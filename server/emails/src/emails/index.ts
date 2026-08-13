@@ -8,6 +8,7 @@ import { NotificationCreditsGranted } from './notification_credits_granted'
 import { NotificationFileFlaggedMalicious } from './notification_file_flagged_malicious'
 import { NotificationNewSale } from './notification_new_sale'
 import { NotificationNewSubscription } from './notification_new_subscription'
+import { NotificationSubscriptionRenewal } from './notification_subscription_renewal'
 import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
 import { OrderConfirmation } from './order_confirmation'
@@ -70,6 +71,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   support_case_organization_new_message: SupportCaseOrganizationNewMessage,
   webhook_endpoint_disabled: WebhookEndpointDisabled,
   notification_new_sale: NotificationNewSale,
+  notification_subscription_renewal: NotificationSubscriptionRenewal,
   notification_new_subscription: NotificationNewSubscription,
   notification_credits_granted: NotificationCreditsGranted,
   notification_file_flagged_malicious: NotificationFileFlaggedMalicious,

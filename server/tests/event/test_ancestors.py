@@ -256,3 +256,32 @@ class TestGetAncestorsBatch:
         # Verify ancestors for grandchildren (parent first, then root)
         assert ancestors[grandchild1.id] == [str(child1.id), str(root.id)]
         assert ancestors[grandchild2.id] == [str(child2.id), str(root.id)]
+
+    async def test_self_referential_event_does_not_hang(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        """
+        An event whose parent_id points to itself (a pre-existing cycle in the
+        database) must not cause get_ancestors_batch to loop forever.  The depth
+        limit in the recursive CTE must cause it to terminate quickly.
+        """
+        organization = await create_organization(save_fixture, account)
+
+        # Create the event normally, then patch parent_id to point at itself.
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            name="self-ref",
+        )
+        # Directly set parent_id = id to simulate the pre-fix cycle.
+        event.parent_id = event.id
+        await save_fixture(event)
+
+        repository = EventRepository.from_session(session)
+        # Must return without hanging and without raising an exception.
+        result = await repository.get_ancestors_batch([event.id])
+
+        # The cycle is broken by the depth limit; the result is non-empty but
+        # should not contain infinitely many entries.
+        ancestors = result.get(event.id, [])
+        assert len(ancestors) <= 100

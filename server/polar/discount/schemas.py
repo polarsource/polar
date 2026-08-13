@@ -32,6 +32,11 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductBase
 
+DiscountID = Annotated[
+    UUID4,
+    MergeJSONSchema({"description": "The discount ID."}),
+]
+
 Name = Annotated[
     str,
     Field(

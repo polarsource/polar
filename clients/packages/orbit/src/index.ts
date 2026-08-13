@@ -76,8 +76,14 @@ export type {
   AnimationProperties,
   AnimationToken,
 } from './tokens/animations'
-export type { DurationToken, EasingToken } from './tokens/value.stylex'
-export type { TransitionProperty } from './utils/types'
+export type {
+  DurationToken,
+  EasingToken,
+  NegativeSpacingToken,
+  PositiveSpacingToken,
+  SpacingToken,
+} from './tokens/value.stylex'
+export type { OffsetValue, TransitionProperty } from './utils/types'
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 export { createText } from './primitives/createText'

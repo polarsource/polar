@@ -36,19 +36,11 @@ export const CheckoutLinkListSidebar = ({
   const searchParams = useSearchParams()
   const pushRouteWithoutCache = usePushRouteWithoutCache()
 
-  const [productIds, setProductIds] = useQueryState(
-    'productId',
-    parseAsArrayOf(parseAsString),
-  )
+  const [productIds] = useQueryState('productId', parseAsArrayOf(parseAsString))
 
   const [sorting, setSorting] = useQueryState(
     'sorting',
-    parseAsStringLiteral([
-      '-created_at',
-      'created_at',
-      'label',
-      '-label',
-    ] as const).withDefault('-created_at'),
+    parseAsStringLiteral(['label', '-label'] as const).withDefault('label'),
   )
 
   const [createCheckoutLinkQuerystring, setCreateCheckoutLinkQuerystring] =
@@ -96,6 +88,23 @@ export const CheckoutLinkListSidebar = ({
     return null
   }, [pathname])
 
+  const handleProductIdsChange = useCallback(
+    (productIds: string[]) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (productIds.length > 0) {
+        params.set('productId', productIds.join(','))
+      } else {
+        params.delete('productId')
+      }
+      const queryString = params.toString()
+
+      pushRouteWithoutCache(
+        `/dashboard/${organization.slug}/products/checkout-links${queryString ? `?${queryString}` : ''}`,
+      )
+    },
+    [searchParams, pushRouteWithoutCache, organization.slug],
+  )
+
   const handleCreateCheckoutLinkClose = useCallback(
     (checkoutLink: schemas['CheckoutLink']) => {
       hideCreateCheckoutLinkModal()
@@ -127,12 +136,10 @@ export const CheckoutLinkListSidebar = ({
               size="icon"
               className="h-6 w-6"
               onClick={() =>
-                setSorting(
-                  sorting === '-created_at' ? 'created_at' : '-created_at',
-                )
+                setSorting(sorting === 'label' ? '-label' : 'label')
               }
             >
-              {sorting === 'created_at' ? (
+              {sorting === 'label' ? (
                 <ArrowUpward fontSize="small" />
               ) : (
                 <ArrowDownward fontSize="small" />
@@ -151,7 +158,7 @@ export const CheckoutLinkListSidebar = ({
           <ProductSelect
             organization={organization}
             value={productIds ?? []}
-            onChange={(productIds) => setProductIds(productIds)}
+            onChange={handleProductIdsChange}
           />
         </div>
         <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">

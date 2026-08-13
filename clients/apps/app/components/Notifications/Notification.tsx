@@ -5,6 +5,7 @@ import {
   MaintainerFileFlaggedMaliciousNotificationPayload,
   MaintainerNewPaidSubscriptionNotificationPayload,
   MaintainerNewProductSaleNotificationPayload,
+  MaintainerSubscriptionRenewalNotificationPayload,
 } from '@/hooks/polar/notifications'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { formatCurrency } from '@polar-sh/currency'
@@ -20,6 +21,7 @@ export interface NotificationProps {
     | MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
+    | MaintainerSubscriptionRenewalNotificationPayload
     | MaintainerFileFlaggedMaliciousNotificationPayload
 }
 
@@ -49,6 +51,10 @@ export const Notification = ({
             color={theme.colors.text}
           />
         )
+      case 'MaintainerSubscriptionRenewalNotification':
+        return (
+          <MaterialIcons name="autorenew" size={20} color={theme.colors.text} />
+        )
       case 'MaintainerAccountCreditsGrantedNotification':
         return <MaterialIcons name="bolt" size={20} color={theme.colors.text} />
       case 'MaintainerFileFlaggedMaliciousNotification':
@@ -72,6 +78,8 @@ export const Notification = ({
         return 'New Subscription'
       case 'MaintainerNewProductSaleNotification':
         return 'New Product Sale'
+      case 'MaintainerSubscriptionRenewalNotification':
+        return 'Subscription Renewal'
       case 'MaintainerAccountCreditsGrantedNotification':
         return 'Credits Granted'
       case 'MaintainerFileFlaggedMaliciousNotification':
@@ -97,6 +105,16 @@ export const Notification = ({
         return `${customer_name} bought ${product_name} for ${formatCurrency(
           'compact',
         )(product_price_amount, saleCurrency || 'usd')}`
+      case 'MaintainerSubscriptionRenewalNotification':
+        const {
+          customer_name: renewalCustomerName,
+          product_name: renewalProductName,
+          product_price_amount: renewalAmount,
+          currency: renewalCurrency,
+        } = payload as MaintainerSubscriptionRenewalNotificationPayload
+        return `${renewalCustomerName} renewed ${renewalProductName} for ${formatCurrency(
+          'compact',
+        )(renewalAmount, renewalCurrency || 'usd')}`
       case 'MaintainerAccountCreditsGrantedNotification':
         const {
           organization_name,

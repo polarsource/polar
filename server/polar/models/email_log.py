@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import String, Uuid
+from sqlalchemy import Index, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -17,6 +17,13 @@ class EmailLogStatus(StrEnum):
 
 class EmailLog(RecordModel):
     __tablename__ = "email_logs"
+    __table_args__ = (
+        Index(
+            "ix_email_logs_deduplication_key",
+            "deduplication_key",
+            postgresql_where="deduplication_key IS NOT NULL",
+        ),
+    )
 
     organization_id: Mapped[UUID | None] = mapped_column(
         Uuid, nullable=True, index=True

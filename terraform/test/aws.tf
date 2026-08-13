@@ -37,6 +37,28 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   ip_protocol                  = "tcp"
 }
 
+module "redis_private_link" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/redis_private_link"
+
+  name                     = "polar-test-worker-redis"
+  vpc_id                   = module.vpc[0].vpc_id
+  subnet_ids               = module.vpc[0].private_subnet_ids
+  redis_host               = module.redis[0].host
+  redis_port               = module.redis[0].port
+  redis_arn                = module.redis[0].arn
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_nlb" {
+  count                        = local.test_enabled ? 1 : 0
+  security_group_id            = module.redis[0].security_group_id
+  referenced_security_group_id = module.redis_private_link[0].nlb_security_group_id
+  from_port                    = module.redis[0].port
+  to_port                      = module.redis[0].port
+  ip_protocol                  = "tcp"
+}
+
 locals {
   files_bucket_name        = "polar-test-files"
   files_public_bucket_name = "polar-test-public-files"

@@ -931,6 +931,108 @@ class TestCreateOrUpdateFromCheckout:
             session, updated_subscription
         )
 
+    async def test_new_sets_metadata(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            user_metadata={"utm_source": "youtube"},
+        )
+
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert created is True
+        assert subscription.user_metadata == {"utm_source": "youtube"}
+
+    async def test_upgrade_keeps_metadata_absent_from_checkout(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_free_price: Product,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_free_price,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            user_metadata={"utm_source": "youtube"},
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            subscription=subscription,
+        )
+
+        (
+            updated_subscription,
+            _,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert updated_subscription.user_metadata == {"utm_source": "youtube"}
+
+    async def test_upgrade_overwrites_metadata_set_on_checkout(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_free_price: Product,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_free_price,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            user_metadata={"utm_source": "youtube", "plan": "free"},
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            subscription=subscription,
+            user_metadata={"plan": "paid"},
+        )
+
+        (
+            updated_subscription,
+            _,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert updated_subscription.user_metadata == {
+            "utm_source": "youtube",
+            "plan": "paid",
+        }
+
     async def test_trial(
         self,
         enqueue_benefits_grants_mock: MagicMock,

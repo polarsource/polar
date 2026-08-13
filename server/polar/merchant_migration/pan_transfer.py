@@ -457,6 +457,7 @@ def annotate(
     *,
     note: str | None = None,
     expected_at: datetime | None = None,
+    clear_expected_at: bool = False,
     in_progress: bool = False,
 ) -> list[PanTransferStep]:
     """Ops-only. Say what a step we're waiting on is doing and when it should land.
@@ -471,6 +472,10 @@ def annotate(
         step.note = note or None
     if expected_at is not None:
         step.expected_at = expected_at
+    elif clear_expected_at:
+        # A date has no "empty" value the way a note does, so dropping one has to
+        # be asked for: otherwise an ETA could be set but never taken back.
+        step.expected_at = None
     if in_progress:
         if step.status != PanStepStatus.pending:
             raise PanStepNotActionable(key)

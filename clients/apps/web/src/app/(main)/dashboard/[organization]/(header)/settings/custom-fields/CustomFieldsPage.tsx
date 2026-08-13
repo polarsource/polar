@@ -7,16 +7,12 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomFields, useDeleteCustomField } from '@/hooks/queries'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
+import { getAPIParams } from '@/utils/datatable'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import { schemas } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {
   DataTable,
@@ -29,75 +25,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useRouter } from 'next/navigation'
+import { parseAsStringLiteral, useQueryStates } from 'nuqs'
 import React, { useCallback, useState } from 'react'
+
+const filterParsers = {
+  type: parseAsStringLiteral(enums.customFieldTypeValues),
+}
 
 interface ClientPageProps {
   organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
-  type?: schemas['CustomFieldType']
 }
 
-const ClientPage: React.FC<ClientPageProps> = ({
-  organization,
-  pagination,
-  sorting,
-  type,
-}) => {
-  const router = useRouter()
+const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
+  const { pagination, setPagination, sorting, setSorting } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'slug', desc: false }],
+    })
 
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-    type?: schemas['CustomFieldType'],
-  ) => {
-    const params = serializeSearchParams(pagination, sorting)
-
-    if (type) {
-      params.append('type', type)
-    }
-
-    return params
-  }
-
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/custom-fields?${getSearchParams(
-        updatedPagination,
-        sorting,
-        type,
-      )}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/custom-fields?${getSearchParams(
-        pagination,
-        updatedSorting,
-        type,
-      )}`,
-    )
-  }
+  const [{ type }] = useQueryStates(filterParsers)
 
   const [showNewModal, setShowNewModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
@@ -132,7 +77,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const customFieldsHook = useCustomFields(organization.id, {
     ...getAPIParams(pagination, sorting),
-    type,
+    type: type ?? undefined,
   })
 
   const customFields = customFieldsHook.data?.items || []

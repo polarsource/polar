@@ -2,9 +2,10 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import Select, String, and_, cast, or_, select, update
+from sqlalchemy import Select, and_, or_, select, update
 from sqlalchemy.orm import joinedload
 
+from polar.email.deduplication import payment_method_expiration_reminder_key_sql
 from polar.enums import PaymentProcessor
 from polar.kit.repository import (
     Options,
@@ -146,18 +147,15 @@ class PaymentMethodRepository(
             .exists()
         )
 
-        logged_payment_method = EmailLog.email_props["payment_method"]
         already_sent_subquery = (
             select(EmailLog.id)
             .where(
                 EmailLog.email_template == "payment_method_expiration_reminder",
                 EmailLog.status == EmailLogStatus.sent,
-                logged_payment_method["id"].as_string()
-                == cast(PaymentMethod.id, String),
-                logged_payment_method["method_metadata"]["exp_year"].as_integer()
-                == exp_year,
-                logged_payment_method["method_metadata"]["exp_month"].as_integer()
-                == exp_month,
+                EmailLog.deduplication_key
+                == payment_method_expiration_reminder_key_sql(
+                    PaymentMethod.id, exp_year, exp_month
+                ),
             )
             .correlate(PaymentMethod)
             .exists()

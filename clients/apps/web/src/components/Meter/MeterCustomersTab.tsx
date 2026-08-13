@@ -73,9 +73,11 @@ const MeterCustomersTab = ({
               />
               <div className="flex flex-col">
                 <span className="text-xs">{customer.name ?? '—'}</span>
-                <span className="dark:text-polar-500 text-xxs text-gray-500">
-                  {customer.email ?? '—'}
-                </span>
+                {(customer.email || customer.type === 'individual') && (
+                  <span className="dark:text-polar-500 text-xxs text-gray-500">
+                    {customer.email ?? '—'}
+                  </span>
+                )}
               </div>
             </Link>
           ),

@@ -1,5 +1,6 @@
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
+import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
 import GppMaybeOutlined from '@mui/icons-material/GppMaybeOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
@@ -231,6 +232,45 @@ const MaintainerNewProductSale = ({
   )
 }
 
+const MaintainerSubscriptionRenewal = ({
+  n,
+}: {
+  n: schemas['MaintainerSubscriptionRenewalNotification']
+}) => {
+  const { payload } = n
+  const href =
+    payload.organization_slug && payload.subscription_id
+      ? `/dashboard/${payload.organization_slug}/sales/subscriptions/${payload.subscription_id}`
+      : payload.organization_slug
+        ? `/dashboard/${payload.organization_slug}/sales/subscriptions`
+        : null
+  return (
+    <Item n={n} iconClasses="bg-green-200 text-green-500">
+      {{
+        text: (
+          <>
+            {payload.customer_name} renewed{' '}
+            {href ? (
+              <InternalLink href={href}>
+                <span>{payload.product_name}</span>
+              </InternalLink>
+            ) : (
+              <span className="font-bold">{payload.product_name}</span>
+            )}{' '}
+            (
+            {formatCurrency('compact')(
+              payload.product_price_amount,
+              payload.currency || 'usd',
+            )}
+            )
+          </>
+        ),
+        icon: <AutorenewOutlined fontSize="small" />,
+      }}
+    </Item>
+  )
+}
+
 const MaintainerAccountCreditsGranted = ({
   n,
 }: {
@@ -291,6 +331,9 @@ const Notification = ({
 
     case 'MaintainerNewProductSaleNotification':
       return <MaintainerNewProductSale n={n} />
+
+    case 'MaintainerSubscriptionRenewalNotification':
+      return <MaintainerSubscriptionRenewal n={n} />
 
     case 'MaintainerAccountCreditsGrantedNotification':
       return <MaintainerAccountCreditsGranted n={n} />

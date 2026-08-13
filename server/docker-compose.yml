@@ -110,7 +110,6 @@ services:
 
   tinybird:
     image: tinybirdco/tinybird-local:latest
-    platform: linux/amd64
     ports:
       - "${TINYBIRD_PORT:-7181}:7181"
       - "${TINYBIRD_ADMIN_PORT:-7182}:7182"
@@ -123,8 +122,6 @@ services:
       interval: 5s
       timeout: 10s
       retries: 30
-    profiles:
-      - tinybird
 
   localstack:
     # Pinned: newer tags may require a LOCALSTACK_AUTH_TOKEN.

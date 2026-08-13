@@ -224,7 +224,7 @@ class TextAreaField(FormField):
             if value is not None:
                 text(str(value))
         if description:
-            with tag.div(classes="label"):
+            with tag.div(classes="label text-wrap"):
                 text(description)
         for error in errors:
             with tag.div(classes="label text-error"):
@@ -285,7 +285,7 @@ class CheckboxField(FormField):
                 pass
             text(label)
         if description:
-            with tag.div(classes="label"):
+            with tag.div(classes="label text-wrap"):
                 text(description)
         for error in errors:
             with tag.div(classes="label text-error"):

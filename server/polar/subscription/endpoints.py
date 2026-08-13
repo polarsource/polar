@@ -9,6 +9,7 @@ from pydantic import AwareDatetime
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
+from polar.discount.schemas import DiscountID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -88,7 +89,7 @@ async def list(
         title="ExternalCustomerID Filter",
         description="Filter by customer external ID.",
     ),
-    discount_id: MultipleQueryFilter[ProductID] | None = Query(
+    discount_id: MultipleQueryFilter[DiscountID] | None = Query(
         None, title="DiscountID Filter", description="Filter by discount ID."
     ),
     active: bool | None = Query(

@@ -77,10 +77,12 @@ class NotificationsService:
         notif: PartialNotification,
     ) -> None:
         _SETTING_KEY: dict[
-            NotificationType, Literal["new_order", "new_subscription"]
+            NotificationType,
+            Literal["new_order", "new_subscription", "subscription_renewal"],
         ] = {
             NotificationType.maintainer_new_product_sale: "new_order",
             NotificationType.maintainer_new_paid_subscription: "new_subscription",
+            NotificationType.maintainer_subscription_renewal: "subscription_renewal",
         }
         key = _SETTING_KEY.get(notif.type)
         members = await user_organization_service.list_by_org(session, org_id)

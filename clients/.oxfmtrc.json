@@ -7,5 +7,11 @@
   "useTabs": false,
   "sortTailwindcss": {},
   "sortPackageJson": false,
-  "ignorePatterns": ["node_modules", "dist", "coverage", ".changeset"]
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "coverage",
+    ".changeset",
+    "**/CHANGELOG.md"
+  ]
 }

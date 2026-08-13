@@ -8,6 +8,7 @@ import type {
   BreakpointKey,
   DurationToken,
   EasingToken,
+  PositiveSpacingToken,
   ShadowToken,
   SpacingToken,
 } from '../tokens/value.stylex'
@@ -23,21 +24,28 @@ export type ResponsiveValue<T> =
   | T
   | Partial<Record<'base' | BreakpointKey | PseudoState, T>>
 
+/**
+ * Offsets accept spacing tokens (positive or negative) with autocomplete,
+ * plus arbitrary CSS lengths (`string & {}` keeps the literal suggestions
+ * without rejecting other strings) and numbers (treated as px).
+ */
+export type OffsetValue = SpacingToken | (string & {}) | number
+
 export interface SpacingProps {
-  padding?: ResponsiveValue<SpacingToken>
-  paddingTop?: ResponsiveValue<SpacingToken>
-  paddingRight?: ResponsiveValue<SpacingToken>
-  paddingBottom?: ResponsiveValue<SpacingToken>
-  paddingLeft?: ResponsiveValue<SpacingToken>
-  paddingHorizontal?: ResponsiveValue<SpacingToken>
-  paddingVertical?: ResponsiveValue<SpacingToken>
-  p?: ResponsiveValue<SpacingToken>
-  pt?: ResponsiveValue<SpacingToken>
-  pr?: ResponsiveValue<SpacingToken>
-  pb?: ResponsiveValue<SpacingToken>
-  pl?: ResponsiveValue<SpacingToken>
-  px?: ResponsiveValue<SpacingToken>
-  py?: ResponsiveValue<SpacingToken>
+  padding?: ResponsiveValue<PositiveSpacingToken>
+  paddingTop?: ResponsiveValue<PositiveSpacingToken>
+  paddingRight?: ResponsiveValue<PositiveSpacingToken>
+  paddingBottom?: ResponsiveValue<PositiveSpacingToken>
+  paddingLeft?: ResponsiveValue<PositiveSpacingToken>
+  paddingHorizontal?: ResponsiveValue<PositiveSpacingToken>
+  paddingVertical?: ResponsiveValue<PositiveSpacingToken>
+  p?: ResponsiveValue<PositiveSpacingToken>
+  pt?: ResponsiveValue<PositiveSpacingToken>
+  pr?: ResponsiveValue<PositiveSpacingToken>
+  pb?: ResponsiveValue<PositiveSpacingToken>
+  pl?: ResponsiveValue<PositiveSpacingToken>
+  px?: ResponsiveValue<PositiveSpacingToken>
+  py?: ResponsiveValue<PositiveSpacingToken>
 
   margin?: ResponsiveValue<SpacingToken | 'auto'>
   marginTop?: ResponsiveValue<SpacingToken | 'auto'>
@@ -54,10 +62,10 @@ export interface SpacingProps {
   mx?: ResponsiveValue<SpacingToken | 'auto'>
   my?: ResponsiveValue<SpacingToken | 'auto'>
 
-  gap?: ResponsiveValue<SpacingToken>
-  rowGap?: ResponsiveValue<SpacingToken>
-  columnGap?: ResponsiveValue<SpacingToken>
-  g?: ResponsiveValue<SpacingToken>
+  gap?: ResponsiveValue<PositiveSpacingToken>
+  rowGap?: ResponsiveValue<PositiveSpacingToken>
+  columnGap?: ResponsiveValue<PositiveSpacingToken>
+  g?: ResponsiveValue<PositiveSpacingToken>
 }
 
 export interface ColorProps {
@@ -153,11 +161,11 @@ export interface PositionProps {
   position?: ResponsiveValue<
     'relative' | 'absolute' | 'fixed' | 'sticky' | 'static'
   >
-  top?: ResponsiveValue<string | number>
-  right?: ResponsiveValue<string | number>
-  bottom?: ResponsiveValue<string | number>
-  left?: ResponsiveValue<string | number>
-  inset?: ResponsiveValue<string | number>
+  top?: ResponsiveValue<OffsetValue>
+  right?: ResponsiveValue<OffsetValue>
+  bottom?: ResponsiveValue<OffsetValue>
+  left?: ResponsiveValue<OffsetValue>
+  inset?: ResponsiveValue<OffsetValue>
   zIndex?: ResponsiveValue<number | string>
 }
 

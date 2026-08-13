@@ -53,8 +53,7 @@ class CanonicalPaymentMethodType(StrEnum):
 class CanonicalPaymentMethod:
     source_id: str
     type: CanonicalPaymentMethodType
-    # A copy re-mints the id but not the card, so these are the only join key
-    # left between the method the source charged and the one that lands on ours.
+    # What a copy preserves, and so all there is to re-identify it by.
     last4: str | None = None
     brand: str | None = None
     exp_month: int | None = None

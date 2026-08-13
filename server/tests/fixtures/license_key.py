@@ -63,13 +63,17 @@ class TestLicenseKey:
             customer=customer,
             status=SubscriptionStatus.active,
         )
-        await create_benefit_grant(
+        grant = await create_benefit_grant(
             save_fixture,
             customer,
             benefit,
             subscription=subscription,
         )
-        return await cls.run_grant_task(session, redis, benefit, customer)
+        benefit, granted = await cls.run_grant_task(session, redis, benefit, customer)
+        grant.properties = granted
+        grant.set_granted()
+        await save_fixture(grant)
+        return benefit, granted
 
     @classmethod
     async def run_grant_task(

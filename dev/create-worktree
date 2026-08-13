@@ -40,6 +40,6 @@ fi
 
 # Set up environment in the worktree
 echo "Setting up environment in $worktree_dir"
-cd "$worktree_dir" && ./dev/cli/dev up --skip-integrations --skip-tinybird --database-name "$db_name"
+cd "$worktree_dir" && ./dev/cli/dev up --skip-integrations --database-name "$db_name"
 
 echo "Worktree setup complete for $name"

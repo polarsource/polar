@@ -15,48 +15,39 @@ import {
   useResetSecretWebhookEndpoint,
   useWebhookEndpoint,
 } from '@/hooks/queries'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-} from '@/utils/datatable'
 import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { Switch } from '@polar-sh/orbit'
 import { useParams, useRouter } from 'next/navigation'
-import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
+import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs'
 import { useCallback, useState } from 'react'
+
+const filterParsers = {
+  succeeded: parseAsString.withDefault('all'),
+  httpCodeClass: parseAsString.withDefault('all'),
+  eventTypes: parseAsArrayOf(parseAsString).withDefault([]),
+  query: parseAsString.withDefault(''),
+}
 
 export default function ClientPage({
   organization,
-  pagination,
-  sorting,
 }: {
   organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
 }) {
   const { id }: { id: string } = useParams()
   const router = useRouter()
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
-  const [succeeded, setSucceeded] = useQueryState(
-    'succeeded',
-    parseAsString.withDefault('all'),
-  )
-  const [httpCodeClass, setHttpCodeClass] = useQueryState(
-    'httpCodeClass',
-    parseAsString.withDefault('all'),
-  )
-  const [eventTypes, setEventTypes] = useQueryState(
-    'eventTypes',
-    parseAsArrayOf(parseAsString).withDefault([]),
-  )
-  const [query, setQuery] = useQueryState(
-    'query',
-    parseAsString.withDefault(''),
-  )
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'created_at', desc: true }],
+    })
+
+  const [{ succeeded, httpCodeClass, eventTypes, query }, setFilters] =
+    useQueryStates(filterParsers)
 
   const { data: endpoint } = useWebhookEndpoint(id)
 
@@ -203,22 +194,38 @@ export default function ClientPage({
           <h2 className="text-xl font-medium">Deliveries</h2>
           <WebhookFilter
             dateRange={dateRange}
-            onDateRangeChange={setDateRange}
+            onDateRangeChange={(value) => {
+              setDateRange(value)
+              resetPage()
+            }}
             succeeded={succeeded}
-            onSucceededChange={(value) => setSucceeded(value)}
+            onSucceededChange={(value) => {
+              setFilters({ succeeded: value })
+              resetPage()
+            }}
             httpCodeClass={httpCodeClass}
-            onHttpCodeClassChange={(value) => setHttpCodeClass(value)}
+            onHttpCodeClassChange={(value) => {
+              setFilters({ httpCodeClass: value })
+              resetPage()
+            }}
             eventTypes={eventTypes}
-            onEventTypesChange={setEventTypes}
+            onEventTypesChange={(value) => {
+              setFilters({ eventTypes: value })
+              resetPage()
+            }}
             query={query}
-            onQueryChange={setQuery}
+            onQueryChange={(value) => {
+              setFilters({ query: value })
+              resetPage()
+            }}
           />
         </div>
         <DeliveriesTable
           endpoint={endpoint}
           pagination={pagination}
+          onPaginationChange={setPagination}
           sorting={sorting}
-          organization={organization}
+          onSortingChange={setSorting}
           dateRange={dateRange}
           succeeded={succeeded !== 'all' ? succeeded === 'true' : undefined}
           httpCodeClass={

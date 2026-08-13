@@ -104,6 +104,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     },
     {
       accessorKey: 'id',
+      enableSorting: false,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="ID" />
       ),

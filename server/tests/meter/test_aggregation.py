@@ -251,6 +251,16 @@ class TestAggregationMatches:
         )
         assert agg.matches(event) is False
 
+    def test_property_not_matches_boolean(self, organization: Organization) -> None:
+        agg = PropertyAggregation(func=AggregationFunction.sum, property="amount")
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"amount": True},
+        )
+        assert agg.matches(event) is False
+
     def test_property_not_matches_missing(self, organization: Organization) -> None:
         agg = PropertyAggregation(func=AggregationFunction.sum, property="amount")
         event = Event(

@@ -13,6 +13,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
+from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
 from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
@@ -1107,6 +1108,57 @@ class TestGetQuantities:
         quantity = result.quantities[0]
         assert quantity.quantity == expected_value
         assert result.total == expected_value
+
+
+@pytest.mark.asyncio
+class TestGetQuantity:
+    async def test_excludes_non_numeric_values(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        await create_event(
+            save_fixture,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20},
+        )
+        await create_event(
+            save_fixture,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 10},
+        )
+        await create_event(
+            save_fixture,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": True},
+        )
+        await create_event(
+            save_fixture,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": "invalid"},
+        )
+
+        meter = await create_meter(
+            save_fixture,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+            organization=customer.organization,
+        )
+
+        event_repository = EventRepository.from_session(session)
+        events_statement = event_repository.get_base_statement().where(
+            Event.organization_id == customer.organization_id
+        )
+
+        quantity = await meter_service.get_quantity(session, meter, events_statement)
+
+        assert quantity == 30.0
 
 
 @pytest_asyncio.fixture

@@ -121,7 +121,10 @@ export function DashboardViewActions({
   }, [isCustomDashboard, currentDashboard, currentSlug])
 
   const handleExport = useCallback(() => {
-    const url = new URL(`${getServerURL()}/v1/metrics/export`)
+    const url = new URL(
+      `${getServerURL()}/v1/metrics/export`,
+      window.location.origin,
+    )
     url.searchParams.set('organization_id', organization.id)
     url.searchParams.set('start_date', toISODate(startDate))
     url.searchParams.set('end_date', toISODate(endDate))

@@ -66,7 +66,10 @@ const ExportOrdersModal: React.FC<ExportOrdersModalProps> = ({
   const rangeLabel = formatExportRange(dateRange)
 
   const onExport = () => {
-    const url = new URL(getServerURL('/v1/orders/export'))
+    const url = new URL(
+      getServerURL('/v1/orders/export'),
+      window.location.origin,
+    )
     url.searchParams.set('organization_id', organization.id)
     for (const id of productId ?? []) {
       url.searchParams.append('product_id', id)

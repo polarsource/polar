@@ -91,6 +91,7 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
   const onExport = useCallback(() => {
     const url = new URL(
       `${getServerURL()}/v1/customers/export?organization_id=${organization.id}`,
+      window.location.origin,
     )
 
     window.open(url, '_blank')

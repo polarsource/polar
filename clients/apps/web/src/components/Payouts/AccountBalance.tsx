@@ -1,11 +1,12 @@
+import { RestrictedModal } from '@/components/Finance/RestrictedModal'
 import { useTransactionsSummary } from '@/hooks/queries'
 import { useHasPermission } from '@/hooks/permissions'
 import { usePayoutAccountSetup } from '@/hooks/usePayoutAccountSetup'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Text } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
 
 import React, { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'
@@ -45,7 +46,6 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
   } = usePayoutAccountSetup(
     organization,
     `/dashboard/${organization.slug}/finance/payouts`,
-    canManageOrganization,
   )
 
   const {
@@ -58,6 +58,18 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     show: showCreditGrantsModal,
     hide: hideCreditGrantsModal,
   } = useModal(false)
+  const {
+    isShown: isRestrictedPayoutAccountModalShown,
+    show: showRestrictedPayoutAccountModal,
+    hide: hideRestrictedPayoutAccountModal,
+  } = useModal(false)
+
+  const handleCreatePayoutAccount = canManageOrganization
+    ? openCreate
+    : showRestrictedPayoutAccountModal
+  const handleManagePayoutAccount = canManageOrganization
+    ? openManage
+    : showRestrictedPayoutAccountModal
 
   const onWithdrawSuccess = useCallback(
     (payoutId: string) => {
@@ -84,11 +96,9 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           <Text variant="heading-xxs" as="h2">
             Available Balance
           </Text>
-          {canManageFinance ? (
-            <Button className="self-start" onClick={showPayoutConfirmModal}>
-              Withdraw
-            </Button>
-          ) : null}
+          <Button className="self-start" onClick={showPayoutConfirmModal}>
+            Withdraw
+          </Button>
         </WellHeader>
         <WellContent>
           <Text variant="heading-s" loading={isLoading}>
@@ -124,73 +134,69 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           </Text>
         </WellFooter>
       </Well>
-      {canManageOrganization ? (
-        <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
-          <WellHeader className="flex flex-row items-center justify-between gap-x-6">
-            <Text variant="heading-xxs" as="h2">
-              Payout Account
-            </Text>
-            {payoutAccount || hasReusableAccounts ? (
-              <Button
-                className="self-start"
-                variant="secondary"
-                onClick={openManage}
-              >
-                Manage
-              </Button>
-            ) : (
-              <Button className="self-start" onClick={openCreate}>
-                Create
-              </Button>
-            )}
-          </WellHeader>
-          <WellContent>
-            <Text
-              variant="heading-s"
-              color={payoutAccount ? 'default' : 'disabled'}
-              loading={!payoutAccount && organization.payout_account_id != null}
+      <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
+        <WellHeader className="flex flex-row items-center justify-between gap-x-6">
+          <Text variant="heading-xxs" as="h2">
+            Payout Account
+          </Text>
+          {payoutAccount || hasReusableAccounts ? (
+            <Button
+              className="self-start"
+              variant="secondary"
+              onClick={handleManagePayoutAccount}
             >
-              {payoutAccount
-                ? payoutAccount.type[0].toUpperCase() +
-                  payoutAccount.type.slice(1)
-                : '—'}
-            </Text>
-          </WellContent>
-          <WellFooter className="mt-auto">
-            {payoutAccount ? (
-              <Box alignItems="center" columnGap="m">
-                <Text color="muted">
-                  {payoutAccount.country.toUpperCase()} ·{' '}
-                  {payoutAccount.currency.toUpperCase()}
+              Manage
+            </Button>
+          ) : (
+            <Button className="self-start" onClick={handleCreatePayoutAccount}>
+              Create
+            </Button>
+          )}
+        </WellHeader>
+        <WellContent>
+          <Text
+            variant="heading-s"
+            color={payoutAccount ? 'default' : 'disabled'}
+            loading={!payoutAccount && organization.payout_account_id != null}
+          >
+            {payoutAccount
+              ? payoutAccount.type[0].toUpperCase() +
+                payoutAccount.type.slice(1)
+              : '—'}
+          </Text>
+        </WellContent>
+        <WellFooter className="mt-auto">
+          {payoutAccount ? (
+            <Box alignItems="center" columnGap="m">
+              <Text color="muted">
+                {payoutAccount.country.toUpperCase()} ·{' '}
+                {payoutAccount.currency.toUpperCase()}
+              </Text>
+              <Box display="inline-flex" alignItems="center" columnGap="xs">
+                <Box
+                  display="block"
+                  width={6}
+                  height={6}
+                  borderRadius="full"
+                  backgroundColor={
+                    payoutAccount.is_payout_ready
+                      ? 'background-success'
+                      : 'background-warning'
+                  }
+                />
+                <Text
+                  variant="caption"
+                  color={payoutAccount.is_payout_ready ? 'success' : 'warning'}
+                >
+                  {payoutAccount.is_payout_ready ? 'Ready' : 'Setup required'}
                 </Text>
-                <Box display="inline-flex" alignItems="center" columnGap="xs">
-                  <Box
-                    display="block"
-                    width={6}
-                    height={6}
-                    borderRadius="full"
-                    backgroundColor={
-                      payoutAccount.is_payout_ready
-                        ? 'background-success'
-                        : 'background-warning'
-                    }
-                  />
-                  <Text
-                    variant="caption"
-                    color={
-                      payoutAccount.is_payout_ready ? 'success' : 'warning'
-                    }
-                  >
-                    {payoutAccount.is_payout_ready ? 'Ready' : 'Setup required'}
-                  </Text>
-                </Box>
               </Box>
-            ) : (
-              <Text color="muted">No payout account configured.</Text>
-            )}
-          </WellFooter>
-        </Well>
-      ) : null}
+            </Box>
+          ) : (
+            <Text color="muted">No payout account configured.</Text>
+          )}
+        </WellFooter>
+      </Well>
       {canManageFinance ? (
         <WithdrawModal
           organization={organization}
@@ -199,7 +205,24 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           hide={hidePayoutConfirmModal}
           onSuccess={onWithdrawSuccess}
         />
-      ) : null}
+      ) : (
+        <RestrictedModal
+          title="Withdraw Balance"
+          isShown={isPayoutConfirmModalShown}
+          hide={hidePayoutConfirmModal}
+          message={permissionDeniedMessage('finance:manage')}
+        />
+      )}
+      <RestrictedModal
+        title={
+          payoutAccount || hasReusableAccounts
+            ? 'Manage Payout Accounts'
+            : 'Create Payout Account'
+        }
+        isShown={isRestrictedPayoutAccountModalShown}
+        hide={hideRestrictedPayoutAccountModal}
+        message={permissionDeniedMessage('organization:manage')}
+      />
       <FeeCreditGrantsModal
         isShown={isCreditGrantsModalShown}
         hide={hideCreditGrantsModal}

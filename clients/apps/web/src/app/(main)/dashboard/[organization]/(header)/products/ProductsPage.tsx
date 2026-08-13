@@ -4,7 +4,6 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
 import { ProductListItem } from '@/components/Products/ProductListItem'
 import { useProducts } from '@/hooks/queries/products'
-import { useHasPermission } from '@/hooks/permissions'
 import { useDebouncedCallback } from '@/hooks/utils'
 import {
   DataTablePaginationState,
@@ -51,7 +50,6 @@ export default function ClientPage({
 
   const router = useRouter()
   const pathname = usePathname()
-  const canManageProducts = useHasPermission(org.id, 'products:manage')
 
   const onPageChange = useCallback(
     (page: number) => {
@@ -186,21 +184,19 @@ export default function ClientPage({
               </Select>
             )}
           </div>
-          {canManageProducts ? (
-            <Link
-              href={`/dashboard/${org.slug}/products/new`}
-              className="w-full md:w-fit"
+          <Link
+            href={`/dashboard/${org.slug}/products/new`}
+            className="w-full md:w-fit"
+          >
+            <Button
+              role="link"
+              wrapperClassNames="gap-x-2 md:w-fit"
+              className="w-full"
             >
-              <Button
-                role="link"
-                wrapperClassNames="gap-x-2 md:w-fit"
-                className="w-full"
-              >
-                <AddOutlined className="h-4 w-4" />
-                <span>New Product</span>
-              </Button>
-            </Link>
-          ) : null}
+              <AddOutlined className="h-4 w-4" />
+              <span>New Product</span>
+            </Button>
+          </Link>
         </div>
         {products.data && products.data.items.length > 0 ? (
           <Pagination
@@ -239,13 +235,11 @@ export default function ClientPage({
                   Start selling digital products today
                 </p>
               </div>
-              {canManageProducts ? (
-                <Link href={`/dashboard/${org.slug}/products/new`}>
-                  <Button role="link" variant="secondary">
-                    <span>Create Product</span>
-                  </Button>
-                </Link>
-              ) : null}
+              <Link href={`/dashboard/${org.slug}/products/new`}>
+                <Button role="link" variant="secondary">
+                  <span>Create Product</span>
+                </Button>
+              </Link>
             </div>
           </ShadowBoxOnMd>
         )}

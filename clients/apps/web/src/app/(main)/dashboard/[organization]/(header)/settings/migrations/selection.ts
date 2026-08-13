@@ -1,3 +1,7 @@
+// Migration-wide rather than review-only: every table here sends the server a
+// set of ledger record ids to act on, over a catalog too big to enumerate
+// client-side. Lives above `review/` so the next one can reuse it.
+//
 // Selection scales past one page with a Gmail-style model: either everything is
 // selected except `toggled` (mode `all`, the opt-out default), or nothing is
 // selected except `toggled` (mode `none`). Row ids never all live client-side,
@@ -53,13 +57,13 @@ export function toggleAll(state: SelectionState): SelectionState {
   return { mode: allSelected ? 'none' : 'all', toggled: new Set() }
 }
 
-// The selection to carry over once `submitted` has imported. The payload below
+// The selection to carry over once `submitted` has been sent. The payload below
 // makes membership derivable: in `all` mode everything outside `toggled` was
 // sent, in `none` mode everything inside it was. Those rows have settled in the
 // ledger, so they can't be selected again — and their checkboxes are disabled,
 // so an id left behind could never be cleared and would decrement the count for
 // good. Anything toggled after submit wasn't sent, so it survives.
-export function selectionAfterImport(
+export function selectionAfterSubmit(
   submitted: SelectionState,
   current: SelectionState,
 ): SelectionState {
@@ -77,10 +81,14 @@ export function selectionAfterImport(
   }
 }
 
-export function importPayload(state: SelectionState): {
+// What a write takes: the ledger record ids to act on, as either an opt-in or
+// an opt-out list. Never both, and neither means "everything".
+export interface SelectionPayload {
   recordIds?: string[]
   excludeRecordIds?: string[]
-} {
+}
+
+export function selectionPayload(state: SelectionState): SelectionPayload {
   if (state.mode === 'all') {
     return state.toggled.size ? { excludeRecordIds: [...state.toggled] } : {}
   }

@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from datetime import timedelta
 from uuid import UUID
 
 import pytest
@@ -15,17 +16,21 @@ from polar.enums import PaymentProcessor
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
+from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
+    CanonicalPaymentMethod,
+    CanonicalPaymentMethodType,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    serialize,
 )
 from polar.merchant_migration.pan_transfer import (
     STEP_RESOLVE_UNCOVERED,
@@ -1452,6 +1457,29 @@ def _steps_until(method: PanTransferMethod, target_key: str) -> list[PanTransfer
         )
 
 
+def _canonical_subscription(
+    *, source_id: str, payment_method: CanonicalPaymentMethod | None
+) -> CanonicalSubscription:
+    return CanonicalSubscription(
+        source_id=source_id,
+        customer_source_id=f"cus_{source_id}",
+        price_source_id="price_1",
+        status=CanonicalSubscriptionStatus.active,
+        collection_method=CanonicalCollectionMethod.charge_automatically,
+        current_period_start=utc_now(),
+        current_period_end=utc_now() + timedelta(days=30),
+        trialing=False,
+        paused_collection=False,
+        line_item_count=1,
+        quantity=1,
+        payment_method=payment_method,
+        has_discount=False,
+        cancel_at_period_end=False,
+        trial_end=None,
+        stopped_for_migration=False,
+    )
+
+
 async def _imported_subscription(
     save_fixture: SaveFixture,
     migration: MerchantMigration,
@@ -1460,6 +1488,7 @@ async def _imported_subscription(
     *,
     source_id: str,
     email: str,
+    payment_method: CanonicalPaymentMethod | None = None,
 ) -> MerchantMigrationRecord:
     """One paused subscription in Polar, staged as imported. The card check
     reads the ledger row and its target, never the canonical blob."""
@@ -1479,7 +1508,9 @@ async def _imported_subscription(
         status=MerchantMigrationRecordStatus.imported,
         source_id=source_id,
         target_id=subscription.id,
-        canonical={},
+        canonical=serialize(
+            _canonical_subscription(source_id=source_id, payment_method=payment_method)
+        ),
     )
     await save_fixture(record)
     return record
@@ -1535,7 +1566,7 @@ class TestRunCardVerification:
         mocker.patch(
             "polar.merchant_migration.service.link_payment_method",
             new=mocker.AsyncMock(
-                side_effect=lambda _session, customer: (
+                side_effect=lambda _session, customer, **_kwargs: (
                     payment_method if customer.id == landed.customer_id else None
                 )
             ),
@@ -1598,7 +1629,7 @@ class TestRunCardVerification:
         landed: dict[UUID, PaymentMethod] = {}
 
         async def _link(
-            _session: AsyncSession, customer: Customer
+            _session: AsyncSession, customer: Customer, **_kwargs: object
         ) -> PaymentMethod | None:
             # None is what the real one answers before a card has landed.
             return landed.get(customer.id)
@@ -1635,3 +1666,53 @@ class TestRunCardVerification:
         )
         # The already-linked one is not looked up a second time.
         assert link.await_count == 1
+
+    async def test_links_the_card_the_source_was_charging(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = _steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+        charged = CanonicalPaymentMethod(
+            source_id="pm_source",
+            type=CanonicalPaymentMethodType.card,
+            brand="visa",
+            last4="4242",
+            exp_month=4,
+            exp_year=2030,
+        )
+        record = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="two-cards@example.com",
+            payment_method=charged,
+        )
+        assert record.target_id is not None
+        subscription = await SubscriptionRepository.from_session(session).get_by_id(
+            record.target_id, options=(joinedload(Subscription.customer),)
+        )
+        assert subscription is not None
+        linked = await create_payment_method(
+            save_fixture, subscription.customer, processor_id="pm_charged"
+        )
+        link = mocker.patch(
+            "polar.merchant_migration.service.link_payment_method",
+            new=mocker.AsyncMock(return_value=linked),
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        # Without this the wrong copy can be attached, and the switch keeps it.
+        assert link.await_args is not None
+        assert link.await_args.kwargs["source_method"] == charged

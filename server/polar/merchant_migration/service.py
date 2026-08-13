@@ -32,15 +32,19 @@ from polar.worker import enqueue_job
 
 from . import pan_transfer
 from .adapters import SourceAdapter, StripeAdapter
-from .canonical import CanonicalRecord, deserialize
-from .cards import link_payment_method
+from .canonical import (
+    CanonicalPaymentMethod,
+    CanonicalRecord,
+    CanonicalSubscription,
+    deserialize,
+)
+from .cards import AmbiguousCopiedCard, link_payment_method
 from .errors import MerchantMigrationError
 from .importer import CatalogImporter
 from .pan_transfer import (
     STEP_VERIFY_CARDS,
     PanStepActor,
     PanStepOwner,
-    PanStepStatus,
     PanTransferAlreadyStarted,
     PanTransferNotReady,
     PanTransferNotStarted,
@@ -198,6 +202,20 @@ class SourceKeyModeMismatch(MerchantMigrationError):
             f"(e.g. `rk_{mode}_…`), so the migration runs against {mode} data.",
             400,
         )
+
+
+def _staged_payment_method(
+    record: MerchantMigrationRecord,
+) -> CanonicalPaymentMethod | None:
+    """What the source subscription was charging, so the right copy is picked
+    when a customer has more than one."""
+    try:
+        staged = deserialize(record.type, record.canonical)
+    except (KeyError, TypeError, ValueError):
+        return None
+    if isinstance(staged, CanonicalSubscription):
+        return staged.payment_method
+    return None
 
 
 def _summarize_entities(
@@ -583,7 +601,19 @@ class MerchantMigrationService:
             # Already covered, or gone from Polar: nothing to link either way.
             if subscription is None or subscription.payment_method_id is not None:
                 continue
-            payment_method = await link_payment_method(session, subscription.customer)
+            try:
+                payment_method = await link_payment_method(
+                    session,
+                    subscription.customer,
+                    source_method=_staged_payment_method(record),
+                )
+            except AmbiguousCopiedCard:
+                log.warning(
+                    "merchant_migration.verify_cards.ambiguous_card",
+                    merchant_migration_id=migration.id,
+                    record_id=record.id,
+                )
+                continue
             if payment_method is None:
                 continue
             await subscription_repository.update(
@@ -650,11 +680,6 @@ class MerchantMigrationService:
                 settings.MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID or None
             ),
             steps=steps,
-        )
-
-    def _step_completed(self, steps: Sequence[PanTransferStep], key: str) -> bool:
-        return any(
-            step.key == key and step.status == PanStepStatus.completed for step in steps
         )
 
     async def _get_manageable(

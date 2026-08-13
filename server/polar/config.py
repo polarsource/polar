@@ -723,6 +723,9 @@ class Settings(BaseSettings):
     def is_test(self) -> bool:
         return self.is_environment({Environment.test})
 
+    def is_vercel(self) -> bool:
+        return "VERCEL" in os.environ
+
     def generate_external_url(self, path: str) -> str:
         return f"{self.BASE_URL}{path}"
 

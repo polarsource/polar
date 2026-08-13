@@ -113,6 +113,7 @@ async def _persist_agent_result(
         input_tokens=result.usage.input_tokens,
         output_tokens=result.usage.output_tokens,
         cost_usd=result.usage.estimated_cost_usd,
+        usage_id=str(uuid.uuid4()),
     )
 
     review_repository = OrganizationReviewRepository.from_session(session)

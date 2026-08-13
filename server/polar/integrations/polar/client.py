@@ -739,6 +739,7 @@ class PolarSelfClient:
         input_tokens: int,
         output_tokens: int,
         cost_usd: Decimal,
+        usage_id: str | None = None,
     ) -> None:
         await self._track_llm_span_usage(
             operation="track_organization_review_usage",
@@ -750,6 +751,7 @@ class PolarSelfClient:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost_usd=cost_usd,
+            usage_id=usage_id,
         )
 
     async def track_compass_assistant_usage(

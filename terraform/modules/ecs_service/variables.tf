@@ -11,6 +11,11 @@ variable "environment" {
 variable "name" {
   description = "Short service name, combined into polar-{environment}-{name}."
   type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.name))
+    error_message = "Must contain only lowercase letters, digits and hyphens."
+  }
 }
 
 variable "cluster_arn" {
@@ -29,16 +34,27 @@ variable "command" {
   default     = null
 }
 
+variable "profile" {
+  description = "Preconfigured task size: tiny (256/512), small (512/1024), medium (1024/2048) or big (2048/4096). Mutually exclusive with cpu/memory."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.profile == null ? true : contains(["tiny", "small", "medium", "big"], var.profile)
+    error_message = "Must be either \"tiny\", \"small\", \"medium\" or \"big\"."
+  }
+}
+
 variable "cpu" {
-  description = "Task CPU units."
+  description = "Task CPU units, set together with memory when profile is unset."
   type        = number
-  default     = 256
+  default     = null
 }
 
 variable "memory" {
-  description = "Task memory in MiB."
+  description = "Task memory in MiB, set together with cpu when profile is unset."
   type        = number
-  default     = 512
+  default     = null
 }
 
 variable "desired_count" {
@@ -84,4 +100,10 @@ variable "log_retention_days" {
   description = "CloudWatch log retention in days."
   type        = number
   default     = 30
+}
+
+variable "tags" {
+  description = "Tags applied to all created resources."
+  type        = map(string)
+  default     = {}
 }

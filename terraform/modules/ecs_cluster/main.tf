@@ -1,5 +1,6 @@
 resource "aws_ecs_cluster" "this" {
   name = "polar-${var.environment}"
+  tags = var.tags
 
   setting {
     name  = "containerInsights"

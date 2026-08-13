@@ -221,6 +221,18 @@ class TestPrecheckEngine:
         report = await run([build_product(recurring_interval=None)])
         assert "one_time_product" in codes(report, PrecheckIssueLevel.warning)
 
+    async def test_short_product_name_warns(self) -> None:
+        report = await run([build_product(name="AB")])
+        assert "product_name_too_short" in codes(report, PrecheckIssueLevel.warning)
+
+    async def test_short_name_does_not_double_report_with_one_time(self) -> None:
+        # A one-time product is already dropped for a more fundamental reason;
+        # the name check must not add a redundant warning.
+        report = await run([build_product(name="X", recurring_interval=None)])
+        warnings = codes(report, PrecheckIssueLevel.warning)
+        assert "one_time_product" in warnings
+        assert "product_name_too_short" not in warnings
+
     async def test_unsupported_interval_count_warns(self) -> None:
         report = await run([build_product(recurring_interval_count=1000)])
         assert "unsupported_recurring_interval" in codes(
@@ -696,6 +708,19 @@ class TestClassifyRecords:
         assert items[0].reason_code == "missing_default_currency_price"
         assert items[0].reason_level == PrecheckReasonLevel.action_required
 
+    def test_short_product_name_skipped(self) -> None:
+        # The classifier must agree with the importer: a name Polar's schema
+        # rejects is skipped, not promised as importable (which would crash).
+        records: list[CanonicalRecord] = [
+            build_product(product_source_id="prod_1", name="AB"),
+        ]
+
+        items = classify_records(records, PrecheckEntity.products, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "product_name_too_short"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
+
     def test_subscription_of_product_without_default_currency_price_skipped(
         self,
     ) -> None:
@@ -992,6 +1017,16 @@ class TestPlanProductImports:
         assert plan.importable is False
         assert plan.skip is not None
         assert plan.skip.code == "missing_default_currency_price"
+
+    def test_short_product_name_is_skipped(self) -> None:
+        product = build_product(name="AB")
+
+        plan = plan_product_imports([product], "usd")[product.source_id]
+
+        assert plan.importable is False
+        assert plan.skip is not None
+        assert plan.skip.code == "product_name_too_short"
+        assert plan.importable_price_ids == set()
 
     def test_default_currency_price_keeps_the_other_currencies(self) -> None:
         product = build_product(

@@ -731,6 +731,60 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         return await repository.create(subscription, flush=True)
 
+    async def activate_imported(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        current_period_start: datetime,
+        current_period_end: datetime,
+        trial_end: datetime | None,
+        payment_method: PaymentMethod,
+    ) -> Subscription:
+        """Hand billing of an imported subscription over to Polar (the cutover).
+
+        Unlike ``resume``, this doesn't start a fresh period or charge anything:
+        the customer already paid the old provider through ``current_period_end``,
+        so Polar picks the cycle up exactly there and first bills at the renewal
+        the customer is already expecting.
+
+        No resumed email either — from the customer's side nothing paused, and
+        nothing about their subscription is changing today.
+        """
+        assert subscription.status == SubscriptionStatus.paused
+
+        subscription.status = (
+            SubscriptionStatus.trialing if trial_end else SubscriptionStatus.active
+        )
+        subscription.paused_at = None
+        subscription.resumes_at = None
+        subscription.scheduler_locked_at = None
+        subscription.trial_start = current_period_start if trial_end else None
+        subscription.trial_end = trial_end
+        subscription.current_period_start = current_period_start
+        subscription.anchor_day = current_period_start.day
+        subscription.current_period_end = current_period_end
+        subscription.payment_method = payment_method
+        subscription.initialize_meter_period(
+            None if trial_end else current_period_start
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        # Flushed: the cutover settles its ledger and counts what moved in the
+        # same transaction, off the columns this writes.
+        subscription = await repository.update(subscription, flush=True)
+
+        await self.enqueue_benefits_grants(session, subscription)
+        await self._on_subscription_updated(session, subscription)
+        enqueue_job("customer.state_changed", subscription.customer_id)
+
+        log.info(
+            "subscription.imported_activated",
+            id=subscription.id,
+            current_period_end=subscription.current_period_end,
+        )
+        return subscription
+
     async def create_or_update_from_checkout(
         self,
         session: AsyncSession,

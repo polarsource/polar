@@ -1,5 +1,15 @@
+from datetime import datetime, timedelta
+
 from polar.kit.encryption import EncryptedString
+from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
+from polar.merchant_migration.canonical import (
+    CanonicalCollectionMethod,
+    CanonicalPaymentMethod,
+    CanonicalSubscription,
+    CanonicalSubscriptionStatus,
+    serialize,
+)
 from polar.merchant_migration.pan_transfer import (
     PanStepActor,
     PanStepOwner,
@@ -11,10 +21,19 @@ from polar.merchant_migration.service import (
     SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT,
     StripeSourceCredentials,
 )
-from polar.models import MerchantMigration, Organization
+from polar.models import (
+    MerchantMigration,
+    MerchantMigrationRecord,
+    Organization,
+    Subscription,
+)
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
+)
+from polar.models.merchant_migration_record import (
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -94,3 +113,70 @@ def pan_steps_until(
         steps = pan_transfer.complete(
             method, steps, current.key, actor=_STEP_ACTORS[current.owner], inputs={}
         )
+
+
+def canonical_subscription(
+    *,
+    source_id: str = "sub_1",
+    customer_source_id: str = "cus_1",
+    price_source_id: str = "price_1",
+    status: CanonicalSubscriptionStatus = CanonicalSubscriptionStatus.active,
+    collection_method: CanonicalCollectionMethod = (
+        CanonicalCollectionMethod.charge_automatically
+    ),
+    current_period_start: datetime | None = None,
+    current_period_end: datetime | None = None,
+    line_item_count: int = 1,
+    quantity: int = 1,
+    has_discount: bool = False,
+    cancel_at_period_end: bool = False,
+    trial_end: datetime | None = None,
+    stopped_for_migration: bool = False,
+    payment_method: CanonicalPaymentMethod | None = None,
+) -> CanonicalSubscription:
+    """A source subscription that renews comfortably outside the safety window,
+    so a test only states the field it's actually about."""
+    return CanonicalSubscription(
+        source_id=source_id,
+        customer_source_id=customer_source_id,
+        price_source_id=price_source_id,
+        status=status,
+        collection_method=collection_method,
+        current_period_start=current_period_start or utc_now() - timedelta(days=10),
+        current_period_end=current_period_end or utc_now() + timedelta(days=20),
+        trialing=status == CanonicalSubscriptionStatus.trialing,
+        paused_collection=status == CanonicalSubscriptionStatus.paused,
+        line_item_count=line_item_count,
+        quantity=quantity,
+        payment_method=payment_method,
+        has_discount=has_discount,
+        cancel_at_period_end=cancel_at_period_end,
+        trial_end=trial_end,
+        stopped_for_migration=stopped_for_migration,
+    )
+
+
+async def stage_subscription_record(
+    save_fixture: SaveFixture,
+    migration: MerchantMigration,
+    organization: Organization,
+    subscription: Subscription,
+    *,
+    source_id: str = "sub_1",
+    price_source_id: str = "price_1",
+) -> MerchantMigrationRecord:
+    """An imported subscription in the ledger, pointing at its Polar row: what
+    the cutover reads."""
+    record = MerchantMigrationRecord(
+        merchant_migration=migration,
+        organization=organization,
+        type=MerchantMigrationRecordType.subscription,
+        status=MerchantMigrationRecordStatus.imported,
+        source_id=source_id,
+        target_id=subscription.id,
+        canonical=serialize(
+            canonical_subscription(source_id=source_id, price_source_id=price_source_id)
+        ),
+    )
+    await save_fixture(record)
+    return record

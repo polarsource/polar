@@ -28,6 +28,7 @@ permissions:
 jobs:
   preview:
     name: "Preview: ${{ (github.event_name == 'pull_request_target' && 'Destroy') || (github.event_name == 'pull_request' && 'Deploy') || github.event.inputs.action }}"
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     outputs:
       preview_url: ${{ steps.deploy.outputs.preview_url }}
@@ -105,6 +106,9 @@ jobs:
         run: |
           set -euo pipefail
           ENV_JSON=$(jq -n \
+            --arg stripe_key "${{ secrets.POLAR_PREVIEW_STRIPE_SECRET_KEY }}" \
+            --arg stripe_whsec "${{ secrets.POLAR_PREVIEW_STRIPE_WEBHOOK_SECRET }}" \
+            --arg pydantic_ai_key "${{ secrets.POLAR_PREVIEW_PYDANTIC_AI_GATEWAY_API_KEY }}" \
             --arg pg_db "${{ steps.provision.outputs.preview_postgres_database }}" \
             --arg pg_host "${{ fromJson(steps.provision.outputs.preview_postgres_env_json).POLAR_POSTGRES_HOST }}" \
             --arg pg_port "${{ fromJson(steps.provision.outputs.preview_postgres_env_json).POLAR_POSTGRES_PORT }}" \
@@ -116,6 +120,9 @@ jobs:
             --arg tb_branch "${{ steps.provision.outputs.preview_tinybird_branch }}" \
             --arg tb_workspace "${{ steps.provision.outputs.preview_tinybird_workspace }}" \
             '{
+              POLAR_STRIPE_SECRET_KEY: $stripe_key,
+              POLAR_STRIPE_WEBHOOK_SECRET: $stripe_whsec,
+              POLAR_PYDANTIC_AI_GATEWAY_API_KEY: $pydantic_ai_key,
               POLAR_POSTGRES_DATABASE: $pg_db,
               POLAR_POSTGRES_HOST: $pg_host,
               POLAR_POSTGRES_PORT: $pg_port,
@@ -132,38 +139,27 @@ jobs:
             }')
           echo "$ENV_JSON" > /tmp/env.json
 
-      - name: Resolve Vercel preview URL
-        if: steps.action.outputs.action == 'deploy'
-        id: vercel_url
+      - name: Set up SSH key
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_PROJECT: polar-sandbox
-          VERCEL_TEAM: polar-sh
+          SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
         run: |
           set -euo pipefail
-          DEPLOY_UID=""
-          for i in $(seq 1 30); do
-            DEPLOY_UID=$(curl -sf -H "Authorization: Bearer ${VERCEL_TOKEN}" \
-              "https://api.vercel.com/v6/deployments?teamSlug=${VERCEL_TEAM}&projectId=${VERCEL_PROJECT}&meta-githubCommitSha=${SHA}&limit=1" \
-              | jq -r '.deployments[0].uid // empty')
-            if [[ -n "$DEPLOY_UID" ]]; then
-              break
-            fi
-            echo "Waiting for Vercel deployment... (attempt $i/30)"
-            sleep 10
-          done
-          if [[ -z "$DEPLOY_UID" ]]; then
-            echo "::warning::Vercel deployment not found, deploy.sh will compute URL"
-            exit 0
-          fi
-          BRANCH_ALIAS=$(curl -sf -H "Authorization: Bearer ${VERCEL_TOKEN}" \
-            "https://api.vercel.com/v13/deployments/${DEPLOY_UID}?teamSlug=${VERCEL_TEAM}" \
-            | jq -r '[.alias[] | select(contains("-git-"))][0] // empty')
-          if [[ -n "$BRANCH_ALIAS" ]]; then
-            echo "vercel_url=https://${BRANCH_ALIAS}" >> "$GITHUB_OUTPUT"
-            echo "Resolved Vercel branch alias: https://${BRANCH_ALIAS}"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/preview_key
+          chmod 600 ~/.ssh/preview_key
+
+      - name: Ensure preview VM exists
+        if: steps.action.outputs.action == 'deploy'
+        env:
+          BASE_VM: ${{ vars.POLAR_PREVIEW_BASE_VM || 'polar-base' }}
+        run: |
+          set -euo pipefail
+          if ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key exe.dev ls --json \
+            | jq -e --arg vm "pr-${PR_NUM}" 'any(.vms[]?; .vm_name == $vm)' >/dev/null; then
+            echo "VM pr-${PR_NUM} already exists"
           else
-            echo "::warning::No branch alias found on deployment ${DEPLOY_UID}, deploy.sh will compute URL"
+            echo "Cloning ${BASE_VM} to pr-${PR_NUM}"
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key exe.dev cp "$BASE_VM" "pr-${PR_NUM}"
           fi
 
       # --- SSH deploy ---
@@ -171,15 +167,30 @@ jobs:
         id: deploy
         if: steps.action.outputs.action == 'deploy'
         env:
-          SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
-          PREVIEW_HOST: ${{ secrets.POLAR_PREVIEW_HOST }}
-          PREVIEW_USER: ${{ vars.POLAR_PREVIEW_USER || 'deploy' }}
+          TS_OAUTH_SECRET: ${{ secrets.POLAR_PREVIEW_TAILSCALE_OAUTH_SECRET }}
+          TS_TAGS: ${{ vars.POLAR_PREVIEW_VM_TAILSCALE_TAGS || 'tag:preview' }}
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/preview_key
-          chmod 600 ~/.ssh/preview_key
           ENV_B64=$(base64 -w0 < /tmp/env.json)
+
+          # Mint a short-lived ephemeral auth key so the OAuth secret never
+          # reaches the VM
+          TS_CLIENT_ID=$(echo "$TS_OAUTH_SECRET" | cut -d- -f3)
+          TS_TOKEN=$(curl -s -d "client_id=${TS_CLIENT_ID}" -d "client_secret=${TS_OAUTH_SECRET}" \
+            https://api.tailscale.com/api/v2/oauth/token | jq -r '.access_token // empty')
+          if [[ -z "$TS_TOKEN" ]]; then
+            echo "::error::Tailscale OAuth token exchange failed"
+            exit 1
+          fi
+          KEY_RESPONSE=$(curl -s -H "Authorization: Bearer ${TS_TOKEN}" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg tags "$TS_TAGS" \
+              '{capabilities: {devices: {create: {reusable: false, ephemeral: true, preauthorized: true, tags: ($tags | split(","))}}}, expirySeconds: 600, description: "preview pr deploy"}')" \
+            https://api.tailscale.com/api/v2/tailnet/-/keys)
+          TS_AUTHKEY=$(echo "$KEY_RESPONSE" | jq -r '.key // empty')
+          if [[ -z "$TS_AUTHKEY" ]]; then
+            echo "::error::Tailscale auth key mint failed: $(echo "$KEY_RESPONSE" | jq -r '.message // .')"
+            exit 1
+          fi
 
           # Pass arguments as JSON on stdin to avoid shell injection via branch names
           jq -n \
@@ -187,26 +198,28 @@ jobs:
             --arg branch "$BRANCH" \
             --arg sha "$SHA" \
             --arg env_b64 "$ENV_B64" \
-            --arg vercel_url "${{ steps.vercel_url.outputs.vercel_url }}" \
-            '{pr_num: $pr_num, branch: $branch, sha: $sha, env_b64: $env_b64, vercel_url: $vercel_url}' \
+            --arg ts_authkey "$TS_AUTHKEY" \
+            --arg ts_tags "$TS_TAGS" \
+            '{pr_num: $pr_num, branch: $branch, sha: $sha, env_b64: $env_b64, ts_authkey: $ts_authkey, ts_tags: $ts_tags}' \
           | ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -i ~/.ssh/preview_key \
-            "${PREVIEW_USER}@${PREVIEW_HOST}" \
-            "/srv/preview-tools/deploy.sh deploy" \
+            "pr-${PR_NUM}.exe.xyz" \
+            "sudo /srv/preview-tools/deploy.sh" \
             | tee /tmp/deploy.log
 
           PREVIEW_URL=$(grep -oP 'Deployed at \K.*' /tmp/deploy.log || true)
           echo "preview_url=${PREVIEW_URL}" >> "$GITHUB_OUTPUT"
 
+      # The preview URL is tailnet-only, so the health check runs on the
+      # VM against Caddy.
       - name: Wait for preview API
         if: steps.action.outputs.action == 'deploy' && steps.deploy.outputs.preview_url != ''
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
         run: |
           set -euo pipefail
-          API_URL="${PREVIEW_URL%/}/v1/"
-          echo "Waiting for API at ${API_URL}"
+          echo "Waiting for API on pr-${PR_NUM}"
           for i in $(seq 1 60); do
-            BODY=$(curl -sS -m 10 "${API_URL}" || true)
+            BODY=$(ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key \
+              "pr-${PR_NUM}.exe.xyz" \
+              "curl -sS -m 10 http://127.0.0.1:8000/v1/" || true)
             if [[ "$BODY" == '{"detail":"Not Found"}' ]]; then
               echo "API is up (attempt $i)"
               exit 0
@@ -217,26 +230,15 @@ jobs:
           echo "::error::API did not come up within timeout"
           exit 1
 
-      # --- SSH destroy ---
-      # Non-fatal: if the VM is unreachable we still want the Teardown
+      # --- VM destroy ---
+      # Non-fatal: if the VM is already gone we still want the Teardown
       # step below to run and clean up Tinybird + Postgres resources.
-      - name: Destroy preview on VM
+      - name: Destroy preview VM
         if: steps.action.outputs.action == 'destroy'
         continue-on-error: true
-        env:
-          SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
-          PREVIEW_HOST: ${{ secrets.POLAR_PREVIEW_HOST }}
-          PREVIEW_USER: ${{ vars.POLAR_PREVIEW_USER || 'deploy' }}
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/preview_key
-          chmod 600 ~/.ssh/preview_key
-
-          jq -n --arg pr_num "$PR_NUM" '{pr_num: $pr_num}' \
-          | ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key \
-            "${PREVIEW_USER}@${PREVIEW_HOST}" \
-            "/srv/preview-tools/deploy.sh destroy"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key exe.dev rm "pr-${PR_NUM}"
 
       - name: Teardown preview resources
         if: always() && steps.action.outputs.action == 'destroy'
@@ -286,7 +288,7 @@ jobs:
             **Preview Environment**
             URL: ${{ needs.preview.outputs.preview_url }}
             API: ${{ needs.preview.outputs.preview_url }}/v1/
-            Logs: [backend](${{ needs.preview.outputs.preview_url }}/_logs/backend)
+            Logs: [backend](${{ needs.preview.outputs.preview_url }}/_logs/backend) · [frontend](${{ needs.preview.outputs.preview_url }}/_logs/frontend)
             SHA: `${{ github.event.pull_request.head.sha }}`
 
   preview_delete_comment:

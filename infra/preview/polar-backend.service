@@ -1,0 +1,21 @@
+[Unit]
+Description=Polar Preview Backend
+After=network.target redis-server.service tailscaled.service
+Wants=redis-server.service tailscaled.service
+ConditionPathExists=/srv/polar/server/.env
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/polar/server
+EnvironmentFile=/srv/polar/server/.env
+ExecStart=/srv/preview-tools/run-preview-backend.sh
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+MemoryMax=2G
+CPUQuota=200%
+
+[Install]
+WantedBy=multi-user.target

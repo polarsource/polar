@@ -77,7 +77,7 @@ const docsCSP = `
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ['127.0.0.1'],
+  allowedDevOrigins: ['127.0.0.1', '*.taildbff7b.ts.net'],
   reactStrictMode: true,
   transpilePackages: ['shiki', '@polar-sh/checkout', '@polar-sh/orbit'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],

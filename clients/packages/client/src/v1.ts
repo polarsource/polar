@@ -21199,6 +21199,16 @@ export interface components {
       created_at: string
       /** Flagged Malicious At */
       flagged_malicious_at: string | null
+      /**
+       * Downloaders
+       * @description Number of distinct downloaders for the requested benefit.
+       */
+      downloaders?: number | null
+      /**
+       * Downloads
+       * @description Total downloads for the requested benefit.
+       */
+      downloads?: number | null
       /** Size Readable */
       readonly size_readable: string
     }
@@ -44745,6 +44755,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by file ID. */
         ids?: string | string[] | null
+        /** @description Scope download statistics to this benefit. If omitted, statistics are aggregated across all benefits. */
+        benefit_id?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

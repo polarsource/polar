@@ -114,6 +114,14 @@ class DownloadableFileRead(FileReadBase):
 
     service: Literal[FileServiceTypes.downloadable]
     flagged_malicious_at: datetime | None
+    downloaders: int | None = Field(
+        default=None,
+        description="Number of distinct downloaders for the requested benefit.",
+    )
+    downloads: int | None = Field(
+        default=None,
+        description="Total downloads for the requested benefit.",
+    )
 
 
 class SupportCaseAttachmentFileRead(FileReadBase):

@@ -13,10 +13,16 @@ type FileRead =
 export const useFiles = (
   organizationId: string,
   fileIds: string[],
-  options?: { limit?: number },
+  options?: { limit?: number; benefitId?: string },
 ) =>
   useQuery({
-    queryKey: ['user', 'files', JSON.stringify(fileIds)],
+    queryKey: [
+      'user',
+      'files',
+      organizationId,
+      JSON.stringify(fileIds),
+      options?.benefitId,
+    ],
     queryFn: () =>
       unwrap(
         api.GET('/v1/files/', {
@@ -24,6 +30,7 @@ export const useFiles = (
             query: {
               organization_id: organizationId,
               ids: fileIds,
+              benefit_id: options?.benefitId,
               limit: options?.limit ?? fileIds.length,
             },
           },

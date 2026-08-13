@@ -188,15 +188,17 @@ const BaseCheckoutForm = ({
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 
   const captureContact = useCallback(
-    (name: ContactField, value: string) => {
+    async (name: ContactField, value: string) => {
       const contact = value.trim()
       if (!contact || checkout[name] === contact) {
         return
       }
       clearErrors(name)
-      update({ [name]: contact }).catch(() => {
+      try {
+        await update({ [name]: contact })
+      } catch {
         /* API errors handled by provider */
-      })
+      }
     },
     [checkout, update, clearErrors],
   )

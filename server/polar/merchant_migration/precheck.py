@@ -21,6 +21,7 @@ from polar.kit.currency import (
 )
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
+from polar.product.schemas import PRODUCT_NAME_MIN_LENGTH
 
 from .canonical import (
     CanonicalAccount,
@@ -58,6 +59,7 @@ NON_IMPORTABLE_STATUSES = {
 PRODUCT_DROP_CODES = {
     "one_time_product",
     "unsupported_recurring_interval",
+    "product_name_too_short",
     "multiple_prices_same_currency",
     "missing_default_currency_price",
 }
@@ -81,6 +83,7 @@ ACTION_REQUIRED_CODES = {
     "customer_missing_country",
     "customer_missing_email",
     "duplicate_customer_email",
+    "product_name_too_short",
     "missing_default_currency_price",
     "multiple_prices_same_currency",
     "subscription_has_discount",
@@ -294,6 +297,20 @@ class PrecheckEngine:
                     f"{product.recurring_interval_count} {product.recurring_interval}, "
                     "which Polar can't represent; it and its subscriptions won't "
                     "be imported."
+                ),
+                source_id=product.source_id,
+            )
+            dropped = True
+        if not dropped and (
+            not product.name or len(product.name.strip()) < PRODUCT_NAME_MIN_LENGTH
+        ):
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="product_name_too_short",
+                message=(
+                    f"Product '{product.name or '(empty)'}' has a name shorter than "
+                    f"{PRODUCT_NAME_MIN_LENGTH} characters, which Polar can't "
+                    "represent; it and its subscriptions won't be imported."
                 ),
                 source_id=product.source_id,
             )

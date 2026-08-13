@@ -718,6 +718,69 @@ class TestImportCatalog:
         assert updated.step == MerchantMigrationStep.create_catalog
 
     @pytest.mark.auth
+    async def test_short_product_name_is_skipped_not_crashed(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A name too short for Polar's schema must be skipped at precheck time,
+        # not crash the importer with a ValidationError that rolls back the batch.
+        # The valid product alongside it still imports (no rollback).
+        catalog = [
+            *_catalog(),
+            CanonicalProduct(
+                source_id="prod_short:month:1",
+                product_source_id="prod_short",
+                name="AB",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_short",
+                        currency="usd",
+                        amount=1000,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    )
+                ],
+            ),
+            CanonicalCustomer(
+                source_id="cus_1",
+                email="alice@example.com",
+                name="Alice",
+                country="US",
+            ),
+        ]
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization, records=catalog
+        )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        # Pro: imported. Legacy (one-time): skipped. Short-name: skipped.
+        assert results[PrecheckEntity.products].imported == 1
+        assert results[PrecheckEntity.products].skipped == 2
+
+        products = await _products(session, organization)
+        assert len(products) == 1
+        assert products[0].name == "Pro"
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        short_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id="prod_short:month:1",
+        )
+        assert short_record is not None
+        assert short_record.status == MerchantMigrationRecordStatus.skipped
+        assert short_record.target_id is None
+        assert short_record.error is not None
+
+    @pytest.mark.auth
     async def test_blocked_organization_cannot_import(
         self,
         mocker: MockerFixture,

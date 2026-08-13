@@ -13,9 +13,13 @@ from polar.models.merchant_migration_operation import (
     STALL_THRESHOLD as STALL_THRESHOLD,
 )
 from polar.models.merchant_migration_operation import (
-    MerchantMigrationOperation,
-    MerchantMigrationOperationSelection,
-    MerchantMigrationOperationStatus,
+    MerchantMigrationOperation as MerchantMigrationOperation,
+)
+from polar.models.merchant_migration_operation import (
+    MerchantMigrationOperationSelection as MerchantMigrationOperationSelection,
+)
+from polar.models.merchant_migration_operation import (
+    MerchantMigrationOperationStatus as MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
 

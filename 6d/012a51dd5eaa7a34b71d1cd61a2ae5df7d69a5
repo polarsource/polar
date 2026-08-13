@@ -1,0 +1,23 @@
+server/polar/oauth2/grants/refresh_token.py
+  s_762300909aeb9a::t_12608d62db3658 6
+  s_762300909aeb9a::t_3da7b06065887c 40-54,56,61-70
+server/tests/oauth2/endpoints/test_oauth2.py
+  s_762300909aeb9a::t_6b7bab54128619 1506,1515-1517,1544-1545
+  s_762300909aeb9a::t_78224118a42056 1428-1429,1448-1449
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "6d012a51dd5eaa7a34b71d1cd61a2ae5df7d69a5",
+  "prompts": {},
+  "sessions": {
+    "s_762300909aeb9a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3c203e04-ec33-4659-a576-8d4688bee29d",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

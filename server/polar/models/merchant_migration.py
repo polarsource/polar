@@ -14,6 +14,11 @@ from polar.merchant_migration.pan_transfer import (
     PanTransferStepsType,
 )
 
+from .merchant_migration_operation import (
+    MerchantMigrationOperation,
+    MerchantMigrationOperationType,
+)
+
 if TYPE_CHECKING:
     from polar.models.organization import Organization
 
@@ -67,6 +72,10 @@ class MerchantMigration(RecordModel):
     # The PAN transfer checklist. Empty until the card move starts.
     pan_transfer_steps: Mapped[list[PanTransferStep]] = mapped_column(
         PanTransferStepsType, nullable=False, default=list
+    )
+    # Background precheck/import state. Null until a run starts.
+    operation: Mapped[MerchantMigrationOperation | None] = mapped_column(
+        MerchantMigrationOperationType, nullable=True, default=None
     )
 
     @declared_attr

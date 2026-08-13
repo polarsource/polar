@@ -2,12 +2,14 @@ import contextlib
 import functools
 import json
 import re
+from collections.abc import Sequence
 
 import dramatiq
 import logfire
 import sentry_sdk
 import structlog
 from starlette.datastructures import Headers, MutableHeaders
+from starlette.routing import BaseRoute, Match
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from polar.logging import ClientContext, CorrelationID, Logger
@@ -81,6 +83,56 @@ class FlushEnqueuedWorkerJobsMiddleware:
 
         async with JobQueueManager.open(dramatiq.get_broker(), scope["state"]["redis"]):
             await self.app(scope, receive, send)
+
+
+class RootPathMiddleware:
+    """Set the ASGI root_path for requests arriving through a path prefix.
+
+    Route matching strips the root_path, so prefixed paths resolve without
+    per-route aliases, and everything derived from the request (url_for,
+    request.base_url, redirect Locations) keeps the prefix. Paths already
+    rewritten by an alias (/api/v1) are left alone by the matcher.
+    """
+
+    def __init__(self, app: ASGIApp, prefix: str) -> None:
+        self.app = app
+        self.prefix = prefix
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] in ("http", "websocket"):
+            path = scope["path"]
+            if path == self.prefix or path.startswith(f"{self.prefix}/"):
+                scope["root_path"] = self.prefix
+        await self.app(scope, receive, send)
+
+
+class TrailingSlashRestoreMiddleware:
+    """Restore trailing slashes stripped by a fronting proxy.
+
+    The Vercel service-binding proxy strips trailing slashes from request
+    paths, so a request for a collection endpoint (routed with a trailing
+    slash) arrives slashless, gets the router's redirect_slashes 307 back to
+    the slashed path — which the proxy strips again, looping until the client
+    gives up. When a path matches no route but its slashed variant does,
+    rewrite the path in place instead of redirecting.
+    """
+
+    def __init__(self, app: ASGIApp, routes: Sequence[BaseRoute]) -> None:
+        self.app = app
+        self.routes = routes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] in ("http", "websocket") and not scope["path"].endswith("/"):
+            slashed_scope = {**scope, "path": f"{scope['path']}/"}
+            if not self._matches_any(scope) and self._matches_any(slashed_scope):
+                scope["path"] = slashed_scope["path"]
+                raw_path: bytes | None = scope.get("raw_path")
+                if raw_path is not None:
+                    scope["raw_path"] = raw_path + b"/"
+        await self.app(scope, receive, send)
+
+    def _matches_any(self, scope: Scope) -> bool:
+        return any(route.matches(scope)[0] is not Match.NONE for route in self.routes)
 
 
 class PathRewriteMiddleware:

@@ -194,18 +194,6 @@ class PanTransferStepComplete(Schema):
     )
 
 
-class PanTransferCardCoverage(Schema):
-    """How many imported subscriptions Polar can charge, once it has looked."""
-
-    covered: int = Field(
-        description=(
-            "Imported subscriptions with a payment method on Polar. Any type "
-            "counts, not only cards: a bank debit is just as chargeable."
-        )
-    )
-    total: int = Field(description="Imported subscriptions in this migration.")
-
-
 class PanTransferChecklist(Schema):
     method: PanTransferMethod = Field(
         description=(
@@ -223,13 +211,6 @@ class PanTransferChecklist(Schema):
         description=(
             "The Stripe account the cards move into. The merchant needs it to "
             "address the copy or import to Polar."
-        )
-    )
-    card_coverage: PanTransferCardCoverage | None = Field(
-        description=(
-            "What the card check found, once it has run. Null before then. The "
-            "shortfall is what the `resolve_uncovered` step asks the merchant to "
-            "chase."
         )
     )
     steps: Sequence[PanTransferStep] = Field(

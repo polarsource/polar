@@ -63,7 +63,6 @@ from .schemas import (
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordSummaryEntity,
-    PanTransferCardCoverage,
     PanTransferChecklist,
     PrecheckEntity,
     PrecheckIssue,
@@ -428,7 +427,7 @@ class MerchantMigrationService:
         """The card-move checklist. Returns an empty one before it's started, so
         the client can show the method and the destination account up front."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
-        return await self._checklist(session, migration)
+        return self._checklist(migration)
 
     async def start_pan_transfer(
         self,
@@ -461,7 +460,7 @@ class MerchantMigrationService:
                 "pan_transfer_steps": steps,
             },
         )
-        return await self._checklist(session, migration, steps)
+        return self._checklist(migration, steps)
 
     async def complete_pan_step(
         self,
@@ -519,7 +518,7 @@ class MerchantMigrationService:
             inputs=inputs,
         )
         await self._advance_checklist(session, migration, steps)
-        return await self._checklist(session, migration, steps)
+        return self._checklist(migration, steps)
 
     async def _advance_checklist(
         self,
@@ -567,7 +566,7 @@ class MerchantMigrationService:
         )
         repository = MerchantMigrationRepository.from_session(session)
         await repository.update(migration, update_dict={"pan_transfer_steps": steps})
-        return await self._checklist(session, migration, steps)
+        return self._checklist(migration, steps)
 
     async def run_card_verification(
         self, session: AsyncSession, migration_id: UUID, *, offset: int = 0
@@ -650,9 +649,8 @@ class MerchantMigrationService:
             )
         return migration
 
-    async def _checklist(
+    def _checklist(
         self,
-        session: AsyncReadSession,
         migration: MerchantMigration,
         # `Sequence`, not `list`: this class defines a `list` method, which would
         # shadow the builtin in an annotation evaluated in the class body.
@@ -668,25 +666,8 @@ class MerchantMigrationService:
             destination_account_id=(
                 settings.MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID or None
             ),
-            card_coverage=await self._card_coverage(session, migration, steps),
             steps=steps,
         )
-
-    async def _card_coverage(
-        self,
-        session: AsyncReadSession,
-        migration: MerchantMigration,
-        steps: Sequence[PanTransferStep],
-    ) -> PanTransferCardCoverage | None:
-        """What the card check found, once it has run. Counted on read rather
-        than stored, so re-running the copy keeps the number honest."""
-        if not self._step_completed(steps, STEP_VERIFY_CARDS):
-            return None
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        covered, total = await record_repository.count_linked_payment_methods(
-            migration.id
-        )
-        return PanTransferCardCoverage(covered=covered, total=total)
 
     def _step_completed(self, steps: Sequence[PanTransferStep], key: str) -> bool:
         return any(

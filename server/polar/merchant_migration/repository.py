@@ -12,7 +12,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import MerchantMigration, MerchantMigrationRecord, Subscription
+from polar.models import MerchantMigration, MerchantMigrationRecord
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -271,29 +271,6 @@ class MerchantMigrationRecordRepository(
         if limit is not None:
             statement = statement.limit(limit)
         return await self.get_all(statement)
-
-    async def count_linked_payment_methods(self, migration_id: UUID) -> tuple[int, int]:
-        """``(with a method to charge, total)`` over the imported subscriptions.
-
-        Any linked method counts, not only cards: bank debits move with the copy
-        and Polar can charge them. `CanonicalPaymentMethodType.requires_reentry`
-        names the types that genuinely can't move.
-        """
-        statement = (
-            self._imported_subscriptions_statement(migration_id)
-            .join(
-                Subscription,
-                (Subscription.id == MerchantMigrationRecord.target_id)
-                & Subscription.deleted_at.is_(None),
-            )
-            .with_only_columns(
-                func.count(Subscription.payment_method_id),
-                func.count(Subscription.id),
-            )
-            .order_by(None)
-        )
-        covered, total = (await self.session.execute(statement)).one()
-        return covered, total
 
     async def upsert(
         self,

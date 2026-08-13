@@ -29553,22 +29553,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /**
-     * PanTransferCardCoverage
-     * @description How many imported subscriptions Polar can charge, once it has looked.
-     */
-    PanTransferCardCoverage: {
-      /**
-       * Covered
-       * @description Imported subscriptions with a payment method on Polar. Any type counts, not only cards: a bank debit is just as chargeable.
-       */
-      covered: number
-      /**
-       * Total
-       * @description Imported subscriptions in this migration.
-       */
-      total: number
-    }
     /** PanTransferChecklist */
     PanTransferChecklist: {
       /** @description How the cards move: `pan_copy` for a Stripe source (account to account), `pan_import` for any other vault. */
@@ -29588,8 +29572,6 @@ export interface components {
        * @description The Stripe account the cards move into. The merchant needs it to address the copy or import to Polar.
        */
       destination_account_id: string | null
-      /** @description What the card check found, once it has run. Null before then. The shortfall is what the `resolve_uncovered` step asks the merchant to chase. */
-      card_coverage: components['schemas']['PanTransferCardCoverage'] | null
       /**
        * Steps
        * @description The ordered checklist. Titles and guidance live in the client, keyed by `key`.

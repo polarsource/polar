@@ -1538,25 +1538,9 @@ class TestRunCardVerification:
 
         await service.run_card_verification(session, migration.id)
 
-        checklist = await service._checklist(session, migration)
-        assert checklist.card_coverage is not None
-        assert checklist.card_coverage.covered == 1
-        assert checklist.card_coverage.total == 2
-        # The step is done, so the merchant is asked to chase the other one.
+        await session.flush()
+        await session.refresh(landed)
+        assert landed.payment_method_id == payment_method.id
+        # The step is done, so the merchant is asked to chase the uncovered one.
+        checklist = service._checklist(migration)
         assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
-
-    async def test_reports_no_coverage_before_it_has_run(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        migration = await build_connected_migration(save_fixture, organization)
-        migration.pan_transfer_steps = _steps_until(
-            migration.pan_transfer_method, STEP_VERIFY_CARDS
-        )
-        await save_fixture(migration)
-
-        checklist = await service._checklist(session, migration)
-
-        assert checklist.card_coverage is None

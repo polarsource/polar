@@ -360,6 +360,20 @@ class OrderRepository(
         result = cast(CursorResult[Order], await self.session.execute(statement))
         return result.rowcount > 0
 
+    async def void_if_pending_and_unlocked(self, order_id: UUID) -> bool:
+        statement = (
+            update(Order)
+            .where(
+                Order.id == order_id,
+                Order.status == OrderStatus.pending,
+                Order.payment_lock_acquired_at.is_(None),
+            )
+            .values(status=OrderStatus.void, next_payment_attempt_at=None)
+            .execution_options(synchronize_session=False)
+        )
+        result = cast(CursorResult[Order], await self.session.execute(statement))
+        return result.rowcount > 0
+
     async def release_payment_lock(self, order: Order, *, flush: bool = False) -> Order:
         """Release a payment lock for an order."""
         return await self.update(

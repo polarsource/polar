@@ -2673,18 +2673,20 @@ class OrderService:
 
     async def void(self, session: AsyncSession, order: Order) -> Order:
         """Mark an order as void, indicating payment cannot be recovered."""
-        if order.payment_lock_acquired_at is not None:
-            raise PaymentAlreadyInProgress(order)
-        if order.status != OrderStatus.pending:
-            raise OrderNotPending(order)
-
-        previous_status = order.status
-
         repository = OrderRepository.from_session(session)
-        order = await repository.update(
-            order,
-            update_dict={"status": OrderStatus.void, "next_payment_attempt_at": None},
-        )
+        while True:
+            if await repository.void_if_pending_and_unlocked(order.id):
+                order.status = OrderStatus.void
+                order.next_payment_attempt_at = None
+                break
+
+            await session.refresh(order, {"status", "payment_lock_acquired_at"})
+            if order.payment_lock_acquired_at is not None:
+                raise PaymentAlreadyInProgress(order)
+            if order.status != OrderStatus.pending:
+                raise OrderNotPending(order)
+
+        previous_status = OrderStatus.pending
 
         # Reduce positive customer balance
         customer_balance = await wallet_service.get_billing_wallet_balance(

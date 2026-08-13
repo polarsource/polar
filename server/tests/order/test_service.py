@@ -10,6 +10,7 @@ import stripe as stripe_lib
 from freezegun import freeze_time
 from pydantic import BaseModel
 from pytest_mock import MockerFixture
+from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
@@ -5742,6 +5743,35 @@ class TestVoidOrder:
             await order_service.void(session, order)
 
         assert exc_info.value.order == order
+
+    @pytest.mark.asyncio
+    async def test_void_order_with_stale_payment_lock(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        await session.execute(
+            update(Order)
+            .where(Order.id == order.id)
+            .values(payment_lock_acquired_at=utc_now())
+            .execution_options(synchronize_session=False)
+        )
+
+        assert order.payment_lock_acquired_at is None
+
+        with pytest.raises(PaymentAlreadyInProgress) as exc_info:
+            await order_service.void(session, order)
+
+        assert exc_info.value.order == order
+        assert order.status == OrderStatus.pending
 
     @pytest.mark.asyncio
     async def test_void_non_pending_order(

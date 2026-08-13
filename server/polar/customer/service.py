@@ -110,10 +110,10 @@ class CustomerService:
         if query is not None:
             statement = statement.where(
                 or_(
-                    Customer.email.ilike(f"%{query}%"),
-                    Customer.name.ilike(f"%{query}%"),
-                    Customer._billing_name.ilike(f"%{query}%"),
-                    Customer.external_id.ilike(f"{query}%"),
+                    Customer.email.icontains(query, autoescape=True),
+                    Customer.name.icontains(query, autoescape=True),
+                    Customer._billing_name.icontains(query, autoescape=True),
+                    Customer.external_id.istartswith(query, autoescape=True),
                 )
             )
 

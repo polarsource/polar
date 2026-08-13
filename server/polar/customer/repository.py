@@ -301,11 +301,11 @@ class CustomerRepository(
             .with_only_columns(Customer.id, Customer.external_id)
             .where(
                 or_(
-                    cast(Customer.id, String).ilike(f"%{query}%"),
-                    Customer.external_id.ilike(f"%{query}%"),
-                    Customer.name.ilike(f"%{query}%"),
-                    Customer._billing_name.ilike(f"%{query}%"),
-                    Customer.email.ilike(f"%{query}%"),
+                    cast(Customer.id, String).icontains(query, autoescape=True),
+                    Customer.external_id.icontains(query, autoescape=True),
+                    Customer.name.icontains(query, autoescape=True),
+                    Customer._billing_name.icontains(query, autoescape=True),
+                    Customer.email.icontains(query, autoescape=True),
                 ),
             )
         )

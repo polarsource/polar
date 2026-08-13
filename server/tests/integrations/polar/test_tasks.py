@@ -9,6 +9,7 @@ from polar.v2026_04.outputs import ResourceNotFound as ResourceNotFoundData
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.integrations.plain.service import TenantOperationError
 from polar.integrations.polar.client import PolarSelfClient
 from polar.integrations.polar.tasks import (
     add_member,
@@ -171,13 +172,12 @@ class TestAddMember:
 
 @pytest.mark.asyncio
 class TestRemoveMember:
-    async def test_removes_existing_member(
+    async def test_removes_member_and_unlinks_plain_tenant(
         self,
         mocker: MockerFixture,
         plain_service_mock: MagicMock,
     ) -> None:
         client = AsyncMock(spec=PolarSelfClient)
-        client.get_member_by_external_id.return_value = MagicMock(id="member-123")
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
 
         await remove_member(
@@ -185,10 +185,7 @@ class TestRemoveMember:
             external_id="user-123",
         )
 
-        client.get_member_by_external_id.assert_called_once_with(
-            external_customer_id="org-123",
-            external_id="user-123",
-        )
+        client.get_member_by_external_id.assert_not_called()
         client.remove_member.assert_called_once_with(
             external_customer_id="org-123",
             external_id="user-123",
@@ -198,44 +195,65 @@ class TestRemoveMember:
             tenant_external_id="org-123",
         )
 
-    async def test_retries_when_member_is_not_ready(
+    async def test_plain_unlink_failure_propagates_for_retry(
         self,
         mocker: MockerFixture,
+        plain_service_mock: MagicMock,
     ) -> None:
         client = AsyncMock(spec=PolarSelfClient)
-        client.get_member_by_external_id.side_effect = ResourceNotFound(
-            404,
-            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
-        )
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
-        mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=True)
+        plain_service_mock.remove_customer_from_tenant.side_effect = (
+            TenantOperationError("org-123", "remove_customer", "Plain API failure")
+        )
 
-        with pytest.raises(Retry):
+        with pytest.raises(TenantOperationError):
             await remove_member(
                 external_customer_id="org-123",
                 external_id="user-123",
             )
 
-        client.remove_member.assert_not_called()
+        client.remove_member.assert_called_once_with(
+            external_customer_id="org-123",
+            external_id="user-123",
+        )
+        plain_service_mock.remove_customer_from_tenant.assert_awaited_once_with(
+            customer_external_id="user-123",
+            tenant_external_id="org-123",
+        )
 
-    async def test_noops_when_member_never_appears(
+    async def test_plain_unlink_retried_after_polar_removal(
         self,
         mocker: MockerFixture,
+        plain_service_mock: MagicMock,
     ) -> None:
         client = AsyncMock(spec=PolarSelfClient)
-        client.get_member_by_external_id.side_effect = ResourceNotFound(
-            404,
-            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
-        )
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
-        mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=False)
+        plain_service_mock.remove_customer_from_tenant.side_effect = [
+            TenantOperationError("org-123", "remove_customer", "Plain API failure"),
+            None,
+        ]
+
+        with pytest.raises(TenantOperationError):
+            await remove_member(
+                external_customer_id="org-123",
+                external_id="user-123",
+            )
 
         await remove_member(
             external_customer_id="org-123",
             external_id="user-123",
         )
 
-        client.remove_member.assert_not_called()
+        assert client.remove_member.await_count == 2
+        assert plain_service_mock.remove_customer_from_tenant.await_count == 2
+        client.remove_member.assert_called_with(
+            external_customer_id="org-123",
+            external_id="user-123",
+        )
+        plain_service_mock.remove_customer_from_tenant.assert_called_with(
+            customer_external_id="user-123",
+            tenant_external_id="org-123",
+        )
 
 
 @pytest.mark.asyncio

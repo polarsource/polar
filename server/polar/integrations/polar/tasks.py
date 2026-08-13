@@ -142,17 +142,6 @@ async def update_customer_slug(external_id: str, slug: str) -> None:
 @actor(actor_name="polar_self.remove_member", priority=TaskPriority.LOW)
 async def remove_member(external_customer_id: str, external_id: str) -> None:
     client = get_client()
-    try:
-        await client.get_member_by_external_id(
-            external_customer_id=external_customer_id,
-            external_id=external_id,
-        )
-    except PolarClientError as e:
-        if e.status_code == 404 and can_retry():
-            raise Retry(delay=1000) from e
-        if e.status_code == 404:
-            return
-        raise
 
     await client.remove_member(
         external_customer_id=external_customer_id,

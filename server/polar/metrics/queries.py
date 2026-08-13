@@ -47,13 +47,10 @@ if TYPE_CHECKING:
 
 
 class MetricQuery(StrEnum):
-    orders = "orders"
     active_subscriptions = "active_subscriptions"
     checkouts = "checkouts"
-    canceled_subscriptions = "canceled_subscriptions"
     churned_subscriptions = "churned_subscriptions"
     churn_rate = "churn_rate"
-    events = "events"
     seats = "seats"
 
 
@@ -892,14 +889,6 @@ def get_seats_cte(
         .order_by(timestamp_column.asc())
     )
 
-
-QUERIES: list[QueryCallable] = [
-    get_active_subscriptions_cte,
-    get_checkouts_cte,
-    get_churned_subscriptions_cte,
-    get_churn_rate_cte,
-    get_seats_cte,
-]
 
 QUERY_TO_FUNCTION: dict[MetricQuery, QueryCallable] = {
     MetricQuery.active_subscriptions: get_active_subscriptions_cte,

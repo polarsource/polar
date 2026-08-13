@@ -7,12 +7,12 @@ migrations only). Worker helpers that mutate this live in
 ``polar.merchant_migration.operation``.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from sqlalchemy import Dialect
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.types import TypeDecorator
@@ -81,6 +81,15 @@ class MerchantMigrationOperation(Schema):
         ),
     )
 
+    @field_validator("last_progress_at", mode="after")
+    @classmethod
+    def _aware_last_progress_at(cls, value: datetime | None) -> datetime | None:
+        # JSONB may hold a no-offset ISO string; treat it as UTC so stall math
+        # against utc_now() never mixes naïve and aware datetimes.
+        if value is not None and value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value
+
     @property
     def is_active(self) -> bool:
         return self.status in (
@@ -102,7 +111,9 @@ class MerchantMigrationOperation(Schema):
 
 
 class MerchantMigrationOperationType(TypeDecorator[Any]):
-    impl = JSONB
+    # none_as_null: Python None → SQL NULL (not JSON 'null'), so IS NULL matches
+    # the documented null-until-started state.
+    impl = JSONB(none_as_null=True)
     cache_ok = True
 
     def process_bind_param(self, value: Any, dialect: Dialect) -> Any:

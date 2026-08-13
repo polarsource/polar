@@ -20,6 +20,7 @@ from polar.integrations.polar import tasks as polar_self
 from polar.integrations.stripe import tasks as stripe
 from polar.integrations.tinybird import tasks as tinybird
 from polar.license_key import tasks as license_key
+from polar.member_session import tasks as member_session
 from polar.meter import tasks as meter
 from polar.notifications import tasks as notifications
 from polar.oauth2 import tasks as oauth2
@@ -63,6 +64,7 @@ __all__ = [
     "file",
     "invariants",
     "license_key",
+    "member_session",
     "meter",
     "notifications",
     "oauth2",

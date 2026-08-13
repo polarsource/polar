@@ -46,7 +46,7 @@ export const CustomerSubscriptionHeader = ({
         {subscription.amount && subscription.currency ? (
           <span className="flex flex-row justify-end gap-x-1">
             {subscriptionBasePrice &&
-              subscription.amount !== subscriptionBasePrice.amount && (
+              subscription.amount < subscriptionBasePrice.amount && (
                 <span className="text-gray-500 line-through">
                   {formatCurrency('compact')(
                     subscriptionBasePrice.amount,

@@ -4,6 +4,7 @@ import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
+import AmountLabel from '../Shared/AmountLabel'
 import { OverviewSummaryCard } from './OverviewSummaryCard'
 
 interface CurrentPeriodOverviewProps {
@@ -76,6 +77,19 @@ export const CurrentPeriodOverview = ({
       price.price_currency === subscription.currency && isSeatBasedPrice(price),
   )
 
+  // The subscription is locked into the price it was created with, which can
+  // differ from the product's current catalog price (e.g. after the merchant
+  // changes it). Show the locked base amount from the charge preview so the
+  // headline matches the subtotal below, rather than the live catalog price.
+  // Seat-based prices keep their per-seat label, pending plan changes preview
+  // the upcoming product's price, and pure metered products have no base rate.
+  const hasPendingProduct = subscription.pending_update?.product_id != null
+  const showLockedBaseAmount =
+    !hasPendingProduct &&
+    !isSeatBasedProduct &&
+    subscriptionPreview != null &&
+    subscriptionPreview.base_amount > 0
+
   // For subscriptions set to cancel, only show if there's still something to
   // bill: metered usage or pending prorations.
   if (isCancelingAtPeriodEnd && !hasMeters && !hasProrations) {
@@ -131,6 +145,13 @@ export const CurrentPeriodOverview = ({
           >
             {isCancelingAtPeriodEnd ? (
               'Canceled'
+            ) : showLockedBaseAmount ? (
+              <AmountLabel
+                amount={subscriptionPreview.base_amount}
+                currency={subscription.currency}
+                interval={subscription.recurring_interval}
+                intervalCount={subscription.recurring_interval_count}
+              />
             ) : (
               <ProductPriceLabel
                 product={product}

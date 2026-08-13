@@ -114,6 +114,8 @@ const nextConfig = {
   },
 
   images: {
+    // Vercel services deployments do not wire the image optimizer yet
+    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === '1',
     remotePatterns: [
       ...(process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
         ? [

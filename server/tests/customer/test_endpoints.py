@@ -289,6 +289,9 @@ class TestCustomerGrowth:
         )
 
         assert response.status_code == 422
+        msg = response.json()["detail"][0]["msg"]
+        assert "too small" in msg.lower()
+        assert "too big" not in msg.lower()
 
     @pytest.mark.auth
     async def test_valid(

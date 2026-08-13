@@ -136,6 +136,15 @@ export const marginStyles = stylex.create({
   '4xl': { margin: spacing['4xl'] },
   '5xl': { margin: spacing['5xl'] },
   auto: { margin: 'auto' },
+  '-xs': { margin: `calc(${spacing.xs} * -1)` },
+  '-s': { margin: `calc(${spacing.s} * -1)` },
+  '-m': { margin: `calc(${spacing.m} * -1)` },
+  '-l': { margin: `calc(${spacing.l} * -1)` },
+  '-xl': { margin: `calc(${spacing.xl} * -1)` },
+  '-2xl': { margin: `calc(${spacing['2xl']} * -1)` },
+  '-3xl': { margin: `calc(${spacing['3xl']} * -1)` },
+  '-4xl': { margin: `calc(${spacing['4xl']} * -1)` },
+  '-5xl': { margin: `calc(${spacing['5xl']} * -1)` },
 })
 
 export const marginTopStyles = stylex.create({
@@ -150,6 +159,15 @@ export const marginTopStyles = stylex.create({
   '4xl': { marginTop: spacing['4xl'] },
   '5xl': { marginTop: spacing['5xl'] },
   auto: { marginTop: 'auto' },
+  '-xs': { marginTop: `calc(${spacing.xs} * -1)` },
+  '-s': { marginTop: `calc(${spacing.s} * -1)` },
+  '-m': { marginTop: `calc(${spacing.m} * -1)` },
+  '-l': { marginTop: `calc(${spacing.l} * -1)` },
+  '-xl': { marginTop: `calc(${spacing.xl} * -1)` },
+  '-2xl': { marginTop: `calc(${spacing['2xl']} * -1)` },
+  '-3xl': { marginTop: `calc(${spacing['3xl']} * -1)` },
+  '-4xl': { marginTop: `calc(${spacing['4xl']} * -1)` },
+  '-5xl': { marginTop: `calc(${spacing['5xl']} * -1)` },
 })
 
 export const marginRightStyles = stylex.create({
@@ -164,6 +182,15 @@ export const marginRightStyles = stylex.create({
   '4xl': { marginRight: spacing['4xl'] },
   '5xl': { marginRight: spacing['5xl'] },
   auto: { marginRight: 'auto' },
+  '-xs': { marginRight: `calc(${spacing.xs} * -1)` },
+  '-s': { marginRight: `calc(${spacing.s} * -1)` },
+  '-m': { marginRight: `calc(${spacing.m} * -1)` },
+  '-l': { marginRight: `calc(${spacing.l} * -1)` },
+  '-xl': { marginRight: `calc(${spacing.xl} * -1)` },
+  '-2xl': { marginRight: `calc(${spacing['2xl']} * -1)` },
+  '-3xl': { marginRight: `calc(${spacing['3xl']} * -1)` },
+  '-4xl': { marginRight: `calc(${spacing['4xl']} * -1)` },
+  '-5xl': { marginRight: `calc(${spacing['5xl']} * -1)` },
 })
 
 export const marginBottomStyles = stylex.create({
@@ -178,6 +205,15 @@ export const marginBottomStyles = stylex.create({
   '4xl': { marginBottom: spacing['4xl'] },
   '5xl': { marginBottom: spacing['5xl'] },
   auto: { marginBottom: 'auto' },
+  '-xs': { marginBottom: `calc(${spacing.xs} * -1)` },
+  '-s': { marginBottom: `calc(${spacing.s} * -1)` },
+  '-m': { marginBottom: `calc(${spacing.m} * -1)` },
+  '-l': { marginBottom: `calc(${spacing.l} * -1)` },
+  '-xl': { marginBottom: `calc(${spacing.xl} * -1)` },
+  '-2xl': { marginBottom: `calc(${spacing['2xl']} * -1)` },
+  '-3xl': { marginBottom: `calc(${spacing['3xl']} * -1)` },
+  '-4xl': { marginBottom: `calc(${spacing['4xl']} * -1)` },
+  '-5xl': { marginBottom: `calc(${spacing['5xl']} * -1)` },
 })
 
 export const marginLeftStyles = stylex.create({
@@ -192,6 +228,15 @@ export const marginLeftStyles = stylex.create({
   '4xl': { marginLeft: spacing['4xl'] },
   '5xl': { marginLeft: spacing['5xl'] },
   auto: { marginLeft: 'auto' },
+  '-xs': { marginLeft: `calc(${spacing.xs} * -1)` },
+  '-s': { marginLeft: `calc(${spacing.s} * -1)` },
+  '-m': { marginLeft: `calc(${spacing.m} * -1)` },
+  '-l': { marginLeft: `calc(${spacing.l} * -1)` },
+  '-xl': { marginLeft: `calc(${spacing.xl} * -1)` },
+  '-2xl': { marginLeft: `calc(${spacing['2xl']} * -1)` },
+  '-3xl': { marginLeft: `calc(${spacing['3xl']} * -1)` },
+  '-4xl': { marginLeft: `calc(${spacing['4xl']} * -1)` },
+  '-5xl': { marginLeft: `calc(${spacing['5xl']} * -1)` },
 })
 
 export const marginInlineStyles = stylex.create({
@@ -206,6 +251,15 @@ export const marginInlineStyles = stylex.create({
   '4xl': { marginInline: spacing['4xl'] },
   '5xl': { marginInline: spacing['5xl'] },
   auto: { marginInline: 'auto' },
+  '-xs': { marginInline: `calc(${spacing.xs} * -1)` },
+  '-s': { marginInline: `calc(${spacing.s} * -1)` },
+  '-m': { marginInline: `calc(${spacing.m} * -1)` },
+  '-l': { marginInline: `calc(${spacing.l} * -1)` },
+  '-xl': { marginInline: `calc(${spacing.xl} * -1)` },
+  '-2xl': { marginInline: `calc(${spacing['2xl']} * -1)` },
+  '-3xl': { marginInline: `calc(${spacing['3xl']} * -1)` },
+  '-4xl': { marginInline: `calc(${spacing['4xl']} * -1)` },
+  '-5xl': { marginInline: `calc(${spacing['5xl']} * -1)` },
 })
 
 export const marginBlockStyles = stylex.create({
@@ -220,6 +274,15 @@ export const marginBlockStyles = stylex.create({
   '4xl': { marginBlock: spacing['4xl'] },
   '5xl': { marginBlock: spacing['5xl'] },
   auto: { marginBlock: 'auto' },
+  '-xs': { marginBlock: `calc(${spacing.xs} * -1)` },
+  '-s': { marginBlock: `calc(${spacing.s} * -1)` },
+  '-m': { marginBlock: `calc(${spacing.m} * -1)` },
+  '-l': { marginBlock: `calc(${spacing.l} * -1)` },
+  '-xl': { marginBlock: `calc(${spacing.xl} * -1)` },
+  '-2xl': { marginBlock: `calc(${spacing['2xl']} * -1)` },
+  '-3xl': { marginBlock: `calc(${spacing['3xl']} * -1)` },
+  '-4xl': { marginBlock: `calc(${spacing['4xl']} * -1)` },
+  '-5xl': { marginBlock: `calc(${spacing['5xl']} * -1)` },
 })
 
 export const gapStyles = stylex.create({

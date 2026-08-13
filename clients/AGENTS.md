@@ -137,7 +137,9 @@ primitive values (literal colors, sizes), and `packages/orbit/src/tokens/semanti
 defines semantic tokens (background-primary, text-secondary, etc.) that reference them.
 Box accepts token **names**, not raw values.
 
-**Spacing** (`SpacingToken`) — used for padding, margin, gap:
+**Spacing** (`SpacingToken`) — used for padding, margin, gap. The scale is mirrored into
+negative tokens (`-xs` … `-5xl`) for margins and offsets; padding and gap accept positive
+tokens only (`PositiveSpacingToken`), since negative values are invalid CSS there:
 
 | Token  | Value |
 | ------ | ----- |
@@ -205,7 +207,8 @@ pseudo-states" below).
 padding (p), paddingTop (pt), paddingRight (pr), paddingBottom (pb), paddingLeft (pl),
 paddingHorizontal (px), paddingVertical (py)
 margin  (m), marginTop  (mt), marginRight  (mr), marginBottom  (mb), marginLeft  (ml),
-marginHorizontal  (mx), marginVertical  (my)   // margin tokens also accept 'auto'
+marginHorizontal  (mx), marginVertical  (my)   // margin tokens also accept 'auto' and
+                                               // negative tokens: '-xs' … '-5xl'
 gap (g), rowGap, columnGap
 ```
 
@@ -256,7 +259,7 @@ gridAutoColumns, gridAutoRows
 
 ```
 position: 'relative'|'absolute'|'fixed'|'sticky'|'static'
-top, right, bottom, left, inset: string | number
+top, right, bottom, left, inset: SpacingToken | string | number   // tokens may be negative ('-l')
 zIndex: number | string
 ```
 

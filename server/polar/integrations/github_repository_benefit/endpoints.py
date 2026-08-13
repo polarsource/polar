@@ -9,8 +9,6 @@ from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
 from polar.config import settings
 from polar.eventstream.service import publish
 from polar.exceptions import (
-    NotPermitted,
-    PolarRedirectionError,
     ResourceAlreadyExists,
     Unauthorized,
 )
@@ -65,15 +63,6 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
     github_oauth_client,
     route_name="integrations.github_repository_benefit.user_callback",
 )
-
-
-class OAuthCallbackError(PolarRedirectionError): ...
-
-
-class NotPermittedOrganizationBillingPlan(NotPermitted):
-    def __init__(self) -> None:
-        message = "Organization billing plan not accessible."
-        super().__init__(message)
 
 
 @router.get(

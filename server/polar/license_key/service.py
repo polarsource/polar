@@ -9,6 +9,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
@@ -24,6 +25,7 @@ from polar.models import (
 )
 from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import LicenseKeyRepository
 from .schemas import (
@@ -148,12 +150,40 @@ class LicenseKeyService:
         updates: LicenseKeyUpdate,
     ) -> LicenseKey:
         update_dict = updates.model_dump(exclude_unset=True)
+
+        status = update_dict.get("status")
+        if status is not None and status != license_key.status:
+            await self._enqueue_grant_lifecycle(session, license_key, status)
+
         for key, value in update_dict.items():
             setattr(license_key, key, value)
 
         session.add(license_key)
         await session.flush()
         return license_key
+
+    async def _enqueue_grant_lifecycle(
+        self,
+        session: AsyncSession,
+        license_key: LicenseKey,
+        status: LicenseKeyStatus,
+    ) -> None:
+        grant_repository = BenefitGrantRepository.from_session(session)
+        grant = await grant_repository.get_by_property_and_organization(
+            license_key.organization_id,
+            "license_key_id",
+            str(license_key.id),
+            benefit_id=license_key.benefit_id,
+        )
+        if grant is None:
+            return
+
+        revoke = status == LicenseKeyStatus.revoked
+        already_applied = grant.is_revoked if revoke else grant.is_granted
+        if already_applied:
+            return
+
+        enqueue_job("license_key.sync_benefit_grant", license_key_id=license_key.id)
 
     async def validate(
         self,

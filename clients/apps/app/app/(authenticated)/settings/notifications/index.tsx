@@ -88,8 +88,8 @@ export default function NotificationsPage() {
         </SettingsItem>
         <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
         <SettingsItem
-          title="New Orders"
-          description="Send a notification when new orders are created"
+          title="New One-Time Purchases"
+          description="Send a notification when a one-time purchase is made"
           variant="static"
         >
           <Switch
@@ -105,6 +105,18 @@ export default function NotificationsPage() {
           <Switch
             value={notificationSettings?.new_subscription ?? false}
             onValueChange={createNotificationSettingHandler('new_subscription')}
+          />
+        </SettingsItem>
+        <SettingsItem
+          title="Subscription Renewals"
+          description="Send a notification each time a subscription renewal payment is collected"
+          variant="static"
+        >
+          <Switch
+            value={notificationSettings?.subscription_renewal ?? false}
+            onValueChange={createNotificationSettingHandler(
+              'subscription_renewal',
+            )}
           />
         </SettingsItem>
         <Box

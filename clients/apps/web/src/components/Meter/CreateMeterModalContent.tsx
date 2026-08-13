@@ -1,7 +1,7 @@
 import { useCreateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
@@ -77,10 +77,14 @@ const CreateMeterModalContent = ({
   )
 
   return (
-    <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
-      <div>
-        <h2 className="text-lg">Create Meter</h2>
-        <div className="dark:text-polar-500 mt-2 space-y-2 text-sm text-gray-500">
+    <div className="flex flex-col overflow-y-auto">
+      <InlineModalHeader hide={hideModal}>
+        <Text variant="heading-xxs" as="h2">
+          Create Meter
+        </Text>
+      </InlineModalHeader>
+      <div className="flex flex-col gap-y-6 px-8 pb-10">
+        <div className="dark:text-polar-500 space-y-2 text-sm text-gray-500">
           <p>
             Meters are aggregated filters on ingested events. They are used to
             calculate your customer&apos;s usage of whatever you choose to
@@ -92,8 +96,6 @@ const CreateMeterModalContent = ({
             events with an arbitrary name like <code>api_call</code>.
           </p>
         </div>
-      </div>
-      <div className="flex flex-col gap-y-6">
         <Form {...form}>
           <form className="flex flex-col gap-y-6">
             <MeterForm organizationId={organization.id} />

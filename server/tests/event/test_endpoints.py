@@ -504,6 +504,27 @@ class TestListStatisticsTimeseries:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth
+    async def test_interval_too_small_for_range(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/events/statistics/timeseries",
+            params={
+                "start_date": "2023-01-01",
+                "end_date": "2024-12-31",
+                "interval": "day",
+            },
+        )
+
+        assert response.status_code == 422
+        msg = response.json()["detail"][0]["msg"]
+        assert "too small" in msg.lower()
+        assert "too big" not in msg.lower()
+
 
 @pytest.mark.asyncio
 class TestListEventNames:

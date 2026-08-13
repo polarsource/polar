@@ -94,24 +94,20 @@ def run(ctx: Context) -> bool:
             step_status(False, "Redis", "timeout after 60s")
             return False
 
-    # Only wait for Tinybird if not skipped
-    if ctx.skip_tinybird:
-        step_status(True, "Tinybird", "skipped")
-    else:
-        with step_spinner("Waiting for Tinybird..."):
-            token = wait_for_tinybird_and_get_token(timeout=90)
-            if token:
-                update_secrets(
-                    {
-                        "POLAR_TINYBIRD_API_TOKEN": token,
-                        "POLAR_TINYBIRD_READ_TOKEN": token,
-                        "POLAR_TINYBIRD_CLICKHOUSE_TOKEN": token,
-                    }
-                )
-                run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
-                step_status(True, "Tinybird", "ready (token configured)")
-            else:
-                step_status(False, "Tinybird", "timeout - continuing without it")
-                # Don't fail the whole setup for tinybird
+    with step_spinner("Waiting for Tinybird..."):
+        token = wait_for_tinybird_and_get_token(timeout=90)
+        if token:
+            update_secrets(
+                {
+                    "POLAR_TINYBIRD_API_TOKEN": token,
+                    "POLAR_TINYBIRD_READ_TOKEN": token,
+                    "POLAR_TINYBIRD_CLICKHOUSE_TOKEN": token,
+                }
+            )
+            run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
+            step_status(True, "Tinybird", "ready (token configured)")
+        else:
+            step_status(False, "Tinybird", "timeout - continuing without it")
+            # Don't fail the whole setup for tinybird
 
     return True

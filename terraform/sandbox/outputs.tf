@@ -22,3 +22,8 @@ output "redis_sandbox_id" {
   description = "The sandbox Redis ID. Used for the render_redis data source."
   value       = render_redis.redis_sandbox.id
 }
+
+output "redis_endpoint_service_name" {
+  description = "VPC endpoint service name for the worker Redis. Provide to Render when creating the private link."
+  value       = module.redis_private_link.service_name
+}

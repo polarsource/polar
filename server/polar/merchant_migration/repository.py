@@ -1,7 +1,9 @@
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func
+from sqlalchemy import ColumnElement, Select, func, select
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.authz.repository import select_accessible_org_ids
@@ -18,6 +20,15 @@ from polar.models.merchant_migration_record import (
 )
 
 from .canonical import CanonicalRecord, serialize
+
+type RecordCounts = dict[
+    tuple[UUID, MerchantMigrationRecordType, MerchantMigrationRecordStatus], int
+]
+
+# (migration, ledger status, record type, canonical blob)
+type CanonicalRow = tuple[
+    UUID, MerchantMigrationRecordStatus, MerchantMigrationRecordType, dict[str, Any]
+]
 
 
 class MerchantMigrationRepository(
@@ -42,6 +53,33 @@ class MerchantMigrationRepository(
                 MerchantMigration.organization_id == auth_subject.subject.id
             )
         return statement
+
+    def get_ops_statement(self) -> Select[tuple[MerchantMigration]]:
+        """Every migration across every organization, newest first.
+
+        Deliberately unscoped: the backoffice watches all migrations at once and
+        is gated on admin instead.
+        """
+        return (
+            self.get_base_statement()
+            .options(joinedload(MerchantMigration.organization))
+            .order_by(MerchantMigration.created_at.desc())
+        )
+
+    async def get_ops_by_id(
+        self, id: UUID, *, for_update: bool = False
+    ) -> MerchantMigration | None:
+        """One migration, unscoped the same way the ops listing is.
+
+        ``for_update`` serializes concurrent ops actions on the same migration.
+        It drops the organization join, because `FOR UPDATE` can't be applied
+        across an outer join — no mutation path renders the organization.
+        """
+        if for_update:
+            return await self.get_by_id(id, for_update=True)
+        return await self.get_one_or_none(
+            self.get_ops_statement().where(MerchantMigration.id == id)
+        )
 
 
 class MerchantMigrationRecordRepository(
@@ -77,6 +115,131 @@ class MerchantMigrationRecordRepository(
                 MerchantMigrationRecord.created_at,
                 MerchantMigrationRecord.id,
             )
+        )
+        return await self.get_all(statement)
+
+    async def count_by_type_and_status(
+        self, migration_ids: Sequence[UUID]
+    ) -> RecordCounts:
+        """Tally the ledger for several migrations in one query, so a listing can
+        show progress per row without a query each."""
+        if not migration_ids:
+            return {}
+        statement = (
+            select(
+                MerchantMigrationRecord.merchant_migration_id,
+                MerchantMigrationRecord.type,
+                MerchantMigrationRecord.status,
+                func.count().label("count"),
+            )
+            .where(
+                MerchantMigrationRecord.merchant_migration_id.in_(migration_ids),
+                MerchantMigrationRecord.deleted_at.is_(None),
+            )
+            .group_by(
+                MerchantMigrationRecord.merchant_migration_id,
+                MerchantMigrationRecord.type,
+                MerchantMigrationRecord.status,
+            )
+        )
+        result = await self.session.execute(statement)
+        return {
+            (migration_id, type, status): count
+            for migration_id, type, status, count in result.all()
+        }
+
+    async def count_failed(self, migration_ids: Sequence[UUID]) -> dict[UUID, int]:
+        """Failed rows per migration, the only tally the ops queue triages on.
+
+        Narrower than ``count_by_type_and_status`` on purpose: the listing needs
+        one number per row, not a 20-cell breakdown of a table that only grows.
+        """
+        if not migration_ids:
+            return {}
+        statement = (
+            select(
+                MerchantMigrationRecord.merchant_migration_id,
+                func.count(),
+            )
+            .where(
+                MerchantMigrationRecord.merchant_migration_id.in_(migration_ids),
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.failed,
+                MerchantMigrationRecord.deleted_at.is_(None),
+            )
+            .group_by(MerchantMigrationRecord.merchant_migration_id)
+        )
+        result = await self.session.execute(statement)
+        return {migration_id: count for migration_id, count in result.all()}
+
+    async def _list_canonicals(
+        self,
+        type: MerchantMigrationRecordType,
+        *scope: ColumnElement[bool],
+    ) -> Sequence[CanonicalRow]:
+        statement = select(
+            MerchantMigrationRecord.merchant_migration_id,
+            MerchantMigrationRecord.status,
+            MerchantMigrationRecord.type,
+            MerchantMigrationRecord.canonical,
+        ).where(
+            *scope,
+            MerchantMigrationRecord.type == type,
+            MerchantMigrationRecord.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return [
+            (migration_id, status, type, canonical)
+            for migration_id, status, type, canonical in result.all()
+        ]
+
+    async def list_product_canonicals(
+        self, organization_ids: Sequence[UUID]
+    ) -> Sequence[CanonicalRow]:
+        """Products carry the prices subscriptions are charged at.
+
+        Scoped by organization rather than migration: the ledger is keyed per
+        org, so a re-run's subscriptions are priced by product rows staged under
+        an earlier migration. A merchant has tens of products, so reading all of
+        theirs is cheap.
+        """
+        if not organization_ids:
+            return []
+        return await self._list_canonicals(
+            MerchantMigrationRecordType.product,
+            MerchantMigrationRecord.organization_id.in_(organization_ids),
+        )
+
+    async def list_subscription_canonicals(
+        self, migration_ids: Sequence[UUID]
+    ) -> Sequence[CanonicalRow]:
+        """The volume side: one row per migrated subscription, so callers should
+        pass only the migrations they are about to render."""
+        if not migration_ids:
+            return []
+        return await self._list_canonicals(
+            MerchantMigrationRecordType.subscription,
+            MerchantMigrationRecord.merchant_migration_id.in_(migration_ids),
+        )
+
+    async def list_by_migration_and_status(
+        self,
+        migration_id: UUID,
+        status: MerchantMigrationRecordStatus,
+        *,
+        limit: int,
+    ) -> Sequence[MerchantMigrationRecord]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.status == status,
+            )
+            .order_by(
+                MerchantMigrationRecord.type,
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
+            .limit(limit)
         )
         return await self.get_all(statement)
 

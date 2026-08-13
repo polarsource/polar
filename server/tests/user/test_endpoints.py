@@ -279,6 +279,7 @@ class TestGetMyNotificationSettings:
             "new_order": True,
             "new_subscription": False,
             "chargeback_prevention": True,
+            "subscription_renewal": False,
         }
         await save_fixture(user_organization)
 
@@ -291,6 +292,7 @@ class TestGetMyNotificationSettings:
             "new_order": True,
             "new_subscription": False,
             "chargeback_prevention": True,
+            "subscription_renewal": False,
         }
 
     @pytest.mark.auth
@@ -336,6 +338,7 @@ class TestUpdateMyNotificationSettings:
                     "new_order": False,
                     "new_subscription": True,
                     "chargeback_prevention": True,
+                    "subscription_renewal": False,
                 }
             },
         )
@@ -345,6 +348,7 @@ class TestUpdateMyNotificationSettings:
             "new_order": False,
             "new_subscription": True,
             "chargeback_prevention": True,
+            "subscription_renewal": False,
         }
 
         # Persisted: a subsequent read returns the new value.
@@ -353,6 +357,7 @@ class TestUpdateMyNotificationSettings:
             "new_order": False,
             "new_subscription": True,
             "chargeback_prevention": True,
+            "subscription_renewal": False,
         }
 
     @pytest.mark.auth
@@ -370,6 +375,7 @@ class TestUpdateMyNotificationSettings:
                     "new_order": True,
                     "new_subscription": True,
                     "chargeback_prevention": False,
+                    "subscription_renewal": False,
                 }
             },
         )
@@ -379,6 +385,7 @@ class TestUpdateMyNotificationSettings:
             "new_order": True,
             "new_subscription": True,
             "chargeback_prevention": False,
+            "subscription_renewal": False,
         }
 
         get_response = await client.get(url)
@@ -386,7 +393,59 @@ class TestUpdateMyNotificationSettings:
             "new_order": True,
             "new_subscription": True,
             "chargeback_prevention": False,
+            "subscription_renewal": False,
         }
+
+    @pytest.mark.auth
+    async def test_subscription_renewal_round_trips(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        url = f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        response = await client.patch(
+            url,
+            json={
+                "notification_settings": {
+                    "new_order": True,
+                    "new_subscription": True,
+                    "chargeback_prevention": True,
+                    "subscription_renewal": True,
+                }
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["notification_settings"]["subscription_renewal"] is True
+
+        get_response = await client.get(url)
+        assert (
+            get_response.json()["notification_settings"]["subscription_renewal"] is True
+        )
+
+    @pytest.mark.auth
+    async def test_subscription_renewal_is_required(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Every key is required: a partial body is rejected rather than silently
+        # resetting the omitted setting.
+        url = f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        response = await client.patch(
+            url,
+            json={
+                "notification_settings": {
+                    "new_order": True,
+                    "new_subscription": True,
+                    "chargeback_prevention": True,
+                }
+            },
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_non_member_returns_404(
@@ -399,6 +458,7 @@ class TestUpdateMyNotificationSettings:
                     "new_order": True,
                     "new_subscription": True,
                     "chargeback_prevention": True,
+                    "subscription_renewal": False,
                 }
             },
         )

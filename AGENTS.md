@@ -153,3 +153,76 @@ Treat **Accepted** ADRs as binding:
 - **S3 / Minio**: file storage.
 - **Redis**: cache and job queue.
 - **PostgreSQL**: primary database.
+
+## Cursor Cloud specific instructions
+
+Prefer the Polar Development CLI (`dev/cli/`, alias `dev`) — the same path local developers use.
+See `dev/cli/README.md` for the full command list. Do **not** use `dev docker` (the heavier
+image-based stack from the `local-environment` skill) unless you specifically need it.
+Standard lint/test commands live in `server/AGENTS.md` and `clients/AGENTS.md`.
+
+**Day-to-day start sequence**
+
+```bash
+# Once per VM boot (Docker isn't managed by systemd here):
+sudo dockerd > /tmp/dockerd.log 2>&1 &
+
+dev up --skip-integrations   # deps, infra (incl. Tinybird), migrations, builds
+dev seed                     # sample orgs/products + admin@polar.sh (NOT part of `dev up`)
+dev start                    # api + worker + web (+ stripe) in tmux session `polar`
+# Stop with:  dev stop
+# Status:     dev status
+```
+
+`--skip-integrations` avoids interactive GitHub/Stripe prompts. **Do not pass `--skip-tinybird`**
+if you need the dashboard Overview/homepage metrics — without Tinybird those widgets show a
+network error. `dev up` does **not** load sample data; run `dev seed` afterward. That creates
+`admin@polar.sh` with access to seeded orgs (notably `admin-org` with a `Pro` product, plus
+`acme-corp`, `polar`, etc.). Login OTP codes print in the API pane. If seed says "Already
+seeded" (exit 2), the DB already has `acme-corp` — use `dev seed --reset` only when you
+intentionally want a wipe.
+
+**Tinybird already-running gotcha.** Step `04_start_infrastructure` early-returns when
+Postgres/Redis/Minio are already up, and will **not** start a missing Tinybird container in
+that case. If `dev status` shows Tinybird down after `dev up`, start it explicitly:
+
+```bash
+cd server && docker compose --profile tinybird up -d
+# then wait for http://localhost:7181/tokens, write the admin_token into
+# ~/.config/polar/secrets.env as POLAR_TINYBIRD_{API,READ,CLICKHOUSE}_TOKEN,
+# run ./dev/setup-environment, and restart api/worker so they pick up the tokens.
+```
+
+`dev start` ends by *attaching* to the `polar` tmux session; in a non-interactive agent shell,
+create/attach then immediately `tmux detach-client -s polar`, or run `dev api` / `dev worker` /
+`dev web` as individual detached processes. The stripe pane of `dev start` will prompt to
+install the Stripe CLI via Homebrew — decline on Linux (no Homebrew); checkout/payment testing
+needs a real Stripe sandbox later (`dev stripe`, see the `local-environment` skill's
+`payment-testing` rule).
+
+**One-time shell wiring** (already done in this VM snapshot): `./dev/cli/install` adds the
+`dev` alias; Node 24 is installed via nvm (`clients/` requires it — `.nvmrc` is `24`); `uv` is
+at `~/.local/bin/uv`. Source `~/.bashrc` (or start a login shell) so `nvm use 24` and the
+`dev` alias are active.
+
+**Docker caveats.** `/etc/docker/daemon.json` is pinned to `fuse-overlayfs` with
+`features.containerd-snapshotter: false` — required for Docker 29 in this VM; don't remove it.
+The `ubuntu` user is in the `docker` group.
+
+**Backend config artifacts.** Config import fails without the email renderer binary
+(`server/emails/bin/react-email-pkg`, built by `dev up` / `uv run task emails`) and
+`server/.jwks.json` + `server/.env` (from `./dev/setup-environment` / `dev up`). Missing →
+pydantic `EMAIL_RENDERER_BINARY_PATH` / `JWKS` errors. `dev status` reports "Worker unknown
+(check manually)" by design — confirm with `pgrep -af dramatiq` or the `polar` tmux pane.
+
+**Tests need no manual DB setup** — the `polar_test` database is auto-created/dropped by a
+`sqlalchemy_utils` fixture. Run `uv run task test` or a subset with
+`POLAR_ENV=testing uv run python -m pytest <path>`.
+
+**Login.** Email OTP codes are printed in the API pane / log (`LOGIN CODE: …`). Grab with
+`tmux capture-pane -t polar:services.0 -p | grep -a "LOGIN CODE" | tail -1`. `admin@polar.sh`
+is the conventional test account.
+
+**Onboarding gotcha.** The org-creation wizard's "Launch Dashboard" button only submits once the
+Product step's required fields are filled (description ≥30 chars, ≥1 selling category, ≥1 pricing
+model). The AUP AI check auto-APPROVEs when `PYDANTIC_AI_GATEWAY_API_KEY` is unset.

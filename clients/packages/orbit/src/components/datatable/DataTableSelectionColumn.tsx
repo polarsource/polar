@@ -9,7 +9,8 @@ export const SELECTION_COLUMN_WIDTH = 36
 
 export interface DataTableSelection<TData> {
   count: number
-  pageState: 'none' | 'some' | 'all'
+  pageSelectedCount: number
+  pageSize: number
   isSelected: (item: TData) => boolean
   toggle: (item: TData, options?: { shiftKey?: boolean }) => void
   setPageSelected: (selected: boolean) => void
@@ -27,26 +28,30 @@ export const createSelectionColumn = <TData,>(
   id: SELECTION_COLUMN_ID,
   size: SELECTION_COLUMN_WIDTH,
   enableSorting: false,
-  header: () => (
-    <div
-      className="flex h-12 cursor-pointer items-center pl-4"
-      onClick={() => selection.setPageSelected(selection.pageState !== 'all')}
-    >
-      <Checkbox
-        aria-label={
-          selection.count > 0
-            ? `Select all rows on this page, ${selection.count} selected`
-            : 'Select all rows on this page'
-        }
-        checked={
-          selection.pageState === 'some'
-            ? 'indeterminate'
-            : selection.pageState === 'all'
-        }
-        className={selectionRevealClassName(selection.count > 0)}
-      />
-    </div>
-  ),
+  header: () => {
+    const pageFullySelected =
+      selection.pageSize > 0 &&
+      selection.pageSelectedCount === selection.pageSize
+    const pagePartiallySelected =
+      selection.pageSelectedCount > 0 && !pageFullySelected
+
+    return (
+      <div
+        className="flex h-12 cursor-pointer items-center pl-4"
+        onClick={() => selection.setPageSelected(!pageFullySelected)}
+      >
+        <Checkbox
+          aria-label={
+            selection.count > 0
+              ? `Select all rows on this page, ${selection.count} selected`
+              : 'Select all rows on this page'
+          }
+          checked={pagePartiallySelected ? 'indeterminate' : pageFullySelected}
+          className={selectionRevealClassName(selection.count > 0)}
+        />
+      </div>
+    )
+  },
   cell: ({ row }) => (
     <div
       className="flex cursor-pointer items-center py-4 pl-4"

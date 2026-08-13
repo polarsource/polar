@@ -8,8 +8,7 @@ import {
 import { useToast } from '@/components/Toast/use-toast'
 import { useUpdateEventType } from '@/hooks/queries/event_types'
 import { apiErrorToast, setValidationErrors } from '@/utils/api/errors'
-import { Button } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
+import { Button, InlineModalHeader, Input, Text } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,
@@ -79,16 +78,20 @@ export const EditEventTypeModal = ({
 
   return (
     <SyntaxHighlighterProvider>
-      <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
-        <div>
-          <h2 className="text-xl">Edit Event Type</h2>
-          <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
-            {/* eslint-disable-next-line react/no-unescaped-entities */}
-            Update the display label for event type "{eventName}"
-          </p>
-        </div>
+      <div className="flex flex-col overflow-y-auto">
+        <InlineModalHeader hide={hide}>
+          <div className="flex flex-col gap-1">
+            <Text variant="heading-xxs" as="h2">
+              Edit Event Type
+            </Text>
+            <p className="dark:text-polar-500 text-sm font-normal text-gray-500">
+              {/* eslint-disable-next-line react/no-unescaped-entities */}
+              Update the display label for event type "{eventName}"
+            </p>
+          </div>
+        </InlineModalHeader>
 
-        <div className="flex flex-col gap-y-6">
+        <div className="flex flex-col gap-y-6 px-8 pb-10">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
@@ -159,7 +162,7 @@ export const EditEventTypeModal = ({
           </Form>
         </div>
 
-        <div className="dark:border-polar-700 border-t border-gray-200 pt-6">
+        <div className="dark:border-polar-700 border-t border-gray-200 px-8 pt-6 pb-10">
           <div className="flex flex-col gap-y-2">
             <h3>Ingesting Events</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">

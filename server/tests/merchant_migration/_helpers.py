@@ -5,6 +5,7 @@ from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
+    CanonicalPaymentMethod,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     serialize,
@@ -107,6 +108,7 @@ def canonical_subscription(
     cancel_at_period_end: bool = False,
     trial_end: datetime | None = None,
     stopped_for_migration: bool = False,
+    payment_method: CanonicalPaymentMethod | None = None,
 ) -> CanonicalSubscription:
     """A source subscription that renews comfortably outside the safety window,
     so a test only states the field it's actually about."""
@@ -122,7 +124,7 @@ def canonical_subscription(
         paused_collection=status == CanonicalSubscriptionStatus.paused,
         line_item_count=line_item_count,
         quantity=quantity,
-        payment_method=None,
+        payment_method=payment_method,
         has_discount=has_discount,
         cancel_at_period_end=cancel_at_period_end,
         trial_end=trial_end,

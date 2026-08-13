@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
-from sqlalchemy import ColumnElement, Select, and_, case, cast, func, or_, select
+from sqlalchemy import ColumnElement, Select, and_, case, func, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.strategy_options import joinedload, raiseload, selectinload
@@ -25,6 +25,10 @@ from polar.auth.models import (
 )
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_accessible_org_ids
+from polar.email.deduplication import (
+    subscription_renewal_reminder_key_sql,
+    subscription_trial_conversion_reminder_key_sql,
+)
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.repository import (
     Options,
@@ -424,11 +428,9 @@ class SubscriptionRepository(
             .where(
                 EmailLog.email_template == "subscription_renewal_reminder",
                 EmailLog.status == EmailLogStatus.sent,
-                EmailLog.email_props["subscription"]["id"].as_string()
-                == cast(Subscription.id, sa.String),
-                EmailLog.email_props["renewal_date"].as_string()
-                == sa.func.to_char(
-                    Subscription.current_period_end, "FMMonth FMDD, YYYY"
+                EmailLog.deduplication_key
+                == subscription_renewal_reminder_key_sql(
+                    Subscription.id, Subscription.current_period_end
                 ),
             )
             .correlate(Subscription)
@@ -474,10 +476,10 @@ class SubscriptionRepository(
             .where(
                 EmailLog.email_template == "subscription_trial_conversion_reminder",
                 EmailLog.status == EmailLogStatus.sent,
-                EmailLog.email_props["subscription"]["id"].as_string()
-                == cast(Subscription.id, sa.String),
-                EmailLog.email_props["conversion_date"].as_string()
-                == sa.func.to_char(Subscription.trial_end, "FMMonth FMDD, YYYY"),
+                EmailLog.deduplication_key
+                == subscription_trial_conversion_reminder_key_sql(
+                    Subscription.id, Subscription.trial_end
+                ),
             )
             .correlate(Subscription)
             .exists()

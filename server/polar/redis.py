@@ -1,3 +1,4 @@
+import socket
 from typing import TYPE_CHECKING, Literal
 
 import redis.asyncio as _async_redis
@@ -19,6 +20,18 @@ else:
 REDIS_RETRY_ON_ERRROR: list[type[RedisError]] = [ConnectionError, TimeoutError]
 REDIS_RETRY = Retry(default_backoff(), retries=50)
 
+# TCP_KEEPIDLE is Linux, TCP_KEEPALIVE its macOS equivalent
+REDIS_KEEPALIVE_OPTIONS: dict[int, int] = {
+    getattr(socket, name): value
+    for name, value in (
+        ("TCP_KEEPIDLE", 60),
+        ("TCP_KEEPALIVE", 60),
+        ("TCP_KEEPINTVL", 30),
+        ("TCP_KEEPCNT", 3),
+    )
+    if hasattr(socket, name)
+}
+
 type ProcessName = Literal["app", "rate-limit", "worker", "script"]
 
 
@@ -29,6 +42,9 @@ def create_redis(process_name: ProcessName) -> Redis:
         retry_on_error=REDIS_RETRY_ON_ERRROR,
         retry=REDIS_RETRY,
         client_name=f"{settings.ENV.value}.{process_name}",
+        socket_keepalive=True,
+        socket_keepalive_options=REDIS_KEEPALIVE_OPTIONS,
+        health_check_interval=30,
     )
 
 

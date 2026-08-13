@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator, Sequence
+from datetime import datetime
 from typing import TypedDict
 from uuid import UUID
 
@@ -32,7 +33,7 @@ from polar.worker import enqueue_job
 
 from . import pan_transfer
 from .adapters import SourceAdapter, StripeAdapter
-from .canonical import CanonicalRecord, CanonicalSubscription, deserialize
+from .canonical import CanonicalRecord, deserialize
 from .cards import link_payment_method
 from .cutover import SubscriptionCutover
 from .errors import MerchantMigrationError
@@ -498,11 +499,27 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
-        return await self.complete_step(
+        return await self._complete_pan_step(
             session, migration, key, actor=PanStepActor.merchant, inputs=inputs
         )
 
-    async def complete_step(
+    async def complete_pan_step_as_ops(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        key: str,
+        *,
+        inputs: dict[str, str],
+    ) -> PanTransferChecklist:
+        """Complete a step from the backoffice. Ops move their own steps, and the
+        ones we only observe (Stripe, the source provider); they can also complete
+        a merchant step to unblock someone who is stuck. Admin-gated by the caller,
+        so there is no auth subject to scope on."""
+        return await self._complete_pan_step(
+            session, migration, key, actor=PanStepActor.ops, inputs=inputs
+        )
+
+    async def _complete_pan_step(
         self,
         session: AsyncSession,
         migration: MerchantMigration,
@@ -562,6 +579,34 @@ class MerchantMigrationService:
             return
         enqueue_job(task, merchant_migration_id=migration.id)
 
+    async def annotate_pan_step(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        key: str,
+        *,
+        note: str | None = None,
+        expected_at: datetime | None = None,
+        clear_expected_at: bool = False,
+        in_progress: bool = False,
+    ) -> PanTransferChecklist:
+        """Say what a step we're waiting on is doing and when it should land, so a
+        weeks-long wait reads as progress to the merchant instead of silence."""
+        if not migration.pan_transfer_steps:
+            raise PanTransferNotStarted()
+
+        steps = pan_transfer.annotate(
+            list(migration.pan_transfer_steps),
+            key,
+            note=note,
+            expected_at=expected_at,
+            clear_expected_at=clear_expected_at,
+            in_progress=in_progress,
+        )
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(migration, update_dict={"pan_transfer_steps": steps})
+        return self._checklist(migration, steps)
+
     async def run_card_verification(
         self, session: AsyncSession, migration_id: UUID, *, offset: int = 0
     ) -> None:
@@ -591,14 +636,7 @@ class MerchantMigrationService:
             # Already covered, or gone from Polar: nothing to link either way.
             if subscription is None or subscription.payment_method_id is not None:
                 continue
-            staged = deserialize(record.type, record.canonical)
-            payment_method = await link_payment_method(
-                session,
-                subscription.customer,
-                source_method=staged.payment_method
-                if isinstance(staged, CanonicalSubscription)
-                else None,
-            )
+            payment_method = await link_payment_method(session, subscription.customer)
             if payment_method is None:
                 continue
             await subscription_repository.update(

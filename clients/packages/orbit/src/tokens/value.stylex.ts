@@ -224,7 +224,14 @@ export type LineHeightToken = StyleXTokenKeys<typeof lineHeights>
 export type FontWeightToken = StyleXTokenKeys<typeof fontWeights>
 export type LetterSpacingToken = StyleXTokenKeys<typeof letterSpacings>
 export type FontFamilyToken = StyleXTokenKeys<typeof fontFamilies>
-export type SpacingToken = StyleXTokenKeys<typeof spacing>
+export type PositiveSpacingToken = StyleXTokenKeys<typeof spacing>
+export type NegativeSpacingToken = `-${Exclude<PositiveSpacingToken, 'none'>}`
+/**
+ * The full spacing scale, mirrored into negatives (`'-xs'` … `'-5xl'`,
+ * resolved as `calc(token * -1)`). Props where negative lengths are invalid
+ * CSS (padding, gap) accept only `PositiveSpacingToken`.
+ */
+export type SpacingToken = PositiveSpacingToken | NegativeSpacingToken
 export type BorderRadiusToken = StyleXTokenKeys<typeof borderRadii>
 export type ShadowToken = StyleXTokenKeys<typeof shadows>
 export type BreakpointKey = keyof typeof breakpoints

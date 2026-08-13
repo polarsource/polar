@@ -76,6 +76,17 @@ const AIValidationResult = ({
       return null
     }
 
+    if (organization.status === 'denied' || result.verdict === 'FAIL') {
+      return {
+        type: 'review_required',
+        title: 'Payment access denied',
+        message: 'Your organization does not meet our acceptable use policy.',
+        icon: (
+          <CircleAlertIcon className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
+        ),
+      }
+    }
+
     switch (result.verdict) {
       case 'PASS':
         return {
@@ -85,15 +96,6 @@ const AIValidationResult = ({
             'Your organization details have been automatically validated. You can accept payments immediately. A manual review will still take place, and any payout you request in the meantime will be paid out automatically once the review is complete.',
           icon: (
             <CheckCircleIcon className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
-          ),
-        }
-      case 'FAIL':
-        return {
-          type: 'review_required',
-          title: 'Payment access denied',
-          message: 'Your organization does not meet our acceptable use policy.',
-          icon: (
-            <CircleAlertIcon className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
           ),
         }
       case 'UNCERTAIN':
@@ -116,7 +118,8 @@ const AIValidationResult = ({
 
   const showAppeal =
     ((reviewStatus.data && reviewStatus.data.verdict) || timedOut) &&
-    status.type === 'review_required'
+    status.type === 'review_required' &&
+    !(organization.status === 'denied' && reviewStatus.data?.verdict === 'PASS')
 
   return (
     <div className="dark:bg-polar-800 rounded-2xl border bg-white">

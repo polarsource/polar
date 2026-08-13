@@ -2900,7 +2900,9 @@ class TestTriggerInvoiceGeneration:
 
         await order_service.trigger_invoice_generation(session, order)
 
-        enqueue_job_mock.assert_called_once_with("order.invoice", order_id=order.id)
+        enqueue_job_mock.assert_called_once_with(
+            "order.invoice", order_id=order.id, force=False
+        )
 
     async def test_draft_order_raises(
         self,
@@ -2979,7 +2981,9 @@ class TestTriggerInvoiceGeneration:
 
         await order_service.trigger_invoice_generation(session, order)
 
-        enqueue_job_mock.assert_called_once_with("order.invoice", order_id=order.id)
+        enqueue_job_mock.assert_called_once_with(
+            "order.invoice", order_id=order.id, force=False
+        )
 
     async def test_existing_invoice_no_checksum(
         self,
@@ -3000,7 +3004,9 @@ class TestTriggerInvoiceGeneration:
 
         await order_service.trigger_invoice_generation(session, order)
 
-        enqueue_job_mock.assert_called_once_with("order.invoice", order_id=order.id)
+        enqueue_job_mock.assert_called_once_with(
+            "order.invoice", order_id=order.id, force=False
+        )
 
     async def test_checksum_mismatch(
         self,
@@ -3022,7 +3028,9 @@ class TestTriggerInvoiceGeneration:
 
         await order_service.trigger_invoice_generation(session, order)
 
-        enqueue_job_mock.assert_called_once_with("order.invoice", order_id=order.id)
+        enqueue_job_mock.assert_called_once_with(
+            "order.invoice", order_id=order.id, force=False
+        )
 
     async def test_checksum_match_skips(
         self,
@@ -3045,6 +3053,30 @@ class TestTriggerInvoiceGeneration:
         await order_service.trigger_invoice_generation(session, order)
 
         enqueue_job_mock.assert_not_called()
+
+    async def test_force_bypasses_checksum_match(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+        order.invoice_path = "invoices/current.pdf"
+        order.invoice_checksum = invoice_service.compute_order_checksum(order)
+
+        await order_service.trigger_invoice_generation(session, order, force=True)
+
+        enqueue_job_mock.assert_called_once_with(
+            "order.invoice", order_id=order.id, force=True
+        )
 
 
 @pytest.mark.asyncio
@@ -3103,6 +3135,34 @@ class TestGenerateInvoice:
 
         assert result is order
         create_order_invoice_mock.assert_not_called()
+
+    async def test_force_regenerates_when_checksum_matches(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        create_order_invoice_mock = mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+            return_value="invoices/regenerated.pdf",
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+        order.invoice_path = "invoices/current.pdf"
+        order.invoice_checksum = invoice_service.compute_order_checksum(order)
+
+        updated = await order_service.generate_invoice(session, order, force=True)
+
+        create_order_invoice_mock.assert_called_once()
+        assert updated.invoice_path == "invoices/regenerated.pdf"
 
 
 @pytest.mark.asyncio
@@ -5751,6 +5811,116 @@ class TestVoidOrder:
         )
         assert new_balance == 200
 
+    @pytest.mark.asyncio
+    async def test_void_restores_balance_consumed_by_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+
+        # The customer had 1000, consumed by the order at creation
+        wallet = await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=1000,
+        )
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=-1000)
+
+        # When
+        result_order = await order_service.void(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.void
+
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == 1000
+
+    @pytest.mark.asyncio
+    async def test_void_restores_consumed_balance_and_reduces_credit(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+
+        # The customer had 1000, consumed by the order at creation, then got a
+        # 1500 credit from another order
+        wallet = await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=1000,
+        )
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=-1000)
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=1500)
+
+        # When
+        result_order = await order_service.void(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.void
+
+        # The 1500 credit is reduced by the 2000 due, the 1000 consumed is restored
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == 1000
+
+    @pytest.mark.asyncio
+    async def test_void_leaves_negative_balance_untouched(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=800,
+        )
+
+        # The customer owes 500 and the order consumed nothing
+        await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=-500,
+        )
+
+        # When
+        await order_service.void(session, order)
+
+        # Then
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == -500
+
 
 class TestUnvoidOrder:
     @pytest.mark.asyncio
@@ -5804,6 +5974,77 @@ class TestUnvoidOrder:
 
         with pytest.raises(OrderNotVoid):
             await order_service.unvoid(session, order)
+
+    @pytest.mark.asyncio
+    async def test_unvoid_reconsumes_restored_balance(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.void,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+
+        # The 1000 consumed by the order was restored when it was voided
+        await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=1000,
+        )
+
+        # When
+        result_order = await order_service.unvoid(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.pending
+
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == 0
+
+    @pytest.mark.asyncio
+    async def test_void_unvoid_round_trip_leaves_balance_unchanged(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+        wallet = await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=1000,
+        )
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=-1000)
+
+        # When
+        order = await order_service.void(session, order)
+        order = await order_service.unvoid(session, order)
+        order = await order_service.void(session, order)
+
+        # Then
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == 1000
 
 
 @pytest.mark.asyncio
@@ -6676,4 +6917,98 @@ class TestFinalizeOrder:
                 call("order.confirmation_email", order.id)
             )
             == 1
+        )
+
+
+@pytest.mark.asyncio
+class TestSubscriptionRenewalNotification:
+    @pytest.mark.parametrize(
+        "billing_reason",
+        [
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        ],
+    )
+    async def test_enqueued_for_renewal_orders(
+        self,
+        billing_reason: OrderBillingReasonInternal,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=billing_reason,
+        )
+
+        await order_service._on_order_paid(session, order)
+
+        assert (
+            call("order.subscription_renewal_notification", order.id)
+            in enqueue_job_mock.call_args_list
+        )
+
+    @pytest.mark.parametrize(
+        "billing_reason",
+        [
+            OrderBillingReasonInternal.subscription_create,
+            OrderBillingReasonInternal.subscription_update,
+            OrderBillingReasonInternal.subscription_cancel,
+        ],
+    )
+    async def test_not_enqueued_for_other_subscription_orders(
+        self,
+        billing_reason: OrderBillingReasonInternal,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=billing_reason,
+        )
+
+        await order_service._on_order_paid(session, order)
+
+        assert (
+            call("order.subscription_renewal_notification", order.id)
+            not in enqueue_job_mock.call_args_list
+        )
+
+    async def test_not_enqueued_for_one_time_purchase(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product_one_time,
+            customer=customer,
+            billing_reason=OrderBillingReasonInternal.purchase,
+        )
+
+        await order_service._on_order_paid(session, order)
+
+        assert (
+            call("order.subscription_renewal_notification", order.id)
+            not in enqueue_job_mock.call_args_list
         )

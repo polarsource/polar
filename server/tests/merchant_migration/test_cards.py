@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator, Sequence
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -11,7 +12,7 @@ from polar.merchant_migration.canonical import (
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
 )
-from polar.merchant_migration.cards import link_payment_method
+from polar.merchant_migration.cards import AmbiguousCopiedCard, link_payment_method
 from polar.models import Customer, Organization, PaymentMethod
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -20,16 +21,16 @@ from tests.fixtures.stripe import build_stripe_payment_method
 
 
 def _stripe_payment_method(
-    id: str, type: str = "card", **details: object
+    id: str, type: str = "card", details: dict[str, Any] | None = None
 ) -> stripe_lib.PaymentMethod:
     payment_method = build_stripe_payment_method(
-        type=type, details=details, customer="cus_1"
+        type=type, details=details or {}, customer="cus_1"
     )
     payment_method.id = id
     return payment_method
 
 
-def _card(last4: str) -> dict[str, object]:
+def _card(last4: str) -> dict[str, Any]:
     return {"last4": last4, "brand": "visa", "exp_month": 4, "exp_year": 2030}
 
 
@@ -208,14 +209,14 @@ class TestKeepsTheCardTheSourceCharged:
         _listing(
             mocker,
             [
-                _stripe_payment_method("pm_copy_of_c1", **_card("1111")),
-                _stripe_payment_method("pm_copy_of_c2", **_card("2222")),
+                _stripe_payment_method("pm_copy_of_c1", details=_card("1111")),
+                _stripe_payment_method("pm_copy_of_c2", details=_card("2222")),
             ],
         )
         charged_on_the_source = CanonicalPaymentMethod(
             source_id="pm_c2_on_the_source",
             type=CanonicalPaymentMethodType.card,
-            **_card("2222"),  # type: ignore[arg-type]
+            **_card("2222"),
         )
 
         payment_method = await link_payment_method(
@@ -246,8 +247,8 @@ class TestKeepsTheCardTheSourceCharged:
         _listing(
             mocker,
             [
-                _stripe_payment_method("pm_copy_of_c1", **_card("1111")),
-                _stripe_payment_method("pm_copy_of_c2", **_card("2222")),
+                _stripe_payment_method("pm_copy_of_c1", details=_card("1111")),
+                _stripe_payment_method("pm_copy_of_c2", details=_card("2222")),
             ],
         )
 
@@ -257,7 +258,7 @@ class TestKeepsTheCardTheSourceCharged:
             source_method=CanonicalPaymentMethod(
                 source_id="pm_c2_on_the_source",
                 type=CanonicalPaymentMethodType.card,
-                **_card("2222"),  # type: ignore[arg-type]
+                **_card("2222"),
             ),
         )
 
@@ -272,7 +273,9 @@ class TestKeepsTheCardTheSourceCharged:
     ) -> None:
         """Only C1 copied. Better the card we have than nothing — the cutover's
         SetupIntent is what decides whether it can actually be charged."""
-        _listing(mocker, [_stripe_payment_method("pm_copy_of_c1", **_card("1111"))])
+        _listing(
+            mocker, [_stripe_payment_method("pm_copy_of_c1", details=_card("1111"))]
+        )
 
         payment_method = await link_payment_method(
             session,
@@ -280,7 +283,7 @@ class TestKeepsTheCardTheSourceCharged:
             source_method=CanonicalPaymentMethod(
                 source_id="pm_c2_on_the_source",
                 type=CanonicalPaymentMethodType.card,
-                **_card("2222"),  # type: ignore[arg-type]
+                **_card("2222"),
             ),
         )
 
@@ -294,7 +297,7 @@ class TestKeepsTheCardTheSourceCharged:
         imported_customer: Customer,
     ) -> None:
         """A legacy `src_` object gives us an id and nothing else."""
-        _listing(mocker, [_stripe_payment_method("pm_copied", **_card("1111"))])
+        _listing(mocker, [_stripe_payment_method("pm_copied", details=_card("1111"))])
 
         payment_method = await link_payment_method(
             session,
@@ -306,3 +309,30 @@ class TestKeepsTheCardTheSourceCharged:
 
         assert payment_method is not None
         assert payment_method.processor_id == "pm_copied"
+
+    async def test_two_indistinguishable_copies_raise(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        """Same brand, last4 and expiry on both copies. Nothing left to tell them
+        apart, and charging the wrong one is worse than not charging."""
+        _listing(
+            mocker,
+            [
+                _stripe_payment_method("pm_copy_a", details=_card("2222")),
+                _stripe_payment_method("pm_copy_b", details=_card("2222")),
+            ],
+        )
+
+        with pytest.raises(AmbiguousCopiedCard):
+            await link_payment_method(
+                session,
+                imported_customer,
+                source_method=CanonicalPaymentMethod(
+                    source_id="pm_on_the_source",
+                    type=CanonicalPaymentMethodType.card,
+                    **_card("2222"),
+                ),
+            )

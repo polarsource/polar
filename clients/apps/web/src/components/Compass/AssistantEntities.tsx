@@ -1,5 +1,6 @@
 'use client'
 
+import { relativeTime } from '@/components/Chat/time'
 import {
   AssistantBlock,
   DataTableColumn,
@@ -38,10 +39,45 @@ const formatCell = (
   return String(value)
 }
 
+/**
+ * The caption under the entity presentations: how much of the result is shown,
+ * and when it was fetched. One line, so a restored answer's staleness sits with
+ * its data rather than adding a caption of its own.
+ */
+const BlockFooter = ({
+  shown,
+  total,
+  entity,
+  answeredAt,
+}: {
+  shown: number
+  total: number
+  entity: string
+  answeredAt?: string
+}) => {
+  const parts: string[] = []
+  if (total > shown) {
+    parts.push(`Showing ${shown} of ${total} ${entity}`)
+  }
+  if (answeredAt) {
+    parts.push(`Fetched ${relativeTime(answeredAt)}`)
+  }
+  if (parts.length === 0) {
+    return null
+  }
+  return (
+    <Text variant="caption" color="muted">
+      {parts.join(' · ')}
+    </Text>
+  )
+}
+
 export const EntityListView = ({
   block,
+  answeredAt,
 }: {
   block: Extract<AssistantBlock, { type: 'entity_list' }>
+  answeredAt?: string
 }) => {
   // Same columns/rows shape as the table, so currency and dates format
   // identically in both presentations. First column is the title, the last
@@ -110,11 +146,12 @@ export const EntityListView = ({
           </ListItem>
         ))}
       </List>
-      {block.total_count > block.rows.length ? (
-        <Text variant="caption" color="muted">
-          Showing {block.rows.length} of {block.total_count} {block.entity}
-        </Text>
-      ) : null}
+      <BlockFooter
+        shown={block.rows.length}
+        total={block.total_count}
+        entity={block.entity}
+        answeredAt={answeredAt}
+      />
     </Box>
   )
 }
@@ -152,8 +189,10 @@ export const CustomerCardView = ({
 
 export const EntityTableView = ({
   block,
+  answeredAt,
 }: {
   block: Extract<AssistantBlock, { type: 'data_table' }>
+  answeredAt?: string
 }) => {
   const columns = useMemo(
     (): DataTableColumnDef<DataTableRow>[] =>
@@ -188,11 +227,12 @@ export const EntityTableView = ({
         </Text>
       ) : null}
       <DataTable columns={columns} data={block.rows} isLoading={false} />
-      {block.total_count > block.rows.length ? (
-        <Text variant="caption" color="muted">
-          Showing {block.rows.length} of {block.total_count} {block.entity}
-        </Text>
-      ) : null}
+      <BlockFooter
+        shown={block.rows.length}
+        total={block.total_count}
+        entity={block.entity}
+        answeredAt={answeredAt}
+      />
     </Box>
   )
 }

@@ -6,20 +6,34 @@ import pytest
 import stripe as stripe_lib
 from dramatiq import Retry
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import Organization, Product
+from polar.models import (
+    Notification,
+    Order,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.subscription import SubscriptionStatus
+from polar.models.user_organization import (
+    OrganizationNotificationSettings,
+    OrganizationRole,
+)
+from polar.notifications.notification import NotificationType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
     OrderDoesNotExist,
     create_subscription_order,
     enqueue_stale_payment_locks,
+    order_subscription_renewal_notification,
     process_dunning,
     process_dunning_order,
     process_stale_payment_lock,
@@ -33,6 +47,7 @@ from tests.fixtures.random_objects import (
     create_payment,
     create_payment_method,
     create_subscription,
+    create_user,
 )
 
 
@@ -773,3 +788,133 @@ class TestTriggerPayment:
         mock_create_payment_intent.assert_called_once()
         call_kwargs = mock_create_payment_intent.call_args[1]
         assert "payment_trigger" not in call_kwargs["metadata"]
+
+
+async def _add_member(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user: User,
+    notification_settings: OrganizationNotificationSettings | None = None,
+) -> None:
+    user_organization = UserOrganization(
+        user_id=user.id,
+        organization_id=organization.id,
+        role=OrganizationRole.member,
+    )
+    if notification_settings is not None:
+        user_organization.notification_settings = notification_settings
+    await save_fixture(user_organization)
+
+
+@pytest.mark.asyncio
+class TestOrderSubscriptionRenewalNotification:
+    async def test_missing_order_raises(self) -> None:
+        with pytest.raises(OrderDoesNotExist):
+            await order_subscription_renewal_notification(uuid.uuid4())
+
+    async def _create_renewal_order(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> Order:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        return await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+    async def _notifications_for(
+        self, session: AsyncSession, user: User
+    ) -> list[Notification]:
+        result = await session.execute(
+            select(Notification).where(Notification.user_id == user.id)
+        )
+        return list(result.scalars().all())
+
+    async def test_notifies_member_who_opted_in(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        member = await create_user(save_fixture)
+        await _add_member(
+            save_fixture,
+            organization,
+            member,
+            notification_settings=OrganizationNotificationSettings(
+                new_order=True,
+                new_subscription=True,
+                chargeback_prevention=True,
+                subscription_renewal=True,
+            ),
+        )
+        order = await self._create_renewal_order(save_fixture, product, organization)
+
+        await order_subscription_renewal_notification(order.id)
+
+        notifications = await self._notifications_for(session, member)
+        assert len(notifications) == 1
+        assert (
+            notifications[0].type
+            == NotificationType.maintainer_subscription_renewal.value
+        )
+        assert notifications[0].payload["subscription_id"] == str(order.subscription_id)
+
+    async def test_skips_member_who_opted_out(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        member = await create_user(save_fixture)
+        await _add_member(
+            save_fixture,
+            organization,
+            member,
+            notification_settings=OrganizationNotificationSettings(
+                new_order=True,
+                new_subscription=True,
+                chargeback_prevention=True,
+                subscription_renewal=False,
+            ),
+        )
+        order = await self._create_renewal_order(save_fixture, product, organization)
+
+        await order_subscription_renewal_notification(order.id)
+
+        assert await self._notifications_for(session, member) == []
+
+    async def test_member_setting_is_always_present(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        # The setting is a required key, so a membership always carries it and
+        # the notification path can index it directly.
+        member = await create_user(save_fixture)
+        await _add_member(save_fixture, organization, member)
+        order = await self._create_renewal_order(save_fixture, product, organization)
+
+        await order_subscription_renewal_notification(order.id)
+
+        result = await session.execute(
+            select(UserOrganization).where(UserOrganization.user_id == member.id)
+        )
+        user_organization = result.scalar_one()
+        assert "subscription_renewal" in user_organization.notification_settings
+        assert await self._notifications_for(session, member) == []

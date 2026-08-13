@@ -234,7 +234,8 @@ async def order_confirmation_email(order_id: uuid.UUID) -> None:
         await order_service.send_confirmation_email(session, order)
 
 
-async def _run_order_invoice(order_id: uuid.UUID) -> None:
+@actor(actor_name="order.subscription_renewal_notification", priority=TaskPriority.LOW)
+async def order_subscription_renewal_notification(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
@@ -243,7 +244,19 @@ async def _run_order_invoice(order_id: uuid.UUID) -> None:
         if order is None:
             raise OrderDoesNotExist(order_id)
 
-        await order_service.generate_invoice(session, order)
+        await order_service.send_subscription_renewal_notification(session, order)
+
+
+async def _run_order_invoice(order_id: uuid.UUID, force: bool = False) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        await order_service.generate_invoice(session, order, force=force)
 
 
 @actor(
@@ -251,8 +264,8 @@ async def _run_order_invoice(order_id: uuid.UUID) -> None:
     priority=TaskPriority.LOW,
     queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
 )
-async def order_invoice(order_id: uuid.UUID) -> None:
-    await _run_order_invoice(order_id)
+async def order_invoice(order_id: uuid.UUID, force: bool = False) -> None:
+    await _run_order_invoice(order_id, force=force)
 
 
 @actor(

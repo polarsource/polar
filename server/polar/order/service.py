@@ -87,6 +87,7 @@ from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewProductSaleNotificationPayload,
+    MaintainerSubscriptionRenewalNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -536,7 +537,7 @@ class OrderService:
         return order
 
     async def trigger_invoice_generation(
-        self, session: AsyncSession, order: Order
+        self, session: AsyncSession, order: Order, *, force: bool = False
     ) -> None:
         if order.status in (OrderStatus.draft, OrderStatus.void):
             raise OrderNotEligibleForInvoice(order)
@@ -545,7 +546,8 @@ class OrderService:
             raise MissingInvoiceBillingDetails(order)
 
         if (
-            order.invoice_path is not None
+            not force
+            and order.invoice_path is not None
             and order.invoice_checksum == invoice_service.compute_order_checksum(order)
         ):
             log.info(
@@ -556,12 +558,15 @@ class OrderService:
             )
             return
 
-        log.info("order.invoice_generation.scheduled", order_id=order.id)
-        enqueue_job("order.invoice", order_id=order.id)
+        log.info("order.invoice_generation.scheduled", order_id=order.id, force=force)
+        enqueue_job("order.invoice", order_id=order.id, force=force)
 
-    async def generate_invoice(self, session: AsyncSession, order: Order) -> Order:
+    async def generate_invoice(
+        self, session: AsyncSession, order: Order, *, force: bool = False
+    ) -> Order:
         if (
-            order.invoice_path is not None
+            not force
+            and order.invoice_path is not None
             and order.invoice_checksum == invoice_service.compute_order_checksum(order)
         ):
             log.info(
@@ -2269,6 +2274,37 @@ class OrderService:
             ),
         )
 
+    async def send_subscription_renewal_notification(
+        self, session: AsyncSession, order: Order
+    ) -> None:
+        product = order.product
+        subscription = order.subscription
+
+        if product is None or subscription is None:
+            return
+
+        organization = order.organization
+        customer = order.customer
+
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            notif=PartialNotification(
+                type=NotificationType.maintainer_subscription_renewal,
+                payload=MaintainerSubscriptionRenewalNotificationPayload(
+                    customer_email=customer.email,
+                    customer_name=customer.display_name,
+                    product_name=product.name,
+                    product_price_amount=order.net_amount,
+                    organization_slug=organization.slug,
+                    subscription_id=str(subscription.id),
+                    recurring_interval=subscription.recurring_interval,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                    currency=order.currency,
+                ),
+            ),
+        )
+
     async def send_confirmation_email(
         self, session: AsyncSession, order: Order
     ) -> None:
@@ -2661,6 +2697,18 @@ class OrderService:
                 order=order,
             )
 
+        # Give back the balance the order consumed: it'll never be collected.
+        # Applied after the reduction above, which is computed on the balance as it
+        # stands while the order is still due.
+        if order.applied_balance_amount < 0:
+            await wallet_service.create_balance_transaction(
+                session,
+                order.customer,
+                -order.applied_balance_amount,
+                order.currency,
+                order=order,
+            )
+
         await event_service.create_event(
             session,
             build_system_event(
@@ -2693,6 +2741,17 @@ class OrderService:
                 "next_payment_attempt_at": None,
             },
         )
+
+        # Consume again the balance restored on void: the order is due once more,
+        # and `applied_balance_amount` still counts it against `due_amount`.
+        if order.applied_balance_amount < 0:
+            await wallet_service.create_balance_transaction(
+                session,
+                order.customer,
+                order.applied_balance_amount,
+                order.currency,
+                order=order,
+            )
 
         await event_service.create_event(
             session,
@@ -2807,6 +2866,7 @@ class OrderService:
                 "benefit.enqueue_benefit_grant_cycles",
                 subscription_id=order.subscription_id,
             )
+            enqueue_job("order.subscription_renewal_notification", order.id)
 
     async def _emit_balance_credit_order_event(
         self,

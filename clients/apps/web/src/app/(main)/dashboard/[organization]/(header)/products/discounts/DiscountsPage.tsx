@@ -1,5 +1,6 @@
 'use client'
 
+import { BulkActionBar } from '@/components/BulkActions/BulkActionBar'
 import CreateDiscountModalContent from '@/components/Discounts/CreateDiscountModalContent'
 import UpdateDiscountModalContent from '@/components/Discounts/UpdateDiscountModalContent'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -7,14 +8,15 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
-import { useDeleteDiscount, useDiscounts } from '@/hooks/queries'
-import { useDebouncedCallback } from '@/hooks/utils'
 import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
+  useDeleteDiscount,
+  useDeleteDiscounts,
+  useDiscounts,
+} from '@/hooks/queries'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { useSelection } from '@/hooks/useSelection'
+import { useDebouncedCallback } from '@/hooks/utils'
+import { getAPIParams } from '@/utils/datatable'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import AddOutlined from '@mui/icons-material/AddOutlined'
@@ -36,97 +38,53 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useRouter } from 'next/navigation'
+import { parseAsString, useQueryStates } from 'nuqs'
 import React, { useCallback, useState } from 'react'
+
+const filterParsers = {
+  query: parseAsString,
+}
+
+const getDiscountId = (discount: schemas['Discount']) => discount.id
 
 interface ClientPageProps {
   organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
-  query: string | undefined
 }
 
-const ClientPage: React.FC<ClientPageProps> = ({
-  organization,
-  pagination,
-  sorting,
-  query: _query,
-}) => {
-  const router = useRouter()
-  const [query, setQuery] = useState(_query)
+const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'name', desc: false }],
+    })
 
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-    query: string | undefined,
-  ) => {
-    const params = serializeSearchParams(pagination, sorting)
+  const [{ query }, setFilters] = useQueryStates(filterParsers)
 
-    if (query) {
-      params.append('query', query)
-    }
+  const debouncedQueryChange = useDebouncedCallback((value: string) => {
+    setFilters({ query: value || null })
+    resetPage()
+  }, 500)
 
-    return params
-  }
+  const discountsHook = useDiscounts(organization.id, {
+    ...getAPIParams(pagination, sorting),
+    query: query ?? undefined,
+  })
 
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
+  const discounts = discountsHook.data?.items || []
+  const rowCount = discountsHook.data?.pagination.total_count ?? 0
+  const pageCount = discountsHook.data?.pagination.max_page ?? 1
 
-    router.push(
-      `/dashboard/${organization.slug}/products/discounts?${getSearchParams(
-        updatedPagination,
-        sorting,
-        query,
-      )}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/products/discounts?${getSearchParams(
-        pagination,
-        updatedSorting,
-        query,
-      )}`,
-    )
-  }
-
-  const debouncedQueryChange = useDebouncedCallback(
-    (query: string) => {
-      router.push(
-        `/dashboard/${organization.slug}/products/discounts?${getSearchParams(
-          { ...pagination, pageIndex: 0 },
-          sorting,
-          query,
-        )}`,
-      )
-    },
-    500,
-    [pagination, sorting, query, router],
-  )
+  const selection = useSelection({
+    items: discounts,
+    getId: getDiscountId,
+    resetKey: query ?? '',
+  })
 
   const onQueryChange = useCallback(
-    (query: string) => {
-      setQuery(query)
-      debouncedQueryChange(query)
+    (value: string) => {
+      debouncedQueryChange(value)
+      selection.clear()
     },
-    [debouncedQueryChange],
+    [debouncedQueryChange, selection],
   )
 
   const handleCopyDiscountId = useCallback(
@@ -167,14 +125,31 @@ const ClientPage: React.FC<ClientPageProps> = ({
     hideDiscountModal()
   }, [discountToDelete, deleteDiscount, hideDiscountModal])
 
-  const discountsHook = useDiscounts(organization.id, {
-    ...getAPIParams(pagination, sorting),
-    query: _query,
-  })
+  const deleteDiscounts = useDeleteDiscounts()
 
-  const discounts = discountsHook.data?.items || []
-  const rowCount = discountsHook.data?.pagination.total_count ?? 0
-  const pageCount = discountsHook.data?.pagination.max_page ?? 1
+  const {
+    isShown: isBulkDeleteModalShown,
+    show: showBulkDeleteModal,
+    hide: hideBulkDeleteModal,
+  } = useModal()
+
+  const handleBulkDeleteDiscounts = useCallback(async () => {
+    const { succeeded, failed } = await deleteDiscounts.mutateAsync(
+      selection.selected,
+    )
+    if (failed.length > 0) {
+      toast({
+        title: 'Some Discounts Were Not Deleted',
+        description: `${String(succeeded.length)} deleted, ${String(failed.length)} failed`,
+      })
+    } else {
+      toast({
+        title: 'Discounts Deleted',
+        description: `${String(succeeded.length)} discounts successfully deleted`,
+      })
+    }
+    selection.clear()
+  }, [deleteDiscounts, selection])
 
   const columns: DataTableColumnDef<schemas['Discount']>[] = [
     {
@@ -329,17 +304,35 @@ const ClientPage: React.FC<ClientPageProps> = ({
             className="w-full md:max-w-64"
             preSlot={<Search fontSize="small" />}
             placeholder="Search Discounts"
-            value={query}
+            defaultValue={query ?? ''}
             onChange={(e) => onQueryChange(e.target.value)}
           />
-          <Button
-            type="button"
-            wrapperClassNames="flex flex-row items-center gap-x-2"
-            onClick={() => setShowNewModal(true)}
-          >
-            <AddOutlined fontSize="small" />
-            <span>New Discount</span>
-          </Button>
+          {selection.count > 0 ? (
+            <BulkActionBar
+              count={selection.count}
+              pageSelectedCount={selection.pageSelectedCount}
+              pageSize={selection.pageSize}
+              onPageSelectedChange={selection.setPageSelected}
+              onClear={selection.clear}
+            >
+              <Button
+                variant="destructive"
+                onClick={showBulkDeleteModal}
+                loading={deleteDiscounts.isPending}
+              >
+                Delete
+              </Button>
+            </BulkActionBar>
+          ) : (
+            <Button
+              type="button"
+              wrapperClassNames="flex flex-row items-center gap-x-2"
+              onClick={() => setShowNewModal(true)}
+            >
+              <AddOutlined fontSize="small" />
+              <span>New Discount</span>
+            </Button>
+          )}
         </div>
         {discounts && pageCount !== undefined && (
           <DataTable
@@ -352,6 +345,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
             sorting={sorting}
             onSortingChange={setSorting}
             isLoading={discountsHook.isLoading}
+            selection={selection}
+            getRowId={getDiscountId}
           />
         )}
       </div>
@@ -386,6 +381,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
         onConfirm={handleDeleteDiscount}
         isShown={isDiscountModalShown}
         hide={hideDiscountModal}
+        destructiveText="Delete"
+        destructive
+      />
+      <ConfirmModal
+        title="Delete Discounts"
+        description={`Are you sure you want to delete ${selection.count} ${
+          selection.count === 1 ? 'discount' : 'discounts'
+        }? This action cannot be undone.`}
+        onConfirm={handleBulkDeleteDiscounts}
+        isShown={isBulkDeleteModalShown}
+        hide={hideBulkDeleteModal}
         destructiveText="Delete"
         destructive
       />

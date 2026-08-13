@@ -20,14 +20,36 @@ module "lambda_worker_ecr" {
 module "redis" {
   source = "../modules/aws_redis"
 
-  name       = "polar-sandbox-worker"
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnet_ids
+  name               = "polar-sandbox-worker"
+  vpc_id             = module.vpc.vpc_id
+  subnet_ids         = module.vpc.private_subnet_ids
+  node_type          = "cache.t4g.small"
+  num_cache_clusters = 2
 }
 
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   security_group_id            = module.redis.security_group_id
   referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
+  ip_protocol                  = "tcp"
+}
+
+module "redis_private_link" {
+  source = "../modules/redis_private_link"
+
+  name                     = "polar-sandbox-worker-redis"
+  vpc_id                   = module.vpc.vpc_id
+  subnet_ids               = module.vpc.private_subnet_ids
+  redis_host               = module.redis.host
+  redis_port               = module.redis.port
+  redis_arn                = module.redis.arn
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_nlb" {
+  security_group_id            = module.redis.security_group_id
+  referenced_security_group_id = module.redis_private_link.nlb_security_group_id
   from_port                    = module.redis.port
   to_port                      = module.redis.port
   ip_protocol                  = "tcp"

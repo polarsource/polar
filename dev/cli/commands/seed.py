@@ -101,11 +101,6 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             "--reset",
             help="Recreate the database before loading fresh seed data.",
         ),
-        skip_tinybird: bool = typer.Option(
-            False,
-            "--skip-tinybird",
-            help="Skip seeding events to Tinybird.",
-        ),
     ) -> None:
         """Load sample data (users, organizations, products) into the database."""
         console.print()
@@ -140,8 +135,6 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
             _print_info("Loading fresh seed data. This usually takes a few minutes.")
             seed_cmd = ["uv", "run", "task", "seeds_load"]
-            if skip_tinybird:
-                seed_cmd.append("--skip-tinybird")
             with step_spinner("Seeding database..."):
                 result = run_command(seed_cmd, cwd=SERVER_DIR, capture=True)
             if not result or result.returncode != 0:
@@ -170,9 +163,6 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             console.print()
 
             cmd = ["uv", "run", "task", "seeds_load"]
-
-        if skip_tinybird:
-            cmd.append("--skip-tinybird")
 
         _print_info("This usually takes a few minutes.")
         with step_spinner("Seeding database..."):

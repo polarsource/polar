@@ -124,8 +124,8 @@ async def get(
                 {
                     "loc": ("query",),
                     "msg": (
-                        "The interval is too big. "
-                        "Try to change the interval or reduce the date range."
+                        "The interval is too small for the given date range. "
+                        "Use a larger interval or reduce the date range."
                     ),
                     "type": "value_error",
                     "input": (start_date, end_date, interval),
@@ -210,8 +210,8 @@ async def export(
                 {
                     "loc": ("query",),
                     "msg": (
-                        "The interval is too big. "
-                        "Try to change the interval or reduce the date range."
+                        "The interval is too small for the given date range. "
+                        "Use a larger interval or reduce the date range."
                     ),
                     "type": "value_error",
                     "input": (start_date, end_date, interval),

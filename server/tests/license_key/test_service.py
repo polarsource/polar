@@ -2,8 +2,13 @@ import asyncio
 from uuid import UUID
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy import delete, func, select
 
+from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.strategies.license_keys.schemas import (
+    BenefitLicenseKeysCreateProperties,
+)
 from polar.config import settings
 from polar.exceptions import NotPermitted
 from polar.kit.db.postgres import (
@@ -12,11 +17,23 @@ from polar.kit.db.postgres import (
     create_async_sessionmaker,
 )
 from polar.license_key.repository import LicenseKeyRepository
-from polar.license_key.schemas import LicenseKeyActivate
+from polar.license_key.schemas import LicenseKeyActivate, LicenseKeyUpdate
 from polar.license_key.service import license_key as license_key_service
-from polar.models import Account, LicenseKey, LicenseKeyActivation, Organization, User
+from polar.models import (
+    Account,
+    BenefitGrant,
+    Customer,
+    LicenseKey,
+    LicenseKeyActivation,
+    Organization,
+    Product,
+    User,
+)
 from polar.models.license_key import LicenseKeyStatus
-from tests.fixtures.database import get_database_url, save_fixture_factory
+from polar.postgres import AsyncSession
+from polar.redis import Redis
+from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
+from tests.fixtures.license_key import TestLicenseKey
 from tests.fixtures.random_objects import (
     create_account,
     create_benefit,
@@ -111,3 +128,147 @@ class TestConcurrentActivation:
                 await cleanup_session.execute(delete(User).where(User.id == user.id))
                 await cleanup_session.commit()
             await engine.dispose()
+
+
+async def _license_key_and_grant(
+    session: AsyncSession,
+    redis: Redis,
+    save_fixture: SaveFixture,
+    customer: Customer,
+    organization: Organization,
+    product: Product,
+) -> tuple[LicenseKey, BenefitGrant]:
+    benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+        session,
+        redis,
+        save_fixture,
+        customer=customer,
+        organization=organization,
+        product=product,
+        properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+    )
+    license_key_repository = LicenseKeyRepository.from_session(session)
+    license_key = await license_key_repository.get_by_id(
+        UUID(granted["license_key_id"])
+    )
+    assert license_key is not None
+
+    grant_repository = BenefitGrantRepository.from_session(session)
+    grant = await grant_repository.get_by_property_and_organization(
+        organization.id,
+        "license_key_id",
+        str(license_key.id),
+        benefit_id=benefit.id,
+    )
+    assert grant is not None
+    return license_key, grant
+
+
+@pytest.mark.asyncio
+class TestUpdate:
+    @pytest.mark.parametrize(
+        "status", [LicenseKeyStatus.granted, LicenseKeyStatus.disabled]
+    )
+    async def test_non_revoked_status_enqueues_sync(
+        self,
+        status: LicenseKeyStatus,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
+        license_key, grant = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+        license_key.status = LicenseKeyStatus.revoked
+        grant.set_revoked()
+        await save_fixture(grant)
+
+        await license_key_service.update(
+            session,
+            license_key=license_key,
+            updates=LicenseKeyUpdate(status=status),
+        )
+
+        assert license_key.status == status
+        enqueue_job_mock.assert_called_once_with(
+            "license_key.sync_benefit_grant", license_key_id=license_key.id
+        )
+
+    async def test_revoked_status_enqueues_sync(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
+        license_key, _ = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+
+        await license_key_service.update(
+            session,
+            license_key=license_key,
+            updates=LicenseKeyUpdate(status=LicenseKeyStatus.revoked),
+        )
+
+        assert license_key.status == LicenseKeyStatus.revoked
+        enqueue_job_mock.assert_called_once_with(
+            "license_key.sync_benefit_grant", license_key_id=license_key.id
+        )
+
+    async def test_status_already_matching_grant_does_not_enqueue(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
+        license_key, _ = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+
+        await license_key_service.update(
+            session,
+            license_key=license_key,
+            updates=LicenseKeyUpdate(status=LicenseKeyStatus.disabled),
+        )
+
+        assert license_key.status == LicenseKeyStatus.disabled
+        enqueue_job_mock.assert_not_called()
+
+    async def test_update_without_status_does_not_enqueue(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
+        license_key, _ = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+
+        await license_key_service.update(
+            session,
+            license_key=license_key,
+            updates=LicenseKeyUpdate(limit_activations=5),
+        )
+
+        assert license_key.limit_activations == 5
+        enqueue_job_mock.assert_not_called()

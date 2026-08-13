@@ -105,19 +105,15 @@ export default function ClientPage({
       ? `${sorting[0].desc ? '-' : ''}${sorting[0].id}`
       : 'name'
 
-  const debouncedQueryChange = useDebouncedCallback(
-    (query: string) => {
-      const searchParams = serializeSearchParams(pagination, sorting)
-      if (query) {
-        searchParams.set('query', query)
-      } else {
-        searchParams.delete('query')
-      }
-      router.replace(`${pathname}?${searchParams}`)
-    },
-    500,
-    [pagination, sorting, query, router, pathname],
-  )
+  const debouncedQueryChange = useDebouncedCallback((query: string) => {
+    const searchParams = serializeSearchParams(pagination, sorting)
+    if (query) {
+      searchParams.set('query', query)
+    } else {
+      searchParams.delete('query')
+    }
+    router.replace(`${pathname}?${searchParams}`)
+  }, 500)
 
   const onQueryChange = useCallback(
     (query: string) => {

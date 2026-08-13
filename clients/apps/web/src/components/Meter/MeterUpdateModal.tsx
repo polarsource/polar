@@ -1,7 +1,7 @@
 import { useMeter, useUpdateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
@@ -68,13 +68,17 @@ export const MeterUpdateModal = ({
   if (!meter) return null
 
   return (
-    <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
-      <h2 className="text-xl">Edit Meter</h2>
-      <p className="dark:text-polar-500 text-gray-500">
-        Meters are aggregations of events. You can create a meter to track
-        events that match a filter.
-      </p>
-      <div className="flex flex-col gap-y-6">
+    <div className="flex flex-col overflow-y-auto">
+      <InlineModalHeader hide={hide}>
+        <Text variant="heading-xxs" as="h2">
+          Edit Meter
+        </Text>
+      </InlineModalHeader>
+      <div className="flex flex-col gap-8 px-8 pb-12">
+        <p className="dark:text-polar-500 text-gray-500">
+          Meters are aggregations of events. You can create a meter to track
+          events that match a filter.
+        </p>
         <Form {...form}>
           <form
             onSubmit={handleSubmit(onSubmit)}

@@ -385,3 +385,24 @@ class TestResolvePendingParents:
         # Standalone root has root_id == self
         standalone = by_ext["standalone"]
         assert standalone.root_id == standalone.id
+
+    async def test_self_referential_event_is_not_its_own_parent(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        """
+        An event whose external_id == pending_parent_external_id must not
+        resolve itself as its own parent.
+        """
+        organization = await create_organization(save_fixture, account)
+        repository = EventRepository.from_session(session)
+
+        events = [_make_event(organization, "self", pending_parent_external_id="self")]
+        event_ids, _ = await repository.insert_batch(events)
+        resolved = await _resolve(repository, event_ids)
+
+        assert resolved == []
+        by_ext = await _get_events(session, organization)
+        self_event = by_ext["self"]
+        assert self_event.parent_id is None
+        assert self_event.pending_parent_external_id == "self"
+        assert self_event.root_id is None

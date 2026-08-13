@@ -2692,6 +2692,12 @@ class OrderService:
         )
         if customer_balance > 0:
             reduction_amount = min(customer_balance, order.due_amount)
+            # Record the reduction so `unvoid` can reverse it precisely,
+            # keeping a void -> unvoid round trip a no-op on the wallet.
+            order = await repository.update(
+                order,
+                update_dict={"void_balance_reduction": reduction_amount},
+            )
             await wallet_service.create_balance_transaction(
                 session,
                 order.customer,
@@ -2754,6 +2760,25 @@ class OrderService:
                 order.applied_balance_amount,
                 order.currency,
                 order=order,
+            )
+
+        # Restore the positive-balance reduction debited on void, mirroring the
+        # re-consumption above: the order is pending again, so the reduction that
+        # prevented double-dipping while void no longer applies.
+        if (
+            order.void_balance_reduction is not None
+            and order.void_balance_reduction > 0
+        ):
+            await wallet_service.create_balance_transaction(
+                session,
+                order.customer,
+                order.void_balance_reduction,
+                order.currency,
+                order=order,
+            )
+            order = await repository.update(
+                order,
+                update_dict={"void_balance_reduction": None},
             )
 
         await event_service.create_event(

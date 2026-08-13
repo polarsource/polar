@@ -213,6 +213,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
+    void_balance_reduction: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
+
     customer_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("customers.id"), nullable=False, index=True
     )

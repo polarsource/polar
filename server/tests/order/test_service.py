@@ -6063,6 +6063,133 @@ class TestUnvoidOrder:
         )
         assert new_balance == 1000
 
+    @pytest.mark.asyncio
+    async def test_void_unvoid_with_positive_balance_at_void_time(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Order consumes $1000 credit; due_amount is $2000
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+        wallet = await create_wallet_billing(
+            save_fixture, customer=customer, initial_balance=1000
+        )
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=-1000)
+
+        # Customer receives $500 additional credit (balance = $500)
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=500)
+
+        balance_before_void = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert balance_before_void == 500
+
+        # Void the order
+        order = await order_service.void(session, order)
+        balance_after_void = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        # $500 balance reduced by $500, then $1000 consumed balance restored
+        assert balance_after_void == 1000
+
+        # Unvoid the order
+        order = await order_service.unvoid(session, order)
+        balance_after_unvoid = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        # The void -> unvoid round trip must be a no-op on the wallet
+        assert balance_after_unvoid == 500
+
+    @pytest.mark.asyncio
+    async def test_void_unvoid_with_no_applied_balance_restores_reduction(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Order that did not consume any wallet balance; due_amount is $800
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=800,
+        )
+        wallet = await create_wallet_billing(
+            save_fixture, customer=customer, initial_balance=1000
+        )
+
+        balance_before_void = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert balance_before_void == 1000
+
+        # Void reduces the $1000 balance by min(1000, 800) = $800
+        order = await order_service.void(session, order)
+        balance_after_void = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert balance_after_void == 200
+
+        # Unvoid restores the reduction
+        order = await order_service.unvoid(session, order)
+        balance_after_unvoid = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert balance_after_unvoid == 1000
+
+    @pytest.mark.asyncio
+    async def test_void_unvoid_with_reduction_capped_by_due_amount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Order consumes $1000 credit; due_amount is $2000
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+        # Customer has $2000, equal to the $2000 due
+        wallet = await create_wallet_billing(
+            save_fixture, customer=customer, initial_balance=3000
+        )
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=-1000)
+
+        balance_before_void = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert balance_before_void == 2000
+
+        # Void reduces by min(2000, 2000) = $2000, then restores $1000 consumed
+        order = await order_service.void(session, order)
+        balance_after_void = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert balance_after_void == 1000
+
+        # Unvoid re-consumes $1000 and restores the $2000 reduction
+        order = await order_service.unvoid(session, order)
+        balance_after_unvoid = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert balance_after_unvoid == 2000
+
 
 @pytest.mark.asyncio
 class TestVoidPendingOrdersForSubscription:

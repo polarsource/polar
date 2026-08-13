@@ -81,12 +81,12 @@ export const CurrentPeriodOverview = ({
   // differ from the product's current catalog price (e.g. after the merchant
   // changes it). Show the locked base amount from the charge preview so the
   // headline matches the subtotal below, rather than the live catalog price.
-  // Seat-based prices keep their per-seat label, pending plan changes preview
-  // the upcoming product's price, and pure metered products have no base rate.
+  // This covers fixed, custom and seat-based prices (base_amount is the locked
+  // total across seats). Pending plan changes preview the upcoming product's
+  // price, and pure metered products have no fixed base rate to show.
   const hasPendingProduct = subscription.pending_update?.product_id != null
   const showLockedBaseAmount =
     !hasPendingProduct &&
-    !isSeatBasedProduct &&
     subscriptionPreview != null &&
     subscriptionPreview.base_amount > 0
 

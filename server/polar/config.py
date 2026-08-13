@@ -4,7 +4,7 @@ import tempfile
 from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 from urllib.parse import parse_qs, unquote, urlparse
 
 from annotated_types import Ge
@@ -130,7 +130,7 @@ class Settings(BaseSettings):
     # Authentication session
     AUTHENTICATION_SESSION_TTL: timedelta = timedelta(minutes=15)
     AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_auth_session"
-    AUTHENTICATION_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
+    AUTHENTICATION_SESSION_COOKIE_DOMAIN: str | None = "127.0.0.1"
 
     # Email OTP
     EMAIL_OTP_TTL: timedelta = timedelta(minutes=30)
@@ -143,13 +143,13 @@ class Settings(BaseSettings):
     # OAuth2 session state
     OAUTH2_SESSION_STATE_TTL: timedelta = timedelta(minutes=10)
     OAUTH2_SESSION_STATE_COOKIE_KEY: str = "polar_oauth2_state"
-    OAUTH2_SESSION_STATE_COOKIE_DOMAIN: str = "127.0.0.1"
+    OAUTH2_SESSION_STATE_COOKIE_DOMAIN: str | None = "127.0.0.1"
 
     # User session
     USER_SESSION_TTL: timedelta = timedelta(days=31)
     USER_SESSION_FRESHNESS_TTL: timedelta = timedelta(hours=1)
     USER_SESSION_COOKIE_KEY: str = "polar_session"
-    USER_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
+    USER_SESSION_COOKIE_DOMAIN: str | None = "127.0.0.1"
 
     # Customer session
     CUSTOMER_SESSION_TTL: timedelta = timedelta(hours=1)
@@ -601,6 +601,35 @@ class Settings(BaseSettings):
         if self.REDIS_URL:
             return self.REDIS_URL
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+    @model_validator(mode="after")
+    def apply_vercel_defaults(self) -> "Settings":
+        """Derive URL and cookie defaults from the deployment's own URL on Vercel.
+
+        Deployment URLs change with every deployment, so these can't be set
+        statically. The app origin serves the API under /api, and cookies are
+        host-only since no fixed Domain can match the deployment host.
+        Explicitly configured values are left untouched.
+        """
+        vercel_url = os.environ.get("VERCEL_URL")
+        if not self.is_vercel() or not vercel_url:
+            return self
+
+        defaults: dict[str, Any] = {
+            "FRONTEND_BASE_URL": f"https://{vercel_url}",
+            "BASE_URL": f"https://{vercel_url}/api",
+            "CHECKOUT_BASE_URL": (
+                f"https://{vercel_url}/api/v1/checkout-links/{{client_secret}}/redirect"
+            ),
+            "ALLOWED_HOSTS": {vercel_url},
+            "AUTHENTICATION_SESSION_COOKIE_DOMAIN": None,
+            "OAUTH2_SESSION_STATE_COOKIE_DOMAIN": None,
+            "USER_SESSION_COOKIE_DOMAIN": None,
+        }
+        for field, value in defaults.items():
+            if field not in self.model_fields_set:
+                setattr(self, field, value)
+        return self
 
     @model_validator(mode="after")
     def apply_postgres_url_non_pooling(self) -> "Settings":

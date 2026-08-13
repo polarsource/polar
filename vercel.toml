@@ -60,3 +60,6 @@ VERCEL_SUPPORT_LARGE_FUNCTIONS = "1"
 NEXT_IMAGE_UNOPTIMIZED = "1"
 # The browser reaches the API same-origin under /api; SSR uses the binding.
 NEXT_PUBLIC_API_URL = "/api"
+# The default vercel-dramatiq-bundle vendors vercel.queue, which would collide
+# with the real vercel-queue that vercel-apscheduler depends on.
+VERCEL_PYTHON_DRAMATIQ_DEPENDENCY = "vercel-dramatiq"

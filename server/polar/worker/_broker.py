@@ -1,6 +1,5 @@
 import contextlib
 import contextvars
-from collections.abc import Callable
 from typing import Any, ClassVar
 
 import dramatiq
@@ -67,7 +66,7 @@ class SchedulerMiddleware(dramatiq.Middleware):
     """Middleware to manage scheduled jobs using APScheduler."""
 
     def __init__(self) -> None:
-        self.cron_triggers: list[tuple[Callable[..., Any], CronTrigger]] = []
+        self.cron_triggers: list[tuple[str, CronTrigger]] = []
 
     @property
     def actor_options(self) -> set[str]:
@@ -77,7 +76,7 @@ class SchedulerMiddleware(dramatiq.Middleware):
         self, broker: dramatiq.Broker, actor: dramatiq.Actor[Any, Any]
     ) -> None:
         if cron_trigger := actor.options.get("cron_trigger"):
-            self.cron_triggers.append((actor.send, cron_trigger))
+            self.cron_triggers.append((actor.actor_name, cron_trigger))
 
 
 scheduler_middleware = SchedulerMiddleware()

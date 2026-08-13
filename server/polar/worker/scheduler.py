@@ -1,12 +1,23 @@
+"""APScheduler entrypoint.
+
+Resident deployments run ``start()``: the scheduler blocks in its own
+process, exposing a health endpoint fed by a main-loop heartbeat. Vercel
+deployments instead declare the module-level ``scheduler`` as a queue
+subscriber in pyproject.toml, driven by the vercel-apscheduler integration,
+so ``start()`` and its heartbeat never run there.
+"""
+
 import threading
 import time
 
+import dramatiq
 import logfire
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.base import STATE_STOPPED
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from polar import tasks
+from polar.config import settings
 from polar.logfire import configure_logfire
 from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
@@ -53,19 +64,47 @@ def _is_scheduler_healthy() -> bool:
     return (time.monotonic() - _last_heartbeat) < HEARTBEAT_STALENESS_SECONDS
 
 
+def enqueue_actor(actor_name: str) -> None:
+    dramatiq.get_broker().get_actor(actor_name).send()
+
+
+def _create_scheduler() -> BlockingScheduler:
+    scheduler = LogfireBlockingScheduler(timezone="UTC")
+
+    # On Vercel, cron jobs must live in the default job store, which is
+    # durable and serializes each job as a textual reference — hence the
+    # module-level ``enqueue_actor`` keyed by actor name and the stable id.
+    if settings.is_vercel():
+        cron_jobstore = "default"
+    else:
+        scheduler.add_jobstore(MemoryJobStore(), "memory")
+        cron_jobstore = "memory"
+
+    for actor_name, cron_trigger in sorted(
+        scheduler_middleware.cron_triggers, key=lambda item: item[0]
+    ):
+        scheduler.add_job(
+            enqueue_actor,
+            cron_trigger,
+            args=(actor_name,),
+            id=actor_name,
+            replace_existing=True,
+            jobstore=cron_jobstore,
+        )
+
+    scheduler.add_jobstore(SubscriptionJobStore(), "subscription")
+    scheduler.add_jobstore(SubscriptionResumeJobStore(), "subscription_resume")
+
+    return scheduler
+
+
+scheduler = _create_scheduler()
+
+
 def start() -> None:
     set_heartbeat_checker(_is_scheduler_healthy)
     health_thread = threading.Thread(target=_run_exposition_server, daemon=True)
     health_thread.start()
-
-    scheduler = LogfireBlockingScheduler()
-
-    scheduler.add_jobstore(MemoryJobStore(), "memory")
-    scheduler.add_jobstore(SubscriptionJobStore(), "subscription")
-    scheduler.add_jobstore(SubscriptionResumeJobStore(), "subscription_resume")
-
-    for func, cron_trigger in scheduler_middleware.cron_triggers:
-        scheduler.add_job(func, cron_trigger, jobstore="memory")
 
     try:
         scheduler.start()
@@ -73,7 +112,7 @@ def start() -> None:
         scheduler.shutdown()
 
 
-__all__ = ["start", "tasks"]
+__all__ = ["scheduler", "start", "tasks"]
 
 
 if __name__ == "__main__":

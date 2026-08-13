@@ -45,6 +45,7 @@ dependencies = [
   "taskipy>=1.10.3",
   "psycopg2-binary>=2.9.12",
   "apscheduler>=3.11.3",
+  "vercel-apscheduler>=0.2.0",
   "plain-client>=0.0.3",
   "tagflow>=0.7.0",
   "exponent-server-sdk>=2.1.0",
@@ -198,7 +199,7 @@ warn_untyped_fields = true
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { reauth = false, polar-sdk = false } # Reauth and the Polar SDK are brand new, but remember to remove these exclusions when stabilized
+exclude-newer-package = { reauth = false, polar-sdk = false, vercel-apscheduler = false } # Reauth, the Polar SDK and vercel-apscheduler are brand new, but remember to remove these exclusions when stabilized
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }
@@ -208,3 +209,13 @@ entrypoint = "polar.app:app"
 
 [[tool.vercel.subscribers]]
 entrypoint = "polar.worker.run:broker"
+
+# Scoped to the scheduler's own wake topics: the module imports the dramatiq
+# broker, whose queue subscriptions would otherwise attach here too.
+[[tool.vercel.subscribers]]
+entrypoint = "polar.worker.scheduler:scheduler"
+topics = ["__aps_*"]
+
+[tool.vercel.apscheduler.previews]
+enabled = true
+idle_timeout = "30m"

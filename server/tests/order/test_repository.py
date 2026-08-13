@@ -5,9 +5,42 @@ from pytest_mock import MockerFixture
 from sqlalchemy import Select
 from sqlalchemy.dialects import postgresql
 
-from polar.models import Order
+from polar.models import Customer, Order
+from polar.models.order import OrderStatus
 from polar.order.repository import OrderRepository
+from polar.order.sorting import OrderSortProperty
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_order
+
+
+@pytest.mark.asyncio
+class TestGetSortingClause:
+    async def test_status(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        expected_statuses = [
+            OrderStatus.draft,
+            OrderStatus.pending,
+            OrderStatus.paid,
+            OrderStatus.partially_refunded,
+            OrderStatus.refunded,
+            OrderStatus.void,
+        ]
+        for status in reversed(expected_statuses):
+            await create_order(save_fixture, customer=customer, status=status)
+
+        repository = OrderRepository.from_session(session)
+        statement = repository.apply_sorting(
+            repository.get_base_statement(),
+            [(OrderSortProperty.status, False)],
+        )
+        orders = await repository.get_all(statement)
+
+        assert [order.status for order in orders] == expected_statuses
 
 
 @pytest.mark.asyncio

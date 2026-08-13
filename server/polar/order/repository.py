@@ -457,10 +457,12 @@ class OrderRepository(
                 return Order.created_at
             case OrderSortProperty.status:
                 return case(
-                    (Order.status == OrderStatus.pending, 1),
-                    (Order.status == OrderStatus.paid, 2),
-                    (Order.status == OrderStatus.refunded, 3),
+                    (Order.status == OrderStatus.draft, 1),
+                    (Order.status == OrderStatus.pending, 2),
+                    (Order.status == OrderStatus.paid, 3),
                     (Order.status == OrderStatus.partially_refunded, 4),
+                    (Order.status == OrderStatus.refunded, 5),
+                    (Order.status == OrderStatus.void, 6),
                 )
             case OrderSortProperty.invoice_number:
                 return Order.invoice_number

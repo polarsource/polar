@@ -1310,8 +1310,11 @@ class OrderService:
         Returns:
             The created Order object.
         """
+        include_metered = (
+            billing_reason != OrderBillingReasonInternal.subscription_update
+        )
         async with billing_entry_service.create_order_items_from_pending(
-            session, subscription, cutoff=cutoff
+            session, subscription, include_metered=include_metered, cutoff=cutoff
         ) as items:
             if len(items) == 0:
                 raise NoPendingBillingEntries(subscription)

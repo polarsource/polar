@@ -1883,54 +1883,71 @@ class TestCreateSubscriptionOrder:
 
         subscription_service_mock.reset_meters.assert_not_awaited()
 
-    async def test_subscription_update_does_not_reset_meters(
+    async def test_subscription_update_leaves_metered_entries_pending(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        product_recurring_metered: Product,
+        product_recurring_fixed_and_metered: Product,
         customer: Customer,
         organization: Organization,
     ) -> None:
         """
-        Regression test for meter credit loss during subscription updates.
-
-        When a subscription_update order is created, meters should NOT be reset.
-        This ensures that meter credits from benefit grants remain valid for
-        the current billing cycle.
-
-        Bug context: Customers were being charged for metered usage even when
-        they had sufficient credited units, because subscription_update orders
-        were resetting meters mid-cycle without re-applying benefit credits.
+        Metered usage and its credits belong to the whole billing period, so an
+        update order bills the prorated static prices only and leaves the metered
+        entries pending for the next cycle. Meters are not reset either.
         """
         subscription_service_mock = mocker.patch(
             "polar.order.service.subscription_service", spec=SubscriptionService
         )
 
         subscription = await create_active_subscription(
-            save_fixture, product=product_recurring_metered, customer=customer
+            save_fixture,
+            product=product_recurring_fixed_and_metered,
+            customer=customer,
         )
 
+        fixed_price = next(
+            price
+            for price in product_recurring_fixed_and_metered.prices
+            if is_fixed_price(price)
+        )
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=fixed_price,
+            amount=2000,
+            currency=fixed_price.price_currency,
+            subscription=subscription,
+        )
+
+        metered_subscription_price = next(
+            subscription_price
+            for subscription_price in subscription.subscription_product_prices
+            if not is_static_price(subscription_price.product_price)
+        )
         event = await create_event(
             save_fixture,
             organization=organization,
             customer=customer,
         )
-        await save_fixture(
-            BillingEntry.from_metered_event(
-                customer, subscription.subscription_product_prices[0], event
-            )
+        metered_entry = BillingEntry.from_metered_event(
+            customer, metered_subscription_price, event
         )
+        await save_fixture(metered_entry)
 
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReasonInternal.subscription_update
         )
 
         assert len(order.items) == 1
-        assert order.subtotal_amount == 100
+        assert order.items[0].product_price == fixed_price
+        assert order.subtotal_amount == 2000
 
-        # subscription_update should NOT reset meters
-        # This ensures meter credits from benefit grants remain valid
+        await session.refresh(metered_entry)
+        assert metered_entry.order_item_id is None
+
         subscription_service_mock.reset_meters.assert_not_awaited()
 
     async def test_positive_order_positive_customer_balance(

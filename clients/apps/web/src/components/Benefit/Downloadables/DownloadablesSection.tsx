@@ -7,11 +7,17 @@ import { useDownloadFile } from '@/hooks/queries/files'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import { schemas } from '@polar-sh/client'
-import { Button, List, ListItem, Text } from '@polar-sh/orbit'
+import {
+  Button,
+  DataTable,
+  Text,
+  type DataTableColumnDef,
+  type DataTablePaginationState,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
-const DownloadableFileItem = ({
+const DownloadFileButton = ({
   file,
 }: {
   file: schemas['BenefitDownloadableFile']
@@ -40,77 +46,90 @@ const DownloadableFileItem = ({
   }, [downloadFile, file.name])
 
   return (
-    <ListItem>
-      <Box minWidth={0} flexGrow={1} flexDirection="column" rowGap="xs">
-        <Text truncate>{file.name}</Text>
-        <Box display={{ base: 'flex', md: 'none' }} columnGap="s">
-          <Text variant="caption" color="muted" tabularNums>
-            <Text
-              as="span"
-              variant="caption"
-              color="muted"
-              formatter="number"
-              tabularNums
-            >
-              {file.downloaders}
-            </Text>{' '}
-            downloaders
-          </Text>
-          <Text variant="caption" color="muted" tabularNums>
-            ·{' '}
-            <Text
-              as="span"
-              variant="caption"
-              color="muted"
-              formatter="number"
-              tabularNums
-            >
-              {file.downloads}
-            </Text>{' '}
-            downloads
-          </Text>
-        </Box>
-      </Box>
-      <Box flexShrink={0} alignItems="center" columnGap="m">
-        <Box
-          display={{ base: 'none', md: 'flex' }}
-          width={88}
-          justifyContent="end"
-        >
-          <Text color="muted" formatter="number" tabularNums>
-            {file.downloaders}
-          </Text>
-        </Box>
-        <Box
-          display={{ base: 'none', md: 'flex' }}
-          width={88}
-          justifyContent="end"
-        >
-          <Text color="muted" formatter="number" tabularNums>
-            {file.downloads}
-          </Text>
-        </Box>
-        <Box width={80} justifyContent="end">
-          <Text color="muted" tabularNums>
-            {file.size_readable}
-          </Text>
-        </Box>
-        <Box width={32}>
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-8 w-8"
-            onClick={onDownload}
-            loading={downloadFile.isPending}
-            aria-label={`Download ${file.name}`}
-          >
-            <ArrowDownward fontSize="inherit" />
-          </Button>
-        </Box>
-      </Box>
-    </ListItem>
+    <Button
+      size="icon"
+      variant="secondary"
+      className="h-8 w-8"
+      onClick={onDownload}
+      loading={downloadFile.isPending}
+      aria-label={`Download ${file.name}`}
+    >
+      <ArrowDownward fontSize="inherit" />
+    </Button>
   )
 }
+
+const columns: DataTableColumnDef<schemas['BenefitDownloadableFile']>[] = [
+  {
+    accessorKey: 'name',
+    header: 'File',
+    cell: ({ row: { original } }) => <Text truncate>{original.name}</Text>,
+  },
+  {
+    accessorKey: 'downloaders',
+    header: () => (
+      <Box width="100%" justifyContent="end">
+        <Text variant="caption" color="muted">
+          Downloaders
+        </Text>
+      </Box>
+    ),
+    size: 120,
+    cell: ({ row: { original } }) => (
+      <Box justifyContent="end">
+        <Text color="muted" formatter="number" tabularNums>
+          {original.downloaders}
+        </Text>
+      </Box>
+    ),
+  },
+  {
+    accessorKey: 'downloads',
+    header: () => (
+      <Box width="100%" justifyContent="end">
+        <Text variant="caption" color="muted">
+          Downloads
+        </Text>
+      </Box>
+    ),
+    size: 120,
+    cell: ({ row: { original } }) => (
+      <Box justifyContent="end">
+        <Text color="muted" formatter="number" tabularNums>
+          {original.downloads}
+        </Text>
+      </Box>
+    ),
+  },
+  {
+    accessorKey: 'size_readable',
+    header: () => (
+      <Box width="100%" justifyContent="end">
+        <Text variant="caption" color="muted">
+          Size
+        </Text>
+      </Box>
+    ),
+    size: 100,
+    cell: ({ row: { original } }) => (
+      <Box justifyContent="end">
+        <Text color="muted" tabularNums>
+          {original.size_readable}
+        </Text>
+      </Box>
+    ),
+  },
+  {
+    id: 'actions',
+    header: () => null,
+    size: 56,
+    cell: ({ row: { original } }) => (
+      <Box justifyContent="end">
+        <DownloadFileButton file={original} />
+      </Box>
+    ),
+  },
+]
 
 export const DownloadablesSection = ({
   benefit,
@@ -120,54 +139,42 @@ export const DownloadablesSection = ({
   const { files, archived } = benefit.properties
   const activeFileIds = files.filter((id) => !archived[id])
   const archivedCount = files.length - activeFileIds.length
-  const { data, isLoading } = useBenefitFiles(benefit.id, activeFileIds.length)
+  const [pagination, setPagination] = useState<DataTablePaginationState>({
+    pageIndex: 0,
+    pageSize: 20,
+  })
+  const { data, isLoading } = useBenefitFiles(
+    benefit.id,
+    {
+      page: pagination.pageIndex + 1,
+      limit: pagination.pageSize,
+    },
+    activeFileIds.length > 0,
+  )
+  const activeCount = data?.pagination.total_count ?? activeFileIds.length
 
   return (
     <OrderSection
       title="Files"
       description={
         <Text color="muted">
-          {activeFileIds.length} active
+          {activeCount} active
           {archivedCount > 0 ? `, ${archivedCount} archived` : ''}
         </Text>
       }
     >
       {activeFileIds.length === 0 ? (
         <Text color="muted">No files uploaded yet</Text>
-      ) : isLoading ? (
-        <Text loading placeholderText="File name" />
       ) : (
-        <Box flexDirection="column" rowGap="s">
-          <Box
-            display={{ base: 'none', md: 'flex' }}
-            alignItems="center"
-            columnGap="m"
-            paddingHorizontal="l"
-          >
-            <Box flexGrow={1} />
-            <Box width={88} justifyContent="end">
-              <Text variant="caption" color="muted">
-                Downloaders
-              </Text>
-            </Box>
-            <Box width={88} justifyContent="end">
-              <Text variant="caption" color="muted">
-                Downloads
-              </Text>
-            </Box>
-            <Box width={80} justifyContent="end">
-              <Text variant="caption" color="muted">
-                Size
-              </Text>
-            </Box>
-            <Box width={32} />
-          </Box>
-          <List size="small">
-            {(data?.items ?? []).map((file) => (
-              <DownloadableFileItem key={file.id} file={file} />
-            ))}
-          </List>
-        </Box>
+        <DataTable
+          columns={columns}
+          data={data?.items ?? []}
+          isLoading={isLoading}
+          rowCount={data?.pagination.total_count ?? 0}
+          pageCount={data?.pagination.max_page ?? 1}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+        />
       )}
     </OrderSection>
   )

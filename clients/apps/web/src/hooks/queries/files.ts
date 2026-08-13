@@ -63,6 +63,10 @@ export const useDownloadFile = (
         return
       }
 
+      getQueryClient().invalidateQueries({
+        queryKey: ['benefits', 'files'],
+      })
+
       if (onSuccessCallback) {
         onSuccessCallback(response.data)
       }

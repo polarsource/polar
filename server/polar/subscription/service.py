@@ -2287,6 +2287,9 @@ class SubscriptionService:
         now = utc_now()
         subscription.canceled_at = now
 
+        subscription.pause_at_period_end = False
+        subscription.resumes_at = None
+
         if customer_reason:
             subscription.customer_cancellation_reason = customer_reason
 

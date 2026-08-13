@@ -1,9 +1,11 @@
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
-from typing import TypedDict
+from typing import Any, TypedDict
 from uuid import UUID
 
 import stripe as stripe_lib
+import structlog
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -12,7 +14,8 @@ from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
-from polar.models import MerchantMigration, MerchantMigrationRecord
+from polar.logging import Logger
+from polar.models import MerchantMigration, MerchantMigrationRecord, Subscription
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
@@ -24,14 +27,20 @@ from polar.models.merchant_migration_record import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
+from polar.worker import enqueue_job
 
 from . import pan_transfer
 from .adapters import SourceAdapter, StripeAdapter
 from .canonical import CanonicalRecord, deserialize
+from .cards import link_payment_method
 from .errors import MerchantMigrationError
 from .importer import CatalogImporter
 from .pan_transfer import (
+    STEP_VERIFY_CARDS,
     PanStepActor,
+    PanStepOwner,
+    PanStepStatus,
     PanTransferAlreadyStarted,
     PanTransferNotReady,
     PanTransferNotStarted,
@@ -54,6 +63,7 @@ from .schemas import (
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordSummaryEntity,
+    PanTransferCardCoverage,
     PanTransferChecklist,
     PrecheckEntity,
     PrecheckIssue,
@@ -61,6 +71,8 @@ from .schemas import (
     PrecheckRecordStatus,
     PrecheckReport,
 )
+
+log: Logger = structlog.get_logger()
 
 IMPORTABLE_STEPS = {
     MerchantMigrationStep.pre_check,
@@ -79,6 +91,17 @@ SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "table": "merchant_migrations",
     "column": "source_credentials",
 }
+
+# Checklist steps Polar performs itself, and the job that performs them. A step
+# here is never completed by a person: becoming current is what schedules the
+# work, and the work is what completes it.
+_STEP_TASKS = {STEP_VERIFY_CARDS: "merchant_migration.verify_cards"}
+
+
+# How many subscriptions one card-check run looks at before handing over to the
+# next: a Stripe round trip per customer adds up, and a worker shouldn't hold a
+# transaction open for a whole catalog.
+CARD_VERIFICATION_BATCH_SIZE = 25
 
 
 class StripeSourceCredentials(TypedDict):
@@ -274,7 +297,7 @@ class MerchantMigrationService:
         if create_schema.source_platform != MerchantMigrationSourcePlatform.stripe:
             raise UnsupportedMigrationSource(create_schema.source_platform)
 
-        # The key's mode must match the Polar environment, so a live cutover never
+        # The key's mode must match the Polar environment, so a live switch never
         # runs against Stripe test data (and a sandbox run never touches live data).
         expect_live = settings.is_production()
         if _is_live_key(create_schema.api_key) != expect_live:
@@ -407,7 +430,7 @@ class MerchantMigrationService:
         """The card-move checklist. Returns an empty one before it's started, so
         the client can show the method and the destination account up front."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
-        return self._checklist(migration)
+        return await self._checklist(session, migration)
 
     async def start_pan_transfer(
         self,
@@ -440,7 +463,7 @@ class MerchantMigrationService:
                 "pan_transfer_steps": steps,
             },
         )
-        return self._checklist(migration, steps)
+        return await self._checklist(session, migration, steps)
 
     async def complete_pan_step(
         self,
@@ -485,6 +508,12 @@ class MerchantMigrationService:
         actor: PanStepActor,
         inputs: dict[str, str],
     ) -> PanTransferChecklist:
+        """Move the checklist on, whoever is asking.
+
+        The single transition point on purpose: a step Polar performs is
+        scheduled by becoming current, so completing one anywhere else would
+        leave it unscheduled forever.
+        """
         if not migration.pan_transfer_steps:
             raise PanTransferNotStarted()
 
@@ -495,9 +524,28 @@ class MerchantMigrationService:
             actor=actor,
             inputs=inputs,
         )
+        await self._advance_checklist(session, migration, steps)
+        return await self._checklist(session, migration, steps)
+
+    async def _advance_checklist(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        steps: Sequence[PanTransferStep],
+        **extra: Any,
+    ) -> None:
+        """Persist the checklist and schedule the job for a step Polar
+        performs itself."""
+        current = pan_transfer.current(steps)
+        update_dict: dict[str, Any] = {"pan_transfer_steps": list(steps), **extra}
         repository = MerchantMigrationRepository.from_session(session)
-        await repository.update(migration, update_dict={"pan_transfer_steps": steps})
-        return self._checklist(migration, steps)
+        await repository.update(migration, update_dict=update_dict)
+
+        if current is None or current.owner != PanStepOwner.polar_app:
+            return
+        task = _STEP_TASKS.get(current.key)
+        if task is not None:
+            enqueue_job(task, merchant_migration_id=migration.id)
 
     async def annotate_pan_step(
         self,
@@ -525,10 +573,88 @@ class MerchantMigrationService:
         )
         repository = MerchantMigrationRepository.from_session(session)
         await repository.update(migration, update_dict={"pan_transfer_steps": steps})
-        return self._checklist(migration, steps)
+        return await self._checklist(session, migration, steps)
 
-    def _checklist(
+    async def run_card_verification(
+        self, session: AsyncSession, migration_id: UUID, *, offset: int = 0
+    ) -> None:
+        """Link the cards that have landed on Polar to the imported
+        subscriptions, a batch at a time (the `verify_cards` step).
+
+        Read-only against the source and idempotent: re-running only picks up
+        cards that arrived since, which is what lets the merchant re-run the copy
+        for the customers it missed.
+        """
+        migration = await self._load(session, migration_id)
+        if migration is None:
+            return
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.list_imported_subscriptions(
+            migration.id, offset=offset, limit=CARD_VERIFICATION_BATCH_SIZE
+        )
+        subscription_repository = SubscriptionRepository.from_session(session)
+        for record in records:
+            if record.target_id is None:
+                continue
+            subscription = await subscription_repository.get_by_id(
+                record.target_id, options=(joinedload(Subscription.customer),)
+            )
+            # Already covered, or gone from Polar: nothing to link either way.
+            if subscription is None or subscription.payment_method_id is not None:
+                continue
+            payment_method = await link_payment_method(session, subscription.customer)
+            if payment_method is None:
+                continue
+            await subscription_repository.update(
+                subscription, update_dict={"payment_method_id": payment_method.id}
+            )
+
+        if len(records) == CARD_VERIFICATION_BATCH_SIZE:
+            enqueue_job(
+                "merchant_migration.verify_cards",
+                merchant_migration_id=migration.id,
+                offset=offset + CARD_VERIFICATION_BATCH_SIZE,
+            )
+            return
+
+        steps = self._complete_step(migration, STEP_VERIFY_CARDS)
+        if steps is not None:
+            await self._advance_checklist(session, migration, steps)
+
+    def _complete_step(
+        self, migration: MerchantMigration, key: str
+    ) -> Sequence[PanTransferStep] | None:
+        """Mark a step Polar performs as done, or None when it isn't ours to
+        move — the work already finished once, or the merchant restarted."""
+        current = pan_transfer.current(migration.pan_transfer_steps)
+        if current is None or current.key != key:
+            return None
+        return pan_transfer.complete(
+            migration.pan_transfer_method,
+            list(migration.pan_transfer_steps),
+            key,
+            actor=PanStepActor.system,
+            inputs={},
+        )
+
+    async def _load(
+        self, session: AsyncReadSession, migration_id: UUID
+    ) -> MerchantMigration | None:
+        """Load a migration outside a request, for the background work. One
+        deleted mid-run just stops the run."""
+        migration = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration_id
+        )
+        if migration is None:
+            log.warning(
+                "merchant_migration.missing", merchant_migration_id=migration_id
+            )
+        return migration
+
+    async def _checklist(
         self,
+        session: AsyncReadSession,
         migration: MerchantMigration,
         # `Sequence`, not `list`: this class defines a `list` method, which would
         # shadow the builtin in an annotation evaluated in the class body.
@@ -544,7 +670,29 @@ class MerchantMigrationService:
             destination_account_id=(
                 settings.MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID or None
             ),
+            card_coverage=await self._card_coverage(session, migration, steps),
             steps=steps,
+        )
+
+    async def _card_coverage(
+        self,
+        session: AsyncReadSession,
+        migration: MerchantMigration,
+        steps: Sequence[PanTransferStep],
+    ) -> PanTransferCardCoverage | None:
+        """What the card check found, once it has run. Counted on read rather
+        than stored, so re-running the copy keeps the number honest."""
+        if not self._step_completed(steps, STEP_VERIFY_CARDS):
+            return None
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        covered, total = await record_repository.count_linked_payment_methods(
+            migration.id
+        )
+        return PanTransferCardCoverage(covered=covered, total=total)
+
+    def _step_completed(self, steps: Sequence[PanTransferStep], key: str) -> bool:
+        return any(
+            step.key == key and step.status == PanStepStatus.completed for step in steps
         )
 
     async def _get_manageable(

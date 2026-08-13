@@ -194,6 +194,20 @@ class PanTransferStepComplete(Schema):
     )
 
 
+class PanTransferCardCoverage(Schema):
+    """How far the moved cards got, once Polar has looked for them.
+
+    "Payment method", not "card": a copied ACH or SEPA mandate is just as
+    chargeable, so counting one as uncovered would send the merchant chasing a
+    customer who needs nothing.
+    """
+
+    covered: int = Field(
+        description="Imported subscriptions with a payment method on Polar."
+    )
+    total: int = Field(description="Imported subscriptions in this migration.")
+
+
 class PanTransferChecklist(Schema):
     method: PanTransferMethod = Field(
         description=(
@@ -211,6 +225,13 @@ class PanTransferChecklist(Schema):
         description=(
             "The Stripe account the cards move into. The merchant needs it to "
             "address the copy or import to Polar."
+        )
+    )
+    card_coverage: PanTransferCardCoverage | None = Field(
+        description=(
+            "What the card check found, once it has run. Null before then. The "
+            "shortfall is what the `resolve_uncovered` step asks the merchant to "
+            "chase."
         )
     )
     steps: Sequence[PanTransferStep] = Field(

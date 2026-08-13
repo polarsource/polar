@@ -10,9 +10,11 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.enums import PaymentProcessor
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
+from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -23,6 +25,14 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+)
+from polar.merchant_migration.pan_transfer import (
+    STEP_RESOLVE_UNCOVERED,
+    STEP_VERIFY_CARDS,
+    PanStepActor,
+    PanStepOwner,
+    PanTransferMethod,
+    PanTransferStep,
 )
 from polar.merchant_migration.repository import (
     MerchantMigrationRecordRepository,
@@ -49,7 +59,9 @@ from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
     Customer,
     MerchantMigration,
+    MerchantMigrationRecord,
     Organization,
+    PaymentMethod,
     Product,
     Subscription,
     User,
@@ -68,7 +80,9 @@ from polar.models.product_price import ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
+from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_customer, create_subscription
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
@@ -1408,3 +1422,141 @@ class TestSummarizeRecords:
         products = by_entity[PrecheckEntity.products]
         assert products.imported == 0
         assert products.selectable == 1
+
+
+_STEP_ACTORS = {
+    PanStepOwner.merchant: PanStepActor.merchant,
+    PanStepOwner.polar_ops: PanStepActor.ops,
+    PanStepOwner.stripe: PanStepActor.ops,
+    PanStepOwner.provider: PanStepActor.ops,
+    PanStepOwner.polar_app: PanStepActor.system,
+}
+
+
+def _steps_until(method: PanTransferMethod, target_key: str) -> list[PanTransferStep]:
+    """A checklist walked forward to ``target_key``, with everything before it
+    completed by whoever owns it: what the merchant would have clicked through.
+    """
+    steps = pan_transfer.build(method)
+    while True:
+        current = pan_transfer.current(steps)
+        if current is None or current.key == target_key:
+            return steps
+        steps = pan_transfer.complete(
+            method, steps, current.key, actor=_STEP_ACTORS[current.owner], inputs={}
+        )
+
+
+async def _imported_subscription(
+    save_fixture: SaveFixture,
+    migration: MerchantMigration,
+    organization: Organization,
+    product: Product,
+    *,
+    source_id: str,
+    email: str,
+) -> MerchantMigrationRecord:
+    """One paused subscription in Polar, staged as imported. The card check
+    reads the ledger row and its target, never the canonical blob."""
+    customer = await create_customer(
+        save_fixture, organization=organization, email=email
+    )
+    subscription = await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.paused,
+    )
+    record = MerchantMigrationRecord(
+        merchant_migration=migration,
+        organization=organization,
+        type=MerchantMigrationRecordType.subscription,
+        status=MerchantMigrationRecordStatus.imported,
+        source_id=source_id,
+        target_id=subscription.id,
+        canonical={},
+    )
+    await save_fixture(record)
+    return record
+
+
+@pytest.mark.asyncio
+class TestRunCardVerification:
+    async def test_links_landed_cards_and_reports_the_shortfall(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """The count is what the next step asks the merchant to chase, so it has
+        to be a number the UI can render, not prose."""
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.copy_cards
+        migration.pan_transfer_steps = _steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+        covered = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_covered",
+            email="covered@example.com",
+        )
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_uncovered",
+            email="uncovered@example.com",
+        )
+        assert covered.target_id is not None
+        subscription_repository = SubscriptionRepository.from_session(session)
+        landed = await subscription_repository.get_by_id(covered.target_id)
+        assert landed is not None
+        payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_copied",
+            type="card",
+            method_metadata={},
+            customer_id=landed.customer_id,
+        )
+        await save_fixture(payment_method)
+        mocker.patch(
+            "polar.merchant_migration.service.link_payment_method",
+            new=mocker.AsyncMock(
+                side_effect=lambda _session, customer: (
+                    payment_method if customer.id == landed.customer_id else None
+                )
+            ),
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        checklist = await service._checklist(session, migration)
+        assert checklist.card_coverage is not None
+        assert checklist.card_coverage.covered == 1
+        assert checklist.card_coverage.total == 2
+        # The step is done, so the merchant is asked to chase the other one.
+        assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
+
+    async def test_reports_no_coverage_before_it_has_run(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = _steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+
+        checklist = await service._checklist(session, migration)
+
+        assert checklist.card_coverage is None

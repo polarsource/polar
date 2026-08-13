@@ -12,7 +12,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import MerchantMigration, MerchantMigrationRecord
+from polar.models import MerchantMigration, MerchantMigrationRecord, Subscription
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -241,6 +241,59 @@ class MerchantMigrationRecordRepository(
             .limit(limit)
         )
         return await self.get_all(statement)
+
+    def _imported_subscriptions_statement(
+        self, migration_id: UUID
+    ) -> Select[tuple[MerchantMigrationRecord]]:
+        """Subscriptions that made it into Polar: what the card check reads.
+
+        Ordered so a batched pass and a chained one see the same sequence.
+        """
+        return (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type
+                == MerchantMigrationRecordType.subscription,
+                MerchantMigrationRecord.status
+                == MerchantMigrationRecordStatus.imported,
+            )
+            .order_by(
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
+        )
+
+    async def list_imported_subscriptions(
+        self, migration_id: UUID, *, offset: int = 0, limit: int | None = None
+    ) -> Sequence[MerchantMigrationRecord]:
+        statement = self._imported_subscriptions_statement(migration_id).offset(offset)
+        if limit is not None:
+            statement = statement.limit(limit)
+        return await self.get_all(statement)
+
+    async def count_linked_payment_methods(self, migration_id: UUID) -> tuple[int, int]:
+        """``(with a method to charge, total)`` over the imported subscriptions.
+
+        Any linked method counts, not only cards: ACH and SEPA move with the copy
+        and Polar can charge them. `CanonicalPaymentMethodType.requires_reentry`
+        names the types that genuinely can't move.
+        """
+        statement = (
+            self._imported_subscriptions_statement(migration_id)
+            .join(
+                Subscription,
+                (Subscription.id == MerchantMigrationRecord.target_id)
+                & Subscription.deleted_at.is_(None),
+            )
+            .with_only_columns(
+                func.count(Subscription.payment_method_id),
+                func.count(Subscription.id),
+            )
+            .order_by(None)
+        )
+        covered, total = (await self.session.execute(statement)).one()
+        return covered, total
 
     async def upsert(
         self,

@@ -29555,16 +29555,12 @@ export interface components {
     }
     /**
      * PanTransferCardCoverage
-     * @description How far the moved cards got, once Polar has looked for them.
-     *
-     *     "Payment method", not "card": a copied ACH or SEPA mandate is just as
-     *     chargeable, so counting one as uncovered would send the merchant chasing a
-     *     customer who needs nothing.
+     * @description How many imported subscriptions Polar can charge, once it has looked.
      */
     PanTransferCardCoverage: {
       /**
        * Covered
-       * @description Imported subscriptions with a payment method on Polar.
+       * @description Imported subscriptions with a payment method on Polar. Any type counts, not only cards: a bank debit is just as chargeable.
        */
       covered: number
       /**

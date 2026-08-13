@@ -275,7 +275,7 @@ class MerchantMigrationRecordRepository(
     async def count_linked_payment_methods(self, migration_id: UUID) -> tuple[int, int]:
         """``(with a method to charge, total)`` over the imported subscriptions.
 
-        Any linked method counts, not only cards: ACH and SEPA move with the copy
+        Any linked method counts, not only cards: bank debits move with the copy
         and Polar can charge them. `CanonicalPaymentMethodType.requires_reentry`
         names the types that genuinely can't move.
         """

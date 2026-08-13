@@ -94,8 +94,6 @@ _ACTOR_OWNERS: dict[PanStepActor, frozenset[PanStepOwner]] = {
 
 _ACTIONABLE = (PanStepStatus.pending, PanStepStatus.in_progress)
 
-# The tail of the checklist, shared by both methods. Named because the service
-# keys the automated work and the cutover phase off them.
 STEP_VERIFY_CARDS = "verify_cards"
 STEP_RESOLVE_UNCOVERED = "resolve_uncovered"
 STEP_CUTOVER = "cutover"

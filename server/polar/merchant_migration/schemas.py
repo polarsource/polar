@@ -195,15 +195,13 @@ class PanTransferStepComplete(Schema):
 
 
 class PanTransferCardCoverage(Schema):
-    """How far the moved cards got, once Polar has looked for them.
-
-    "Payment method", not "card": a copied ACH or SEPA mandate is just as
-    chargeable, so counting one as uncovered would send the merchant chasing a
-    customer who needs nothing.
-    """
+    """How many imported subscriptions Polar can charge, once it has looked."""
 
     covered: int = Field(
-        description="Imported subscriptions with a payment method on Polar."
+        description=(
+            "Imported subscriptions with a payment method on Polar. Any type "
+            "counts, not only cards: a bank debit is just as chargeable."
+        )
     )
     total: int = Field(description="Imported subscriptions in this migration.")
 

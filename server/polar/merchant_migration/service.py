@@ -98,9 +98,7 @@ SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
 _STEP_TASKS = {STEP_VERIFY_CARDS: "merchant_migration.verify_cards"}
 
 
-# How many subscriptions one card-check run looks at before handing over to the
-# next: a Stripe round trip per customer adds up, and a worker shouldn't hold a
-# transaction open for a whole catalog.
+# One Stripe round trip per customer, so a whole catalog can't be one job.
 CARD_VERIFICATION_BATCH_SIZE = 25
 
 
@@ -508,12 +506,8 @@ class MerchantMigrationService:
         actor: PanStepActor,
         inputs: dict[str, str],
     ) -> PanTransferChecklist:
-        """Move the checklist on, whoever is asking.
-
-        The single transition point on purpose: a step Polar performs is
-        scheduled by becoming current, so completing one anywhere else would
-        leave it unscheduled forever.
-        """
+        """Complete a step and advance. Go through here, not `pan_transfer`
+        directly: this is what schedules the job for the step that follows."""
         if not migration.pan_transfer_steps:
             raise PanTransferNotStarted()
 
@@ -580,6 +574,10 @@ class MerchantMigrationService:
     ) -> None:
         """Link the cards that have landed on Polar to the imported
         subscriptions, a batch at a time (the `verify_cards` step).
+
+        Entered from the `merchant_migration.verify_cards` job, which
+        `_advance_checklist` enqueues when Ops completes the Stripe step before
+        this one. Each batch enqueues the next.
 
         Read-only against the source and idempotent: re-running only picks up
         cards that arrived since, which is what lets the merchant re-run the copy

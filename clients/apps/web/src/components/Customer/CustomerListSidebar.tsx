@@ -1,13 +1,15 @@
 'use client'
 
 import { CreateCustomerModal } from '@/components/Customer/CreateCustomerModal'
-import { InlineModal } from '@polar-sh/orbit'
+import AccessRestricted from '@/components/Finance/AccessRestricted'
+import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { Spinner } from '@polar-sh/orbit'
 import { useCustomers } from '@/hooks/queries'
 import { useHasPermission } from '@/hooks/permissions'
 import { useInViewport } from '@/hooks/utils'
 import { getServerURL } from '@/utils/api'
+import { permissionDeniedMessage } from '@/utils/permissions'
 
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
@@ -20,6 +22,7 @@ import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -207,15 +210,13 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {canManageCustomers ? (
-              <Button
-                size="icon"
-                className="h-6 w-6"
-                onClick={showCreateCustomerModal}
-              >
-                <AddOutlined fontSize="small" />
-              </Button>
-            ) : null}
+            <Button
+              size="icon"
+              className="h-6 w-6"
+              onClick={showCreateCustomerModal}
+            >
+              <AddOutlined fontSize="small" />
+            </Button>
           </div>
         </div>
         <div className="flex flex-row items-center gap-3 px-4 py-2">
@@ -291,10 +292,28 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
         isShown={isCreateCustomerModalOpen}
         hide={hideCreateCustomerModal}
         modalContent={
-          <CreateCustomerModal
-            organization={organization}
-            onClose={hideCreateCustomerModal}
-          />
+          canManageCustomers ? (
+            <CreateCustomerModal
+              organization={organization}
+              onClose={hideCreateCustomerModal}
+            />
+          ) : (
+            <Box flexDirection="column" height="100%">
+              <InlineModalHeader hide={hideCreateCustomerModal}>
+                <h2 className="text-xl">Create Customer</h2>
+              </InlineModalHeader>
+              <Box
+                flex={1}
+                flexDirection="column"
+                alignItems="center"
+                padding="xl"
+              >
+                <AccessRestricted
+                  message={permissionDeniedMessage('customers:manage')}
+                />
+              </Box>
+            </Box>
+          )
         }
       />
     </>

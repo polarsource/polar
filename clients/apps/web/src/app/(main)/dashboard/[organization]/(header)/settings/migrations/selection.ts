@@ -1,7 +1,3 @@
-// Migration-wide rather than review-only: every table here sends the server a
-// set of ledger record ids to act on, over a catalog too big to enumerate
-// client-side. Lives above `review/` so the next one can reuse it.
-//
 // Selection scales past one page with a Gmail-style model: either everything is
 // selected except `toggled` (mode `all`, the opt-out default), or nothing is
 // selected except `toggled` (mode `none`). Row ids never all live client-side,
@@ -81,8 +77,7 @@ export function selectionAfterSubmit(
   }
 }
 
-// What a write takes: the ledger record ids to act on, as either an opt-in or
-// an opt-out list. Never both, and neither means "everything".
+// Never both. Neither means everything.
 export interface SelectionPayload {
   recordIds?: string[]
   excludeRecordIds?: string[]

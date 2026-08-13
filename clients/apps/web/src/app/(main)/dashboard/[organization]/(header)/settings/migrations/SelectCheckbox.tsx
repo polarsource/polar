@@ -3,14 +3,9 @@
 import { Checkbox } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
-// The table zeroes the padding of any cell holding a checkbox
-// (`[&:has([role=checkbox])]:p-0`), so a selection column has to put the inset
-// back itself. Without this the checkbox sits flush against the table edge
-// while every other column is indented, and the column reads as misaligned.
-//
-// Orbit's own `createSelectionColumn` does the same thing, but its header
-// selects the current page; the migration tables select across the whole
-// catalog, so they build their own column and share this cell.
+// The table zeroes padding on any cell holding a checkbox, so the inset has to
+// come from here. Orbit's `createSelectionColumn` does the same, but its header
+// selects the page rather than the whole catalog.
 export function SelectCheckbox({
   checked,
   disabled = false,

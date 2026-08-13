@@ -55,3 +55,17 @@ export const formatCountry = (() => {
 
   return (country: string): string => regionName.of(country) ?? country
 })()
+
+export const formatMetadataValue = (
+  value: string | number | boolean | null | undefined,
+): string => {
+  if (value === null || value === undefined) {
+    return '—'
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No'
+  }
+
+  return String(value)
+}

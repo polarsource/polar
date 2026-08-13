@@ -14,6 +14,7 @@ import { useSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
 import { useDateRange } from '@/utils/date'
+import { formatMetadataValue } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Avatar } from '@polar-sh/orbit'
@@ -249,7 +250,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           ),
           cell: (props) => (
             <Text as="span" monospace>
-              {props.getValue() as string}
+              {formatMetadataValue(
+                props.getValue() as
+                  | string
+                  | number
+                  | boolean
+                  | null
+                  | undefined,
+              )}
             </Text>
           ),
         }))

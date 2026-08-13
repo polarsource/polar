@@ -11,6 +11,7 @@ import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useModal } from '@/components/Modal/useModal'
 import { useDateRange } from '@/utils/date'
 import { getAPIParams } from '@/utils/datatable'
+import { formatMetadataValue } from '@/utils/formatters'
 import { dateRangeToInterval } from '@/utils/metrics'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -216,7 +217,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               className="text-black dark:text-white"
             />
           ),
-          cell: (props) => <Text monospace>{props.getValue() as string}</Text>,
+          cell: (props) => (
+            <Text monospace>
+              {formatMetadataValue(
+                props.getValue() as
+                  | string
+                  | number
+                  | boolean
+                  | null
+                  | undefined,
+              )}
+            </Text>
+          ),
         }))
       : []),
   ]

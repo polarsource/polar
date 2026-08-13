@@ -372,63 +372,43 @@ class TestAvatarUrl:
 
 @pytest.mark.asyncio
 class TestSearchByQuery:
-    async def test_escapes_percent_character(
+    @pytest.mark.parametrize(
+        ("match_email", "match_name", "non_match_email", "non_match_name", "query"),
+        [
+            # `%` is a wildcard for any string; it must match literally, not
+            # cause "50" (without `%`) in another customer's name to be returned.
+            ("alice@example.com", "Alice 50% Off", "bob@example.com", "Bob 50 Off", "50%"),
+            # `_` is a wildcard for any single character; `user_one` must not
+            # match `userAone`.
+            ("user_one@example.com", None, "userAone@example.com", None, "user_one"),
+        ],
+    )
+    async def test_escapes_special_like_characters(
         self,
         save_fixture: SaveFixture,
         repository: CustomerRepository,
         organization: Organization,
+        match_email: str,
+        match_name: str | None,
+        non_match_email: str,
+        non_match_name: str | None,
+        query: str,
     ) -> None:
-        # `%` is a SQL LIKE wildcard for any string; it must be treated
-        # literally so a search for it does not return every customer.
         match = await create_customer(
             save_fixture,
             organization=organization,
-            email="alice@example.com",
-            name="Alice 50% Off",
-        )
-        # `bob` has "50" (without `%`) in his name: the buggy unescaped
-        # pattern `%50%%` would match him too, the fixed one must not.
-        await create_customer(
-            save_fixture,
-            organization=organization,
-            email="bob@example.com",
-            name="Bob 50 Off",
+            email=match_email,
+            **({"name": match_name} if match_name is not None else {}),
         )
         await create_customer(
             save_fixture,
             organization=organization,
-            email="carol@example.com",
-            name="Carol",
+            email=non_match_email,
+            **({"name": non_match_name} if non_match_name is not None else {}),
         )
 
         customer_ids, external_ids = await repository.search_by_query(
-            {AccessibleOrganizationID(organization.id)}, "50%"
-        )
-
-        assert customer_ids == [match.id]
-        assert external_ids == []
-
-    async def test_escapes_underscore_character(
-        self,
-        save_fixture: SaveFixture,
-        repository: CustomerRepository,
-        organization: Organization,
-    ) -> None:
-        # `_` is a SQL LIKE wildcard for any single character; it must be
-        # treated literally so `user_one` does not also match `userAone`.
-        match = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="user_one@example.com",
-        )
-        await create_customer(
-            save_fixture,
-            organization=organization,
-            email="userAone@example.com",
-        )
-
-        customer_ids, external_ids = await repository.search_by_query(
-            {AccessibleOrganizationID(organization.id)}, "user_one"
+            {AccessibleOrganizationID(organization.id)}, query
         )
 
         assert customer_ids == [match.id]

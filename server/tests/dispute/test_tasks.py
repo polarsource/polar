@@ -7,9 +7,11 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.dispute.dispute_case import DISPUTE_GREETING
+from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.dispute.tasks import auto_accept, enqueue_auto_accepts, post_dispute_greeting
 from polar.kit.utils import utc_now
 from polar.models import Customer, Dispute, Organization, Product
+from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     DisputeSupportCase,
     SupportCaseAudience,
@@ -245,3 +247,51 @@ class TestAutoAccept:
         await _auto_accept(dispute.id)
 
         accept_mock.assert_not_awaited()
+
+    async def test_does_not_accept_after_concurrent_merchant_reply(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """The re-check inside ``accept()`` must catch a merchant reply that
+        committed after the sweep's ``auto_accept_applies()`` check ran."""
+        dispute = await _dispute(save_fixture, organization, customer, product)
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        await save_fixture(
+            SupportCaseMessage(
+                case=case,
+                type=SupportCaseMessageType.chat,
+                author_kind=SupportCaseMessageAuthorKind.merchant,
+                body="We're handling this ourselves.",
+                audience=[SupportCaseAudience.merchant],
+            )
+        )
+
+        mocker.patch(
+            "polar.dispute.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+        mocker.patch(
+            "polar.dispute.tasks.dispute_service.auto_accept_applies",
+            new_callable=AsyncMock,
+            return_value=True,
+        )
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+
+        await _auto_accept(dispute.id)
+
+        close_mock.assert_not_awaited()
+        await session.refresh(dispute)
+        assert dispute.status == DisputeStatus.needs_response
+        message_types = [
+            message.type
+            for message in await SupportCaseMessageRepository.from_session(
+                session
+            ).list_by_case(case.id, visible_to=None)
+        ]
+        assert SupportCaseMessageType.dispute_auto_accepted not in message_types

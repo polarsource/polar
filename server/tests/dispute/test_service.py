@@ -16,6 +16,8 @@ from polar.models import Customer, Dispute, Organization, Product, User
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.models.support_case import (
     DisputeSupportCase,
+    SupportCaseAudience,
+    SupportCaseMessage,
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
     SupportCaseType,
@@ -1340,6 +1342,127 @@ class TestAccept:
             await dispute_service.accept(session, dispute)
 
         close_mock.assert_not_awaited()
+
+    async def test_automatic_aborts_when_merchant_replied(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """A merchant reply that commits after the sweep's applicability
+        check must still stop the automatic accept — the re-check inside
+        ``accept()`` is what closes the READ COMMITTED race window."""
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+        case = await dispute_case_service.open_case(
+            session, dispute, organization=organization
+        )
+        await save_fixture(
+            SupportCaseMessage(
+                case=case,
+                type=SupportCaseMessageType.chat,
+                author_kind=SupportCaseMessageAuthorKind.merchant,
+                body="We're handling this ourselves.",
+                audience=[SupportCaseAudience.merchant],
+            )
+        )
+
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+
+        result = await dispute_service.accept(session, dispute, automatic=True)
+
+        close_mock.assert_not_awaited()
+        assert result.status == DisputeStatus.needs_response
+        message_types = {
+            message.type
+            for message in await SupportCaseMessageRepository.from_session(
+                session
+            ).list_by_case(case.id, visible_to=None)
+        }
+        assert SupportCaseMessageType.dispute_auto_accepted not in message_types
+
+    async def test_automatic_accepts_without_merchant_reply(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        dispute_transaction_service_mock: MagicMock,
+        benefit_grant_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+        case = await dispute_case_service.open_case(
+            session, dispute, organization=organization
+        )
+
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+        close_mock.return_value = build_stripe_dispute(
+            status="lost", balance_transactions=[]
+        )
+
+        result = await dispute_service.accept(session, dispute, automatic=True)
+
+        close_mock.assert_awaited_once_with(dispute.payment_processor_id)
+        assert result.status == DisputeStatus.lost
+        message_types = {
+            message.type
+            for message in await SupportCaseMessageRepository.from_session(
+                session
+            ).list_by_case(case.id, visible_to=None)
+        }
+        assert SupportCaseMessageType.dispute_auto_accepted in message_types
+
+    async def test_manual_accepts_with_merchant_reply(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        dispute_transaction_service_mock: MagicMock,
+        benefit_grant_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+        case = await dispute_case_service.open_case(
+            session, dispute, organization=organization
+        )
+        await save_fixture(
+            SupportCaseMessage(
+                case=case,
+                type=SupportCaseMessageType.chat,
+                author_kind=SupportCaseMessageAuthorKind.merchant,
+                body="We want to accept this.",
+                audience=[SupportCaseAudience.merchant],
+            )
+        )
+
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+        close_mock.return_value = build_stripe_dispute(
+            status="lost", balance_transactions=[]
+        )
+
+        result = await dispute_service.accept(session, dispute)
+
+        close_mock.assert_awaited_once_with(dispute.payment_processor_id)
+        assert result.status == DisputeStatus.lost
+        message_types = {
+            message.type
+            for message in await SupportCaseMessageRepository.from_session(
+                session
+            ).list_by_case(case.id, visible_to=None)
+        }
+        assert SupportCaseMessageType.merchant_accepted in message_types
 
 
 async def _eligible_dispute(

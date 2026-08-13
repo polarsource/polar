@@ -144,6 +144,10 @@ class DisputeService:
 
         case = await dispute_case_service.get_case(session, dispute)
         if case is not None:
+            if automatic:
+                message_repository = SupportCaseMessageRepository.from_session(session)
+                if await message_repository.has_merchant_message(case.id):
+                    return dispute
             await dispute_case_service.accept(session, case, automatic=automatic)
 
         stripe_dispute = await stripe_service.close_dispute(

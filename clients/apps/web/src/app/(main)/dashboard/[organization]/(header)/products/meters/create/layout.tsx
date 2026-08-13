@@ -13,8 +13,8 @@ export default async function Layout({
   return (
     <OrganizationPermissionGuard
       organizationSlug={organization}
-      permission="products:read"
-      message={permissionDeniedMessage('products:read')}
+      permission="products:manage"
+      message={permissionDeniedMessage('products:manage')}
       standalone
     >
       {children}

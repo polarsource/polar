@@ -3,6 +3,7 @@ import { CheckoutLinkListSidebar } from '@/components/CheckoutLinks/CheckoutLink
 import { MasterDetailLayout } from '@/components/Layout/MasterDetailLayout'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { PropsWithChildren } from 'react'
 
 export default async function Layout(
@@ -20,7 +21,8 @@ export default async function Layout(
   return (
     <OrganizationPermissionGuard
       organizationSlug={params.organization}
-      permission="products:manage"
+      permission="products:read"
+      message={permissionDeniedMessage('products:read')}
       standalone
     >
       <MasterDetailLayout

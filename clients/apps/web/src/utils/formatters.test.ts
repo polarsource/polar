@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatHumanFriendlyScalar } from './formatters'
+import { formatHumanFriendlyScalar, formatMetadataValue } from './formatters'
 
 describe('formatHumanFriendlyScalar', () => {
   it('uses the statistics abbreviation thresholds and precision', () => {
@@ -19,5 +19,22 @@ describe('formatHumanFriendlyScalar', () => {
     expect(formatHumanFriendlyScalar(-12_345.67)).toEqual('-12,345')
     expect(formatHumanFriendlyScalar(-1_234_567)).toEqual('-1.235M')
     expect(formatHumanFriendlyScalar(-123_456_789)).toEqual('-123.46M')
+  })
+})
+
+describe('formatMetadataValue', () => {
+  it('renders booleans as visible labels', () => {
+    expect(formatMetadataValue(true)).toEqual('Yes')
+    expect(formatMetadataValue(false)).toEqual('No')
+  })
+
+  it('renders nullish values as an em dash', () => {
+    expect(formatMetadataValue(null)).toEqual('—')
+    expect(formatMetadataValue(undefined)).toEqual('—')
+  })
+
+  it('renders strings and numbers as strings', () => {
+    expect(formatMetadataValue('test')).toEqual('test')
+    expect(formatMetadataValue(42)).toEqual('42')
   })
 })

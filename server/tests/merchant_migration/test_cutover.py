@@ -7,7 +7,6 @@ import pytest_asyncio
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
-from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -32,7 +31,11 @@ from polar.models.merchant_migration_record import MerchantMigrationCutoverStatu
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_subscription
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_payment_method,
+    create_subscription,
+)
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     build_connected_migration,
@@ -86,15 +89,16 @@ def _succeeded_setup_intent(mocker: MockerFixture, status: str = "succeeded") ->
     )
 
 
-async def _linked_card(save_fixture: SaveFixture, customer: Customer) -> PaymentMethod:
-    payment_method = PaymentMethod(
-        processor=PaymentProcessor.stripe,
-        processor_id="pm_copied",
-        type="card",
-        method_metadata={},
-        customer=customer,
+async def _card_on(
+    save_fixture: SaveFixture, subscription: Subscription, customer: Customer
+) -> PaymentMethod:
+    """A copied card, already attached to the subscription: what the card check
+    leaves behind when the copy landed."""
+    payment_method = await create_payment_method(
+        save_fixture, customer, processor_id="pm_copied"
     )
-    await save_fixture(payment_method)
+    subscription.payment_method = payment_method
+    await save_fixture(subscription)
     return payment_method
 
 
@@ -156,9 +160,9 @@ class TestRun:
         imported_customer: Customer,
         paused_subscription: Subscription,
     ) -> None:
-        payment_method = await _linked_card(save_fixture, imported_customer)
-        paused_subscription.payment_method = payment_method
-        await save_fixture(paused_subscription)
+        payment_method = await _card_on(
+            save_fixture, paused_subscription, imported_customer
+        )
         renewal = utc_now() + timedelta(days=20)
         adapter = _FakeSourceAdapter(canonical_subscription(current_period_end=renewal))
         _succeeded_setup_intent(mocker)
@@ -184,9 +188,7 @@ class TestRun:
         imported_customer: Customer,
         paused_subscription: Subscription,
     ) -> None:
-        payment_method = await _linked_card(save_fixture, imported_customer)
-        paused_subscription.payment_method = payment_method
-        await save_fixture(paused_subscription)
+        await _card_on(save_fixture, paused_subscription, imported_customer)
         trial_end = utc_now() + timedelta(days=10)
         adapter = _FakeSourceAdapter(
             canonical_subscription(
@@ -216,9 +218,7 @@ class TestRun:
     ) -> None:
         """A crash between the Stripe cancellation and the commit must not read
         our own cancellation as the customer having churned."""
-        payment_method = await _linked_card(save_fixture, imported_customer)
-        paused_subscription.payment_method = payment_method
-        await save_fixture(paused_subscription)
+        await _card_on(save_fixture, paused_subscription, imported_customer)
         adapter = _FakeSourceAdapter(
             canonical_subscription(
                 status=CanonicalSubscriptionStatus.canceled,
@@ -249,9 +249,7 @@ class TestRun:
         """The source is already stopped, so refusing here would leave the
         customer billed by nobody. An unpaid first renewal goes to dunning,
         which is recoverable; a subscription nobody bills is not."""
-        payment_method = await _linked_card(save_fixture, imported_customer)
-        paused_subscription.payment_method = payment_method
-        await save_fixture(paused_subscription)
+        await _card_on(save_fixture, paused_subscription, imported_customer)
         adapter = _FakeSourceAdapter(
             canonical_subscription(
                 status=CanonicalSubscriptionStatus.canceled,
@@ -561,9 +559,7 @@ class TestSkips:
         imported_customer: Customer,
         paused_subscription: Subscription,
     ) -> None:
-        payment_method = await _linked_card(save_fixture, imported_customer)
-        paused_subscription.payment_method = payment_method
-        await save_fixture(paused_subscription)
+        await _card_on(save_fixture, paused_subscription, imported_customer)
         mocker.patch(
             "polar.merchant_migration.cutover.stripe_service.create_setup_intent",
             new=mocker.AsyncMock(
@@ -588,9 +584,7 @@ class TestSkips:
         imported_customer: Customer,
         paused_subscription: Subscription,
     ) -> None:
-        payment_method = await _linked_card(save_fixture, imported_customer)
-        paused_subscription.payment_method = payment_method
-        await save_fixture(paused_subscription)
+        await _card_on(save_fixture, paused_subscription, imported_customer)
         _succeeded_setup_intent(mocker, status="requires_action")
         adapter = _FakeSourceAdapter(canonical_subscription())
 

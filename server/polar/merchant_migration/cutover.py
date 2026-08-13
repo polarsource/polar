@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 
 import stripe as stripe_lib
 import structlog
+from sqlalchemy.orm import joinedload
 
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.utils import utc_now
@@ -176,20 +177,23 @@ class SubscriptionCutover:
         # A previous attempt already stopped it on the source: the money side is
         # committed, so the only safe move is to finish, not re-run the checks
         # against the cancellation we made ourselves.
-        if not source.stopped_for_migration:
+        already_stopped = source.stopped_for_migration
+        if not already_stopped:
             reason = self._source_reason(source, record)
             if reason is not None:
                 return _skip(reason)
 
+        # Stays behind the source gate above: resolving writes, because it
+        # upserts the copied methods and may set the customer's default.
         payment_method = await self._resolve_payment_method(
             subscription, customer, source.payment_method
         )
-        if source.stopped_for_migration:
-            # The source is already stopped, so declining to finish here would
-            # leave the customer billed by nobody. A card we can't prove is
-            # still better than that: an unpaid first renewal goes to dunning,
-            # which is recoverable. Only having no method at all blocks us, and
-            # that's a failure to chase rather than a deliberate skip.
+        if already_stopped:
+            # Declining to finish now would leave the customer billed by nobody.
+            # A card we can't prove is still better than that: an unpaid first
+            # renewal goes to dunning, which is recoverable. Only having no
+            # method at all blocks us, and that's a failure to chase rather than
+            # a deliberate skip.
             if payment_method is None:
                 log.error(
                     "merchant_migration.cutover.stranded",
@@ -204,8 +208,6 @@ class SubscriptionCutover:
             card_reason = await self._card_reason(customer, payment_method)
             if card_reason is not None:
                 return _skip(card_reason)
-
-        if not source.stopped_for_migration:
             await self.adapter.stop_source_subscription(
                 record.source_id, reference=str(self.migration.id)
             )
@@ -253,29 +255,29 @@ class SubscriptionCutover:
     ) -> Subscription | None:
         if record.target_id is None:
             return None
+        # Only the customer: `activate_imported` re-reads the product for the
+        # benefit grants, and the webhook re-loads the whole graph itself, so
+        # the repository's eager options would be fetched and thrown away.
         return await self.subscription_repository.get_by_id(
-            record.target_id,
-            options=self.subscription_repository.get_eager_options(),
+            record.target_id, options=(joinedload(Subscription.customer),)
         )
 
     def _source_reason(
         self, source: CanonicalSubscription, record: MerchantMigrationRecord
     ) -> str | None:
         """Why the source says this subscription shouldn't move today."""
-        if source.status not in MIGRATABLE_SOURCE_STATUSES:
-            if source.status == CanonicalSubscriptionStatus.canceled:
-                return _SOURCE_CANCELED
-            reason = subscription_import_reason(source)
-            if reason is not None:
-                return reason.message
-            return _SOURCE_NOT_LIVE.format(status=source.status.value)
-        if source.cancel_at_period_end:
+        if source.status == CanonicalSubscriptionStatus.canceled:
+            return _SOURCE_CANCELED
+        migratable = source.status in MIGRATABLE_SOURCE_STATUSES
+        if migratable and source.cancel_at_period_end:
             return _ENDING
         # Everything the import refused to take, re-applied: the source has had
         # weeks to grow a second line item, a coupon or a manual invoice.
         reason = subscription_import_reason(source)
         if reason is not None:
             return reason.message
+        if not migratable:
+            return _SOURCE_NOT_LIVE.format(status=source.status.value)
         try:
             staged = deserialize(record.type, record.canonical)
         except (KeyError, TypeError, ValueError):

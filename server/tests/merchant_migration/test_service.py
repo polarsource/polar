@@ -32,6 +32,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
     serialize,
 )
+from polar.merchant_migration.cards import AmbiguousCopiedCard
 from polar.merchant_migration.pan_transfer import (
     STEP_RESOLVE_UNCOVERED,
     STEP_VERIFY_CARDS,
@@ -1716,3 +1717,71 @@ class TestRunCardVerification:
         # Without this the wrong copy can be attached, and the switch keeps it.
         assert link.await_args is not None
         assert link.await_args.kwargs["source_method"] == charged
+
+    async def test_an_ambiguous_card_skips_that_customer_only(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = _steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+        ambiguous = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_ambiguous",
+            email="ambiguous@example.com",
+        )
+        clear = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_clear",
+            email="clear@example.com",
+        )
+        eager = (joinedload(Subscription.customer),)
+        subscription_repository = SubscriptionRepository.from_session(session)
+        assert ambiguous.target_id is not None
+        assert clear.target_id is not None
+        ambiguous_subscription = await subscription_repository.get_by_id(
+            ambiguous.target_id, options=eager
+        )
+        clear_subscription = await subscription_repository.get_by_id(
+            clear.target_id, options=eager
+        )
+        assert ambiguous_subscription is not None
+        assert clear_subscription is not None
+        linked = await create_payment_method(
+            save_fixture, clear_subscription.customer, processor_id="pm_clear"
+        )
+
+        async def _link(
+            _session: AsyncSession, customer: Customer, **_kwargs: object
+        ) -> PaymentMethod | None:
+            if customer.id == ambiguous_subscription.customer_id:
+                raise AmbiguousCopiedCard(customer.id, 2)
+            return linked
+
+        mocker.patch(
+            "polar.merchant_migration.service.link_payment_method",
+            new=mocker.AsyncMock(side_effect=_link),
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        await session.flush()
+        await session.refresh(ambiguous_subscription)
+        await session.refresh(clear_subscription)
+        assert ambiguous_subscription.payment_method_id is None
+        assert clear_subscription.payment_method_id == linked.id
+        checklist = service._checklist(migration)
+        assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED

@@ -607,11 +607,12 @@ class MerchantMigrationService:
                     subscription.customer,
                     source_method=_staged_payment_method(record),
                 )
-            except AmbiguousCopiedCard:
-                log.warning(
+            except AmbiguousCopiedCard as e:
+                log.error(
                     "merchant_migration.verify_cards.ambiguous_card",
                     merchant_migration_id=migration.id,
                     record_id=record.id,
+                    customer_id=e.customer_id,
                 )
                 continue
             if payment_method is None:

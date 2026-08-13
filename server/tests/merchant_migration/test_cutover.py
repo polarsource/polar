@@ -10,9 +10,11 @@ from pytest_mock import MockerFixture
 from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
+    CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
+    CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
@@ -66,6 +68,15 @@ class _FakeSourceAdapter:
 
     async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
         self.stopped.append(source_id)
+
+    # The cutover never reads the catalog, but the protocol covers the whole
+    # adapter and a fake that only satisfies half of it isn't one.
+    async def extract(self) -> AsyncIterator[CanonicalRecord]:
+        return
+        yield
+
+    async def get_source_account(self) -> CanonicalAccount:
+        return CanonicalAccount(country="US", has_connected_accounts=False)
 
 
 def _succeeded_setup_intent(mocker: MockerFixture, status: str = "succeeded") -> Any:

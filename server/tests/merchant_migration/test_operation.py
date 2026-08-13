@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy.dialects.postgresql import JSONB, dialect as postgresql_dialect
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import dialect as postgresql_dialect
 
 from polar.kit.utils import utc_now
 from polar.models.merchant_migration_operation import (

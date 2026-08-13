@@ -80,7 +80,13 @@ const buildUrl = (
           // Handle deepObject style parameters (e.g., metadata)
           for (const [subKey, subValue] of Object.entries(value)) {
             if (subValue !== null && subValue !== undefined) {
-              searchParams.append(`${key}[${subKey}]`, String(subValue));
+              if (Array.isArray(subValue)) {
+                for (const item of subValue) {
+                  searchParams.append(`${key}[${subKey}]`, String(item));
+                }
+              } else {
+                searchParams.append(`${key}[${subKey}]`, String(subValue));
+              }
             }
           }
         } else {

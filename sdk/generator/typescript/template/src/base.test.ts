@@ -62,6 +62,15 @@ describe("buildRequest", () => {
     );
   });
 
+  test("deep object array query params", () => {
+    const [url] = client.buildRequest("GET", "/v1/items/", undefined, {
+      metadata: { reference_id: ["ABC", "DEF"] },
+    });
+    expect(url).toBe(
+      "https://api.polar.sh/v1/items/?metadata%5Breference_id%5D=ABC&metadata%5Breference_id%5D=DEF",
+    );
+  });
+
   test("null and undefined values are ignored", () => {
     const [url] = client.buildRequest(
       "GET",

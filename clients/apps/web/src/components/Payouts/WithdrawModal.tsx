@@ -39,10 +39,13 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     [organization.capabilities.payouts],
   )
 
-  const { data: latestPayouts, isPending } = usePayouts(account.id, {
-    limit: 1,
-    sorting: ['-created_at'],
-  })
+  const { data: latestPayouts, isPending } = usePayouts(
+    canManageFinance ? account.id : undefined,
+    {
+      limit: 1,
+      sorting: ['-created_at'],
+    },
+  )
 
   const nextPayoutAt = useMemo(() => {
     const latest = latestPayouts?.items?.[0]

@@ -1,4 +1,5 @@
 import OrganizationPermissionGuard from '@/components/Auth/OrganizationPermissionGuard'
+import { permissionDeniedMessage } from '@/utils/permissions'
 
 export default async function Layout({
   children,
@@ -13,6 +14,8 @@ export default async function Layout({
     <OrganizationPermissionGuard
       organizationSlug={organization}
       permission="products:manage"
+      message={permissionDeniedMessage('products:manage')}
+      standalone
     >
       {children}
     </OrganizationPermissionGuard>

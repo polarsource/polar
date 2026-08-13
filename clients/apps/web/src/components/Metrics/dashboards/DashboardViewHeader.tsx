@@ -4,6 +4,7 @@ import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
+import { toast } from '@/components/Toast/use-toast'
 import { MetricDashboardEditorContent } from '@/components/DashboardOverview/MetricSelectorModal'
 import {
   useDeleteMetricDashboard,
@@ -208,6 +209,10 @@ function DashboardDotMenu({
   onExport: () => void
 }) {
   const router = useRouter()
+  const canManageAnalytics = useHasPermission(
+    organization.id,
+    'analytics:manage',
+  )
   const deleteMutation = useDeleteMetricDashboard(dashboard.id, organization.id)
   const {
     isShown: isDeleteShown,
@@ -234,7 +239,20 @@ function DashboardDotMenu({
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem destructive onClick={showDelete}>
+          <DropdownMenuItem
+            destructive
+            onClick={() => {
+              if (!canManageAnalytics) {
+                toast({
+                  title: 'Restricted access',
+                  description: permissionDeniedMessage('analytics:manage'),
+                })
+                return
+              }
+
+              showDelete()
+            }}
+          >
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>

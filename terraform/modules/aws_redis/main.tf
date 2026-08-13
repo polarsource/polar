@@ -14,7 +14,7 @@ resource "aws_security_group" "this" {
 resource "aws_elasticache_replication_group" "this" {
   replication_group_id       = var.name
   description                = "${var.name} Redis"
-  engine                     = "redis"
+  engine                     = "valkey"
   engine_version             = var.engine_version
   node_type                  = var.node_type
   num_cache_clusters         = var.node_count

@@ -32,9 +32,9 @@ variable "node_type" {
 }
 
 variable "engine_version" {
-  description = "Redis engine version."
+  description = "Valkey engine version."
   type        = string
-  default     = "7.1"
+  default     = "9.1"
 }
 
 variable "port" {

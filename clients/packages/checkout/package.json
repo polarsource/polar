@@ -13,6 +13,7 @@
   "scripts": {
     "build": "rm -rf dist/ && tsup",
     "lint": "oxfmt --check . && eslint --max-warnings 0 .",
+    "lint:oxlint": "oxlint .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

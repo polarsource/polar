@@ -17,6 +17,7 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "pnpm format:check && expo lint",
+    "lint:oxlint": "oxlint .",
     "typecheck": "tsc --noEmit",
     "push:test": "node tooling/push-notifications/send-push.js",
     "postinstall": "pnpm --filter @polar-sh/client build && patch-package",

@@ -24,6 +24,7 @@
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
     "lint": "pnpm format:check && eslint --max-warnings 0 .",
+    "lint:oxlint": "oxlint .",
     "typecheck": "tsc --noEmit"
   },
   "exports": {

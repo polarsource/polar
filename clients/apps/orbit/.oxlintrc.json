@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../packages/eslint-config/oxlint-next.json"],
+  "options": {
+    "denyWarnings": true,
+    "typeAware": true
+  },
+  "ignorePatterns": [
+    ".next/**",
+    "node_modules/**",
+    "babel.config.js",
+    "scripts/**"
+  ]
+}

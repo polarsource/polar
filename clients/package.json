@@ -6,6 +6,7 @@
     "dev": "turbo watch dev",
     "dev-web": "turbo run dev --filter=web",
     "lint": "turbo run lint",
+    "lint:oxlint": "turbo run lint:oxlint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "generate": "pnpm -C packages/client generate",
@@ -24,6 +25,8 @@
     "knip": "^5.88.1",
     "only-allow": "1.2.2",
     "oxfmt": "^0.41.0",
+    "oxlint": "^1.78.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "turbo": "^2.9.12",
     "typescript": "6.0.3"
   },

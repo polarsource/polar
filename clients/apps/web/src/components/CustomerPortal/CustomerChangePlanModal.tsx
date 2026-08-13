@@ -72,7 +72,7 @@ const CustomerChangePlanModal = ({
   const paymentMethods = useCustomerPaymentMethods(api)
 
   const hasPaymentMethod = useMemo(() => {
-    return paymentMethods.data?.items.length ?? 0 > 0
+    return (paymentMethods.data?.items.length ?? 0) > 0
   }, [paymentMethods.data])
 
   const needToAddPaymentMethod = useMemo(() => {

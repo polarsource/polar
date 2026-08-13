@@ -12,6 +12,7 @@
     "format:check": "oxfmt --check ./src",
     "lint:only": "eslint --max-warnings 0 .",
     "lint": "pnpm format:check && pnpm lint:only",
+    "lint:oxlint": "oxlint .",
     "lint:changed": "eslint --max-warnings 0 $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(js|jsx|ts|tsx)$')",
     "test": "vitest run",
     "test:e2e": "playwright test",

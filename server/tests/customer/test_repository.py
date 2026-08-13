@@ -386,7 +386,13 @@ class TestSearchByQuery:
             ),
             # `_` is a wildcard for any single character; `user_one` must not
             # match `userAone`.
-            ("user_one@example.com", None, "userAone@example.com", None, "user_one"),
+            (
+                "user_one@example.com",
+                "Customer",
+                "userAone@example.com",
+                "Customer",
+                "user_one",
+            ),
         ],
     )
     async def test_escapes_special_like_characters(
@@ -395,22 +401,22 @@ class TestSearchByQuery:
         repository: CustomerRepository,
         organization: Organization,
         match_email: str,
-        match_name: str | None,
+        match_name: str,
         non_match_email: str,
-        non_match_name: str | None,
+        non_match_name: str,
         query: str,
     ) -> None:
         match = await create_customer(
             save_fixture,
             organization=organization,
             email=match_email,
-            **({"name": match_name} if match_name is not None else {}),
+            name=match_name,
         )
         await create_customer(
             save_fixture,
             organization=organization,
             email=non_match_email,
-            **({"name": non_match_name} if non_match_name is not None else {}),
+            name=non_match_name,
         )
 
         customer_ids, external_ids = await repository.search_by_query(

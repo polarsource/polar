@@ -521,9 +521,9 @@ class CustomerService:
         current_type = customer.type or CustomerType.individual
         if (
             isinstance(customer_update, CustomerUpdate)
-            and customer_update.type is not None
+            and "type" in customer_update.model_fields_set
             and current_type == CustomerType.team
-            and customer_update.type == CustomerType.individual
+            and customer_update.type != CustomerType.team
         ):
             errors.append(
                 {

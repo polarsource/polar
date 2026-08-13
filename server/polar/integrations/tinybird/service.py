@@ -14,6 +14,7 @@ from clickhouse_connect.cc_sqlalchemy.dialect import ClickHouseDialect
 from sqlalchemy import (
     Column,
     ColumnClause,
+    ColumnElement,
     DateTime,
     Float,
     MetaData,
@@ -44,6 +45,16 @@ from .schemas import TinybirdEvent
 log: Logger = structlog.get_logger()
 
 clickhouse_dialect = ClickHouseDialect()
+
+
+def _contains(column: Any, value: str) -> ColumnElement[bool]:
+    return func.position(column, value) > 0
+
+
+def _icontains(column: Any, value: str) -> ColumnElement[bool]:
+    return func.positionCaseInsensitiveUTF8(column, value) > 0
+
+
 metadata = MetaData()
 
 events_table = Table(
@@ -541,7 +552,7 @@ class TinybirdEventsQuery:
         return self
 
     def filter_name_query(self, query: str) -> Self:
-        self._filters.append(events_table.c.name.ilike(f"%{query}%"))
+        self._filters.append(_icontains(events_table.c.name, query))
         return self
 
     def filter_timestamp_range(
@@ -598,9 +609,9 @@ class TinybirdEventsQuery:
         matching_external_customer_ids: Sequence[str] | None = None,
     ) -> Self:
         conditions: list[Any] = [
-            events_table.c.name.ilike(f"%{query}%"),
-            events_table.c.source.ilike(f"%{query}%"),
-            events_table.c.user_metadata.ilike(f"%{query}%"),
+            _icontains(events_table.c.name, query),
+            _icontains(events_table.c.source, query),
+            _icontains(events_table.c.user_metadata, query),
         ]
         if matching_customer_ids:
             conditions.append(
@@ -686,7 +697,11 @@ class TinybirdEventsQuery:
     def _ch_comparison(attr: Any, clause: FilterClause) -> Any:
         v = clause.value
         if clause.operator in (FilterOperator.like, FilterOperator.not_like):
-            v = str(v) if not isinstance(v, bool) else ("t" if v else "f")
+            needle = str(v) if not isinstance(v, bool) else ("t" if v else "f")
+            haystack = func.toString(attr)
+            if clause.operator == FilterOperator.like:
+                return _contains(haystack, needle)
+            return ~_contains(haystack, needle)
         op = clause.operator
         if op == FilterOperator.eq:
             return attr == v
@@ -700,10 +715,6 @@ class TinybirdEventsQuery:
             return attr < v
         if op == FilterOperator.lte:
             return attr <= v
-        if op == FilterOperator.like:
-            return attr.like(f"%{v}%")
-        if op == FilterOperator.not_like:
-            return attr.notlike(f"%{v}%")
         return false()
 
     _SORT_COLUMN_MAP = {

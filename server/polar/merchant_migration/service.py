@@ -91,11 +91,7 @@ SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "column": "source_credentials",
 }
 
-# Checklist steps Polar performs itself, and the job that performs them. A step
-# here is never completed by a person: becoming current is what schedules the
-# work, and the work is what completes it.
 _STEP_TASKS = {STEP_VERIFY_CARDS: "merchant_migration.verify_cards"}
-
 
 # One Stripe round trip per customer, so a whole catalog can't be one job.
 CARD_VERIFICATION_BATCH_SIZE = 25

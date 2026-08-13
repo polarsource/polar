@@ -28,6 +28,11 @@ class Environment(StrEnum):
 
 
 def _validate_email_renderer_binary_path(value: Path) -> Path:
+    # On Vercel the binary is produced later in the build (see vercel.toml),
+    # after this import-time check runs.
+    if "VERCEL" in os.environ:
+        return value
+
     if not value.exists() and not value.is_file():
         raise ValueError(
             f"""

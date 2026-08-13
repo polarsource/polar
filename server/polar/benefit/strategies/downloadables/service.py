@@ -24,7 +24,7 @@ from .properties import (
     BenefitDownloadablesProperties,
     BenefitGrantDownloadablesProperties,
 )
-from .repository import BenefitDownloadablesRepository
+from .repository import BenefitDownloadableFileRepository
 
 log: Logger = structlog.get_logger()
 
@@ -45,7 +45,7 @@ class BenefitDownloadableFileService:
         file_ids = get_active_file_ids(
             cast(BenefitDownloadablesProperties, benefit.properties)
         )
-        repository = BenefitDownloadablesRepository.from_session(session)
+        repository = BenefitDownloadableFileRepository.from_session(session)
         results, count = await repository.paginate_files(
             benefit.id, file_ids, pagination=pagination
         )

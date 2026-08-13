@@ -11,7 +11,7 @@ from polar.models.file import FileServiceTypes
 type BenefitFileResult = tuple[File, int, int]
 
 
-class BenefitDownloadablesRepository(
+class BenefitDownloadableFileRepository(
     RepositorySoftDeletionMixin[File], RepositoryBase[File]
 ):
     model = File

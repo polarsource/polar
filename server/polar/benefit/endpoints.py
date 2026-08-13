@@ -10,7 +10,12 @@ from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
@@ -117,7 +122,7 @@ async def files(
     id: BenefitID,
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[BenefitDownloadableFile]:
     """List the downloadable files for a benefit with their download statistics."""
     benefit = await benefit_service.get(session, auth_subject, id)

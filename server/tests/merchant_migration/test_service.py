@@ -1,10 +1,11 @@
 from collections.abc import AsyncIterator
+from uuid import UUID
 
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
@@ -82,7 +83,11 @@ from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_subscription
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_payment_method,
+    create_subscription,
+)
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
@@ -1544,3 +1549,89 @@ class TestRunCardVerification:
         # The step is done, so the merchant is asked to chase the uncovered one.
         checklist = service._checklist(migration)
         assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
+
+    async def test_re_running_picks_up_only_what_arrived_since(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Merchants re-run the copy for the customers it missed, so this runs
+        again over subscriptions it has already linked."""
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = _steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+        first = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_first",
+            email="first@example.com",
+        )
+        late = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_late",
+            email="late@example.com",
+        )
+        subscription_repository = SubscriptionRepository.from_session(session)
+        assert first.target_id is not None
+        assert late.target_id is not None
+        eager = (joinedload(Subscription.customer),)
+        first_subscription = await subscription_repository.get_by_id(
+            first.target_id, options=eager
+        )
+        late_subscription = await subscription_repository.get_by_id(
+            late.target_id, options=eager
+        )
+        assert first_subscription is not None
+        assert late_subscription is not None
+
+        landed: dict[UUID, PaymentMethod] = {}
+
+        async def _link(
+            _session: AsyncSession, customer: Customer
+        ) -> PaymentMethod | None:
+            # None is what the real one answers before a card has landed.
+            return landed.get(customer.id)
+
+        link = mocker.patch(
+            "polar.merchant_migration.service.link_payment_method",
+            new=mocker.AsyncMock(side_effect=_link),
+        )
+
+        # Only the first customer's card has landed.
+        landed[first_subscription.customer_id] = await create_payment_method(
+            save_fixture, first_subscription.customer, processor_id="pm_first"
+        )
+        await service.run_card_verification(session, migration.id)
+        await session.flush()
+
+        # The merchant re-runs the copy and the second card lands.
+        landed[late_subscription.customer_id] = await create_payment_method(
+            save_fixture, late_subscription.customer, processor_id="pm_late"
+        )
+        link.reset_mock()
+        await service.run_card_verification(session, migration.id)
+        await session.flush()
+
+        await session.refresh(first_subscription)
+        await session.refresh(late_subscription)
+        assert (
+            first_subscription.payment_method_id
+            == landed[first_subscription.customer_id].id
+        )
+        assert (
+            late_subscription.payment_method_id
+            == landed[late_subscription.customer_id].id
+        )
+        # The already-linked one is not looked up a second time.
+        assert link.await_count == 1

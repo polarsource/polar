@@ -501,11 +501,6 @@ class MerchantMigrationService:
         actor: PanStepActor,
         inputs: dict[str, str],
     ) -> PanTransferChecklist:
-        """Complete a step and move the checklist on.
-
-        Use this, not `pan_transfer.complete`: it also starts the job for the
-        next step.
-        """
         if not migration.pan_transfer_steps:
             raise PanTransferNotStarted()
 
@@ -570,17 +565,6 @@ class MerchantMigrationService:
     async def run_card_verification(
         self, session: AsyncSession, migration_id: UUID, *, offset: int = 0
     ) -> None:
-        """Link the cards that have landed on Polar to the imported
-        subscriptions, a batch at a time (the `verify_cards` step).
-
-        Entered from the `merchant_migration.verify_cards` job, which
-        `_advance_checklist` enqueues when Ops completes the Stripe step before
-        this one. Each batch enqueues the next.
-
-        Read-only against the source and idempotent: re-running only picks up
-        cards that arrived since, which is what lets the merchant re-run the copy
-        for the customers it missed.
-        """
         migration = await self._load(session, migration_id)
         if migration is None:
             return

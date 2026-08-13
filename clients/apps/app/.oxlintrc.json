@@ -1,0 +1,171 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "react"],
+  "jsPlugins": [
+    {
+      "name": "expo",
+      "specifier": "./eslint-rules/oxlint-expo-plugin.js"
+    },
+    {
+      "name": "@polar",
+      "specifier": "./eslint-rules/index.js"
+    }
+  ],
+  "categories": {
+    "correctness": "off"
+  },
+  "options": {
+    "typeAware": true
+  },
+  "env": {
+    "builtin": true,
+    "browser": true,
+    "commonjs": true,
+    "es2022": true,
+    "node": true
+  },
+  "ignorePatterns": ["android/app/build", "dist/*"],
+  "rules": {
+    "import/export": "error",
+    "import/named": "error",
+    "import/namespace": "error",
+    "import/no-named-as-default": "warn",
+    "import/no-named-as-default-member": "warn",
+    "import/no-duplicates": "warn",
+    "eqeqeq": ["warn", "smart"],
+    "no-dupe-class-members": "error",
+    "no-dupe-keys": "error",
+    "no-duplicate-case": "error",
+    "no-empty-character-class": "warn",
+    "no-empty-pattern": "warn",
+    "no-extend-native": "warn",
+    "no-extra-bind": "warn",
+    "no-redeclare": "warn",
+    "no-undef": "error",
+    "no-unreachable": "warn",
+    "no-unsafe-negation": "warn",
+    "no-unused-expressions": [
+      "warn",
+      {
+        "allowShortCircuit": true,
+        "enforceForJSX": true
+      }
+    ],
+    "no-unused-labels": "warn",
+    "no-unused-vars": [
+      "warn",
+      {
+        "vars": "all",
+        "args": "none",
+        "ignoreRestSiblings": true,
+        "caughtErrors": "all",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ],
+    "no-with": "warn",
+    "unicode-bom": ["warn", "never"],
+    "use-isnan": "error",
+    "valid-typeof": "error",
+    "import/first": "warn",
+    "no-var": "error",
+    "react/display-name": "error",
+    "react/jsx-key": "error",
+    "react/jsx-no-comment-textnodes": "error",
+    "react/jsx-no-duplicate-props": "error",
+    "react/jsx-no-undef": "error",
+    "react/no-children-prop": "error",
+    "react/no-danger-with-children": "error",
+    "react/no-direct-mutation-state": "error",
+    "react/no-find-dom-node": "error",
+    "react/no-is-mounted": "error",
+    "react/no-render-return-value": "error",
+    "react/require-render-return": "error",
+    "react/no-string-refs": "error",
+    "react/no-unescaped-entities": "error",
+    "react/no-unknown-property": "warn",
+    "react/no-this-in-sfc": "warn",
+    "expo/use-dom-exports": ["error"],
+    "expo/no-env-var-destructuring": ["error"],
+    "expo/no-dynamic-env-var": ["error"],
+    "@polar/no-view": "error",
+    "@polar/no-text": "error",
+    "@polar/no-stylesheet-create": "error",
+    "@polar/no-image": "error",
+    "@polar/no-flatlist": "error",
+    "@polar/no-touchable": "error",
+    "@polar/no-jsx-logical-and": "error",
+    "@polar/no-restyle-use-theme": "error",
+    "@polar/no-hardcoded-spacing": "error",
+    "@polar/no-hardcoded-colors": "error",
+    "@polar/no-hardcoded-dimensions": "error",
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["**/metro.config.js"],
+      "globals": {
+        "AsyncDisposableStack": "readonly",
+        "DisposableStack": "readonly",
+        "SuppressedError": "readonly"
+      },
+      "env": {
+        "node": true
+      }
+    },
+    {
+      "files": ["**/*.ts", "**/*.tsx", "**/*.d.ts"],
+      "rules": {
+        "no-undef": "off",
+        "no-unused-vars": [
+          "warn",
+          {
+            "vars": "all",
+            "args": "none",
+            "ignoreRestSiblings": true,
+            "caughtErrors": "all"
+          }
+        ],
+        "no-useless-constructor": "warn",
+        "typescript/array-type": [
+          "warn",
+          {
+            "default": "array"
+          }
+        ],
+        "typescript/no-empty-object-type": "warn",
+        "typescript/no-wrapper-object-types": "warn",
+        "typescript/consistent-type-assertions": [
+          "warn",
+          {
+            "assertionStyle": "as",
+            "objectLiteralTypeAssertions": "allow"
+          }
+        ],
+        "typescript/no-extra-non-null-assertion": "warn",
+        "typescript/no-require-imports": [
+          "warn",
+          {
+            "allow": [
+              "\\.(aac|aiff|avif|bmp|caf|db|gif|heic|html|jpeg|jpg|json|m4a|m4v|mov|mp3|mp4|mpeg|mpg|otf|pdf|png|psd|svg|ttf|wav|webm|webp|xml|yaml|yml|zip)$"
+            ]
+          }
+        ]
+      },
+      "plugins": ["typescript"]
+    },
+    {
+      "files": ["tooling/**/*.js"],
+      "rules": {
+        "no-console": "off"
+      },
+      "globals": {
+        "process": "readonly",
+        "console": "readonly",
+        "require": "readonly",
+        "module": "writable",
+        "__dirname": "readonly"
+      }
+    }
+  ]
+}

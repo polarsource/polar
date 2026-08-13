@@ -19,7 +19,7 @@ import {
   isRowSelected,
   selectedCount,
   SelectionState,
-} from './reviewSelection'
+} from '../selection'
 import { ReviewRow, ReviewScope } from './reviewRows'
 
 const numberFormat = new Intl.NumberFormat('en-US')

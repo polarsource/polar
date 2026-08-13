@@ -53,13 +53,13 @@ export function toggleAll(state: SelectionState): SelectionState {
   return { mode: allSelected ? 'none' : 'all', toggled: new Set() }
 }
 
-// The selection to carry over once `submitted` has imported. The payload below
+// The selection to carry over once `submitted` has been sent. The payload below
 // makes membership derivable: in `all` mode everything outside `toggled` was
 // sent, in `none` mode everything inside it was. Those rows have settled in the
 // ledger, so they can't be selected again — and their checkboxes are disabled,
 // so an id left behind could never be cleared and would decrement the count for
 // good. Anything toggled after submit wasn't sent, so it survives.
-export function selectionAfterImport(
+export function selectionAfterSubmit(
   submitted: SelectionState,
   current: SelectionState,
 ): SelectionState {
@@ -77,10 +77,15 @@ export function selectionAfterImport(
   }
 }
 
-export function importPayload(state: SelectionState): {
-  recordIds?: string[]
-  excludeRecordIds?: string[]
-} {
+// Opt in, opt out, or neither for everything. The `never` arms are what stop a
+// caller sending both, which the server would silently resolve in favour of
+// `recordIds`.
+export type SelectionPayload =
+  | { recordIds: string[]; excludeRecordIds?: never }
+  | { recordIds?: never; excludeRecordIds: string[] }
+  | { recordIds?: never; excludeRecordIds?: never }
+
+export function selectionPayload(state: SelectionState): SelectionPayload {
   if (state.mode === 'all') {
     return state.toggled.size ? { excludeRecordIds: [...state.toggled] } : {}
   }

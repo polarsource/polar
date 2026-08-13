@@ -11,13 +11,13 @@ import { useCallback, useState } from 'react'
 import { useRecordSummary } from './recordSummary'
 import { ReviewScope } from './reviewRows'
 import {
-  importPayload,
+  selectionPayload,
   initialSelection,
-  selectionAfterImport,
+  selectionAfterSubmit,
   SelectionState,
   toggleAll,
   toggleRow,
-} from './reviewSelection'
+} from '../selection'
 import { ReviewFilter } from './ReviewStatusTabs'
 import { ReviewTableView } from './ReviewTableView'
 
@@ -107,9 +107,9 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onToggleAll={onToggleAll}
       onImport={() => {
         const submitted = selection
-        importCatalog.mutate(importPayload(submitted), {
+        importCatalog.mutate(selectionPayload(submitted), {
           onSuccess: () =>
-            setSelection((current) => selectionAfterImport(submitted, current)),
+            setSelection((current) => selectionAfterSubmit(submitted, current)),
         })
       }}
       importing={importCatalog.isPending}

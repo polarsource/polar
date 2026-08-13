@@ -1,8 +1,9 @@
-import { Checkbox, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTableColumnDef } from '@polar-sh/orbit'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
-import { HeaderCheckState } from './reviewSelection'
+import { SelectCheckbox } from '../SelectCheckbox'
+import { HeaderCheckState } from '../selection'
 import {
   entityLabelSingular,
   isImported,
@@ -138,11 +139,13 @@ function SelectCell({
   // A row that can't be picked keeps a disabled box, so the column stays a
   // column instead of a run of gaps.
   if (isImported(row)) {
-    return <SelectBox checked disabled ariaLabel={`${row.title} is imported`} />
+    return (
+      <SelectCheckbox checked disabled ariaLabel={`${row.title} is imported`} />
+    )
   }
   if (!isSelectable(row) || !id) {
     return (
-      <SelectBox
+      <SelectCheckbox
         checked={false}
         disabled
         ariaLabel={`${row.title} can't be imported`}
@@ -150,7 +153,7 @@ function SelectCell({
     )
   }
   return (
-    <SelectBox
+    <SelectCheckbox
       checked={isSelected(id)}
       ariaLabel={`Import ${row.title}`}
       onToggle={() => onToggle(id)}
@@ -168,36 +171,13 @@ function HeaderCheckbox({
   onToggle: () => void
 }) {
   return (
-    <SelectBox
+    <SelectCheckbox
       checked={
         state === 'indeterminate' ? 'indeterminate' : state === 'checked'
       }
       disabled={disabled}
       ariaLabel="Select all"
       onToggle={onToggle}
-    />
-  )
-}
-
-function SelectBox({
-  checked,
-  disabled = false,
-  ariaLabel,
-  onToggle,
-}: {
-  checked: boolean | 'indeterminate'
-  disabled?: boolean
-  ariaLabel: string
-  onToggle?: () => void
-}) {
-  return (
-    <Checkbox
-      checked={checked}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onCheckedChange={() => onToggle?.()}
-      // The row itself opens the detail modal.
-      onClick={(event) => event.stopPropagation()}
     />
   )
 }

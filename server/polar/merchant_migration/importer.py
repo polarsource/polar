@@ -10,7 +10,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import joinedload, selectinload
 
-from polar.auth.models import AuthSubject, is_organization
+from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.enums import SubscriptionRecurringInterval
@@ -24,7 +24,6 @@ from polar.models import (
     Organization,
     Product,
     Subscription,
-    User,
 )
 from polar.models.merchant_migration import MerchantMigrationSourcePlatform
 from polar.models.merchant_migration_record import (
@@ -112,7 +111,7 @@ class CatalogImporter:
         session: AsyncSession,
         migration: MerchantMigration,
         organization: Organization,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[Organization],
         *,
         selection: MerchantMigrationOperationSelection | None = None,
     ) -> None:
@@ -240,14 +239,11 @@ class CatalogImporter:
                     price_currency=PresentmentCurrency(price.currency.lower()),
                 )
             )
-        organization_id = (
-            None if is_organization(self.auth_subject) else self.organization.id
-        )
         return await product_service.create(
             self.session,
             ProductCreateRecurring(
                 name=product.name,
-                organization_id=organization_id,
+                organization_id=None,
                 recurring_interval=SubscriptionRecurringInterval(
                     product.recurring_interval
                 ),

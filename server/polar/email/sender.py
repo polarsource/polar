@@ -66,6 +66,7 @@ class EmailSender(ABC):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
+        tags: dict[str, str] | None = None,
     ) -> str | None:
         pass
 
@@ -83,6 +84,7 @@ class LoggingEmailSender(EmailSender):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
+        tags: dict[str, str] | None = None,
     ) -> str | None:
         log.info(
             "Sending an email",
@@ -90,6 +92,7 @@ class LoggingEmailSender(EmailSender):
             subject=subject,
             from_name=from_name,
             from_email_addr=to_ascii_email(from_email_addr),
+            tags=tags,
         )
         return None
 
@@ -113,6 +116,7 @@ class ResendEmailSender(EmailSender):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
+        tags: dict[str, str] | None = None,
     ) -> str | None:
         to_email_addr_ascii = to_ascii_email(to_email_addr)
         payload: dict[str, Any] = {
@@ -129,6 +133,9 @@ class ResendEmailSender(EmailSender):
                 for attachment in attachments
             ]
             if attachments
+            else [],
+            "tags": [{"name": name, "value": value} for name, value in tags.items()]
+            if tags
             else [],
         }
         if reply_to_name and reply_to_email_addr:

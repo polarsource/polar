@@ -135,6 +135,73 @@ class TestEmailSend:
         assert str(log.organization_id) == org_id
         assert log.email_props["organization"]["name"] == "Test Org"
 
+    async def test_send_includes_category_and_tenant_tags(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+    ) -> None:
+        mock_send = mocker.patch(
+            "polar.email.tasks.email_sender.send",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.email.tasks.render_from_json",
+            return_value="<p>Rendered</p>",
+        )
+
+        org_id = "01942f38-d81f-7cd7-a40e-a80ae5e3cecd"
+        props_json = (
+            '{"email": "test@example.com",'
+            f' "organization": {{"id": "{org_id}", "name": "Test Org"}}}}'
+        )
+
+        await email_send(
+            to_email_addr="test@example.com",
+            subject="Test Subject",
+            html_content=None,
+            from_name="Polar",
+            from_email_addr="noreply@polar.sh",
+            email_headers=None,
+            reply_to_name=None,
+            reply_to_email_addr=None,
+            template="order_confirmation",
+            props_json=props_json,
+        )
+
+        assert mock_send.call_args.kwargs["tags"] == {
+            "category": "order_confirmation",
+            "tenant_id": org_id,
+        }
+
+    async def test_send_tags_omit_tenant_without_organization(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+    ) -> None:
+        mock_send = mocker.patch(
+            "polar.email.tasks.email_sender.send",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.email.tasks.render_from_json",
+            return_value="<p>Rendered</p>",
+        )
+
+        await email_send(
+            to_email_addr="test@example.com",
+            subject="Test Subject",
+            html_content=None,
+            from_name="Polar",
+            from_email_addr="noreply@polar.sh",
+            email_headers=None,
+            reply_to_name=None,
+            reply_to_email_addr=None,
+            template="login_code",
+            props_json='{"email": "test@example.com"}',
+        )
+
+        assert mock_send.call_args.kwargs["tags"] == {"category": "login_code"}
+
     async def test_processor_reflects_settings(
         self,
         session: AsyncSession,

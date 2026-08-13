@@ -1,0 +1,9 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "options": {
+    "denyWarnings": true,
+    "typeAware": true
+  },
+  "ignorePatterns": ["node_modules/**", "dist/**"],
+  "extends": ["../eslint-config/oxlint-react.json"]
+}

@@ -34,6 +34,7 @@
   "scripts": {
     "build": "rm -rf dist && tsup",
     "lint": "oxfmt --check . && eslint --max-warnings 0 .",
+    "lint:oxlint": "oxlint .",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

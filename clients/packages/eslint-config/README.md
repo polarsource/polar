@@ -1,3 +1,3 @@
-# `@turbo/eslint-config`
+# `@polar-sh/eslint-config`
 
-Collection of internal eslint configurations.
+Shared ESLint and Oxlint configurations for the clients monorepo. Both linters are kept available during the Oxlint migration for output comparison.

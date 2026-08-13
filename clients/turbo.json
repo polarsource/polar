@@ -64,6 +64,9 @@
     "lint": {
       "dependsOn": ["^build"]
     },
+    "lint:oxlint": {
+      "dependsOn": ["^build"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },

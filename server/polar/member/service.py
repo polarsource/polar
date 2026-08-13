@@ -421,37 +421,6 @@ class MemberService:
                 )
             return created_member
 
-    async def get_or_create_seat_member(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        organization: OrgModel,
-    ) -> Member | None:
-        """
-        Get or create a member for a seat assignment if feature flag is enabled.
-
-        Returns:
-            Created/existing Member if feature flag enabled, None if flag disabled
-        """
-        member_model = organization.feature_settings.get("member_model_enabled", False)
-        seat_based = organization.feature_settings.get(
-            "seat_based_pricing_enabled", False
-        )
-        if not member_model and not seat_based:
-            return None
-
-        if customer.email is None:
-            return None
-
-        return await self.get_or_create_by_email(
-            session,
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email=customer.email,
-            name=customer.name,
-            role=MemberRole.member,
-        )
-
     async def get_or_create_by_email(
         self,
         session: AsyncSession,

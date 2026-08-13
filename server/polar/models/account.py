@@ -89,10 +89,7 @@ class Account(RecordModel):
             "Organization",
             lazy="raise",
             primaryjoin=(
-                "and_("
-                "Organization.account_id == Account.id,"
-                "Organization.is_deleted.is_(False)"
-                ")"
+                "and_(Organization.account_id == Account.id,~Organization.is_deleted)"
             ),
             viewonly=True,
         )

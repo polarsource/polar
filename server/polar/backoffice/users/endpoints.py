@@ -584,7 +584,7 @@ async def get(
         active_oauth_result = await session.execute(
             select(OAuthAccount).where(
                 OAuthAccount.user_id == user.id,
-                OAuthAccount.is_deleted.is_(False),
+                ~OAuthAccount.is_deleted,
             )
         )
         active_oauth_accounts = active_oauth_result.scalars().all()
@@ -592,7 +592,7 @@ async def get(
         deleted_oauth_result = await session.execute(
             select(OAuthAccount).where(
                 OAuthAccount.user_id == user.id,
-                OAuthAccount.is_deleted.is_(True),
+                OAuthAccount.is_deleted,
             )
         )
         deleted_oauth_accounts = deleted_oauth_result.scalars().all()

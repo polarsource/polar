@@ -37,7 +37,7 @@ class OrganizationSSOConnectionRepository(
         self, organization_id: UUID
     ) -> Sequence[OrganizationSSOConnection]:
         statement = self.get_statement_by_organization(organization_id).where(
-            OrganizationSSOConnection.enabled.is_(True)
+            OrganizationSSOConnection.enabled
         )
         return await self.get_all(statement)
 
@@ -46,6 +46,6 @@ class OrganizationSSOConnectionRepository(
     ) -> OrganizationSSOConnection | None:
         statement = self.get_statement_by_organization(organization_id).where(
             OrganizationSSOConnection.id == id,
-            OrganizationSSOConnection.enabled.is_(True),
+            OrganizationSSOConnection.enabled,
         )
         return await self.get_one_or_none(statement)

@@ -143,7 +143,7 @@ def cases_statement(
         statement = statement.where(SupportCase.type == case_type)
     disputes_enabled = Organization.feature_settings["disputes_enabled"].as_boolean()
     if self_service == "enabled":
-        statement = statement.where(disputes_enabled.is_(True))
+        statement = statement.where(disputes_enabled)
     elif self_service == "disabled":
         statement = statement.where(disputes_enabled.isnot(True))
     order_by: tuple[Any, ...]

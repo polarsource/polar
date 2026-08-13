@@ -30,7 +30,7 @@ class UserOrganizationRepository:
         statement = select(UserOrganization).where(
             UserOrganization.user_id == user_id,
             UserOrganization.organization_id == organization_id,
-            UserOrganization.is_deleted.is_(False),
+            ~UserOrganization.is_deleted,
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
@@ -49,7 +49,7 @@ class UserOrganizationRepository:
             )
             .where(
                 UserOrganization.user_id == user_id,
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
                 Organization.can_authenticate,
             )
             .order_by(Organization.name)
@@ -67,7 +67,7 @@ class UserOrganizationRepository:
             .where(
                 UserOrganization.organization_id == organization_id,
                 UserOrganization.role == OrganizationRole.owner,
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
             )
             .values(role=OrganizationRole.admin)
             .returning(UserOrganization.user_id)

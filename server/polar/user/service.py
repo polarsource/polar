@@ -450,7 +450,7 @@ class UserService:
         stmt = (
             update(NotificationRecipient)
             .where(NotificationRecipient.user_id == user.id)
-            .where(NotificationRecipient.is_deleted.is_(False))
+            .where(~NotificationRecipient.is_deleted)
             .values(deleted_at=func.now())
         )
         await session.execute(stmt)

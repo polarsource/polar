@@ -773,8 +773,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @classmethod
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
         return and_(
-            cls.is_deleted.is_(False),
-            cls.capabilities["api_access"].as_boolean().is_(True),
+            ~cls.is_deleted,
+            cls.capabilities["api_access"].as_boolean(),
         )
 
     @hybrid_property
@@ -785,8 +785,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @classmethod
     def _can_access_dashboard_expression(cls) -> ColumnElement[bool]:
         return and_(
-            cls.is_deleted.is_(False),
-            cls.capabilities["dashboard_access"].as_boolean().is_(True),
+            ~cls.is_deleted,
+            cls.capabilities["dashboard_access"].as_boolean(),
         )
 
     @hybrid_property
@@ -796,7 +796,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @can_accept_payments.inplace.expression
     @classmethod
     def _can_accept_payments_expression(cls) -> ColumnElement[bool]:
-        return cls.capabilities["checkout_payments"].as_boolean().is_(True)
+        return cls.capabilities["checkout_payments"].as_boolean()
 
     @hybrid_property
     def can_renew_subscriptions(self) -> bool:
@@ -805,7 +805,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @can_renew_subscriptions.inplace.expression
     @classmethod
     def _can_renew_subscriptions_expression(cls) -> ColumnElement[bool]:
-        return cls.capabilities["subscription_renewals"].as_boolean().is_(True)
+        return cls.capabilities["subscription_renewals"].as_boolean()
 
     @hybrid_property
     def can_payout(self) -> bool:
@@ -814,7 +814,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @can_payout.inplace.expression
     @classmethod
     def _can_payout_expression(cls) -> ColumnElement[bool]:
-        return cls.capabilities["payouts"].as_boolean().is_(True)
+        return cls.capabilities["payouts"].as_boolean()
 
     @hybrid_property
     def can_refund(self) -> bool:
@@ -823,7 +823,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @can_refund.inplace.expression
     @classmethod
     def _can_refund_expression(cls) -> ColumnElement[bool]:
-        return cls.capabilities["refunds"].as_boolean().is_(True)
+        return cls.capabilities["refunds"].as_boolean()
 
     def set_status(self, status: OrganizationStatus) -> None:
         if (
@@ -926,10 +926,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
             "Product",
             lazy="raise",
             primaryjoin=(
-                "and_("
-                "Product.organization_id == Organization.id, "
-                "Product.is_archived.is_(False)"
-                ")"
+                "and_(Product.organization_id == Organization.id, ~Product.is_archived)"
             ),
             viewonly=True,
         )

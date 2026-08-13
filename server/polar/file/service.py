@@ -49,7 +49,7 @@ class FileService:
         )
 
         statement = repository.get_statement_by_org_ids(org_ids).where(
-            File.is_uploaded.is_(True),
+            File.is_uploaded,
             File.service != FileServiceTypes.support_case_attachment,
         )
 
@@ -194,9 +194,9 @@ class FileService:
         statement = sql.select(ProductMediaFile).where(
             File.id == id,
             File.organization_id == organization_id,
-            File.is_uploaded.is_(True),
-            File.is_enabled.is_(True),
-            File.is_deleted.is_(False),
+            File.is_uploaded,
+            File.is_enabled,
+            ~File.is_deleted,
             File.flagged_malicious_at.is_(None),
         )
         result = await session.execute(statement)

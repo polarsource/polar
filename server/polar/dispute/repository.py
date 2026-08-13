@@ -164,8 +164,8 @@ class DisputeRepository(
             .where(
                 Dispute.status == DisputeStatus.needs_response,
                 announced,
-                feature_settings["disputes_enabled"].as_boolean().is_(True),
-                feature_settings["dispute_auto_accept_enabled"].as_boolean().is_(True),
+                feature_settings["disputes_enabled"].as_boolean(),
+                feature_settings["dispute_auto_accept_enabled"].as_boolean(),
                 Organization.dispute_settings["auto_accept_below_amount"]
                 .as_integer()
                 .isnot(None),

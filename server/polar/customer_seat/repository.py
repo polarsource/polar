@@ -447,8 +447,8 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
             .where(
                 Subscription.product_id == product_id,
-                Subscription.is_deleted.is_(False),
-                Subscription.active.is_(True),
+                ~Subscription.is_deleted,
+                Subscription.active,
                 CustomerSeat.status == SeatStatus.claimed,
                 CustomerSeat.customer_id.is_not(None),
             )
@@ -463,7 +463,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             .join(Order, CustomerSeat.order_id == Order.id)
             .where(
                 Order.product_id == product_id,
-                Order.is_deleted.is_(False),
+                ~Order.is_deleted,
                 CustomerSeat.status == SeatStatus.claimed,
                 CustomerSeat.customer_id.is_not(None),
             )

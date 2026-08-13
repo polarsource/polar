@@ -327,7 +327,7 @@ class Customer(MetadataMixin, RecordModel):
     @can_authenticate.inplace.expression
     @classmethod
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
-        return cls.is_deleted.is_(False)
+        return ~cls.is_deleted
 
     def get_oauth_account(
         self, account_id: str, platform: CustomerOAuthPlatform

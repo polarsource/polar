@@ -82,7 +82,7 @@ class BillingEntryRepository(
             # pending set — which was timing out on high-volume subscriptions.
             .where(
                 BillingEntry.type != BillingEntryType.metered,
-                ProductPrice.is_static.is_(True),
+                ProductPrice.is_static,
             )
             .options(
                 contains_eager(BillingEntry.product_price),

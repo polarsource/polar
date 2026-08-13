@@ -30,7 +30,7 @@ class OrganizationAccessTokenRepository(
             .join(OrganizationAccessToken.organization)
             .where(
                 OrganizationAccessToken.token == token_hash,
-                Organization.can_authenticate.is_(True),
+                Organization.can_authenticate,
             )
             .options(contains_eager(OrganizationAccessToken.organization))
         )
@@ -64,7 +64,7 @@ class OrganizationAccessTokenRepository(
             sql.select(OrganizationAccessToken.id)
             .where(
                 OrganizationAccessToken.organization_id == organization_id,
-                OrganizationAccessToken.is_deleted.is_(False),
+                ~OrganizationAccessToken.is_deleted,
             )
             .limit(1)
         )

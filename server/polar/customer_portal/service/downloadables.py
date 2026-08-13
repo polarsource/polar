@@ -111,7 +111,7 @@ class DownloadableService(
                 Downloadable.customer_id == customer.id,
                 Downloadable.benefit_id == benefit_id,
                 Downloadable.status == DownloadableStatus.granted,
-                Downloadable.is_deleted.is_(False),
+                ~Downloadable.is_deleted,
             )
             .values(
                 status=DownloadableStatus.revoked,

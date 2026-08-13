@@ -418,9 +418,9 @@ class SubscriptionService:
 
         if active is not None:
             if active:
-                statement = statement.where(Subscription.active.is_(True))
+                statement = statement.where(Subscription.active)
             else:
-                statement = statement.where(Subscription.revoked.is_(True))
+                statement = statement.where(Subscription.revoked)
 
         if status is not None:
             statement = statement.where(Subscription.status.in_(status))
@@ -3559,8 +3559,8 @@ class SubscriptionService:
         statement = select(BenefitGrant).where(
             BenefitGrant.subscription_id == subscription.id,
             BenefitGrant.benefit_id.not_in(subscription_tier_benefits_statement),
-            BenefitGrant.is_granted.is_(True),
-            BenefitGrant.is_deleted.is_(False),
+            BenefitGrant.is_granted,
+            ~BenefitGrant.is_deleted,
         )
 
         result = await session.execute(statement)

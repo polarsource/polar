@@ -233,8 +233,8 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
             .join(CustomerSession.customer)
             .where(
                 CustomerSession.token == token_hash,
-                CustomerSession.is_deleted.is_(False),
-                Customer.can_authenticate.is_(True),
+                ~CustomerSession.is_deleted,
+                Customer.can_authenticate,
             )
             .options(
                 contains_eager(CustomerSession.customer).joinedload(

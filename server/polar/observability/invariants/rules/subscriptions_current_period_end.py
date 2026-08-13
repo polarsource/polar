@@ -50,10 +50,10 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
             select(Subscription.id, over(func.count()))
             .join(Subscription.organization)
             .where(
-                Subscription.active.is_(True),
+                Subscription.active,
                 Organization.deleted_at.is_(None),
                 Subscription.current_period_end < (func.now() - self.LEEWAY),
-                Organization.can_renew_subscriptions.is_(True),
+                Organization.can_renew_subscriptions,
                 last_write < (func.now() - self.SETTLE_GRACE),
             )
             .order_by(Subscription.current_period_end.asc(), Subscription.id.asc())

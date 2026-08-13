@@ -510,7 +510,7 @@ class MetricsService:
             product_stmt = select(Product.id).where(
                 Product.organization_id.in_(tb_org_ids),
                 Product.billing_type.in_(billing_type),
-                Product.is_deleted.is_(False),
+                ~Product.is_deleted,
             )
             billing_type_product_ids = list(await session.scalars(product_stmt))
             if product_id is not None:

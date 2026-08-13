@@ -202,7 +202,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(CheckoutLink.id)).where(
                 CheckoutLink.organization_id == organization_id,
-                CheckoutLink.is_deleted.is_(False),
+                ~CheckoutLink.is_deleted,
             )
         )
         return result.scalar() or 0
@@ -212,7 +212,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(WebhookEndpoint.id)).where(
                 WebhookEndpoint.organization_id == organization_id,
-                WebhookEndpoint.is_deleted.is_(False),
+                ~WebhookEndpoint.is_deleted,
             )
         )
         return result.scalar() or 0
@@ -222,7 +222,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(OrganizationAccessToken.id)).where(
                 OrganizationAccessToken.organization_id == organization_id,
-                OrganizationAccessToken.is_deleted.is_(False),
+                ~OrganizationAccessToken.is_deleted,
             )
         )
         return result.scalar() or 0
@@ -232,8 +232,8 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(Product.id)).where(
                 Product.organization_id == organization_id,
-                Product.is_archived.is_(False),
-                Product.is_deleted.is_(False),
+                ~Product.is_archived,
+                ~Product.is_deleted,
             )
         )
         return result.scalar() or 0
@@ -243,7 +243,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(Benefit.id)).where(
                 Benefit.organization_id == organization_id,
-                Benefit.is_deleted.is_(False),
+                ~Benefit.is_deleted,
             )
         )
         return result.scalar() or 0
@@ -255,7 +255,7 @@ class OrganizationSetupAnalyticsService:
             .join(ProductBenefit, Benefit.id == ProductBenefit.benefit_id)
             .where(
                 Benefit.organization_id == organization_id,
-                Benefit.is_deleted.is_(False),
+                ~Benefit.is_deleted,
             )
         )
         return result.scalar() or 0

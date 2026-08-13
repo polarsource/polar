@@ -20,7 +20,7 @@ from polar.models import Benefit, BenefitGrant, Downloadable, LicenseKey, Organi
 
 def _member_model_org_ids() -> Select[tuple[UUID]]:
     return select(Organization.id).where(
-        Organization.feature_settings["member_model_enabled"].as_boolean().is_(True)
+        Organization.feature_settings["member_model_enabled"].as_boolean()
     )
 
 

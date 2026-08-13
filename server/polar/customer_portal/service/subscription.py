@@ -121,9 +121,9 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
 
         if active is not None:
             if active:
-                statement = statement.where(Subscription.active.is_(True))
+                statement = statement.where(Subscription.active)
             else:
-                statement = statement.where(Subscription.revoked.is_(True))
+                statement = statement.where(Subscription.revoked)
 
         if query is not None:
             statement = statement.where(Product.name.icontains(query, autoescape=True))
@@ -369,7 +369,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         self, auth_subject: AuthSubject[Customer | Member]
     ) -> Select[tuple[Subscription]]:
         return select(Subscription).where(
-            Subscription.is_deleted.is_(False),
+            ~Subscription.is_deleted,
             Subscription.customer_id == get_customer_id(auth_subject),
         )
 

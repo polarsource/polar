@@ -98,7 +98,7 @@ class LicenseKey(RecordModel):
             primaryjoin=(
                 "and_("
                 "LicenseKeyActivation.license_key_id == LicenseKey.id, "
-                "LicenseKeyActivation.is_deleted.is_(False)"
+                "~LicenseKeyActivation.is_deleted"
                 ")"
             ),
             viewonly=True,

@@ -190,7 +190,7 @@ class OrganizationRepository(
             .join(UserOrganization)
             .where(
                 UserOrganization.user_id == user,
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
                 Organization.status != OrganizationStatus.BLOCKED,
             )
         )
@@ -358,8 +358,8 @@ class OrganizationRepository(
             .where(
                 UserOrganization.organization_id == organization.id,
                 UserOrganization.role == OrganizationRole.owner,
-                UserOrganization.is_deleted.is_(False),
-                User.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
+                ~User.is_deleted,
             )
         )
         result = await self.session.execute(statement)
@@ -376,7 +376,7 @@ class OrganizationRepository(
             .join(Customer, Order.customer_id == Customer.id)
             .where(
                 Customer.organization_id == organization_id,
-                Customer.is_deleted.is_(False),
+                ~Customer.is_deleted,
                 Order.total_amount > 0,
             )
         )
@@ -399,7 +399,7 @@ class OrganizationRepository(
             .outerjoin(Discount, Subscription.discount_id == Discount.id)
             .where(
                 Customer.organization_id == organization_id,
-                Customer.is_deleted.is_(False),
+                ~Customer.is_deleted,
                 Subscription.status.in_(SubscriptionStatus.active_statuses()),
                 ~(
                     (Subscription.amount == 0)
@@ -514,7 +514,7 @@ class OrganizationRepository(
             .where(
                 UserOrganization.user_id == user_id,
                 UserOrganization.role == OrganizationRole.owner,
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
             )
         )
         return await self.get_all(statement)
@@ -528,6 +528,6 @@ class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):
     ) -> OrganizationReview | None:
         statement = self.get_base_statement().where(
             OrganizationReview.organization_id == organization_id,
-            OrganizationReview.is_deleted.is_(False),
+            ~OrganizationReview.is_deleted,
         )
         return await self.get_one_or_none(statement)

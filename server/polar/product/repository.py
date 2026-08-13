@@ -56,8 +56,8 @@ class ProductRepository(
             .join(Product, Product.id == ProductPrice.product_id)
             .where(
                 Product.organization_id == organization_id,
-                Product.is_archived.is_(False),
-                ProductPrice.is_archived.is_(False),
+                ~Product.is_archived,
+                ~ProductPrice.is_archived,
                 ProductPrice.price_currency.is_not(None),
             )
             .distinct()
@@ -70,7 +70,7 @@ class ProductRepository(
         migration source product would duplicate one that already exists."""
         statement = select(func.lower(Product.name)).where(
             Product.organization_id == organization_id,
-            Product.is_archived.is_(False),
+            ~Product.is_archived,
             Product.deleted_at.is_(None),
         )
         result = await self.session.execute(statement)
@@ -87,7 +87,7 @@ class ProductRepository(
             self.get_base_statement()
             .where(
                 Product.organization_id == organization_id,
-                Product.is_archived.is_(False),
+                ~Product.is_archived,
             )
             .order_by(Product.created_at.asc())
             .options(*options)
@@ -138,7 +138,7 @@ class ProductRepository(
         """Count products for an organization with optional archived filter."""
         statement = sql.select(sql.func.count(Product.id)).where(
             Product.organization_id == organization_id,
-            Product.is_deleted.is_(False),
+            ~Product.is_deleted,
         )
 
         if is_archived is not None:
@@ -186,7 +186,7 @@ class ProductRepository(
                 ProductPrice,
                 and_(
                     ProductPrice.product_id == Product.id,
-                    ProductPrice.is_archived.is_(False),
+                    ~ProductPrice.is_archived,
                     ProductPrice.price_currency == currency,
                     ProductPrice.source == ProductPriceSource.catalog,
                 ),
@@ -194,7 +194,7 @@ class ProductRepository(
             )
             .where(
                 Product.organization_id == organization_id,
-                Product.is_archived.is_(False),
+                ~Product.is_archived,
                 ProductPrice.id.is_(None),
             )
         )

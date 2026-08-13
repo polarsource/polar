@@ -478,7 +478,7 @@ class CustomerMeterService:
                 by_external_id=False,
                 cutoff=cutoff,
             )
-            .where(Event.is_meter_credit.is_(True))
+            .where(Event.is_meter_credit)
             .order_by(Event.timestamp.asc())
         )
 

@@ -103,7 +103,7 @@ class OrganizationAccessTokenService:
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             OrganizationAccessToken.id == id,
-            OrganizationAccessToken.is_deleted.is_(False),
+            ~OrganizationAccessToken.is_deleted,
         )
         return await repository.get_one_or_none(statement)
 

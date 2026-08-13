@@ -68,7 +68,7 @@ def find_subscriptions_missing_reset_events(
             event_repository = EventRepository.from_session(session)
 
             statement = repository.get_base_statement().where(
-                Subscription.active.is_(True),
+                Subscription.active,
                 exists().where(SubscriptionMeter.subscription_id == Subscription.id),
             )
             count = await session.scalar(

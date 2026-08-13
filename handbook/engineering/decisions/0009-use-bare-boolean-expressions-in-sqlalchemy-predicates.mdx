@@ -1,0 +1,52 @@
+---
+title: "ADR-0009: Use bare boolean expressions in SQLAlchemy predicates"
+description: "Avoid wrapping SQLAlchemy query predicates in IS TRUE or IS FALSE so PostgreSQL can match indexes."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-08-12
+</Info>
+
+## Context
+
+SQLAlchemy hybrid properties often expand to comparisons such as
+`payment_lock_acquired_at <= cutoff` or `deleted_at IS NOT NULL`. Wrapping such an expression
+in `.is_(True)` or `.is_(False)` produces an outer `IS TRUE` or `IS FALSE` node; PostgreSQL's
+limited predicate implication logic may then fail to see the underlying indexable condition,
+particularly when matching a partial index, and choose a sequential scan instead.
+
+## Decision
+
+In SQL predicate positions, write a boolean expression directly for truth and negate it with
+`~expression` or `sqlalchemy.not_(expression)` for falsehood. Do not use `.is_(True)` or
+`.is_(False)` unless SQL identity semantics are intentionally required.
+
+```python
+statement.where(Order.is_payment_lock_stale)
+statement.where(~Order.is_deleted)
+```
+
+Identity tests remain valid when their three-valued behavior is the requirement. For example,
+`expression.is_not(True)` means "false or unknown" and therefore includes `NULL`, while
+`~expression` means strict falsehood and excludes `NULL`. The rule does not apply to
+`.is_(None)` / `.is_not(None)`, which express SQL null checks.
+
+## Consequences
+
+- PostgreSQL can see comparisons and null checks inside hybrid properties, making ordinary and
+  partial indexes available to the planner.
+- Predicate code consistently uses `expression` for true and `~expression` for false.
+- Every replacement must preserve the intended handling of `NULL`; `IS NOT TRUE`, projections,
+  constraints, and other contexts where `UNKNOWN` is distinct require explicit review.
+- We accept that identity tests remain in exceptional cases and should make the required null
+  semantics evident from their context or a short comment.
+
+## References
+
+- [PR #13687: stop the stale payment lock sweep from scanning every order](https://github.com/polarsource/polar/pull/13687)
+- [Issue #13690: audit `IS TRUE` / `IS FALSE` wrappers](https://github.com/polarsource/polar/issues/13690)
+- [PostgreSQL partial indexes](https://www.postgresql.org/docs/current/indexes-partial.html)

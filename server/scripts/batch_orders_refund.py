@@ -78,7 +78,7 @@ async def batch_orders_refund(
                     .join(Order.customer)
                     .where(
                         Customer.organization_id == organization_id,
-                        Order.paid.is_(True),
+                        Order.paid,
                     )
                     .options(*order_repository.get_eager_options())
                 )

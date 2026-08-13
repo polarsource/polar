@@ -86,7 +86,7 @@ class OrderRepository(
             .where(
                 Order.organization_id == organization_id,
                 Order.status.in_(OrderStatus.paid_statuses()),
-                Order.is_deleted.is_(False),
+                ~Order.is_deleted,
             )
             .group_by(Customer.id)
             .order_by(net_revenue.desc())
@@ -118,7 +118,7 @@ class OrderRepository(
             .where(
                 Order.organization_id == organization_id,
                 Order.status.in_(OrderStatus.paid_statuses()),
-                Order.is_deleted.is_(False),
+                ~Order.is_deleted,
                 Order.created_at >= since,
                 country.is_not(None),
             )
@@ -151,7 +151,7 @@ class OrderRepository(
             .where(
                 Order.organization_id == organization_id,
                 Order.status.in_(OrderStatus.paid_statuses()),
-                Order.is_deleted.is_(False),
+                ~Order.is_deleted,
                 # product_id is nullable; a NULL revenue group would waste a
                 # candidate slot and poison the returned id list.
                 Order.product_id.is_not(None),
@@ -280,9 +280,9 @@ class OrderRepository(
             .where(
                 Order.next_payment_attempt_at.is_not(None),
                 Order.next_payment_attempt_at <= utc_now(),
-                Order.is_void.is_(False),
-                Organization.is_deleted.is_(False),
-                Organization.can_renew_subscriptions.is_(True),
+                ~Order.is_void,
+                ~Organization.is_deleted,
+                Organization.can_renew_subscriptions,
             )
             .order_by(Order.next_payment_attempt_at.asc())
             .options(*options)
@@ -422,13 +422,13 @@ class OrderRepository(
             customer = auth_subject.subject
             statement = statement.where(
                 Order.customer_id == customer.id,
-                Order.is_deleted.is_(False),
+                ~Order.is_deleted,
             )
         elif is_member(auth_subject):
             member = auth_subject.subject
             statement = statement.where(
                 Order.customer_id == member.customer_id,
-                Order.is_deleted.is_(False),
+                ~Order.is_deleted,
             )
 
         return statement

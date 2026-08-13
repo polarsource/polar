@@ -131,7 +131,7 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
             primaryjoin=(
                 "and_("
                 "ProductPrice.product_id == Product.id, "
-                "ProductPrice.is_archived.is_(False), "
+                "~ProductPrice.is_archived, "
                 "ProductPrice.source == 'catalog'"
                 ")"
             ),
@@ -209,7 +209,7 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
             cls.id.in_(
                 select(ProductPrice.product_id).where(
                     ProductPrice.type == ProductPriceType.recurring,
-                    ProductPrice.is_archived.is_(False),
+                    ~ProductPrice.is_archived,
                 )
             ),
         )
@@ -224,7 +224,7 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
     @classmethod
     def _billing_type_expression(cls) -> ColumnElement[ProductBillingType]:
         return case(
-            (cls.is_recurring.is_(True), ProductBillingType.recurring),
+            (cls.is_recurring, ProductBillingType.recurring),
             else_=ProductBillingType.one_time,
         )
 

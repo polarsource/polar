@@ -69,7 +69,7 @@ class BenefitGrantService:
             select(BenefitGrant)
             .where(
                 BenefitGrant.benefit_id == benefit.id,
-                BenefitGrant.is_deleted.is_(False),
+                ~BenefitGrant.is_deleted,
             )
             .order_by(BenefitGrant.created_at.desc())
             .options(
@@ -111,7 +111,7 @@ class BenefitGrantService:
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .join(Customer, BenefitGrant.customer_id == Customer.id)
-            .where(BenefitGrant.is_deleted.is_(False))
+            .where(~BenefitGrant.is_deleted)
             .options(
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),

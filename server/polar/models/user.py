@@ -266,7 +266,7 @@ class User(RecordModel):
     @can_authenticate.inplace.expression
     @classmethod
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
-        return and_(cls.is_deleted.is_(False), cls.blocked_at.is_(None))
+        return and_(~cls.is_deleted, cls.blocked_at.is_(None))
 
     @property
     def signup_attribution(self) -> dict[str, Any]:

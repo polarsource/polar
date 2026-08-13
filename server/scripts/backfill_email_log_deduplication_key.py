@@ -119,7 +119,7 @@ def _canonical_ids(
     # no row in the group is keyed, so that earliest row is guaranteed NULL.
     return select(ranked.c.id).where(
         ranked.c.rank == 1,
-        ranked.c.group_keyed.is_(False),
+        ~ranked.c.group_keyed,
     )
 
 

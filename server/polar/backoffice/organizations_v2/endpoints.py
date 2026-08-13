@@ -702,9 +702,9 @@ async def list_organizations(
             stmt = stmt.where(OrganizationReview.appeal_submitted_at.is_(None))
 
     if first_reviews == "true":
-        stmt = stmt.where(Organization.is_first_review.is_(True))
+        stmt = stmt.where(Organization.is_first_review)
     elif first_reviews == "false":
-        stmt = stmt.where(Organization.is_first_review.is_(False))
+        stmt = stmt.where(~Organization.is_first_review)
 
     stmt = apply_deleted_filter(stmt, deleted_filter)
 
@@ -858,8 +858,8 @@ async def get_organization_detail(
         .options(contains_eager(UserOrganization.user))
         .where(
             UserOrganization.organization_id == organization_id,
-            UserOrganization.is_deleted.is_(False),
-            User.is_deleted.is_(False),
+            ~UserOrganization.is_deleted,
+            ~User.is_deleted,
         )
     )
     members_result = await session.execute(members_stmt)

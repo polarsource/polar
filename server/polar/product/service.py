@@ -100,8 +100,8 @@ class ProductService:
                 .with_only_columns(ProductPrice.id)
                 .where(
                     ProductPrice.product_id == Product.id,
-                    ProductPrice.is_archived.is_(False),
-                    ProductPrice.is_deleted.is_(False),
+                    ~ProductPrice.is_archived,
+                    ~ProductPrice.is_deleted,
                 )
                 .order_by(ProductPrice.created_at.asc())
                 .limit(1)

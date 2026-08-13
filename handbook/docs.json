@@ -105,7 +105,8 @@
               "engineering/decisions/0005-auth-subject-and-scopes",
               "engineering/decisions/0006-migration-and-backfill-safety",
               "engineering/decisions/0007-no-default-in-output-schemas",
-              "engineering/decisions/0008-encrypt-secrets-at-rest"
+              "engineering/decisions/0008-encrypt-secrets-at-rest",
+              "engineering/decisions/0009-use-bare-boolean-expressions-in-sqlalchemy-predicates"
             ]
           },
           "engineering/tech-notes",

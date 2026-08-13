@@ -115,7 +115,7 @@ class UserOrganizationService:
             sql.select(UserOrganization)
             .where(
                 UserOrganization.organization_id == org_id,
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
             )
             .options(
                 joinedload(UserOrganization.user),
@@ -130,7 +130,7 @@ class UserOrganizationService:
         """Get the count of active members in an organization."""
         stmt = sql.select(func.count(UserOrganization.user_id)).where(
             UserOrganization.organization_id == org_id,
-            UserOrganization.is_deleted.is_(False),
+            ~UserOrganization.is_deleted,
         )
         res = await session.execute(stmt)
         count = res.scalar()
@@ -166,7 +166,7 @@ class UserOrganizationService:
             .where(
                 UserOrganization.user_id == user_id,
                 UserOrganization.organization_id == organization_id,
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
             )
             .options(
                 joinedload(UserOrganization.user),
@@ -314,7 +314,7 @@ class UserOrganizationService:
             .where(
                 UserOrganization.user_id == user_id,
                 UserOrganization.organization_id == organization_id,
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
             )
             .values(deleted_at=utc_now())
             .returning(UserOrganization.user_id)
@@ -356,7 +356,7 @@ class UserOrganizationService:
             .where(
                 UserOrganization.organization_id == organization_id,
                 UserOrganization.role.in_(ADMIN_CAPABLE_ROLES),
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
             )
             .order_by(UserOrganization.user_id)
             .with_for_update()
@@ -412,7 +412,7 @@ class UserOrganizationService:
             sql.select(UserOrganization)
             .where(
                 UserOrganization.user_id == user_id,
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
             )
             .options(
                 joinedload(UserOrganization.user),

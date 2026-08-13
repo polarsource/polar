@@ -431,7 +431,7 @@ class OrderService:
         if external_customer_id is not None:
             statement = statement.where(
                 Customer.external_id.in_(external_customer_id),
-                Customer.is_deleted.is_(False),
+                ~Customer.is_deleted,
             )
 
         if checkout_id is not None:
@@ -2486,10 +2486,10 @@ class OrderService:
             .join(Order.customer)
             .where(
                 Order.product_id == product.id,
-                Order.is_deleted.is_(False),
+                ~Order.is_deleted,
                 Order.subscription_id.is_(None),
                 Order.seats.is_(None),
-                Customer.is_deleted.is_(False),
+                ~Customer.is_deleted,
             )
             .options(joinedload(Order.customer))
         )

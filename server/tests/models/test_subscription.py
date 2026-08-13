@@ -90,7 +90,7 @@ async def _matches_expression(
     result = await session.execute(
         select(Subscription.id).where(
             Subscription.id == subscription.id,
-            Subscription.requires_payment_method.is_(True),
+            Subscription.requires_payment_method,
         )
     )
     return result.scalar_one_or_none() is not None

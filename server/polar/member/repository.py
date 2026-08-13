@@ -38,7 +38,7 @@ class MemberRepository(
         statement = select(Member).where(
             Member.customer_id == customer.id,
             func.lower(Member.email) == email.lower(),
-            Member.is_deleted.is_(False),
+            ~Member.is_deleted,
         )
         return await self.get_one_or_none(statement)
 
@@ -56,7 +56,7 @@ class MemberRepository(
         statement = select(Member).where(
             Member.customer_id == customer_id,
             func.lower(Member.email) == email.lower(),
-            Member.is_deleted.is_(False),
+            ~Member.is_deleted,
         )
         return await self.get_one_or_none(statement)
 
@@ -74,7 +74,7 @@ class MemberRepository(
         statement = select(Member).where(
             Member.customer_id == customer_id,
             Member.external_id == external_id,
-            Member.is_deleted.is_(False),
+            ~Member.is_deleted,
         )
         return await self.get_one_or_none(statement)
 
@@ -92,7 +92,7 @@ class MemberRepository(
         statement = select(Member).where(
             Member.id == member_id,
             Member.customer_id == customer_id,
-            Member.is_deleted.is_(False),
+            ~Member.is_deleted,
         )
         return await self.get_one_or_none(statement)
 
@@ -102,7 +102,7 @@ class MemberRepository(
     ) -> Sequence[Member]:
         statement = select(Member).where(
             Member.customer_id == customer_id,
-            Member.is_deleted.is_(False),
+            ~Member.is_deleted,
         )
         return await self.get_all(statement)
 
@@ -126,7 +126,7 @@ class MemberRepository(
             .options(joinedload(Member.customer).joinedload(Customer.organization))
         )
         if not include_deleted:
-            statement = statement.where(Member.is_deleted.is_(False))
+            statement = statement.where(~Member.is_deleted)
         return await self.get_one_or_none(statement)
 
     async def transfer_ownership(
@@ -173,7 +173,7 @@ class MemberRepository(
             .where(
                 func.lower(Member.email) == email.lower(),
                 Member.organization_id == organization_id,
-                Member.is_deleted.is_(False),
+                ~Member.is_deleted,
             )
             .options(joinedload(Member.customer))
         )

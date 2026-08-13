@@ -87,7 +87,7 @@ class PaymentService:
 
             statement = statement.where(
                 effective_customer_id.in_(customer_id),
-                or_(Order.is_deleted.is_(False), Order.id.is_(None)),
+                or_(~Order.is_deleted, Order.id.is_(None)),
             )
 
         if status is not None:

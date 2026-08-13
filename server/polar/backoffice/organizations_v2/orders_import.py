@@ -49,7 +49,7 @@ async def _get_product_by_name(
 ) -> Product | None:
     statement = repository.get_base_statement().where(
         Product.organization_id == organization.id,
-        Product.is_archived.is_(False),
+        ~Product.is_archived,
         func.lower(func.trim(Product.name)) == name.lower(),
     )
     try:

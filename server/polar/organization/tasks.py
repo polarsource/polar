@@ -331,11 +331,11 @@ async def _backfill_owner_members(
             Member,
             (Customer.id == Member.customer_id)
             & (Member.role == MemberRole.owner)
-            & (Member.is_deleted.is_(False)),
+            & (~Member.is_deleted),
         )
         .where(
             Customer.organization_id == organization.id,
-            Customer.is_deleted.is_(False),
+            ~Customer.is_deleted,
             Member.id.is_(None),
         )
     )
@@ -589,7 +589,7 @@ async def _backfill_benefit_grants(
         .where(
             Customer.organization_id == organization.id,
             BenefitGrant.member_id.is_(None),
-            BenefitGrant.is_deleted.is_(False),
+            ~BenefitGrant.is_deleted,
         )
     )
     results = await session.stream_scalars(
@@ -671,7 +671,7 @@ async def _backfill_benefit_grants(
                         BenefitGrant.member_id == target_member_id,
                         BenefitGrant.benefit_id == grant.benefit_id,
                         BenefitGrant.id != grant.id,
-                        BenefitGrant.is_deleted.is_(False),
+                        ~BenefitGrant.is_deleted,
                     )
                 )
                 if existing_id is not None:
@@ -1100,7 +1100,7 @@ async def _prepare_benefit_grants(
         .where(
             Customer.organization_id == organization.id,
             BenefitGrant.member_id.is_(None),
-            BenefitGrant.is_deleted.is_(False),
+            ~BenefitGrant.is_deleted,
         )
     )
     results = await session.stream_scalars(
@@ -1173,7 +1173,7 @@ async def _prepare_benefit_grants(
                         BenefitGrant.subscription_id == grant.subscription_id,
                         BenefitGrant.order_id == grant.order_id,
                         BenefitGrant.id != grant.id,
-                        BenefitGrant.is_deleted.is_(False),
+                        ~BenefitGrant.is_deleted,
                     )
                 )
                 if scope_conflict_id is not None:

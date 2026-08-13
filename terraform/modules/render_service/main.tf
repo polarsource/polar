@@ -414,7 +414,7 @@ resource "render_web_service" "worker" {
       dramatiq_prom_port       = { value = each.value.dramatiq_prom_port }
       POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
     },
-    (each.value.redis_host != null && each.value.redis_port != null && each.value.redis_db) ? {
+    (each.value.redis_host != null && each.value.redis_port != null && each.value.redis_db != null) ? {
       POLAR_REDIS_HOST = { value = each.value.redis_host }
       POLAR_REDIS_PORT = { value = each.value.redis_port }
       POLAR_REDIS_DB   = { value = each.value.redis_db }

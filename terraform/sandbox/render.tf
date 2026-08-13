@@ -153,6 +153,12 @@ module "sandbox" {
       start_command      = "uv run dramatiq polar.worker.run_without_db -p 1 -t 16 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
+    worker-sandbox-drain = {
+      start_command = "uv run dramatiq polar.worker.run -p 2 -t 8"
+      redis_host    = render_redis.redis_sandbox.id
+      redis_port    = "6379"
+      redis_db      = "1"
+    }
     worker-sandbox-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"

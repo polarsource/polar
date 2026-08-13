@@ -212,6 +212,13 @@ module "production" {
       start_command      = "uv run dramatiq polar.worker.run_without_db -p 4 -t 32 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
+    worker-drain = {
+      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8"
+      dramatiq_prom_port = "10004"
+      redis_host         = render_redis.redis.id
+      redis_port         = "6379"
+      redis_db           = "0"
+    }
     worker-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"

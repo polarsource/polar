@@ -9,10 +9,12 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
+import { useHasPermission } from '@/hooks/permissions'
 import { useDeleteCustomer } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVert from '@mui/icons-material/MoreVert'
 import { schemas } from '@polar-sh/client'
@@ -58,11 +60,22 @@ export const CustomerHeader = ({
     hide: hideDeleteCustomerModal,
     isShown: isDeleteCustomerModalShown,
   } = useModal()
-
   const safeCopy = useSafeCopy(toast)
+  const canManageCustomers = useHasPermission(
+    organization.id,
+    'customers:manage',
+  )
   const memberModelEnabled =
     !!organization.feature_settings?.member_model_enabled
   const createCustomerSession = useCallback(async () => {
+    if (!canManageCustomers) {
+      toast({
+        title: 'Restricted access',
+        description: permissionDeniedMessage('customers:manage'),
+      })
+      return
+    }
+
     let memberId: string | undefined
     if (memberModelEnabled && customer.type === 'team') {
       const { data: membersData } = await api.GET('/v1/members/', {
@@ -103,7 +116,7 @@ export const CustomerHeader = ({
       title: 'Copied To Clipboard',
       description: `Customer Portal Link was copied to clipboard`,
     })
-  }, [safeCopy, customer, organization, memberModelEnabled])
+  }, [canManageCustomers, safeCopy, customer, organization, memberModelEnabled])
 
   const deleteCustomer = useDeleteCustomer(
     customer.id,

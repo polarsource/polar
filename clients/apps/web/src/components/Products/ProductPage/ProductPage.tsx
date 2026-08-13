@@ -209,14 +209,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                   >
                     Copy Product ID
                   </DropdownMenuItem>
-                  {product.is_archived ? (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={showUnarchiveModal}>
-                        Unarchive Product
-                      </DropdownMenuItem>
-                    </>
-                  ) : (
+                  {!product.is_archived && (
                     <>
                       <DropdownMenuItem
                         onClick={() => {
@@ -240,6 +233,14 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem destructive onClick={showArchiveModal}>
                         Archive Product
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {product.is_archived && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={showUnarchiveModal}>
+                        Unarchive Product
                       </DropdownMenuItem>
                     </>
                   )}

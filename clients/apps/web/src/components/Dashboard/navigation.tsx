@@ -107,17 +107,25 @@ export const useResolveRoutes = (
   const posthog = usePostHog()
 
   return useMemo(() => {
-    return routesResolver(org, posthog)
-      .filter((route) => allowAll || route.if)
-      .map((route) => ({
-        ...route,
-        subs: route.subs?.filter(
-          (child) =>
-            typeof child.if === 'undefined' ||
-            (typeof child.if === 'function' ? child.if() : child.if),
-        ),
-      }))
-      .map(applyIsActive(path))
+    return (
+      routesResolver(org, posthog)
+        .filter((o) => allowAll || o.if)
+        // Filter out child routes if they have an if-function and it evaluates to false
+        .map((route) => {
+          if (route.subs && Array.isArray(route.subs)) {
+            return {
+              ...route,
+              subs: route.subs.filter(
+                (child) =>
+                  typeof child.if === 'undefined' ||
+                  (typeof child.if === 'function' ? child.if() : child.if),
+              ),
+            }
+          }
+          return route
+        })
+        .map(applyIsActive(path))
+    )
   }, [org, path, allowAll, routesResolver, posthog])
 }
 

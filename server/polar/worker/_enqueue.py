@@ -9,6 +9,7 @@ from typing import Any, Self
 
 import dramatiq
 import structlog
+from dramatiq.brokers.redis import RedisBroker
 from dramatiq.common import dq_name
 
 from polar.config import settings
@@ -84,7 +85,7 @@ class JobQueueManager:
             job for job in self._enqueued_jobs if not should_route_to_sqs(job[0])
         ]
 
-        queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
+        built_messages: list[tuple[dramatiq.Message[Any], int | None]] = []
         all_messages: list[tuple[str, Any]] = []
 
         for actor_name, args, kwargs, delay in redis_jobs:
@@ -113,28 +114,37 @@ class JobQueueManager:
                 else:
                     delay = debounce_delay
 
-            # Handle delay: convert to eta and use delayed queue
-            # See https://github.com/Bogdanp/dramatiq/blob/aa91cdfcfa6d8ad957ca0afe900266617f2661f8/dramatiq/brokers/stub.py#L107-L116
-            if delay is not None and delay > 0:
-                current_millis = int(time.time() * 1000)
-                eta = current_millis + delay
-                message = message.copy(
-                    queue_name=dq_name(message.queue_name),
-                    options={**message.options, "eta": eta},
-                )
-
-            encoded_message = message.encode()
-            queue_messages[message.queue_name].append(
-                (redis_message_id, encoded_message)
-            )
+            built_messages.append((message, delay))
             all_messages.append((fn.actor_name, message.encode()))
 
-        for queue_name, messages in queue_messages.items():
-            for batch in itertools.batched(messages, FLUSH_BATCH_SIZE):
-                await self._batch_hset_messages(redis, queue_name, batch)
-                await self._batch_rpush_queue(
-                    redis, queue_name, (message_id for message_id, _ in batch)
+        if isinstance(broker, RedisBroker):
+            # Fast path: write messages to the broker's Redis structures in
+            # batches, bypassing per-message enqueue round-trips.
+            queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
+            for message, delay in built_messages:
+                # Handle delay: convert to eta and use delayed queue
+                # See https://github.com/Bogdanp/dramatiq/blob/aa91cdfcfa6d8ad957ca0afe900266617f2661f8/dramatiq/brokers/stub.py#L107-L116
+                if delay is not None and delay > 0:
+                    current_millis = int(time.time() * 1000)
+                    eta = current_millis + delay
+                    message = message.copy(
+                        queue_name=dq_name(message.queue_name),
+                        options={**message.options, "eta": eta},
+                    )
+                queue_messages[message.queue_name].append(
+                    (message.options["redis_message_id"], message.encode())
                 )
+            for queue_name, messages in queue_messages.items():
+                for batch in itertools.batched(messages, FLUSH_BATCH_SIZE):
+                    await self._batch_hset_messages(redis, queue_name, batch)
+                    await self._batch_rpush_queue(
+                        redis, queue_name, (message_id for message_id, _ in batch)
+                    )
+        else:
+            # Other brokers (e.g. Vercel Queues) go through the standard
+            # enqueue API, which handles delays natively.
+            for message, delay in built_messages:
+                broker.enqueue(message, delay=delay if delay and delay > 0 else None)
 
         for actor_name, encoded_message in all_messages:
             log.debug(

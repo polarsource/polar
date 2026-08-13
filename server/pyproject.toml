@@ -205,3 +205,6 @@ dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-
 
 [tool.vercel]
 entrypoint = "polar.app:app"
+
+[[tool.vercel.subscribers]]
+entrypoint = "polar.worker.run:broker"

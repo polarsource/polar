@@ -246,6 +246,14 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
         middleware.CurrentMessage(),
     ]
 
+    if settings.is_vercel():
+        # Vercel Queues transport, delivering into the subscriber Function
+        # declared in pyproject.toml. Local import: vercel-dramatiq is
+        # installed by the Vercel build, not declared as a dependency.
+        from vercel.integrations.dramatiq import VercelQueueBroker
+
+        return VercelQueueBroker(middleware=middleware_list)
+
     broker = RoutingRedisBroker(
         connection_pool=redis_pool,
         middleware=middleware_list,

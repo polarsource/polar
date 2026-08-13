@@ -1,9 +1,0 @@
-[Unit]
-Description=Watch for preview infra triggers
-StartLimitIntervalSec=0
-
-[Path]
-DirectoryNotEmpty=/srv/preview-triggers
-
-[Install]
-WantedBy=multi-user.target

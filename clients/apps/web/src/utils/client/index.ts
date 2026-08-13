@@ -51,13 +51,7 @@ export const createClientSideAPI = (token?: string): Client => {
 export const api = createClientSideAPI()
 
 export const getSSRHeaders = (): Record<string, string> => {
-  const headers: Record<string, string> = { ...CLIENT_VERSION_HEADERS }
-
-  if (process.env.POLAR_PREVIEW_ACCESS_TOKEN) {
-    headers['X-Preview-Token'] = process.env.POLAR_PREVIEW_ACCESS_TOKEN
-  }
-
-  return headers
+  return { ...CLIENT_VERSION_HEADERS }
 }
 
 export const createServerSideAPI = async (
@@ -79,14 +73,6 @@ export const createServerSideAPI = async (
   apiHeaders = {
     ...apiHeaders,
     Cookie: cookies.toString(),
-  }
-
-  // Preview environments: include access token so SSR calls pass through the funnel gate
-  if (process.env.POLAR_PREVIEW_ACCESS_TOKEN) {
-    apiHeaders = {
-      ...apiHeaders,
-      'X-Preview-Token': process.env.POLAR_PREVIEW_ACCESS_TOKEN,
-    }
   }
 
   // Use POLAR_API_URL for server-side requests (e.g., in Docker containers)

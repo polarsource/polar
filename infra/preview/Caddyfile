@@ -1,2 +1,32 @@
-:80 {
+(polar) {
+	handle /v1/* {
+		reverse_proxy 127.0.0.1:10000
+	}
+	@backoffice path /backoffice /backoffice/*
+	handle @backoffice {
+		reverse_proxy 127.0.0.1:10000
+	}
+	handle /healthz {
+		reverse_proxy 127.0.0.1:10000
+	}
+	handle /openapi.json {
+		reverse_proxy 127.0.0.1:10000
+	}
+	handle /_logs/* {
+		reverse_proxy 127.0.0.1:9990
+	}
+	handle {
+		reverse_proxy 127.0.0.1:3000
+	}
+}
+
+:8000 {
+	import polar
+}
+
+:443 {
+	tls {
+		get_certificate tailscale
+	}
+	import polar
 }

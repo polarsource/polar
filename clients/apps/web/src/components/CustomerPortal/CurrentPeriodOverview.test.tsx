@@ -19,9 +19,25 @@ const createSeatPrice = (amount: number): schemas['ProductPriceSeatBased'] =>
     },
   }) as schemas['ProductPriceSeatBased']
 
+const createFixedPrice = (amount: number): schemas['ProductPriceFixed'] =>
+  ({
+    amount_type: 'fixed',
+    price_currency: 'usd',
+    price_amount: amount,
+  }) as schemas['ProductPriceFixed']
+
+const createCustomPrice = (): schemas['ProductPriceCustom'] =>
+  ({
+    amount_type: 'custom',
+    price_currency: 'usd',
+    minimum_amount: 1000,
+    maximum_amount: null,
+    preset_amount: 2000,
+  }) as schemas['ProductPriceCustom']
+
 const createProduct = (
   id: string,
-  price: schemas['ProductPriceSeatBased'],
+  price: schemas['ProductPrice'],
 ): schemas['CustomerProduct'] =>
   ({
     id,
@@ -32,12 +48,13 @@ const createProduct = (
   }) as schemas['CustomerProduct']
 
 const createSubscription = (
-  price: schemas['ProductPriceSeatBased'],
+  price: schemas['ProductPrice'],
   pendingProductId: string | null = null,
+  amount = 5000,
 ): schemas['CustomerSubscription'] =>
   ({
     id: 'subscription-1',
-    amount: 5000,
+    amount,
     currency: 'usd',
     recurring_interval: 'month',
     recurring_interval_count: 1,
@@ -56,21 +73,65 @@ const createSubscription = (
       : null,
   }) as unknown as schemas['CustomerSubscription']
 
+const mockChargePreview = (baseAmount: number) => {
+  const preview: schemas['SubscriptionChargePreview'] = {
+    base_amount: baseAmount,
+    metered_amount: 0,
+    proration_amount: 0,
+    prorations: [],
+    subtotal_amount: baseAmount,
+    discount_amount: 0,
+    net_amount: baseAmount,
+    tax_amount: 0,
+    total_amount: baseAmount,
+    applied_balance_amount: 0,
+    due_amount: baseAmount,
+  }
+
+  vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
+    data: preview,
+  } as unknown as ReturnType<typeof useCustomerSubscriptionChargePreview>)
+}
+
 describe('CurrentPeriodOverview', () => {
   beforeEach(() => {
-    vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
-      data: {
-        base_amount: 5000,
-        metered_amount: 0,
-        proration_amount: 0,
-        prorations: [],
-        subtotal_amount: 5000,
-        discount_amount: 0,
-        net_amount: 5000,
-        tax_amount: 0,
-        total_amount: 5000,
-      },
-    } as ReturnType<typeof useCustomerSubscriptionChargePreview>)
+    mockChargePreview(5000)
+  })
+
+  it('shows the locked amount instead of the current fixed catalog price', () => {
+    mockChargePreview(2499)
+    const subscription = createSubscription(createFixedPrice(2499), null, 2499)
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(1999))]}
+        api={{} as Client}
+      />,
+    )
+
+    expect(container.textContent).toContain(
+      formatCurrency('compact')(2499, 'usd'),
+    )
+    expect(container.textContent).not.toContain(
+      formatCurrency('compact')(1999, 'usd'),
+    )
+  })
+
+  it('shows the locked amount instead of the custom catalog price label', () => {
+    mockChargePreview(2499)
+    const subscription = createSubscription(createCustomPrice(), null, 2499)
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createCustomPrice())]}
+        api={{} as Client}
+      />,
+    )
+
+    expect(container.textContent).toContain(
+      formatCurrency('compact')(2499, 'usd'),
+    )
+    expect(container.textContent).not.toContain('Pay what you want')
   })
 
   it('shows the locked total for the current seat-based product', () => {

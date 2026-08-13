@@ -502,6 +502,7 @@ class TestTrackOrganizationReviewUsage:
             input_tokens=100,
             output_tokens=50,
             cost_usd="0.0123",
+            usage_id="usage-123",
         )
 
         client.track_organization_review_usage.assert_called_once_with(
@@ -512,4 +513,5 @@ class TestTrackOrganizationReviewUsage:
             input_tokens=100,
             output_tokens=50,
             cost_usd=Decimal("0.0123"),
+            usage_id="usage-123",
         )

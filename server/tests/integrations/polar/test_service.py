@@ -368,6 +368,7 @@ class TestEnqueueTrackOrganizationReviewUsage:
             input_tokens=100,
             output_tokens=50,
             cost_usd=cost_usd,
+            usage_id="usage-123",
         )
 
     def test_noop_when_not_configured(self, mocker: MockerFixture) -> None:
@@ -422,6 +423,7 @@ class TestEnqueueTrackOrganizationReviewUsage:
             input_tokens=100,
             output_tokens=50,
             cost_usd="0.0123",
+            usage_id="usage-123",
         )
 
     def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:

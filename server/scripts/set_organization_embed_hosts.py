@@ -132,9 +132,13 @@ def _is_preview_host(host: str) -> bool:
     The hash changes on every deploy, so the entry is stale as soon as it is
     written. `*.vercel.app` would cover it and admit every other tenant too, so
     the merchant has to weigh that themselves.
+
+    What is left after the first label has to be a suffix someone else operates,
+    which takes at least two labels: `vercel.app` is one, `com` is every ordinary
+    domain in the world.
     """
     _, _, parent = host.partition(".")
-    return bool(parent) and is_tld(parent)
+    return "." in parent and is_tld(parent)
 
 
 async def _load_candidates(
@@ -227,7 +231,9 @@ def _classify(
 
 def _render(candidates: list[Candidate], *, verbose: bool) -> None:
     ready = [c for c in candidates if c.ready]
-    blocked = [c for c in candidates if c.blocked and not c.ready]
+    # Also when there are hosts to set: fixing one origin and leaving an HTTP one
+    # refused would otherwise read as a merchant put right.
+    blocked = [c for c in candidates if c.blocked]
 
     if ready:
         table = Table(title="Ready to set", title_justify="left")
@@ -359,13 +365,22 @@ async def set_embed_hosts(
     try:
         async with sessionmaker() as session:
             console.rule("[bold]Setting embed hosts")
+            # Locked, and re-checked against the primary: the scan read a lagging
+            # replica minutes ago, and an organization may have been deleted or
+            # lost the capability since.
             organizations = {
                 organization.id: organization
                 for organization in (
                     await session.execute(
-                        select(Organization).where(
-                            Organization.id.in_([c.organization_id for c in actionable])
+                        select(Organization)
+                        .where(
+                            Organization.id.in_(
+                                [c.organization_id for c in actionable]
+                            ),
+                            Organization.deleted_at.is_(None),
+                            Organization.can_accept_payments,
                         )
+                        .with_for_update()
                     )
                 )
                 .scalars()
@@ -374,9 +389,15 @@ async def set_embed_hosts(
 
             updated = 0
             for candidate in actionable:
-                organization = organizations[candidate.organization_id]
-                # The replica lags, and the scan takes minutes. A merchant who
-                # edited their own list in between has answered for themselves.
+                organization = organizations.get(candidate.organization_id)
+                if organization is None:
+                    console.print(
+                        f"[yellow]{candidate.slug}: no longer takes payments, "
+                        "left alone."
+                    )
+                    continue
+                # A merchant who edited their own list while we scanned has
+                # answered for themselves.
                 if organization.embed_hosts != candidate.current_hosts:
                     console.print(
                         f"[yellow]{candidate.slug}: list changed since the scan, "

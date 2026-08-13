@@ -3,7 +3,6 @@ import { useModal } from '@/components/Modal/useModal'
 import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
-import { useHasPermission } from '@/hooks/permissions'
 import { useMetrics, useUpdateProduct } from '@/hooks/queries'
 import { apiErrorToast } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
@@ -37,7 +36,6 @@ export interface ProductPageProps {
 }
 
 export const ProductPage = ({ organization, product }: ProductPageProps) => {
-  const canManageProducts = useHasPermission(organization.id, 'products:manage')
   const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
     'all_time',
     product.created_at,
@@ -172,7 +170,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
         }
         header={
           <div className="flex flex-row items-center justify-between gap-2">
-            {!product.is_archived && canManageProducts ? (
+            {product.is_archived ? null : (
               <div>
                 <Button
                   variant="secondary"
@@ -185,7 +183,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                   Edit Product
                 </Button>
               </div>
-            ) : null}
+            )}
             <div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -211,7 +209,14 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                   >
                     Copy Product ID
                   </DropdownMenuItem>
-                  {!product.is_archived && canManageProducts ? (
+                  {product.is_archived ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={showUnarchiveModal}>
+                        Unarchive Product
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
                     <>
                       <DropdownMenuItem
                         onClick={() => {
@@ -237,15 +242,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                         Archive Product
                       </DropdownMenuItem>
                     </>
-                  ) : null}
-                  {product.is_archived && canManageProducts ? (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={showUnarchiveModal}>
-                        Unarchive Product
-                      </DropdownMenuItem>
-                    </>
-                  ) : null}
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

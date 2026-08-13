@@ -1,8 +1,5 @@
-import { RestrictedModal } from '@/components/Finance/RestrictedModal'
 import { useTransactionsSummary } from '@/hooks/queries'
-import { useHasPermission } from '@/hooks/permissions'
 import { usePayoutAccountSetup } from '@/hooks/usePayoutAccountSetup'
-import { permissionDeniedMessage } from '@/utils/permissions'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button, Text } from '@polar-sh/orbit'
@@ -26,11 +23,6 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
   organization,
   onWithdrawSuccess: _onWithdrawSuccess,
 }) => {
-  const canManageFinance = useHasPermission(organization.id, 'finance:manage')
-  const canManageOrganization = useHasPermission(
-    organization.id,
-    'organization:manage',
-  )
   const {
     data: summary,
     refetch: refetchBalance,
@@ -58,18 +50,6 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     show: showCreditGrantsModal,
     hide: hideCreditGrantsModal,
   } = useModal(false)
-  const {
-    isShown: isRestrictedPayoutAccountModalShown,
-    show: showRestrictedPayoutAccountModal,
-    hide: hideRestrictedPayoutAccountModal,
-  } = useModal(false)
-
-  const handleCreatePayoutAccount = canManageOrganization
-    ? openCreate
-    : showRestrictedPayoutAccountModal
-  const handleManagePayoutAccount = canManageOrganization
-    ? openManage
-    : showRestrictedPayoutAccountModal
 
   const onWithdrawSuccess = useCallback(
     (payoutId: string) => {
@@ -143,12 +123,12 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
             <Button
               className="self-start"
               variant="secondary"
-              onClick={handleManagePayoutAccount}
+              onClick={openManage}
             >
               Manage
             </Button>
           ) : (
-            <Button className="self-start" onClick={handleCreatePayoutAccount}>
+            <Button className="self-start" onClick={openCreate}>
               Create
             </Button>
           )}
@@ -197,31 +177,12 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           )}
         </WellFooter>
       </Well>
-      {canManageFinance ? (
-        <WithdrawModal
-          organization={organization}
-          account={account}
-          isShown={isPayoutConfirmModalShown}
-          hide={hidePayoutConfirmModal}
-          onSuccess={onWithdrawSuccess}
-        />
-      ) : (
-        <RestrictedModal
-          title="Withdraw Balance"
-          isShown={isPayoutConfirmModalShown}
-          hide={hidePayoutConfirmModal}
-          message={permissionDeniedMessage('finance:manage')}
-        />
-      )}
-      <RestrictedModal
-        title={
-          payoutAccount || hasReusableAccounts
-            ? 'Manage Payout Accounts'
-            : 'Create Payout Account'
-        }
-        isShown={isRestrictedPayoutAccountModalShown}
-        hide={hideRestrictedPayoutAccountModal}
-        message={permissionDeniedMessage('organization:manage')}
+      <WithdrawModal
+        organization={organization}
+        account={account}
+        isShown={isPayoutConfirmModalShown}
+        hide={hidePayoutConfirmModal}
+        onSuccess={onWithdrawSuccess}
       />
       <FeeCreditGrantsModal
         isShown={isCreditGrantsModalShown}

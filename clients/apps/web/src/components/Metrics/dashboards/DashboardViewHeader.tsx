@@ -1,5 +1,6 @@
 'use client'
 
+import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
@@ -11,10 +12,12 @@ import {
 } from '@/hooks/queries/metrics'
 import { useHasPermission } from '@/hooks/permissions'
 import { getServerURL } from '@/utils/api'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -100,10 +103,6 @@ export function DashboardViewActions({
   className,
 }: DashboardViewActionsProps) {
   const { isShown: isEditShown, show: showEdit, hide: hideEdit } = useModal()
-  const canManageAnalytics = useHasPermission(
-    organization.id,
-    'analytics:manage',
-  )
 
   const { interval, startDate, endDate, productId } = useMetricsFilters(
     earliestDateISOString,
@@ -152,7 +151,7 @@ export function DashboardViewActions({
 
   return (
     <div className={twMerge('flex items-center', className)}>
-      {isCustomDashboard && currentDashboard && canManageAnalytics ? (
+      {isCustomDashboard && currentDashboard ? (
         <DashboardDotMenu
           organization={organization}
           dashboard={currentDashboard}
@@ -162,7 +161,7 @@ export function DashboardViewActions({
       ) : (
         <ExportMenu onExport={handleExport} />
       )}
-      {currentDashboard && canManageAnalytics ? (
+      {currentDashboard ? (
         <Modal
           title="Edit Dashboard"
           isShown={isEditShown}
@@ -264,6 +263,10 @@ function EditDashboardContent({
   dashboard: schemas['MetricDashboardSchema']
   onClose: () => void
 }) {
+  const canManageAnalytics = useHasPermission(
+    organization.id,
+    'analytics:manage',
+  )
   const updateMutation = useUpdateMetricDashboard(dashboard.id, organization.id)
 
   const handleSave = useCallback(
@@ -273,6 +276,16 @@ function EditDashboardContent({
     },
     [updateMutation, onClose],
   )
+
+  if (!canManageAnalytics) {
+    return (
+      <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+        <AccessRestricted
+          message={permissionDeniedMessage('analytics:manage')}
+        />
+      </Box>
+    )
+  }
 
   return (
     <MetricDashboardEditorContent

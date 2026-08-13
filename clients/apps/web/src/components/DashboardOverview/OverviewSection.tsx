@@ -48,10 +48,6 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
   )
 
   const canReadAnalytics = useHasPermission(organization.id, 'analytics:read')
-  const canManageOrganization = useHasPermission(
-    organization.id,
-    'organization:manage',
-  )
 
   const { data, isLoading } = useMetrics(
     {
@@ -79,19 +75,17 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
               value={range}
               onChange={setRange}
             />
-            {canManageOrganization ? (
-              <Button
-                type="button"
-                onClick={show}
-                variant="secondary"
-                size="sm"
-                wrapperClassNames="gap-x-2"
-                aria-label="Customize"
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-                <span className="hidden md:inline">Customize</span>
-              </Button>
-            ) : null}
+            <Button
+              type="button"
+              onClick={show}
+              variant="secondary"
+              size="sm"
+              wrapperClassNames="gap-x-2"
+              aria-label="Customize"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              <span className="hidden md:inline">Customize</span>
+            </Button>
           </div>
         ) : null}
       </div>

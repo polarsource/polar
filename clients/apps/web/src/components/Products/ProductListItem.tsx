@@ -3,7 +3,6 @@ import { useModal } from '@/components/Modal/useModal'
 import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
-import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateProduct } from '@/hooks/queries/products'
 import {
   hasLegacyRecurringPrices,
@@ -40,7 +39,6 @@ export const ProductListItem = ({
   currency,
 }: ProductListItemProps) => {
   const router = useRouter()
-  const canManageProducts = useHasPermission(organization.id, 'products:manage')
   const {
     show: showModal,
     hide: hideModal,
@@ -136,21 +134,19 @@ export const ProductListItem = ({
                     <ProductPriceLabel product={product} currency={currency} />
                   )}
                 </span>
-                {canManageProducts ? (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="hidden md:inline-flex"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      router.push(
-                        `/dashboard/${organization.slug}/products/checkout-links?productId=${product.id}`,
-                      )
-                    }}
-                  >
-                    Share
-                  </Button>
-                ) : null}
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="hidden md:inline-flex"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    router.push(
+                      `/dashboard/${organization.slug}/products/checkout-links?productId=${product.id}`,
+                    )
+                  }}
+                >
+                  Share
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger className="focus:outline-none" asChild>
                     <Button
@@ -176,47 +172,43 @@ export const ProductListItem = ({
                     >
                       Copy Product ID
                     </DropdownMenuItem>
-                    {canManageProducts ? (
-                      <>
-                        <DropdownMenuItem
-                          onClick={handleContextMenuCallback(() => {
-                            router.push(
-                              `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
-                            )
-                          })}
-                        >
-                          Integrate Checkout
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {product.is_archived ? null : (
-                          <DropdownMenuItem
-                            onClick={handleContextMenuCallback(() => {
-                              router.push(
-                                `/dashboard/${organization.slug}/products/${product.id}/edit`,
-                              )
-                            })}
-                          >
-                            Edit Product
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={handleContextMenuCallback(() => {
-                            router.push(
-                              `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
-                            )
-                          })}
-                        >
-                          Duplicate Product
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          destructive
-                          onClick={handleContextMenuCallback(showModal)}
-                        >
-                          Archive Product
-                        </DropdownMenuItem>
-                      </>
-                    ) : null}
+                    <DropdownMenuItem
+                      onClick={handleContextMenuCallback(() => {
+                        router.push(
+                          `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
+                        )
+                      })}
+                    >
+                      Integrate Checkout
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {product.is_archived ? null : (
+                      <DropdownMenuItem
+                        onClick={handleContextMenuCallback(() => {
+                          router.push(
+                            `/dashboard/${organization.slug}/products/${product.id}/edit`,
+                          )
+                        })}
+                      >
+                        Edit Product
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onClick={handleContextMenuCallback(() => {
+                        router.push(
+                          `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
+                        )
+                      })}
+                    >
+                      Duplicate Product
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      destructive
+                      onClick={handleContextMenuCallback(showModal)}
+                    >
+                      Archive Product
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>

@@ -35,6 +35,27 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   ip_protocol                  = "tcp"
 }
 
+module "redis_private_link" {
+  source = "../modules/redis_private_link"
+
+  name                     = "polar-production-worker-redis"
+  vpc_id                   = module.vpc.vpc_id
+  subnet_ids               = module.vpc.private_subnet_ids
+  redis_host               = module.redis.host
+  redis_port               = module.redis.port
+  redis_arn                = module.redis.arn
+  allowed_principals       = ["arn:aws:iam::557508356783:root"]
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_nlb" {
+  security_group_id            = module.redis.security_group_id
+  referenced_security_group_id = module.redis_private_link.nlb_security_group_id
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
+  ip_protocol                  = "tcp"
+}
+
 locals {
   files_bucket_name        = "polar-production-files"
   files_public_bucket_name = "polar-public-files"

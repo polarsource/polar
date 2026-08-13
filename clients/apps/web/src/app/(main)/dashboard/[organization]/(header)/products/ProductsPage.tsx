@@ -208,7 +208,7 @@ export default function ClientPage({
           >
             <List size="small">
               {products.data.items
-                .toSorted((a, b) => {
+                .sort((a, b) => {
                   if (a.is_archived === b.is_archived) return 0
                   return a.is_archived ? 1 : -1
                 })

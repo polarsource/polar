@@ -94,12 +94,7 @@ export const EditMemberModal = ({
             Edit Member
           </Text>
         </InlineModalHeader>
-        <Box
-          flex={1}
-          flexDirection="column"
-          alignItems="center"
-          padding="xl"
-        >
+        <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
           <AccessRestricted
             message={permissionDeniedMessage('customers:manage')}
           />

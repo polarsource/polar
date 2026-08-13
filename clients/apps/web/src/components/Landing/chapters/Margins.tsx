@@ -76,22 +76,13 @@ export const Margins = () => (
       <Box
         minHeight={{ base: '14rem', lg: 'auto' }}
         overflow="hidden"
-        backgroundColor="background-secondary"
         flexDirection="column"
         justifyContent="between"
         padding="xl"
         rowGap="l"
-      >
-        <Box display="block" flex={1} minHeight={0} aspectRatio="1/1">
-          <MarginPulse />
-        </Box>
-      </Box>
+      />
 
-      <Box
-        overflow="hidden"
-        backgroundColor="background-secondary"
-        display={{ base: 'none', md: 'block' }}
-      >
+      <Box overflow="hidden" display={{ base: 'none', md: 'block' }}>
         <Box
           display="grid"
           gridTemplateColumns={GRID_COLUMNS}
@@ -101,7 +92,7 @@ export const Margins = () => (
           paddingVertical="m"
           borderBottomWidth={1}
           borderStyle="solid"
-          borderColor="border-secondary"
+          borderColor="border-primary"
         >
           <Text color="muted">Customer</Text>
           <Text color="muted" align="right">

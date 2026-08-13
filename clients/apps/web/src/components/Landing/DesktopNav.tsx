@@ -38,6 +38,7 @@ export const LandingPageDesktopNavigation = () => {
       flexDirection="column"
       alignItems="center"
       paddingVertical="xl"
+      paddingHorizontal="3xl"
       backgroundColor="background-primary"
       onMouseLeave={closeMenu}
       onBlur={(event) => {
@@ -54,7 +55,7 @@ export const LandingPageDesktopNavigation = () => {
       <Box
         position="relative"
         width="100%"
-        paddingHorizontal="3xl"
+        maxWidth={1920}
         alignItems="center"
         justifyContent="between"
       >
@@ -150,6 +151,7 @@ const NavMenuPanel = ({
     borderColor="border-primary"
     paddingTop="2xl"
     paddingBottom="3xl"
+    paddingHorizontal="3xl"
   >
     <motion.div
       style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
@@ -159,7 +161,7 @@ const NavMenuPanel = ({
     >
       <Grid
         width="100%"
-        paddingHorizontal="3xl"
+        maxWidth={1920}
         templateColumns="repeat(4, 1fr)"
         gap="4xl"
       >

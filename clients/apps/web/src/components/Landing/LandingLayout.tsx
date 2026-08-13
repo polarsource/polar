@@ -52,7 +52,7 @@ export default function Layout({ children }: PropsWithChildren) {
         <LandingPageDesktopNavigation />
       </div>
       <div className="dark:bg-polar-950 relative flex flex-col overflow-x-clip bg-white px-0 md:w-full md:flex-1 md:items-center md:px-12">
-        <div className="flex flex-col gap-y-2 md:w-full">
+        <div className="flex flex-col gap-y-2 md:w-full md:max-w-[1920px]">
           <SidebarProvider className="absolute inset-0 flex flex-col items-start md:hidden">
             <LandingPageTopbar />
             <LandingPageMobileNavigation />

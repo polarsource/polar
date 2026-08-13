@@ -6,7 +6,6 @@ import {
   Confidence,
   FastAPICloud,
   MiddayWordmark,
-  StillaAIWordmark,
   Tailwind,
 } from './Logos'
 
@@ -25,10 +24,6 @@ const LOGOS: LogoCell[] = [
     link: 'https://fastapicloud.com',
   },
   {
-    icon: <StillaAIWordmark size={28} />,
-    link: 'https://stilla.ai',
-  },
-  {
     icon: <Confidence size={32} />,
     link: 'https://confidence.spotify.com',
   },
@@ -40,14 +35,11 @@ const LOGOS: LogoCell[] = [
 
 export const LogoGrid = () => (
   <Grid
-    templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' }}
+    templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
     gap="l"
   >
-    {LOGOS.map((logo, index) => (
-      <GridItem
-        key={logo.link}
-        colSpan={{ base: index === LOGOS.length - 1 ? 2 : 1, md: 1 }}
-      >
+    {LOGOS.map((logo) => (
+      <GridItem key={logo.link}>
         <Link href={logo.link} target="_blank" className="flex w-full">
           <Box
             width="100%"

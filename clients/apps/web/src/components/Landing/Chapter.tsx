@@ -9,7 +9,7 @@ interface ChapterMarkerProps {
 
 const ChapterMarker = ({ name }: ChapterMarkerProps) => (
   <Box alignItems="start">
-    <Text variant="heading-m">{name}</Text>
+    <Text variant="heading-l">{name}</Text>
   </Box>
 )
 
@@ -81,7 +81,7 @@ export const Chapter = ({
         <ChapterHeadline title={title} subtitle={subtitle} />
         {description ? (
           <Box display="block" width="100%">
-            <Text variant="heading-xs" color="muted" wrap="pretty">
+            <Text variant="heading-s" color="muted" wrap="pretty">
               {description}
             </Text>
           </Box>

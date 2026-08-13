@@ -107,6 +107,8 @@ const userTestimonials = [
 
 export const Testimonials = () => (
   <Chapter
+    index="04"
+    name="Customers"
     title="Trusted by the teams shipping fastest"
     subtitle="From AI startups to infrastructure veterans"
   >

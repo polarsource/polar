@@ -1,115 +1,81 @@
-'use client'
-
-import {
-  SyntaxHighlighterClient,
-  SyntaxHighlighterProvider,
-} from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
+import type { ComponentType } from 'react'
 import { Chapter } from '../Chapter'
+import { Compass } from '../graphics/Compass'
+import { GaugeSweep } from '../graphics/GaugeSweep'
+import { RadialSpinner } from '../graphics/RadialSpinner'
+import { SteppedRadial } from '../graphics/SteppedRadial'
 
-const CASES = [
+interface Step {
+  title: string
+  desc: string
+  Graphic: ComponentType
+}
+
+const STEPS: Step[] = [
   {
-    id: 'completions',
-    file: 'completions.ts',
-    title: 'AI completions',
-    desc: 'Wrap any model with the LLMStrategy. Tokens are metered and billed on every call.',
-    docsHref:
-      '/docs/features/usage-based-billing/ingestion-strategies/llm-strategy',
-    snippet: `import { Ingestion } from '@polar-sh/ingestion'
-import { LLMStrategy } from '@polar-sh/ingestion/strategies/LLM'
-import { generateText } from 'ai'
-import { openai } from '@ai-sdk/openai'
-
-const llm = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN })
-  .strategy(new LLMStrategy(openai('gpt-4o')))
-  .ingest('openai-usage')
-
-const { text } = await generateText({
-  model: llm.client({ customerId: user.id }),
-  prompt,
-})`,
+    title: 'Measure the usage',
+    desc: 'Every call, token and GPU second your users consume, recorded the moment it happens.',
+    Graphic: RadialSpinner,
   },
   {
-    id: 'agents',
-    file: 'agents.ts',
-    title: 'Autonomous agents',
-    desc: 'Charge per agent run. Price success and failure differently, without double-billing.',
-    docsHref: '/docs/features/usage-based-billing/event-ingestion',
-    snippet: `await polar.events.ingest({
-  events: [{
-    name: 'agent.run.completed',
-    externalCustomerId: org.id,
-    metadata: {
-      steps: 12,
-      status: 'success',
-      _llm: {
-        vendor: 'anthropic',
-        model: 'claude-sonnet-4',
-        input_tokens: 18400,
-        output_tokens: 2100,
-        total_tokens: 20500,
-      },
-    },
-  }],
-})`,
+    title: 'Aggregate into meters',
+    desc: 'Raw events roll up into a live meter per customer. No batch jobs, no lag.',
+    Graphic: GaugeSweep,
   },
   {
-    id: 'gpu',
-    file: 'gpu.ts',
-    title: 'GPU & compute',
-    desc: 'Meter fine-tuning, inference and training runs by the second.',
-    docsHref: '/docs/features/usage-based-billing/meters',
-    snippet: `await polar.events.ingest({
-  events: [{
-    name: 'gpu.runtime',
-    externalCustomerId: team.id,
-    metadata: {
-      gpu: 'a100',
-      seconds: 1840,
-    },
-  }],
-})`,
+    title: 'Calculate the charge',
+    desc: 'Meters turn into priced units. Per token, per seat, tiered or hybrid. However you wish to price.',
+    Graphic: Compass,
+  },
+  {
+    title: 'Bill it automatically',
+    desc: 'Usage lands on the invoice and settles at the end of every cycle, without any manual reconciliation.',
+    Graphic: SteppedRadial,
   },
 ]
 
-export const Meter = () => {
-  const [activeId] = useState(CASES[0].id)
-  const active = CASES.find((c) => c.id === activeId) ?? CASES[0]
-
-  return (
-    <Chapter
-      index="01"
-      name="Meter"
-      title="Every token, accounted for"
-      subtitle="Usage recorded the moment it happens"
-      description="Tokens, agent runs and GPU seconds, metered per customer."
+export const Meter = () => (
+  <Chapter
+    index="01"
+    name="Meter everything"
+    title="Every token, accounted for"
+    subtitle="Usage recorded the moment it happens"
+    description="Tokens, agent runs and GPU seconds flow through live meters and land on the invoice, priced however you sell."
+  >
+    <Grid
+      templateColumns={{
+        base: '1fr',
+        md: 'repeat(2, 1fr)',
+        xl: 'repeat(4, 1fr)',
+      }}
+      gap="l"
     >
-      <SyntaxHighlighterProvider>
-        <Grid
-          templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
-          gap={{ base: '3xl', lg: 'l' }}
+      {STEPS.map(({ title, desc, Graphic }) => (
+        <Box
+          key={title}
+          height="100%"
+          flexDirection="column"
+          justifyContent="between"
+          rowGap="3xl"
+          padding="3xl"
+          backgroundColor="background-secondary"
         >
-          <Box
-            flexDirection="column"
-            rowGap="l"
-            minHeight={{ base: 'auto', lg: '24rem' }}
-            backgroundColor="background-secondary"
-            padding="2xl"
-          >
-            <Text variant="caption" color="muted" monospace>
-              {active.file}
-            </Text>
-            <div className="overflow-x-auto font-mono text-xs leading-relaxed">
-              <SyntaxHighlighterClient
-                lang="typescript"
-                code={active.snippet}
-              />
-            </div>
+          <Box display="block" aspectRatio="1 / 1">
+            <Graphic />
           </Box>
-        </Grid>
-      </SyntaxHighlighterProvider>
-    </Chapter>
-  )
-}
+          <Box flexDirection="column" rowGap="l">
+            <Text variant="heading-s" as="h3">
+              {title}
+            </Text>
+
+            <Text variant="heading-xs" color="muted" wrap="pretty">
+              {desc}
+            </Text>
+          </Box>
+        </Box>
+      ))}
+    </Grid>
+  </Chapter>
+)

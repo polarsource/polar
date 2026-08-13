@@ -8,7 +8,6 @@ const CheckoutVignette = () => (
     flexDirection="column"
     rowGap="l"
     backgroundColor="background-card"
-    borderRadius="m"
     padding="xl"
     width="100%"
     maxWidth="19rem"
@@ -37,7 +36,6 @@ const MeterVignette = () => (
     flexDirection="column"
     rowGap="m"
     backgroundColor="background-card"
-    borderRadius="m"
     padding="xl"
     width="100%"
     maxWidth="19rem"
@@ -89,7 +87,6 @@ const MarginVignette = () => (
         alignItems="center"
         columnGap="l"
         backgroundColor="background-card"
-        borderRadius="m"
         paddingHorizontal="xl"
         paddingVertical="l"
       >
@@ -99,11 +96,7 @@ const MarginVignette = () => (
             {row.tokens}
           </Text>
         </Box>
-        <Text
-          variant="body"
-          color={row.negative ? 'danger' : 'success'}
-          tabularNums
-        >
+        <Text variant="body" tabularNums>
           {row.margin}
         </Text>
       </Box>
@@ -116,14 +109,13 @@ const PayoutVignette = () => (
     flexDirection="column"
     rowGap="xs"
     backgroundColor="background-card"
-    borderRadius="m"
     padding="xl"
     width="100%"
     maxWidth="19rem"
   >
     <Box justifyContent="between" alignItems="baseline" columnGap="l">
       <Text variant="body">Payout</Text>
-      <Text variant="body" color="success" tabularNums>
+      <Text variant="body" tabularNums>
         $9,311
       </Text>
     </Box>
@@ -167,7 +159,7 @@ export const Platform = () => (
     name="Platform"
     title="The brains of a finance team"
     subtitle="in the body of an API"
-    description="Polar meters your usage, runs your subscriptions and invoicing, and sells to your customers as merchant of record. One integration, from first event to payout."
+    description="Polar meters your usage, runs your subscriptions & invoicing, and sells to your customers as merchant of record. One integration, from first event to payout."
   >
     <Grid
       templateColumns={{
@@ -188,12 +180,12 @@ export const Platform = () => (
           >
             {pillar.vignette}
           </Box>
-          <Box flexDirection="column" rowGap="s">
-            <Text variant="heading-xxs" as="h3">
+          <Box flexDirection="column" rowGap="xs">
+            <Text variant="heading-xs" as="h3">
               {pillar.title}
             </Text>
-            <Box display="block" maxWidth="20rem">
-              <Text variant="body" color="muted" wrap="pretty">
+            <Box display="block">
+              <Text variant="heading-xxs" color="muted" wrap="pretty">
                 {pillar.desc}
               </Text>
             </Box>

@@ -135,91 +135,92 @@ export const Pipeline = () => {
     <Box
       display="grid"
       gridTemplateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
-      gap={{ base: '2xl', lg: 'l' }}
+      gap="2xl"
     >
       {/* Flow */}
-      <Box
-        width="100%"
-        maxWidth={{ base: '100%', lg: '28rem' }}
-        marginHorizontal="auto"
-        flexDirection="column"
-        paddingVertical={{ base: '2xl', md: '4xl' }}
-        paddingHorizontal={{ base: '2xl', md: '4xl' }}
-        rowGap="xl"
-      >
-        {/* Customer */}
+      <Box borderStyle="solid" borderColor="border-primary" borderWidth={1}>
         <Box
-          alignItems="center"
-          columnGap="m"
-          backgroundColor="background-secondary"
-          padding="l"
+          width="100%"
+          maxWidth={{ base: '100%', lg: '28rem' }}
+          marginHorizontal="auto"
+          flexDirection="column"
+          paddingVertical={{ base: '2xl', md: '4xl' }}
+          paddingHorizontal={{ base: '2xl', md: '4xl' }}
+          rowGap="xl"
         >
-          <Avatar
-            name="John Doe"
-            avatar_url="/assets/team/emil.png"
-            className="h-10 w-10 text-sm"
-          />
-          <Box flexDirection="column">
-            <Text>John Doe</Text>
-            <Text color="muted">Consumed 23,820 tokens</Text>
-          </Box>
-        </Box>
-
-        <ArrowDown />
-
-        {/* Polar */}
-        <Box flexDirection="column" rowGap="s">
+          {/* Customer */}
           <Box
-            paddingVertical="m"
-            justifyContent="center"
+            alignItems="center"
+            columnGap="m"
             backgroundColor="background-secondary"
+            padding="l"
           >
-            <Text variant="body">Polar</Text>
+            <Avatar
+              name="John Doe"
+              avatar_url="/assets/team/emil.png"
+              className="h-10 w-10 text-sm"
+            />
+            <Box flexDirection="column">
+              <Text>John Doe</Text>
+              <Text color="muted">Consumed 23,820 tokens</Text>
+            </Box>
           </Box>
-          {GROUPS.map((group, groupIndex) => (
+
+          <ArrowDown />
+
+          {/* Polar */}
+          <Box flexDirection="column" rowGap="s">
             <Box
-              key={groupIndex}
-              flexDirection="column"
+              paddingVertical="m"
+              justifyContent="center"
               backgroundColor="background-secondary"
-              padding="s"
             >
-              {group.map((aspect) => {
-                return (
-                  <Box
-                    key={aspect.title}
-                    alignItems="center"
-                    columnGap="l"
-                    paddingVertical="s"
-                    paddingHorizontal="s"
-                    cursor="pointer"
-                  >
-                    <CheckIcon active={true} />
-                    <Text variant="body">{aspect.title}</Text>
-                  </Box>
-                )
-              })}
+              <Text variant="body">Polar</Text>
             </Box>
-          ))}
-        </Box>
+            {GROUPS.map((group, groupIndex) => (
+              <Box
+                key={groupIndex}
+                flexDirection="column"
+                backgroundColor="background-secondary"
+                padding="s"
+              >
+                {group.map((aspect) => {
+                  return (
+                    <Box
+                      key={aspect.title}
+                      alignItems="center"
+                      columnGap="l"
+                      paddingVertical="s"
+                      paddingHorizontal="s"
+                      cursor="pointer"
+                    >
+                      <CheckIcon active={true} />
+                      <Text variant="body">{aspect.title}</Text>
+                    </Box>
+                  )
+                })}
+              </Box>
+            ))}
+          </Box>
 
-        <ArrowDown />
+          <ArrowDown />
 
-        {/* Payout */}
-        <Box
-          alignItems="center"
-          columnGap="l"
-          backgroundColor="background-secondary"
-          padding="l"
-        >
-          <BankIcon />
-          <Box flexDirection="column" rowGap="xs">
-            <Box alignItems="baseline" columnGap="s">
-              <Text>Merchant Payout</Text>
-              <Text color="muted">Acme Inc</Text>
-            </Box>
-            <Box alignItems="baseline" columnGap="s">
-              <Text color="success">$9,311</Text>
-              <Text color="muted">SEB **** 9128</Text>
+          {/* Payout */}
+          <Box
+            alignItems="center"
+            columnGap="l"
+            backgroundColor="background-secondary"
+            padding="xl"
+          >
+            <Box flexDirection="column" rowGap="xs">
+              <Box alignItems="baseline" columnGap="s">
+                <Text>Merchant Payout</Text>
+                <Text color="muted">Acme Inc</Text>
+              </Box>
+              <Box alignItems="baseline" columnGap="s">
+                <Text color="success">$9,311</Text>
+                <Text color="muted">SEB **** 9128</Text>
+              </Box>
             </Box>
           </Box>
         </Box>

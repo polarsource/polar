@@ -1,6 +1,6 @@
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
-from typing import Any, TypedDict
+from typing import TypedDict
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -501,8 +501,11 @@ class MerchantMigrationService:
         actor: PanStepActor,
         inputs: dict[str, str],
     ) -> PanTransferChecklist:
-        """Complete a step and advance. Go through here, not `pan_transfer`
-        directly: this is what schedules the job for the step that follows."""
+        """Complete a step and move the checklist on.
+
+        Use this, not `pan_transfer.complete`: it also starts the job for the
+        next step.
+        """
         if not migration.pan_transfer_steps:
             raise PanTransferNotStarted()
 
@@ -521,15 +524,15 @@ class MerchantMigrationService:
         session: AsyncSession,
         migration: MerchantMigration,
         steps: Sequence[PanTransferStep],
-        **extra: Any,
     ) -> None:
         """Persist the checklist and schedule the job for a step Polar
         performs itself."""
-        current = pan_transfer.current(steps)
-        update_dict: dict[str, Any] = {"pan_transfer_steps": list(steps), **extra}
         repository = MerchantMigrationRepository.from_session(session)
-        await repository.update(migration, update_dict=update_dict)
+        await repository.update(
+            migration, update_dict={"pan_transfer_steps": list(steps)}
+        )
 
+        current = pan_transfer.current(steps)
         if current is None or current.owner != PanStepOwner.polar_app:
             return
         task = _STEP_TASKS.get(current.key)

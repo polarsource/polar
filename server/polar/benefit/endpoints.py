@@ -25,6 +25,10 @@ from .schemas import (
     benefit_schema_map,
 )
 from .service import benefit as benefit_service
+from .strategies.downloadables.schemas import BenefitDownloadableFile
+from .strategies.downloadables.service import (
+    benefit_downloadable_file as benefit_downloadable_file_service,
+)
 
 router = APIRouter(prefix="/benefits", tags=["benefits", APITag.public])
 
@@ -101,6 +105,30 @@ async def get(
         raise ResourceNotFound()
 
     return benefit
+
+
+@router.get(
+    "/{id}/files",
+    summary="List Benefit Files",
+    response_model=ListResource[BenefitDownloadableFile],
+    responses={404: BenefitNotFound},
+)
+async def files(
+    id: BenefitID,
+    auth_subject: auth.BenefitsRead,
+    pagination: PaginationParamsQuery,
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[BenefitDownloadableFile]:
+    """List the downloadable files for a benefit with their download statistics."""
+    benefit = await benefit_service.get(session, auth_subject, id)
+
+    if benefit is None or benefit.type != BenefitType.downloadables:
+        raise ResourceNotFound()
+
+    results, count = await benefit_downloadable_file_service.list(
+        session, benefit, pagination=pagination
+    )
+    return ListResource.from_paginated_results(results, count, pagination)
 
 
 @router.get(

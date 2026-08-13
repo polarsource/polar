@@ -1,10 +1,13 @@
+from datetime import datetime
 from typing import Annotated, Any, Literal
 
 from annotated_types import Len
-from pydantic import UUID4, model_validator
+from pydantic import UUID4, Field, model_validator
 
+from polar.file.schemas import FileReadBase
 from polar.kit.schemas import Schema
 from polar.models.benefit import BenefitType
+from polar.models.file import FileServiceTypes
 
 from ..base.schemas import (
     BenefitBase,
@@ -33,6 +36,15 @@ def get_active_file_ids(properties: BenefitDownloadablesProperties) -> list[UUID
             active.append(file_id)
 
     return active
+
+
+class BenefitDownloadableFile(FileReadBase):
+    service: Literal[FileServiceTypes.downloadable]
+    flagged_malicious_at: datetime | None
+    downloaders: int = Field(
+        description="Number of distinct customers or members who downloaded the file."
+    )
+    downloads: int = Field(description="Total number of downloads for the file.")
 
 
 class BenefitDownloadablesSubscriberProperties(Schema):

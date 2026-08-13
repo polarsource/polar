@@ -2,7 +2,8 @@
 
 import { OrderSection } from '@/components/Orders/OrderSection'
 import { toast } from '@/components/Toast/use-toast'
-import { useDownloadFile, useFiles } from '@/hooks/queries'
+import { useBenefitFiles } from '@/hooks/queries/benefits'
+import { useDownloadFile } from '@/hooks/queries/files'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import { schemas } from '@polar-sh/client'
@@ -13,7 +14,7 @@ import { useCallback } from 'react'
 const DownloadableFileItem = ({
   file,
 }: {
-  file: schemas['DownloadableFileRead']
+  file: schemas['BenefitDownloadableFile']
 }) => {
   const downloadFile = useDownloadFile(file.id, (fileDownload) => {
     window.location.href = fileDownload.download.url
@@ -38,19 +39,35 @@ const DownloadableFileItem = ({
       })
   }, [downloadFile, file.name])
 
-  const downloaders = file.downloaders ?? 0
-  const downloads = file.downloads ?? 0
-
   return (
     <ListItem>
       <Box minWidth={0} flexGrow={1} flexDirection="column" rowGap="xs">
         <Text truncate>{file.name}</Text>
         <Box display={{ base: 'flex', md: 'none' }} columnGap="s">
           <Text variant="caption" color="muted" tabularNums>
-            {downloaders.toLocaleString()} downloaders
+            <Text
+              as="span"
+              variant="caption"
+              color="muted"
+              formatter="number"
+              tabularNums
+            >
+              {file.downloaders}
+            </Text>{' '}
+            downloaders
           </Text>
           <Text variant="caption" color="muted" tabularNums>
-            · {downloads.toLocaleString()} downloads
+            ·{' '}
+            <Text
+              as="span"
+              variant="caption"
+              color="muted"
+              formatter="number"
+              tabularNums
+            >
+              {file.downloads}
+            </Text>{' '}
+            downloads
           </Text>
         </Box>
       </Box>
@@ -60,14 +77,18 @@ const DownloadableFileItem = ({
           width={88}
           justifyContent="end"
         >
-          <Text tabularNums>{downloaders.toLocaleString()}</Text>
+          <Text color="muted" formatter="number" tabularNums>
+            {file.downloaders}
+          </Text>
         </Box>
         <Box
           display={{ base: 'none', md: 'flex' }}
           width={88}
           justifyContent="end"
         >
-          <Text tabularNums>{downloads.toLocaleString()}</Text>
+          <Text color="muted" formatter="number" tabularNums>
+            {file.downloads}
+          </Text>
         </Box>
         <Box width={80} justifyContent="end">
           <Text color="muted" tabularNums>
@@ -93,17 +114,13 @@ const DownloadableFileItem = ({
 
 export const DownloadablesSection = ({
   benefit,
-  organization,
 }: {
   benefit: schemas['BenefitDownloadables']
-  organization: schemas['Organization']
 }) => {
   const { files, archived } = benefit.properties
   const activeFileIds = files.filter((id) => !archived[id])
   const archivedCount = files.length - activeFileIds.length
-  const { data, isLoading } = useFiles(organization.id, activeFileIds, {
-    benefitId: benefit.id,
-  })
+  const { data, isLoading } = useBenefitFiles(benefit.id, activeFileIds.length)
 
   return (
     <OrderSection
@@ -146,11 +163,9 @@ export const DownloadablesSection = ({
             <Box width={32} />
           </Box>
           <List size="small">
-            {(data?.items ?? []).map((file) =>
-              file.service === 'downloadable' ? (
-                <DownloadableFileItem key={file.id} file={file} />
-              ) : null,
-            )}
+            {(data?.items ?? []).map((file) => (
+              <DownloadableFileItem key={file.id} file={file} />
+            ))}
           </List>
         </Box>
       )}

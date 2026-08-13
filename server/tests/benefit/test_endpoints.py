@@ -10,15 +10,22 @@ from polar.kit.visibility import Visibility
 from polar.models import (
     Benefit,
     Customer,
+    Downloadable,
     Member,
     Organization,
     Subscription,
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.downloadable import DownloadableStatus
+from polar.models.file import FileServiceTypes
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit, create_benefit_grant
+from tests.fixtures.random_objects import (
+    create_benefit,
+    create_benefit_grant,
+    create_support_case_attachment_file,
+)
 
 
 @pytest_asyncio.fixture
@@ -258,6 +265,157 @@ class TestGetBenefit:
         response = await client.get(f"/v1/benefits/{benefit_second_organization.id}")
 
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestListBenefitFiles:
+    async def test_anonymous(
+        self, client: AsyncClient, benefit_organization: Benefit
+    ) -> None:
+        response = await client.get(f"/v1/benefits/{benefit_organization.id}/files")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/benefits/{uuid.uuid4()}/files")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_downloadables(
+        self,
+        client: AsyncClient,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/benefits/{benefit_organization.id}/files")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_other_organization(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.downloadables,
+            organization=organization_second,
+            properties={"files": [], "archived": {}},
+        )
+
+        response = await client.get(f"/v1/benefits/{benefit.id}/files")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        downloaded_file = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="macos.dmg",
+            service=FileServiceTypes.downloadable,
+        )
+        not_downloaded_file = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="windows.exe",
+            service=FileServiceTypes.downloadable,
+        )
+        archived_file = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="archive.zip",
+            service=FileServiceTypes.downloadable,
+        )
+        product_media_file = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="cover.png",
+            service=FileServiceTypes.product_media,
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.downloadables,
+            organization=organization,
+            properties={
+                "files": [
+                    str(downloaded_file.id),
+                    str(not_downloaded_file.id),
+                    str(archived_file.id),
+                    str(product_media_file.id),
+                ],
+                "archived": {str(archived_file.id): True},
+            },
+        )
+        await save_fixture(
+            Downloadable(
+                file=downloaded_file,
+                status=DownloadableStatus.granted,
+                customer=customer,
+                benefit=benefit,
+                downloaded=3,
+            )
+        )
+        await save_fixture(
+            Downloadable(
+                file=downloaded_file,
+                status=DownloadableStatus.revoked,
+                customer=customer_second,
+                benefit=benefit,
+                downloaded=2,
+            )
+        )
+        other_benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.downloadables,
+            organization=organization,
+            properties={"files": [str(downloaded_file.id)], "archived": {}},
+        )
+        await save_fixture(
+            Downloadable(
+                file=downloaded_file,
+                status=DownloadableStatus.granted,
+                customer=customer,
+                benefit=other_benefit,
+                downloaded=4,
+            )
+        )
+
+        response = await client.get(f"/v1/benefits/{benefit.id}/files")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+        assert [file["id"] for file in json["items"]] == [
+            str(downloaded_file.id),
+            str(not_downloaded_file.id),
+        ]
+        assert json["items"][0]["downloaders"] == 2
+        assert json["items"][0]["downloads"] == 5
+        assert json["items"][1]["downloaders"] == 0
+        assert json["items"][1]["downloads"] == 0
+
+        paginated_response = await client.get(
+            f"/v1/benefits/{benefit.id}/files", params={"limit": 1}
+        )
+
+        assert paginated_response.status_code == 200
+        paginated_json = paginated_response.json()
+        assert paginated_json["pagination"]["total_count"] == 2
+        assert len(paginated_json["items"]) == 1
 
 
 @pytest.mark.asyncio

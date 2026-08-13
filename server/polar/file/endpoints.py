@@ -26,7 +26,6 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import (
-    DownloadableFileRead,
     FileCreate,
     FileDownload,
     FilePatch,
@@ -63,35 +62,21 @@ async def list(
     ids: MultipleQueryFilter[UUID4] | None = Query(
         None, title="FileID Filter", description="Filter by file ID."
     ),
-    benefit_id: UUID4 | None = Query(
-        None,
-        title="Benefit ID",
-        description=(
-            "Scope download statistics to this benefit. If omitted, statistics "
-            "are aggregated across all benefits."
-        ),
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[FileRead]:
     """List files."""
-    results, count, download_statistics = await file_service.list(
+    results, count = await file_service.list(
         session,
         auth_subject,
         organization_id=organization_id,
         ids=ids,
         pagination=pagination,
-        benefit_id=benefit_id,
     )
-    files = []
-    for result in results:
-        file = FileReadAdapter.validate_python(result)
-        if isinstance(file, DownloadableFileRead):
-            downloaders, downloads = download_statistics.get(file.id, (0, 0))
-            file.downloaders = downloaders
-            file.downloads = downloads
-        files.append(file)
-
-    return ListResource.from_paginated_results(files, count, pagination)
+    return ListResource.from_paginated_results(
+        [FileReadAdapter.validate_python(result) for result in results],
+        count,
+        pagination,
+    )
 
 
 @router.get(

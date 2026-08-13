@@ -8,18 +8,13 @@ from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
 from polar.integrations.aws.s3.exceptions import S3FileError
 from polar.kit.utils import utc_now
-from polar.models import Customer, Downloadable, Organization, UserOrganization
-from polar.models.benefit import BenefitType
-from polar.models.downloadable import DownloadableStatus
+from polar.models import Organization, UserOrganization
 from polar.models.file import FileServiceTypes
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.file import TestFile
-from tests.fixtures.random_objects import (
-    create_benefit,
-    create_support_case_attachment_file,
-)
+from tests.fixtures.random_objects import create_support_case_attachment_file
 
 
 @pytest.mark.asyncio
@@ -225,100 +220,6 @@ class TestList:
         assert items[str(flagged.id)]["flagged_malicious_at"] is not None
         assert items[str(visible.id)]["flagged_malicious_at"] is None
         assert "flagged_malicious_at" not in items[str(media.id)]
-
-    @pytest.mark.auth
-    async def test_download_statistics(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        customer: Customer,
-        customer_second: Customer,
-    ) -> None:
-        downloaded_file = await create_support_case_attachment_file(
-            save_fixture,
-            organization,
-            name="macos.dmg",
-            service=FileServiceTypes.downloadable,
-        )
-        not_downloaded_file = await create_support_case_attachment_file(
-            save_fixture,
-            organization,
-            name="windows.exe",
-            service=FileServiceTypes.downloadable,
-        )
-        benefit = await create_benefit(
-            save_fixture,
-            type=BenefitType.downloadables,
-            organization=organization,
-            properties={
-                "files": [str(downloaded_file.id), str(not_downloaded_file.id)],
-                "archived": {},
-            },
-        )
-        await save_fixture(
-            Downloadable(
-                file=downloaded_file,
-                status=DownloadableStatus.granted,
-                customer=customer,
-                benefit=benefit,
-                downloaded=3,
-            )
-        )
-        await save_fixture(
-            Downloadable(
-                file=downloaded_file,
-                status=DownloadableStatus.revoked,
-                customer=customer_second,
-                benefit=benefit,
-                downloaded=2,
-            )
-        )
-        other_benefit = await create_benefit(
-            save_fixture,
-            type=BenefitType.downloadables,
-            organization=organization,
-            properties={"files": [str(downloaded_file.id)], "archived": {}},
-        )
-        await save_fixture(
-            Downloadable(
-                file=downloaded_file,
-                status=DownloadableStatus.granted,
-                customer=customer,
-                benefit=other_benefit,
-                downloaded=4,
-            )
-        )
-
-        response = await client.get(
-            "/v1/files/",
-            params={
-                "organization_id": str(organization.id),
-                "ids": [str(downloaded_file.id), str(not_downloaded_file.id)],
-                "benefit_id": str(benefit.id),
-            },
-        )
-
-        assert response.status_code == 200
-        files = {file["id"]: file for file in response.json()["items"]}
-        assert files[str(downloaded_file.id)]["downloaders"] == 2
-        assert files[str(downloaded_file.id)]["downloads"] == 5
-        assert files[str(not_downloaded_file.id)]["downloaders"] == 0
-        assert files[str(not_downloaded_file.id)]["downloads"] == 0
-
-        response = await client.get(
-            "/v1/files/",
-            params={
-                "organization_id": str(organization.id),
-                "ids": str(downloaded_file.id),
-            },
-        )
-
-        assert response.status_code == 200
-        file = response.json()["items"][0]
-        assert file["downloaders"] == 2
-        assert file["downloads"] == 9
 
 
 @pytest.mark.asyncio

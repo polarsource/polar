@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any, Unpack, cast
 from uuid import UUID
 
@@ -11,9 +12,11 @@ from polar.customer_portal.service.downloadables import (
 )
 from polar.exceptions import ValidationError
 from polar.file.repository import FileRepository
+from polar.kit.pagination import PaginationParams
 from polar.logging import Logger
 from polar.models import Benefit, Customer, File, Member, Organization, User
 from polar.models.benefit_grant import BenefitGrantScopeArgs
+from polar.postgres import AsyncReadSession
 
 from ..base.service import BenefitPropertiesValidationError, BenefitServiceProtocol
 from . import schemas
@@ -21,6 +24,7 @@ from .properties import (
     BenefitDownloadablesProperties,
     BenefitGrantDownloadablesProperties,
 )
+from .repository import BenefitDownloadablesRepository
 
 log: Logger = structlog.get_logger()
 
@@ -28,6 +32,37 @@ log: Logger = structlog.get_logger()
 def get_active_file_ids(properties: BenefitDownloadablesProperties) -> list[UUID]:
     schema = schemas.BenefitDownloadablesProperties(**properties)
     return schemas.get_active_file_ids(schema)
+
+
+class BenefitDownloadableFileService:
+    async def list(
+        self,
+        session: AsyncReadSession,
+        benefit: Benefit,
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[schemas.BenefitDownloadableFile], int]:
+        file_ids = get_active_file_ids(
+            cast(BenefitDownloadablesProperties, benefit.properties)
+        )
+        repository = BenefitDownloadablesRepository.from_session(session)
+        results, count = await repository.paginate_files(
+            benefit.id, file_ids, pagination=pagination
+        )
+        files = [
+            schemas.BenefitDownloadableFile.model_validate(
+                {
+                    **file.__dict__,
+                    "downloaders": downloaders,
+                    "downloads": downloads,
+                }
+            )
+            for file, downloaders, downloads in results
+        ]
+        return files, count
+
+
+benefit_downloadable_file = BenefitDownloadableFileService()
 
 
 class BenefitDownloadablesService(

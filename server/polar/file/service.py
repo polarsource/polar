@@ -42,8 +42,7 @@ class FileService:
         organization_id: Sequence[uuid.UUID] | None = None,
         ids: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        benefit_id: uuid.UUID | None = None,
-    ) -> tuple[Sequence[File], int, dict[uuid.UUID, tuple[int, int]]]:
+    ) -> tuple[Sequence[File], int]:
         repository = FileRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.products_read
@@ -60,13 +59,9 @@ class FileService:
         if ids is not None:
             statement = statement.where(File.id.in_(ids))
 
-        results, count = await repository.paginate(
+        return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )
-        statistics = await repository.get_download_statistics(
-            [file.id for file in results], benefit_id
-        )
-        return results, count, statistics
 
     async def get(
         self,

@@ -22,6 +22,10 @@ const _invalidateBenefitsQueries = ({
     queryClient.invalidateQueries({
       queryKey: ['benefits', 'id', id],
     })
+
+    queryClient.invalidateQueries({
+      queryKey: ['benefits', 'files', id],
+    })
   }
 
   if (orgId) {
@@ -95,6 +99,22 @@ export const useBenefits = (
     retry: defaultRetry,
     enabled: !!orgId,
     placeholderData: keepPreviousData,
+  })
+
+export const useBenefitFiles = (id: string, limit: number) =>
+  useQuery({
+    queryKey: ['benefits', 'files', id, limit],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/benefits/{id}/files', {
+          params: {
+            path: { id },
+            query: { limit },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: limit > 0,
   })
 
 export const useBenefit = (id?: string) =>

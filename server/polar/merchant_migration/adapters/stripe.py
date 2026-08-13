@@ -25,6 +25,7 @@ from ..canonical import (
 # Period data moved onto the subscription item in this version; read it per item.
 STRIPE_API_VERSION = "2026-01-28.clover"
 PAGE_SIZE = 100
+PRODUCT_PRICE_CONCURRENCY = 10
 
 SKIPPED_SUBSCRIPTION_STATUSES = frozenset(
     {"canceled", "incomplete", "incomplete_expired"}
@@ -43,6 +44,10 @@ _SUBSCRIPTION_EXPAND = [
     "customer.invoice_settings.default_payment_method",
     "customer.default_source",
 ]
+
+type ExtractPage = tuple[list[CanonicalRecord], str | None]
+
+_EXTRACT_PHASES = ("products", "customers", "subscriptions")
 
 
 class StripeAdapter:
@@ -122,42 +127,57 @@ class StripeAdapter:
     ) -> tuple[list[CanonicalRecord], dict[str, Any] | None]:
         """Page products → customers → subscriptions under an opaque cursor.
 
-        Products are buffered once (catalogs are small). Customers and
-        subscriptions page with Stripe ``starting_after``.
+        Each phase pages with Stripe ``starting_after``. Product pages load all
+        active prices for each product so one canonical product is never split
+        across batches.
         """
         phase = "products" if cursor is None else str(cursor["phase"])
         starting_after = None if cursor is None else cursor.get("starting_after")
 
-        if phase == "products":
-            records: list[CanonicalRecord] = [
-                product async for product in self._extract_products()
-            ]
-            return records, {"phase": "customers"}
+        page_loaders: dict[str, Callable[[str | None, int], Awaitable[ExtractPage]]] = {
+            "products": self._page_products,
+            "customers": self._page_customers,
+            "subscriptions": self._page_subscriptions,
+        }
+        try:
+            loader = page_loaders[phase]
+            phase_index = _EXTRACT_PHASES.index(phase)
+        except (KeyError, ValueError):
+            raise ValueError(f"Unknown extract phase: {phase}") from None
 
-        if phase == "customers":
-            records, next_after = await self._page_customers(
-                starting_after=starting_after, limit=limit
-            )
-            if next_after is not None:
-                return records, {"phase": "customers", "starting_after": next_after}
-            return records, {"phase": "subscriptions"}
-
-        if phase == "subscriptions":
-            records, next_after = await self._page_subscriptions(
-                starting_after=starting_after, limit=limit
-            )
-            if next_after is not None:
-                return records, {
-                    "phase": "subscriptions",
-                    "starting_after": next_after,
-                }
+        records, next_after = await loader(starting_after, limit)
+        if next_after is not None:
+            return records, {"phase": phase, "starting_after": next_after}
+        if phase_index + 1 == len(_EXTRACT_PHASES):
             return records, None
+        return records, {"phase": _EXTRACT_PHASES[phase_index + 1]}
 
-        raise ValueError(f"Unknown extract phase: {phase}")
+    async def _page_products(
+        self, starting_after: str | None, limit: int
+    ) -> ExtractPage:
+        params: dict[str, Any] = {"active": True, "limit": min(limit, PAGE_SIZE)}
+        if starting_after is not None:
+            params["starting_after"] = starting_after
+        page = await self._client.v1.products.list_async(params=params)  # type: ignore[arg-type]
+        semaphore = asyncio.Semaphore(PRODUCT_PRICE_CONCURRENCY)
+
+        async def load_product(product: stripe_lib.Product) -> list[CanonicalProduct]:
+            async with semaphore:
+                return await self._canonical_products(product)
+
+        product_records = await asyncio.gather(
+            *(load_product(product) for product in page.data)
+        )
+        records: list[CanonicalRecord] = [
+            record for products in product_records for record in products
+        ]
+        if not page.has_more or not page.data:
+            return records, None
+        return records, page.data[-1].id
 
     async def _page_customers(
-        self, *, starting_after: str | None, limit: int
-    ) -> tuple[list[CanonicalRecord], str | None]:
+        self, starting_after: str | None, limit: int
+    ) -> ExtractPage:
         params: dict[str, Any] = {"limit": min(limit, PAGE_SIZE)}
         if starting_after is not None:
             params["starting_after"] = starting_after
@@ -170,8 +190,8 @@ class StripeAdapter:
         return records, page.data[-1].id
 
     async def _page_subscriptions(
-        self, *, starting_after: str | None, limit: int
-    ) -> tuple[list[CanonicalRecord], str | None]:
+        self, starting_after: str | None, limit: int
+    ) -> ExtractPage:
         params: dict[str, Any] = {
             "status": "all",
             "limit": min(limit, PAGE_SIZE),
@@ -222,23 +242,18 @@ class StripeAdapter:
             has_connected_accounts=has_connected_accounts,
         )
 
-    async def _extract_products(self) -> AsyncIterator[CanonicalProduct]:
-        # Buffer + group prices per (product, interval); catalogs are small,
-        # unlike customers, so holding them in memory is fine.
+    async def _canonical_products(
+        self, product: stripe_lib.Product
+    ) -> list[CanonicalProduct]:
         grouped: dict[str, CanonicalProduct] = {}
         prices = await self._client.v1.prices.list_async(
             params={
                 "active": True,
+                "product": product.id,
                 "limit": PAGE_SIZE,
-                "expand": ["data.product"],
             }
         )
         async for price in prices.auto_paging_iter():
-            product = price.product
-            # A deleted product deserializes as a Product with no `active`/`name`;
-            # `not active` skips deleted and archived alike.
-            if not isinstance(product, stripe_lib.Product) or not product.get("active"):
-                continue
             recurring = price.recurring
             interval = recurring.interval if recurring else None
             interval_count = recurring.interval_count if recurring else 1
@@ -255,30 +270,7 @@ class StripeAdapter:
                 )
                 grouped[key] = canonical
             canonical.prices.append(self._map_price(price))
-        for canonical in grouped.values():
-            yield canonical
-
-    async def _extract_customers(self) -> AsyncIterator[CanonicalCustomer]:
-        customers = await self._client.v1.customers.list_async(
-            params={"limit": PAGE_SIZE}
-        )
-        async for customer in customers.auto_paging_iter():
-            yield self._map_customer(customer)
-
-    async def _extract_subscriptions(self) -> AsyncIterator[CanonicalSubscription]:
-        subscriptions = await self._client.v1.subscriptions.list_async(
-            params={
-                "status": "all",
-                "limit": PAGE_SIZE,
-                "expand": [f"data.{path}" for path in _SUBSCRIPTION_EXPAND],
-            }
-        )
-        async for subscription in subscriptions.auto_paging_iter():
-            if subscription.status in SKIPPED_SUBSCRIPTION_STATUSES:
-                continue
-            if not subscription["items"]["data"]:
-                continue
-            yield self._map_subscription(subscription)
+        return list(grouped.values())
 
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
         try:

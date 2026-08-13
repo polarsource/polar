@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,7 +10,10 @@ from polar.merchant_migration.adapters.stripe import (
     CANCELLATION_COMMENT_PREFIX,
     StripeAdapter,
 )
-from polar.merchant_migration.canonical import CanonicalSubscriptionStatus
+from polar.merchant_migration.canonical import (
+    CanonicalProduct,
+    CanonicalSubscriptionStatus,
+)
 
 
 def _adapter(mocker: MockerFixture) -> tuple[StripeAdapter, Any]:
@@ -34,6 +38,38 @@ def _all_scopes_present(mocker: MockerFixture, client: Any) -> None:
     # fails "no such subscription", which is not a PermissionError.
     client.v1.subscriptions.cancel_async = mocker.AsyncMock(
         side_effect=stripe_lib.InvalidRequestError("no such subscription", "id")
+    )
+
+
+async def _iterate(items: list[Any]) -> AsyncIterator[Any]:
+    for item in items:
+        yield item
+
+
+def _stripe_product(id: str = "prod_1") -> stripe_lib.Product:
+    return stripe_lib.Product.construct_from(
+        {"id": id, "active": True, "name": "Pro"},
+        None,
+    )
+
+
+def _stripe_price(
+    id: str, *, interval: str = "month", amount: int = 1000
+) -> stripe_lib.Price:
+    return stripe_lib.Price.construct_from(
+        {
+            "id": id,
+            "active": True,
+            "currency": "usd",
+            "unit_amount": amount,
+            "billing_scheme": "per_unit",
+            "recurring": {
+                "interval": interval,
+                "interval_count": 1,
+                "usage_type": "licensed",
+            },
+        },
+        None,
     )
 
 
@@ -197,6 +233,74 @@ class TestGetSourceAccount:
 
         assert account.country is None
         assert account.has_connected_accounts is False
+
+
+@pytest.mark.asyncio
+class TestExtractBatch:
+    async def test_products_page_keeps_all_prices_grouped(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        product = _stripe_product()
+        client.v1.products.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[product], has_more=True)
+        )
+        prices = mocker.MagicMock()
+        prices.auto_paging_iter.return_value = _iterate(
+            [_stripe_price("price_1"), _stripe_price("price_2", amount=2000)]
+        )
+        client.v1.prices.list_async = mocker.AsyncMock(return_value=prices)
+
+        records, cursor = await adapter.extract_batch(cursor=None, limit=25)
+
+        assert len(records) == 1
+        record = records[0]
+        assert isinstance(record, CanonicalProduct)
+        assert [price.source_id for price in record.prices] == ["price_1", "price_2"]
+        assert cursor == {"phase": "products", "starting_after": "prod_1"}
+        client.v1.products.list_async.assert_awaited_once_with(
+            params={"active": True, "limit": 25}
+        )
+        client.v1.prices.list_async.assert_awaited_once_with(
+            params={"active": True, "product": "prod_1", "limit": 100}
+        )
+
+    async def test_finished_phase_advances_to_next_phase(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, _ = _adapter(mocker)
+        page_customers = mocker.patch.object(
+            adapter, "_page_customers", return_value=([], None)
+        )
+
+        records, cursor = await adapter.extract_batch(
+            cursor={"phase": "customers", "starting_after": "cus_1"},
+            limit=25,
+        )
+
+        assert records == []
+        assert cursor == {"phase": "subscriptions"}
+        page_customers.assert_awaited_once_with("cus_1", 25)
+
+    async def test_finished_subscriptions_complete_extraction(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, _ = _adapter(mocker)
+        mocker.patch.object(adapter, "_page_subscriptions", return_value=([], None))
+
+        records, cursor = await adapter.extract_batch(
+            cursor={"phase": "subscriptions"},
+            limit=25,
+        )
+
+        assert records == []
+        assert cursor is None
+
+    async def test_unknown_phase_is_rejected(self, mocker: MockerFixture) -> None:
+        adapter, _ = _adapter(mocker)
+
+        with pytest.raises(ValueError, match="Unknown extract phase"):
+            await adapter.extract_batch(cursor={"phase": "invoices"}, limit=25)
 
 
 def _stripe_subscription(

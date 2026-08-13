@@ -236,6 +236,84 @@ class TestRun:
         assert adapter.stopped == []
         assert paused_subscription.status == SubscriptionStatus.active
 
+    async def test_finishes_a_stopped_move_even_when_the_card_now_declines(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        paused_subscription: Subscription,
+    ) -> None:
+        """The source is already stopped, so refusing here would leave the
+        customer billed by nobody. An unpaid first renewal goes to dunning,
+        which is recoverable; a subscription nobody bills is not."""
+        payment_method = await _linked_card(save_fixture, imported_customer)
+        paused_subscription.payment_method = payment_method
+        await save_fixture(paused_subscription)
+        adapter = _FakeSourceAdapter(
+            canonical_subscription(
+                status=CanonicalSubscriptionStatus.canceled,
+                stopped_for_migration=True,
+            )
+        )
+        # Would have been a skip on the normal path.
+        _succeeded_setup_intent(mocker, status="requires_action")
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert paused_subscription.status == SubscriptionStatus.active
+
+    async def test_a_stopped_move_with_no_card_at_all_fails_loudly(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        record: MerchantMigrationRecord,
+        paused_subscription: Subscription,
+    ) -> None:
+        """Nothing to charge and nothing billing on the source either. Failed,
+        not skipped: it needs chasing, and a retry can still finish it."""
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.list_payment_methods",
+            return_value=_no_payment_methods(),
+        )
+        adapter = _FakeSourceAdapter(
+            canonical_subscription(
+                status=CanonicalSubscriptionStatus.canceled,
+                stopped_for_migration=True,
+            )
+        )
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert outcome.reason is not None
+        assert paused_subscription.status == SubscriptionStatus.paused
+
+    async def test_an_unreadable_staged_record_stops_at_that_record(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        record: MerchantMigrationRecord,
+        paused_subscription: Subscription,
+    ) -> None:
+        """One bad ledger row must not raise: the run is one subscription per
+        job, so an escaping error would stall the whole chain on it."""
+        record.canonical = {}
+        await save_fixture(record)
+        adapter = _FakeSourceAdapter(canonical_subscription())
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert adapter.stopped == []
+        assert paused_subscription.status == SubscriptionStatus.paused
+
     async def test_a_second_run_stops_nothing_twice(
         self,
         session: AsyncSession,

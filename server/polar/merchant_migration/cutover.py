@@ -60,6 +60,10 @@ MIGRATABLE_SOURCE_STATUSES = frozenset(
     {CanonicalSubscriptionStatus.active, CanonicalSubscriptionStatus.trialing}
 )
 
+# Floor for a period we have to reconstruct, so an activated subscription never
+# starts on a cycle of zero length.
+_MINIMUM_PERIOD = timedelta(days=1)
+
 _GONE = "It no longer exists on the source, so there is nothing to take over."
 _SOURCE_CANCELED = (
     "It was cancelled on the source after the import, so Polar won't start billing it."
@@ -81,6 +85,15 @@ _NO_CARD = (
     "enter their billing details again, or the copy has to pick them up."
 )
 _NOT_PAUSED = "It isn't paused in Polar any more, so it was left alone."
+_STRANDED = (
+    "It was already stopped on the source, but no payment method has landed on "
+    "Polar for this customer, so nobody is billing them. They need to enter "
+    "their billing details, then run this again."
+)
+_UNREADABLE = (
+    "We can't read what was imported for this subscription, so we can't tell "
+    "whether it still matches the source. Re-run the import for this customer."
+)
 _CUSTOMER_DELETED = "The Polar customer was deleted, so it can't be billed."
 _SUBSCRIPTION_GONE = "The imported Polar subscription no longer exists."
 
@@ -171,11 +184,26 @@ class SubscriptionCutover:
         payment_method = await self._resolve_payment_method(
             subscription, customer, source.payment_method
         )
-        if payment_method is None:
-            return _skip(_NO_CARD)
-        card_reason = await self._card_reason(customer, payment_method)
-        if card_reason is not None:
-            return _skip(card_reason)
+        if source.stopped_for_migration:
+            # The source is already stopped, so declining to finish here would
+            # leave the customer billed by nobody. A card we can't prove is
+            # still better than that: an unpaid first renewal goes to dunning,
+            # which is recoverable. Only having no method at all blocks us, and
+            # that's a failure to chase rather than a deliberate skip.
+            if payment_method is None:
+                log.error(
+                    "merchant_migration.cutover.stranded",
+                    migration_id=self.migration.id,
+                    record_id=record.id,
+                    source_id=record.source_id,
+                )
+                return _fail(_STRANDED)
+        else:
+            if payment_method is None:
+                return _skip(_NO_CARD)
+            card_reason = await self._card_reason(customer, payment_method)
+            if card_reason is not None:
+                return _skip(card_reason)
 
         if not source.stopped_for_migration:
             await self.adapter.stop_source_subscription(
@@ -248,7 +276,13 @@ class SubscriptionCutover:
         reason = subscription_import_reason(source)
         if reason is not None:
             return reason.message
-        staged = deserialize(record.type, record.canonical)
+        try:
+            staged = deserialize(record.type, record.canonical)
+        except (KeyError, TypeError, ValueError):
+            # A blob staged before a canonical change, or half-written. Stopping
+            # this one record beats letting it raise: the run is one subscription
+            # per job, so an escaping error would stall the whole chain on it.
+            return _UNREADABLE
         if (
             isinstance(staged, CanonicalSubscription)
             and staged.price_source_id != source.price_source_id
@@ -336,8 +370,11 @@ class SubscriptionCutover:
         end = source.current_period_end or subscription.current_period_end
         start = source.current_period_start or subscription.current_period_start
         if start >= end:
-            # An inverted period would feed the renewal maths.
-            start = min(subscription.current_period_start, end)
+            # An inverted or empty period would feed the renewal maths, and the
+            # subscription's own start can be just as late as the source's. Keep
+            # the cycle length Polar already knows and land it before the end.
+            length = subscription.current_period_end - subscription.current_period_start
+            start = end - max(length, _MINIMUM_PERIOD)
         return start, end
 
     def _trial_end(self, source: CanonicalSubscription) -> datetime | None:

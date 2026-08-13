@@ -764,6 +764,31 @@ class TestUpdate:
 
         assert "downgraded" in str(exc_info.value).lower()
 
+    async def test_cannot_downgrade_type_team_to_null(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that setting type=null on a team customer is rejected."""
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team-null@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.update(
+                session,
+                customer,
+                CustomerUpdate(type=None),
+            )
+
+        assert "downgraded" in str(exc_info.value).lower()
+
     async def test_same_type_update_allowed(
         self,
         session: AsyncSession,

@@ -91,8 +91,19 @@ export const createServerSideAPI = async (
 
   // Use POLAR_API_URL for server-side requests (e.g., in Docker containers)
   // Fall back to NEXT_PUBLIC_API_URL for local development
-  const apiUrl =
+  let apiUrl =
     process.env.POLAR_API_URL || (process.env.NEXT_PUBLIC_API_URL as string)
+
+  // A relative base (same-origin deployments) must be absolute for
+  // server-side fetch. Middleware has no service binding URL, so derive
+  // the base from the request's own host.
+  if (apiUrl.startsWith('/')) {
+    const host = headers.get('host')
+    if (host) {
+      const proto = headers.get('x-forwarded-proto') ?? 'https'
+      apiUrl = `${proto}://${host}${apiUrl}`
+    }
+  }
 
   const client = baseCreateClient(apiUrl, token, apiHeaders)
 

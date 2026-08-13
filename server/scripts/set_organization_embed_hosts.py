@@ -169,12 +169,13 @@ def _is_preview_host(host: str) -> bool:
     written. `*.vercel.app` would cover it and admit every other tenant too, so
     the merchant has to weigh that themselves.
 
-    What is left after the first label has to be a suffix someone else operates,
-    which takes at least two labels: `vercel.app` is one, `com` is every ordinary
-    domain in the world.
+    What is left after the first label has to be a suffix a company operates for
+    its tenants: `vercel.app`, `pages.dev`. A registry suffix does not count,
+    however many labels it carries — `acme.co.uk` is a merchant's own domain,
+    not one tenant of `co.uk`.
     """
     _, _, parent = host.partition(".")
-    return "." in parent and is_tld(parent)
+    return is_tld(parent) and not is_tld(parent, search_private=False)
 
 
 def _owned_domains(candidate: Candidate) -> dict[str, str]:

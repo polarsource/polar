@@ -1,9 +1,11 @@
+import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import ANY, AsyncMock, MagicMock
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
@@ -12,9 +14,11 @@ from pydantic import HttpUrl, ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.attributes import flag_modified
 
 from polar.auth.models import Anonymous, AuthSubject
 from polar.checkout.guard import has_product_checkout
+from polar.checkout.repository import CheckoutRepository
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmStripe,
@@ -52,6 +56,7 @@ from polar.exceptions import NotPermitted, PaymentNotReady, PolarRequestValidati
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import AddressInput
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -66,6 +71,7 @@ from polar.models import (
     Payment,
     PayoutAccount,
     Product,
+    TrialRedemption,
     User,
     UserOrganization,
 )
@@ -5798,6 +5804,113 @@ class TestConfirm:
                 ),
             )
 
+    async def test_free_trial_creates_redemption_in_confirm(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product_recurring_free_price: Product,
+    ) -> None:
+        """Free trials must create the trial redemption inside ``confirm`` (under
+        the customer lock) so a concurrent confirmation for the same customer
+        is blocked — not later in ``handle_success``."""
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_recurring_free_price],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+        assert checkout.trial_end is not None
+        assert checkout.is_payment_form_required is False
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        enqueue_job_mock = mocker.patch("polar.checkout.service.enqueue_job")
+
+        confirmed = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                }
+            ),
+        )
+
+        assert confirmed.status == CheckoutStatus.confirmed
+        enqueue_job_mock.assert_called_once_with(
+            "checkout.handle_free_success", checkout_id=confirmed.id
+        )
+
+        # The redemption must exist immediately after confirm(), before the
+        # background job runs.
+        trial_redemption_repository = TrialRedemptionRepository.from_session(session)
+        trial_redemptions = await trial_redemption_repository.get_all(
+            trial_redemption_repository.get_base_statement()
+        )
+        assert len(trial_redemptions) == 1
+        assert trial_redemptions[0].customer_id == confirmed.customer_id
+        assert trial_redemptions[0].payment_method_fingerprint is None
+
+    async def test_free_trial_already_redeemed_blocks_concurrent_confirm(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product_recurring_free_price: Product,
+    ) -> None:
+        """A second free-trial confirmation for a customer who already has a
+        redemption (created in the first ``confirm``) must be rejected."""
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+
+        existing_customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        await create_trial_redemption(
+            save_fixture,
+            customer=existing_customer,
+            customer_email=existing_customer.email,
+        )
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_recurring_free_price],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+        assert checkout.is_payment_form_required is False
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        mocker.patch("polar.checkout.service.enqueue_job")
+
+        with pytest.raises(TrialAlreadyRedeemed):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                    }
+                ),
+            )
+
     async def test_discount_per_customer_limit_reached(
         self,
         save_fixture: SaveFixture,
@@ -7423,3 +7536,186 @@ async def test_send_expiration_events(
     args = mock_send.call_args
     assert args[0][2] == WebhookEventType.checkout_expired
     assert args[0][3].id == checkout.id
+
+
+async def _attempt_confirm_free_trial(
+    sessionmaker: AsyncSessionMaker, checkout_id: UUID, email: str
+) -> tuple[str, UUID | None]:
+    """Try to confirm a free-trial checkout in its own session; return
+    ("success", checkout_id) or ("blocked", None).
+
+    Mirrors the structure of ``tests/license_key/test_service.py::_attempt_activation``:
+    each concurrent contender opens its own session, loads the checkout fresh,
+    calls the service, and either commits or rolls back.
+    """
+    async with sessionmaker() as session:
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_id(
+            checkout_id, options=repository.get_eager_options()
+        )
+        assert checkout is not None
+        try:
+            confirmed = await checkout_service.confirm(
+                session,
+                Anonymous(),
+                checkout,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "customer_name": "Customer Name",
+                        "customer_email": email,
+                    }
+                ),
+            )
+        except TrialAlreadyRedeemed:
+            await session.rollback()
+            return ("blocked", None)
+        await session.commit()
+        return ("success", confirmed.id)
+
+
+@pytest.mark.asyncio
+class TestConcurrentFreeTrialConfirmation:
+    """Regression tests for the TOCTOU race in trial-abuse prevention.
+
+    Two concurrent free-trial confirmations for the same existing customer
+    must not both succeed. The customer row lock + redemption creation in
+    ``confirm`` ensures only one proceeds; the other raises
+    ``TrialAlreadyRedeemed``.
+
+    These tests use real concurrent sessions (one per contender) rather than
+    mocked concurrency, mirroring
+    ``tests/license_key/test_service.py::TestConcurrentActivation``.
+    """
+
+    async def test_concurrent_free_trial_confirmations_serialized(
+        self, worker_id: str, stripe_service_mock: MagicMock
+    ) -> None:
+        """Two concurrent free-trial confirmations for the same existing
+        customer must produce exactly one success and one TrialAlreadyRedeemed,
+        and exactly one trial_redemption row."""
+        from sqlalchemy import delete, func, select
+
+        from polar.config import settings
+        from polar.enums import SubscriptionRecurringInterval
+        from polar.kit.db.postgres import (
+            create_async_engine,
+            create_async_sessionmaker,
+        )
+        from tests.fixtures.database import get_database_url, save_fixture_factory
+        from tests.fixtures.random_objects import (
+            create_account,
+            create_checkout,
+            create_customer,
+            create_organization,
+            create_product,
+            create_user,
+        )
+
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_trial_concurrency",
+            pool_size=8,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+
+        async with sessionmaker() as setup_session:
+            save_fixture = save_fixture_factory(setup_session)
+            user = await create_user(save_fixture)
+            account = await create_account(save_fixture, user)
+            organization = await create_organization(save_fixture, account)
+            organization.subscription_settings["prevent_trial_abuse"] = True
+            flag_modified(organization, "subscription_settings")
+            await save_fixture(organization)
+            product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(None, "usd")],
+            )
+            existing_customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email="trial-race@example.com",
+            )
+            checkout1 = await create_checkout(
+                save_fixture,
+                products=[product],
+                trial_interval=TrialInterval.day,
+                trial_interval_count=7,
+            )
+            checkout2 = await create_checkout(
+                save_fixture,
+                products=[product],
+                trial_interval=TrialInterval.day,
+                trial_interval_count=7,
+            )
+            await setup_session.commit()
+
+        try:
+            with (
+                patch("polar.checkout.service.enqueue_job"),
+                patch("polar.checkout.service.webhook_service.send"),
+            ):
+                results = await asyncio.gather(
+                    _attempt_confirm_free_trial(
+                        sessionmaker, checkout1.id, "trial-race@example.com"
+                    ),
+                    _attempt_confirm_free_trial(
+                        sessionmaker, checkout2.id, "trial-race@example.com"
+                    ),
+                )
+
+            successes = [r for r in results if r[0] == "success"]
+            blocked = [r for r in results if r[0] == "blocked"]
+
+            assert len(successes) == 1, (
+                f"expected exactly 1 successful confirmation, got "
+                f"{len(successes)}: {successes}"
+            )
+            assert len(blocked) == 1, (
+                f"expected exactly 1 blocked confirmation, got "
+                f"{len(blocked)}: {blocked}"
+            )
+
+            async with sessionmaker() as session:
+                redemption_count = (
+                    await session.execute(
+                        select(func.count(TrialRedemption.id)).where(
+                            TrialRedemption.customer_id == existing_customer.id
+                        )
+                    )
+                ).scalar_one()
+
+            assert redemption_count == 1, (
+                f"expected exactly 1 trial redemption, got {redemption_count}"
+            )
+        finally:
+            async with sessionmaker() as cleanup_session:
+                await cleanup_session.execute(
+                    delete(TrialRedemption).where(
+                        TrialRedemption.customer_id == existing_customer.id
+                    )
+                )
+                await cleanup_session.execute(
+                    delete(Checkout).where(Checkout.organization_id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Customer).where(Customer.organization_id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Product).where(Product.organization_id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Organization).where(Organization.id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Account).where(Account.id == account.id)
+                )
+                await cleanup_session.execute(delete(User).where(User.id == user.id))
+                await cleanup_session.commit()
+            await engine.dispose()

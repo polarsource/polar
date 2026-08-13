@@ -1290,6 +1290,15 @@ class CheckoutService:
                         customer.type == CustomerType.team and customer.email is None
                     )
                 ):
+                    # Serialize concurrent confirmations of the same buyer, so two
+                    # checkouts can't both pass the trial check before either creates
+                    # a redemption. For free trials the redemption is created below
+                    # in this same transaction (before enqueuing handle_free_success),
+                    # so a concurrent confirmation that acquires this lock after we
+                    # commit will observe the redemption and be blocked.
+                    customer_repository = CustomerRepository.from_session(session)
+                    await customer_repository.get_by_id(customer.id, for_update=True)
+
                     trial_already_redeemed = (
                         await trial_redemption_service.check_trial_already_redeemed(
                             session,
@@ -1322,6 +1331,18 @@ class CheckoutService:
             raise NotImplementedError()
 
         if not checkout.is_payment_form_required:
+            # For free trials, create the redemption within this transaction
+            # (under the customer lock acquired above) so that a concurrent
+            # confirmation for the same customer is blocked by the trial-abuse
+            # check. Payment-required trials create the redemption later in
+            # handle_success, after payment succeeds.
+            if checkout.trial_end is not None:
+                assert checkout.customer is not None
+                await trial_redemption_service.create_trial_redemption(
+                    session,
+                    customer=checkout.customer,
+                    product=checkout.product,
+                )
             enqueue_job("checkout.handle_free_success", checkout_id=checkout.id)
 
         checkout.status = CheckoutStatus.confirmed
@@ -1390,8 +1411,12 @@ class CheckoutService:
 
         await self._maybe_auto_claim_buyer_seat(session, checkout, subscription, order)
 
-        # Create trial redemption record if this checkout had a trial period
-        if checkout.trial_end is not None:
+        # Create trial redemption record if this checkout had a trial period.
+        # Free trials (no payment form) create the redemption in confirm() under
+        # the customer lock to prevent concurrent redemptions, so only create
+        # it here for payment-required trials where it must wait for payment
+        # to succeed.
+        if checkout.trial_end is not None and checkout.is_payment_form_required:
             assert checkout.customer is not None
             await trial_redemption_service.create_trial_redemption(
                 session,

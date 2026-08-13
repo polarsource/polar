@@ -150,6 +150,72 @@ class TestListCustomers:
         assert json["items"][0]["id"] == str(customer.id)
 
     @pytest.mark.auth
+    async def test_query_escapes_percent_character(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # `%` is a SQL LIKE wildcard for any string; it must be treated
+        # literally so a search for it does not return every customer.
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="alice@example.com",
+            name="Alice 50% Off",
+        )
+        # `bob` has "50" (without `%`) in his name: the buggy unescaped
+        # pattern `%50%%` would match him too, the fixed one must not.
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="bob@example.com",
+            name="Bob 50 Off",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="carol@example.com",
+            name="Carol",
+        )
+
+        response = await client.get("/v1/customers/", params={"query": "50%"})
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["email"] == "alice@example.com"
+
+    @pytest.mark.auth
+    async def test_query_escapes_underscore_character(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # `_` is a SQL LIKE wildcard for any single character; it must be
+        # treated literally so `user_one` does not also match `userAone`.
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="user_one@example.com",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="userAone@example.com",
+        )
+
+        response = await client.get("/v1/customers/", params={"query": "user_one"})
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["email"] == "user_one@example.com"
+
+    @pytest.mark.auth
     async def test_active_filter(
         self,
         save_fixture: SaveFixture,

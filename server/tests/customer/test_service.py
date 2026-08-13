@@ -83,6 +83,129 @@ class TestList:
         assert customer1 in customers
         assert customer2 in customers
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_query_escapes_percent_character(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # `%` is a SQL LIKE wildcard for any string; it must be treated
+        # literally so a search for it does not return every customer.
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="alice@example.com",
+            name="Alice 50% Off",
+        )
+        # `bob` has "50" (without `%`) in his name: the buggy unescaped
+        # pattern `%50%%` would match him too, the fixed one must not.
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="bob@example.com",
+            name="Bob 50 Off",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="carol@example.com",
+            name="Carol",
+        )
+
+        customers, total = await customer_service.list(
+            session,
+            auth_subject,
+            query="50%",
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert total == 1
+        assert customers[0].email == "alice@example.com"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_query_escapes_underscore_character(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # `_` is a SQL LIKE wildcard for any single character; it must be
+        # treated literally so `user_one` does not also match `userAone`.
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="user_one@example.com",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="userAone@example.com",
+        )
+
+        customers, total = await customer_service.list(
+            session,
+            auth_subject,
+            query="user_one",
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert total == 1
+        assert customers[0].email == "user_one@example.com"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_query_external_id_is_prefix_match(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # external_id keeps prefix-match semantics: a non-prefix substring
+        # must not match it (guards istartswith against regressing to contains).
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="c1@example.com",
+            external_id="ext_123",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="c2@example.com",
+            external_id="other_ext_123",
+        )
+
+        customers, total = await customer_service.list(
+            session,
+            auth_subject,
+            query="ext_1",
+            pagination=PaginationParams(1, 10),
+        )
+        assert total == 1
+        assert customers[0].external_id == "ext_123"
+
+        # "123" is a suffix of both external_ids but a prefix of neither,
+        # and it appears in no other searchable field, so nothing matches.
+        customers, total = await customer_service.list(
+            session,
+            auth_subject,
+            query="123",
+            pagination=PaginationParams(1, 10),
+        )
+        assert total == 0
+
 
 @pytest.mark.asyncio
 class TestCreate:

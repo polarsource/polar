@@ -4,6 +4,7 @@ from unittest.mock import call
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
 from polar.event.system import SystemEvent
 from polar.models import Customer, Organization
@@ -12,7 +13,7 @@ from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_member
+from tests.fixtures.random_objects import create_customer, create_member
 
 
 @pytest.fixture
@@ -367,3 +368,90 @@ class TestAvatarUrl:
         assert result.avatar_url == (
             _avatar_url_for_email(expected_email) if expected_email else None
         )
+
+
+@pytest.mark.asyncio
+class TestSearchByQuery:
+    async def test_escapes_percent_character(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        organization: Organization,
+    ) -> None:
+        # `%` is a SQL LIKE wildcard for any string; it must be treated
+        # literally so a search for it does not return every customer.
+        match = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="alice@example.com",
+            name="Alice 50% Off",
+        )
+        # `bob` has "50" (without `%`) in his name: the buggy unescaped
+        # pattern `%50%%` would match him too, the fixed one must not.
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="bob@example.com",
+            name="Bob 50 Off",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="carol@example.com",
+            name="Carol",
+        )
+
+        customer_ids, external_ids = await repository.search_by_query(
+            {AccessibleOrganizationID(organization.id)}, "50%"
+        )
+
+        assert customer_ids == [match.id]
+        assert external_ids == []
+
+    async def test_escapes_underscore_character(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        organization: Organization,
+    ) -> None:
+        # `_` is a SQL LIKE wildcard for any single character; it must be
+        # treated literally so `user_one` does not also match `userAone`.
+        match = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="user_one@example.com",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="userAone@example.com",
+        )
+
+        customer_ids, external_ids = await repository.search_by_query(
+            {AccessibleOrganizationID(organization.id)}, "user_one"
+        )
+
+        assert customer_ids == [match.id]
+        assert external_ids == []
+
+    async def test_matches_external_id_substring(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        organization: Organization,
+    ) -> None:
+        # search_by_query uses a contains match for external_id (prefix and
+        # middle both match), unlike the merchant-facing list endpoint.
+        match = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="c1@example.com",
+            external_id="org_123_user",
+        )
+
+        customer_ids, external_ids = await repository.search_by_query(
+            {AccessibleOrganizationID(organization.id)}, "123"
+        )
+
+        assert customer_ids == [match.id]
+        assert external_ids == ["org_123_user"]

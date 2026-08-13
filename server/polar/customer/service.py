@@ -604,7 +604,7 @@ class CustomerService:
                             "type": "invalid",
                             "loc": ("body", "tax_id"),
                             "msg": "Invalid tax ID.",
-                            "input": customer_update.tax_id,
+                            "input": customer.tax_id[0],
                         }
                     ]
                 ) from e

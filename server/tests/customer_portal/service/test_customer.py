@@ -57,7 +57,7 @@ class TestUpdate:
             billing_address=Address(country=CountryAlpha2("GB")),
             tax_id=None,
         )
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.update(
                 session,
                 customer,
@@ -65,6 +65,9 @@ class TestUpdate:
                     tax_id="FR61954506077",
                 ),
             )
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "tax_id")
+        assert errors[0]["input"] == "FR61954506077"
 
     async def test_country_tax_id_set_mismatch(
         self,
@@ -78,7 +81,7 @@ class TestUpdate:
             billing_address=Address(country=CountryAlpha2("FR")),
             tax_id=("FR61954506077", TaxIDFormat.eu_vat),
         )
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.update(
                 session,
                 customer,
@@ -86,6 +89,9 @@ class TestUpdate:
                     billing_address=AddressInput(country=CountryAlpha2Input("GB")),
                 ),
             )
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "tax_id")
+        assert errors[0]["input"] == "FR61954506077"
 
     async def test_explicit_null_billing_address(
         self,

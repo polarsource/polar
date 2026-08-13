@@ -48,6 +48,7 @@ def create_email_sender_mock(capture: EmailCapture) -> MagicMock:
         reply_to_name: str | None = None,
         reply_to_email_addr: str | None = None,
         attachments: Any = None,
+        tags: dict[str, str] | None = None,
     ) -> str:
         capture.emails.append(CapturedEmail(to=to_email_addr, subject=subject))
         return f"mock-email-{uuid.uuid4()}"

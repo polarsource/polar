@@ -175,16 +175,21 @@ class PaymentMethodRepository(
     async def soft_delete(
         self, object: PaymentMethod, *, flush: bool = False
     ) -> PaymentMethod:
-        # Unlink the payment method from the customer and subscriptions
-        await self.session.execute(
-            update(Customer)
-            .values(default_payment_method_id=None)
-            .where(Customer.default_payment_method_id == object.id)
-        )
+        # Unlink the payment method from the customer and subscriptions.
+        # Subscriptions are unlinked first so the lock order (Subscription →
+        # Customer) matches the customer portal's uncancel/resume flow, which
+        # locks the subscription row then the customer row. Reversing this
+        # order would deadlock if a concurrent uncancel holds the subscription
+        # lock and waits for the customer lock we'd acquire here.
         await self.session.execute(
             update(Subscription)
             .values(payment_method_id=None)
             .where(Subscription.payment_method_id == object.id)
+        )
+        await self.session.execute(
+            update(Customer)
+            .values(default_payment_method_id=None)
+            .where(Customer.default_payment_method_id == object.id)
         )
 
         return await super().soft_delete(object, flush=flush)

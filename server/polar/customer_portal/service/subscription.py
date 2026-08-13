@@ -299,15 +299,15 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         subscription: Subscription,
     ) -> Subscription:
-        if (
-            subscription.can_resume()
-            and subscription.organization.can_renew_subscriptions
-        ):
-            await self._require_payment_method(session, subscription, "resuming")
-
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
         ) as ctx:
+            if (
+                subscription.can_resume()
+                and subscription.organization.can_renew_subscriptions
+            ):
+                await self._require_payment_method(session, subscription, "resuming")
+
             return await subscription_service.resume(session, ctx, subscription)
 
     async def uncancel(
@@ -315,12 +315,14 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         subscription: Subscription,
     ) -> Subscription:
-        if subscription.can_uncancel():
-            await self._require_payment_method(session, subscription, "uncancelling")
-
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
         ) as ctx:
+            if subscription.can_uncancel():
+                await self._require_payment_method(
+                    session, subscription, "uncancelling"
+                )
+
             return await subscription_service.uncancel(
                 session,
                 ctx,
@@ -379,6 +381,17 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
     ) -> None:
         if all(price.is_free for price in subscription.prices):
             return
+
+        # Lock the customer row and refresh default_payment_method_id so this
+        # check is atomic with the uncancel/resume that follows. PostgreSQL
+        # FOR UPDATE locks are table-specific, so the subscription row lock
+        # acquired by the endpoint does not block a concurrent payment-method
+        # deletion (which UPDATEs the Customer table).
+        await session.refresh(
+            subscription.customer,
+            attribute_names=["default_payment_method_id"],
+            with_for_update=True,
+        )
 
         payment_method = await payment_method_service.get_customer_payment_method(
             session, subscription.customer

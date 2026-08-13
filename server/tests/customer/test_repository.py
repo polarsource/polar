@@ -377,7 +377,13 @@ class TestSearchByQuery:
         [
             # `%` is a wildcard for any string; it must match literally, not
             # cause "50" (without `%`) in another customer's name to be returned.
-            ("alice@example.com", "Alice 50% Off", "bob@example.com", "Bob 50 Off", "50%"),
+            (
+                "alice@example.com",
+                "Alice 50% Off",
+                "bob@example.com",
+                "Bob 50 Off",
+                "50%",
+            ),
             # `_` is a wildcard for any single character; `user_one` must not
             # match `userAone`.
             ("user_one@example.com", None, "userAone@example.com", None, "user_one"),

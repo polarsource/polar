@@ -37,6 +37,12 @@ variable "engine_version" {
   default     = "9.1"
 }
 
+variable "parameter_group_family" {
+  description = "Parameter group family matching the engine version."
+  type        = string
+  default     = "valkey9"
+}
+
 variable "port" {
   description = "Redis port."
   type        = number

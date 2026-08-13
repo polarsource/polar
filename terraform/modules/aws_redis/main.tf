@@ -11,11 +11,23 @@ resource "aws_security_group" "this" {
   tags        = var.tags
 }
 
+resource "aws_elasticache_parameter_group" "this" {
+  name   = var.name
+  family = var.parameter_group_family
+  tags   = var.tags
+
+  parameter {
+    name  = "maxmemory-policy"
+    value = "noeviction"
+  }
+}
+
 resource "aws_elasticache_replication_group" "this" {
   replication_group_id       = var.name
   description                = "${var.name} Redis"
   engine                     = "valkey"
   engine_version             = var.engine_version
+  parameter_group_name       = aws_elasticache_parameter_group.this.name
   node_type                  = var.node_type
   num_cache_clusters         = var.node_count
   multi_az_enabled           = var.node_count > 1

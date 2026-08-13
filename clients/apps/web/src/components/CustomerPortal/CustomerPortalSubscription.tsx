@@ -9,6 +9,7 @@ import {
   useCustomerResumeSubscription,
   usePortalAuthenticatedUser,
 } from '@/hooks/queries/customerPortal'
+import { useRequirePaymentMethod } from '@/hooks/useRequirePaymentMethod'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { getPauseAction } from '@/utils/subscription'
@@ -73,6 +74,8 @@ const CustomerPortalSubscription = ({
   const clearPendingUpdate = useCustomerClearPendingSubscriptionUpdate(api)
   const pauseSubscription = useCustomerPauseSubscription(api)
   const resumeSubscription = useCustomerResumeSubscription(api)
+  const { withPaymentMethod, isPending: paymentMethodsPending } =
+    useRequirePaymentMethod(api, customerSessionToken, subscription)
 
   const pendingUpdate = subscription.pending_update
   const pendingProduct = products.find(
@@ -122,21 +125,22 @@ const CustomerPortalSubscription = ({
     }
   }
 
-  const handleResume = async () => {
-    try {
-      await resumeSubscription.mutateAsync({ id: subscription.id })
-      router.refresh()
-      toast({
-        title: 'Subscription Resumed',
-        description: 'Your subscription has been resumed.',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: `Failed to resume the subscription: ${extractApiErrorMessage(error as Record<string, unknown>)}`,
-      })
-    }
-  }
+  const handleResume = async () =>
+    withPaymentMethod(async () => {
+      try {
+        await resumeSubscription.mutateAsync({ id: subscription.id })
+        router.refresh()
+        toast({
+          title: 'Subscription Resumed',
+          description: 'Your subscription has been resumed.',
+        })
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: `Failed to resume the subscription: ${extractApiErrorMessage(error as Record<string, unknown>)}`,
+        })
+      }
+    })
 
   return (
     <div className="flex flex-col gap-8">
@@ -297,7 +301,8 @@ const CustomerPortalSubscription = ({
                 variant="secondary"
                 fullWidth
                 onClick={handleResume}
-                loading={resumeSubscription.isPending}
+                loading={resumeSubscription.isPending || paymentMethodsPending}
+                disabled={resumeSubscription.isPending || paymentMethodsPending}
                 aria-label="Resume subscription"
               >
                 Resume Subscription

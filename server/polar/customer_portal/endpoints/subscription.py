@@ -35,8 +35,8 @@ from ..schemas.subscription import (
 from ..service.subscription import (
     CustomerSubscriptionSortProperty,
     PauseResumeNotAllowed,
+    PaymentMethodRequired,
     RevokeNotAllowed,
-    UncancelWithoutPaymentMethod,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
 )
@@ -236,8 +236,8 @@ async def preview_change(
         },
         404: SubscriptionNotFound,
         409: {
-            "description": "The subscription has no payment method to renew with.",
-            "model": UncancelWithoutPaymentMethod.schema(),
+            "description": "The subscription has no payment method to charge.",
+            "model": PaymentMethodRequired.schema(),
         },
     },
 )

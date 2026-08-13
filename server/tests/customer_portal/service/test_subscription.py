@@ -14,6 +14,7 @@ from polar.customer_portal.schemas.subscription import (
 )
 from polar.customer_portal.service.subscription import (
     PauseResumeNotAllowed,
+    PaymentMethodRequired,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
 )
@@ -38,6 +39,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_payment_method,
     create_product,
     create_subscription,
 )
@@ -548,6 +550,102 @@ class TestUpdatePause:
                 updates=CustomerSubscriptionResume(resume=True),
             )
 
+    async def test_resume_without_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "pause": True,
+            },
+        }
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        with pytest.raises(PaymentMethodRequired):
+            await customer_subscription_service.update(
+                session,
+                subscription,
+                updates=CustomerSubscriptionResume(resume=True),
+            )
+
+    async def test_resume_free_subscription_without_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_recurring_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "pause": True,
+            },
+        }
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_free_price,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        updated = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionResume(resume=True),
+        )
+
+        assert updated.status == SubscriptionStatus.active
+
+    async def test_resume_without_payment_method_renewals_disabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "pause": True,
+            },
+        }
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        updated = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionResume(resume=True),
+        )
+
+        assert updated.status == SubscriptionStatus.paused
+
     async def test_resume_allowed(
         self,
         session: AsyncSession,
@@ -564,6 +662,7 @@ class TestUpdatePause:
             },
         }
         await save_fixture(organization)
+        await create_payment_method(save_fixture, customer)
         subscription = await create_subscription(
             save_fixture,
             product=product,

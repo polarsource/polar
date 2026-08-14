@@ -4,6 +4,7 @@ import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
+import AmountLabel from '../Shared/AmountLabel'
 import { OverviewSummaryCard } from './OverviewSummaryCard'
 
 interface CurrentPeriodOverviewProps {
@@ -76,6 +77,15 @@ export const CurrentPeriodOverview = ({
       price.price_currency === subscription.currency && isSeatBasedPrice(price),
   )
 
+  // Use the subscription amount (except when a pending update is scheduled)
+  // instead of the current product price, since we by default grandfather old subscriptions
+  // on their old prices if a product price is updated
+  const hasPendingProduct = subscription.pending_update?.product_id != null
+  const showLockedBaseAmount =
+    !hasPendingProduct &&
+    subscriptionPreview != null &&
+    subscriptionPreview.base_amount > 0
+
   // For subscriptions set to cancel, only show if there's still something to
   // bill: metered usage or pending prorations.
   if (isCancelingAtPeriodEnd && !hasMeters && !hasProrations) {
@@ -131,6 +141,13 @@ export const CurrentPeriodOverview = ({
           >
             {isCancelingAtPeriodEnd ? (
               'Canceled'
+            ) : showLockedBaseAmount ? (
+              <AmountLabel
+                amount={subscriptionPreview.base_amount}
+                currency={subscription.currency}
+                interval={subscription.recurring_interval}
+                intervalCount={subscription.recurring_interval_count}
+              />
             ) : (
               <ProductPriceLabel
                 product={product}

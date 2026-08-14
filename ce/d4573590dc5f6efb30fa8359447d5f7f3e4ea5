@@ -8,6 +8,7 @@ server/tests/subscription/test_service.py
   s_da5d177b80c128::t_f4838169b33da0 3607-3685
 server/tests/merchant_migration/_helpers.py
   s_da5d177b80c128::t_f4838169b33da0 1-2,4,6-12,24-29,34-37,91-92,117-182
+  s_da5d177b80c128::t_33de54940a0857 116
 ---
 {
   "schema_version": "authorship/3.0.0",

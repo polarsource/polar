@@ -22,7 +22,7 @@ from polar.config import settings
 from polar.logfire import instrument_httpx
 from polar.logging import CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
-from polar.redis import REDIS_RETRY_ON_ERRROR
+from polar.redis import REDIS_RETRY_ON_ERRROR, SyncFailoverRedis
 
 from . import _sqs
 from ._asyncio import MonitoredAsyncIO
@@ -219,13 +219,17 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
 
     result_backend = ResultsBackend(
         encoder=JSONEncoder(),
-        connection_pool=redis.ConnectionPool.from_url(
-            settings.redis_url, retry=retry, retry_on_error=REDIS_RETRY_ON_ERRROR
+        client=SyncFailoverRedis(
+            connection_pool=redis.ConnectionPool.from_url(
+                settings.redis_url, retry=retry, retry_on_error=REDIS_RETRY_ON_ERRROR
+            )
         ),
     )
     rate_limiter_backend = RateLimiterBackend(
-        connection_pool=redis.ConnectionPool.from_url(
-            settings.redis_url, retry=retry, retry_on_error=REDIS_RETRY_ON_ERRROR
+        client=SyncFailoverRedis(
+            connection_pool=redis.ConnectionPool.from_url(
+                settings.redis_url, retry=retry, retry_on_error=REDIS_RETRY_ON_ERRROR
+            )
         )
     )
 
@@ -263,6 +267,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
 
     broker = RoutingRedisBroker(
         connection_pool=redis_pool,
+        client=SyncFailoverRedis(connection_pool=redis_pool),
         middleware=middleware_list,
         dead_message_ttl=3600 * 1000,  # 1 hour in milliseconds
     )

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { UpdateSubscriptionBillingPeriodForm } from './UpdateSubscriptionBillingPeriodForm'
 import { UpdateSubscriptionDiscountForm } from './UpdateSubscriptionDiscountForm'
 import { UpdateSubscriptionProductForm } from './UpdateSubscriptionProductForm'
+import { UpdateSubscriptionSeatsForm } from './UpdateSubscriptionSeatsForm'
 import { UpdateSubscriptionTrialForm } from './UpdateSubscriptionTrialForm'
 
 const UpdateSubscriptionModal = ({
@@ -21,6 +22,7 @@ const UpdateSubscriptionModal = ({
 }) => {
   const isActive =
     subscription.status === 'active' || subscription.status === 'trialing'
+  const isSeatBased = !!subscription.seats && subscription.seats > 0
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
@@ -35,6 +37,9 @@ const UpdateSubscriptionModal = ({
             {isActive && <TabsTrigger value="trial">Trial</TabsTrigger>}
             {isActive && (
               <TabsTrigger value="billing-period">Billing Period</TabsTrigger>
+            )}
+            {isActive && isSeatBased && (
+              <TabsTrigger value="seats">Seats</TabsTrigger>
             )}
           </TabsList>
           <TabsContent value="product">
@@ -70,6 +75,16 @@ const UpdateSubscriptionModal = ({
               <UpdateSubscriptionBillingPeriodForm
                 subscription={subscription}
                 onUpdate={onUpdate}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="seats">
+            <div className="flex h-full flex-col gap-4">
+              <UpdateSubscriptionSeatsForm
+                subscription={subscription}
+                onUpdate={onUpdate}
+                organization={organization}
               />
             </div>
           </TabsContent>

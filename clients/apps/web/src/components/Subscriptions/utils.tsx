@@ -6,6 +6,7 @@ import { twMerge } from 'tailwind-merge'
 export const subscriptionUpdateValidationDiscriminators = [
   'SubscriptionUpdateBase',
   'SubscriptionUpdateBillingPeriod',
+  'SubscriptionUpdateSeats',
 ]
 
 export const subscriptionStatusDisplayNames: {

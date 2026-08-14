@@ -3,8 +3,7 @@
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useModal } from '@/components/Modal/useModal'
-import { OrderSection } from '@/components/Orders/OrderSection'
-import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
+import { SubscriptionSeatsSection } from '@/components/Seats/SubscriptionSeatsSection'
 import SubscriptionActionsMenu from '@/components/Subscriptions/SubscriptionActionsMenu'
 import { SubscriptionDetailsGrid } from '@/components/Subscriptions/SubscriptionDetailsGrid'
 import SubscriptionInvoicePreview from '@/components/Subscriptions/SubscriptionInvoicePreview'
@@ -12,7 +11,6 @@ import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOr
 import { SubscriptionSecondaryDetails } from '@/components/Subscriptions/SubscriptionSecondaryDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
 import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
-import { useOrganizationSeats } from '@/hooks/queries/seats'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -38,17 +36,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     show: showUpdateModal,
     isShown: isShownUpdateModal,
   } = useModal()
-
-  const hasSeatBasedSubscription =
-    !!subscription?.seats && subscription.seats > 0
-
-  const { data: seatsData, isLoading: isLoadingSeats } = useOrganizationSeats(
-    hasSeatBasedSubscription ? { subscriptionId: subscription?.id } : undefined,
-  )
-
-  const totalSeats = seatsData?.total_seats || 0
-  const availableSeats = seatsData?.available_seats || 0
-  const seats = seatsData?.seats || []
 
   if (!subscription || !product) {
     return null
@@ -94,23 +81,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         customFields={customFields?.items}
       />
 
-      {hasSeatBasedSubscription && (
-        <OrderSection
-          title="Seats"
-          description={
-            <Text color="muted">
-              {availableSeats} of {totalSeats} seats available
-            </Text>
-          }
-        >
-          {!isLoadingSeats && seats.length > 0 && (
-            <SeatViewOnlyTable seats={seats} />
-          )}
-          {!isLoadingSeats && seats.length === 0 && (
-            <Text color="muted">No seats have been assigned yet.</Text>
-          )}
-        </OrderSection>
-      )}
+      <SubscriptionSeatsSection subscription={subscription} />
 
       <SubscriptionOrdersSection
         organization={organization}

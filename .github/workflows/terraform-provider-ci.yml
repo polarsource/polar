@@ -1,0 +1,34 @@
+name: Terraform Provider CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['sdk/terraform/**']
+  pull_request:
+    paths: ['sdk/terraform/**']
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: sdk/terraform
+
+jobs:
+  build:
+    name: 'Terraform Provider: Build & Test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'sdk/terraform/go.mod'
+          cache: true
+          cache-dependency-path: 'sdk/terraform/go.sum'
+      - run: go build -v ./...
+      - run: go vet ./...
+      - run: test -z "$(gofmt -l .)"
+      - run: go test -v ./...
+      - name: Check go.mod is tidy
+        run: go mod tidy && git diff --exit-code go.mod go.sum

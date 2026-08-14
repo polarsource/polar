@@ -41,6 +41,8 @@ polar/
 ├── sdk/                    # SDKs and generators
 │   ├── generator/              # Internal SDK code generator
 │   ├── python/                 # Generated Python SDK
+│   ├── terraform/              # Terraform provider (Go) — see sdk/terraform/AGENTS.md;
+│   │                           #   published via sync to polarsource/terraform-provider-polar (ADR-0010)
 │   └── overlays/               # OpenAPI Overlay tweaks for Speakeasy-generated SDKs
 └── .claude/                # Claude Code config (settings, hooks, commands)
 ```

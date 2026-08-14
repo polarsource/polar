@@ -1,7 +1,7 @@
 import contextlib
 import dataclasses
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncIterable, Sequence
 from datetime import datetime
 from typing import cast
 
@@ -69,25 +69,21 @@ type BillingEntrySelector = Sequence[uuid.UUID] | PendingByPrice | PendingByMete
 
 class BillingEntryService:
     @contextlib.asynccontextmanager
-    async def create_order_items_from_pending(
+    async def _create_order_items(
         self,
         session: AsyncSession,
         subscription: Subscription,
+        line_items: AsyncIterable[
+            tuple[StaticLineItem | MeteredLineItem, BillingEntrySelector]
+        ],
         *,
-        include_metered: bool = True,
-        cutoff: datetime | None = None,
+        cutoff: datetime,
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         repository = BillingEntryRepository.from_session(session)
-        cutoff = cutoff or utc_now()
         await repository.lock_pending_by_subscription(subscription.id)
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
-        async for line_item, selector in self.compute_pending_subscription_line_items(
-            session,
-            subscription,
-            include_metered=include_metered,
-            cutoff=cutoff,
-        ):
+        async for line_item, selector in line_items:
             order_item = OrderItem(
                 id=uuid.uuid4(),
                 label=line_item.label,
@@ -101,7 +97,6 @@ class BillingEntryService:
 
         yield list(item_entries_map.keys())
 
-        repository = BillingEntryRepository.from_session(session)
         for order_item, selector in item_entries_map.items():
             if isinstance(selector, PendingByPrice):
                 await repository.link_pending_by_subscription_and_price(
@@ -119,6 +114,46 @@ class BillingEntryService:
                 )
             else:
                 await repository.update_order_item_id(selector, order_item.id)
+
+    def create_order_items_from_pending(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        include_metered: bool = True,
+        cutoff: datetime | None = None,
+    ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
+        cutoff = cutoff or utc_now()
+        return self._create_order_items(
+            session,
+            subscription,
+            self.compute_pending_subscription_line_items(
+                session, subscription, include_metered=include_metered, cutoff=cutoff
+            ),
+            cutoff=cutoff,
+        )
+
+    def create_metered_order_items_from_pending(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        cutoff: datetime | None = None,
+    ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
+        """
+        Build order items from the subscription's pending *metered* billing entries
+        only, leaving static/proration entries pending. Used by the meter cycle,
+        which settles usage between billing renewals.
+        """
+        cutoff = cutoff or utc_now()
+        return self._create_order_items(
+            session,
+            subscription,
+            self.compute_pending_metered_line_items(
+                session, subscription, cutoff=cutoff
+            ),
+            cutoff=cutoff,
+        )
 
     async def compute_pending_subscription_line_items(
         self,
@@ -145,6 +180,24 @@ class BillingEntryService:
             # Settling them mid-period consumes the period's credit early, so the
             # entries stay pending and are billed on the next cycle.
             return
+
+        async for (
+            metered_line_item,
+            selector,
+        ) in self.compute_pending_metered_line_items(
+            session, subscription, cutoff=cutoff
+        ):
+            yield metered_line_item, selector
+
+    async def compute_pending_metered_line_items(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        cutoff: datetime | None = None,
+    ) -> AsyncGenerator[tuple[MeteredLineItem, BillingEntrySelector]]:
+        cutoff = cutoff or utc_now()
+        repository = BillingEntryRepository.from_session(session)
 
         # 👋 Reading the code below, you might wonder:
         # "Why is this so complex?"

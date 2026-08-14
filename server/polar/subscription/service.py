@@ -263,6 +263,22 @@ class AboveMaximumSeats(SubscriptionError):
         super().__init__(message, 400)
 
 
+class SubscriptionMeterCycleLag(SubscriptionError):
+    """The meter clock fell more than one period behind; needs manual intervention."""
+
+    def __init__(
+        self, subscription: Subscription, meter_period_end: datetime, now: datetime
+    ) -> None:
+        self.subscription = subscription
+        self.meter_period_end = meter_period_end
+        message = (
+            f"Subscription {subscription.id} meter clock is more than one period "
+            f"behind (period end {meter_period_end.isoformat()}, now "
+            f"{now.isoformat()}); halting the meter cycle pending manual intervention."
+        )
+        super().__init__(message)
+
+
 @overload
 def _from_timestamp(t: int) -> datetime: ...
 
@@ -994,10 +1010,11 @@ class SubscriptionService:
             if previous_status == SubscriptionStatus.trialing:
                 subscription.status = SubscriptionStatus.active
 
-        # Re-arm the meter clock off the new billing period. At the billing boundary
-        # both clocks coincide, so the full cycle settles the final meter period and
-        # the meter clock simply restarts. Also covers trial conversion, where the
-        # meter clock starts for the first time.
+        # Meter period coincides with billing here, so we don't settle it
+        # separately: the renewal order below sweeps its pending entries too.
+
+        # Re-arm the meter clock off the new billing period (also starts it at
+        # trial conversion).
         if not revoke:
             subscription.initialize_meter_period(subscription.current_period_start)
 
@@ -1146,6 +1163,99 @@ class SubscriptionService:
                     timestamp=reset_at,
                 ),
             )
+
+    async def _settle_meter_cycle(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        """
+        Settle a meter period's usage into a meter-cycle order. The order import
+        is local because the order service imports this one at module load.
+        """
+        from polar.order.service import order as order_service
+
+        await order_service.settle_meter_cycle_order(session, subscription)
+
+    async def cycle_meters(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        """
+        Run the metered slice of the cycle at a meter-period boundary.
+
+        Settles the elapsed period's overage as a ``subscription_meter_cycle`` order,
+        then unconditionally resets meters, re-grants meter-credit benefits and
+        advances the meter clock. Reset and re-grant happen whether or not there was
+        overage to bill, so credits keep pacing even on zero-overage periods.
+        Sub-minimum overage isn't carried: the order flow adds it to the customer
+        balance and applies it to the next order.
+
+        While the subscription isn't active (e.g. past_due), the cycle is frozen:
+        the clock still advances but settlement, reset and re-grant are skipped
+        until the subscription recovers.
+        """
+        boundary = subscription.current_meter_period_end
+        if (
+            boundary is None
+            or subscription.meter_interval is None
+            or subscription.meter_interval_count is None
+        ):
+            # No meter cycle, but dispatch locked the row: clear it or the
+            # subscription (billing renewal included) never cycles again.
+            repository = SubscriptionRepository.from_session(session)
+            return await repository.update(
+                subscription, update_dict={"scheduler_locked_at": None}
+            )
+
+        now = utc_now()
+
+        # Frozen while inactive (e.g. past_due): advance the clock so the scheduler
+        # re-arms, but don't settle/reset/grant — granting for unpaid time hands out
+        # a paid-tier allowance. Usage accrues and bills on recovery (mark_active).
+        if not subscription.active:
+            period_end = boundary
+            while period_end <= now:
+                subscription.current_meter_period_start = period_end
+                period_end = subscription.meter_interval.get_next_period(
+                    period_end,
+                    subscription.anchor_day,
+                    subscription.meter_interval_count,
+                )
+            subscription.current_meter_period_end = period_end
+            repository = SubscriptionRepository.from_session(session)
+            return await repository.update(
+                subscription, update_dict={"scheduler_locked_at": None}
+            )
+
+        next_period_end = subscription.meter_interval.get_next_period(
+            boundary,
+            subscription.anchor_day,
+            subscription.meter_interval_count,
+        )
+        if next_period_end <= now:
+            # >1 period elapsed. Replaying per period is unsafe — async grants would
+            # race the next settlement — so halt (lock left set) and page for a
+            # manual catch-up.
+            raise SubscriptionMeterCycleLag(subscription, boundary, now)
+
+        # Drop a lapsed discount before settling: the meter-cycle order applies
+        # `subscription.discount`, so mirror the billing cycle's expiry check
+        # instead of relying on it to have run first.
+        self._clear_expired_discount(subscription)
+
+        # Settle before reset: settlement reads the window that reset closes.
+        await self._settle_meter_cycle(session, subscription)
+        await self.reset_meters(session, subscription)
+        enqueue_job(
+            "benefit.enqueue_benefit_grant_cycles", subscription_id=subscription.id
+        )
+
+        subscription.current_meter_period_start = boundary
+        subscription.current_meter_period_end = next_period_end
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(
+            subscription, update_dict={"scheduler_locked_at": None}
+        )
+        return subscription
 
     async def _after_subscription_created(
         self, session: AsyncSession, subscription: Subscription
@@ -1538,6 +1648,14 @@ class SubscriptionService:
                         entry.event = event
                         session.add(entry)
 
+                # Settle the old product's overage before the switch: its metered
+                # prices and meters disappear once apply_update() runs.
+                if (
+                    not was_trialing
+                    and subscription.current_meter_period_end is not None
+                ):
+                    await self._settle_meter_cycle(session, subscription)
+
                 interval_changed = subscription_update.is_interval_changed()
                 subscription = subscription_update.apply_update()
                 if was_trialing:
@@ -1551,6 +1669,11 @@ class SubscriptionService:
                         assert new_trial_end is not None
                         subscription.trial_end = new_trial_end
                         subscription.current_period_end = new_trial_end
+                # Re-arm the meter clock from the new product's cadence (cleared if
+                # it has none) so it isn't left on a stale boundary. None in a trial.
+                subscription.initialize_meter_period(
+                    None if was_trialing else subscription.current_period_start
+                )
                 session.add(subscription)
                 await session.flush()
 
@@ -2302,6 +2425,10 @@ class SubscriptionService:
             subscription.customer_cancellation_comment = customer_comment
 
         if immediately:
+            # Settle the final meter period before ending, so usage up to now isn't
+            # lost when the subscription closes.
+            if subscription.current_meter_period_end is not None:
+                await self._settle_meter_cycle(session, subscription)
             subscription.ends_at = now
             subscription.ended_at = now
             subscription.status = SubscriptionStatus.canceled
@@ -3609,6 +3736,20 @@ class SubscriptionService:
             subscription,
             update_dict={"status": SubscriptionStatus.active, "past_due_at": None},
         )
+
+        # Meter cycle was frozen while past_due, so usage accrued unsettled: bill it
+        # now and reset so the credits re-granted below start from a clean window.
+        if (
+            previous_status == SubscriptionStatus.past_due
+            and subscription.meter_interval is not None
+        ):
+            loaded = await repository.get_by_id(
+                subscription.id, options=repository.get_eager_options()
+            )
+            assert loaded is not None
+            subscription = loaded
+            await self._settle_meter_cycle(session, subscription)
+            await self.reset_meters(session, subscription)
 
         await self._after_subscription_updated(
             session,

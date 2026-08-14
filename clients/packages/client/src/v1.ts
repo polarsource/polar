@@ -25487,6 +25487,7 @@ export interface components {
       | 'subscription_create'
       | 'subscription_cycle'
       | 'subscription_update'
+      | 'subscription_meter_cycle'
     /**
      * OrderBillingReasonInternal
      * @description Internal billing reasons with additional granularity.
@@ -25499,6 +25500,7 @@ export interface components {
       | 'subscription_cycle_after_trial'
       | 'subscription_cancel'
       | 'subscription_update'
+      | 'subscription_meter_cycle'
     /**
      * OrderCreate
      * @description Schema to create a draft order for an off-session charge.
@@ -65933,6 +65935,7 @@ export const orderBillingReasonValues: ReadonlyArray<
   'subscription_create',
   'subscription_cycle',
   'subscription_update',
+  'subscription_meter_cycle',
 ]
 export const orderBillingReasonInternalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderBillingReasonInternal']
@@ -65943,6 +65946,7 @@ export const orderBillingReasonInternalValues: ReadonlyArray<
   'subscription_cycle_after_trial',
   'subscription_cancel',
   'subscription_update',
+  'subscription_meter_cycle',
 ]
 export const orderExportColumnValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderExportColumn']

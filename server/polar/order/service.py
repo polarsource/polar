@@ -79,6 +79,7 @@ from polar.models import (
     User,
     WalletTransaction,
 )
+from polar.models.discount import DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
@@ -1398,13 +1399,24 @@ class OrderService:
         number, balance impact, optional meter reset, then payment."""
         customer = subscription.customer
 
+        # Fixed discounts are per-order, so applying one per meter-cycle settlement
+        # multiplies the giveaway by cadence; percentage discounts are
+        # cadence-invariant and still apply. See #154.
+        discount = subscription.discount
+        if (
+            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and discount is not None
+            and discount.type != DiscountType.percentage
+        ):
+            discount = None
+
         order = await self.build_subscription_order(
             session,
             subscription,
             items,
             billing_reason,
             lock_balance=True,
-            discount=subscription.discount,
+            discount=discount,
         )
         balance_change = (
             order.applied_balance_amount
@@ -1486,6 +1498,23 @@ class OrderService:
                 )
 
         return order
+
+    async def settle_meter_cycle_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> Order | None:
+        async with billing_entry_service.create_metered_order_items_from_pending(
+            session, subscription
+        ) as items:
+            if len(items) == 0:
+                return None
+            return await self._create_order(
+                session,
+                subscription,
+                list(items),
+                OrderBillingReasonInternal.subscription_meter_cycle,
+            )
 
     async def create_trial_order(
         self,
@@ -2380,6 +2409,15 @@ class OrderService:
                     "id": "{subscription}",
                     "email": "{email}",
                 }
+            case OrderBillingReasonInternal.subscription_meter_cycle:
+                template_name = "subscription_cycled"
+                subject_template = "Your {description} usage invoice"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
 
         # Final invoice uses the same email setting as subscription_cycled
         email_setting_name = (
@@ -2955,6 +2993,11 @@ class OrderService:
             )
             return order
 
+        # A failed meter-cycle charge must not escalate the subscription (past_due
+        # or revoke) — a small overage can't cancel a prepaid plan; dun it retry-only.
+        if order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle:
+            return await self._handle_meter_cycle_dunning_attempt(session, order)
+
         if order.subscription is None:
             return order
 
@@ -3083,6 +3126,35 @@ class OrderService:
             await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
+
+    async def _handle_meter_cycle_dunning_attempt(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Reschedule payment on the dunning intervals without touching the
+        subscription; void once retries are exhausted."""
+        repository = OrderRepository.from_session(session)
+
+        if order.is_void:
+            return await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+
+        payment_repository = PaymentRepository.from_session(session)
+        failed_attempts = await payment_repository.count_failed_payments_for_order(
+            order.id
+        )
+
+        # failed_attempts includes this failure, so > len(intervals) means retries
+        # are exhausted. Void via the canonical path to notify the merchant
+        # (order_voided event + order.updated webhook).
+        if failed_attempts > len(settings.DUNNING_RETRY_INTERVALS):
+            return await self.void(session, order)
+
+        next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
+        return await repository.update(
+            order,
+            update_dict={"next_payment_attempt_at": utc_now() + next_interval},
+        )
 
     async def schedule_retry_for_past_due_orders(
         self,

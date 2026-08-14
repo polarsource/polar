@@ -4352,9 +4352,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 checkout,
-                CheckoutUpdate(
-                    product_id=product_seat_based_with_min_max.id, seats=10
-                ),
+                CheckoutUpdate(product_id=product_seat_based_with_min_max.id, seats=10),
             )
 
     async def test_update_seats_below_minimum(

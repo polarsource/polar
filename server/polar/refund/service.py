@@ -39,6 +39,7 @@ from polar.order.service import order as order_service
 from polar.payment.repository import PaymentRepository
 from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.tax.calculation.base import AlreadyRevertedError
+from polar.transaction.repository import PaymentTransactionRepository
 from polar.transaction.service.refund import (
     RefundTransactionAlreadyExistsError,
     RefundTransactionDoesNotExistError,
@@ -236,6 +237,15 @@ class RefundService:
         payment = await payment_repository.get_succeeded_by_order(order.id)
         if payment is None:
             raise RefundUnknownPayment(order.id, payment_type="order")
+
+        payment_transaction_repository = PaymentTransactionRepository.from_session(
+            session
+        )
+        payment_transaction = await payment_transaction_repository.get_by_payment_id(
+            payment.id
+        )
+        if payment_transaction is None:
+            raise RefundUnknownPayment(payment.id, payment_type="order")
 
         if payment.processor == PaymentProcessor.stripe:
             refund_total = refund_amount + refund_tax_amount

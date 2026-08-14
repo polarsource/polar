@@ -67,8 +67,10 @@ func (r *webhookEndpointResource) Schema(ctx context.Context, req resource.Schem
 				},
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "An optional name to help identify the endpoint.",
-				Optional:            true,
+				MarkdownDescription: "An optional name to help identify the endpoint. " +
+					"The API cannot unset a name once set — change it to a new value instead of removing it.",
+				Optional: true,
+				Computed: true,
 			},
 			"format": schema.StringAttribute{
 				MarkdownDescription: "The format of the webhook payload: `raw`, `discord` or `slack`.",
@@ -153,19 +155,24 @@ func (r *webhookEndpointResource) Create(ctx context.Context, req resource.Creat
 	// update. Honor an explicit `enabled = false` with a follow-up update.
 	if !plan.Enabled.IsNull() && !plan.Enabled.IsUnknown() && !plan.Enabled.ValueBool() {
 		disabled := false
-		endpoint, err = r.client.UpdateWebhookEndpoint(ctx, endpoint.ID, polarapi.WebhookEndpointUpdate{
+		updated, updateErr := r.client.UpdateWebhookEndpoint(ctx, endpoint.ID, polarapi.WebhookEndpointUpdate{
 			Enabled: &disabled,
 		})
-		if err != nil {
+		if updateErr != nil {
+			// Persist the created endpoint so Terraform tracks it despite the
+			// failure; the next apply retries the disable as an update.
+			resp.Diagnostics.Append(resp.State.Set(ctx, webhookEndpointToModel(ctx, endpoint, &plan))...)
 			resp.Diagnostics.AddError(
 				"Failed to disable webhook endpoint after creation",
-				"The endpoint was created but disabling it failed, so it is currently enabled. Error: "+err.Error(),
+				"The endpoint was created and is tracked in state, but disabling it failed, so it is "+
+					"currently enabled. The next apply will retry. Error: "+updateErr.Error(),
 			)
 			return
 		}
+		endpoint = updated
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, webhookEndpointToModel(ctx, endpoint))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, webhookEndpointToModel(ctx, endpoint, &plan))...)
 }
 
 func (r *webhookEndpointResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -185,7 +192,7 @@ func (r *webhookEndpointResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, webhookEndpointToModel(ctx, endpoint))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, webhookEndpointToModel(ctx, endpoint, &state))...)
 }
 
 func (r *webhookEndpointResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -215,7 +222,7 @@ func (r *webhookEndpointResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, webhookEndpointToModel(ctx, endpoint))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, webhookEndpointToModel(ctx, endpoint, &plan))...)
 }
 
 func (r *webhookEndpointResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -234,11 +241,19 @@ func (r *webhookEndpointResource) ImportState(ctx context.Context, req resource.
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func webhookEndpointToModel(ctx context.Context, endpoint *polarapi.WebhookEndpoint) webhookEndpointModel {
+func webhookEndpointToModel(ctx context.Context, endpoint *polarapi.WebhookEndpoint, prior *webhookEndpointModel) webhookEndpointModel {
 	events, _ := types.ListValueFrom(ctx, types.StringType, endpoint.Events)
+	// The server normalizes URLs (adds a trailing slash to bare domains,
+	// lowercases the host). Keep the user's spelling when it is equivalent so
+	// the applied value matches the plan.
+	urlValue := types.StringValue(endpoint.URL)
+	if prior != nil && !prior.URL.IsNull() && !prior.URL.IsUnknown() &&
+		urlsEquivalent(prior.URL.ValueString(), endpoint.URL) {
+		urlValue = prior.URL
+	}
 	return webhookEndpointModel{
 		ID:             types.StringValue(endpoint.ID),
-		URL:            types.StringValue(endpoint.URL),
+		URL:            urlValue,
 		Name:           stringFromPointer(endpoint.Name),
 		Format:         types.StringValue(endpoint.Format),
 		Events:         events,

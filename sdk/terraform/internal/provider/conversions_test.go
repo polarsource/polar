@@ -152,3 +152,42 @@ func TestClauseFromAPIValueTypes(t *testing.T) {
 		t.Error("unsupported value types should error")
 	}
 }
+
+func TestURLsEquivalent(t *testing.T) {
+	equivalent := [][2]string{
+		{"https://example.com", "https://example.com/"},
+		{"https://Example.COM/hook", "https://example.com/hook"},
+		{"https://example.com:443/hook", "https://example.com/hook"},
+		{"https://example.com/hook?a=1", "https://example.com/hook?a=1"},
+	}
+	for _, pair := range equivalent {
+		if !urlsEquivalent(pair[0], pair[1]) {
+			t.Errorf("urlsEquivalent(%q, %q) = false, want true", pair[0], pair[1])
+		}
+	}
+	different := [][2]string{
+		{"https://example.com/hook", "https://example.com/other"},
+		{"https://example.com/hook?a=1", "https://example.com/hook?a=2"},
+		{"https://example.com/hook", "https://other.com/hook"},
+	}
+	for _, pair := range different {
+		if urlsEquivalent(pair[0], pair[1]) {
+			t.Errorf("urlsEquivalent(%q, %q) = true, want false", pair[0], pair[1])
+		}
+	}
+}
+
+func TestPriorMetadataIsEmptyMap(t *testing.T) {
+	ctx := context.Background()
+	empty, _ := types.MapValueFrom(ctx, types.StringType, map[string]string{})
+	filled, _ := types.MapValueFrom(ctx, types.StringType, map[string]string{"k": "v"})
+	if !priorMetadataIsEmptyMap(empty) {
+		t.Error("empty known map should qualify")
+	}
+	if priorMetadataIsEmptyMap(filled) {
+		t.Error("map with keys must not qualify: out-of-band deletion must surface as drift")
+	}
+	if priorMetadataIsEmptyMap(types.MapNull(types.StringType)) {
+		t.Error("null map must not qualify")
+	}
+}

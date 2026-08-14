@@ -42,7 +42,8 @@ output "webhook_secret" {
 
 ### Optional
 
-- `name` (String) An optional name to help identify the endpoint.
+- `name` (String) An optional name to help identify the endpoint. The API cannot unset a
+  name once set — change it to a new value instead of removing it.
 - `enabled` (Boolean) Whether the endpoint receives events. Defaults to `true`. The API
   creates endpoints enabled; `enabled = false` is applied with an immediate follow-up
   update after creation.

@@ -50,7 +50,10 @@ type CustomFieldUpdate struct {
 	Slug       *string                `json:"slug,omitempty"`
 	Name       *string                `json:"name,omitempty"`
 	Properties *CustomFieldProperties `json:"properties,omitempty"`
-	Metadata   map[string]any         `json:"metadata,omitempty"`
+	// Metadata is a pointer so a pointer to an empty map serializes as
+	// {"metadata": {}} and clears server-side metadata; a plain map with
+	// omitempty would drop the key and the server would keep the old value.
+	Metadata *map[string]any `json:"metadata,omitempty"`
 }
 
 func (c *Client) CreateCustomField(ctx context.Context, create CustomFieldCreate) (*CustomField, error) {

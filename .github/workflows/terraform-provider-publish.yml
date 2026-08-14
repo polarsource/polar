@@ -11,8 +11,9 @@
 # Cloudflare's generated provider.
 #
 # Required repository secret:
-#   TERRAFORM_PROVIDER_PUSH_TOKEN - a token with contents:write on
-#                                   polarsource/terraform-provider-polar
+#   TERRAFORM_PROVIDER_PUSH_TOKEN - a token for polarsource/terraform-provider-polar
+#     with contents:write AND workflows:write (the sync pushes files under
+#     .github/workflows, which GitHub rejects without the workflow permission).
 name: Terraform Provider Publish
 
 on:
@@ -25,6 +26,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  VERSION: ${{ inputs.version }}
 
 jobs:
   verify:
@@ -52,7 +56,7 @@ jobs:
     steps:
       - name: Validate version
         run: |
-          if ! echo "${{ inputs.version }}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
             echo "Version must be semver without the leading v, e.g. 0.1.0"
             exit 1
           fi
@@ -72,8 +76,8 @@ jobs:
       - name: Refuse to overwrite an existing tag
         working-directory: public
         run: |
-          if git rev-parse "v${{ inputs.version }}" >/dev/null 2>&1; then
-            echo "Tag v${{ inputs.version }} already exists in terraform-provider-polar"
+          if git ls-remote --exit-code origin "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${VERSION} already exists in terraform-provider-polar"
             exit 1
           fi
 
@@ -86,6 +90,8 @@ jobs:
 
       - name: Commit, tag, and push
         working-directory: public
+        env:
+          MONOREPO_SHA: ${{ github.sha }}
         run: |
           git config user.name "polar-releases[bot]"
           git config user.email "releases@polar.sh"
@@ -93,9 +99,9 @@ jobs:
           if git diff --cached --quiet; then
             echo "No source changes since the last sync; tagging the current commit."
           else
-            git commit -m "Release v${{ inputs.version }}" \
-              -m "Synced from polarsource/polar@${{ github.sha }} (sdk/terraform)."
+            git commit -m "Release v${VERSION}" \
+              -m "Synced from polarsource/polar@${MONOREPO_SHA} (sdk/terraform)."
           fi
-          git tag "v${{ inputs.version }}"
+          git tag "v${VERSION}"
           git push origin HEAD:main
-          git push origin "v${{ inputs.version }}"
+          git push origin "v${VERSION}"

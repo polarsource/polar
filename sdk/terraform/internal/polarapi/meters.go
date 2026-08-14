@@ -84,15 +84,20 @@ type MeterCreate struct {
 	Metadata         map[string]any `json:"metadata,omitempty"`
 }
 
+// MeterUpdate carries the full desired state of an update. CustomLabel and
+// CustomMultiplier serialize explicit nulls (no omitempty) so switching away
+// from a custom unit clears them server-side. Filter and Aggregation must only
+// be set when they actually change: the server rejects their mere presence
+// with a 422 once the meter has billed events. Metadata is a pointer so a
+// pointer to an empty map serializes as {} and clears server-side metadata.
 type MeterUpdate struct {
-	Name             *string        `json:"name,omitempty"`
-	Unit             *string        `json:"unit,omitempty"`
-	CustomLabel      *string        `json:"custom_label,omitempty"`
-	CustomMultiplier *int64         `json:"custom_multiplier,omitempty"`
-	Filter           *Filter        `json:"filter,omitempty"`
-	Aggregation      *Aggregation   `json:"aggregation,omitempty"`
-	IsArchived       *bool          `json:"is_archived,omitempty"`
-	Metadata         map[string]any `json:"metadata,omitempty"`
+	Name             *string         `json:"name,omitempty"`
+	Unit             *string         `json:"unit,omitempty"`
+	CustomLabel      *string         `json:"custom_label"`
+	CustomMultiplier *int64          `json:"custom_multiplier"`
+	Filter           *Filter         `json:"filter,omitempty"`
+	Aggregation      *Aggregation    `json:"aggregation,omitempty"`
+	Metadata         *map[string]any `json:"metadata,omitempty"`
 }
 
 func (c *Client) CreateMeter(ctx context.Context, create MeterCreate) (*Meter, error) {
@@ -114,6 +119,17 @@ func (c *Client) GetMeter(ctx context.Context, id string) (*Meter, error) {
 func (c *Client) UpdateMeter(ctx context.Context, id string, update MeterUpdate) (*Meter, error) {
 	var meter Meter
 	if err := c.do(ctx, http.MethodPatch, "/v1/meters/"+id, update, &meter); err != nil {
+		return nil, err
+	}
+	return &meter, nil
+}
+
+// ArchiveMeter sends a minimal payload on purpose: a full MeterUpdate would
+// carry explicit custom_label/custom_multiplier nulls and wipe those fields as
+// a side effect of archiving.
+func (c *Client) ArchiveMeter(ctx context.Context, id string) (*Meter, error) {
+	var meter Meter
+	if err := c.do(ctx, http.MethodPatch, "/v1/meters/"+id, map[string]any{"is_archived": true}, &meter); err != nil {
 		return nil, err
 	}
 	return &meter, nil

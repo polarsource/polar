@@ -91,8 +91,8 @@ builds and GPG-signs the registry assets with goreleaser.
 2. Generate an RSA GPG signing key for releases; add `GPG_PRIVATE_KEY` and `GPG_PASSPHRASE`
    secrets to that repository, and register the public key in the Terraform Registry
    organization settings.
-3. Add a `TERRAFORM_PROVIDER_PUSH_TOKEN` secret (contents:write on the public repository)
-   to the monorepo.
+3. Add a `TERRAFORM_PROVIDER_PUSH_TOKEN` secret to the monorepo: a token for the public
+   repository with contents:write **and** workflows:write (the sync pushes workflow files).
 4. Publish the provider once through the Terraform Registry UI (sign in with the
    polarsource GitHub organization, select the repository); subsequent releases are
    ingested automatically via webhook.

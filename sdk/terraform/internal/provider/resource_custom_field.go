@@ -122,14 +122,17 @@ func (r *customFieldResource) Schema(ctx context.Context, req resource.SchemaReq
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"form_label": schema.StringAttribute{
+						Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 						MarkdownDescription: "Label shown on the checkout form.",
 						Optional:            true,
 					},
 					"form_help_text": schema.StringAttribute{
+						Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 						MarkdownDescription: "Help text shown on the checkout form.",
 						Optional:            true,
 					},
 					"form_placeholder": schema.StringAttribute{
+						Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 						MarkdownDescription: "Placeholder shown on the checkout form.",
 						Optional:            true,
 					},
@@ -325,7 +328,7 @@ func (r *customFieldResource) Update(ctx context.Context, req resource.UpdateReq
 		Slug:       stringPointer(plan.Slug),
 		Name:       stringPointer(plan.Name),
 		Properties: &properties,
-		Metadata:   metadata,
+		Metadata:   &metadata,
 	}
 
 	customField, err := r.client.UpdateCustomField(ctx, plan.ID.ValueString(), update)
@@ -413,7 +416,7 @@ func customFieldPropertiesEmpty(model customFieldPropertiesModel) bool {
 
 func customFieldToModel(ctx context.Context, customField *polarapi.CustomField, prior *customFieldModel) customFieldModel {
 	metadata := metadataFromAPI(ctx, customField.Metadata)
-	if metadata.IsNull() && !prior.Metadata.IsNull() && !prior.Metadata.IsUnknown() {
+	if metadata.IsNull() && prior != nil && priorMetadataIsEmptyMap(prior.Metadata) {
 		metadata = prior.Metadata
 	}
 	return customFieldModel{

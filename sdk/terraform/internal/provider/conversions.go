@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -114,6 +115,44 @@ func metadataValueToString(value any) string {
 	default:
 		return ""
 	}
+}
+
+// priorMetadataIsEmptyMap reports whether the prior state holds a known,
+// empty metadata map. That is the one case where a null read-back should keep
+// the prior value (config `metadata = {}` and the API's absent metadata are
+// the same thing); a prior map with keys must NOT be kept, so out-of-band
+// metadata deletion still surfaces as drift.
+func priorMetadataIsEmptyMap(prior types.Map) bool {
+	return !prior.IsNull() && !prior.IsUnknown() && len(prior.Elements()) == 0
+}
+
+// urlsEquivalent compares two URLs the way pydantic normalizes them
+// server-side: case-insensitive scheme and host, default HTTPS port stripped,
+// and an empty path equal to "/". This lets the provider keep the user's
+// spelling in state while the API stores the normalized form.
+func urlsEquivalent(a, b string) bool {
+	if a == b {
+		return true
+	}
+	parsedA, errA := url.Parse(a)
+	parsedB, errB := url.Parse(b)
+	if errA != nil || errB != nil {
+		return false
+	}
+	normalizeHost := func(u *url.URL) string {
+		return strings.TrimSuffix(strings.ToLower(u.Host), ":443")
+	}
+	normalizePath := func(u *url.URL) string {
+		if u.EscapedPath() == "" {
+			return "/"
+		}
+		return u.EscapedPath()
+	}
+	return strings.EqualFold(parsedA.Scheme, parsedB.Scheme) &&
+		normalizeHost(parsedA) == normalizeHost(parsedB) &&
+		normalizePath(parsedA) == normalizePath(parsedB) &&
+		parsedA.RawQuery == parsedB.RawQuery &&
+		parsedA.Fragment == parsedB.Fragment
 }
 
 func stringPointer(value types.String) *string {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -172,15 +173,21 @@ func (r *meterResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 						},
 					},
 					"clauses": schema.ListNestedAttribute{
-						MarkdownDescription: "Flat comparison clauses.",
+						MarkdownDescription: "Flat comparison clauses. Omit the attribute instead of passing an empty list.",
 						Optional:            true,
+						Validators: []validator.List{
+							listvalidator.SizeAtLeast(1),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: meterClauseAttributes(),
 						},
 					},
 					"groups": schema.ListNestedAttribute{
-						MarkdownDescription: "Nested clause groups, one level deep.",
+						MarkdownDescription: "Nested clause groups, one level deep. Omit the attribute instead of passing an empty list.",
 						Optional:            true,
+						Validators: []validator.List{
+							listvalidator.SizeAtLeast(1),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"conjunction": schema.StringAttribute{
@@ -420,8 +427,9 @@ func (r *meterResource) Read(ctx context.Context, req resource.ReadRequest, resp
 }
 
 func (r *meterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan meterModel
+	var plan, state meterModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -435,16 +443,23 @@ func (r *meterResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		metadata = map[string]any{}
 	}
 
-	filter := filterToAPI(plan.Filter)
-	aggregation := aggregationToAPI(plan.Aggregation)
 	update := polarapi.MeterUpdate{
 		Name:             stringPointer(plan.Name),
 		Unit:             stringPointer(plan.Unit),
 		CustomLabel:      stringPointer(plan.CustomLabel),
 		CustomMultiplier: int64Pointer(plan.CustomMultiplier),
-		Filter:           &filter,
-		Aggregation:      &aggregation,
-		Metadata:         metadata,
+		Metadata:         &metadata,
+	}
+	// Only send filter/aggregation when they actually change: the server 422s
+	// on their mere presence once the meter has billed events, which would
+	// otherwise break unrelated updates like a rename.
+	planFilter := filterToAPI(plan.Filter)
+	if stateFilter := filterToAPI(state.Filter); !reflect.DeepEqual(stateFilter, planFilter) {
+		update.Filter = &planFilter
+	}
+	planAggregation := aggregationToAPI(plan.Aggregation)
+	if stateAggregation := aggregationToAPI(state.Aggregation); !reflect.DeepEqual(stateAggregation, planAggregation) {
+		update.Aggregation = &planAggregation
 	}
 
 	meter, err := r.client.UpdateMeter(ctx, plan.ID.ValueString(), update)
@@ -475,8 +490,7 @@ func (r *meterResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 
 	// Polar has no meter deletion; archiving is the terminal state.
-	archived := true
-	_, err := r.client.UpdateMeter(ctx, state.ID.ValueString(), polarapi.MeterUpdate{IsArchived: &archived})
+	_, err := r.client.ArchiveMeter(ctx, state.ID.ValueString())
 	if err != nil {
 		if polarapi.IsNotFound(err) {
 			return
@@ -603,7 +617,7 @@ func meterToModel(ctx context.Context, meter *polarapi.Meter, prior *meterModel)
 	}
 
 	metadata := metadataFromAPI(ctx, meter.Metadata)
-	if metadata.IsNull() && prior != nil && !prior.Metadata.IsNull() && !prior.Metadata.IsUnknown() {
+	if metadata.IsNull() && prior != nil && priorMetadataIsEmptyMap(prior.Metadata) {
 		metadata = prior.Metadata
 	}
 

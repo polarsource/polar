@@ -79,6 +79,25 @@ func (p *polarProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
+	unknownAttributes := map[string]types.String{
+		"access_token": config.AccessToken,
+		"server":       config.Server,
+		"base_url":     config.BaseURL,
+	}
+	for name, value := range unknownAttributes {
+		if value.IsUnknown() {
+			resp.Diagnostics.AddAttributeError(
+				path.Root(name),
+				"Unknown provider configuration value",
+				"The provider cannot be configured with a value that is only known after apply. "+
+					"Set "+name+" to a static value or an environment variable.",
+			)
+		}
+	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	token := os.Getenv("POLAR_ACCESS_TOKEN")
 	if !config.AccessToken.IsNull() {
 		token = config.AccessToken.ValueString()

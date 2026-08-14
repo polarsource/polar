@@ -3,9 +3,9 @@ name: Terraform Provider CI
 on:
   push:
     branches: [main]
-    paths: ['sdk/terraform/**']
+    paths: ['sdk/terraform/**', '.github/workflows/terraform-provider-ci.yml']
   pull_request:
-    paths: ['sdk/terraform/**']
+    paths: ['sdk/terraform/**', '.github/workflows/terraform-provider-ci.yml']
 
 permissions:
   contents: read

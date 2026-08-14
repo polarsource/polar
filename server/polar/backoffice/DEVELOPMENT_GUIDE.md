@@ -97,7 +97,7 @@ async def list(
 
     # Add search functionality
     if query:
-        statement = statement.where(MyEntity.name.ilike(f"%{query}%"))
+        statement = statement.where(MyEntity.name.icontains(query, autoescape=True))
 
     items, count = await repository.paginate(
         statement, limit=pagination.limit, page=pagination.page

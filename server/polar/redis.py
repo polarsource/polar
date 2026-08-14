@@ -101,6 +101,8 @@ def create_redis(process_name: ProcessName) -> Redis:
         retry_on_error=REDIS_RETRY_ON_ERRROR,
         retry=REDIS_RETRY,
         client_name=f"{settings.ENV.value}.{process_name}",
+        socket_timeout=10,
+        socket_connect_timeout=3,
         socket_keepalive=True,
         socket_keepalive_options=REDIS_KEEPALIVE_OPTIONS,
         health_check_interval=30,

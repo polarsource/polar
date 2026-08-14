@@ -215,20 +215,30 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
         client_name=f"{settings.ENV.value}.worker.dramatiq",
         retry=retry,
         retry_on_error=REDIS_RETRY_ON_ERRROR,
+        socket_timeout=10,
+        socket_connect_timeout=3,
     )
 
     result_backend = ResultsBackend(
         encoder=JSONEncoder(),
         client=SyncFailoverRedis(
             connection_pool=redis.ConnectionPool.from_url(
-                settings.redis_url, retry=retry, retry_on_error=REDIS_RETRY_ON_ERRROR
+                settings.redis_url,
+                retry=retry,
+                retry_on_error=REDIS_RETRY_ON_ERRROR,
+                socket_timeout=10,
+                socket_connect_timeout=3,
             )
         ),
     )
     rate_limiter_backend = RateLimiterBackend(
         client=SyncFailoverRedis(
             connection_pool=redis.ConnectionPool.from_url(
-                settings.redis_url, retry=retry, retry_on_error=REDIS_RETRY_ON_ERRROR
+                settings.redis_url,
+                retry=retry,
+                retry_on_error=REDIS_RETRY_ON_ERRROR,
+                socket_timeout=10,
+                socket_connect_timeout=3,
             )
         )
     )

@@ -34,6 +34,6 @@ resource "aws_security_group" "lambda" {
 }
 
 locals {
-  lambda_subnet_ids         = local.test_enabled ? module.vpc[0].private_subnet_ids : []
+  lambda_subnet_ids         = local.test_enabled ? module.vpc[0].secondary_private_subnet_ids : []
   lambda_security_group_ids = local.test_enabled ? [aws_security_group.lambda[0].id] : []
 }

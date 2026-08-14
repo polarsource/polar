@@ -14,7 +14,7 @@ resource "aws_vpc_security_group_egress_rule" "redis" {
 }
 
 resource "aws_lb" "this" {
-  name                             = var.name
+  name                             = coalesce(var.nlb_name, var.name)
   internal                         = true
   load_balancer_type               = "network"
   subnets                          = var.subnet_ids
@@ -24,10 +24,14 @@ resource "aws_lb" "this" {
   enforce_security_group_inbound_rules_on_private_link_traffic = "off"
 
   tags = var.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_target_group" "redis" {
-  name        = var.name
+  name        = coalesce(var.target_group_name, var.name)
   port        = var.redis_port
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -42,6 +46,10 @@ resource "aws_lb_target_group" "redis" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_listener" "redis" {
@@ -55,6 +63,10 @@ resource "aws_lb_listener" "redis" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_vpc_endpoint_service" "this" {

@@ -114,10 +114,13 @@ export const UpdateSubscriptionSeatsForm = ({
                   <Input
                     type="number"
                     min={minimumSeats}
+                    step={1}
                     value={field.value ?? ''}
                     onChange={(e) => {
                       const value = e.target.value
-                      field.onChange(value === '' ? undefined : parseInt(value, 10))
+                      field.onChange(
+                        value === '' ? undefined : parseInt(value, 10),
+                      )
                     }}
                   />
                 </FormControl>

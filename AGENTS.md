@@ -174,24 +174,12 @@ dev start                    # api + worker + web (+ stripe) in tmux session `po
 # Status:     dev status
 ```
 
-`--skip-integrations` avoids interactive GitHub/Stripe prompts. **Do not pass `--skip-tinybird`**
-if you need the dashboard Overview/homepage metrics — without Tinybird those widgets show a
-network error. `dev up` does **not** load sample data; run `dev seed` afterward. That creates
+`--skip-integrations` avoids interactive GitHub/Stripe prompts. `dev up` does **not** load
+sample data; run `dev seed` afterward. That creates
 `admin@polar.sh` with access to seeded orgs (notably `admin-org` with a `Pro` product, plus
 `acme-corp`, `polar`, etc.). Login OTP codes print in the API pane. If seed says "Already
 seeded" (exit 2), the DB already has `acme-corp` — use `dev seed --reset` only when you
 intentionally want a wipe.
-
-**Tinybird already-running gotcha.** Step `04_start_infrastructure` early-returns when
-Postgres/Redis/Minio are already up, and will **not** start a missing Tinybird container in
-that case. If `dev status` shows Tinybird down after `dev up`, start it explicitly:
-
-```bash
-cd server && docker compose --profile tinybird up -d
-# then wait for http://localhost:7181/tokens, write the admin_token into
-# ~/.config/polar/secrets.env as POLAR_TINYBIRD_{API,READ,CLICKHOUSE}_TOKEN,
-# run ./dev/setup-environment, and restart api/worker so they pick up the tokens.
-```
 
 `dev start` ends by *attaching* to the `polar` tmux session; in a non-interactive agent shell,
 create/attach then immediately `tmux detach-client -s polar`, or run `dev api` / `dev worker` /

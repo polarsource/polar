@@ -12,3 +12,8 @@ output "public_subnet_id" {
   description = "ID of the public subnet."
   value       = aws_subnet.public.id
 }
+
+output "secondary_private_subnet_ids" {
+  description = "IDs of the private subnets in the secondary CIDR block."
+  value       = aws_subnet.private_secondary[*].id
+}

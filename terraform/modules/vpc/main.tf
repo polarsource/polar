@@ -30,6 +30,25 @@ resource "aws_subnet" "private" {
   tags = merge(var.tags, { Name = "${var.name}-private-${var.availability_zones[count.index]}" })
 }
 
+resource "aws_vpc_ipv4_cidr_block_association" "secondary" {
+  count = var.secondary_cidr_block == null ? 0 : 1
+
+  vpc_id     = aws_vpc.this.id
+  cidr_block = var.secondary_cidr_block
+}
+
+resource "aws_subnet" "private_secondary" {
+  count = var.secondary_cidr_block == null ? 0 : length(var.availability_zones)
+
+  vpc_id            = aws_vpc.this.id
+  cidr_block        = cidrsubnet(var.secondary_cidr_block, 4, count.index + 1)
+  availability_zone = var.availability_zones[count.index]
+
+  tags = merge(var.tags, { Name = "${var.name}-private-secondary-${var.availability_zones[count.index]}" })
+
+  depends_on = [aws_vpc_ipv4_cidr_block_association.secondary]
+}
+
 resource "aws_nat_gateway" "this" {
   allocation_id = var.eip_allocation_id
   subnet_id     = aws_subnet.public.id
@@ -72,5 +91,12 @@ resource "aws_route_table_association" "private" {
   count = length(aws_subnet.private)
 
   subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_secondary" {
+  count = length(aws_subnet.private_secondary)
+
+  subnet_id      = aws_subnet.private_secondary[count.index].id
   route_table_id = aws_route_table.private.id
 }

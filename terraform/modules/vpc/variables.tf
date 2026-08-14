@@ -9,6 +9,12 @@ variable "cidr_block" {
   default     = "10.20.0.0/16"
 }
 
+variable "secondary_cidr_block" {
+  description = "Optional secondary CIDR block, with parallel private subnets in each availability zone."
+  type        = string
+  default     = null
+}
+
 variable "availability_zones" {
   description = "Availability zones for the private subnets. The first also hosts the NAT gateway's public subnet."
   type        = list(string)

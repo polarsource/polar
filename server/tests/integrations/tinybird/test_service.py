@@ -2,6 +2,7 @@ import asyncio
 import json
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import httpx
 import pytest
@@ -18,8 +19,11 @@ from polar.integrations.tinybird.service import (
     TinybirdEventsQuery,
     TinybirdEventTypesQuery,
     _event_to_tinybird,
+    clickhouse_dialect,
     count_user_events_by_organization,
+    events_table,
 )
+from polar.meter.filter import FilterClause, FilterOperator
 from polar.models import Event
 from polar.models.event import EventSource
 from tests.fixtures.tinybird import tinybird_available
@@ -130,6 +134,69 @@ class TestEventToTinybird:
         assert result["parent_id"] is None
         assert result["meter_id"] is None
         assert result["amount"] is None
+
+
+def compile_clause(clause: Any) -> str:
+    return str(
+        clause.compile(
+            dialect=clickhouse_dialect, compile_kwargs={"literal_binds": True}
+        )
+    )
+
+
+class TestQueryWildcardsAreLiteral:
+    def test_filter_name_query(self) -> None:
+        query = TinybirdEventsQuery([uuid.uuid4()]).filter_name_query("ai_gen%")
+        compiled = compile_clause(query._filters[-1])
+        assert (
+            compiled
+            == "positionCaseInsensitiveUTF8(`events_by_timestamp`.`name`, 'ai_gen%') > 0"
+        )
+
+    def test_filter_by_query(self) -> None:
+        query = TinybirdEventsQuery([uuid.uuid4()]).filter_by_query("100%_x")
+        compiled = compile_clause(query._filters[-1])
+        for column in ("name", "source", "user_metadata"):
+            assert (
+                f"positionCaseInsensitiveUTF8(`events_by_timestamp`.`{column}`, '100%_x') > 0"
+                in compiled
+            )
+
+    def test_like_operator(self) -> None:
+        clause = FilterClause(
+            property="name", operator=FilterOperator.like, value="api_test"
+        )
+        compiled = compile_clause(
+            TinybirdEventsQuery._ch_comparison(events_table.c.name, clause)
+        )
+        assert (
+            compiled
+            == "position(toString(`events_by_timestamp`.`name`), 'api_test') > 0"
+        )
+
+    def test_not_like_operator(self) -> None:
+        clause = FilterClause(
+            property="name", operator=FilterOperator.not_like, value="api_test"
+        )
+        compiled = compile_clause(
+            TinybirdEventsQuery._ch_comparison(events_table.c.name, clause)
+        )
+        assert (
+            compiled
+            == "position(toString(`events_by_timestamp`.`name`), 'api_test') <= 0"
+        )
+
+    def test_like_operator_numeric_column(self) -> None:
+        clause = FilterClause(
+            property="_cost.amount", operator=FilterOperator.like, value=10
+        )
+        compiled = compile_clause(
+            TinybirdEventsQuery._ch_comparison(events_table.c.cost_amount, clause)
+        )
+        assert (
+            compiled
+            == "position(toString(`events_by_timestamp`.`cost_amount`), '10') > 0"
+        )
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")

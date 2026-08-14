@@ -12,12 +12,10 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
-from polar.enums import PaymentProcessor
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
-from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -36,10 +34,6 @@ from polar.merchant_migration.cards import AmbiguousCopiedCard
 from polar.merchant_migration.pan_transfer import (
     STEP_RESOLVE_UNCOVERED,
     STEP_VERIFY_CARDS,
-    PanStepActor,
-    PanStepOwner,
-    PanTransferMethod,
-    PanTransferStep,
 )
 from polar.merchant_migration.repository import (
     MerchantMigrationRecordRepository,
@@ -97,6 +91,7 @@ from tests.fixtures.random_objects import (
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    pan_steps_until,
 )
 
 
@@ -1435,29 +1430,6 @@ class TestSummarizeRecords:
         assert products.selectable == 1
 
 
-_STEP_ACTORS = {
-    PanStepOwner.merchant: PanStepActor.merchant,
-    PanStepOwner.polar_ops: PanStepActor.ops,
-    PanStepOwner.stripe: PanStepActor.ops,
-    PanStepOwner.provider: PanStepActor.ops,
-    PanStepOwner.polar_app: PanStepActor.system,
-}
-
-
-def _steps_until(method: PanTransferMethod, target_key: str) -> list[PanTransferStep]:
-    """A checklist walked forward to ``target_key``, with everything before it
-    completed by whoever owns it: what the merchant would have clicked through.
-    """
-    steps = pan_transfer.build(method)
-    while True:
-        current = pan_transfer.current(steps)
-        if current is None or current.key == target_key:
-            return steps
-        steps = pan_transfer.complete(
-            method, steps, current.key, actor=_STEP_ACTORS[current.owner], inputs={}
-        )
-
-
 def _canonical_subscription(
     *, source_id: str, payment_method: CanonicalPaymentMethod | None
 ) -> CanonicalSubscription:
@@ -1527,12 +1499,9 @@ class TestRunCardVerification:
         organization: Organization,
         product: Product,
     ) -> None:
-        """The count is what the next step asks the merchant to chase, so it has
-        to be a number the UI can render, not prose."""
         mocker.patch("polar.merchant_migration.service.enqueue_job")
         migration = await build_connected_migration(save_fixture, organization)
-        migration.step = MerchantMigrationStep.copy_cards
-        migration.pan_transfer_steps = _steps_until(
+        migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
         await save_fixture(migration)
@@ -1554,16 +1523,13 @@ class TestRunCardVerification:
         )
         assert covered.target_id is not None
         subscription_repository = SubscriptionRepository.from_session(session)
-        landed = await subscription_repository.get_by_id(covered.target_id)
-        assert landed is not None
-        payment_method = PaymentMethod(
-            processor=PaymentProcessor.stripe,
-            processor_id="pm_copied",
-            type="card",
-            method_metadata={},
-            customer_id=landed.customer_id,
+        landed = await subscription_repository.get_by_id(
+            covered.target_id, options=(joinedload(Subscription.customer),)
         )
-        await save_fixture(payment_method)
+        assert landed is not None
+        payment_method = await create_payment_method(
+            save_fixture, landed.customer, processor_id="pm_copied"
+        )
         mocker.patch(
             "polar.merchant_migration.service.link_payment_method",
             new=mocker.AsyncMock(
@@ -1594,7 +1560,7 @@ class TestRunCardVerification:
         again over subscriptions it has already linked."""
         mocker.patch("polar.merchant_migration.service.enqueue_job")
         migration = await build_connected_migration(save_fixture, organization)
-        migration.pan_transfer_steps = _steps_until(
+        migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
         await save_fixture(migration)
@@ -1678,7 +1644,7 @@ class TestRunCardVerification:
     ) -> None:
         mocker.patch("polar.merchant_migration.service.enqueue_job")
         migration = await build_connected_migration(save_fixture, organization)
-        migration.pan_transfer_steps = _steps_until(
+        migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
         await save_fixture(migration)
@@ -1728,7 +1694,7 @@ class TestRunCardVerification:
     ) -> None:
         mocker.patch("polar.merchant_migration.service.enqueue_job")
         migration = await build_connected_migration(save_fixture, organization)
-        migration.pan_transfer_steps = _steps_until(
+        migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
         await save_fixture(migration)
@@ -1785,3 +1751,66 @@ class TestRunCardVerification:
         assert clear_subscription.payment_method_id == linked.id
         checklist = service._checklist(migration)
         assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
+
+    async def test_lists_a_customer_once_however_many_subscriptions(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+        first = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_one",
+            email="holder@example.com",
+        )
+        assert first.target_id is not None
+        subscription_repository = SubscriptionRepository.from_session(session)
+        held = await subscription_repository.get_by_id(
+            first.target_id, options=(joinedload(Subscription.customer),)
+        )
+        assert held is not None
+        second = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=held.customer,
+            status=SubscriptionStatus.paused,
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.subscription,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="sub_two",
+                target_id=second.id,
+                canonical={},
+            )
+        )
+        linked = await create_payment_method(
+            save_fixture, held.customer, processor_id="pm_shared"
+        )
+        link = mocker.patch(
+            "polar.merchant_migration.service.link_payment_method",
+            new=mocker.AsyncMock(return_value=linked),
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        await session.flush()
+        await session.refresh(held)
+        await session.refresh(second)
+        assert held.payment_method_id == linked.id
+        assert second.payment_method_id == linked.id
+        # Both subscriptions charge the same customer, so one Stripe listing.
+        assert link.await_count == 1

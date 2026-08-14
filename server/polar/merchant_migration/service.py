@@ -49,7 +49,6 @@ from .importer import CatalogImporter
 from .pan_transfer import (
     STEP_VERIFY_CARDS,
     PanStepActor,
-    PanStepOwner,
     PanTransferAlreadyStarted,
     PanTransferNotReady,
     PanTransferNotStarted,
@@ -551,9 +550,7 @@ class MerchantMigrationService:
         )
 
         current = pan_transfer.current(steps)
-        if current is None or current.owner != PanStepOwner.polar_app:
-            return
-        task = _STEP_TASKS.get(current.key)
+        task = _STEP_TASKS.get(current.key) if current else None
         if task is not None:
             enqueue_job(task, merchant_migration_id=migration.id)
 
@@ -588,8 +585,12 @@ class MerchantMigrationService:
     async def run_card_verification(
         self, session: AsyncSession, migration_id: UUID, *, offset: int = 0
     ) -> None:
-        migration = await self._load(session, migration_id)
+        repository = MerchantMigrationRepository.from_session(session)
+        migration = await repository.get_by_id(migration_id)
         if migration is None:
+            log.warning(
+                "merchant_migration.missing", merchant_migration_id=migration_id
+            )
             return
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
@@ -607,33 +608,13 @@ class MerchantMigrationService:
             # Already covered, or gone from Polar: nothing to link either way.
             if subscription is None or subscription.payment_method_id is not None:
                 continue
-            source_method = _staged_payment_method(record)
-            # One Stripe listing per customer, not per subscription they hold.
-            key = (
-                subscription.customer_id,
-                source_method.source_id if source_method else None,
+            payment_method = await self._resolve_card(
+                session, record, subscription, resolved
             )
-            if key in resolved:
-                payment_method = resolved[key]
-            else:
-                try:
-                    payment_method = await link_payment_method(
-                        session, subscription.customer, source_method=source_method
-                    )
-                except AmbiguousCopiedCard as e:
-                    log.error(
-                        "merchant_migration.verify_cards.ambiguous_card",
-                        merchant_migration_id=migration.id,
-                        record_id=record.id,
-                        customer_id=e.customer_id,
-                    )
-                    payment_method = None
-                resolved[key] = payment_method
-            if payment_method is None:
-                continue
-            await subscription_repository.update(
-                subscription, update_dict={"payment_method_id": payment_method.id}
-            )
+            if payment_method is not None:
+                await subscription_repository.update(
+                    subscription, update_dict={"payment_method_id": payment_method.id}
+                )
 
         if len(records) == CARD_VERIFICATION_BATCH_SIZE:
             enqueue_job(
@@ -643,40 +624,54 @@ class MerchantMigrationService:
             )
             return
 
-        await session.refresh(migration, with_for_update=True)
-        steps = self._complete_step(migration, STEP_VERIFY_CARDS)
-        if steps is not None:
-            await self._advance_checklist(session, migration, steps)
+        await repository.refresh_for_update(migration)
+        await self._complete_step(session, migration, STEP_VERIFY_CARDS)
 
-    def _complete_step(
-        self, migration: MerchantMigration, key: str
-    ) -> Sequence[PanTransferStep] | None:
-        """Mark a step Polar performs as done, or None when it isn't ours to
+    async def _resolve_card(
+        self,
+        session: AsyncSession,
+        record: MerchantMigrationRecord,
+        subscription: Subscription,
+        resolved: dict[tuple[UUID, str | None], PaymentMethod | None],
+    ) -> PaymentMethod | None:
+        """The method to charge, resolved once per customer and source method
+        rather than once per subscription they hold."""
+        source_method = _staged_payment_method(record)
+        key = (
+            subscription.customer_id,
+            source_method.source_id if source_method else None,
+        )
+        if key not in resolved:
+            try:
+                resolved[key] = await link_payment_method(
+                    session, subscription.customer, source_method=source_method
+                )
+            except AmbiguousCopiedCard as e:
+                log.error(
+                    "merchant_migration.verify_cards.ambiguous_card",
+                    merchant_migration_id=record.merchant_migration_id,
+                    record_id=record.id,
+                    customer_id=e.customer_id,
+                )
+                resolved[key] = None
+        return resolved[key]
+
+    async def _complete_step(
+        self, session: AsyncSession, migration: MerchantMigration, key: str
+    ) -> None:
+        """Mark a step Polar performs as done. A no-op when it isn't ours to
         move — the work already finished once, or the merchant restarted."""
         current = pan_transfer.current(migration.pan_transfer_steps)
         if current is None or current.key != key:
-            return None
-        return pan_transfer.complete(
+            return
+        steps = pan_transfer.complete(
             migration.pan_transfer_method,
             list(migration.pan_transfer_steps),
             key,
             actor=PanStepActor.system,
             inputs={},
         )
-
-    async def _load(
-        self, session: AsyncReadSession, migration_id: UUID
-    ) -> MerchantMigration | None:
-        """Load a migration outside a request, for the background work. One
-        deleted mid-run just stops the run."""
-        migration = await MerchantMigrationRepository.from_session(session).get_by_id(
-            migration_id
-        )
-        if migration is None:
-            log.warning(
-                "merchant_migration.missing", merchant_migration_id=migration_id
-            )
-        return migration
+        await self._advance_checklist(session, migration, steps)
 
     def _checklist(
         self,

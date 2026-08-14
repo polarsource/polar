@@ -4,6 +4,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import redis.asyncio as async_redis
 from httpx import ASGITransport, AsyncClient
 from pytest_mock import MockerFixture
 from redis import RedisError
@@ -302,7 +303,9 @@ class TestLifespan:
     ) -> None:
         create_engine = mocker.patch.object(health_module, "create_async_engine")
         mocker.patch.object(
-            health_module, "create_redis", return_value=MagicMock(close=AsyncMock())
+            async_redis.Redis,
+            "from_url",
+            return_value=MagicMock(close=AsyncMock()),
         )
 
         async with _create_lifespan(database=False)(MagicMock()) as state:
@@ -322,7 +325,9 @@ class TestLifespan:
             health_module, "create_async_sessionmaker", return_value="sessionmaker"
         )
         mocker.patch.object(
-            health_module, "create_redis", return_value=MagicMock(close=AsyncMock())
+            async_redis.Redis,
+            "from_url",
+            return_value=MagicMock(close=AsyncMock()),
         )
 
         async with _create_lifespan(database=True)(MagicMock()) as state:

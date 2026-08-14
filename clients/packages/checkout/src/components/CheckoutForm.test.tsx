@@ -700,6 +700,29 @@ describe('CheckoutForm', () => {
       expect(screen.queryByText('Server said no')).not.toBeInTheDocument()
     })
 
+    it('keeps the error the rejected write raised', async () => {
+      const holder: {
+        form?: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      } = {}
+      const failingUpdate = vi.fn(async () => {
+        holder.form?.setError('customer_email', {
+          message:
+            'buyer@example.com is not a valid email address: The domain name example.com does not accept email.',
+        })
+        throw new Error('rejected')
+      })
+
+      holder.form = renderForm(createCheckout(), failingUpdate).form
+
+      await act(async () => {
+        fill('Email', 'buyer@example.com')
+      })
+
+      expect(
+        screen.getByText(/The domain name example.com does not accept email/),
+      ).toBeInTheDocument()
+    })
+
     it('stores the value again after a rejected write', async () => {
       const { update } = renderForm(createCheckout(), rejectingUpdate())
 

@@ -193,7 +193,10 @@ const BaseCheckoutForm = ({
       if (!contact || checkout[name] === contact) {
         return
       }
-      update({ [name]: contact }).catch(() => clearErrors(name))
+      clearErrors(name)
+      update({ [name]: contact }).catch(() => {
+        /* API errors handled by provider */
+      })
     },
     [checkout, update, clearErrors],
   )

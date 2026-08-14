@@ -20,18 +20,20 @@ from reauth.factors.totp import (
     NotEnrolledTOTPException,
 )
 
+from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.exceptions import (
     PolarAuthError,
     PolarAuthRedirectionError,
     SessionNotFreshError,
     UnavailableFactorError,
 )
+from polar.auth.models import is_user
 from polar.auth.oauth2.github import get_github_factor
 from polar.auth.oauth2.google import get_google_factor
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWriteFresh
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.kit.http import get_ip_address
+from polar.kit.http import get_ip_address, get_safe_return_url
 from polar.models import UserSession as UserSession
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
@@ -45,6 +47,7 @@ from .authentication_session import (
     InvalidAuthenticationSession,
     get_authentication_session,
     get_authentication_session_service,
+    get_optional_authentication_session,
 )
 from .factors import (
     BackupCodesFactor,
@@ -135,12 +138,20 @@ async def status(
 @router.get("/complete", include_in_schema=False)
 async def complete(
     request: Request,
-    authentication_session: AuthenticationSession = Depends(get_authentication_session),
+    auth_subject: WebUserOrAnonymous,
+    authentication_session: AuthenticationSession | None = Depends(
+        get_optional_authentication_session
+    ),
     authentication_session_service: AuthenticationSessionService = Depends(
         get_authentication_session_service
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
+    if authentication_session is None:
+        if is_user(auth_subject):
+            return RedirectResponse(get_safe_return_url(None), 303)
+        raise InvalidAuthenticationSession()
+
     try:
         identity_id, _ = await authentication_session_service.complete(
             authentication_session

@@ -11,9 +11,10 @@ module "egress_ip" {
 module "vpc" {
   source = "../modules/vpc"
 
-  name               = "polar-sandbox"
-  availability_zones = ["us-east-2a", "us-east-2b", "us-east-2c"]
-  eip_allocation_id  = module.egress_ip.allocation_id
+  name                 = "polar-sandbox"
+  availability_zones   = ["us-east-2a", "us-east-2b", "us-east-2c"]
+  eip_allocation_id    = module.egress_ip.allocation_id
+  secondary_cidr_block = "10.21.0.0/16"
 }
 
 resource "aws_security_group" "lambda" {

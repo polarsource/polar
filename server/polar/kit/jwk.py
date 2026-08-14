@@ -41,7 +41,7 @@ def _validate_jwks(value: Any) -> KeySet:
         )
 
     try:
-        with open(value) as f:
+        with open(path) as f:
             content = f.read().strip()
             return JsonWebKey.import_key_set(content)
     except ValueError as e:

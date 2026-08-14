@@ -18,10 +18,15 @@ if (
   process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = baseUrl
 }
 
-// On Vercel, deployment URLs change with every deployment, so unless a
-// frontend base URL is configured explicitly with a separate backend host,
-// derive it from the deployment's own URL.
-if (!process.env.NEXT_PUBLIC_FRONTEND_BASE_URL && process.env.VERCEL_URL) {
+// Vercel services deployments: deployment URLs change with
+// every deployment, so derive base from the deployment's own URL
+const VERCEL_SERVICES =
+  process.env.NEXT_PUBLIC_POLAR_VERCEL_SERVICES_ENABLED === '1'
+if (
+  VERCEL_SERVICES &&
+  !process.env.NEXT_PUBLIC_FRONTEND_BASE_URL &&
+  process.env.VERCEL_URL
+) {
   process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = `https://${process.env.VERCEL_URL}`
 }
 

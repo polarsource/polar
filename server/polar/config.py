@@ -615,13 +615,33 @@ class Settings(BaseSettings):
         if not self.is_vercel() or not vercel_url:
             return self
 
+        # Production deployments have a stable URL (the assigned domain);
+        # prefer it over the per-deployment URL for generated links.
+        production_url = os.environ.get("VERCEL_PROJECT_PRODUCTION_URL")
+        canonical_url = (
+            production_url
+            if os.environ.get("VERCEL_ENV") == "production" and production_url
+            else vercel_url
+        )
+
+        # Accept every host the deployment is reachable at.
+        allowed_hosts = {
+            host
+            for host in (
+                vercel_url,
+                os.environ.get("VERCEL_BRANCH_URL"),
+                production_url,
+            )
+            if host
+        }
+
         defaults: dict[str, Any] = {
-            "FRONTEND_BASE_URL": f"https://{vercel_url}",
-            "BASE_URL": f"https://{vercel_url}/api",
+            "FRONTEND_BASE_URL": f"https://{canonical_url}",
+            "BASE_URL": f"https://{canonical_url}/api",
             "CHECKOUT_BASE_URL": (
-                f"https://{vercel_url}/api/v1/checkout-links/{{client_secret}}/redirect"
+                f"https://{canonical_url}/api/v1/checkout-links/{{client_secret}}/redirect"
             ),
-            "ALLOWED_HOSTS": {vercel_url},
+            "ALLOWED_HOSTS": allowed_hosts,
             "AUTHENTICATION_SESSION_COOKIE_DOMAIN": None,
             "OAUTH2_SESSION_STATE_COOKIE_DOMAIN": None,
             "USER_SESSION_COOKIE_DOMAIN": None,

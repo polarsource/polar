@@ -46,7 +46,7 @@ interface TurnstileWindow extends Window {
 // The env override serves deployments on domains outside the production
 // sitekey's allowlist (e.g. *.vercel.app), paired with a matching secret.
 const TURNSTILE_SITE_KEY =
-  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ??
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
   (CONFIG.ENVIRONMENT === 'development'
     ? '1x00000000000000000000AA'
     : '0x4AAAAAAD7cBrbpX3kX8K9g')

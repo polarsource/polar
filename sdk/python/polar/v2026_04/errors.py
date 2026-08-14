@@ -17,6 +17,9 @@ from polar.v2026_04.outputs import (
     CustomerNotReady as CustomerNotReadyModel,
 )
 from polar.v2026_04.outputs import (
+    DisputeAutoAcceptNotEnabled as DisputeAutoAcceptNotEnabledModel,
+)
+from polar.v2026_04.outputs import (
     DisputeNotOpenError as DisputeNotOpenErrorModel,
 )
 from polar.v2026_04.outputs import (
@@ -24,6 +27,9 @@ from polar.v2026_04.outputs import (
 )
 from polar.v2026_04.outputs import (
     HTTPValidationError as HTTPValidationErrorModel,
+)
+from polar.v2026_04.outputs import (
+    InactiveSubscription as InactiveSubscriptionModel,
 )
 from polar.v2026_04.outputs import (
     ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
@@ -66,6 +72,9 @@ from polar.v2026_04.outputs import (
 )
 from polar.v2026_04.outputs import (
     PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
+)
+from polar.v2026_04.outputs import (
+    PaymentMethodRequired as PaymentMethodRequiredModel,
 )
 from polar.v2026_04.outputs import (
     PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
@@ -116,11 +125,15 @@ class ResourceNotFound(PolarClientError):
         super().__init__(status_code, error)
 
 
-class NotPermitted(PolarClientError):
-    error_type = NotPermittedModel
-    error: NotPermittedModel
+class OrganizationsUpdate403Error(PolarClientError):
+    error_type = NotPermittedModel | DisputeAutoAcceptNotEnabledModel
+    error: NotPermittedModel | DisputeAutoAcceptNotEnabledModel
 
-    def __init__(self, status_code: int, error: NotPermittedModel) -> None:
+    def __init__(
+        self,
+        status_code: int,
+        error: NotPermittedModel | DisputeAutoAcceptNotEnabledModel,
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -161,6 +174,28 @@ class PaymentFailed(PolarClientError):
     error: PaymentFailedModel
 
     def __init__(self, status_code: int, error: PaymentFailedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SubscriptionsUpdate403Error(PolarClientError):
+    error_type = AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel
+    error: AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class NotPermitted(PolarClientError):
+    error_type = NotPermittedModel
+    error: NotPermittedModel
+
+    def __init__(self, status_code: int, error: NotPermittedModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -647,6 +682,15 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         status_code: int,
         error: AlreadyCanceledSubscriptionModel | PauseResumeNotAllowedModel,
     ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class PaymentMethodRequired(PolarClientError):
+    error_type = PaymentMethodRequiredModel
+    error: PaymentMethodRequiredModel
+
+    def __init__(self, status_code: int, error: PaymentMethodRequiredModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 

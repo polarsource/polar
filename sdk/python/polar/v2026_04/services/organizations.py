@@ -7,7 +7,7 @@ from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.v2026_04.errors import (
     CannotCreateOrganizationError,
     HTTPValidationError,
-    NotPermitted,
+    OrganizationsUpdate403Error,
     ResourceNotFound,
     SSOEnforcementRequiresConnection,
 )
@@ -189,7 +189,7 @@ class OrganizationsSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            NotPermitted: You don't have the permission to update this organization.
+            OrganizationsUpdate403Error: You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
             ResourceNotFound: Organization not found.
             SSOEnforcementRequiresConnection: Cannot enforce SSO without an enabled connection.
             HTTPValidationError: Validation Error
@@ -208,7 +208,7 @@ class OrganizationsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            403: NotPermitted,
+            403: OrganizationsUpdate403Error,
             404: ResourceNotFound,
             409: SSOEnforcementRequiresConnection,
             422: HTTPValidationError,
@@ -382,7 +382,7 @@ class OrganizationsAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            NotPermitted: You don't have the permission to update this organization.
+            OrganizationsUpdate403Error: You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
             ResourceNotFound: Organization not found.
             SSOEnforcementRequiresConnection: Cannot enforce SSO without an enabled connection.
             HTTPValidationError: Validation Error
@@ -401,7 +401,7 @@ class OrganizationsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            403: NotPermitted,
+            403: OrganizationsUpdate403Error,
             404: ResourceNotFound,
             409: SSOEnforcementRequiresConnection,
             422: HTTPValidationError,

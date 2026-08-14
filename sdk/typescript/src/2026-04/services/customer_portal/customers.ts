@@ -211,7 +211,7 @@ export const deletePaymentMethodCustomers = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {PaymentMethodInUseByActiveSubscription} Payment method is used by active subscription(s).
+   * @throws {PaymentMethodInUseByActiveSubscription} Payment method is still needed to bill a subscription.
    * @throws {ResourceNotFound} Payment method not found.
    * @throws {HTTPValidationError} Validation Error
    */

@@ -15,6 +15,7 @@ from polar.v2026_04.errors import (
     PaymentFailed,
     ResourceNotFound,
     SubscriptionLocked,
+    SubscriptionsUpdate403Error,
 )
 from polar.v2026_04.inputs import (
     MetadataQuery,
@@ -31,6 +32,7 @@ from polar.v2026_04.inputs import (
 )
 from polar.v2026_04.literals import (
     CustomerCancellationReason,
+    SubscriptionExportColumn,
     SubscriptionSortProperty,
     SubscriptionStatus,
 )
@@ -57,6 +59,8 @@ class SubscriptionsSync(SyncServiceBase):
         | None = None,
         canceled_at_after: str | None = None,
         canceled_at_before: str | None = None,
+        started_after: str | None = None,
+        started_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
@@ -79,6 +83,8 @@ class SubscriptionsSync(SyncServiceBase):
             customer_cancellation_reason: Filter by customer cancellation reason.
             canceled_at_after: Filter by cancellation date (after or equal to).
             canceled_at_before: Filter by cancellation date (before or equal to).
+            started_after: Only include subscriptions started after this date.
+            started_before: Only include subscriptions started before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -106,6 +112,8 @@ class SubscriptionsSync(SyncServiceBase):
                 "customer_cancellation_reason": customer_cancellation_reason,
                 "canceled_at_after": canceled_at_after,
                 "canceled_at_before": canceled_at_before,
+                "started_after": started_after,
+                "started_before": started_before,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -134,6 +142,8 @@ class SubscriptionsSync(SyncServiceBase):
         | None = None,
         canceled_at_after: str | None = None,
         canceled_at_before: str | None = None,
+        started_after: str | None = None,
+        started_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
@@ -156,6 +166,8 @@ class SubscriptionsSync(SyncServiceBase):
             customer_cancellation_reason: Filter by customer cancellation reason.
             canceled_at_after: Filter by cancellation date (after or equal to).
             canceled_at_before: Filter by cancellation date (before or equal to).
+            started_after: Only include subscriptions started after this date.
+            started_before: Only include subscriptions started before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -183,6 +195,8 @@ class SubscriptionsSync(SyncServiceBase):
                 customer_cancellation_reason=customer_cancellation_reason,
                 canceled_at_after=canceled_at_after,
                 canceled_at_before=canceled_at_before,
+                started_after=started_after,
+                started_before=started_before,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -245,6 +259,15 @@ class SubscriptionsSync(SyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        product_id: str | builtins.list[str] | None = None,
+        status: SubscriptionStatus | builtins.list[SubscriptionStatus] | None = None,
+        cancel_at_period_end: bool | None = None,
+        started_after: str | None = None,
+        started_before: str | None = None,
+        timezone: str = "UTC",
+        columns: SubscriptionExportColumn
+        | builtins.list[SubscriptionExportColumn]
+        | None = None,
     ) -> str:
         """
         Export subscriptions as a CSV file.
@@ -253,6 +276,13 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            product_id: Filter by product ID.
+            status: Filter by subscription status.
+            cancel_at_period_end: Filter by subscriptions that are set to cancel at period end.
+            started_after: Only include subscriptions started after this date. Must include a UTC offset.
+            started_before: Only include subscriptions started before this date. Must include a UTC offset.
+            timezone: Time zone used to render dates in the CSV.
+            columns: Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.
 
         Raises:
             HTTPValidationError: Validation Error
@@ -266,6 +296,13 @@ class SubscriptionsSync(SyncServiceBase):
             path_params={},
             query_params={
                 "organization_id": organization_id,
+                "product_id": product_id,
+                "status": status,
+                "cancel_at_period_end": cancel_at_period_end,
+                "started_after": started_after,
+                "started_before": started_before,
+                "timezone": timezone,
+                "columns": columns,
             },
         )
         response = self.client.send_request(request)
@@ -418,7 +455,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.
-            AlreadyCanceledSubscription: Subscription is already canceled or will be at the end of the period.
+            SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, or is not active.
             ResourceNotFound: Subscription not found.
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
@@ -438,7 +475,7 @@ class SubscriptionsSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             402: PaymentFailed,
-            403: AlreadyCanceledSubscription,
+            403: SubscriptionsUpdate403Error,
             404: ResourceNotFound,
             409: SubscriptionLocked,
             422: HTTPValidationError,
@@ -463,6 +500,8 @@ class SubscriptionsAsync(AsyncServiceBase):
         | None = None,
         canceled_at_after: str | None = None,
         canceled_at_before: str | None = None,
+        started_after: str | None = None,
+        started_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
@@ -485,6 +524,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             customer_cancellation_reason: Filter by customer cancellation reason.
             canceled_at_after: Filter by cancellation date (after or equal to).
             canceled_at_before: Filter by cancellation date (before or equal to).
+            started_after: Only include subscriptions started after this date.
+            started_before: Only include subscriptions started before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -512,6 +553,8 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "customer_cancellation_reason": customer_cancellation_reason,
                 "canceled_at_after": canceled_at_after,
                 "canceled_at_before": canceled_at_before,
+                "started_after": started_after,
+                "started_before": started_before,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -540,6 +583,8 @@ class SubscriptionsAsync(AsyncServiceBase):
         | None = None,
         canceled_at_after: str | None = None,
         canceled_at_before: str | None = None,
+        started_after: str | None = None,
+        started_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
@@ -562,6 +607,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             customer_cancellation_reason: Filter by customer cancellation reason.
             canceled_at_after: Filter by cancellation date (after or equal to).
             canceled_at_before: Filter by cancellation date (before or equal to).
+            started_after: Only include subscriptions started after this date.
+            started_before: Only include subscriptions started before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -589,6 +636,8 @@ class SubscriptionsAsync(AsyncServiceBase):
                 customer_cancellation_reason=customer_cancellation_reason,
                 canceled_at_after=canceled_at_after,
                 canceled_at_before=canceled_at_before,
+                started_after=started_after,
+                started_before=started_before,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -652,6 +701,15 @@ class SubscriptionsAsync(AsyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        product_id: str | builtins.list[str] | None = None,
+        status: SubscriptionStatus | builtins.list[SubscriptionStatus] | None = None,
+        cancel_at_period_end: bool | None = None,
+        started_after: str | None = None,
+        started_before: str | None = None,
+        timezone: str = "UTC",
+        columns: SubscriptionExportColumn
+        | builtins.list[SubscriptionExportColumn]
+        | None = None,
     ) -> str:
         """
         Export subscriptions as a CSV file.
@@ -660,6 +718,13 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            product_id: Filter by product ID.
+            status: Filter by subscription status.
+            cancel_at_period_end: Filter by subscriptions that are set to cancel at period end.
+            started_after: Only include subscriptions started after this date. Must include a UTC offset.
+            started_before: Only include subscriptions started before this date. Must include a UTC offset.
+            timezone: Time zone used to render dates in the CSV.
+            columns: Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.
 
         Raises:
             HTTPValidationError: Validation Error
@@ -673,6 +738,13 @@ class SubscriptionsAsync(AsyncServiceBase):
             path_params={},
             query_params={
                 "organization_id": organization_id,
+                "product_id": product_id,
+                "status": status,
+                "cancel_at_period_end": cancel_at_period_end,
+                "started_after": started_after,
+                "started_before": started_before,
+                "timezone": timezone,
+                "columns": columns,
             },
         )
         response = await self.client.send_request(request)
@@ -825,7 +897,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.
-            AlreadyCanceledSubscription: Subscription is already canceled or will be at the end of the period.
+            SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, or is not active.
             ResourceNotFound: Subscription not found.
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
@@ -845,7 +917,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             402: PaymentFailed,
-            403: AlreadyCanceledSubscription,
+            403: SubscriptionsUpdate403Error,
             404: ResourceNotFound,
             409: SubscriptionLocked,
             422: HTTPValidationError,

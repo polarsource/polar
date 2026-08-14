@@ -4,10 +4,12 @@ import type {
   MetadataQuery,
   Order,
   OrderCreate,
+  OrderExportColumn,
   OrderFinalize,
   OrderInvoice,
   OrderReceipt,
   OrderSortProperty,
+  OrderStatus,
   OrderUpdate,
   ProductBillingType,
 } from "../models";
@@ -44,6 +46,9 @@ export const listOrders = (client: ClientBase) => {
     external_customer_id?: string | string[] | null;
     checkout_id?: string | string[] | null;
     subscription_id?: string | string[] | null;
+    status?: OrderStatus | OrderStatus[] | null;
+    created_after?: string | null;
+    created_before?: string | null;
     page?: number;
     limit?: number;
     sorting?: OrderSortProperty[] | null;
@@ -59,6 +64,9 @@ export const listOrders = (client: ClientBase) => {
       external_customer_id: query?.external_customer_id,
       checkout_id: query?.checkout_id,
       subscription_id: query?.subscription_id,
+      status: query?.status,
+      created_after: query?.created_after,
+      created_before: query?.created_before,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
       sorting: query?.sorting ?? ["-created_at"],
@@ -93,6 +101,9 @@ export const iterListOrders = (client: ClientBase) => {
     external_customer_id?: string | string[] | null;
     checkout_id?: string | string[] | null;
     subscription_id?: string | string[] | null;
+    status?: OrderStatus | OrderStatus[] | null;
+    created_after?: string | null;
+    created_before?: string | null;
     page?: number;
     limit?: number;
     sorting?: OrderSortProperty[] | null;
@@ -158,11 +169,21 @@ export const exportOrders = (client: ClientBase) => {
   return async (query?: {
     organization_id?: string | string[] | null;
     product_id?: string | string[] | null;
+    status?: OrderStatus | OrderStatus[] | null;
+    created_after?: string | null;
+    created_before?: string | null;
+    timezone?: string;
+    columns?: OrderExportColumn | OrderExportColumn[] | null;
   }): Promise<string> => {
     const pathParams = {};
     const queryParams = {
       organization_id: query?.organization_id,
       product_id: query?.product_id,
+      status: query?.status,
+      created_after: query?.created_after,
+      created_before: query?.created_before,
+      timezone: query?.timezone ?? "UTC",
+      columns: query?.columns,
     };
     const request = client.buildRequest(
       "GET",

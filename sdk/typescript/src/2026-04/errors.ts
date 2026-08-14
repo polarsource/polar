@@ -4,9 +4,11 @@ import type {
   CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
   CheckoutForbiddenError as CheckoutForbiddenErrorModel,
   CustomerNotReady as CustomerNotReadyModel,
+  DisputeAutoAcceptNotEnabled as DisputeAutoAcceptNotEnabledModel,
   DisputeNotOpenError as DisputeNotOpenErrorModel,
   ExpiredCheckoutError as ExpiredCheckoutErrorModel,
   HTTPValidationError as HTTPValidationErrorModel,
+  InactiveSubscription as InactiveSubscriptionModel,
   ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
   MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
   NotPermitted as NotPermittedModel,
@@ -21,6 +23,7 @@ import type {
   PaymentError as PaymentErrorModel,
   PaymentFailed as PaymentFailedModel,
   PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
+  PaymentMethodRequired as PaymentMethodRequiredModel,
   PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
   RefundedAlready as RefundedAlreadyModel,
   ResourceNotFound as ResourceNotFoundModel,
@@ -67,15 +70,17 @@ export class ResourceNotFound extends PolarClientError<ResourceNotFoundModel> {
   }
 }
 /**
- * You don't have the permission to update this organization.
+ * You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
  */
-export class NotPermitted extends PolarClientError<NotPermittedModel> {
+export class OrganizationsUpdate403Error extends PolarClientError<
+  NotPermittedModel | DisputeAutoAcceptNotEnabledModel
+> {
   constructor(
     public readonly statusCode: 403,
-    public readonly error: NotPermittedModel,
+    public readonly error: NotPermittedModel | DisputeAutoAcceptNotEnabledModel,
   ) {
     super(statusCode, error);
-    this.name = "NotPermitted";
+    this.name = "OrganizationsUpdate403Error";
   }
 }
 /**
@@ -124,6 +129,32 @@ export class PaymentFailed extends PolarClientError<PaymentFailedModel> {
   ) {
     super(statusCode, error);
     this.name = "PaymentFailed";
+  }
+}
+/**
+ * Subscription is already canceled or will be at the end of the period, or is not active.
+ */
+export class SubscriptionsUpdate403Error extends PolarClientError<
+  AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel
+> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel,
+  ) {
+    super(statusCode, error);
+    this.name = "SubscriptionsUpdate403Error";
+  }
+}
+/**
+ * This benefit is not deletable.
+ */
+export class NotPermitted extends PolarClientError<NotPermittedModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: NotPermittedModel,
+  ) {
+    super(statusCode, error);
+    this.name = "NotPermitted";
   }
 }
 /**
@@ -323,7 +354,7 @@ export class CustomerNotReady extends PolarClientError<CustomerNotReadyModel> {
   }
 }
 /**
- * Payment method is used by active subscription(s).
+ * Payment method is still needed to bill a subscription.
  */
 export class PaymentMethodInUseByActiveSubscription extends PolarClientError<PaymentMethodInUseByActiveSubscriptionModel> {
   constructor(
@@ -754,6 +785,18 @@ export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
   ) {
     super(statusCode, error);
     this.name = "CustomerPortalSubscriptionsUpdate403Error";
+  }
+}
+/**
+ * The subscription has no payment method to charge.
+ */
+export class PaymentMethodRequired extends PolarClientError<PaymentMethodRequiredModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: PaymentMethodRequiredModel,
+  ) {
+    super(statusCode, error);
+    this.name = "PaymentMethodRequired";
   }
 }
 /**

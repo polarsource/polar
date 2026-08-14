@@ -818,7 +818,28 @@ export type OrderBillingReason =
   | "purchase"
   | "subscription_create"
   | "subscription_cycle"
-  | "subscription_update";
+  | "subscription_update"
+  | "subscription_meter_cycle";
+/**
+ * OrderExportColumn
+ */
+export type OrderExportColumn =
+  | "email"
+  | "created_at"
+  | "product"
+  | "net_amount"
+  | "currency"
+  | "status"
+  | "invoice_number"
+  | "customer_name"
+  | "billing_name"
+  | "billing_country"
+  | "subtotal_amount"
+  | "discount_amount"
+  | "tax_amount"
+  | "total_amount"
+  | "refunded_amount"
+  | "billing_reason";
 /**
  * OrderSortProperty
  */
@@ -916,7 +937,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -1197,6 +1218,32 @@ export type Status = "active" | "trialing";
  * SubType
  */
 export type SubType = "user" | "organization";
+/**
+ * SubscriptionExportColumn
+ */
+export type SubscriptionExportColumn =
+  | "email"
+  | "started_at"
+  | "product"
+  | "amount"
+  | "currency"
+  | "status"
+  | "recurring_interval"
+  | "customer_name"
+  | "billing_name"
+  | "billing_country"
+  | "net_amount"
+  | "discount"
+  | "seats"
+  | "current_period_start"
+  | "current_period_end"
+  | "cancel_at_period_end"
+  | "canceled_at"
+  | "ends_at"
+  | "ended_at"
+  | "cancellation_reason"
+  | "trial_start"
+  | "trial_end";
 /**
  * SubscriptionProrationBehavior
  */
@@ -1891,6 +1938,7 @@ export type WebhookEventType =
   | "subscription.active"
   | "subscription.canceled"
   | "subscription.uncanceled"
+  | "subscription.cycled"
   | "subscription.revoked"
   | "subscription.past_due"
   | "subscription.paused"
@@ -1899,6 +1947,9 @@ export type WebhookEventType =
   | "refund.updated"
   | "product.created"
   | "product.updated"
+  | "discount.created"
+  | "discount.updated"
+  | "discount.deleted"
   | "benefit.created"
   | "benefit.updated"
   | "benefit_grant.created"
@@ -3271,6 +3322,87 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitDiscordCreateProperties | null;
+}
+/**
+ * BenefitDownloadableFile
+ */
+export interface BenefitDownloadableFile {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * organization_id
+   */
+  organization_id: string;
+  /**
+   * name
+   */
+  name: string;
+  /**
+   * path
+   */
+  path: string;
+  /**
+   * mime_type
+   */
+  mime_type: string;
+  /**
+   * size
+   */
+  size: number;
+  /**
+   * storage_version
+   */
+  storage_version: string | null;
+  /**
+   * checksum_etag
+   */
+  checksum_etag: string | null;
+  /**
+   * checksum_sha256_base64
+   */
+  checksum_sha256_base64: string | null;
+  /**
+   * checksum_sha256_hex
+   */
+  checksum_sha256_hex: string | null;
+  /**
+   * last_modified_at
+   */
+  last_modified_at: string | null;
+  /**
+   * version
+   */
+  version: string | null;
+  /**
+   * service
+   */
+  service: "downloadable";
+  /**
+   * is_uploaded
+   */
+  is_uploaded: boolean;
+  /**
+   * created_at
+   */
+  created_at: string;
+  /**
+   * flagged_malicious_at
+   */
+  flagged_malicious_at: string | null;
+  /**
+   * Number of distinct customers or members who downloaded the file.
+   */
+  downloaders: number;
+  /**
+   * Total number of downloads for the file.
+   */
+  downloads: number;
+  /**
+   * size_readable
+   */
+  size_readable: string;
 }
 /**
  * BenefitDownloadables
@@ -9558,6 +9690,10 @@ export interface CustomerIndividual {
    */
   deleted_at: string | null;
   /**
+   * Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+   */
+  first_user_event_at: string | null;
+  /**
    * avatar_url
    */
   avatar_url: string | null;
@@ -10882,6 +11018,10 @@ export interface CustomerStateIndividual {
    */
   deleted_at: string | null;
   /**
+   * Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+   */
+  first_user_event_at: string | null;
+  /**
    * avatar_url
    */
   avatar_url: string | null;
@@ -11121,6 +11261,10 @@ export interface CustomerStateTeam {
    * Timestamp for when the customer was soft deleted.
    */
   deleted_at: string | null;
+  /**
+   * Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+   */
+  first_user_event_at: string | null;
   /**
    * avatar_url
    */
@@ -11567,6 +11711,10 @@ export interface CustomerTeam {
    */
   deleted_at: string | null;
   /**
+   * Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+   */
+  first_user_event_at: string | null;
+  /**
    * avatar_url
    */
   avatar_url: string | null;
@@ -11897,6 +12045,10 @@ You can store up to **50 key-value pairs**.
    */
   max_redemptions?: number | null;
   /**
+   * Optional maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer?: number | null;
+  /**
    * products
    */
   products?: string[] | null;
@@ -11995,6 +12147,10 @@ export interface DiscountFixedOnceForeverDuration {
    */
   max_redemptions: number | null;
   /**
+   * Maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer: number | null;
+  /**
    * Number of times the discount has been redeemed.
    */
   redemptions_count: number;
@@ -12067,6 +12223,10 @@ export interface DiscountFixedOnceForeverDurationBase {
    * Maximum number of times the discount can be redeemed.
    */
   max_redemptions: number | null;
+  /**
+   * Maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer: number | null;
   /**
    * Number of times the discount has been redeemed.
    */
@@ -12141,6 +12301,10 @@ export interface DiscountFixedRepeatDuration {
    * Maximum number of times the discount can be redeemed.
    */
   max_redemptions: number | null;
+  /**
+   * Maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer: number | null;
   /**
    * Number of times the discount has been redeemed.
    */
@@ -12219,6 +12383,10 @@ export interface DiscountFixedRepeatDurationBase {
    */
   max_redemptions: number | null;
   /**
+   * Maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer: number | null;
+  /**
    * Number of times the discount has been redeemed.
    */
   redemptions_count: number;
@@ -12265,6 +12433,10 @@ You can store up to **50 key-value pairs**.
    * Optional maximum number of times the discount can be redeemed.
    */
   max_redemptions?: number | null;
+  /**
+   * Optional maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer?: number | null;
   /**
    * products
    */
@@ -12351,6 +12523,10 @@ export interface DiscountPercentageOnceForeverDuration {
    */
   max_redemptions: number | null;
   /**
+   * Maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer: number | null;
+  /**
    * Number of times the discount has been redeemed.
    */
   redemptions_count: number;
@@ -12415,6 +12591,10 @@ export interface DiscountPercentageOnceForeverDurationBase {
    * Maximum number of times the discount can be redeemed.
    */
   max_redemptions: number | null;
+  /**
+   * Maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer: number | null;
   /**
    * Number of times the discount has been redeemed.
    */
@@ -12481,6 +12661,10 @@ export interface DiscountPercentageRepeatDuration {
    * Maximum number of times the discount can be redeemed.
    */
   max_redemptions: number | null;
+  /**
+   * Maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer: number | null;
   /**
    * Number of times the discount has been redeemed.
    */
@@ -12550,6 +12734,10 @@ export interface DiscountPercentageRepeatDurationBase {
    * Maximum number of times the discount can be redeemed.
    */
   max_redemptions: number | null;
+  /**
+   * Maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer: number | null;
   /**
    * Number of times the discount has been redeemed.
    */
@@ -12629,6 +12817,19 @@ export interface DiscountProduct {
   organization_id: string;
 }
 /**
+ * DiscountRedemptionLimitReached
+ */
+export interface DiscountRedemptionLimitReached {
+  /**
+   * error
+   */
+  error: "DiscountRedemptionLimitReached";
+  /**
+   * detail
+   */
+  detail: string;
+}
+/**
  * Schema to update a discount.
  */
 export interface DiscountUpdate {
@@ -12666,6 +12867,10 @@ You can store up to **50 key-value pairs**.
    * Optional maximum number of times the discount can be redeemed.
    */
   max_redemptions?: number | null;
+  /**
+   * Optional maximum number of times the discount can be redeemed by a single customer.
+   */
+  max_redemptions_per_customer?: number | null;
   /**
    * duration
    */
@@ -12771,6 +12976,19 @@ export interface Dispute {
   case_id: string | null;
 }
 /**
+ * DisputeAutoAcceptNotEnabled
+ */
+export interface DisputeAutoAcceptNotEnabled {
+  /**
+   * error
+   */
+  error: "DisputeAutoAcceptNotEnabled";
+  /**
+   * detail
+   */
+  detail: string;
+}
+/**
  * DisputeCustomer
  */
 export interface DisputeCustomer {
@@ -12838,6 +13056,10 @@ export interface DisputeCustomer {
    * Timestamp for when the customer was soft deleted.
    */
   deleted_at: string | null;
+  /**
+   * Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+   */
+  first_user_event_at: string | null;
   /**
    * avatar_url
    */
@@ -12957,6 +13179,10 @@ export interface DownloadableFileRead {
    * created_at
    */
   created_at: string;
+  /**
+   * flagged_malicious_at
+   */
+  flagged_malicious_at: string | null;
   /**
    * size_readable
    */
@@ -13522,6 +13748,19 @@ export interface HTTPValidationError {
   detail?: ValidationError[];
 }
 /**
+ * InactiveSubscription
+ */
+export interface InactiveSubscription {
+  /**
+   * error
+   */
+  error: "InactiveSubscription";
+  /**
+   * detail
+   */
+  detail: string;
+}
+/**
  * IntrospectTokenResponse
  */
 export interface IntrospectTokenResponse {
@@ -13909,6 +14148,10 @@ export interface LicenseKeyCustomer {
    */
   deleted_at: string | null;
   /**
+   * Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+   */
+  first_user_event_at: string | null;
+  /**
    * avatar_url
    */
   avatar_url: string | null;
@@ -14148,6 +14391,19 @@ export interface ListResourceBenefit {
    * items
    */
   items: Benefit[];
+  /**
+   * pagination
+   */
+  pagination: Pagination;
+}
+/**
+ * ListResourceBenefitDownloadableFile
+ */
+export interface ListResourceBenefitDownloadableFile {
+  /**
+   * items
+   */
+  items: BenefitDownloadableFile[];
   /**
    * pagination
    */
@@ -16317,6 +16573,10 @@ export interface OrderCustomer {
    */
   deleted_at: string | null;
   /**
+   * Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+   */
+  first_user_event_at: string | null;
+  /**
    * avatar_url
    */
   avatar_url: string | null;
@@ -17048,6 +17308,10 @@ export interface Organization {
    */
   details_submitted_at: string | null;
   /**
+   * When Polar requested that the organization review and resubmit its onboarding information, if applicable.
+   */
+  onboarding_resubmission_requested_at: string | null;
+  /**
    * Whether members must access this organization through its SSO connection.
    */
   sso_enforced: boolean;
@@ -17075,6 +17339,18 @@ export interface Organization {
    * customer_portal_settings
    */
   customer_portal_settings: OrganizationCustomerPortalSettings;
+  /**
+   * dispute_settings
+   */
+  dispute_settings: OrganizationDisputeSettings;
+  /**
+   * Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
+   */
+  embed_hosts: string[];
+  /**
+   * Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
+   */
+  embed_hosts_enforced: boolean;
   /**
    * Two-letter country code (ISO 3166-1 alpha-2).
    */
@@ -17320,6 +17596,10 @@ export interface OrganizationCustomerEmailSettings {
    */
   order_confirmation: boolean;
   /**
+   * payment_method_expiration_reminder
+   */
+  payment_method_expiration_reminder: boolean;
+  /**
    * subscription_cancellation
    */
   subscription_cancellation: boolean;
@@ -17431,6 +17711,24 @@ export interface OrganizationDetails {
   previous_annual_revenue?: number | null;
 }
 /**
+ * `auto_accept_below_amount` is in Polar's settlement currency (USD).
+ */
+export interface OrganizationDisputeSettings {
+  /**
+   * auto_accept_below_amount
+   */
+  auto_accept_below_amount: number | null;
+}
+/**
+ * OrganizationDisputeSettingsUpdate
+ */
+export interface OrganizationDisputeSettingsUpdate {
+  /**
+   * Concede disputes below this amount, in USD cents, without asking the organization. A dispute charged in another currency converts at the rate its payment settled at. `null` turns it off. The disputed amount and the processor's dispute fee are still deducted.
+   */
+  auto_accept_below_amount?: number | null;
+}
+/**
  * OrganizationFeatureSettings
  */
 export interface OrganizationFeatureSettings {
@@ -17482,6 +17780,10 @@ export interface OrganizationFeatureSettings {
    * If this organization has single sign-on configuration enabled
    */
   sso_enabled?: boolean;
+  /**
+   * If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`.
+   */
+  dispute_auto_accept_enabled?: boolean;
   /**
    * If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
    */
@@ -17623,6 +17925,14 @@ export interface OrganizationUpdate {
    * customer_portal_settings
    */
   customer_portal_settings?: OrganizationCustomerPortalSettings | null;
+  /**
+   * dispute_settings
+   */
+  dispute_settings?: OrganizationDisputeSettingsUpdate | null;
+  /**
+   * embed_hosts
+   */
+  embed_hosts?: string[] | null;
   /**
    * Default presentment currency for the organization
    */
@@ -17809,6 +18119,19 @@ export interface PaymentMethodInUseByActiveSubscription {
    * error
    */
   error: "PaymentMethodInUseByActiveSubscription";
+  /**
+   * detail
+   */
+  detail: string;
+}
+/**
+ * PaymentMethodRequired
+ */
+export interface PaymentMethodRequired {
+  /**
+   * error
+   */
+  error: "PaymentMethodRequired";
   /**
    * detail
    */
@@ -20143,6 +20466,10 @@ export interface SubscriptionCustomer {
    */
   deleted_at: string | null;
   /**
+   * Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+   */
+  first_user_event_at: string | null;
+  /**
    * avatar_url
    */
   avatar_url: string | null;
@@ -21962,7 +22289,8 @@ export type CheckoutForbiddenError =
   | AlreadyActiveSubscriptionError
   | NotOpenCheckout
   | PaymentNotReady
-  | TrialAlreadyRedeemed;
+  | TrialAlreadyRedeemed
+  | DiscountRedemptionLimitReached;
 /**
  * CheckoutLinkCreate
  */

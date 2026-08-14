@@ -4,6 +4,7 @@ import type {
   BenefitCreate,
   BenefitCustomUpdate,
   BenefitDiscordUpdate,
+  BenefitDownloadableFile,
   BenefitDownloadablesUpdate,
   BenefitFeatureFlagUpdate,
   BenefitGitHubRepositoryUpdate,
@@ -14,6 +15,7 @@ import type {
   BenefitSortProperty,
   BenefitType,
   ListResourceBenefit,
+  ListResourceBenefitDownloadableFile,
   ListResourceBenefitGrant,
   MetadataQuery,
 } from "../models";
@@ -244,6 +246,88 @@ export const updateBenefits = (client: ClientBase) => {
     });
   };
 };
+export const filesBenefits = (client: ClientBase) => {
+  /**
+   * List the downloadable files for a benefit with their download statistics.
+   *
+   * **Scopes**: `benefits:read` `benefits:write`
+   *
+   * @param id
+   * @param query - Query parameters
+   * @returns {ListResourceBenefitDownloadableFile}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {ResourceNotFound} Benefit not found.
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (
+    id: string,
+    query?: {
+      page?: number;
+      limit?: number;
+    },
+  ): Promise<ListResourceBenefitDownloadableFile> => {
+    const pathParams = {
+      id: id,
+    };
+    const queryParams = {
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+    };
+    const request = client.buildRequest(
+      "GET",
+      "/v1/benefits/{id}/files",
+      pathParams,
+      queryParams,
+      undefined,
+    );
+    const response = await client.sendRequest(request);
+    return client.parseResponse<ListResourceBenefitDownloadableFile>(response, "json", {
+      404: ResourceNotFound,
+      422: HTTPValidationError,
+    });
+  };
+};
+/**
+ * List the downloadable files for a benefit with their download statistics.
+ *
+ * **Scopes**: `benefits:read` `benefits:write`
+ *
+ * @param id
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<BenefitDownloadableFile>} A generator that yields items of type BenefitDownloadableFile.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ResourceNotFound} Benefit not found.
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterFilesBenefits = (client: ClientBase) => {
+  return async function* (
+    id: string,
+    query?: {
+      page?: number;
+      limit?: number;
+    },
+  ): AsyncGenerator<BenefitDownloadableFile> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await filesBenefits(client)(id, { ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const grantsBenefits = (client: ClientBase) => {
   /**
    * List the individual grants for a benefit.
@@ -347,8 +431,10 @@ export function createBenefitsService(client: ClientBase) {
     get: getBenefits(client),
     delete: deleteBenefits(client),
     update: updateBenefits(client),
+    files: filesBenefits(client),
     grants: grantsBenefits(client),
     iterList: iterListBenefits(client),
+    iterFiles: iterFilesBenefits(client),
     iterGrants: iterGrantsBenefits(client),
   };
 }

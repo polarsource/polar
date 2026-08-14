@@ -233,7 +233,7 @@ class CustomersSync(SyncServiceBase):
             id:
 
         Raises:
-            PaymentMethodInUseByActiveSubscription: Payment method is used by active subscription(s).
+            PaymentMethodInUseByActiveSubscription: Payment method is still needed to bill a subscription.
             ResourceNotFound: Payment method not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -552,7 +552,7 @@ class CustomersAsync(AsyncServiceBase):
             id:
 
         Raises:
-            PaymentMethodInUseByActiveSubscription: Payment method is used by active subscription(s).
+            PaymentMethodInUseByActiveSubscription: Payment method is still needed to bill a subscription.
             ResourceNotFound: Payment method not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.

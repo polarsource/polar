@@ -39,8 +39,10 @@ from polar.v2026_04.literals import (
 )
 from polar.v2026_04.outputs import (
     Benefit,
+    BenefitDownloadableFile,
     BenefitGrant,
     ListResourceBenefit,
+    ListResourceBenefitDownloadableFile,
     ListResourceBenefitGrant,
 )
 
@@ -403,6 +405,88 @@ class BenefitsSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, Benefit, method_errors)
+
+    def files(
+        self,
+        id: str,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> ListResourceBenefitDownloadableFile:
+        """
+        List the downloadable files for a benefit with their download statistics.
+
+        **Scopes**: `benefits:read` `benefits:write`
+
+        Args:
+            id:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Raises:
+            ResourceNotFound: Benefit not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/benefits/{id}/files",
+            path_params={
+                "id": id,
+            },
+            query_params={
+                "page": page,
+                "limit": limit,
+            },
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(
+            response, ListResourceBenefitDownloadableFile, method_errors
+        )
+
+    def iter_files(
+        self,
+        id: str,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[BenefitDownloadableFile, None, None]:
+        """
+        List the downloadable files for a benefit with their download statistics.
+
+        **Scopes**: `benefits:read` `benefits:write`
+
+        Args:
+            id:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type BenefitDownloadableFile.
+
+        Raises:
+            ResourceNotFound: Benefit not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.files(
+                id=id,
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     def grants(
         self,
@@ -866,6 +950,89 @@ class BenefitsAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, Benefit, method_errors)
+
+    async def files(
+        self,
+        id: str,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> ListResourceBenefitDownloadableFile:
+        """
+        List the downloadable files for a benefit with their download statistics.
+
+        **Scopes**: `benefits:read` `benefits:write`
+
+        Args:
+            id:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Raises:
+            ResourceNotFound: Benefit not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/benefits/{id}/files",
+            path_params={
+                "id": id,
+            },
+            query_params={
+                "page": page,
+                "limit": limit,
+            },
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(
+            response, ListResourceBenefitDownloadableFile, method_errors
+        )
+
+    async def iter_files(
+        self,
+        id: str,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[BenefitDownloadableFile, None]:
+        """
+        List the downloadable files for a benefit with their download statistics.
+
+        **Scopes**: `benefits:read` `benefits:write`
+
+        Args:
+            id:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type BenefitDownloadableFile.
+
+        Raises:
+            ResourceNotFound: Benefit not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.files(
+                id=id,
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     async def grants(
         self,

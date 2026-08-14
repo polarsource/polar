@@ -2368,12 +2368,22 @@ class CheckoutService:
         price_set: PriceSet,
     ) -> Checkout:
         checkout.product_price = price_set.get_default_price()
+        previous_seats = checkout.seats
         checkout.seats = None
         seat_price = price_set.get_seat_price()
         seats: int | None = None
         if seat_price is not None:
-            seats = checkout_update.seats or seat_price.get_minimum_seats()
-            self._validate_seat_limits(seat_price, seats)
+            seats = (
+                checkout_update.seats
+                or previous_seats
+                or seat_price.get_minimum_seats()
+            )
+            self._validate_seat_limits(
+                seat_price,
+                seats,
+                checkout_min_seats=checkout.min_seats,
+                checkout_max_seats=checkout.max_seats,
+            )
             checkout.seats = seats
         checkout.amount = calculate_upfront_amount(
             price_set.get_static_prices(), custom_amount=None, seats=seats

@@ -1,6 +1,6 @@
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
-from typing import TypedDict
+from typing import NamedTuple, TypedDict
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -206,6 +206,17 @@ class SourceKeyModeMismatch(MerchantMigrationError):
             f"(e.g. `rk_{mode}_…`), so the migration runs against {mode} data.",
             400,
         )
+
+
+class _CardLookup(NamedTuple):
+    """What one `link_payment_method` call is decided by, and so what a second
+    call with the same values would repeat."""
+
+    customer_id: UUID
+    source_method_id: str | None
+
+
+type ResolvedCards = dict[_CardLookup, PaymentMethod | None]
 
 
 def _staged_payment_method(
@@ -598,7 +609,7 @@ class MerchantMigrationService:
             migration.id, offset=offset, limit=CARD_VERIFICATION_BATCH_SIZE
         )
         subscription_repository = SubscriptionRepository.from_session(session)
-        resolved: dict[tuple[UUID, str | None], PaymentMethod | None] = {}
+        resolved: ResolvedCards = {}
         for record in records:
             if record.target_id is None:
                 continue
@@ -632,14 +643,14 @@ class MerchantMigrationService:
         session: AsyncSession,
         record: MerchantMigrationRecord,
         subscription: Subscription,
-        resolved: dict[tuple[UUID, str | None], PaymentMethod | None],
+        resolved: ResolvedCards,
     ) -> PaymentMethod | None:
         """The method to charge, resolved once per customer and source method
         rather than once per subscription they hold."""
         source_method = _staged_payment_method(record)
-        key = (
-            subscription.customer_id,
-            source_method.source_id if source_method else None,
+        key = _CardLookup(
+            customer_id=subscription.customer_id,
+            source_method_id=source_method.source_id if source_method else None,
         )
         if key not in resolved:
             try:

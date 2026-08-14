@@ -12,7 +12,7 @@ from polar.authz.service import (
     get_accessible_org_ids,
 )
 from polar.exceptions import NotPermitted, PolarRequestValidationError
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -104,7 +104,7 @@ class BenefitService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Benefit | None:

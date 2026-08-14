@@ -208,10 +208,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         >
           <BenefitDetails benefit={benefit} organization={organization} />
           {benefit.type === 'downloadables' && (
-            <DownloadablesSection
-              benefit={benefit}
-              organization={organization}
-            />
+            <DownloadablesSection benefit={benefit} />
           )}
           <BenefitProducts benefit={benefit} organization={organization} />
           {benefit.type === 'license_keys' ? (

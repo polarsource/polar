@@ -22,6 +22,10 @@ const _invalidateBenefitsQueries = ({
     queryClient.invalidateQueries({
       queryKey: ['benefits', 'id', id],
     })
+
+    queryClient.invalidateQueries({
+      queryKey: ['benefits', 'files', id],
+    })
   }
 
   if (orgId) {
@@ -95,6 +99,26 @@ export const useBenefits = (
     retry: defaultRetry,
     enabled: !!orgId,
     placeholderData: keepPreviousData,
+  })
+
+export const useBenefitFiles = (
+  id: string,
+  parameters: NonNullable<operations['benefits:files']['parameters']['query']>,
+  enabled: boolean = true,
+) =>
+  useQuery({
+    queryKey: ['benefits', 'files', id, parameters],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/benefits/{id}/files', {
+          params: {
+            path: { id },
+            query: parameters,
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
   })
 
 export const useBenefit = (id?: string) =>

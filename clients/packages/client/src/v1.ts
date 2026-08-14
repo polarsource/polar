@@ -2187,6 +2187,28 @@ export interface paths {
     patch: operations['benefits:update']
     trace?: never
   }
+  '/v1/benefits/{id}/files': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Benefit Files
+     * @description List the downloadable files for a benefit with their download statistics.
+     *
+     *     **Scopes**: `benefits:read` `benefits:write`
+     */
+    get: operations['benefits:files']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/benefits/{id}/grants': {
     parameters: {
       query?: never
@@ -9420,6 +9442,66 @@ export interface components {
       properties?:
         | components['schemas']['BenefitDiscordCreateProperties']
         | null
+    }
+    /** BenefitDownloadableFile */
+    BenefitDownloadableFile: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Name */
+      name: string
+      /** Path */
+      path: string
+      /** Mime Type */
+      mime_type: string
+      /** Size */
+      size: number
+      /** Storage Version */
+      storage_version: string | null
+      /** Checksum Etag */
+      checksum_etag: string | null
+      /** Checksum Sha256 Base64 */
+      checksum_sha256_base64: string | null
+      /** Checksum Sha256 Hex */
+      checksum_sha256_hex: string | null
+      /** Last Modified At */
+      last_modified_at: string | null
+      /** Version */
+      version: string | null
+      /**
+       * Service
+       * @constant
+       */
+      service: 'downloadable'
+      /** Is Uploaded */
+      is_uploaded: boolean
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Flagged Malicious At */
+      flagged_malicious_at: string | null
+      /**
+       * Downloaders
+       * @description Number of distinct customers or members who downloaded the file.
+       */
+      downloaders: number
+      /**
+       * Downloads
+       * @description Total number of downloads for the file.
+       */
+      downloads: number
+      /** Size Readable */
+      readonly size_readable: string
     }
     /** BenefitDownloadables */
     BenefitDownloadables: {
@@ -22868,6 +22950,12 @@ export interface components {
       /** Items */
       items: components['schemas']['Event'][]
       pagination: components['schemas']['CursorPagination']
+    }
+    /** ListResource[BenefitDownloadableFile] */
+    ListResource_BenefitDownloadableFile_: {
+      /** Items */
+      items: components['schemas']['BenefitDownloadableFile'][]
+      pagination: components['schemas']['Pagination']
     }
     /** ListResource[BenefitGrant] */
     ListResource_BenefitGrant_: {
@@ -42773,6 +42861,51 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Benefit']
+        }
+      }
+      /** @description Benefit not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'benefits:files': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_BenefitDownloadableFile_']
         }
       }
       /** @description Benefit not found. */

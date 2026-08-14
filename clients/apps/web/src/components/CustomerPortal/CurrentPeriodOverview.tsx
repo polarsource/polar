@@ -77,13 +77,9 @@ export const CurrentPeriodOverview = ({
       price.price_currency === subscription.currency && isSeatBasedPrice(price),
   )
 
-  // The subscription is locked into the price it was created with, which can
-  // differ from the product's current catalog price (e.g. after the merchant
-  // changes it). Show the locked base amount from the charge preview so the
-  // headline matches the subtotal below, rather than the live catalog price.
-  // This covers fixed, custom and seat-based prices (base_amount is the locked
-  // total across seats). Pending plan changes preview the upcoming product's
-  // price, and pure metered products have no fixed base rate to show.
+  // Use the subscription amount (except when a pending update is scheduled)
+  // instead of the current product price, since we by default grandfather old subscriptions
+  // on their old prices if a product price is updated
   const hasPendingProduct = subscription.pending_update?.product_id != null
   const showLockedBaseAmount =
     !hasPendingProduct &&

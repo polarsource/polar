@@ -1237,7 +1237,9 @@ class SubscriptionService:
                 )
 
             if update.has_metadata:
-                subscription.user_metadata = update.metadata
+                subscription = await self.update_metadata(
+                    session, ctx, subscription, metadata=update.metadata
+                )
 
         if isinstance(update, SubscriptionUpdateSeats):
             subscription = await self.update_seats(
@@ -1810,6 +1812,19 @@ class SubscriptionService:
         )
 
         return subscription
+
+    async def update_metadata(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+        *,
+        metadata: dict[str, Any],
+    ) -> Subscription:
+        repository = SubscriptionRepository.from_session(session)
+        return await repository.update(
+            subscription, update_dict={"user_metadata": metadata}
+        )
 
     async def update_seats(
         self,

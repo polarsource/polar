@@ -79,6 +79,10 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         # CR TIN: cédula jurídica (business)
         ("3-101-356876", "CR", ("3101356876", TaxIDFormat.cr_tin)),
         ("3101356876", "CR", ("3101356876", TaxIDFormat.cr_tin)),
+        # UY RUT (Stripe calls it uy_ruc, stdnum module is uy.rut)
+        ("211003420017", "UY", ("211003420017", TaxIDFormat.uy_ruc)),
+        ("21-100342-001-7", "UY", ("211003420017", TaxIDFormat.uy_ruc)),
+        ("UY 21 140634 001 1", "UY", ("211406340011", TaxIDFormat.uy_ruc)),
     ],
 )
 def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> None:
@@ -115,6 +119,7 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("62140098", "TW"),  # Wrong check digit under both rules
         ("9999999999", "CR"),  # Invalid CR TIN
         ("1-1000-0001", "CR"),  # cédula física (individual), not accepted
+        ("210303670014", "UY"),  # Wrong check digit
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

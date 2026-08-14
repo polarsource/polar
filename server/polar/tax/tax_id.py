@@ -14,6 +14,7 @@ import stdnum.in_.gstin
 import stdnum.mk.edb
 import stdnum.tr.vkn
 import stdnum.tw.ubn
+import stdnum.uy.rut
 import stdnum.vn.mst
 from pydantic import Field
 from sqlalchemy.dialects.postgresql import JSONB
@@ -370,6 +371,15 @@ class TWVATValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class UYRUCValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.uy.rut.compact(number)
+        try:
+            return stdnum.uy.rut.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 class INGSTValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         number = stdnum.in_.gstin.compact(number)
@@ -463,6 +473,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return TRTINValidator()
         case TaxIDFormat.tw_vat:
             return TWVATValidator()
+        case TaxIDFormat.uy_ruc:
+            return UYRUCValidator()
         case TaxIDFormat.in_gst:
             return INGSTValidator()
         case TaxIDFormat.vn_tin:

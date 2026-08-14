@@ -2373,11 +2373,20 @@ class CheckoutService:
         seat_price = price_set.get_seat_price()
         seats: int | None = None
         if seat_price is not None:
-            seats = (
-                checkout_update.seats
-                or previous_seats
-                or seat_price.get_minimum_seats()
+            is_seat_count_locked = (
+                checkout.min_seats is not None or checkout.max_seats is not None
             )
+            if checkout_update.seats is not None:
+                seats = checkout_update.seats
+            elif previous_seats is not None and not is_seat_count_locked:
+                # Preserve the existing seat count across a product switch,
+                # clamped to the new product's own bounds.
+                seats = max(previous_seats, seat_price.get_minimum_seats())
+                maximum_seats = seat_price.get_maximum_seats()
+                if maximum_seats is not None:
+                    seats = min(seats, maximum_seats)
+            else:
+                seats = previous_seats or seat_price.get_minimum_seats()
             self._validate_seat_limits(
                 seat_price,
                 seats,

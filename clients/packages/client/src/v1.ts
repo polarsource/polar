@@ -34928,6 +34928,23 @@ export interface components {
     /** SubscriptionUpdateBase */
     SubscriptionUpdateBase: {
       /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
        * Product Id
        * @description Update subscription to another product.
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23

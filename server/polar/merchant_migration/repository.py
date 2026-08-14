@@ -53,6 +53,12 @@ class MerchantMigrationRepository(
             )
         return statement
 
+    async def refresh_for_update(self, migration: MerchantMigration) -> None:
+        """Re-read under a row lock, so a background write can't overwrite what
+        ops changed while it was working. Not `get_by_id(for_update=True)`: that
+        takes the lock but keeps the stale attributes already in the session."""
+        await self.session.refresh(migration, with_for_update=True)
+
     def get_ops_statement(self) -> Select[tuple[MerchantMigration]]:
         """Every migration across every organization, newest first.
 
@@ -238,6 +244,38 @@ class MerchantMigrationRecordRepository(
                 MerchantMigrationRecord.created_at,
                 MerchantMigrationRecord.id,
             )
+            .limit(limit)
+        )
+        return await self.get_all(statement)
+
+    def _imported_subscriptions_statement(
+        self, migration_id: UUID
+    ) -> Select[tuple[MerchantMigrationRecord]]:
+        """Subscriptions that made it into Polar: what the card check reads.
+
+        Ordered so a batched pass and a chained one see the same sequence.
+        """
+        return (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type
+                == MerchantMigrationRecordType.subscription,
+                MerchantMigrationRecord.status
+                == MerchantMigrationRecordStatus.imported,
+            )
+            .order_by(
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
+        )
+
+    async def list_imported_subscriptions(
+        self, migration_id: UUID, *, offset: int, limit: int
+    ) -> Sequence[MerchantMigrationRecord]:
+        statement = (
+            self._imported_subscriptions_statement(migration_id)
+            .offset(offset)
             .limit(limit)
         )
         return await self.get_all(statement)

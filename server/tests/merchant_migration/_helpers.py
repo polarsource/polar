@@ -1,4 +1,11 @@
 from polar.kit.encryption import EncryptedString
+from polar.merchant_migration import pan_transfer
+from polar.merchant_migration.pan_transfer import (
+    PanStepActor,
+    PanStepOwner,
+    PanTransferMethod,
+    PanTransferStep,
+)
 from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.merchant_migration.service import (
     SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT,
@@ -62,3 +69,28 @@ async def build_connected_migration(
     )
     await save_fixture(migration)
     return migration
+
+
+_STEP_ACTORS = {
+    PanStepOwner.merchant: PanStepActor.merchant,
+    PanStepOwner.polar_ops: PanStepActor.ops,
+    PanStepOwner.stripe: PanStepActor.ops,
+    PanStepOwner.provider: PanStepActor.ops,
+    PanStepOwner.polar_app: PanStepActor.system,
+}
+
+
+def pan_steps_until(
+    method: PanTransferMethod, target_key: str
+) -> list[PanTransferStep]:
+    """A checklist walked forward to ``target_key``, with everything before it
+    completed by whoever owns it: what the merchant would have clicked through.
+    """
+    steps = pan_transfer.build(method)
+    while True:
+        current = pan_transfer.current(steps)
+        if current is None or current.key == target_key:
+            return steps
+        steps = pan_transfer.complete(
+            method, steps, current.key, actor=_STEP_ACTORS[current.owner], inputs={}
+        )

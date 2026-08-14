@@ -94,6 +94,11 @@ _ACTOR_OWNERS: dict[PanStepActor, frozenset[PanStepOwner]] = {
 
 _ACTIONABLE = (PanStepStatus.pending, PanStepStatus.in_progress)
 
+STEP_VERIFY_CARDS = "verify_cards"
+STEP_RESOLVE_UNCOVERED = "resolve_uncovered"
+STEP_CUTOVER = "cutover"
+STEP_MOVE_SUBSCRIPTIONS = "move_subscriptions"
+
 
 class PanTransferError(MerchantMigrationError): ...
 
@@ -227,22 +232,22 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
         kind=PanStepKind.auto,
     ),
     PanStepTemplate(
-        key="verify_cards",
+        key=STEP_VERIFY_CARDS,
         owner=PanStepOwner.polar_app,
         kind=PanStepKind.auto,
     ),
     PanStepTemplate(
-        key="resolve_uncovered",
+        key=STEP_RESOLVE_UNCOVERED,
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
     ),
     PanStepTemplate(
-        key="cutover",
+        key=STEP_CUTOVER,
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
     ),
     PanStepTemplate(
-        key="move_subscriptions",
+        key=STEP_MOVE_SUBSCRIPTIONS,
         owner=PanStepOwner.polar_app,
         kind=PanStepKind.auto,
     ),
@@ -289,22 +294,22 @@ PAN_IMPORT_TEMPLATES: tuple[PanStepTemplate, ...] = (
         kind=PanStepKind.auto,
     ),
     PanStepTemplate(
-        key="verify_cards",
+        key=STEP_VERIFY_CARDS,
         owner=PanStepOwner.polar_app,
         kind=PanStepKind.auto,
     ),
     PanStepTemplate(
-        key="resolve_uncovered",
+        key=STEP_RESOLVE_UNCOVERED,
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
     ),
     PanStepTemplate(
-        key="cutover",
+        key=STEP_CUTOVER,
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
     ),
     PanStepTemplate(
-        key="move_subscriptions",
+        key=STEP_MOVE_SUBSCRIPTIONS,
         owner=PanStepOwner.polar_app,
         kind=PanStepKind.auto,
     ),

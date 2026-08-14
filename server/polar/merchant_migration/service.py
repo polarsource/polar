@@ -1,9 +1,11 @@
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
-from typing import TypedDict
+from typing import NamedTuple, TypedDict
 from uuid import UUID
 
 import stripe as stripe_lib
+import structlog
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -12,7 +14,13 @@ from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
-from polar.models import MerchantMigration, MerchantMigrationRecord
+from polar.logging import Logger
+from polar.models import (
+    MerchantMigration,
+    MerchantMigrationRecord,
+    PaymentMethod,
+    Subscription,
+)
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
@@ -24,13 +32,22 @@ from polar.models.merchant_migration_record import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
+from polar.worker import enqueue_job
 
 from . import pan_transfer
 from .adapters import SourceAdapter, StripeAdapter
-from .canonical import CanonicalRecord, deserialize
+from .canonical import (
+    CanonicalPaymentMethod,
+    CanonicalRecord,
+    CanonicalSubscription,
+    deserialize,
+)
+from .cards import AmbiguousCopiedCard, link_payment_method
 from .errors import MerchantMigrationError
 from .importer import CatalogImporter
 from .pan_transfer import (
+    STEP_VERIFY_CARDS,
     PanStepActor,
     PanTransferAlreadyStarted,
     PanTransferNotReady,
@@ -62,6 +79,8 @@ from .schemas import (
     PrecheckReport,
 )
 
+log: Logger = structlog.get_logger()
+
 IMPORTABLE_STEPS = {
     MerchantMigrationStep.pre_check,
     MerchantMigrationStep.create_catalog,
@@ -79,6 +98,11 @@ SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "table": "merchant_migrations",
     "column": "source_credentials",
 }
+
+_STEP_TASKS = {STEP_VERIFY_CARDS: "merchant_migration.verify_cards"}
+
+# One Stripe round trip per customer, so a whole catalog can't be one job.
+CARD_VERIFICATION_BATCH_SIZE = 25
 
 
 class StripeSourceCredentials(TypedDict):
@@ -184,6 +208,31 @@ class SourceKeyModeMismatch(MerchantMigrationError):
         )
 
 
+class _CardLookup(NamedTuple):
+    """What one `link_payment_method` call is decided by, and so what a second
+    call with the same values would repeat."""
+
+    customer_id: UUID
+    source_method_id: str | None
+
+
+type ResolvedCards = dict[_CardLookup, PaymentMethod | None]
+
+
+def _staged_payment_method(
+    record: MerchantMigrationRecord,
+) -> CanonicalPaymentMethod | None:
+    """What the source subscription was charging, so the right copy is picked
+    when a customer has more than one."""
+    try:
+        staged = deserialize(record.type, record.canonical)
+    except (KeyError, TypeError, ValueError):
+        return None
+    if isinstance(staged, CanonicalSubscription):
+        return staged.payment_method
+    return None
+
+
 def _summarize_entities(
     items: Sequence[MerchantMigrationRecordItem], entities: Sequence[PrecheckEntity]
 ) -> list[MerchantMigrationRecordSummaryEntity]:
@@ -274,7 +323,7 @@ class MerchantMigrationService:
         if create_schema.source_platform != MerchantMigrationSourcePlatform.stripe:
             raise UnsupportedMigrationSource(create_schema.source_platform)
 
-        # The key's mode must match the Polar environment, so a live cutover never
+        # The key's mode must match the Polar environment, so a live switch never
         # runs against Stripe test data (and a sandbox run never touches live data).
         expect_live = settings.is_production()
         if _is_live_key(create_schema.api_key) != expect_live:
@@ -495,9 +544,26 @@ class MerchantMigrationService:
             actor=actor,
             inputs=inputs,
         )
-        repository = MerchantMigrationRepository.from_session(session)
-        await repository.update(migration, update_dict={"pan_transfer_steps": steps})
+        await self._advance_checklist(session, migration, steps)
         return self._checklist(migration, steps)
+
+    async def _advance_checklist(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        steps: Sequence[PanTransferStep],
+    ) -> None:
+        """Persist the checklist and schedule the job for a step Polar
+        performs itself."""
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration, update_dict={"pan_transfer_steps": list(steps)}
+        )
+
+        current = pan_transfer.current(steps)
+        task = _STEP_TASKS.get(current.key) if current else None
+        if task is not None:
+            enqueue_job(task, merchant_migration_id=migration.id)
 
     async def annotate_pan_step(
         self,
@@ -526,6 +592,97 @@ class MerchantMigrationService:
         repository = MerchantMigrationRepository.from_session(session)
         await repository.update(migration, update_dict={"pan_transfer_steps": steps})
         return self._checklist(migration, steps)
+
+    async def run_card_verification(
+        self, session: AsyncSession, migration_id: UUID, *, offset: int = 0
+    ) -> None:
+        repository = MerchantMigrationRepository.from_session(session)
+        migration = await repository.get_by_id(migration_id)
+        if migration is None:
+            log.warning(
+                "merchant_migration.missing", merchant_migration_id=migration_id
+            )
+            return
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.list_imported_subscriptions(
+            migration.id, offset=offset, limit=CARD_VERIFICATION_BATCH_SIZE
+        )
+        subscription_repository = SubscriptionRepository.from_session(session)
+        resolved: ResolvedCards = {}
+        for record in records:
+            if record.target_id is None:
+                continue
+            subscription = await subscription_repository.get_by_id(
+                record.target_id, options=(joinedload(Subscription.customer),)
+            )
+            # Already covered, or gone from Polar: nothing to link either way.
+            if subscription is None or subscription.payment_method_id is not None:
+                continue
+            payment_method = await self._resolve_card(
+                session, record, subscription, resolved
+            )
+            if payment_method is not None:
+                await subscription_repository.update(
+                    subscription, update_dict={"payment_method_id": payment_method.id}
+                )
+
+        if len(records) == CARD_VERIFICATION_BATCH_SIZE:
+            enqueue_job(
+                "merchant_migration.verify_cards",
+                merchant_migration_id=migration.id,
+                offset=offset + CARD_VERIFICATION_BATCH_SIZE,
+            )
+            return
+
+        await repository.refresh_for_update(migration)
+        await self._complete_step(session, migration, STEP_VERIFY_CARDS)
+
+    async def _resolve_card(
+        self,
+        session: AsyncSession,
+        record: MerchantMigrationRecord,
+        subscription: Subscription,
+        resolved: ResolvedCards,
+    ) -> PaymentMethod | None:
+        """The method to charge, resolved once per customer and source method
+        rather than once per subscription they hold."""
+        source_method = _staged_payment_method(record)
+        key = _CardLookup(
+            customer_id=subscription.customer_id,
+            source_method_id=source_method.source_id if source_method else None,
+        )
+        if key not in resolved:
+            try:
+                resolved[key] = await link_payment_method(
+                    session, subscription.customer, source_method=source_method
+                )
+            except AmbiguousCopiedCard as e:
+                log.error(
+                    "merchant_migration.verify_cards.ambiguous_card",
+                    merchant_migration_id=record.merchant_migration_id,
+                    record_id=record.id,
+                    customer_id=e.customer_id,
+                )
+                resolved[key] = None
+        return resolved[key]
+
+    async def _complete_step(
+        self, session: AsyncSession, migration: MerchantMigration, key: str
+    ) -> None:
+        """Mark a step Polar performs as done. A no-op when it isn't ours to
+        move — the work already finished once, or the merchant restarted."""
+        current = pan_transfer.current(migration.pan_transfer_steps)
+        if current is None or current.key != key:
+            return
+        steps = pan_transfer.complete(
+            migration.pan_transfer_method,
+            list(migration.pan_transfer_steps),
+            key,
+            actor=PanStepActor.system,
+            inputs={},
+        )
+        await self._advance_checklist(session, migration, steps)
 
     def _checklist(
         self,

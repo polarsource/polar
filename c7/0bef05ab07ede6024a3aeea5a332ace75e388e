@@ -1,0 +1,21 @@
+server/polar/checkout/service.py
+  s_9185a601e91e5e::t_8c7766c5c64d9d 2371,2376-2386
+server/tests/checkout/test_service.py
+  s_9185a601e91e5e::t_9b6ab7ba7050f9 4254-4307
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "c70bef05ab07ede6024a3aeea5a332ace75e388e",
+  "prompts": {},
+  "sessions": {
+    "s_9185a601e91e5e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0722f7ec-8492-4f19-b308-d52d4c0e4e42",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

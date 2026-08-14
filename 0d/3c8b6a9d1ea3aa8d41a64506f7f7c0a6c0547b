@@ -1,0 +1,19 @@
+server/tests/checkout/test_service.py
+  s_9185a601e91e5e::t_957b30c17a3f20 4355
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "0d3c8b6a9d1ea3aa8d41a64506f7f7c0a6c0547b",
+  "prompts": {},
+  "sessions": {
+    "s_9185a601e91e5e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0722f7ec-8492-4f19-b308-d52d4c0e4e42",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

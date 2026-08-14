@@ -308,7 +308,7 @@ class SubscriptionCreateExternalCustomer(SubscriptionCreateBase):
 SubscriptionCreate = SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer
 
 
-class SubscriptionUpdateBase(Schema):
+class SubscriptionUpdateBase(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     product_id: UUID4 | None = Field(
@@ -346,6 +346,10 @@ class SubscriptionUpdateBase(Schema):
     @property
     def has_trial_end(self) -> bool:
         return self.trial_end is not None
+
+    @property
+    def has_metadata(self) -> bool:
+        return "metadata" in self.model_fields_set
 
     @property
     def discount(self) -> UUID4 | Literal["unset"] | None:

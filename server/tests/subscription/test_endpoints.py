@@ -550,6 +550,59 @@ class TestSubscriptionProductUpdate:
 
 
 @pytest.mark.asyncio
+class TestSubscriptionUpdateMetadata:
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "ABC", "keep": "no"},
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"metadata": {"reference_id": "DEF"}},
+        )
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        # Setting metadata replaces the whole object, it doesn't merge with the existing one
+        assert updated_subscription["metadata"] == {"reference_id": "DEF"}
+
+    @pytest.mark.auth
+    async def test_not_provided_leaves_metadata_untouched(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "ABC"},
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"product_id": str(product_second.id)},
+        )
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert updated_subscription["metadata"] == {"reference_id": "ABC"}
+
+
+@pytest.mark.asyncio
 class TestSubscriptionUpdateMixedFields:
     @pytest.mark.auth
     async def test_mixed_seats_and_discount_returns_422(

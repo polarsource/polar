@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Literal
 
 import redis.asyncio as _async_redis
 from fastapi import Request
-from redis import ConnectionError, RedisError, TimeoutError
+from redis import ConnectionError, ReadOnlyError, RedisError, TimeoutError
 from redis.asyncio.retry import Retry
 from redis.backoff import default_backoff
 
@@ -17,7 +17,11 @@ else:
     Redis = _async_redis.Redis
 
 
-REDIS_RETRY_ON_ERRROR: list[type[RedisError]] = [ConnectionError, TimeoutError]
+REDIS_RETRY_ON_ERRROR: list[type[RedisError]] = [
+    ConnectionError,
+    ReadOnlyError,
+    TimeoutError,
+]
 REDIS_RETRY = Retry(default_backoff(), retries=50)
 
 # TCP_KEEPIDLE is Linux, TCP_KEEPALIVE its macOS equivalent

@@ -193,7 +193,8 @@ const BaseCheckoutForm = ({
       if (!contact || checkout[name] === contact) {
         return
       }
-      update({ [name]: contact }).catch(() => clearErrors(name))
+      clearErrors(name)
+      update({ [name]: contact }).catch(() => {})
     },
     [checkout, update, clearErrors],
   )

@@ -117,7 +117,7 @@ export const UpdateSubscriptionSeatsForm = ({
                     value={field.value ?? ''}
                     onChange={(e) => {
                       const value = e.target.value
-                      field.onChange(value === '' ? undefined : Number(value))
+                      field.onChange(value === '' ? undefined : parseInt(value, 10))
                     }}
                   />
                 </FormControl>

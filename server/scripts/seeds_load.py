@@ -4,11 +4,13 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
+from time import monotonic
 from typing import Any, Literal, NotRequired, TypedDict
 from uuid import UUID
 
 import dramatiq
 import typer
+from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -287,17 +289,37 @@ async def _stamp_event_type_ids(
 ) -> None:
     """Stamp event_type_id on each event dict, mirroring the real ingest path."""
     event_type_repository = EventTypeRepository.from_session(session)
-    cache: dict[tuple[str, Any], Any] = {}
+    names_by_organization: dict[UUID, set[str]] = {}
     for event in events:
         name = event.get("name")
-        org_id = event.get("organization_id")
-        if not name or not org_id:
+        organization_id = event.get("organization_id")
+        if not name or not organization_id:
             continue
-        key = (name, org_id)
-        if key not in cache:
-            event_type = await event_type_repository.get_or_create(name, org_id)
-            cache[key] = event_type.id
-        event["event_type_id"] = cache[key]
+        names_by_organization.setdefault(organization_id, set()).add(name)
+
+    event_type_ids: dict[tuple[UUID, str], UUID] = {}
+    for organization_id, names in names_by_organization.items():
+        ensured = await event_type_repository.ensure_by_names(
+            sorted(names), organization_id
+        )
+        event_type_ids.update(
+            {
+                (organization_id, name): event_type.id
+                for name, event_type in ensured.items()
+            }
+        )
+
+    for event in events:
+        name = event.get("name")
+        event_organization_id = event.get("organization_id")
+        if name and event_organization_id:
+            event["event_type_id"] = event_type_ids[(event_organization_id, name)]
+
+
+def _normalize_seed_event_batch(events: list[dict[str, Any]]) -> None:
+    for event in events:
+        event.setdefault("external_id", None)
+        event.setdefault("parent_id", None)
 
 
 def _build_customer_timeline_events(
@@ -1245,6 +1267,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     if existing:
         raise typer.Exit(2)
 
+    seed_started_at = monotonic()
+    print("seed.load status=pending")
+
     # Organizations data
     orgs_data: list[OrganizationDict] = [
         {
@@ -1714,6 +1739,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
     # Create organizations with users and sample data
     for org_data in orgs_data:
+        organization_started_at = monotonic()
         # Get or create user (allows multiple orgs to share the same user)
         user, _created = await user_service.get_by_email_or_create(
             session=session,
@@ -2030,8 +2056,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         # Accumulate events across all customers in this org, then flush to
         # Tinybird in a single batched call at the end. The per-customer
         # synchronous ingest (with wait=true) used to dominate seed runtime.
-        pending_tinybird_events: list[EventModel] = []
-        pending_tinybird_ancestors: dict[UUID, list[str]] = {}
+        pending_events: list[dict[str, Any]] = []
 
         num_customers = (
             random.randint(3, 8) if not org_data.get("seat_based_customers") else 0
@@ -2058,8 +2083,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 customer_name=f"Customer {i + 1}",
                 products=org_products,
             )
-
-            event_repository = EventRepository.from_session(session)
 
             # Create meter events for ColdMail customers
             if org_data["slug"] == "coldmail" and coldmail_meter and i == 0:
@@ -2102,24 +2125,25 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             )
             timeline_events.extend(cost_spans)
 
-            # Insert events in batch; defer Tinybird ingest until all of the
-            # org's customers are processed so we can send one batched call.
-            if timeline_events:
-                await _stamp_event_type_ids(session, timeline_events)
-                event_ids, _ = await event_repository.insert_batch(timeline_events)
-                if event_ids:
-                    inserted = await event_repository.get_all(
-                        select(EventModel).where(EventModel.id.in_(event_ids))
-                    )
-                    ancestors_by_event = await event_repository.get_ancestors_batch(
-                        event_ids
-                    )
-                    pending_tinybird_events.extend(inserted)
-                    pending_tinybird_ancestors.update(ancestors_by_event)
+            pending_events.extend(timeline_events)
 
-        await _flush_tinybird_events(
-            pending_tinybird_events, pending_tinybird_ancestors
-        )
+        inserted_event_count = 0
+        if pending_events:
+            event_repository = EventRepository.from_session(session)
+            _normalize_seed_event_batch(pending_events)
+            await _stamp_event_type_ids(session, pending_events)
+            event_ids, _ = await event_repository.insert_batch(
+                pending_events, render_nulls=True
+            )
+            inserted_event_count = len(event_ids)
+            if event_ids:
+                inserted = await event_repository.get_all(
+                    select(EventModel).where(EventModel.id.in_(event_ids))
+                )
+                ancestors_by_event = await event_repository.get_ancestors_batch(
+                    event_ids
+                )
+                await _flush_tinybird_events(inserted, ancestors_by_event)
 
         # Create real Subscription rows for acme-corp customers so that PG-based
         # metrics (MRR, Trial MRR, Active Subscriptions) have data to display.
@@ -2482,6 +2506,12 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             user,
             update_dict={"is_admin": user.is_admin or org_data.get("is_admin", False)},
         )
+        print(
+            "seed.organization status=processed "
+            f"slug={organization.slug} events={inserted_event_count} "
+            f"event_insert_batches={int(bool(pending_events))} "
+            f"elapsed_seconds={monotonic() - organization_started_at:.2f}"
+        )
 
     subscribed = await _subscribe_seeded_orgs_to_polar_self(session)
     if subscribed:
@@ -2490,8 +2520,15 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     await create_support_cases_seed(session)
 
     await session.commit()
+    print(
+        "seed.load status=success "
+        f"organizations={len(orgs_data)} "
+        f"elapsed_seconds={monotonic() - seed_started_at:.2f}"
+    )
     print("✅ Sample data created successfully!")
-    print("Created 3 organizations with users, products, benefits, and customers")
+    print(
+        f"Created {len(orgs_data)} organizations with users, products, benefits, and customers"
+    )
 
 
 POLAR_ORG_SLUG = "polar"
@@ -2669,8 +2706,7 @@ async def create_single_org_seed(
     # Create customers with timeline events. Accumulate events across
     # customers and flush to Tinybird once at the end to avoid per-customer
     # synchronous HTTP round-trips (wait=true is ~4s each).
-    pending_tinybird_events: list[EventModel] = []
-    pending_tinybird_ancestors: dict[UUID, list[str]] = {}
+    pending_events: list[dict[str, Any]] = []
 
     num_customers = random.randint(5, 10)
     for i in range(num_customers):
@@ -2693,26 +2729,29 @@ async def create_single_org_seed(
             products=org_products,
         )
 
-        if timeline_events:
-            event_repository = EventRepository.from_session(session)
-            await _stamp_event_type_ids(session, timeline_events)
-            event_ids, _ = await event_repository.insert_batch(timeline_events)
-            if event_ids:
-                inserted = await event_repository.get_all(
-                    select(EventModel).where(EventModel.id.in_(event_ids))
-                )
-                ancestors_by_event = await event_repository.get_ancestors_batch(
-                    event_ids
-                )
-                pending_tinybird_events.extend(inserted)
-                pending_tinybird_ancestors.update(ancestors_by_event)
+        pending_events.extend(timeline_events)
 
-    await _flush_tinybird_events(pending_tinybird_events, pending_tinybird_ancestors)
+    inserted_event_count = 0
+    if pending_events:
+        event_repository = EventRepository.from_session(session)
+        _normalize_seed_event_batch(pending_events)
+        await _stamp_event_type_ids(session, pending_events)
+        event_ids, _ = await event_repository.insert_batch(
+            pending_events, render_nulls=True
+        )
+        inserted_event_count = len(event_ids)
+        if event_ids:
+            inserted = await event_repository.get_all(
+                select(EventModel).where(EventModel.id.in_(event_ids))
+            )
+            ancestors_by_event = await event_repository.get_ancestors_batch(event_ids)
+            await _flush_tinybird_events(inserted, ancestors_by_event)
 
     await session.commit()
     print(f"✅ Created organization '{name}' ({slug})")
     print(
-        f"   {len(org_products)} products, {num_customers} customers with timeline events"
+        f"   {len(org_products)} products, {num_customers} customers, "
+        f"{inserted_event_count} timeline events"
     )
 
 
@@ -2734,11 +2773,26 @@ def seeds_load(
         async with JobQueueManager.open(dramatiq.get_broker(), redis):
             engine = create_async_engine("script")
             sessionmaker = create_async_sessionmaker(engine)
-            async with sessionmaker() as session:
-                if new_org:
-                    await create_single_org_seed(session, redis, new_org)
-                else:
-                    await create_seed_data(session, redis)
+            sql_executions = 0
+
+            def count_sql_executions(*args: Any) -> None:
+                nonlocal sql_executions
+                sql_executions += 1
+
+            sqlalchemy_event.listen(
+                engine.sync_engine, "before_cursor_execute", count_sql_executions
+            )
+            try:
+                async with sessionmaker() as session:
+                    if new_org:
+                        await create_single_org_seed(session, redis, new_org)
+                    else:
+                        await create_seed_data(session, redis)
+            finally:
+                sqlalchemy_event.remove(
+                    engine.sync_engine, "before_cursor_execute", count_sql_executions
+                )
+                print(f"seed.sql executions={sql_executions}")
 
     asyncio.run(run())
 

@@ -88,7 +88,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return float(value) if value is not None else None
 
     async def insert_batch(
-        self, events: Sequence[dict[str, Any]]
+        self, events: Sequence[dict[str, Any]], *, render_nulls: bool = False
     ) -> tuple[Sequence[UUID], int]:
         if not events:
             return [], 0
@@ -104,6 +104,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .on_conflict_do_nothing(index_elements=["organization_id", "external_id"])
             .returning(Event.id)
         )
+        if render_nulls:
+            statement = statement.execution_options(render_nulls=True)
         result = await self.session.execute(statement, events)
         inserted_ids = [row[0] for row in result.all()]
 

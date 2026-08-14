@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 import pytest
+from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy import select
 
 from polar.event.repository import EventRepository
@@ -49,6 +50,55 @@ async def _resolve(
 
 @pytest.mark.asyncio
 class TestResolvePendingParents:
+    async def test_render_nulls_uses_single_insert(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        organization = await create_organization(save_fixture, account)
+        repository = EventRepository.from_session(session)
+        parent_id = uuid.uuid4()
+        events = [
+            {
+                "id": parent_id,
+                "name": "root",
+                "source": EventSource.user,
+                "organization_id": organization.id,
+                "external_id": "root",
+                "parent_id": None,
+            },
+            {
+                "name": "child",
+                "source": EventSource.user,
+                "organization_id": organization.id,
+                "external_id": None,
+                "parent_id": parent_id,
+            },
+            {
+                "name": "standalone",
+                "source": EventSource.system,
+                "organization_id": organization.id,
+                "external_id": None,
+                "parent_id": None,
+            },
+        ]
+        insert_count = 0
+
+        def count_event_inserts(*args: Any) -> None:
+            nonlocal insert_count
+            statement = args[2]
+            if statement.startswith("INSERT INTO events"):
+                insert_count += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        sqlalchemy_event.listen(bind, "before_cursor_execute", count_event_inserts)
+        try:
+            inserted_ids, _ = await repository.insert_batch(events, render_nulls=True)
+        finally:
+            sqlalchemy_event.remove(bind, "before_cursor_execute", count_event_inserts)
+
+        assert len(inserted_ids) == 3
+        assert insert_count == 1
+
     async def test_no_pending_events(
         self, save_fixture: SaveFixture, session: AsyncSession, account: Account
     ) -> None:

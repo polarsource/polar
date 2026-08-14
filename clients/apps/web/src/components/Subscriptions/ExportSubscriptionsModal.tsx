@@ -69,7 +69,10 @@ const ExportSubscriptionsModal: React.FC<ExportSubscriptionsModalProps> = ({
   const rangeLabel = formatExportRange(dateRange)
 
   const onExport = () => {
-    const url = new URL(getServerURL('/v1/subscriptions/export'))
+    const url = new URL(
+      getServerURL('/v1/subscriptions/export'),
+      window.location.origin,
+    )
     url.searchParams.set('organization_id', organization.id)
     if (productId) {
       url.searchParams.append('product_id', productId)

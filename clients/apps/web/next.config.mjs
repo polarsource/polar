@@ -18,6 +18,13 @@ if (
   process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = baseUrl
 }
 
+// On Vercel, deployment URLs change with every deployment, so unless a
+// frontend base URL is configured explicitly with a separate backend host,
+// derive it from the deployment's own URL.
+if (!process.env.NEXT_PUBLIC_FRONTEND_BASE_URL && process.env.VERCEL_URL) {
+  process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = `https://${process.env.VERCEL_URL}`
+}
+
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =
@@ -114,6 +121,8 @@ const nextConfig = {
   },
 
   images: {
+    // Vercel services deployments do not wire the image optimizer yet
+    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === '1',
     remotePatterns: [
       ...(process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
         ? [

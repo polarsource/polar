@@ -3,6 +3,35 @@ import { CONFIG } from '@/utils/config'
 import { Client, operations, schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
 
+const isApiSameOrigin = (): boolean => {
+  if (typeof window === 'undefined') return false
+  try {
+    return (
+      new URL(CONFIG.BASE_URL, window.location.origin).origin ===
+      window.location.origin
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Navigate to /auth after a completed verification step.
+ *
+ * When the API shares the frontend's origin, /auth redirects to the one-time
+ * GET /v1/auth/complete, which requires a hard browser navigation rather than
+ * a client-side route transition.
+ */
+export const navigateToAuthCompletion = (router: {
+  push: (href: string) => void
+}): void => {
+  if (isApiSameOrigin()) {
+    window.location.assign('/auth')
+  } else {
+    router.push('/auth')
+  }
+}
+
 export type LoginMethod =
   | 'email_otp'
   | 'totp'

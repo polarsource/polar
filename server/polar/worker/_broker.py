@@ -1,6 +1,5 @@
 import contextlib
 import contextvars
-from collections.abc import Callable
 from typing import Any, ClassVar
 
 import dramatiq
@@ -67,7 +66,7 @@ class SchedulerMiddleware(dramatiq.Middleware):
     """Middleware to manage scheduled jobs using APScheduler."""
 
     def __init__(self) -> None:
-        self.cron_triggers: list[tuple[Callable[..., Any], CronTrigger]] = []
+        self.cron_triggers: list[tuple[str, CronTrigger]] = []
 
     @property
     def actor_options(self) -> set[str]:
@@ -77,7 +76,7 @@ class SchedulerMiddleware(dramatiq.Middleware):
         self, broker: dramatiq.Broker, actor: dramatiq.Actor[Any, Any]
     ) -> None:
         if cron_trigger := actor.options.get("cron_trigger"):
-            self.cron_triggers.append((actor.send, cron_trigger))
+            self.cron_triggers.append((actor.actor_name, cron_trigger))
 
 
 scheduler_middleware = SchedulerMiddleware()
@@ -245,6 +244,14 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
         middleware.TimeLimit(time_limit=60_000),
         middleware.CurrentMessage(),
     ]
+
+    if settings.is_vercel():
+        # Vercel Queues transport, delivering into the subscriber Function
+        # declared in pyproject.toml. Local import: vercel-dramatiq is
+        # installed by the Vercel build, not declared as a dependency.
+        from vercel.integrations.dramatiq import VercelQueueBroker
+
+        return VercelQueueBroker(middleware=middleware_list)
 
     broker = RoutingRedisBroker(
         connection_pool=redis_pool,

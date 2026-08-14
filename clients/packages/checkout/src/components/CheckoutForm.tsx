@@ -194,7 +194,9 @@ const BaseCheckoutForm = ({
         return
       }
       clearErrors(name)
-      update({ [name]: contact }).catch(() => {})
+      update({ [name]: contact }).catch(() => {
+        /* API errors handled by provider */
+      })
     },
     [checkout, update, clearErrors],
   )

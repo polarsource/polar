@@ -21,6 +21,7 @@ from polar.models import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
+from polar.order.service import order as order_service
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.subscription import sorting
 from polar.subscription.repository import SubscriptionRepository
@@ -40,9 +41,13 @@ from ..layout import layout
 from ..orders.components import orders_datatable
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
-from .forms import CancelForm, UpdateBillingPeriodEndForm
+from .forms import CancelForm, UpdateBillingPeriodEndForm, build_update_status_form
 
 router = APIRouter()
+
+STATUS_TRANSITIONS: dict[SubscriptionStatus, set[SubscriptionStatus]] = {
+    SubscriptionStatus.past_due: {SubscriptionStatus.active},
+}
 
 
 # Description List Items
@@ -304,6 +309,16 @@ async def get(
                             hx_target="#modal",
                         ):
                             text("Update Billing Period End")
+                    if subscription.status in STATUS_TRANSITIONS:
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:update_status", id=subscription.id
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Update Status")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Subscription Details
@@ -658,3 +673,81 @@ async def update_billing_period_end(
                         text("Cancel")
                 with button(type="submit", variant="primary"):
                     text("Submit")
+
+
+@router.api_route(
+    "/{id}/update_status", name="subscriptions:update_status", methods=["GET", "POST"]
+)
+async def update_status(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    subscription_repository = SubscriptionRepository.from_session(session)
+    subscription = await subscription_repository.get_by_id(
+        id, options=subscription_repository.get_eager_options()
+    )
+
+    if subscription is None:
+        raise HTTPException(status_code=404)
+
+    targets = STATUS_TRANSITIONS.get(subscription.status, set())
+    if not targets:
+        await add_toast(
+            request, "This subscription's status cannot be updated.", "error"
+        )
+        return
+
+    update_status_form = build_update_status_form(
+        sorted(targets), subscription.status == SubscriptionStatus.past_due
+    )
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = update_status_form.model_validate_form(data)
+            if form.status not in targets:
+                await add_toast(
+                    request,
+                    f"Cannot update this subscription to {form.status.value}.",
+                    "error",
+                )
+                return
+            if (subscription.status, form.status) == (
+                SubscriptionStatus.past_due,
+                SubscriptionStatus.active,
+            ):
+                await subscription_service.mark_active(session, subscription)
+                if form.void_pending_orders:
+                    await order_service.void_pending_orders_for_subscription(
+                        session, subscription
+                    )
+            await add_toast(request, "Subscription status updated.", "success")
+            return HXRedirectResponse(
+                request, str(request.url_for("subscriptions:get", id=id)), 303
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Update subscription status", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with alert("warning", soft=True):
+                with tag.p():
+                    text(
+                        "This triggers the full lifecycle side effects: "
+                        "webhooks, customer emails and benefit grants or revokes."
+                    )
+            with update_status_form.render(
+                hx_post=str(request.url_for("subscriptions:update_status", id=id)),
+                hx_target="#modal",
+                classes="flex flex-col",
+                validation_error=validation_error,
+            ):
+                with tag.div(classes="modal-action"):
+                    with tag.form(method="dialog"):
+                        with button(ghost=True):
+                            text("Cancel")
+                    with button(type="submit", variant="primary"):
+                        text("Submit")

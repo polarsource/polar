@@ -41,6 +41,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       <div className="rounded-xl bg-blue-500 p-6 text-white">
         <p className="text-lg font-medium">🚀 Preview environment</p>
         <p>You are looking at a preview deployment</p>
+        <p>It changed</p>
       </div>
       <PlanUpsell organization={organization} />
       <OrganizationStatusBanner organization={organization} />

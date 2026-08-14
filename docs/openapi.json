@@ -420,11 +420,19 @@
             }
           },
           "403": {
-            "description": "You don't have the permission to update this organization.",
+            "description": "You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/NotPermitted"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/NotPermitted"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DisputeAutoAcceptNotEnabled"
+                    }
+                  ],
+                  "title": "Response 403 Organizations:Update"
                 }
               }
             }
@@ -633,14 +641,14 @@
                 {
                   "type": "string",
                   "format": "uuid4",
-                  "description": "The product ID."
+                  "description": "The discount ID."
                 },
                 {
                   "type": "array",
                   "items": {
                     "type": "string",
                     "format": "uuid4",
-                    "description": "The product ID."
+                    "description": "The discount ID."
                   }
                 },
                 {
@@ -775,6 +783,44 @@
               "title": "Canceled At Before"
             },
             "description": "Filter by cancellation date (before or equal to)."
+          },
+          {
+            "name": "started_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include subscriptions started after this date.",
+              "title": "Started After"
+            },
+            "description": "Only include subscriptions started after this date."
+          },
+          {
+            "name": "started_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include subscriptions started before this date.",
+              "title": "Started Before"
+            },
+            "description": "Only include subscriptions started before this date."
           },
           {
             "name": "page",
@@ -1043,10 +1089,154 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by organization ID.",
-              "title": "Organization Id"
+              "title": "OrganizationID Filter",
+              "description": "Filter by organization ID."
             },
             "description": "Filter by organization ID."
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "description": "The product ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "description": "The product ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ProductID Filter",
+              "description": "Filter by product ID."
+            },
+            "description": "Filter by product ID."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SubscriptionStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubscriptionStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status Filter",
+              "description": "Filter by subscription status."
+            },
+            "description": "Filter by subscription status."
+          },
+          {
+            "name": "cancel_at_period_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by subscriptions that are set to cancel at period end.",
+              "title": "Cancel At Period End"
+            },
+            "description": "Filter by subscriptions that are set to cancel at period end."
+          },
+          {
+            "name": "started_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include subscriptions started after this date. Must include a UTC offset.",
+              "title": "Started After"
+            },
+            "description": "Only include subscriptions started after this date. Must include a UTC offset."
+          },
+          {
+            "name": "started_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include subscriptions started before this date. Must include a UTC offset.",
+              "title": "Started Before"
+            },
+            "description": "Only include subscriptions started before this date. Must include a UTC offset."
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Time zone used to render dates in the CSV.",
+              "default": "UTC",
+              "title": "Timezone"
+            },
+            "description": "Time zone used to render dates in the CSV."
+          },
+          {
+            "name": "columns",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SubscriptionExportColumn"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubscriptionExportColumn"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.",
+              "title": "Columns"
+            },
+            "description": "Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval."
           }
         ],
         "responses": {
@@ -1080,11 +1270,11 @@
         "x-codeSamples": [
           {
             "lang": "Python (New SDK)",
-            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.export()\nprint(response)\n"
+            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.export(\n    timezone='UTC',\n)\nprint(response)\n"
           },
           {
             "lang": "TypeScript (New SDK)",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.export();\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.export(\n  {\n    \"timezone\": \"UTC\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -1252,11 +1442,19 @@
             }
           },
           "403": {
-            "description": "Subscription is already canceled or will be at the end of the period.",
+            "description": "Subscription is already canceled or will be at the end of the period, or is not active.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlreadyCanceledSubscription"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AlreadyCanceledSubscription"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InactiveSubscription"
+                    }
+                  ],
+                  "title": "Response 403 Subscriptions:Update"
                 }
               }
             }
@@ -2606,6 +2804,149 @@
           {
             "lang": "TypeScript (New SDK)",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.benefits.delete(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
+          }
+        ]
+      }
+    },
+    "/v1/benefits/{id}/files": {
+      "get": {
+        "tags": [
+          "benefits",
+          "public"
+        ],
+        "summary": "List Benefit Files",
+        "description": "List the downloadable files for a benefit with their download statistics.\n\n**Scopes**: `benefits:read` `benefits:write`",
+        "operationId": "benefits:files",
+        "security": [
+          {
+            "oidc": [
+              "benefits:read",
+              "benefits:write"
+            ]
+          },
+          {
+            "pat": [
+              "benefits:read",
+              "benefits:write"
+            ]
+          },
+          {
+            "oat": [
+              "benefits:read",
+              "benefits:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The benefit ID.",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Page number, defaults to 1.",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, defaults to 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Size of a page, defaults to 10. Maximum is 100.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Size of a page, defaults to 10. Maximum is 100."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResource_BenefitDownloadableFile_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Benefit not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-pagination": {
+          "type": "offsetLimit",
+          "inputs": [
+            {
+              "name": "page",
+              "in": "parameters",
+              "type": "page"
+            },
+            {
+              "name": "limit",
+              "in": "parameters",
+              "type": "limit"
+            }
+          ],
+          "outputs": {
+            "results": "$.items",
+            "numPages": "$.pagination.max_page"
+          }
+        },
+        "x-speakeasy-group": "benefits",
+        "x-speakeasy-name-override": "files",
+        "x-polar-pagination": {
+          "type": "page_limit",
+          "item_schema": {
+            "$ref": "#/components/schemas/BenefitDownloadableFile"
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python (New SDK)",
+            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.benefits.iter_files(\n    '00000000-0000-4000-8000-000000000000',\n    page=1,\n    limit=10,\n):\n    print(item)\n"
+          },
+          {
+            "lang": "TypeScript (New SDK)",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.benefits.iterFiles(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
       }
@@ -4978,6 +5319,68 @@
             "description": "Filter by subscription ID."
           },
           {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OrderStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status Filter",
+              "description": "Filter by order status."
+            },
+            "description": "Filter by order status."
+          },
+          {
+            "name": "created_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include orders created after this date",
+              "title": "Created After"
+            },
+            "description": "Only include orders created after this date"
+          },
+          {
+            "name": "created_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include orders created before this date",
+              "title": "Created Before"
+            },
+            "description": "Only include orders created before this date"
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -5265,6 +5668,104 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OrderStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status Filter",
+              "description": "Filter by order status."
+            },
+            "description": "Filter by order status."
+          },
+          {
+            "name": "created_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include orders created after this date. Must include a UTC offset.",
+              "title": "Created After"
+            },
+            "description": "Only include orders created after this date. Must include a UTC offset."
+          },
+          {
+            "name": "created_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include orders created before this date. Must include a UTC offset.",
+              "title": "Created Before"
+            },
+            "description": "Only include orders created before this date. Must include a UTC offset."
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Time zone used to render dates in the CSV.",
+              "default": "UTC",
+              "title": "Timezone"
+            },
+            "description": "Time zone used to render dates in the CSV."
+          },
+          {
+            "name": "columns",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OrderExportColumn"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderExportColumn"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number.",
+              "title": "Columns"
+            },
+            "description": "Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number."
           }
         ],
         "responses": {
@@ -5298,11 +5799,11 @@
         "x-codeSamples": [
           {
             "lang": "Python (New SDK)",
-            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.export()\nprint(response)\n"
+            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.export(\n    timezone='UTC',\n)\nprint(response)\n"
           },
           {
             "lang": "TypeScript (New SDK)",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.export();\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.export(\n  {\n    \"timezone\": \"UTC\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -16342,7 +16843,7 @@
             "description": "Payment method deleted."
           },
           "400": {
-            "description": "Payment method is used by active subscription(s).",
+            "description": "Payment method is still needed to bill a subscription.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19661,6 +20162,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The subscription has no payment method to charge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodRequired"
                 }
               }
             }
@@ -27221,6 +27732,76 @@
         ],
         "title": "AppealNotRejectedError"
       },
+      "AssistantBlockPart": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "block",
+            "title": "Kind",
+            "default": "block"
+          },
+          "block": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextBlock"
+              },
+              {
+                "$ref": "#/components/schemas/MetricChartBlock"
+              },
+              {
+                "$ref": "#/components/schemas/InsightCardsBlock"
+              },
+              {
+                "$ref": "#/components/schemas/EntityListBlock"
+              },
+              {
+                "$ref": "#/components/schemas/DataTableBlock"
+              },
+              {
+                "$ref": "#/components/schemas/CustomerCardBlock"
+              }
+            ],
+            "title": "Block",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "customer_card": "#/components/schemas/CustomerCardBlock",
+                "data_table": "#/components/schemas/DataTableBlock",
+                "entity_list": "#/components/schemas/EntityListBlock",
+                "insight_cards": "#/components/schemas/InsightCardsBlock",
+                "metric_chart": "#/components/schemas/MetricChartBlock",
+                "text": "#/components/schemas/TextBlock"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "block"
+        ],
+        "title": "AssistantBlockPart",
+        "description": "A renderable block, at the position the model placed it."
+      },
+      "AssistantTextPart": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "text",
+            "title": "Kind",
+            "default": "text"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "AssistantTextPart",
+        "description": "A run of assistant prose, as it was streamed."
+      },
       "AttachedCustomField": {
         "properties": {
           "custom_field_id": {
@@ -30008,6 +30589,168 @@
           "type"
         ],
         "title": "BenefitDiscordUpdate"
+      },
+      "BenefitDownloadableFile": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "storage_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Version"
+          },
+          "checksum_etag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Etag"
+          },
+          "checksum_sha256_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Sha256 Base64"
+          },
+          "checksum_sha256_hex": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Sha256 Hex"
+          },
+          "last_modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified At"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "service": {
+            "type": "string",
+            "const": "downloadable",
+            "title": "Service"
+          },
+          "is_uploaded": {
+            "type": "boolean",
+            "title": "Is Uploaded"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "flagged_malicious_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flagged Malicious At"
+          },
+          "downloaders": {
+            "type": "integer",
+            "title": "Downloaders",
+            "description": "Number of distinct customers or members who downloaded the file."
+          },
+          "downloads": {
+            "type": "integer",
+            "title": "Downloads",
+            "description": "Total number of downloads for the file."
+          },
+          "size_readable": {
+            "type": "string",
+            "title": "Size Readable",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "name",
+          "path",
+          "mime_type",
+          "size",
+          "storage_version",
+          "checksum_etag",
+          "checksum_sha256_base64",
+          "checksum_sha256_hex",
+          "last_modified_at",
+          "version",
+          "service",
+          "is_uploaded",
+          "created_at",
+          "flagged_malicious_at",
+          "downloaders",
+          "downloads",
+          "size_readable"
+        ],
+        "title": "BenefitDownloadableFile"
       },
       "BenefitDownloadables": {
         "properties": {
@@ -35354,6 +36097,50 @@
         ],
         "title": "CaseRepliesNotSupportedError"
       },
+      "CatalogImportBlocked": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CatalogImportBlocked",
+            "title": "Error",
+            "examples": [
+              "CatalogImportBlocked"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CatalogImportBlocked"
+      },
+      "CatalogImportNotReady": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CatalogImportNotReady",
+            "title": "Error",
+            "examples": [
+              "CatalogImportNotReady"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CatalogImportNotReady"
+      },
       "ChannelNamePreviewRequest": {
         "properties": {
           "organization_id": {
@@ -36818,6 +37605,9 @@
           },
           {
             "$ref": "#/components/schemas/TrialAlreadyRedeemed"
+          },
+          {
+            "$ref": "#/components/schemas/DiscountRedemptionLimitReached"
           }
         ]
       },
@@ -41221,6 +42011,148 @@
         "title": "CheckoutUpdatePublic",
         "description": "Update an existing checkout session using the client secret."
       },
+      "ColumnFormat": {
+        "type": "string",
+        "enum": [
+          "text",
+          "currency",
+          "datetime",
+          "badge",
+          "avatar"
+        ],
+        "title": "ColumnFormat"
+      },
+      "CompassThreadMessageSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "parts": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AssistantTextPart"
+                },
+                {
+                  "$ref": "#/components/schemas/AssistantBlockPart"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "block": "#/components/schemas/AssistantBlockPart",
+                  "text": "#/components/schemas/AssistantTextPart"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Parts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "prompt",
+          "parts"
+        ],
+        "title": "CompassThreadMessageSchema",
+        "description": "One completed turn: the user's prompt and the rendered answer."
+      },
+      "CompassThreadSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "organization_id",
+          "title"
+        ],
+        "title": "CompassThreadSchema",
+        "description": "An assistant conversation thread."
+      },
+      "CompassThreadUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "title": "CompassThreadUpdate"
+      },
       "ConfidenceLevel": {
         "type": "string",
         "enum": [
@@ -44704,6 +45636,56 @@
         ],
         "title": "CustomerCancellationReason"
       },
+      "CustomerCardBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "customer_card",
+            "title": "Type",
+            "default": "customer_card"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "name",
+          "avatar_url",
+          "created_at"
+        ],
+        "title": "CustomerCardBlock",
+        "description": "A single customer's identity header, above their orders/subscriptions."
+      },
       "CustomerCreate": {
         "oneOf": [
           {
@@ -45307,6 +46289,33 @@
         ],
         "title": "CustomerEmailUpdateVerifyResponse"
       },
+      "CustomerGrowthPeriod": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The start of the period."
+          },
+          "new_customers": {
+            "type": "integer",
+            "title": "New Customers",
+            "description": "The number of customers created during the period."
+          },
+          "total_customers": {
+            "type": "integer",
+            "title": "Total Customers",
+            "description": "The cumulative number of customers at the end of the period."
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp",
+          "new_customers",
+          "total_customers"
+        ],
+        "title": "CustomerGrowthPeriod"
+      },
       "CustomerIndividual": {
         "properties": {
           "id": {
@@ -45497,6 +46506,19 @@
             "title": "Deleted At",
             "description": "Timestamp for when the customer was soft deleted."
           },
+          "first_user_event_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First User Event At",
+            "description": "Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."
+          },
           "avatar_url": {
             "anyOf": [
               {
@@ -45527,6 +46549,7 @@
           "tax_id",
           "organization_id",
           "deleted_at",
+          "first_user_event_at",
           "avatar_url"
         ],
         "title": "CustomerIndividual",
@@ -48909,6 +49932,19 @@
             "title": "Deleted At",
             "description": "Timestamp for when the customer was soft deleted."
           },
+          "first_user_event_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First User Event At",
+            "description": "Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."
+          },
           "avatar_url": {
             "anyOf": [
               {
@@ -48963,6 +49999,7 @@
           "tax_id",
           "organization_id",
           "deleted_at",
+          "first_user_event_at",
           "avatar_url",
           "active_subscriptions",
           "granted_benefits",
@@ -49571,6 +50608,19 @@
             "title": "Deleted At",
             "description": "Timestamp for when the customer was soft deleted."
           },
+          "first_user_event_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First User Event At",
+            "description": "Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."
+          },
           "avatar_url": {
             "anyOf": [
               {
@@ -49624,6 +50674,7 @@
           "tax_id",
           "organization_id",
           "deleted_at",
+          "first_user_event_at",
           "avatar_url",
           "active_subscriptions",
           "granted_benefits",
@@ -50756,6 +51807,19 @@
             "title": "Deleted At",
             "description": "Timestamp for when the customer was soft deleted."
           },
+          "first_user_event_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First User Event At",
+            "description": "Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."
+          },
           "avatar_url": {
             "anyOf": [
               {
@@ -50785,6 +51849,7 @@
           "tax_id",
           "organization_id",
           "deleted_at",
+          "first_user_event_at",
           "avatar_url"
         ],
         "title": "CustomerTeam",
@@ -51545,6 +52610,99 @@
         ],
         "title": "CustomerWalletSortProperty"
       },
+      "DataTableBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "data_table",
+            "title": "Type",
+            "default": "data_table"
+          },
+          "entity": {
+            "type": "string",
+            "title": "Entity",
+            "description": "What the rows are, e.g. `subscriptions`."
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "Heading rendered above the table."
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/DataTableColumn"
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity",
+          "title",
+          "columns",
+          "rows",
+          "total_count"
+        ],
+        "title": "DataTableBlock",
+        "description": "Tabular entities (orders, subscriptions, customers, ...)."
+      },
+      "DataTableColumn": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "format": {
+            "$ref": "#/components/schemas/ColumnFormat",
+            "default": "text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "DataTableColumn"
+      },
       "DiscordGuild": {
         "properties": {
           "name": {
@@ -51729,6 +52887,20 @@
             ],
             "title": "Max Redemptions",
             "description": "Optional maximum number of times the discount can be redeemed."
+          },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Optional maximum number of times the discount can be redeemed by a single customer."
           },
           "products": {
             "anyOf": [
@@ -51967,6 +53139,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -52005,6 +53189,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
           "products"
@@ -52133,6 +53318,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -52164,6 +53361,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id"
         ],
@@ -52294,6 +53492,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -52333,6 +53543,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
           "products"
@@ -52465,6 +53676,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -52497,6 +53720,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id"
         ],
@@ -52589,6 +53813,20 @@
             ],
             "title": "Max Redemptions",
             "description": "Optional maximum number of times the discount can be redeemed."
+          },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Optional maximum number of times the discount can be redeemed by a single customer."
           },
           "products": {
             "anyOf": [
@@ -52763,6 +54001,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -52799,6 +54049,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
           "products"
@@ -52905,6 +54156,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -52934,6 +54197,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id"
         ],
@@ -53042,6 +54306,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -53079,6 +54355,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
           "products"
@@ -53189,6 +54466,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -53219,6 +54508,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id"
         ],
@@ -53383,6 +54673,28 @@
         "title": "DiscountProduct",
         "description": "A product that a discount can be applied to."
       },
+      "DiscountRedemptionLimitReached": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "DiscountRedemptionLimitReached",
+            "title": "Error",
+            "examples": [
+              "DiscountRedemptionLimitReached"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "DiscountRedemptionLimitReached"
+      },
       "DiscountSortProperty": {
         "type": "string",
         "enum": [
@@ -53501,6 +54813,20 @@
             ],
             "title": "Max Redemptions",
             "description": "Optional maximum number of times the discount can be redeemed."
+          },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Optional maximum number of times the discount can be redeemed by a single customer."
           },
           "duration": {
             "anyOf": [
@@ -53789,6 +55115,28 @@
         "title": "Dispute",
         "description": "Schema representing a dispute.\n\nA dispute is a challenge raised by a customer or their bank regarding a payment."
       },
+      "DisputeAutoAcceptNotEnabled": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "DisputeAutoAcceptNotEnabled",
+            "title": "Error",
+            "examples": [
+              "DisputeAutoAcceptNotEnabled"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "DisputeAutoAcceptNotEnabled"
+      },
       "DisputeCustomer": {
         "properties": {
           "id": {
@@ -53984,6 +55332,19 @@
             "title": "Deleted At",
             "description": "Timestamp for when the customer was soft deleted."
           },
+          "first_user_event_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First User Event At",
+            "description": "Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."
+          },
           "avatar_url": {
             "anyOf": [
               {
@@ -54013,6 +55374,7 @@
           "tax_id",
           "organization_id",
           "deleted_at",
+          "first_user_event_at",
           "avatar_url"
         ],
         "title": "DisputeCustomer"
@@ -54363,6 +55725,18 @@
             "format": "date-time",
             "title": "Created At"
           },
+          "flagged_malicious_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flagged Malicious At"
+          },
           "size_readable": {
             "type": "string",
             "title": "Size Readable",
@@ -54386,6 +55760,7 @@
           "service",
           "is_uploaded",
           "created_at",
+          "flagged_malicious_at",
           "size_readable"
         ],
         "title": "DownloadableFileRead",
@@ -54471,6 +55846,77 @@
           "email"
         ],
         "title": "EmailUpdateRequest"
+      },
+      "EntityListBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "entity_list",
+            "title": "Type",
+            "default": "entity_list"
+          },
+          "entity": {
+            "type": "string",
+            "title": "Entity",
+            "description": "What the items are, e.g. `orders`."
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "Heading rendered above the list."
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/DataTableColumn"
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity",
+          "title",
+          "columns",
+          "rows",
+          "total_count"
+        ],
+        "title": "EntityListBlock",
+        "description": "A few entities as a compact list; same shape as the table so the\nclient formats values (currency, dates) identically in both."
       },
       "Event": {
         "oneOf": [
@@ -56054,6 +57500,28 @@
         ],
         "title": "IdentityVerificationStatus"
       },
+      "InactiveSubscription": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "InactiveSubscription",
+            "title": "Error",
+            "examples": [
+              "InactiveSubscription"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "InactiveSubscription"
+      },
       "Insight": {
         "properties": {
           "id": {
@@ -56169,6 +57637,29 @@
         ],
         "title": "Insight",
         "description": "A computed, narrated reading of the business with a drill-down."
+      },
+      "InsightCardsBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "insight_cards",
+            "title": "Type",
+            "default": "insight_cards"
+          },
+          "insights": {
+            "items": {
+              "$ref": "#/components/schemas/Insight"
+            },
+            "type": "array",
+            "title": "Insights"
+          }
+        },
+        "type": "object",
+        "required": [
+          "insights"
+        ],
+        "title": "InsightCardsBlock",
+        "description": "Compass insights, rendered with the same card as the feed."
       },
       "InsightCategory": {
         "type": "string",
@@ -57122,6 +58613,19 @@
             "title": "Deleted At",
             "description": "Timestamp for when the customer was soft deleted."
           },
+          "first_user_event_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First User Event At",
+            "description": "Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."
+          },
           "avatar_url": {
             "anyOf": [
               {
@@ -57151,6 +58655,7 @@
           "tax_id",
           "organization_id",
           "deleted_at",
+          "first_user_event_at",
           "avatar_url"
         ],
         "title": "LicenseKeyCustomer"
@@ -57719,6 +59224,26 @@
         ],
         "title": "ListResourceWithCursorPagination[Event]"
       },
+      "ListResource_BenefitDownloadableFile_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BenefitDownloadableFile"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[BenefitDownloadableFile]"
+      },
       "ListResource_BenefitGrant_": {
         "properties": {
           "items": {
@@ -57799,6 +59324,46 @@
           "pagination"
         ],
         "title": "ListResource[Checkout]"
+      },
+      "ListResource_CompassThreadMessageSchema_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CompassThreadMessageSchema"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[CompassThreadMessageSchema]"
+      },
+      "ListResource_CompassThreadSchema_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CompassThreadSchema"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[CompassThreadSchema]"
       },
       "ListResource_CustomField_": {
         "properties": {
@@ -58836,6 +60401,65 @@
         ],
         "title": "MaintainerAccountCreditsGrantedNotificationPayload"
       },
+      "MaintainerFileFlaggedMaliciousNotification": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "type": {
+            "type": "string",
+            "const": "MaintainerFileFlaggedMaliciousNotification",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/MaintainerFileFlaggedMaliciousNotificationPayload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "type",
+          "payload"
+        ],
+        "title": "MaintainerFileFlaggedMaliciousNotification"
+      },
+      "MaintainerFileFlaggedMaliciousNotificationPayload": {
+        "properties": {
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "organization_name": {
+            "type": "string",
+            "title": "Organization Name"
+          },
+          "organization_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Slug"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_name",
+          "organization_name"
+        ],
+        "title": "MaintainerFileFlaggedMaliciousNotificationPayload"
+      },
       "MaintainerNewPaidSubscriptionNotification": {
         "properties": {
           "id": {
@@ -59166,6 +60790,119 @@
           "order_url"
         ],
         "title": "MaintainerNewProductSaleNotificationPayload"
+      },
+      "MaintainerSubscriptionRenewalNotification": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "type": {
+            "type": "string",
+            "const": "MaintainerSubscriptionRenewalNotification",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/MaintainerSubscriptionRenewalNotificationPayload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "type",
+          "payload"
+        ],
+        "title": "MaintainerSubscriptionRenewalNotification"
+      },
+      "MaintainerSubscriptionRenewalNotificationPayload": {
+        "properties": {
+          "product_name": {
+            "type": "string",
+            "title": "Product Name"
+          },
+          "product_price_amount": {
+            "type": "integer",
+            "title": "Product Price Amount"
+          },
+          "customer_name": {
+            "type": "string",
+            "title": "Customer Name",
+            "default": ""
+          },
+          "customer_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Email"
+          },
+          "organization_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Slug"
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id"
+          },
+          "recurring_interval": {
+            "type": "string",
+            "title": "Recurring Interval"
+          },
+          "recurring_interval_count": {
+            "type": "integer",
+            "title": "Recurring Interval Count",
+            "default": 1
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "usd"
+          },
+          "formatted_price_amount": {
+            "type": "string",
+            "title": "Formatted Price Amount",
+            "readOnly": true
+          },
+          "formatted_recurring_interval": {
+            "type": "string",
+            "title": "Formatted Recurring Interval",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_name",
+          "product_price_amount",
+          "recurring_interval",
+          "formatted_price_amount",
+          "formatted_recurring_interval"
+        ],
+        "title": "MaintainerSubscriptionRenewalNotificationPayload"
       },
       "ManualRetryLimitExceeded": {
         "properties": {
@@ -59673,6 +61410,91 @@
         ],
         "title": "MerchantMigrationCreate"
       },
+      "MerchantMigrationImportReport": {
+        "properties": {
+          "step": {
+            "$ref": "#/components/schemas/MerchantMigrationStep",
+            "description": "The migration step after the import."
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/MerchantMigrationImportResult"
+            },
+            "type": "array",
+            "title": "Results",
+            "description": "Per-entity counts of what was imported vs skipped."
+          }
+        },
+        "type": "object",
+        "required": [
+          "step",
+          "results"
+        ],
+        "title": "MerchantMigrationImportReport"
+      },
+      "MerchantMigrationImportRequest": {
+        "properties": {
+          "record_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Ids",
+            "description": "The ledger record ids to import (from the records listing). When omitted, every importable record is imported (subject to `exclude_record_ids`). Records not selected stay pending."
+          },
+          "exclude_record_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude Record Ids",
+            "description": "Import every importable record except these \u2014 the opt-out selection for large catalogs. Ignored when `record_ids` is set."
+          }
+        },
+        "type": "object",
+        "title": "MerchantMigrationImportRequest"
+      },
+      "MerchantMigrationImportResult": {
+        "properties": {
+          "entity": {
+            "$ref": "#/components/schemas/PrecheckEntity",
+            "description": "The source entity type."
+          },
+          "imported": {
+            "type": "integer",
+            "title": "Imported",
+            "description": "How many were created or reused in Polar."
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped",
+            "description": "How many were left on the source (not importable)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity",
+          "imported",
+          "skipped"
+        ],
+        "title": "MerchantMigrationImportResult"
+      },
       "MerchantMigrationNotEnabled": {
         "properties": {
           "error": {
@@ -59719,6 +61541,19 @@
       },
       "MerchantMigrationRecordItem": {
         "properties": {
+          "record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Id",
+            "description": "The ledger record id, used to select this row for import. Null for price rows, which are imported together with their product."
+          },
           "entity": {
             "$ref": "#/components/schemas/PrecheckEntity",
             "description": "The source entity type."
@@ -59743,11 +61578,58 @@
               }
             ],
             "title": "Subtitle",
-            "description": "Secondary detail (interval, amount, country, status)."
+            "description": "Secondary detail (lifecycle status, country)."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "description": "Recurring price in the currency's smallest unit (cents for USD), for priced rows."
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency",
+            "description": "ISO currency for `amount`."
+          },
+          "recurring_interval": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurring Interval",
+            "description": "Billing interval for `amount` (e.g. `month`, `year`)."
           },
           "status": {
             "$ref": "#/components/schemas/PrecheckRecordStatus",
             "description": "Whether this record will be imported or stays on the source."
+          },
+          "import_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MerchantMigrationRecordStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product."
           },
           "reason": {
             "anyOf": [
@@ -59759,7 +61641,7 @@
               }
             ],
             "title": "Reason",
-            "description": "Why the record is skipped, if it is."
+            "description": "Why the record is skipped, or what to know about it if it isn't."
           },
           "reason_code": {
             "anyOf": [
@@ -59771,20 +61653,115 @@
               }
             ],
             "title": "Reason Code",
-            "description": "Stable code for the skip reason, if any."
+            "description": "Stable code for `reason`, if any."
+          },
+          "reason_level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrecheckReasonLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason."
+          }
+        },
+        "type": "object",
+        "required": [
+          "record_id",
+          "entity",
+          "source_id",
+          "title",
+          "subtitle",
+          "amount",
+          "currency",
+          "recurring_interval",
+          "status",
+          "import_status",
+          "reason",
+          "reason_code",
+          "reason_level"
+        ],
+        "title": "MerchantMigrationRecordItem"
+      },
+      "MerchantMigrationRecordStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "imported",
+          "skipped",
+          "failed"
+        ],
+        "title": "MerchantMigrationRecordStatus"
+      },
+      "MerchantMigrationRecordSummary": {
+        "properties": {
+          "entities": {
+            "items": {
+              "$ref": "#/components/schemas/MerchantMigrationRecordSummaryEntity"
+            },
+            "type": "array",
+            "title": "Entities",
+            "description": "Per-entity counts, for the listable entities only."
+          },
+          "action_required": {
+            "type": "integer",
+            "title": "Action Required",
+            "description": "How many records the pre-check flagged for the merchant to fix, across entities. Classification only, so a flagged record that has since been imported still counts."
+          }
+        },
+        "type": "object",
+        "required": [
+          "entities",
+          "action_required"
+        ],
+        "title": "MerchantMigrationRecordSummary",
+        "description": "Every count the review UI needs, from one classification pass."
+      },
+      "MerchantMigrationRecordSummaryEntity": {
+        "properties": {
+          "entity": {
+            "$ref": "#/components/schemas/PrecheckEntity",
+            "description": "The source entity type."
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "How many were read from the source."
+          },
+          "importable": {
+            "type": "integer",
+            "title": "Importable",
+            "description": "How many will be imported into Polar."
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped",
+            "description": "How many won't be imported and stay on the source."
+          },
+          "imported": {
+            "type": "integer",
+            "title": "Imported",
+            "description": "How many are already in Polar."
+          },
+          "selectable": {
+            "type": "integer",
+            "title": "Selectable",
+            "description": "How many an import would actually move: importable by the pre-check and still pending in the ledger."
           }
         },
         "type": "object",
         "required": [
           "entity",
-          "source_id",
-          "title",
-          "subtitle",
-          "status",
-          "reason",
-          "reason_code"
+          "total",
+          "importable",
+          "skipped",
+          "imported",
+          "selectable"
         ],
-        "title": "MerchantMigrationRecordItem"
+        "title": "MerchantMigrationRecordSummaryEntity",
+        "description": "The pre-check's per-entity counts, plus where the ledger has got to."
       },
       "MerchantMigrationSourcePlatform": {
         "type": "string",
@@ -60625,6 +62602,66 @@
         ],
         "title": "Metric",
         "description": "Information about a metric."
+      },
+      "MetricChartBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "metric_chart",
+            "title": "Type",
+            "default": "metric_chart"
+          },
+          "metric": {
+            "type": "string",
+            "title": "Metric",
+            "description": "Metric slug, e.g. `monthly_recurring_revenue`."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human-readable metric name."
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "description": "Metric unit type, e.g. `currency` or `scalar`."
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MetricChartPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric",
+          "label",
+          "unit",
+          "points"
+        ],
+        "title": "MetricChartBlock",
+        "description": "A single metric's series over the requested window."
+      },
+      "MetricChartPoint": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp",
+          "value"
+        ],
+        "title": "MetricChartPoint"
       },
       "MetricDashboardCreate": {
         "properties": {
@@ -63218,15 +65255,23 @@
                   "$ref": "#/components/schemas/MaintainerNewProductSaleNotification"
                 },
                 {
+                  "$ref": "#/components/schemas/MaintainerSubscriptionRenewalNotification"
+                },
+                {
                   "$ref": "#/components/schemas/MaintainerAccountCreditsGrantedNotification"
+                },
+                {
+                  "$ref": "#/components/schemas/MaintainerFileFlaggedMaliciousNotification"
                 }
               ],
               "discriminator": {
                 "propertyName": "type",
                 "mapping": {
                   "MaintainerAccountCreditsGrantedNotification": "#/components/schemas/MaintainerAccountCreditsGrantedNotification",
+                  "MaintainerFileFlaggedMaliciousNotification": "#/components/schemas/MaintainerFileFlaggedMaliciousNotification",
                   "MaintainerNewPaidSubscriptionNotification": "#/components/schemas/MaintainerNewPaidSubscriptionNotification",
-                  "MaintainerNewProductSaleNotification": "#/components/schemas/MaintainerNewProductSaleNotification"
+                  "MaintainerNewProductSaleNotification": "#/components/schemas/MaintainerNewProductSaleNotification",
+                  "MaintainerSubscriptionRenewalNotification": "#/components/schemas/MaintainerSubscriptionRenewalNotification"
                 }
               }
             },
@@ -64426,7 +66471,8 @@
           "purchase",
           "subscription_create",
           "subscription_cycle",
-          "subscription_update"
+          "subscription_update",
+          "subscription_meter_cycle"
         ],
         "title": "OrderBillingReason"
       },
@@ -64438,7 +66484,8 @@
           "subscription_cycle",
           "subscription_cycle_after_trial",
           "subscription_cancel",
-          "subscription_update"
+          "subscription_update",
+          "subscription_meter_cycle"
         ],
         "title": "OrderBillingReasonInternal",
         "description": "Internal billing reasons with additional granularity."
@@ -64769,6 +66816,19 @@
             "title": "Deleted At",
             "description": "Timestamp for when the customer was soft deleted."
           },
+          "first_user_event_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First User Event At",
+            "description": "Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."
+          },
           "avatar_url": {
             "anyOf": [
               {
@@ -64798,9 +66858,32 @@
           "tax_id",
           "organization_id",
           "deleted_at",
+          "first_user_event_at",
           "avatar_url"
         ],
         "title": "OrderCustomer"
+      },
+      "OrderExportColumn": {
+        "type": "string",
+        "enum": [
+          "email",
+          "created_at",
+          "product",
+          "net_amount",
+          "currency",
+          "status",
+          "invoice_number",
+          "customer_name",
+          "billing_name",
+          "billing_country",
+          "subtotal_amount",
+          "discount_amount",
+          "tax_amount",
+          "total_amount",
+          "refunded_amount",
+          "billing_reason"
+        ],
+        "title": "OrderExportColumn"
       },
       "OrderFinalize": {
         "properties": {
@@ -66418,6 +68501,19 @@
             "title": "Details Submitted At",
             "description": "When the business details were submitted for review."
           },
+          "onboarding_resubmission_requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Resubmission Requested At",
+            "description": "When Polar requested that the organization review and resubmit its onboarding information, if applicable."
+          },
           "sso_enforced": {
             "type": "boolean",
             "title": "Sso Enforced",
@@ -66454,6 +68550,23 @@
           "customer_portal_settings": {
             "$ref": "#/components/schemas/OrganizationCustomerPortalSettings",
             "description": "Settings related to the customer portal"
+          },
+          "dispute_settings": {
+            "$ref": "#/components/schemas/OrganizationDisputeSettings",
+            "description": "Settings related to disputes"
+          },
+          "embed_hosts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Embed Hosts",
+            "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."
+          },
+          "embed_hosts_enforced": {
+            "type": "boolean",
+            "title": "Embed Hosts Enforced",
+            "description": "Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone."
           },
           "country": {
             "anyOf": [
@@ -67015,6 +69128,7 @@
           "socials",
           "status",
           "details_submitted_at",
+          "onboarding_resubmission_requested_at",
           "sso_enforced",
           "default_presentment_currency",
           "default_tax_behavior",
@@ -67022,6 +69136,9 @@
           "subscription_settings",
           "customer_email_settings",
           "customer_portal_settings",
+          "dispute_settings",
+          "embed_hosts",
+          "embed_hosts_enforced",
           "account_id",
           "payout_account_id",
           "capabilities"
@@ -68461,6 +70578,10 @@
             "type": "boolean",
             "title": "Order Confirmation"
           },
+          "payment_method_expiration_reminder": {
+            "type": "boolean",
+            "title": "Payment Method Expiration Reminder"
+          },
           "subscription_cancellation": {
             "type": "boolean",
             "title": "Subscription Cancellation"
@@ -68513,6 +70634,7 @@
         "type": "object",
         "required": [
           "order_confirmation",
+          "payment_method_expiration_reminder",
           "subscription_cancellation",
           "subscription_confirmation",
           "subscription_cycled",
@@ -68722,6 +70844,94 @@
         "type": "object",
         "title": "OrganizationDetails"
       },
+      "OrganizationDisputeSettings": {
+        "properties": {
+          "auto_accept_below_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Accept Below Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "auto_accept_below_amount"
+        ],
+        "title": "OrganizationDisputeSettings",
+        "description": "`auto_accept_below_amount` is in Polar's settlement currency (USD)."
+      },
+      "OrganizationDisputeSettingsUpdate": {
+        "properties": {
+          "auto_accept_below_amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Accept Below Amount",
+            "description": "Concede disputes below this amount, in USD cents, without asking the organization. A dispute charged in another currency converts at the rate its payment settled at. `null` turns it off. The disputed amount and the processor's dispute fee are still deducted."
+          }
+        },
+        "type": "object",
+        "title": "OrganizationDisputeSettingsUpdate"
+      },
+      "OrganizationEmbedStatus": {
+        "properties": {
+          "has_embedded": {
+            "type": "boolean",
+            "title": "Has Embedded",
+            "description": "Whether this organization has ever opened an embedded checkout."
+          },
+          "embed_hosts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Embed Hosts",
+            "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."
+          },
+          "embed_hosts_enforced": {
+            "type": "boolean",
+            "title": "Embed Hosts Enforced",
+            "description": "Whether an embedding page's origin must match `embed_hosts`."
+          },
+          "shared_hosts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Shared Hosts",
+            "description": "Entries of `embed_hosts` admitting every tenant of a platform, such as `*.vercel.app`."
+          },
+          "uncovered_hosts": {
+            "items": {
+              "$ref": "#/components/schemas/OrganizationUncoveredHost"
+            },
+            "type": "array",
+            "title": "Uncovered Hosts",
+            "description": "Hosts seen embedding this organization's checkout that `embed_hosts` would refuse. Anyone can name an origin when they create a checkout, so these are observations, not hosts we vouch for."
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_embedded",
+          "embed_hosts",
+          "embed_hosts_enforced",
+          "shared_hosts",
+          "uncovered_hosts"
+        ],
+        "title": "OrganizationEmbedStatus"
+      },
       "OrganizationFeatureSettings": {
         "properties": {
           "issue_funding_enabled": {
@@ -68803,6 +71013,12 @@
             "type": "boolean",
             "title": "Sso Enabled",
             "description": "If this organization has single sign-on configuration enabled",
+            "default": false
+          },
+          "dispute_auto_accept_enabled": {
+            "type": "boolean",
+            "title": "Dispute Auto Accept Enabled",
+            "description": "If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`.",
             "default": false
           },
           "compass_enabled": {
@@ -68982,6 +71198,19 @@
             "title": "Details Submitted At",
             "description": "When the business details were submitted for review."
           },
+          "onboarding_resubmission_requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Resubmission Requested At",
+            "description": "When Polar requested that the organization review and resubmit its onboarding information, if applicable."
+          },
           "sso_enforced": {
             "type": "boolean",
             "title": "Sso Enforced",
@@ -69018,6 +71247,23 @@
           "customer_portal_settings": {
             "$ref": "#/components/schemas/OrganizationCustomerPortalSettings",
             "description": "Settings related to the customer portal"
+          },
+          "dispute_settings": {
+            "$ref": "#/components/schemas/OrganizationDisputeSettings",
+            "description": "Settings related to disputes"
+          },
+          "embed_hosts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Embed Hosts",
+            "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."
+          },
+          "embed_hosts_enforced": {
+            "type": "boolean",
+            "title": "Embed Hosts Enforced",
+            "description": "Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone."
           },
           "country": {
             "anyOf": [
@@ -69590,6 +71836,7 @@
           "socials",
           "status",
           "details_submitted_at",
+          "onboarding_resubmission_requested_at",
           "sso_enforced",
           "default_presentment_currency",
           "default_tax_behavior",
@@ -69597,6 +71844,9 @@
           "subscription_settings",
           "customer_email_settings",
           "customer_portal_settings",
+          "dispute_settings",
+          "embed_hosts",
+          "embed_hosts_enforced",
           "account_id",
           "payout_account_id",
           "capabilities"
@@ -69716,13 +71966,18 @@
           "chargeback_prevention": {
             "type": "boolean",
             "title": "Chargeback Prevention"
+          },
+          "subscription_renewal": {
+            "type": "boolean",
+            "title": "Subscription Renewal"
           }
         },
         "type": "object",
         "required": [
           "new_order",
           "new_subscription",
-          "chargeback_prevention"
+          "chargeback_prevention",
+          "subscription_renewal"
         ],
         "title": "OrganizationNotificationSettings"
       },
@@ -69901,12 +72156,26 @@
           "organization_status": {
             "$ref": "#/components/schemas/OrganizationStatus",
             "description": "Current organization status"
+          },
+          "onboarding_resubmission_requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Resubmission Requested At",
+            "description": "When Polar requested that the organization review and resubmit its onboarding information, if applicable. Null for organizations that have never been reset for review."
           }
         },
         "type": "object",
         "required": [
           "payment_ready",
-          "organization_status"
+          "organization_status",
+          "onboarding_resubmission_requested_at"
         ],
         "title": "OrganizationPaymentStatus"
       },
@@ -71115,6 +73384,39 @@
         ],
         "title": "OrganizationSubscriptionUpdate"
       },
+      "OrganizationUncoveredHost": {
+        "properties": {
+          "host": {
+            "type": "string",
+            "title": "Host",
+            "description": "The entry that would admit this origin."
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin",
+            "description": "The origin seen embedding the checkout."
+          },
+          "checkouts": {
+            "type": "integer",
+            "title": "Checkouts",
+            "description": "Embedded checkouts opened from this origin."
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen At",
+            "description": "When it last opened one."
+          }
+        },
+        "type": "object",
+        "required": [
+          "host",
+          "origin",
+          "checkouts",
+          "last_seen_at"
+        ],
+        "title": "OrganizationUncoveredHost"
+      },
       "OrganizationUpdate": {
         "properties": {
           "name": {
@@ -71741,6 +74043,38 @@
               }
             ]
           },
+          "dispute_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganizationDisputeSettingsUpdate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "embed_hosts": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.",
+                "examples": [
+                  [
+                    "example.com",
+                    "*.example.com",
+                    "localhost:3000"
+                  ]
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Hosts"
+          },
           "default_presentment_currency": {
             "anyOf": [
               {
@@ -71941,6 +74275,19 @@
             "title": "Details Submitted At",
             "description": "When the business details were submitted for review."
           },
+          "onboarding_resubmission_requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Resubmission Requested At",
+            "description": "When Polar requested that the organization review and resubmit its onboarding information, if applicable."
+          },
           "sso_enforced": {
             "type": "boolean",
             "title": "Sso Enforced",
@@ -71977,6 +74324,23 @@
           "customer_portal_settings": {
             "$ref": "#/components/schemas/OrganizationCustomerPortalSettings",
             "description": "Settings related to the customer portal"
+          },
+          "dispute_settings": {
+            "$ref": "#/components/schemas/OrganizationDisputeSettings",
+            "description": "Settings related to disputes"
+          },
+          "embed_hosts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Embed Hosts",
+            "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."
+          },
+          "embed_hosts_enforced": {
+            "type": "boolean",
+            "title": "Embed Hosts Enforced",
+            "description": "Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone."
           },
           "country": {
             "anyOf": [
@@ -72550,6 +74914,7 @@
           "socials",
           "status",
           "details_submitted_at",
+          "onboarding_resubmission_requested_at",
           "sso_enforced",
           "default_presentment_currency",
           "default_tax_behavior",
@@ -72557,6 +74922,9 @@
           "subscription_settings",
           "customer_email_settings",
           "customer_portal_settings",
+          "dispute_settings",
+          "embed_hosts",
+          "embed_hosts_enforced",
           "account_id",
           "payout_account_id",
           "capabilities",
@@ -72583,6 +74951,385 @@
           "max_page"
         ],
         "title": "Pagination"
+      },
+      "PanStepActor": {
+        "type": "string",
+        "enum": [
+          "merchant",
+          "ops",
+          "system"
+        ],
+        "title": "PanStepActor",
+        "description": "Who is asking to move a step, which decides what they're allowed to move."
+      },
+      "PanStepKind": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "input",
+          "confirm"
+        ],
+        "title": "PanStepKind",
+        "description": "What the owner has to do, which is what the frontend renders."
+      },
+      "PanStepNotActionable": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PanStepNotActionable",
+            "title": "Error",
+            "examples": [
+              "PanStepNotActionable"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PanStepNotActionable"
+      },
+      "PanStepNotFound": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PanStepNotFound",
+            "title": "Error",
+            "examples": [
+              "PanStepNotFound"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PanStepNotFound"
+      },
+      "PanStepNotOwned": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PanStepNotOwned",
+            "title": "Error",
+            "examples": [
+              "PanStepNotOwned"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PanStepNotOwned"
+      },
+      "PanStepOwner": {
+        "type": "string",
+        "enum": [
+          "merchant",
+          "polar_ops",
+          "polar_app",
+          "stripe",
+          "provider"
+        ],
+        "title": "PanStepOwner",
+        "description": "Who moves a step forward."
+      },
+      "PanStepStatus": {
+        "type": "string",
+        "enum": [
+          "blocked",
+          "pending",
+          "in_progress",
+          "completed"
+        ],
+        "title": "PanStepStatus"
+      },
+      "PanTransferAlreadyStarted": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PanTransferAlreadyStarted",
+            "title": "Error",
+            "examples": [
+              "PanTransferAlreadyStarted"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PanTransferAlreadyStarted"
+      },
+      "PanTransferChecklist": {
+        "properties": {
+          "method": {
+            "$ref": "#/components/schemas/PanTransferMethod",
+            "description": "How the cards move: `pan_copy` for a Stripe source (account to account), `pan_import` for any other vault."
+          },
+          "started": {
+            "type": "boolean",
+            "title": "Started",
+            "description": "Whether the card transfer has been started. Steps are empty until it is."
+          },
+          "current_step_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Step Key",
+            "description": "The one step that can be acted on now. Null once every step is done."
+          },
+          "destination_account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Account Id",
+            "description": "The Stripe account the cards move into. The merchant needs it to address the copy or import to Polar."
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/PanTransferStep"
+            },
+            "type": "array",
+            "title": "Steps",
+            "description": "The ordered checklist. Titles and guidance live in the client, keyed by `key`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "method",
+          "started",
+          "current_step_key",
+          "destination_account_id",
+          "steps"
+        ],
+        "title": "PanTransferChecklist"
+      },
+      "PanTransferMethod": {
+        "type": "string",
+        "enum": [
+          "pan_copy",
+          "pan_import"
+        ],
+        "title": "PanTransferMethod",
+        "description": "How the cards reach Polar's Stripe account."
+      },
+      "PanTransferNotReady": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PanTransferNotReady",
+            "title": "Error",
+            "examples": [
+              "PanTransferNotReady"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PanTransferNotReady"
+      },
+      "PanTransferNotStarted": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PanTransferNotStarted",
+            "title": "Error",
+            "examples": [
+              "PanTransferNotStarted"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PanTransferNotStarted"
+      },
+      "PanTransferStep": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Stable identifier. The client keys its copy off it."
+          },
+          "owner": {
+            "$ref": "#/components/schemas/PanStepOwner",
+            "description": "Who moves this step forward."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PanStepKind",
+            "description": "What the owner does, so the client knows what to render."
+          },
+          "status": {
+            "$ref": "#/components/schemas/PanStepStatus",
+            "description": "Where the step is. Only one step is actionable at a time."
+          },
+          "inputs": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Inputs",
+            "description": "Values collected on this step."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "Free text from Polar Ops, shown to the merchant. How a weeks-long wait on Stripe or the provider gets explained without a support thread."
+          },
+          "expected_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected At",
+            "description": "When Ops expects this step to land."
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "When the step became actionable."
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At",
+            "description": "When the step was completed."
+          },
+          "completed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PanStepActor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who completed the step."
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "owner",
+          "kind",
+          "status",
+          "inputs",
+          "note",
+          "expected_at",
+          "started_at",
+          "completed_at",
+          "completed_by"
+        ],
+        "title": "PanTransferStep",
+        "description": "One checklist step, as persisted on `MerchantMigration.pan_transfer_steps`.\n\nThe row is self-contained: owner and kind are copied off the template so both\nthe stored JSONB and the API response can be read without resolving a\ntemplate. The template stays authoritative for the rules that gate a\ntransition (`auto_complete`, the accepted inputs), so a step whose key no\nlonger has a template can't be completed."
+      },
+      "PanTransferStepComplete": {
+        "properties": {
+          "inputs": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Inputs",
+            "description": "Values the step collects. Which keys it accepts depends on the step; unknown keys are rejected."
+          }
+        },
+        "type": "object",
+        "title": "PanTransferStepComplete"
+      },
+      "PanTransferUnavailable": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PanTransferUnavailable",
+            "title": "Error",
+            "examples": [
+              "PanTransferUnavailable"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PanTransferUnavailable"
       },
       "PauseResumeNotAllowed": {
         "properties": {
@@ -72903,6 +75650,28 @@
           "detail"
         ],
         "title": "PaymentMethodInUseByActiveSubscription"
+      },
+      "PaymentMethodRequired": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PaymentMethodRequired",
+            "title": "Error",
+            "examples": [
+              "PaymentMethodRequired"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PaymentMethodRequired"
       },
       "PaymentMethodSetupFailed": {
         "properties": {
@@ -73895,6 +76664,14 @@
           "warning"
         ],
         "title": "PrecheckIssueLevel"
+      },
+      "PrecheckReasonLevel": {
+        "type": "string",
+        "enum": [
+          "action_required",
+          "info"
+        ],
+        "title": "PrecheckReasonLevel"
       },
       "PrecheckRecordStatus": {
         "type": "string",
@@ -77722,6 +80499,28 @@
         ],
         "title": "SlackWorkspaceUsersResponse"
       },
+      "SourceAccountNotMigratable": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "SourceAccountNotMigratable",
+            "title": "Error",
+            "examples": [
+              "SourceAccountNotMigratable"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "SourceAccountNotMigratable"
+      },
       "SourceKeyModeMismatch": {
         "properties": {
           "error": {
@@ -79473,6 +82272,19 @@
             "title": "Deleted At",
             "description": "Timestamp for when the customer was soft deleted."
           },
+          "first_user_event_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First User Event At",
+            "description": "Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."
+          },
           "avatar_url": {
             "anyOf": [
               {
@@ -79502,6 +82314,7 @@
           "tax_id",
           "organization_id",
           "deleted_at",
+          "first_user_event_at",
           "avatar_url"
         ],
         "title": "SubscriptionCustomer"
@@ -79678,6 +82491,34 @@
           "subscription_id"
         ],
         "title": "SubscriptionCycledMetadata"
+      },
+      "SubscriptionExportColumn": {
+        "type": "string",
+        "enum": [
+          "email",
+          "started_at",
+          "product",
+          "amount",
+          "currency",
+          "status",
+          "recurring_interval",
+          "customer_name",
+          "billing_name",
+          "billing_country",
+          "net_amount",
+          "discount",
+          "seats",
+          "current_period_start",
+          "current_period_end",
+          "cancel_at_period_end",
+          "canceled_at",
+          "ends_at",
+          "ended_at",
+          "cancellation_reason",
+          "trial_start",
+          "trial_end"
+        ],
+        "title": "SubscriptionExportColumn"
       },
       "SubscriptionLocked": {
         "properties": {
@@ -82456,7 +85297,10 @@
           "dispute_won",
           "dispute_lost",
           "dispute_prevented",
-          "merchant_accepted"
+          "merchant_accepted",
+          "dispute_auto_accept_scheduled",
+          "dispute_auto_accept_canceled",
+          "dispute_auto_accepted"
         ],
         "title": "SupportCaseMessageType",
         "description": "Known message types. Stored as a plain string column (not a DB enum):\n``chat`` and lifecycle values are generic, while action values are\ndomain-specific and grow per case type. Validated at the app boundary."
@@ -82939,6 +85783,26 @@
         "title": "TaxSummary",
         "description": "Aggregated tax remitted by Polar across all jurisdictions.\n\nTotals span the full filtered dataset, independent of the pagination\napplied to the jurisdiction breakdown."
       },
+      "TextBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type",
+            "default": "text"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "TextBlock",
+        "description": "Plain narrated text."
+      },
       "TimeInterval": {
         "type": "string",
         "enum": [
@@ -83000,6 +85864,83 @@
           "scope"
         ],
         "title": "TokenResponse"
+      },
+      "TopCustomer": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the customer.",
+            "examples": [
+              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+            ]
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "The email address of the customer. This must be unique within the organization.",
+            "examples": [
+              "customer@example.com"
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the customer.",
+            "examples": [
+              "John Doe"
+            ]
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url",
+            "examples": [
+              "https://www.gravatar.com/avatar/xxx?d=404"
+            ]
+          },
+          "order_count": {
+            "type": "integer",
+            "title": "Order Count",
+            "description": "The number of paid orders in the period."
+          },
+          "net_revenue": {
+            "type": "integer",
+            "title": "Net Revenue",
+            "description": "The net revenue from this customer in the period, in cents, with refunded amounts subtracted."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "name",
+          "avatar_url",
+          "order_count",
+          "net_revenue"
+        ],
+        "title": "TopCustomer"
       },
       "Transaction": {
         "properties": {

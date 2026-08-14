@@ -143,9 +143,11 @@ func (p *polarProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 func (p *polarProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewBenefitResource,
 		NewCustomFieldResource,
-		NewWebhookEndpointResource,
+		NewDiscountResource,
 		NewMeterResource,
+		NewWebhookEndpointResource,
 	}
 }
 

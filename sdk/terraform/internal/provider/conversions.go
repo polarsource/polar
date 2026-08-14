@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -16,9 +17,67 @@ import (
 )
 
 var (
-	slugRegex     = regexp.MustCompile(`^[a-z0-9-_]+$`)
-	httpsURLRegex = regexp.MustCompile(`^https://`)
+	slugRegex         = regexp.MustCompile(`^[a-z0-9-_]+$`)
+	httpsURLRegex     = regexp.MustCompile(`^https://`)
+	discountCodeRegex = regexp.MustCompile(`^[a-zA-Z0-9]{3,256}$`)
 )
+
+// rfc3339Timestamp validates that a string attribute parses as RFC 3339.
+type rfc3339TimestampValidator struct{}
+
+func (v rfc3339TimestampValidator) Description(ctx context.Context) string {
+	return "must be an RFC 3339 timestamp, e.g. 2026-01-01T00:00:00Z"
+}
+
+func (v rfc3339TimestampValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v rfc3339TimestampValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	if _, err := time.Parse(time.RFC3339, req.ConfigValue.ValueString()); err != nil {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid timestamp",
+			"The value must be an RFC 3339 timestamp, e.g. 2026-01-01T00:00:00Z. Parse error: "+err.Error(),
+		)
+	}
+}
+
+func rfc3339Timestamp() validator.String {
+	return rfc3339TimestampValidator{}
+}
+
+func parseTimestamp(value types.String) *time.Time {
+	if value.IsNull() || value.IsUnknown() {
+		return nil
+	}
+	parsed, err := time.Parse(time.RFC3339, value.ValueString())
+	if err != nil {
+		return nil
+	}
+	return &parsed
+}
+
+// keepEquivalentTimestamp keeps the configured spelling of a timestamp when
+// the API's stored value denotes the same instant (the server normalizes to
+// UTC), so the applied value matches the plan.
+func keepEquivalentTimestamp(prior types.String, api *string) types.String {
+	if api == nil {
+		return types.StringNull()
+	}
+	if prior.IsNull() || prior.IsUnknown() {
+		return types.StringValue(*api)
+	}
+	priorTime, priorErr := time.Parse(time.RFC3339, prior.ValueString())
+	apiTime, apiErr := time.Parse(time.RFC3339, *api)
+	if priorErr == nil && apiErr == nil && priorTime.Equal(apiTime) {
+		return prior
+	}
+	return types.StringValue(*api)
+}
 
 // noMetadataPrefix rejects property names carrying the "metadata." prefix: the
 // API silently strips it, which would leave a permanent diff between the

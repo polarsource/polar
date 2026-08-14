@@ -53,6 +53,7 @@ README.md for the one-time setup checklist.
 
 Remaining catalog resources, in rough order of value: `polar_product` (nested prices —
 the hard one; see the price-replacement semantics in `server/polar/product/service.py`),
-`polar_benefit`, `polar_discount`, `polar_checkout_link`, `polar_metric_dashboard`,
-`polar_organization` (update-only singleton), plus data sources for products, benefits and
+`polar_checkout_link`, `polar_metric_dashboard`, `polar_organization` (update-only
+singleton), the four integration-backed benefit types (`discord`, `github_repository`,
+`feature_flag`, `slack_shared_channel`), plus data sources for products, benefits and
 event types.

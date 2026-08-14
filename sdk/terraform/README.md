@@ -49,7 +49,9 @@ resource "polar_webhook_endpoint" "billing_events" {
 
 | Resource | Notes |
 | --- | --- |
+| `polar_benefit` | Entitlements (`custom`, `meter_credit`, `license_keys`, `downloadables`). Deleting revokes all grants. |
 | `polar_custom_field` | Checkout form fields. Full lifecycle; `type` forces replacement. |
+| `polar_discount` | Checkout discounts. `type`/`duration` force replacement; value frozen after first redemption. |
 | `polar_webhook_endpoint` | Webhook endpoints. The signing `secret` is server-generated and stored as sensitive state. |
 | `polar_meter` | Usage-billing meters. Polar has no meter deletion: destroy archives the meter. `filter`/`aggregation` become immutable once the meter has billed events. |
 

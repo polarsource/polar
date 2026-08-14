@@ -191,3 +191,74 @@ func TestPriorMetadataIsEmptyMap(t *testing.T) {
 		t.Error("null map must not qualify")
 	}
 }
+
+func TestKeepEquivalentTimestamp(t *testing.T) {
+	api := "2026-09-01T00:00:00Z"
+	prior := types.StringValue("2026-09-01T02:00:00+02:00")
+	if got := keepEquivalentTimestamp(prior, &api); got != prior {
+		t.Errorf("equivalent instants should keep the configured spelling, got %v", got)
+	}
+	different := types.StringValue("2026-09-01T03:00:00+02:00")
+	if got := keepEquivalentTimestamp(different, &api); got.ValueString() != api {
+		t.Errorf("different instants should take the API value, got %v", got)
+	}
+	if got := keepEquivalentTimestamp(types.StringNull(), nil); !got.IsNull() {
+		t.Errorf("nil API value should map to null, got %v", got)
+	}
+}
+
+func TestBenefitPropertiesRoundTrip(t *testing.T) {
+	model := &benefitModel{
+		Type: types.StringValue("license_keys"),
+		LicenseKeys: &benefitLicenseKeysModel{
+			Prefix:     types.StringValue("POLAR"),
+			LimitUsage: types.Int64Value(5),
+			Expires:    &benefitLicenseKeysExpiresModel{TTL: types.Int64Value(1), Timeframe: types.StringValue("year")},
+			Activations: &benefitLicenseKeysActivationsModel{
+				Limit:               types.Int64Value(3),
+				EnableCustomerAdmin: types.BoolValue(true),
+			},
+		},
+	}
+	properties := benefitPropertiesToAPI(model)
+	if properties["prefix"] != "POLAR" || properties["limit_usage"] != int64(5) {
+		t.Errorf("license_keys properties not converted: %v", properties)
+	}
+
+	benefit := &polarapi.Benefit{
+		Type: "license_keys",
+		Properties: map[string]any{
+			"prefix":      "POLAR",
+			"limit_usage": float64(5),
+			"expires":     map[string]any{"ttl": float64(1), "timeframe": "year"},
+			"activations": map[string]any{"limit": float64(3), "enable_customer_admin": true},
+		},
+	}
+	_, _, licenseKeys, _, err := benefitPropertiesFromAPI(benefit, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if licenseKeys == nil || licenseKeys.Prefix.ValueString() != "POLAR" ||
+		licenseKeys.Expires.Timeframe.ValueString() != "year" ||
+		licenseKeys.Activations.Limit.ValueInt64() != 3 {
+		t.Errorf("license_keys read-back lost data: %+v", licenseKeys)
+	}
+}
+
+func TestBenefitCustomNoteAlwaysPresent(t *testing.T) {
+	model := &benefitModel{Type: types.StringValue("custom")}
+	properties := benefitPropertiesToAPI(model)
+	if _, present := properties["note"]; !present {
+		t.Fatal("custom properties must always carry the note key: the update schema requires it (nullable)")
+	}
+	if properties["note"] != nil {
+		t.Errorf("unset note should serialize as null, got %v", properties["note"])
+	}
+}
+
+func TestBenefitUnsupportedTypeErrors(t *testing.T) {
+	benefit := &polarapi.Benefit{Type: "discord", Properties: map[string]any{}}
+	if _, _, _, _, err := benefitPropertiesFromAPI(benefit, nil); err == nil {
+		t.Fatal("unsupported benefit types must error on read")
+	}
+}

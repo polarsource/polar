@@ -1841,6 +1841,9 @@ You can store up to **50 key-value pairs**."""
     max_redemptions: typing.NotRequired[int | None]
     """Optional maximum number of times the discount can be redeemed."""
 
+    max_redemptions_per_customer: typing.NotRequired[int | None]
+    """Optional maximum number of times the discount can be redeemed by a single customer."""
+
     products: typing.NotRequired[list[str] | None]
 
     organization_id: typing.NotRequired[str | None]
@@ -1896,6 +1899,9 @@ You can store up to **50 key-value pairs**."""
     max_redemptions: typing.NotRequired[int | None]
     """Optional maximum number of times the discount can be redeemed."""
 
+    max_redemptions_per_customer: typing.NotRequired[int | None]
+    """Optional maximum number of times the discount can be redeemed by a single customer."""
+
     products: typing.NotRequired[list[str] | None]
 
     organization_id: typing.NotRequired[str | None]
@@ -1949,6 +1955,9 @@ You can store up to **50 key-value pairs**."""
 
     max_redemptions: typing.NotRequired[int | None]
     """Optional maximum number of times the discount can be redeemed."""
+
+    max_redemptions_per_customer: typing.NotRequired[int | None]
+    """Optional maximum number of times the discount can be redeemed by a single customer."""
 
     duration: typing.NotRequired[DiscountDuration | None]
 
@@ -2523,6 +2532,8 @@ class OrganizationCreate(typing.TypedDict):
 class OrganizationCustomerEmailSettings(typing.TypedDict):
     order_confirmation: bool
 
+    payment_method_expiration_reminder: bool
+
     subscription_cancellation: bool
 
     subscription_confirmation: bool
@@ -2588,6 +2599,11 @@ class OrganizationDetails(typing.TypedDict):
 
     previous_annual_revenue: typing.NotRequired[int | None]
     """Revenue from last year if applicable."""
+
+
+class OrganizationDisputeSettingsUpdate(typing.TypedDict):
+    auto_accept_below_amount: typing.NotRequired[int | None]
+    """Concede disputes below this amount, in USD cents, without asking the organization. A dispute charged in another currency converts at the rate its payment settled at. `null` turns it off. The disputed amount and the processor's dispute fee are still deducted."""
 
 
 class OrganizationFeatureSettingsUpdate(typing.TypedDict):
@@ -2663,6 +2679,10 @@ class OrganizationUpdate(typing.TypedDict):
     customer_portal_settings: typing.NotRequired[
         OrganizationCustomerPortalSettings | None
     ]
+
+    dispute_settings: typing.NotRequired[OrganizationDisputeSettingsUpdate | None]
+
+    embed_hosts: typing.NotRequired[list[str] | None]
 
     default_presentment_currency: typing.NotRequired[PresentmentCurrency | None]
     """Default presentment currency for the organization"""

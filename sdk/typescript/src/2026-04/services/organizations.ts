@@ -10,7 +10,7 @@ import type {
 import {
   CannotCreateOrganizationError,
   HTTPValidationError,
-  NotPermitted,
+  OrganizationsUpdate403Error,
   ResourceNotFound,
   SSOEnforcementRequiresConnection,
 } from "../errors";
@@ -166,7 +166,7 @@ export const updateOrganizations = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {NotPermitted} You don't have the permission to update this organization.
+   * @throws {OrganizationsUpdate403Error} You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
    * @throws {ResourceNotFound} Organization not found.
    * @throws {SSOEnforcementRequiresConnection} Cannot enforce SSO without an enabled connection.
    * @throws {HTTPValidationError} Validation Error
@@ -185,7 +185,7 @@ export const updateOrganizations = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<Organization>(response, "json", {
-      403: NotPermitted,
+      403: OrganizationsUpdate403Error,
       404: ResourceNotFound,
       409: SSOEnforcementRequiresConnection,
       422: HTTPValidationError,

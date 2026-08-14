@@ -6,6 +6,7 @@ import type {
   Subscription,
   SubscriptionCreateCustomer,
   SubscriptionCreateExternalCustomer,
+  SubscriptionExportColumn,
   SubscriptionSortProperty,
   SubscriptionStatus,
   SubscriptionUpdate,
@@ -17,6 +18,7 @@ import {
   PaymentFailed,
   ResourceNotFound,
   SubscriptionLocked,
+  SubscriptionsUpdate403Error,
 } from "../errors";
 
 export const listSubscriptions = (client: ClientBase) => {
@@ -44,6 +46,8 @@ export const listSubscriptions = (client: ClientBase) => {
     customer_cancellation_reason?: CustomerCancellationReason | CustomerCancellationReason[] | null;
     canceled_at_after?: string | null;
     canceled_at_before?: string | null;
+    started_after?: string | null;
+    started_before?: string | null;
     page?: number;
     limit?: number;
     sorting?: SubscriptionSortProperty[] | null;
@@ -62,6 +66,8 @@ export const listSubscriptions = (client: ClientBase) => {
       customer_cancellation_reason: query?.customer_cancellation_reason,
       canceled_at_after: query?.canceled_at_after,
       canceled_at_before: query?.canceled_at_before,
+      started_after: query?.started_after,
+      started_before: query?.started_before,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
       sorting: query?.sorting ?? ["-started_at"],
@@ -105,6 +111,8 @@ export const iterListSubscriptions = (client: ClientBase) => {
     customer_cancellation_reason?: CustomerCancellationReason | CustomerCancellationReason[] | null;
     canceled_at_after?: string | null;
     canceled_at_before?: string | null;
+    started_after?: string | null;
+    started_before?: string | null;
     page?: number;
     limit?: number;
     sorting?: SubscriptionSortProperty[] | null;
@@ -176,10 +184,26 @@ export const exportSubscriptions = (client: ClientBase) => {
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (query?: { organization_id?: string | string[] | null }): Promise<string> => {
+  return async (query?: {
+    organization_id?: string | string[] | null;
+    product_id?: string | string[] | null;
+    status?: SubscriptionStatus | SubscriptionStatus[] | null;
+    cancel_at_period_end?: boolean | null;
+    started_after?: string | null;
+    started_before?: string | null;
+    timezone?: string;
+    columns?: SubscriptionExportColumn | SubscriptionExportColumn[] | null;
+  }): Promise<string> => {
     const pathParams = {};
     const queryParams = {
       organization_id: query?.organization_id,
+      product_id: query?.product_id,
+      status: query?.status,
+      cancel_at_period_end: query?.cancel_at_period_end,
+      started_after: query?.started_after,
+      started_before: query?.started_before,
+      timezone: query?.timezone ?? "UTC",
+      columns: query?.columns,
     };
     const request = client.buildRequest(
       "GET",
@@ -277,7 +301,7 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentFailed} Payment required to apply the subscription update.
-   * @throws {AlreadyCanceledSubscription} Subscription is already canceled or will be at the end of the period.
+   * @throws {SubscriptionsUpdate403Error} Subscription is already canceled or will be at the end of the period, or is not active.
    * @throws {ResourceNotFound} Subscription not found.
    * @throws {SubscriptionLocked} Subscription is pending an update.
    * @throws {HTTPValidationError} Validation Error
@@ -297,7 +321,7 @@ export const updateSubscriptions = (client: ClientBase) => {
     const response = await client.sendRequest(request);
     return client.parseResponse<Subscription>(response, "json", {
       402: PaymentFailed,
-      403: AlreadyCanceledSubscription,
+      403: SubscriptionsUpdate403Error,
       404: ResourceNotFound,
       409: SubscriptionLocked,
       422: HTTPValidationError,

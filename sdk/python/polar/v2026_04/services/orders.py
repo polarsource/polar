@@ -25,7 +25,9 @@ from polar.v2026_04.inputs import (
     OrderUpdate,
 )
 from polar.v2026_04.literals import (
+    OrderExportColumn,
     OrderSortProperty,
+    OrderStatus,
     ProductBillingType,
 )
 from polar.v2026_04.outputs import (
@@ -50,6 +52,9 @@ class OrdersSync(SyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         checkout_id: str | builtins.list[str] | None = None,
         subscription_id: str | builtins.list[str] | None = None,
+        status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
@@ -69,6 +74,9 @@ class OrdersSync(SyncServiceBase):
             external_customer_id: Filter by customer external ID.
             checkout_id: Filter by checkout ID.
             subscription_id: Filter by subscription ID.
+            status: Filter by order status.
+            created_after: Only include orders created after this date
+            created_before: Only include orders created before this date
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -93,6 +101,9 @@ class OrdersSync(SyncServiceBase):
                 "external_customer_id": external_customer_id,
                 "checkout_id": checkout_id,
                 "subscription_id": subscription_id,
+                "status": status,
+                "created_after": created_after,
+                "created_before": created_before,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -118,6 +129,9 @@ class OrdersSync(SyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         checkout_id: str | builtins.list[str] | None = None,
         subscription_id: str | builtins.list[str] | None = None,
+        status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
@@ -137,6 +151,9 @@ class OrdersSync(SyncServiceBase):
             external_customer_id: Filter by customer external ID.
             checkout_id: Filter by checkout ID.
             subscription_id: Filter by subscription ID.
+            status: Filter by order status.
+            created_after: Only include orders created after this date
+            created_before: Only include orders created before this date
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -161,6 +178,9 @@ class OrdersSync(SyncServiceBase):
                 external_customer_id=external_customer_id,
                 checkout_id=checkout_id,
                 subscription_id=subscription_id,
+                status=status,
+                created_after=created_after,
+                created_before=created_before,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -211,6 +231,11 @@ class OrdersSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
+        timezone: str = "UTC",
+        columns: OrderExportColumn | builtins.list[OrderExportColumn] | None = None,
     ) -> str:
         """
         Export orders as a CSV file.
@@ -220,6 +245,11 @@ class OrdersSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            status: Filter by order status.
+            created_after: Only include orders created after this date. Must include a UTC offset.
+            created_before: Only include orders created before this date. Must include a UTC offset.
+            timezone: Time zone used to render dates in the CSV.
+            columns: Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number.
 
         Raises:
             HTTPValidationError: Validation Error
@@ -234,6 +264,11 @@ class OrdersSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "status": status,
+                "created_after": created_after,
+                "created_before": created_before,
+                "timezone": timezone,
+                "columns": columns,
             },
         )
         response = self.client.send_request(request)
@@ -481,6 +516,9 @@ class OrdersAsync(AsyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         checkout_id: str | builtins.list[str] | None = None,
         subscription_id: str | builtins.list[str] | None = None,
+        status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
@@ -500,6 +538,9 @@ class OrdersAsync(AsyncServiceBase):
             external_customer_id: Filter by customer external ID.
             checkout_id: Filter by checkout ID.
             subscription_id: Filter by subscription ID.
+            status: Filter by order status.
+            created_after: Only include orders created after this date
+            created_before: Only include orders created before this date
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -524,6 +565,9 @@ class OrdersAsync(AsyncServiceBase):
                 "external_customer_id": external_customer_id,
                 "checkout_id": checkout_id,
                 "subscription_id": subscription_id,
+                "status": status,
+                "created_after": created_after,
+                "created_before": created_before,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -549,6 +593,9 @@ class OrdersAsync(AsyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         checkout_id: str | builtins.list[str] | None = None,
         subscription_id: str | builtins.list[str] | None = None,
+        status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
@@ -568,6 +615,9 @@ class OrdersAsync(AsyncServiceBase):
             external_customer_id: Filter by customer external ID.
             checkout_id: Filter by checkout ID.
             subscription_id: Filter by subscription ID.
+            status: Filter by order status.
+            created_after: Only include orders created after this date
+            created_before: Only include orders created before this date
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -592,6 +642,9 @@ class OrdersAsync(AsyncServiceBase):
                 external_customer_id=external_customer_id,
                 checkout_id=checkout_id,
                 subscription_id=subscription_id,
+                status=status,
+                created_after=created_after,
+                created_before=created_before,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -643,6 +696,11 @@ class OrdersAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
+        timezone: str = "UTC",
+        columns: OrderExportColumn | builtins.list[OrderExportColumn] | None = None,
     ) -> str:
         """
         Export orders as a CSV file.
@@ -652,6 +710,11 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            status: Filter by order status.
+            created_after: Only include orders created after this date. Must include a UTC offset.
+            created_before: Only include orders created before this date. Must include a UTC offset.
+            timezone: Time zone used to render dates in the CSV.
+            columns: Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number.
 
         Raises:
             HTTPValidationError: Validation Error
@@ -666,6 +729,11 @@ class OrdersAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "status": status,
+                "created_after": created_after,
+                "created_before": created_before,
+                "timezone": timezone,
+                "columns": columns,
             },
         )
         response = await self.client.send_request(request)

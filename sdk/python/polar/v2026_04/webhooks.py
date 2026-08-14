@@ -11,6 +11,7 @@ from polar.v2026_04.outputs import (
     Customer,
     CustomerSeat,
     CustomerState,
+    Discount,
     Member,
     Order,
     Organization,
@@ -257,6 +258,45 @@ class WebhookCustomerUpdatedPayload:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookDiscountCreatedPayload:
+    """Sent when a new discount is created.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["discount.created"]
+
+    timestamp: str
+
+    data: Discount
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookDiscountDeletedPayload:
+    """Sent when a discount is deleted.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["discount.deleted"]
+
+    timestamp: str
+
+    data: Discount
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookDiscountUpdatedPayload:
+    """Sent when a discount is updated.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["discount.updated"]
+
+    timestamp: str
+
+    data: Discount
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class WebhookMemberCreatedPayload:
     """Sent when a new member is created.
 
@@ -484,6 +524,27 @@ class WebhookSubscriptionCreatedPayload:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionCycledPayload:
+    """Sent when a subscription enters a new billing period.
+
+    The payload carries the new `current_period_start` and `current_period_end`.
+    It fires when the period rolls over, before the renewal order exists and
+    regardless of whether the renewal payment succeeds — listen to `order.paid`
+    if you need the payment.
+
+    A trial converting to a paid subscription starts a new period, so it fires
+    there too. Read `status` to tell the two apart.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["subscription.cycled"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class WebhookSubscriptionPastDuePayload:
     """Sent when a subscription payment fails and the subscription enters `past_due` status.
 
@@ -571,7 +632,7 @@ class WebhookSubscriptionUpdatedPayload:
 
     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
 
-    To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+    To listen specifically for renewals, listen to `subscription.cycled`.
 
     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped."""
 
@@ -599,6 +660,9 @@ WebhookPayload: typing.TypeAlias = (
     | WebhookCustomerSeatRevokedPayload
     | WebhookCustomerStateChangedPayload
     | WebhookCustomerUpdatedPayload
+    | WebhookDiscountCreatedPayload
+    | WebhookDiscountDeletedPayload
+    | WebhookDiscountUpdatedPayload
     | WebhookMemberCreatedPayload
     | WebhookMemberDeletedPayload
     | WebhookMemberUpdatedPayload
@@ -614,6 +678,7 @@ WebhookPayload: typing.TypeAlias = (
     | WebhookSubscriptionActivePayload
     | WebhookSubscriptionCanceledPayload
     | WebhookSubscriptionCreatedPayload
+    | WebhookSubscriptionCycledPayload
     | WebhookSubscriptionPastDuePayload
     | WebhookSubscriptionPausedPayload
     | WebhookSubscriptionResumedPayload
@@ -640,6 +705,9 @@ _KNOWN_EVENT_TYPES = frozenset(
         "customer_seat.assigned",
         "customer_seat.claimed",
         "customer_seat.revoked",
+        "discount.created",
+        "discount.deleted",
+        "discount.updated",
         "member.created",
         "member.deleted",
         "member.updated",
@@ -655,6 +723,7 @@ _KNOWN_EVENT_TYPES = frozenset(
         "subscription.active",
         "subscription.canceled",
         "subscription.created",
+        "subscription.cycled",
         "subscription.past_due",
         "subscription.paused",
         "subscription.resumed",
@@ -696,6 +765,9 @@ __all__ = [
     "WebhookCustomerSeatRevokedPayload",
     "WebhookCustomerStateChangedPayload",
     "WebhookCustomerUpdatedPayload",
+    "WebhookDiscountCreatedPayload",
+    "WebhookDiscountDeletedPayload",
+    "WebhookDiscountUpdatedPayload",
     "WebhookMemberCreatedPayload",
     "WebhookMemberDeletedPayload",
     "WebhookMemberUpdatedPayload",
@@ -712,6 +784,7 @@ __all__ = [
     "WebhookSubscriptionActivePayload",
     "WebhookSubscriptionCanceledPayload",
     "WebhookSubscriptionCreatedPayload",
+    "WebhookSubscriptionCycledPayload",
     "WebhookSubscriptionPastDuePayload",
     "WebhookSubscriptionPausedPayload",
     "WebhookSubscriptionResumedPayload",

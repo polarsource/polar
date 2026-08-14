@@ -936,6 +936,50 @@ class BenefitDiscordSubscriberProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitDownloadableFile:
+    id: str
+    """The ID of the object."""
+
+    organization_id: str
+
+    name: str
+
+    path: str
+
+    mime_type: str
+
+    size: int
+
+    storage_version: str | None
+
+    checksum_etag: str | None
+
+    checksum_sha256_base64: str | None
+
+    checksum_sha256_hex: str | None
+
+    last_modified_at: str | None
+
+    version: str | None
+
+    service: typing.Literal["downloadable"]
+
+    is_uploaded: bool
+
+    created_at: str
+
+    flagged_malicious_at: str | None
+
+    downloaders: int
+    """Number of distinct customers or members who downloaded the file."""
+
+    downloads: int
+    """Total number of downloads for the file."""
+
+    size_readable: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitDownloadables:
     id: str
     """The ID of the benefit."""
@@ -3966,6 +4010,9 @@ class CustomerIndividual:
     deleted_at: str | None
     """Timestamp for when the customer was soft deleted."""
 
+    first_user_event_at: str | None
+    """Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."""
+
     avatar_url: str | None
 
 
@@ -4705,6 +4752,9 @@ class CustomerStateIndividual:
     deleted_at: str | None
     """Timestamp for when the customer was soft deleted."""
 
+    first_user_event_at: str | None
+    """Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."""
+
     avatar_url: str | None
 
     active_subscriptions: list[CustomerStateSubscription]
@@ -4882,6 +4932,9 @@ class CustomerStateTeam:
 
     deleted_at: str | None
     """Timestamp for when the customer was soft deleted."""
+
+    first_user_event_at: str | None
+    """Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."""
 
     avatar_url: str | None
 
@@ -5141,6 +5194,9 @@ class CustomerTeam:
     deleted_at: str | None
     """Timestamp for when the customer was soft deleted."""
 
+    first_user_event_at: str | None
+    """Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."""
+
     avatar_url: str | None
 
 
@@ -5284,6 +5340,9 @@ class DiscountFixedOnceForeverDuration:
     max_redemptions: int | None
     """Maximum number of times the discount can be redeemed."""
 
+    max_redemptions_per_customer: int | None
+    """Maximum number of times the discount can be redeemed by a single customer."""
+
     redemptions_count: int
     """Number of times the discount has been redeemed."""
 
@@ -5331,6 +5390,9 @@ class DiscountFixedOnceForeverDurationBase:
 
     max_redemptions: int | None
     """Maximum number of times the discount can be redeemed."""
+
+    max_redemptions_per_customer: int | None
+    """Maximum number of times the discount can be redeemed by a single customer."""
 
     redemptions_count: int
     """Number of times the discount has been redeemed."""
@@ -5383,6 +5445,9 @@ class DiscountFixedRepeatDuration:
     max_redemptions: int | None
     """Maximum number of times the discount can be redeemed."""
 
+    max_redemptions_per_customer: int | None
+    """Maximum number of times the discount can be redeemed by a single customer."""
+
     redemptions_count: int
     """Number of times the discount has been redeemed."""
 
@@ -5433,6 +5498,9 @@ class DiscountFixedRepeatDurationBase:
     max_redemptions: int | None
     """Maximum number of times the discount can be redeemed."""
 
+    max_redemptions_per_customer: int | None
+    """Maximum number of times the discount can be redeemed by a single customer."""
+
     redemptions_count: int
     """Number of times the discount has been redeemed."""
 
@@ -5477,6 +5545,9 @@ class DiscountPercentageOnceForeverDuration:
     max_redemptions: int | None
     """Maximum number of times the discount can be redeemed."""
 
+    max_redemptions_per_customer: int | None
+    """Maximum number of times the discount can be redeemed by a single customer."""
+
     redemptions_count: int
     """Number of times the discount has been redeemed."""
 
@@ -5520,6 +5591,9 @@ class DiscountPercentageOnceForeverDurationBase:
 
     max_redemptions: int | None
     """Maximum number of times the discount can be redeemed."""
+
+    max_redemptions_per_customer: int | None
+    """Maximum number of times the discount can be redeemed by a single customer."""
 
     redemptions_count: int
     """Number of times the discount has been redeemed."""
@@ -5568,6 +5642,9 @@ class DiscountPercentageRepeatDuration:
     max_redemptions: int | None
     """Maximum number of times the discount can be redeemed."""
 
+    max_redemptions_per_customer: int | None
+    """Maximum number of times the discount can be redeemed by a single customer."""
+
     redemptions_count: int
     """Number of times the discount has been redeemed."""
 
@@ -5613,6 +5690,9 @@ class DiscountPercentageRepeatDurationBase:
 
     max_redemptions: int | None
     """Maximum number of times the discount can be redeemed."""
+
+    max_redemptions_per_customer: int | None
+    """Maximum number of times the discount can be redeemed by a single customer."""
 
     redemptions_count: int
     """Number of times the discount has been redeemed."""
@@ -5673,6 +5753,13 @@ class DiscountProduct:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class DiscountRedemptionLimitReached:
+    error: typing.Literal["DiscountRedemptionLimitReached"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class Dispute:
     """Schema representing a dispute.
 
@@ -5726,6 +5813,13 @@ class Dispute:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class DisputeAutoAcceptNotEnabled:
+    error: typing.Literal["DisputeAutoAcceptNotEnabled"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class DisputeCustomer:
     id: str
     """The ID of the customer."""
@@ -5769,6 +5863,9 @@ class DisputeCustomer:
 
     deleted_at: str | None
     """Timestamp for when the customer was soft deleted."""
+
+    first_user_event_at: str | None
+    """Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."""
 
     avatar_url: str | None
 
@@ -5814,6 +5911,8 @@ class DownloadableFileRead:
     is_uploaded: bool
 
     created_at: str
+
+    flagged_malicious_at: str | None
 
     size_readable: str
 
@@ -6071,6 +6170,13 @@ class HTTPValidationError:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class InactiveSubscription:
+    error: typing.Literal["InactiveSubscription"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class IntrospectTokenResponse:
     active: bool
 
@@ -6289,6 +6395,9 @@ class LicenseKeyCustomer:
     deleted_at: str | None
     """Timestamp for when the customer was soft deleted."""
 
+    first_user_event_at: str | None
+    """Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."""
+
     avatar_url: str | None
 
 
@@ -6375,6 +6484,13 @@ class LicenseKeyWithActivations:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class ListResourceBenefit:
     items: list[Benefit]
+
+    pagination: Pagination
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class ListResourceBenefitDownloadableFile:
+    items: list[BenefitDownloadableFile]
 
     pagination: Pagination
 
@@ -7442,6 +7558,9 @@ class OrderCustomer:
     deleted_at: str | None
     """Timestamp for when the customer was soft deleted."""
 
+    first_user_event_at: str | None
+    """Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."""
+
     avatar_url: str | None
 
 
@@ -7931,6 +8050,9 @@ class Organization:
     details_submitted_at: str | None
     """When the business details were submitted for review."""
 
+    onboarding_resubmission_requested_at: str | None
+    """When Polar requested that the organization review and resubmit its onboarding information, if applicable."""
+
     sso_enforced: bool
     """Whether members must access this organization through its SSO connection."""
 
@@ -7947,6 +8069,14 @@ class Organization:
     customer_email_settings: OrganizationCustomerEmailSettings
 
     customer_portal_settings: OrganizationCustomerPortalSettings
+
+    dispute_settings: OrganizationDisputeSettings
+
+    embed_hosts: list[str]
+    """Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."""
+
+    embed_hosts_enforced: bool
+    """Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone."""
 
     country: CountryAlpha2 | None = None
     """Two-letter country code (ISO 3166-1 alpha-2)."""
@@ -8025,6 +8155,8 @@ class OrganizationCapabilities:
 class OrganizationCustomerEmailSettings:
     order_confirmation: bool
 
+    payment_method_expiration_reminder: bool
+
     subscription_cancellation: bool
 
     subscription_confirmation: bool
@@ -8057,6 +8189,13 @@ class OrganizationCustomerPortalSettings:
     subscription: CustomerPortalSubscriptionSettings
 
     customer: CustomerPortalCustomerSettings | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class OrganizationDisputeSettings:
+    """`auto_accept_below_amount` is in Polar's settlement currency (USD)."""
+
+    auto_accept_below_amount: int | None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8096,6 +8235,9 @@ class OrganizationFeatureSettings:
 
     sso_enabled: bool = False
     """If this organization has single sign-on configuration enabled"""
+
+    dispute_auto_accept_enabled: bool = False
+    """If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`."""
 
     compass_enabled: bool = False
     """If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard"""
@@ -8228,6 +8370,13 @@ class PaymentMethodGeneric:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class PaymentMethodInUseByActiveSubscription:
     error: typing.Literal["PaymentMethodInUseByActiveSubscription"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class PaymentMethodRequired:
+    error: typing.Literal["PaymentMethodRequired"]
 
     detail: str
 
@@ -9126,6 +9275,9 @@ class SubscriptionCustomer:
 
     deleted_at: str | None
     """Timestamp for when the customer was soft deleted."""
+
+    first_user_event_at: str | None
+    """Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested."""
 
     avatar_url: str | None
 
@@ -10200,6 +10352,7 @@ CheckoutForbiddenError: typing.TypeAlias = (
     | NotOpenCheckout
     | PaymentNotReady
     | TrialAlreadyRedeemed
+    | DiscountRedemptionLimitReached
 )
 
 CustomField: typing.TypeAlias = (

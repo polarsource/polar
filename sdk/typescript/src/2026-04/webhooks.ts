@@ -5,6 +5,7 @@ import type {
   Customer,
   CustomerSeat,
   CustomerState,
+  Discount,
   Member,
   Order,
   Organization,
@@ -346,6 +347,63 @@ export interface WebhookCustomerUpdatedPayload {
   data: Customer;
 }
 /**
+ * Sent when a new discount is created.
+ *
+ * **Discord & Slack support:** Basic
+ */
+export interface WebhookDiscountCreatedPayload {
+  /**
+   * type
+   */
+  type: "discount.created";
+  /**
+   * timestamp
+   */
+  timestamp: string;
+  /**
+   * data
+   */
+  data: Discount;
+}
+/**
+ * Sent when a discount is deleted.
+ *
+ * **Discord & Slack support:** Basic
+ */
+export interface WebhookDiscountDeletedPayload {
+  /**
+   * type
+   */
+  type: "discount.deleted";
+  /**
+   * timestamp
+   */
+  timestamp: string;
+  /**
+   * data
+   */
+  data: Discount;
+}
+/**
+ * Sent when a discount is updated.
+ *
+ * **Discord & Slack support:** Basic
+ */
+export interface WebhookDiscountUpdatedPayload {
+  /**
+   * type
+   */
+  type: "discount.updated";
+  /**
+   * timestamp
+   */
+  timestamp: string;
+  /**
+   * data
+   */
+  data: Discount;
+}
+/**
  * Sent when a new member is created.
  *
  * A member represents an individual within a customer (team).
@@ -663,6 +721,33 @@ export interface WebhookSubscriptionCreatedPayload {
   data: Subscription;
 }
 /**
+ * Sent when a subscription enters a new billing period.
+ *
+ * The payload carries the new `current_period_start` and `current_period_end`.
+ * It fires when the period rolls over, before the renewal order exists and
+ * regardless of whether the renewal payment succeeds — listen to `order.paid`
+ * if you need the payment.
+ *
+ * A trial converting to a paid subscription starts a new period, so it fires
+ * there too. Read `status` to tell the two apart.
+ *
+ * **Discord & Slack support:** Basic
+ */
+export interface WebhookSubscriptionCycledPayload {
+  /**
+   * type
+   */
+  type: "subscription.cycled";
+  /**
+   * timestamp
+   */
+  timestamp: string;
+  /**
+   * data
+   */
+  data: Subscription;
+}
+/**
  * Sent when a subscription payment fails and the subscription enters `past_due` status.
  *
  * This is a recoverable state - the customer can update their payment method to restore the subscription.
@@ -779,7 +864,7 @@ export interface WebhookSubscriptionUncanceledPayload {
  *
  * If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
  *
- * To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+ * To listen specifically for renewals, listen to `subscription.cycled`.
  *
  * **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
  */
@@ -814,6 +899,9 @@ export type WebhookPayload =
   | WebhookCustomerSeatRevokedPayload
   | WebhookCustomerStateChangedPayload
   | WebhookCustomerUpdatedPayload
+  | WebhookDiscountCreatedPayload
+  | WebhookDiscountDeletedPayload
+  | WebhookDiscountUpdatedPayload
   | WebhookMemberCreatedPayload
   | WebhookMemberDeletedPayload
   | WebhookMemberUpdatedPayload
@@ -829,6 +917,7 @@ export type WebhookPayload =
   | WebhookSubscriptionActivePayload
   | WebhookSubscriptionCanceledPayload
   | WebhookSubscriptionCreatedPayload
+  | WebhookSubscriptionCycledPayload
   | WebhookSubscriptionPastDuePayload
   | WebhookSubscriptionPausedPayload
   | WebhookSubscriptionResumedPayload
@@ -853,6 +942,9 @@ const knownEventTypes = new Set<string>([
   "customer_seat.assigned",
   "customer_seat.claimed",
   "customer_seat.revoked",
+  "discount.created",
+  "discount.deleted",
+  "discount.updated",
   "member.created",
   "member.deleted",
   "member.updated",
@@ -868,6 +960,7 @@ const knownEventTypes = new Set<string>([
   "subscription.active",
   "subscription.canceled",
   "subscription.created",
+  "subscription.cycled",
   "subscription.past_due",
   "subscription.paused",
   "subscription.resumed",

@@ -704,7 +704,29 @@ MetricType: typing.TypeAlias = typing.Literal[
     "scalar", "currency", "currency_sub_cent", "percentage"
 ]
 OrderBillingReason: typing.TypeAlias = typing.Literal[
-    "purchase", "subscription_create", "subscription_cycle", "subscription_update"
+    "purchase",
+    "subscription_create",
+    "subscription_cycle",
+    "subscription_update",
+    "subscription_meter_cycle",
+]
+OrderExportColumn: typing.TypeAlias = typing.Literal[
+    "email",
+    "created_at",
+    "product",
+    "net_amount",
+    "currency",
+    "status",
+    "invoice_number",
+    "customer_name",
+    "billing_name",
+    "billing_country",
+    "subtotal_amount",
+    "discount_amount",
+    "tax_amount",
+    "total_amount",
+    "refunded_amount",
+    "billing_reason",
 ]
 OrderSortProperty: typing.TypeAlias = typing.Literal[
     "created_at",
@@ -1026,6 +1048,30 @@ SeatStatus: typing.TypeAlias = typing.Literal["pending", "claimed", "revoked"]
 SeatTierType: typing.TypeAlias = typing.Literal["volume", "graduated"]
 Status: typing.TypeAlias = typing.Literal["active", "trialing"]
 SubType: typing.TypeAlias = typing.Literal["user", "organization"]
+SubscriptionExportColumn: typing.TypeAlias = typing.Literal[
+    "email",
+    "started_at",
+    "product",
+    "amount",
+    "currency",
+    "status",
+    "recurring_interval",
+    "customer_name",
+    "billing_name",
+    "billing_country",
+    "net_amount",
+    "discount",
+    "seats",
+    "current_period_start",
+    "current_period_end",
+    "cancel_at_period_end",
+    "canceled_at",
+    "ends_at",
+    "ended_at",
+    "cancellation_reason",
+    "trial_start",
+    "trial_end",
+]
 SubscriptionProrationBehavior: typing.TypeAlias = typing.Literal[
     "invoice", "prorate", "next_period", "reset"
 ]
@@ -1694,6 +1740,7 @@ WebhookEventType: typing.TypeAlias = typing.Literal[
     "subscription.active",
     "subscription.canceled",
     "subscription.uncanceled",
+    "subscription.cycled",
     "subscription.revoked",
     "subscription.past_due",
     "subscription.paused",
@@ -1702,6 +1749,9 @@ WebhookEventType: typing.TypeAlias = typing.Literal[
     "refund.updated",
     "product.created",
     "product.updated",
+    "discount.created",
+    "discount.updated",
+    "discount.deleted",
     "benefit.created",
     "benefit.updated",
     "benefit_grant.created",

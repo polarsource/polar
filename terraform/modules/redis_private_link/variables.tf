@@ -14,7 +14,7 @@ variable "subnet_ids" {
 }
 
 variable "nlb_name" {
-  description = "Override the NLB name; changing it rotates the NLB behind the endpoint service."
+  description = "Override the NLB name; any replacement must supply a fresh name since create_before_destroy keeps both alive briefly."
   type        = string
   default     = null
 }

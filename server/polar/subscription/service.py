@@ -1236,6 +1236,11 @@ class SubscriptionService:
             # manual catch-up.
             raise SubscriptionMeterCycleLag(subscription, boundary, now)
 
+        # Drop a lapsed discount before settling: the meter-cycle order applies
+        # `subscription.discount`, so mirror the billing cycle's expiry check
+        # instead of relying on it to have run first.
+        self._clear_expired_discount(subscription)
+
         # Settle before reset: settlement reads the window that reset closes.
         await self._settle_meter_cycle(session, subscription)
         await self.reset_meters(session, subscription)

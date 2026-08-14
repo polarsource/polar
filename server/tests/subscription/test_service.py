@@ -2545,6 +2545,44 @@ class TestCycleMeters:
         ]
         assert order_calls == []
 
+    async def test_clears_expired_discount_before_settling(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            scheduler_locked_at=utc_now(),
+        )
+        now = utc_now()
+        # "once" discount applied in an earlier billing period → already expired.
+        subscription.discount_applied_at = (
+            subscription.current_period_start - timedelta(days=31)
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = now - timedelta(days=31)
+        subscription.current_meter_period_end = now - timedelta(seconds=1)
+        await save_fixture(subscription)
+
+        updated = await subscription_service.cycle_meters(session, subscription)
+
+        assert updated.discount is None
+
     async def test_raises_and_halts_on_multi_period_lag(
         self,
         session: AsyncSession,

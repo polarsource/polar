@@ -69,6 +69,17 @@ export const CheckoutFormProvider = ({
   })
   const { setError } = form
 
+  const setDiscountError = useCallback(
+    (message: string) => {
+      const field =
+        checkout.allow_discount_codes && checkout.is_discount_applicable
+          ? 'discount_code'
+          : 'root'
+      setError(field, { message })
+    },
+    [checkout, setError],
+  )
+
   const update = useCallback(
     async (
       checkoutUpdatePublic: schemas['CheckoutUpdatePublic'],
@@ -89,7 +100,7 @@ export const CheckoutFormProvider = ({
               setValidationErrors(error.detail, setError)
               break
             case 'DiscountRedemptionLimitReached':
-              setError('discount_code', { message: error.detail })
+              setDiscountError(error.detail)
               break
             case 'AlreadyActiveSubscriptionError':
             case 'NotOpenCheckout':
@@ -104,7 +115,7 @@ export const CheckoutFormProvider = ({
         throw error
       }
     },
-    [updateOuter, setError],
+    [updateOuter, setError, setDiscountError],
   )
 
   const _confirm = useCallback(
@@ -130,7 +141,7 @@ export const CheckoutFormProvider = ({
             setError('root', { message: error.detail })
             break
           case 'DiscountRedemptionLimitReached':
-            setError('discount_code', { message: error.detail })
+            setDiscountError(error.detail)
             break
           case 'TrialAlreadyRedeemed':
             setTrialUnavailable(true)
@@ -144,7 +155,7 @@ export const CheckoutFormProvider = ({
 
       throw error
     },
-    [confirmOuter, setError, update, setTrialUnavailable],
+    [confirmOuter, setError, setDiscountError, update, setTrialUnavailable],
   )
 
   const confirm = useCallback(

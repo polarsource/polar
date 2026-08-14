@@ -122,6 +122,68 @@ describe('CheckoutFormProvider', () => {
       )
     })
 
+    it('sets discount_code error for DiscountRedemptionLimitReached when the code input is shown', async () => {
+      const getCtx = renderWithCheckout({
+        checkout: { allow_discount_codes: true, is_discount_applicable: true },
+        update: vi.fn<CheckoutContextProps['update']>(async () =>
+          updateErrorResult({
+            error: 'DiscountRedemptionLimitReached',
+            detail: 'limit reached',
+          }),
+        ),
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().update({ discount_code: 'CODE' }),
+        ).rejects.toBeDefined()
+      })
+
+      expect(getCtx().form.formState.errors.discount_code?.message).toBe(
+        'limit reached',
+      )
+    })
+
+    it('sets root error for DiscountRedemptionLimitReached when discount codes are disabled', async () => {
+      const getCtx = renderWithCheckout({
+        checkout: { allow_discount_codes: false, is_discount_applicable: true },
+        update: vi.fn<CheckoutContextProps['update']>(async () =>
+          updateErrorResult({
+            error: 'DiscountRedemptionLimitReached',
+            detail: 'limit reached',
+          }),
+        ),
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().update({ customer_email: 'a@b.com' }),
+        ).rejects.toBeDefined()
+      })
+
+      expect(getCtx().form.formState.errors.root?.message).toBe('limit reached')
+    })
+
+    it('sets root error for DiscountRedemptionLimitReached when no discount applies', async () => {
+      const getCtx = renderWithCheckout({
+        checkout: { allow_discount_codes: true, is_discount_applicable: false },
+        update: vi.fn<CheckoutContextProps['update']>(async () =>
+          updateErrorResult({
+            error: 'DiscountRedemptionLimitReached',
+            detail: 'limit reached',
+          }),
+        ),
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().update({ customer_email: 'a@b.com' }),
+        ).rejects.toBeDefined()
+      })
+
+      expect(getCtx().form.formState.errors.root?.message).toBe('limit reached')
+    })
+
     it.each(['ResourceNotFound', 'ExpiredCheckoutError'] as const)(
       'does not set a form error for %s',
       async (errorCode) => {
@@ -238,6 +300,58 @@ describe('CheckoutFormProvider', () => {
       expect(getCtx().form.formState.errors.root?.message).toBe(
         `${errorCode} detail`,
       )
+    })
+
+    it('sets discount_code error for DiscountRedemptionLimitReached when the code input is shown', async () => {
+      const getCtx = renderWithCheckout({
+        checkout: {
+          ...freeCheckout,
+          allow_discount_codes: true,
+          is_discount_applicable: true,
+        },
+        update: vi.fn(),
+        confirm: vi.fn<CheckoutContextProps['confirm']>(async () =>
+          confirmErrorResult({
+            error: 'DiscountRedemptionLimitReached',
+            detail: 'limit reached',
+          }),
+        ),
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().confirm({ customer_email: 'a@b.com' }, null, null),
+        ).rejects.toBeDefined()
+      })
+
+      expect(getCtx().form.formState.errors.discount_code?.message).toBe(
+        'limit reached',
+      )
+    })
+
+    it('sets root error for DiscountRedemptionLimitReached when discount codes are disabled', async () => {
+      const getCtx = renderWithCheckout({
+        checkout: {
+          ...freeCheckout,
+          allow_discount_codes: false,
+          is_discount_applicable: true,
+        },
+        update: vi.fn(),
+        confirm: vi.fn<CheckoutContextProps['confirm']>(async () =>
+          confirmErrorResult({
+            error: 'DiscountRedemptionLimitReached',
+            detail: 'limit reached',
+          }),
+        ),
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().confirm({ customer_email: 'a@b.com' }, null, null),
+        ).rejects.toBeDefined()
+      })
+
+      expect(getCtx().form.formState.errors.root?.message).toBe('limit reached')
     })
 
     it.each(['ResourceNotFound', 'ExpiredCheckoutError'] as const)(

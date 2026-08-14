@@ -17,7 +17,6 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 
@@ -25,7 +24,6 @@ const VerifyPage = ({ intent = 'login' }: { intent?: 'login' | 'signup' }) => {
   const form = useForm<{ code: string }>()
   const { control, handleSubmit, setError } = form
   const emailOTPVerify = useEmailOTPVerify()
-  const router = useRouter()
 
   const [loading, setLoading] = useState(false)
   const submittingRef = useRef(false)
@@ -43,7 +41,7 @@ const VerifyPage = ({ intent = 'login' }: { intent?: 'login' | 'signup' }) => {
         }
         return
       }
-      router.push('/auth')
+      window.location.href = `${CONFIG.FRONTEND_BASE_URL}/auth`
     } catch {
       setError('code', {
         message: 'An unexpected error occurred. Please try again.',

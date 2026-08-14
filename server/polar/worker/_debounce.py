@@ -10,6 +10,7 @@ import structlog
 from polar.config import settings
 from polar.logging import Logger
 from polar.observability import TASK_DEBOUNCE_DELAY, TASK_DEBOUNCED
+from polar.redis import SyncFailoverRedis
 
 if TYPE_CHECKING:
     from ._enqueue import JSONSerializable
@@ -83,7 +84,9 @@ class DebounceMiddleware(dramatiq.Middleware):
     """
 
     def __init__(self, redis_pool: redis.ConnectionPool) -> None:
-        self._redis = redis.Redis(connection_pool=redis_pool, decode_responses=False)
+        self._redis = SyncFailoverRedis(
+            connection_pool=redis_pool, decode_responses=False
+        )
 
     @property
     def actor_options(self) -> set[str]:

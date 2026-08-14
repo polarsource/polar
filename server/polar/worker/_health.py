@@ -6,6 +6,7 @@ from datetime import timedelta
 from typing import Any
 
 import logfire
+import redis.asyncio as async_redis
 import structlog
 import uvicorn
 from dramatiq.middleware import Middleware
@@ -18,6 +19,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
+from polar.config import settings
 from polar.external_event.repository import ExternalEventRepository
 from polar.kit.db.postgres import AsyncSessionMaker, create_async_sessionmaker
 from polar.kit.utils import utc_now
@@ -25,7 +27,7 @@ from polar.logfire import configure_logfire
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.postgres import AsyncEngine, create_async_engine
-from polar.redis import Redis, create_redis
+from polar.redis import Redis
 from polar.webhook.repository import WebhookEventRepository
 
 log: Logger = structlog.get_logger()
@@ -129,7 +131,13 @@ def _create_lifespan(
 ) -> Callable[[Starlette], contextlib.AbstractAsyncContextManager[Mapping[str, Any]]]:
     @contextlib.asynccontextmanager
     async def lifespan(app: Starlette) -> AsyncGenerator[Mapping[str, Any]]:
-        redis = create_redis("worker")
+        redis: Redis = async_redis.Redis.from_url(
+            settings.redis_url,
+            decode_responses=True,
+            client_name=f"{settings.ENV.value}.worker.health",
+            socket_timeout=2,
+            socket_connect_timeout=2,
+        )
         state: dict[str, Any] = {"redis": redis}
 
         async_engine: AsyncEngine | None = None

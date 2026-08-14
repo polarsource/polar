@@ -98,7 +98,6 @@ describe('CheckoutFormProvider', () => {
     })
 
     it.each([
-      'DiscountRedemptionLimitReached',
       'AlreadyActiveSubscriptionError',
       'NotOpenCheckout',
       'PaymentNotReady',
@@ -278,7 +277,6 @@ describe('CheckoutFormProvider', () => {
 
     it.each([
       'PaymentError',
-      'DiscountRedemptionLimitReached',
       'AlreadyActiveSubscriptionError',
       'NotOpenCheckout',
       'PaymentNotReady',

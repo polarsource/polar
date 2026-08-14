@@ -15,11 +15,14 @@ from dramatiq.middleware.group_callbacks import GroupCallbacks
 from dramatiq.rate_limits.backends import RedisBackend as RateLimiterBackend
 from dramatiq.results import Results
 from dramatiq.results.backends import RedisBackend as ResultsBackend
+from redis.backoff import default_backoff
+from redis.retry import Retry
 
 from polar.config import settings
 from polar.logfire import instrument_httpx
 from polar.logging import CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
+from polar.redis import REDIS_RETRY_ON_ERRROR
 
 from . import _sqs
 from ._asyncio import MonitoredAsyncIO
@@ -206,13 +209,25 @@ class RoutingRedisBroker(RedisBroker):
 
 
 def get_broker(*, database: bool = True) -> dramatiq.Broker:
+    retry = Retry(default_backoff(), retries=50)
     redis_pool = redis.ConnectionPool.from_url(
         settings.redis_url,
         client_name=f"{settings.ENV.value}.worker.dramatiq",
+        retry=retry,
+        retry_on_error=REDIS_RETRY_ON_ERRROR,
     )
 
-    result_backend = ResultsBackend(url=settings.redis_url, encoder=JSONEncoder())
-    rate_limiter_backend = RateLimiterBackend(url=settings.redis_url)
+    result_backend = ResultsBackend(
+        encoder=JSONEncoder(),
+        connection_pool=redis.ConnectionPool.from_url(
+            settings.redis_url, retry=retry, retry_on_error=REDIS_RETRY_ON_ERRROR
+        ),
+    )
+    rate_limiter_backend = RateLimiterBackend(
+        connection_pool=redis.ConnectionPool.from_url(
+            settings.redis_url, retry=retry, retry_on_error=REDIS_RETRY_ON_ERRROR
+        )
+    )
 
     middleware_list = [
         # Infrastructure & async support

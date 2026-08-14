@@ -1,3 +1,4 @@
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api, createClientSideAPI } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import {
@@ -77,6 +78,59 @@ export const useOrganizationSeats = (parameters?: {
       ),
     retry: defaultRetry,
     enabled: !!parameters?.subscriptionId || !!parameters?.orderId,
+  })
+
+export const useAssignOrganizationSeat = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (variables: { subscription_id: string; email: string }) =>
+      api.POST('/v1/customer-seats', {
+        body: { ...variables, immediate_claim: false },
+      }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      queryClient.invalidateQueries({ queryKey: ['organization_seats'] })
+    },
+  })
+}
+
+export const useRevokeOrganizationSeat = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (seatId: string) => {
+      const result = await api.DELETE('/v1/customer-seats/{seat_id}', {
+        params: { path: { seat_id: seatId } },
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to revoke seat'),
+        )
+      }
+      return result.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organization_seats'] })
+    },
+  })
+}
+
+export const useResendOrganizationSeatInvitation = () =>
+  useMutation({
+    mutationFn: async (seatId: string) => {
+      const result = await api.POST('/v1/customer-seats/{seat_id}/resend', {
+        params: { path: { seat_id: seatId } },
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to resend invitation'),
+        )
+      }
+      return result.data
+    },
   })
 
 // Stable reference so useQueries' combine doesn't re-run on every render.

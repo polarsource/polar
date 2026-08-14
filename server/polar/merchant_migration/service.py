@@ -15,7 +15,12 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
 from polar.logging import Logger
-from polar.models import MerchantMigration, MerchantMigrationRecord, Subscription
+from polar.models import (
+    MerchantMigration,
+    MerchantMigrationRecord,
+    PaymentMethod,
+    Subscription,
+)
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
@@ -592,6 +597,7 @@ class MerchantMigrationService:
             migration.id, offset=offset, limit=CARD_VERIFICATION_BATCH_SIZE
         )
         subscription_repository = SubscriptionRepository.from_session(session)
+        resolved: dict[tuple[UUID, str | None], PaymentMethod | None] = {}
         for record in records:
             if record.target_id is None:
                 continue
@@ -601,20 +607,28 @@ class MerchantMigrationService:
             # Already covered, or gone from Polar: nothing to link either way.
             if subscription is None or subscription.payment_method_id is not None:
                 continue
-            try:
-                payment_method = await link_payment_method(
-                    session,
-                    subscription.customer,
-                    source_method=_staged_payment_method(record),
-                )
-            except AmbiguousCopiedCard as e:
-                log.error(
-                    "merchant_migration.verify_cards.ambiguous_card",
-                    merchant_migration_id=migration.id,
-                    record_id=record.id,
-                    customer_id=e.customer_id,
-                )
-                continue
+            source_method = _staged_payment_method(record)
+            # One Stripe listing per customer, not per subscription they hold.
+            key = (
+                subscription.customer_id,
+                source_method.source_id if source_method else None,
+            )
+            if key in resolved:
+                payment_method = resolved[key]
+            else:
+                try:
+                    payment_method = await link_payment_method(
+                        session, subscription.customer, source_method=source_method
+                    )
+                except AmbiguousCopiedCard as e:
+                    log.error(
+                        "merchant_migration.verify_cards.ambiguous_card",
+                        merchant_migration_id=migration.id,
+                        record_id=record.id,
+                        customer_id=e.customer_id,
+                    )
+                    payment_method = None
+                resolved[key] = payment_method
             if payment_method is None:
                 continue
             await subscription_repository.update(
@@ -629,6 +643,7 @@ class MerchantMigrationService:
             )
             return
 
+        await session.refresh(migration, with_for_update=True)
         steps = self._complete_step(migration, STEP_VERIFY_CARDS)
         if steps is not None:
             await self._advance_checklist(session, migration, steps)

@@ -375,9 +375,10 @@ class OrganizationSocialLink(Schema):
     @model_validator(mode="before")
     @classmethod
     def validate_url(cls, data: dict[str, Any]) -> dict[str, Any]:
-        url = data.get("url", "").lower()
-        if not url:
+        url = data.get("url", "")
+        if not url or not isinstance(url, str):
             return data
+        url = url.lower()
 
         # Auto-detect platform from URL domain, fallback to "other"
         detected = detect_platform_from_url(url)

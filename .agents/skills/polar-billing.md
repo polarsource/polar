@@ -243,6 +243,7 @@ update_product(subscription, product_id, proration_behavior, discount=None)
 update_seats(subscription, seats, proration_behavior)
 update_discount(subscription, discount)  # discount: UUID | Literal["unset"]
 update_trial(subscription, trial_end)
+update_metadata(subscription, metadata)
 
 # Lifecycle
 cycle(subscription)  # Period renewal

@@ -1,12 +1,15 @@
+from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any, NotRequired, TypedDict
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 
-from fastapi import FastAPI
-from fastapi.openapi.utils import get_openapi
+from fastapi.openapi.utils import get_openapi as _get_openapi
+from starlette.routing import BaseRoute
 
-from polar.config import Environment, settings
 from polar.kit.metadata import add_metadata_query_schema
 from polar.oauth2.schemas import add_oauth2_form_schemas
+
+if TYPE_CHECKING:
+    from polar.kit.versioning import APIVersion
 
 
 class OpenAPIExternalDoc(TypedDict):
@@ -57,75 +60,36 @@ class APITag(StrEnum):
         ]
 
 
-class OpenAPIParameters(TypedDict):
-    title: str
-    summary: str
-    description: str
-    docs_url: str | None
-    redoc_url: str | None
-    openapi_tags: list[dict[str, Any]]
-    servers: list[dict[str, Any]] | None
+def get_openapi(version: "APIVersion", routes: Sequence[BaseRoute]) -> dict[str, Any]:
+    openapi_schema = _get_openapi(
+        title="Polar API",
+        version=str(version),
+        summary="Polar HTTP and Webhooks API",
+        description="Read the docs at https://polar.sh/docs/api-reference",
+        routes=routes,
+        tags=APITag.metadata(),  # type: ignore
+        servers=[
+            {
+                "url": "https://api.polar.sh",
+                "description": "Production environment",
+                "x-speakeasy-server-id": "production",
+                "x-polar-environment": "production",
+            },
+            {
+                "url": "https://sandbox-api.polar.sh",
+                "description": "Sandbox environment",
+                "x-speakeasy-server-id": "sandbox",
+                "x-polar-environment": "sandbox",
+            },
+        ],
+    )
+    openapi_schema = add_metadata_query_schema(openapi_schema)
+    openapi_schema = add_oauth2_form_schemas(openapi_schema)
 
-
-OPENAPI_PARAMETERS: OpenAPIParameters = {
-    "title": "Polar API",
-    "summary": "Polar HTTP and Webhooks API",
-    "description": "Read the docs at https://polar.sh/docs/api-reference",
-    "docs_url": None
-    if settings.is_environment({Environment.sandbox, Environment.production})
-    else "/docs",
-    "redoc_url": None
-    if settings.is_environment({Environment.sandbox, Environment.production})
-    else "/redoc",
-    "openapi_tags": APITag.metadata(),  # type: ignore
-    "servers": [
-        {
-            "url": "https://api.polar.sh",
-            "description": "Production environment",
-            "x-speakeasy-server-id": "production",
-            "x-polar-environment": "production",
-        },
-        {
-            "url": "https://sandbox-api.polar.sh",
-            "description": "Sandbox environment",
-            "x-speakeasy-server-id": "sandbox",
-            "x-polar-environment": "sandbox",
-        },
-    ],
-}
-
-
-def set_openapi_generator(app: FastAPI) -> None:
-    def _openapi_generator() -> dict[str, Any]:
-        if app.openapi_schema:
-            return app.openapi_schema
-
-        openapi_schema = get_openapi(
-            title=app.title,
-            version=app.version,
-            openapi_version=app.openapi_version,
-            summary=app.summary,
-            description=app.description,
-            terms_of_service=app.terms_of_service,
-            contact=app.contact,
-            license_info=app.license_info,
-            routes=app.routes,
-            webhooks=app.webhooks.routes,
-            tags=app.openapi_tags,
-            servers=app.servers,
-            separate_input_output_schemas=app.separate_input_output_schemas,
-        )
-
-        openapi_schema = add_metadata_query_schema(openapi_schema)
-        openapi_schema = add_oauth2_form_schemas(openapi_schema)
-
-        return openapi_schema
-
-    app.openapi = _openapi_generator  # type: ignore[method-assign]
+    return openapi_schema
 
 
 __all__ = [
-    "OPENAPI_PARAMETERS",
     "APITag",
-    "set_openapi_generator",
+    "get_openapi",
 ]

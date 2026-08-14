@@ -4,7 +4,6 @@ from typing import TypedDict
 
 import structlog
 from fastapi import FastAPI
-from fastapi.routing import APIRoute
 
 from polar import worker  # noqa
 from polar.api import router
@@ -28,6 +27,7 @@ from polar.kit.db.postgres import (
     create_async_sessionmaker,
     create_sync_sessionmaker,
 )
+from polar.kit.versioning import add_versioned_routers
 from polar.logfire import (
     configure_logfire,
     instrument_fastapi,
@@ -59,7 +59,6 @@ from polar.observability.remote_write import (
     stop_remote_write_pusher,
 )
 from polar.observability.slo import start_slo_metrics, stop_slo_metrics
-from polar.openapi import OPENAPI_PARAMETERS, APITag, set_openapi_generator
 from polar.postgres import (
     AsyncSessionMiddleware,
     create_async_engine,
@@ -69,8 +68,7 @@ from polar.postgres import (
 from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
 from polar.sentry import configure_sentry
-from polar.version import CURRENT_API_VERSION, APIVersionMiddleware
-from polar.webhook.webhooks import document_webhooks
+from polar.version import CURRENT_API_VERSION, VERSIONS
 
 from . import rate_limit
 
@@ -106,11 +104,6 @@ def configure_cors(app: FastAPI) -> None:
     configs.append(api_config)
 
     app.add_middleware(CORSMatcherMiddleware, configs=configs)
-
-
-def generate_unique_openapi_id(route: APIRoute) -> str:
-    parts = [str(tag) for tag in route.tags if tag not in APITag] + [route.name]
-    return ":".join(parts)
 
 
 class State(TypedDict):
@@ -203,17 +196,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(
-        generate_unique_id_function=generate_unique_openapi_id,
-        lifespan=lifespan,
-        version=str(CURRENT_API_VERSION),
-        **OPENAPI_PARAMETERS,
-    )
+    app = FastAPI(lifespan=lifespan, openapi_url=None)
 
     app.add_middleware(OperationalErrorMiddleware)
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
-    app.add_middleware(APIVersionMiddleware, current=CURRENT_API_VERSION)
     app.add_middleware(CacheControlMiddleware)
     if not settings.is_testing():
         rate_limit_redis = create_redis("rate-limit")
@@ -259,9 +246,7 @@ def create_app() -> FastAPI:
     if settings.CHECKOUT_LINK_HOST is not None:
         app.host(settings.CHECKOUT_LINK_HOST, checkout_link_redirect_app)
 
-    app.include_router(router)
-    document_webhooks(app)
-    set_openapi_generator(app)
+    add_versioned_routers(app, router, VERSIONS, CURRENT_API_VERSION)
 
     return app
 

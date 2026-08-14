@@ -9,9 +9,11 @@ from polar.kit.routing import (
     SpeakeasyPaginationAPIRoute,
     get_api_router_class,
 )
+from polar.kit.versioning import VersionedAPIRoute
 
 
 class APIRoute(
+    VersionedAPIRoute,
     AutoCommitAPIRoute,
     IncludedInSchemaAPIRoute,
     DocumentedAuthSubjectAPIRoute,

@@ -1,5 +1,5 @@
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import { Grid, GridItem, Text } from '@polar-sh/orbit'
+import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
@@ -21,18 +21,14 @@ const Footer = () => {
     >
       <Grid
         width="100%"
-        templateColumns={{
-          base: '1fr',
-          md: 'repeat(2, 1fr)',
-          lg: 'repeat(6, 1fr)',
-        }}
-        gap={{ base: '3xl', md: '4xl' }}
+        templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+        gap={{ base: '3xl', lg: 'l' }}
       >
-        <GridItem
-          colSpan={{ md: 2 }}
+        <Box
           flexDirection="column"
           justifyContent="between"
-          rowGap="xl"
+          alignItems="start"
+          rowGap="3xl"
         >
           <PolarLogotype
             className="ml-2 md:ml-0"
@@ -51,7 +47,7 @@ const Footer = () => {
                 columnGap="s"
                 color="text-primary"
               >
-                <Text as="span" variant="body" color="inherit">
+                <Text as="span" variant="heading-xxs" color="inherit">
                   Get Started
                 </Text>
                 <ArrowOutwardOutlined fontSize="inherit" />
@@ -61,47 +57,63 @@ const Footer = () => {
               &copy; Polar Software, Inc. {new Date().getFullYear()}
             </Text>
           </Box>
-        </GridItem>
+        </Box>
 
-        <FooterSection title="Features">
-          <FooterLink href="/features/usage-billing">Usage Billing</FooterLink>
-          <FooterLink href="/features/subscriptions">Subscriptions</FooterLink>
-          <FooterLink href="/features/seats">Seats</FooterLink>
-          <FooterLink href="/features/credits">Credits</FooterLink>
-          <FooterLink href="/features/trials">Trials</FooterLink>
-          <FooterLink href="/features/discounts">Discounts</FooterLink>
-          <FooterLink href="/features/cost-insights">Cost Insights</FooterLink>
-          <FooterLink href="/features/finance">Finance</FooterLink>
-          <FooterLink href="/features/merchant-of-record">
-            Merchant of Record
-          </FooterLink>
-        </FooterSection>
+        <Grid
+          templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }}
+          columnGap="l"
+          rowGap="3xl"
+        >
+          <FooterSection title="Features">
+            <FooterLink href="/features/usage-billing">
+              Usage Billing
+            </FooterLink>
+            <FooterLink href="/features/subscriptions">
+              Subscriptions
+            </FooterLink>
+            <FooterLink href="/features/seats">Seats</FooterLink>
+            <FooterLink href="/features/credits">Credits</FooterLink>
+            <FooterLink href="/features/trials">Trials</FooterLink>
+            <FooterLink href="/features/discounts">Discounts</FooterLink>
+            <FooterLink href="/features/cost-insights">
+              Cost Insights
+            </FooterLink>
+            <FooterLink href="/features/finance">Finance</FooterLink>
+            <FooterLink href="/features/merchant-of-record">
+              Merchant of Record
+            </FooterLink>
+          </FooterSection>
 
-        <FooterSection title="Resources">
-          <FooterLink href="/resources/why">Why Polar</FooterLink>
-          <FooterLink href="/resources/merchant-of-record">
-            Merchant of Record
-          </FooterLink>
-          <FooterLink href="/resources/pricing">Pricing</FooterLink>
-          <FooterLink href="/downloads">Downloads</FooterLink>
-        </FooterSection>
+          <FooterSection title="Resources">
+            <FooterLink href="/resources/why">Why Polar</FooterLink>
+            <FooterLink href="/resources/merchant-of-record">
+              Merchant of Record
+            </FooterLink>
+            <FooterLink href="/resources/pricing">Pricing</FooterLink>
+            <FooterLink href="/downloads">Downloads</FooterLink>
+          </FooterSection>
 
-        <FooterSection title="Company">
-          <FooterLink href="/company">About Polar</FooterLink>
-          <FooterLink href="https://github.com/polarsource">GitHub</FooterLink>
-          <FooterLink href="https://x.com/polar_sh">X / Twitter</FooterLink>
-          <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
-            Brand Assets
-          </FooterLink>
-          <FooterLink href="https://polar.sh/legal">Legal</FooterLink>
-          <CookiePreferencesButton />
-        </FooterSection>
+          <FooterSection title="Company">
+            <FooterLink href="/company">About Polar</FooterLink>
+            <FooterLink href="https://github.com/polarsource">
+              GitHub
+            </FooterLink>
+            <FooterLink href="https://x.com/polar_sh">X / Twitter</FooterLink>
+            <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
+              Brand Assets
+            </FooterLink>
+            <FooterLink href="https://polar.sh/legal">Legal</FooterLink>
+            <CookiePreferencesButton />
+          </FooterSection>
 
-        <FooterSection title="Support">
-          <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
-          <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
-          <FooterLink href="https://status.polar.sh">Service Status</FooterLink>
-        </FooterSection>
+          <FooterSection title="Support">
+            <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
+            <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
+            <FooterLink href="https://status.polar.sh">
+              Service Status
+            </FooterLink>
+          </FooterSection>
+        </Grid>
       </Grid>
     </Box>
   )
@@ -114,7 +126,7 @@ const FooterSection = ({
   children,
 }: PropsWithChildren<{ title: string }>) => (
   <Box flexDirection="column" rowGap="l">
-    <Text as="h3" color="muted">
+    <Text as="h3" variant="body" color="muted">
       {title}
     </Text>
     <Box flexDirection="column" rowGap="s">
@@ -137,7 +149,7 @@ const FooterLink = ({
       transitionProperty="colors"
       transitionDuration="fast"
     >
-      <Text as="span" color="inherit">
+      <Text as="span" variant="heading-xxs" color="inherit">
         {children}
       </Text>
     </Box>

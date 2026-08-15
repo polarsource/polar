@@ -103,7 +103,7 @@ const TierCard = ({ tier }: { tier: Tier }) => (
             {tier.name}
           </Text>
           <Box display="block">
-            <Text variant="body" color="muted">
+            <Text variant="heading-xxs" color="muted">
               {tier.desc}
             </Text>
           </Box>

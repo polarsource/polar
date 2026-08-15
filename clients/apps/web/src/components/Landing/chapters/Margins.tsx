@@ -6,8 +6,8 @@ export const Margins = () => (
   <Chapter
     index="03"
     name="Understand"
-    title="The only payment stack that knows your margins"
-    subtitle="Revenue meets cost, customer by customer"
+    title="The only payment stack"
+    subtitle="that knows your margins"
     description="Polar already collects every payment, so placing inference cost beside it reveals your true gross margin per customer. The $90 plan burning $600 of tokens stops hiding in your averages."
   >
     <Box

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -77,6 +78,65 @@ func keepEquivalentTimestamp(prior types.String, api *string) types.String {
 		return prior
 	}
 	return types.StringValue(*api)
+}
+
+// keepEquivalentDecimal keeps the configured spelling of a decimal amount when
+// the API's stored value denotes the same number (the server normalizes the
+// scale, so "0.015" comes back as "0.0150"), which keeps the applied value
+// matching the plan.
+func keepEquivalentDecimal(prior types.String, api *string) types.String {
+	if api == nil {
+		return types.StringNull()
+	}
+	if prior.IsNull() || prior.IsUnknown() {
+		return types.StringValue(*api)
+	}
+	if decimalsEqual(prior.ValueString(), *api) {
+		return prior
+	}
+	return types.StringValue(*api)
+}
+
+// decimalsEqual compares two decimal strings numerically, so trailing zeros
+// and a leading zero before the point don't count as a difference.
+func decimalsEqual(a, b string) bool {
+	if a == b {
+		return true
+	}
+	parsedA, okA := new(big.Rat).SetString(a)
+	parsedB, okB := new(big.Rat).SetString(b)
+	return okA && okB && parsedA.Cmp(parsedB) == 0
+}
+
+// strippedString rejects values with surrounding whitespace: the API strips
+// them, which would leave a permanent diff between configuration and state.
+type strippedStringValidator struct{}
+
+func (v strippedStringValidator) Description(ctx context.Context) string {
+	return "must not start or end with whitespace"
+}
+
+func (v strippedStringValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v strippedStringValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	value := req.ConfigValue.ValueString()
+	if strings.TrimSpace(value) != value {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Surrounding whitespace",
+			"The Polar API strips leading and trailing whitespace from this value, which would cause a "+
+				"permanent diff. Remove the surrounding whitespace.",
+		)
+	}
+}
+
+func strippedString() validator.String {
+	return strippedStringValidator{}
 }
 
 // noMetadataPrefix rejects property names carrying the "metadata." prefix: the
@@ -183,6 +243,29 @@ func metadataValueToString(value any) string {
 // metadata deletion still surfaces as drift.
 func priorMetadataIsEmptyMap(prior types.Map) bool {
 	return !prior.IsNull() && !prior.IsUnknown() && len(prior.Elements()) == 0
+}
+
+// priorListIsEmpty reports whether the prior state holds a known, empty list.
+// That is the one case where an empty API list should keep the prior value
+// rather than reading back as null; a prior list with elements must NOT be
+// kept, so out-of-band removal still surfaces as drift. Mirrors
+// priorMetadataIsEmptyMap.
+func priorListIsEmpty(prior types.List) bool {
+	return !prior.IsNull() && !prior.IsUnknown() && len(prior.Elements()) == 0
+}
+
+// stringListFromAPI converts an ordered list of API IDs into a list attribute,
+// staying null when the API has none so a configuration omitting the attribute
+// doesn't drift against an empty list.
+func stringListFromAPI(ctx context.Context, ids []string, prior types.List) types.List {
+	if len(ids) == 0 {
+		if priorListIsEmpty(prior) {
+			return prior
+		}
+		return types.ListNull(types.StringType)
+	}
+	list, _ := types.ListValueFrom(ctx, types.StringType, ids)
+	return list
 }
 
 // urlsEquivalent compares two URLs the way pydantic normalizes them

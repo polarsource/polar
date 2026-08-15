@@ -1,8 +1,8 @@
 # Polar Terraform Provider
 
 Manage a [Polar](https://polar.sh) organization's product catalog and settings as code:
-custom fields, webhook endpoints, usage-billing meters — with more of the catalog
-(products, benefits, discounts, checkout links) on the roadmap.
+products, benefits, discounts, custom fields, webhook endpoints and usage-billing meters —
+with more of the catalog (checkout links, organization settings) on the roadmap.
 
 The provider authenticates with an **organization access token** created once in the Polar
 dashboard. Everything else happens through Terraform.
@@ -54,6 +54,7 @@ resource "polar_webhook_endpoint" "billing_events" {
 | `polar_discount` | Checkout discounts. `type`/`duration` force replacement; value frozen after first redemption. |
 | `polar_webhook_endpoint` | Webhook endpoints. The signing `secret` is server-generated and stored as sensitive state. |
 | `polar_meter` | Usage-billing meters. Polar has no meter deletion: destroy archives the meter. `filter`/`aggregation` become immutable once the meter has billed events. |
+| `polar_product` | Products with nested prices, benefits and checkout fields. Destroy archives the product; prices are immutable (an edit archives and recreates them) and the billing interval forces replacement. |
 
 Generated documentation for each resource lives in [`docs/`](docs/) and on the Terraform Registry.
 

@@ -2,8 +2,12 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/polarsource/terraform-provider-polar/internal/polarapi"
@@ -260,5 +264,401 @@ func TestBenefitUnsupportedTypeErrors(t *testing.T) {
 	benefit := &polarapi.Benefit{Type: "discord", Properties: map[string]any{}}
 	if _, _, _, _, err := benefitPropertiesFromAPI(benefit, nil); err == nil {
 		t.Fatal("unsupported benefit types must error on read")
+	}
+}
+
+func TestDecimalsEqual(t *testing.T) {
+	equal := [][2]string{
+		{"0.015", "0.0150"},
+		{"1", "1.000000000000"},
+		{"0.5", ".5"},
+		{"10", "10"},
+	}
+	for _, pair := range equal {
+		if !decimalsEqual(pair[0], pair[1]) {
+			t.Errorf("decimalsEqual(%q, %q) = false, want true", pair[0], pair[1])
+		}
+	}
+	different := [][2]string{
+		{"0.015", "0.0151"},
+		{"1", "10"},
+		{"0.015", "not a number"},
+	}
+	for _, pair := range different {
+		if decimalsEqual(pair[0], pair[1]) {
+			t.Errorf("decimalsEqual(%q, %q) = true, want false", pair[0], pair[1])
+		}
+	}
+}
+
+func TestKeepEquivalentDecimal(t *testing.T) {
+	api := "0.0150"
+	prior := types.StringValue("0.015")
+	if got := keepEquivalentDecimal(prior, &api); got != prior {
+		t.Errorf("an equivalent decimal should keep the configured spelling, got %v", got)
+	}
+	changed := types.StringValue("0.02")
+	if got := keepEquivalentDecimal(changed, &api); got.ValueString() != api {
+		t.Errorf("a different decimal should take the API value, got %v", got)
+	}
+	if got := keepEquivalentDecimal(types.StringNull(), nil); !got.IsNull() {
+		t.Errorf("a nil API value should map to null, got %v", got)
+	}
+}
+
+func TestPriorListIsEmpty(t *testing.T) {
+	ctx := context.Background()
+	empty, _ := types.ListValueFrom(ctx, types.StringType, []string{})
+	filled, _ := types.ListValueFrom(ctx, types.StringType, []string{"a"})
+	if !priorListIsEmpty(empty) {
+		t.Error("empty known list should qualify")
+	}
+	if priorListIsEmpty(filled) {
+		t.Error("list with elements must not qualify: out-of-band removal must surface as drift")
+	}
+	if priorListIsEmpty(types.ListNull(types.StringType)) {
+		t.Error("null list must not qualify")
+	}
+}
+
+func testPriceID(id string) types.String {
+	if id == "" {
+		return types.StringUnknown()
+	}
+	return types.StringValue(id)
+}
+
+func testFixedPrice(id string, amount int64) productPriceModel {
+	return productPriceModel{
+		ID:            testPriceID(id),
+		AmountType:    types.StringValue("fixed"),
+		PriceCurrency: types.StringValue("usd"),
+		PriceAmount:   types.Int64Value(amount),
+	}
+}
+
+func testCustomPrice(id string, minimum int64) productPriceModel {
+	return productPriceModel{
+		ID:            testPriceID(id),
+		AmountType:    types.StringValue("custom"),
+		PriceCurrency: types.StringValue("usd"),
+		MinimumAmount: types.Int64Value(minimum),
+	}
+}
+
+func testSeatPrice(id string, pricePerSeat int64) productPriceModel {
+	return productPriceModel{
+		ID:            testPriceID(id),
+		AmountType:    types.StringValue("seat_based"),
+		PriceCurrency: types.StringValue("usd"),
+		SeatTiers: &productSeatTiersModel{
+			SeatTierType: types.StringValue("volume"),
+			Tiers: []productSeatTierModel{{
+				MinSeats:     types.Int64Value(1),
+				MaxSeats:     types.Int64Null(),
+				PricePerSeat: types.Int64Value(pricePerSeat),
+			}},
+		},
+	}
+}
+
+func testMeteredPrice(id, meterID, unitAmount string) productPriceModel {
+	return productPriceModel{
+		ID:            testPriceID(id),
+		AmountType:    types.StringValue("metered_unit"),
+		PriceCurrency: types.StringValue("usd"),
+		MeterID:       types.StringValue(meterID),
+		UnitAmount:    types.StringValue(unitAmount),
+	}
+}
+
+func TestPricesMatch(t *testing.T) {
+	cases := []struct {
+		name     string
+		planned  productPriceModel
+		other    productPriceModel
+		mode     priceMatchMode
+		expected bool
+	}{
+		{"fixed same amount, different ID", testFixedPrice("", 990), testFixedPrice("p1", 990), exactPriceMatch, true},
+		{"fixed different amount", testFixedPrice("", 990), testFixedPrice("p1", 1990), exactPriceMatch, false},
+		{"different amount type", testFixedPrice("", 990), testCustomPrice("p1", 990), exactPriceMatch, false},
+		{"custom same minimum", testCustomPrice("", 500), testCustomPrice("p1", 500), exactPriceMatch, true},
+		{"custom different minimum", testCustomPrice("", 500), testCustomPrice("p1", 100), exactPriceMatch, false},
+		{"seat based same ladder", testSeatPrice("", 1000), testSeatPrice("p1", 1000), exactPriceMatch, true},
+		{"seat based different rate", testSeatPrice("", 1000), testSeatPrice("p1", 2000), exactPriceMatch, false},
+		{"metered equivalent decimals", testMeteredPrice("", "m1", "0.015"), testMeteredPrice("p1", "m1", "0.0150"), exactPriceMatch, true},
+		{"metered different decimals", testMeteredPrice("", "m1", "0.015"), testMeteredPrice("p1", "m1", "0.016"), exactPriceMatch, false},
+		{"metered different meter", testMeteredPrice("", "m1", "0.015"), testMeteredPrice("p1", "m2", "0.015"), exactPriceMatch, false},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := pricesMatch(testCase.planned, testCase.other, testCase.mode); got != testCase.expected {
+				t.Errorf("pricesMatch = %v, want %v", got, testCase.expected)
+			}
+		})
+	}
+}
+
+func TestPricesMatchTreatsUnknownsPerMode(t *testing.T) {
+	// A meter ID resolved during apply: the provider cannot prove the price is
+	// unchanged, so it must not keep the existing one...
+	planned := testMeteredPrice("", "m1", "0.015")
+	planned.MeterID = types.StringUnknown()
+	existing := testMeteredPrice("p1", "m1", "0.015")
+	if pricesMatch(planned, existing, exactPriceMatch) {
+		t.Error("an unknown attribute must never keep an existing price")
+	}
+	// ... but lining the API's response up with the plan is exactly the case
+	// where an unknown is whatever the API just returned.
+	if !pricesMatch(planned, existing, responsePriceMatch) {
+		t.Error("an unknown attribute should be satisfied by the API's value")
+	}
+}
+
+func TestMatchPricesToStateConsumesEachStatePriceOnce(t *testing.T) {
+	// Two planned prices that both look like the single price in state: only
+	// the first may claim it, the second has to be created.
+	planned := []productPriceModel{testFixedPrice("", 990), testFixedPrice("", 990)}
+	state := []productPriceModel{testFixedPrice("p1", 990)}
+	matches := matchPricesToState(planned, state)
+	if matches[0] != 0 {
+		t.Errorf("the first planned price should claim the state price, got %d", matches[0])
+	}
+	if matches[1] != -1 {
+		t.Errorf("a state price must only back one planned price, got %d", matches[1])
+	}
+}
+
+func TestPricesToAPIUpdateKeepsMatchedPrices(t *testing.T) {
+	state := []productPriceModel{testFixedPrice("p-fixed", 990), testMeteredPrice("p-metered", "m1", "0.015")}
+	// The metered price is unchanged (written at a different scale), the fixed
+	// price got more expensive, and a seat price was added.
+	planned := []productPriceModel{
+		testMeteredPrice("", "m1", "0.0150"),
+		testFixedPrice("", 1990),
+		testSeatPrice("", 1000),
+	}
+
+	payload := pricesToAPIUpdate(planned, state)
+	if len(payload) != 3 {
+		t.Fatalf("expected one entry per planned price, got %d", len(payload))
+	}
+	if payload[0].ExistingID == nil || *payload[0].ExistingID != "p-metered" {
+		t.Errorf("the unchanged metered price should be kept by ID, got %+v", payload[0])
+	}
+	if payload[1].Create == nil || payload[1].Create.AmountType != "fixed" {
+		t.Errorf("the repriced fixed price should be recreated, got %+v", payload[1])
+	}
+	if payload[2].Create == nil || payload[2].Create.SeatTiers == nil {
+		t.Errorf("the added seat price should be created, got %+v", payload[2])
+	}
+	// The fixed price in state is not referenced, which is how the API is told
+	// to archive it.
+	for _, entry := range payload {
+		if entry.ExistingID != nil && *entry.ExistingID == "p-fixed" {
+			t.Error("the repriced fixed price must not be kept by ID")
+		}
+	}
+}
+
+func testNumber(value string) *json.Number {
+	number := json.Number(value)
+	return &number
+}
+
+func testInt64(value int64) *int64 {
+	return &value
+}
+
+func testString(value string) *string {
+	return &value
+}
+
+func TestPricesFromAPIFiltersAdHocAndFollowsPlanOrder(t *testing.T) {
+	// The API returns catalog prices in its own order (static before metered)
+	// and mixes in ad-hoc prices created by Checkout sessions.
+	api := []polarapi.ProductPrice{
+		{ID: "p-fixed", Source: "catalog", AmountType: "fixed", PriceCurrency: "usd", PriceAmount: testInt64(990)},
+		{ID: "p-adhoc", Source: "ad_hoc", AmountType: "fixed", PriceCurrency: "usd", PriceAmount: testInt64(1)},
+		{ID: "p-archived", Source: "catalog", AmountType: "fixed", PriceCurrency: "usd", PriceAmount: testInt64(490), IsArchived: true},
+		{ID: "p-metered", Source: "catalog", AmountType: "metered_unit", PriceCurrency: "usd", MeterID: testString("m1"), UnitAmount: testNumber("0.0150")},
+	}
+	prior := []productPriceModel{testMeteredPrice("", "m1", "0.015"), testFixedPrice("", 990)}
+
+	prices, err := pricesFromAPI(api, prior)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(prices) != 2 {
+		t.Fatalf("ad-hoc and archived prices must not enter state, got %d prices", len(prices))
+	}
+	if prices[0].ID.ValueString() != "p-metered" || prices[1].ID.ValueString() != "p-fixed" {
+		t.Errorf("prices should follow the plan's order, got %s then %s",
+			prices[0].ID.ValueString(), prices[1].ID.ValueString())
+	}
+	if prices[0].UnitAmount.ValueString() != "0.015" {
+		t.Errorf("the configured decimal spelling should survive the read-back, got %q",
+			prices[0].UnitAmount.ValueString())
+	}
+}
+
+func TestPricesFromAPIAppendsUnplannedPrices(t *testing.T) {
+	api := []polarapi.ProductPrice{
+		{ID: "p-fixed", Source: "catalog", AmountType: "fixed", PriceCurrency: "usd", PriceAmount: testInt64(990)},
+		{ID: "p-extra", Source: "catalog", AmountType: "fixed", PriceCurrency: "eur", PriceAmount: testInt64(900)},
+	}
+	prices, err := pricesFromAPI(api, []productPriceModel{testFixedPrice("p-fixed", 990)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(prices) != 2 || prices[1].ID.ValueString() != "p-extra" {
+		t.Fatalf("a price added out of band should append as drift, got %+v", prices)
+	}
+}
+
+func TestPricesFromAPIRejectsUnrepresentablePrices(t *testing.T) {
+	legacy := []polarapi.ProductPrice{
+		{ID: "p-legacy", Source: "catalog", AmountType: "fixed", PriceCurrency: "usd", PriceAmount: testInt64(990), Legacy: true},
+	}
+	if _, err := pricesFromAPI(legacy, nil); err == nil {
+		t.Error("legacy recurring prices must error rather than be guessed at")
+	}
+
+	unknown := []polarapi.ProductPrice{
+		{ID: "p-new", Source: "catalog", AmountType: "metered_tiered", PriceCurrency: "usd"},
+	}
+	if _, err := pricesFromAPI(unknown, nil); err == nil {
+		t.Error("unknown amount types must error rather than be dropped")
+	}
+}
+
+func TestValidateSeatTiers(t *testing.T) {
+	tier := func(min int64, max *int64, price int64) productSeatTierModel {
+		return productSeatTierModel{
+			MinSeats:     types.Int64Value(min),
+			MaxSeats:     int64FromPointer(max),
+			PricePerSeat: types.Int64Value(price),
+		}
+	}
+	cases := []struct {
+		name   string
+		tiers  []productSeatTierModel
+		errors bool
+	}{
+		{"contiguous", []productSeatTierModel{tier(1, testInt64(10), 1000), tier(11, nil, 800)}, false},
+		{"gap", []productSeatTierModel{tier(1, testInt64(10), 1000), tier(12, nil, 800)}, true},
+		{"overlap", []productSeatTierModel{tier(1, testInt64(10), 1000), tier(5, nil, 800)}, true},
+		{"unbounded tier is not last", []productSeatTierModel{tier(1, nil, 1000), tier(11, nil, 800)}, true},
+		{"single unbounded tier", []productSeatTierModel{tier(1, nil, 1000)}, false},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			resp := &resource.ValidateConfigResponse{}
+			validateSeatTiers(testCase.tiers, path.Root("prices"), resp)
+			if resp.Diagnostics.HasError() != testCase.errors {
+				t.Errorf("HasError = %v, want %v (%v)", resp.Diagnostics.HasError(), testCase.errors, resp.Diagnostics)
+			}
+		})
+	}
+}
+
+func TestMeterIntervalDividesBillingInterval(t *testing.T) {
+	cases := []struct {
+		meterInterval   string
+		meterCount      int64
+		billingInterval string
+		billingCount    int64
+		expected        bool
+	}{
+		{"month", 1, "year", 1, true},
+		{"month", 5, "year", 1, false},
+		{"month", 1, "month", 3, true},
+		{"month", 2, "month", 3, false},
+		{"day", 1, "year", 1, true},
+		{"day", 2, "year", 1, false},
+		{"day", 7, "week", 2, true},
+		{"year", 1, "month", 1, false},
+		{"week", 1, "month", 1, false},
+	}
+	for _, testCase := range cases {
+		got := meterIntervalDividesBillingInterval(
+			testCase.meterInterval, testCase.meterCount, testCase.billingInterval, testCase.billingCount)
+		if got != testCase.expected {
+			t.Errorf("%s x%d on %s x%d = %v, want %v",
+				testCase.meterInterval, testCase.meterCount,
+				testCase.billingInterval, testCase.billingCount, got, testCase.expected)
+		}
+	}
+}
+
+func TestUnitAmountValidator(t *testing.T) {
+	valid := []string{"0.015", "1", "12.000000000001", "0.000000000001"}
+	for _, value := range valid {
+		resp := &validator.StringResponse{}
+		unitAmount().ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root("unit_amount"),
+			ConfigValue: types.StringValue(value),
+		}, resp)
+		if resp.Diagnostics.HasError() {
+			t.Errorf("%q should be a valid unit amount: %v", value, resp.Diagnostics)
+		}
+	}
+	invalid := []string{"0", "0.000", "-1", "1e-3", "0.0000000000001", "abc", ""}
+	for _, value := range invalid {
+		resp := &validator.StringResponse{}
+		unitAmount().ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root("unit_amount"),
+			ConfigValue: types.StringValue(value),
+		}, resp)
+		if !resp.Diagnostics.HasError() {
+			t.Errorf("%q should be rejected as a unit amount", value)
+		}
+	}
+}
+
+func TestStrippedStringValidator(t *testing.T) {
+	resp := &validator.StringResponse{}
+	strippedString().ValidateString(context.Background(), validator.StringRequest{
+		Path:        path.Root("name"),
+		ConfigValue: types.StringValue(" Pro "),
+	}, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Error("surrounding whitespace must be rejected: the API strips it, leaving a permanent diff")
+	}
+}
+
+func TestResourceSchemasAreValid(t *testing.T) {
+	ctx := context.Background()
+	for _, newResource := range New("test")().Resources(ctx) {
+		resp := &resource.SchemaResponse{}
+		newResource().Schema(ctx, resource.SchemaRequest{}, resp)
+		if resp.Diagnostics.HasError() {
+			t.Fatalf("schema construction failed: %v", resp.Diagnostics)
+		}
+		metadataResp := &resource.MetadataResponse{}
+		newResource().Metadata(ctx, resource.MetadataRequest{ProviderTypeName: "polar"}, metadataResp)
+		if diags := resp.Schema.ValidateImplementation(ctx); diags.HasError() {
+			t.Errorf("%s has an invalid schema: %v", metadataResp.TypeName, diags)
+		}
+	}
+}
+
+func TestPlannedPriceIDs(t *testing.T) {
+	state := []productPriceModel{testFixedPrice("p-fixed", 990), testMeteredPrice("p-metered", "m1", "0.015")}
+	// The metered price is unchanged, the fixed price was repriced, and a
+	// custom price was added.
+	planned := []productPriceModel{
+		testMeteredPrice("", "m1", "0.0150"),
+		testFixedPrice("", 1990),
+		testCustomPrice("", 500),
+	}
+
+	ids := plannedPriceIDs(planned, state)
+	if ids[0].ValueString() != "p-metered" {
+		t.Errorf("an unchanged price should keep its ID in the plan, got %v", ids[0])
+	}
+	if !ids[1].IsUnknown() || !ids[2].IsUnknown() {
+		t.Errorf("recreated and added prices should plan an unknown ID, got %v and %v", ids[1], ids[2])
 	}
 }

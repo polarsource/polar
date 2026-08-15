@@ -31,8 +31,8 @@ POLAR_ACCESS_TOKEN=... POLAR_BASE_URL=http://127.0.0.1:8000 make testacc  # agai
   come from `server/polar/{module}/` (schemas + service layer). Cite the server behavior in
   the resource's Markdown descriptions when it is surprising (archive-on-destroy,
   conditional immutability).
-- **Archive-on-destroy** for resources without a DELETE endpoint (meters today; products
-  when added): destroy maps to `is_archived: true`, Read treats archived as destroyed.
+- **Archive-on-destroy** for resources without a DELETE endpoint (meters and products):
+  destroy maps to `is_archived: true`, Read treats archived as destroyed.
 - **Server-generated values** (webhook secrets, IDs, timestamps) are `Computed` with
   `UseStateForUnknown`; secrets are `Sensitive`.
 - **Fail at plan time when the API would silently rewrite input** (e.g. `metadata.`
@@ -51,8 +51,7 @@ README.md for the one-time setup checklist.
 
 ## Roadmap
 
-Remaining catalog resources, in rough order of value: `polar_product` (nested prices —
-the hard one; see the price-replacement semantics in `server/polar/product/service.py`),
+Remaining catalog resources, in rough order of value:
 `polar_checkout_link`, `polar_metric_dashboard`, `polar_organization` (update-only
 singleton), the four integration-backed benefit types (`discord`, `github_repository`,
 `feature_flag`, `slack_shared_channel`), plus data sources for products, benefits and

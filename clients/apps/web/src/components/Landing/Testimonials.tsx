@@ -4,7 +4,6 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Chapter } from './Chapter'
 import { LogoGrid } from './LogoGrid'
-import { FastAPICloud, StillaAI } from './Logos'
 
 interface Testimonial {
   link: string
@@ -99,7 +98,7 @@ const TestimonialRow = ({ testimonial }: { testimonial: Testimonial }) => (
 export const Testimonials = () => (
   <Chapter
     index="04"
-    name="Customers"
+    name="What people say"
     title="Trusted by the teams shipping fastest"
     subtitle="From AI startups to infrastructure veterans"
   >

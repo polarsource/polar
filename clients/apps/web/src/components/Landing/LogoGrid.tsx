@@ -52,6 +52,8 @@ export const LogoGrid = () => (
               base: 'background-secondary',
               hover: 'background-card',
             }}
+            transitionDuration="fast"
+            transitionProperty="colors"
           >
             {logo.icon}
           </Box>

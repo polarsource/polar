@@ -8,118 +8,101 @@ import { CookiePreferencesButton } from '../Privacy/CookiePreferencesButton'
 
 const Footer = () => {
   return (
-    // Spacing tokens cap at 96px ('5xl'), so the wrapper and inner paddings
-    // stack to reach the 192px vertical padding on large screens.
     <Box
+      as="footer"
       width="100%"
       flexDirection="column"
-      alignItems="center"
-      marginTop="4xl"
-      paddingVertical={{ lg: '5xl' }}
+      marginTop={{ base: 'none', md: '2xl' }}
+      paddingHorizontal={{ base: 'xl', md: 'none' }}
+      paddingVertical={{ base: '4xl', md: '5xl' }}
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
     >
-      <Box
+      <Grid
         width="100%"
-        maxWidth={{ md: 768, xl: 1280 }}
-        flexDirection="column"
-        alignItems="center"
-        paddingHorizontal={{ base: 'xl', md: 'none' }}
-        paddingVertical={{ base: '4xl', lg: '5xl' }}
+        templateColumns={{
+          base: '1fr',
+          md: 'repeat(2, 1fr)',
+          lg: 'repeat(6, 1fr)',
+        }}
+        gap={{ base: '3xl', md: '4xl' }}
       >
-        <Grid
-          width="100%"
-          templateColumns={{
-            base: '1fr',
-            md: 'repeat(2, 1fr)',
-            lg: 'repeat(6, 1fr)',
-          }}
-          gap={{ base: '3xl', md: '4xl' }}
+        <GridItem
+          colSpan={{ md: 2 }}
+          flexDirection="column"
+          justifyContent="between"
+          rowGap="xl"
         >
-          <GridItem
-            colSpan={{ md: 2 }}
-            flexDirection="column"
-            justifyContent="between"
-            rowGap="xl"
-          >
-            <PolarLogotype
-              className="ml-2 md:ml-0"
-              logoVariant="logotype"
-              size={120}
-            />
-            <Box flexDirection="column" rowGap="xl">
-              <Link
-                href="/signup"
-                className="w-fit border-b border-current pb-0.5"
+          <PolarLogotype
+            className="ml-2 md:ml-0"
+            logoVariant="logotype"
+            size={120}
+          />
+          <Box flexDirection="column" rowGap="xl">
+            <Link
+              href="/signup"
+              className="w-fit border-b border-current pb-0.5"
+            >
+              <Box
+                as="span"
+                display="inline-flex"
+                alignItems="center"
+                columnGap="s"
+                color="text-primary"
               >
-                <Box
-                  as="span"
-                  display="inline-flex"
-                  alignItems="center"
-                  columnGap="s"
-                  color="text-primary"
-                >
-                  <Text as="span" variant="body" color="inherit">
-                    Get Started
-                  </Text>
-                  <ArrowOutwardOutlined fontSize="inherit" />
-                </Box>
-              </Link>
-              <Text variant="body" color="muted">
-                &copy; Polar Software, Inc. {new Date().getFullYear()}
-              </Text>
-            </Box>
-          </GridItem>
+                <Text as="span" variant="body" color="inherit">
+                  Get Started
+                </Text>
+                <ArrowOutwardOutlined fontSize="inherit" />
+              </Box>
+            </Link>
+            <Text variant="body" color="muted">
+              &copy; Polar Software, Inc. {new Date().getFullYear()}
+            </Text>
+          </Box>
+        </GridItem>
 
-          <FooterSection title="Features">
-            <FooterLink href="/features/usage-billing">
-              Usage Billing
-            </FooterLink>
-            <FooterLink href="/features/subscriptions">
-              Subscriptions
-            </FooterLink>
-            <FooterLink href="/features/seats">Seats</FooterLink>
-            <FooterLink href="/features/credits">Credits</FooterLink>
-            <FooterLink href="/features/trials">Trials</FooterLink>
-            <FooterLink href="/features/discounts">Discounts</FooterLink>
-            <FooterLink href="/features/cost-insights">
-              Cost Insights
-            </FooterLink>
-            <FooterLink href="/features/finance">Finance</FooterLink>
-            <FooterLink href="/features/merchant-of-record">
-              Merchant of Record
-            </FooterLink>
-          </FooterSection>
+        <FooterSection title="Features">
+          <FooterLink href="/features/usage-billing">Usage Billing</FooterLink>
+          <FooterLink href="/features/subscriptions">Subscriptions</FooterLink>
+          <FooterLink href="/features/seats">Seats</FooterLink>
+          <FooterLink href="/features/credits">Credits</FooterLink>
+          <FooterLink href="/features/trials">Trials</FooterLink>
+          <FooterLink href="/features/discounts">Discounts</FooterLink>
+          <FooterLink href="/features/cost-insights">Cost Insights</FooterLink>
+          <FooterLink href="/features/finance">Finance</FooterLink>
+          <FooterLink href="/features/merchant-of-record">
+            Merchant of Record
+          </FooterLink>
+        </FooterSection>
 
-          <FooterSection title="Resources">
-            <FooterLink href="/resources/why">Why Polar</FooterLink>
-            <FooterLink href="/resources/merchant-of-record">
-              Merchant of Record
-            </FooterLink>
-            <FooterLink href="/resources/pricing">Pricing</FooterLink>
-            <FooterLink href="/downloads">Downloads</FooterLink>
-          </FooterSection>
+        <FooterSection title="Resources">
+          <FooterLink href="/resources/why">Why Polar</FooterLink>
+          <FooterLink href="/resources/merchant-of-record">
+            Merchant of Record
+          </FooterLink>
+          <FooterLink href="/resources/pricing">Pricing</FooterLink>
+          <FooterLink href="/downloads">Downloads</FooterLink>
+        </FooterSection>
 
-          <FooterSection title="Company">
-            <FooterLink href="/company">About Polar</FooterLink>
-            <FooterLink href="https://github.com/polarsource">
-              GitHub
-            </FooterLink>
-            <FooterLink href="https://x.com/polar_sh">X / Twitter</FooterLink>
-            <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
-              Brand Assets
-            </FooterLink>
-            <FooterLink href="https://polar.sh/legal">Legal</FooterLink>
-            <CookiePreferencesButton />
-          </FooterSection>
+        <FooterSection title="Company">
+          <FooterLink href="/company">About Polar</FooterLink>
+          <FooterLink href="https://github.com/polarsource">GitHub</FooterLink>
+          <FooterLink href="https://x.com/polar_sh">X / Twitter</FooterLink>
+          <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
+            Brand Assets
+          </FooterLink>
+          <FooterLink href="https://polar.sh/legal">Legal</FooterLink>
+          <CookiePreferencesButton />
+        </FooterSection>
 
-          <FooterSection title="Support">
-            <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
-            <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
-            <FooterLink href="https://status.polar.sh">
-              Service Status
-            </FooterLink>
-          </FooterSection>
-        </Grid>
-      </Box>
+        <FooterSection title="Support">
+          <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
+          <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
+          <FooterLink href="https://status.polar.sh">Service Status</FooterLink>
+        </FooterSection>
+      </Grid>
     </Box>
   )
 }

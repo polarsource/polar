@@ -4,6 +4,7 @@ import { Margins } from './chapters/Margins'
 import { MerchantOfRecord } from './chapters/MerchantOfRecord'
 import { Meter } from './chapters/Meter'
 import { Platform } from './chapters/Platform'
+import { StartupProgram } from './chapters/StartupProgram'
 import { ClosingCta } from './ClosingCta'
 import { Hero } from './Hero/Hero'
 import { Pricing } from './Pricing'
@@ -19,6 +20,7 @@ export default function Page() {
       <Margins />
       <Testimonials />
       <Pricing />
+      <StartupProgram />
       <ClosingCta />
     </div>
   )

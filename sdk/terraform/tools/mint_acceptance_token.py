@@ -9,9 +9,9 @@ services, repositories and token crypto:
     cd server && uv run python ../sdk/terraform/tools/mint_acceptance_token.py
 
 It idempotently ensures a user, an organization able to authenticate
-(`api_access` capability, see `Organization.can_authenticate`) and a token with
-every scope the provider needs, then prints the token — and nothing else — on
-stdout, so it can be captured directly:
+(`api_access` capability, see `Organization.can_authenticate`) with the feature
+flags the suite exercises, and a token with every scope the provider needs, then
+prints the token — and nothing else — on stdout, so it can be captured directly:
 
     export POLAR_ACCESS_TOKEN=$(cd server && uv run python \\
         ../sdk/terraform/tools/mint_acceptance_token.py)
@@ -60,6 +60,14 @@ from polar.worker import JobQueueManager  # noqa: E402
 DEFAULT_EMAIL = "terraform-acceptance@polar.sh"
 DEFAULT_SLUG = "terraform-acceptance"
 DEFAULT_COMMENT = "terraform-provider-acceptance-tests"
+
+# Per-organization feature flags the acceptance suite needs: the product service
+# rejects a `seat_based` price unless `seat_based_pricing_enabled` is set. The
+# two are written together because `organization.update` refuses to enable
+# seat-based pricing unless the member model is already on or turned on in the
+# same call. `organization.create` sets both for new organizations, but the
+# script reuses whatever organization is already there, which may predate that.
+FEATURE_FLAGS = ("member_model_enabled", "seat_based_pricing_enabled")
 
 # Every scope the provider's resources need: meters, products, benefits,
 # discounts, custom fields and webhook endpoints, plus the organization and
@@ -126,7 +134,30 @@ async def ensure_organization(
             f"organization {slug} cannot authenticate: capabilities="
             f"{organization.capabilities}"
         )
+
+    await ensure_feature_flags(session, organization)
     return organization
+
+
+async def ensure_feature_flags(
+    session: AsyncSession, organization: Organization
+) -> None:
+    missing = [
+        flag for flag in FEATURE_FLAGS if not organization.feature_settings.get(flag)
+    ]
+    if not missing:
+        return
+
+    # feature_settings is a plain JSONB dict, so mutating it in place would not
+    # mark the attribute dirty: build a new one. Both flags are written at once,
+    # which is what the update invariant asks for.
+    organization.feature_settings = {
+        **organization.feature_settings,
+        **dict.fromkeys(FEATURE_FLAGS, True),
+    }
+    session.add(organization)
+    await session.flush()
+    log(f"enabled feature flag(s) {', '.join(missing)}")
 
 
 async def revoke_previous_tokens(

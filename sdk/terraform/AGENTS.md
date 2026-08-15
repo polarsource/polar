@@ -44,9 +44,10 @@ server's environment and reuses its services and token crypto to mint one:
 cd server && uv run python ../sdk/terraform/tools/mint_acceptance_token.py
 ```
 
-It is idempotent on the user and the organization — reusing them across runs — and revokes
-the tokens it previously minted, since only the hash is stored and an old token cannot be
-recovered.
+It is idempotent on the user and the organization — reusing them across runs, and enabling
+the `member_model_enabled` and `seat_based_pricing_enabled` feature settings the suite needs
+on an organization created before they were the default — and revokes the tokens it
+previously minted, since only the hash is stored and an old token cannot be recovered.
 
 ## Conventions
 
@@ -64,9 +65,11 @@ recovered.
   retried on 5xx.
 - **Acceptance-test every resource's special semantics.** Each `resource_*_acc_test.go`
   covers create/update/import/destroy plus what makes that resource unusual (a meter is
-  archived rather than deleted, a product's price IDs survive unrelated edits). Checks that
-  matter server-side — archiving, clearing an optional field — are verified with a direct
-  API call, not just against Terraform's state.
+  archived rather than deleted, a product's price IDs survive unrelated edits, a seat-based
+  price's tier ladder round-trips in order, a product's benefits survive an update that does
+  not mention them). Checks that matter server-side — archiving, clearing an optional field,
+  the order of a product's benefit attachments — are verified with a direct API call, not
+  just against Terraform's state.
 - API changes that touch these endpoints must keep this provider compiling: the monorepo
   CI job `terraform-provider-ci` runs on every PR touching `sdk/terraform/`. The separate
   `terraform-provider-acceptance` workflow boots the backend and runs the acceptance suite

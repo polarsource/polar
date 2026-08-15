@@ -58,6 +58,38 @@ func TestFilterRoundTrip(t *testing.T) {
 	}
 }
 
+// TestMeterUpdateOmitsUnchangedDefinition guards the payload half of the
+// meter's rename path: once a meter has billed events the server 422s on the
+// mere presence of filter or aggregation, so an update that does not change
+// them must leave the keys out entirely. The acceptance test can only observe
+// that a rename succeeds; this observes what is sent.
+func TestMeterUpdateOmitsUnchangedDefinition(t *testing.T) {
+	name := "Renamed"
+	metadata := map[string]any{}
+	encoded, err := json.Marshal(MeterUpdate{Name: &name, Metadata: &metadata})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(encoded, &payload); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"filter", "aggregation"} {
+		if _, present := payload[key]; present {
+			t.Errorf("%s must be omitted when unchanged, got %s", key, encoded)
+		}
+	}
+	// custom_label and custom_multiplier carry explicit nulls so switching away
+	// from a custom unit clears them.
+	for _, key := range []string{"custom_label", "custom_multiplier"} {
+		value, present := payload[key]
+		if !present || value != nil {
+			t.Errorf("%s must serialize as an explicit null, got %s", key, encoded)
+		}
+	}
+}
+
 func jsonEqual(a, b any) bool {
 	aBytes, errA := json.Marshal(a)
 	bBytes, errB := json.Marshal(b)

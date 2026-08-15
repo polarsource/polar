@@ -73,13 +73,40 @@ make test       # unit tests
 make lint       # vet + gofmt
 ```
 
-Acceptance tests run real create/read/update/destroy cycles. Point them at a sandbox
-organization, or at a local Polar development stack via `base_url`:
+### Acceptance tests
+
+Acceptance tests drive the real terraform CLI through create, update, import and destroy
+against a live Polar API, so they need the terraform CLI on `PATH` and a token. They only
+run with `TF_ACC=1`, which `make testacc` sets; `make test` skips them.
+
+Against a local development stack, `make testacc-local` mints the token itself and runs the
+suite:
+
+```bash
+cd server && uv run task api          # in another terminal
+cd sdk/terraform && make testacc-local
+```
+
+Organization access tokens can only be created from the Polar dashboard, so
+[`tools/mint_acceptance_token.py`](tools/mint_acceptance_token.py) runs inside the server's
+own environment to create the user, organization and token the tests need:
+
+```bash
+export POLAR_ACCESS_TOKEN=$(cd server && uv run python \
+    ../sdk/terraform/tools/mint_acceptance_token.py)
+```
+
+With a token in hand, `make testacc` runs the suite against whichever environment you point
+it at:
 
 ```bash
 POLAR_ACCESS_TOKEN=polar_oat_... POLAR_SERVER=sandbox make testacc
 POLAR_ACCESS_TOKEN=...           POLAR_BASE_URL=http://127.0.0.1:8000 make testacc
 ```
+
+The tests create and destroy real resources in the token's organization, and refuse to run
+without `POLAR_SERVER` or `POLAR_BASE_URL` so they never default to production. Use a
+dedicated organization: they share one, and are deliberately not parallelized.
 
 ## Releasing
 

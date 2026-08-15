@@ -22,8 +22,31 @@ excluded from the sync.
 make build   # compile
 make test    # unit tests (httptest-based, no network)
 make lint    # go vet + gofmt check
-POLAR_ACCESS_TOKEN=... POLAR_BASE_URL=http://127.0.0.1:8000 make testacc  # against local stack
 ```
+
+Acceptance tests (`*_acc_test.go`, `TestAcc*`) drive the real terraform CLI through
+create/read/update/import/destroy against a live API. They only run with `TF_ACC=1`, so
+`make test` skips them. Against a local stack, with the token minted for you:
+
+```bash
+cd server && uv run task api    # in another terminal
+cd sdk/terraform && make testacc-local
+```
+
+`make testacc` is the raw entry point when you already have a token — for a sandbox
+organization, `POLAR_ACCESS_TOKEN=polar_oat_... POLAR_SERVER=sandbox make testacc`.
+
+Organization access tokens can only be created from the dashboard (the OAT endpoints are
+private and reject organization tokens), so `tools/mint_acceptance_token.py` runs inside the
+server's environment and reuses its services and token crypto to mint one:
+
+```bash
+cd server && uv run python ../sdk/terraform/tools/mint_acceptance_token.py
+```
+
+It is idempotent on the user and the organization — reusing them across runs — and revokes
+the tokens it previously minted, since only the hash is stored and an old token cannot be
+recovered.
 
 ## Conventions
 
@@ -39,8 +62,16 @@ POLAR_ACCESS_TOKEN=... POLAR_BASE_URL=http://127.0.0.1:8000 make testacc  # agai
   prefixes on meter filter properties) — a custom validator beats a perpetual diff.
 - **Retry policy**: 429 always; 5xx and network errors only for GET. Writes are not
   retried on 5xx.
+- **Acceptance-test every resource's special semantics.** Each `resource_*_acc_test.go`
+  covers create/update/import/destroy plus what makes that resource unusual (a meter is
+  archived rather than deleted, a product's price IDs survive unrelated edits). Checks that
+  matter server-side — archiving, clearing an optional field — are verified with a direct
+  API call, not just against Terraform's state.
 - API changes that touch these endpoints must keep this provider compiling: the monorepo
-  CI job `terraform-provider-ci` runs on every PR touching `sdk/terraform/`.
+  CI job `terraform-provider-ci` runs on every PR touching `sdk/terraform/`. The separate
+  `terraform-provider-acceptance` workflow boots the backend and runs the acceptance suite
+  against it, on those same PRs and nightly — the nightly is what catches a server change
+  that broke the provider without touching `sdk/terraform/`.
 
 ## Releasing
 

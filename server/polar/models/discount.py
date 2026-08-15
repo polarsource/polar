@@ -117,12 +117,18 @@ class Discount(MetadataMixin, RecordModel):
         current_period_start: datetime,
     ) -> bool:
         """
-        Check if a discount's repetition has expired for the current billing cycle.
+        Check if a discount's repetition has expired for the current cycle.
+
+        Duration is counted in **calendar months** from when the discount was
+        first applied, not in billing cycles — so callers must pass the start
+        of the period actually being settled (billing or meter).
 
         Args:
             discount_applied_at: The timestamp when the discount was first applied
                 to a billing cycle. This should be the cycle's start date.
-            current_period_start: The start date of the current billing period.
+            current_period_start: The start date of the period being checked
+                (billing period for billing cycles, meter boundary for meter
+                cycles).
 
         Returns:
             True if the discount should no longer apply to this cycle.

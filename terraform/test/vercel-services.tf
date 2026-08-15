@@ -5,7 +5,7 @@
 locals {
   # Vercel's Postgres and Redis integrations own POLAR_POSTGRES_URL_NON_POOLING
   # and POLAR_REDIS_URL. They are intentionally not duplicated here.
-  vercel_services_environment_variables = {
+  vercel_services_base_environment_variables = {
     SENTRY_ORG = {
       value     = "polar-sh"
       sensitive = false
@@ -305,9 +305,6 @@ locals {
     AWS_SECRET_ACCESS_KEY = {
       value = var.aws_secret_access_key
     }
-    POLAR_AWS_KMS_KEY_ID = {
-      value = one(module.secrets_kms[*].key_arn)
-    }
     POLAR_S3_FILES_BUCKET_NAME = {
       value     = local.files_bucket_name
       sensitive = false
@@ -409,6 +406,15 @@ locals {
       value = var.tinybird_workspace
     }
   }
+
+  vercel_services_environment_variables = merge(
+    local.vercel_services_base_environment_variables,
+    local.test_enabled ? {
+      POLAR_AWS_KMS_KEY_ID = {
+        value = module.secrets_kms[0].key_arn
+      }
+    } : {},
+  )
 }
 
 module "vercel_services" {
@@ -425,17 +431,21 @@ module "vercel_services" {
 }
 
 data "aws_iam_policy_document" "vercel_services_kms" {
+  count = local.test_enabled ? 1 : 0
+
   statement {
     actions = [
       "kms:GenerateDataKey",
       "kms:Decrypt",
     ]
-    resources = [one(module.secrets_kms[*].key_arn)]
+    resources = [module.secrets_kms[0].key_arn]
   }
 }
 
 resource "aws_iam_user_policy" "vercel_services_kms" {
+  count = local.test_enabled ? 1 : 0
+
   name   = "polar-test-vercel-services-kms"
   user   = "polar-test-files"
-  policy = data.aws_iam_policy_document.vercel_services_kms.json
+  policy = data.aws_iam_policy_document.vercel_services_kms[0].json
 }

@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/polarsource/terraform-provider-polar/internal/polarapi"
@@ -660,5 +664,323 @@ func TestPlannedPriceIDs(t *testing.T) {
 	}
 	if !ids[1].IsUnknown() || !ids[2].IsUnknown() {
 		t.Errorf("recreated and added prices should plan an unknown ID, got %v and %v", ids[1], ids[2])
+	}
+}
+
+// productResourceSchema returns the real resource schema so the tests below
+// exercise the same attribute types Terraform sends.
+func productResourceSchema(t *testing.T) schema.Schema {
+	t.Helper()
+	resp := &resource.SchemaResponse{}
+	(&productResource{}).Schema(context.Background(), resource.SchemaRequest{}, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatal(resp.Diagnostics)
+	}
+	return resp.Schema
+}
+
+func productPriceObjectType(t *testing.T) types.ObjectType {
+	t.Helper()
+	objectType, ok := productResourceSchema(t).Type().(types.ObjectType)
+	if !ok {
+		t.Fatal("the product schema should be an object type")
+	}
+	listType, ok := objectType.AttrTypes["prices"].(types.ListType)
+	if !ok {
+		t.Fatal("prices should be a list type")
+	}
+	priceType, ok := listType.ElemType.(types.ObjectType)
+	if !ok {
+		t.Fatal("a price should be an object type")
+	}
+	return priceType
+}
+
+// nullObjectValues fills every attribute of an object type with its null
+// value; ValueType returns the zero value of each type, which is null but
+// carries the element and attribute types nested values need.
+func nullObjectValues(ctx context.Context, attributeTypes map[string]attr.Type) map[string]attr.Value {
+	values := make(map[string]attr.Value, len(attributeTypes))
+	for name, attributeType := range attributeTypes {
+		values[name] = attributeType.ValueType(ctx)
+	}
+	return values
+}
+
+func testObject(t *testing.T, objectType types.ObjectType, overrides map[string]attr.Value) types.Object {
+	t.Helper()
+	ctx := context.Background()
+	values := nullObjectValues(ctx, objectType.AttrTypes)
+	for name, value := range overrides {
+		values[name] = value
+	}
+	object, diags := types.ObjectValue(objectType.AttrTypes, values)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	return object
+}
+
+func testList(t *testing.T, elementType attr.Type, elements ...attr.Value) types.List {
+	t.Helper()
+	list, diags := types.ListValue(elementType, elements)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	return list
+}
+
+// testProductConfig builds a product configuration from the real schema, with
+// every attribute null except the ones given.
+func testProductConfig(t *testing.T, overrides map[string]attr.Value) tfsdk.Config {
+	t.Helper()
+	ctx := context.Background()
+	productSchema := productResourceSchema(t)
+	objectType := productSchema.Type().(types.ObjectType)
+	raw, err := testObject(t, objectType, overrides).ToTerraformValue(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tfsdk.Config{Raw: raw, Schema: productSchema}
+}
+
+func TestValidateConfigSkipsUnknownCollections(t *testing.T) {
+	ctx := context.Background()
+	priceType := productPriceObjectType(t)
+	seatTiersType := priceType.AttrTypes["seat_tiers"].(types.ObjectType)
+	tiersType := seatTiersType.AttrTypes["tiers"].(types.ListType)
+
+	fixedPrice := testObject(t, priceType, map[string]attr.Value{
+		"amount_type":  types.StringValue("fixed"),
+		"price_amount": types.Int64Value(990),
+	})
+	customFieldsType := productResourceSchema(t).Type().(types.ObjectType).
+		AttrTypes["attached_custom_fields"].(types.ListType)
+
+	cases := map[string]map[string]attr.Value{
+		// `prices = var.prices` in a reusable module: every variable is
+		// unknown during `terraform validate`.
+		"unknown price list": {"prices": types.ListUnknown(priceType)},
+		"unknown price element": {
+			"prices": testList(t, priceType, types.ObjectUnknown(priceType.AttrTypes)),
+		},
+		"unknown seat tiers": {
+			"prices": testList(t, priceType, testObject(t, priceType, map[string]attr.Value{
+				"amount_type": types.StringValue("seat_based"),
+				"seat_tiers":  types.ObjectUnknown(seatTiersType.AttrTypes),
+			})),
+		},
+		"unknown tiers list": {
+			"prices": testList(t, priceType, testObject(t, priceType, map[string]attr.Value{
+				"amount_type": types.StringValue("seat_based"),
+				"seat_tiers": testObject(t, seatTiersType, map[string]attr.Value{
+					"seat_tier_type": types.StringValue("volume"),
+					"tiers":          types.ListUnknown(tiersType.ElemType),
+				}),
+			})),
+		},
+		"unknown attached custom fields": {
+			"prices":                 testList(t, priceType, fixedPrice),
+			"attached_custom_fields": types.ListUnknown(customFieldsType.ElemType),
+		},
+	}
+
+	for name, overrides := range cases {
+		t.Run(name, func(t *testing.T) {
+			resp := &resource.ValidateConfigResponse{}
+			(&productResource{}).ValidateConfig(ctx,
+				resource.ValidateConfigRequest{Config: testProductConfig(t, overrides)}, resp)
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("a collection the configuration cannot describe yet must skip validation, "+
+					"not fail it: %v", resp.Diagnostics)
+			}
+		})
+	}
+}
+
+func TestValidateConfigStillCatchesKnownMistakes(t *testing.T) {
+	priceType := productPriceObjectType(t)
+	// A metered price on a one-time product, with the fixed price's attribute
+	// set on it: both are plan-time errors.
+	broken := testObject(t, priceType, map[string]attr.Value{
+		"amount_type":  types.StringValue("metered_unit"),
+		"meter_id":     types.StringValue("00000000-0000-0000-0000-000000000001"),
+		"unit_amount":  types.StringValue("0.015"),
+		"price_amount": types.Int64Value(990),
+	})
+
+	resp := &resource.ValidateConfigResponse{}
+	(&productResource{}).ValidateConfig(context.Background(), resource.ValidateConfigRequest{
+		Config: testProductConfig(t, map[string]attr.Value{"prices": testList(t, priceType, broken)}),
+	}, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("fully known prices must still be validated")
+	}
+}
+
+func testPricesPlanRequest(t *testing.T, plan, state types.List) planmodifier.ListRequest {
+	t.Helper()
+	config := testProductConfig(t, nil)
+	return planmodifier.ListRequest{
+		Path:        path.Root("prices"),
+		Config:      config,
+		ConfigValue: plan,
+		Plan:        tfsdk.Plan{Raw: config.Raw, Schema: config.Schema},
+		PlanValue:   plan,
+		State:       tfsdk.State{Raw: config.Raw, Schema: config.Schema},
+		StateValue:  state,
+	}
+}
+
+func testPlannedPriceIDs(t *testing.T, plan, state types.List) []attr.Value {
+	t.Helper()
+	resp := &planmodifier.ListResponse{PlanValue: plan}
+	keepMatchedPriceIDs().PlanModifyList(context.Background(), testPricesPlanRequest(t, plan, state), resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("planning prices must not fail: %v", resp.Diagnostics)
+	}
+	ids := make([]attr.Value, 0, len(resp.PlanValue.Elements()))
+	for _, element := range resp.PlanValue.Elements() {
+		object, ok := element.(types.Object)
+		if !ok || object.IsUnknown() || object.IsNull() {
+			ids = append(ids, types.StringUnknown())
+			continue
+		}
+		ids = append(ids, object.Attributes()["id"])
+	}
+	return ids
+}
+
+func TestKeepMatchedPriceIDsKeepsUnchangedPrices(t *testing.T) {
+	priceType := productPriceObjectType(t)
+	fixed := func(id string, amount int64) types.Object {
+		return testObject(t, priceType, map[string]attr.Value{
+			"id":             types.StringValue(id),
+			"amount_type":    types.StringValue("fixed"),
+			"price_currency": types.StringValue("usd"),
+			"price_amount":   types.Int64Value(amount),
+		})
+	}
+	metered := func(id string) types.Object {
+		return testObject(t, priceType, map[string]attr.Value{
+			"id":             types.StringValue(id),
+			"amount_type":    types.StringValue("metered_unit"),
+			"price_currency": types.StringValue("usd"),
+			"meter_id":       types.StringValue("m1"),
+			"unit_amount":    types.StringValue("0.015"),
+		})
+	}
+	unknownID := func(object types.Object) types.Object {
+		return testObject(t, priceType, mergeAttributes(object.Attributes(), map[string]attr.Value{
+			"id": types.StringUnknown(),
+		}))
+	}
+
+	state := testList(t, priceType, fixed("p-fixed", 990), metered("p-metered"))
+	// The prices were reordered and the fixed one repriced; the framework has
+	// already blanked every ID because the product changed.
+	plan := testList(t, priceType, unknownID(metered("")), unknownID(fixed("", 1990)))
+
+	ids := testPlannedPriceIDs(t, plan, state)
+	if ids[0].(types.String).ValueString() != "p-metered" {
+		t.Errorf("a reordered but unchanged price should keep its ID, got %v", ids[0])
+	}
+	if !ids[1].IsUnknown() {
+		t.Errorf("a repriced price is archived and recreated, so its ID must be unknown, got %v", ids[1])
+	}
+}
+
+func TestKeepMatchedPriceIDsBlanksIDsItCannotMatch(t *testing.T) {
+	priceType := productPriceObjectType(t)
+	seatTiersType := priceType.AttrTypes["seat_tiers"].(types.ObjectType)
+
+	state := testList(t, priceType, testObject(t, priceType, map[string]attr.Value{
+		"id":             types.StringValue("p-existing"),
+		"amount_type":    types.StringValue("fixed"),
+		"price_currency": types.StringValue("usd"),
+		"price_amount":   types.Int64Value(990),
+	}))
+	// Terraform fills a list of nested attributes by index, so a price can
+	// arrive carrying the previous occupant's ID. With a seat ladder that is
+	// only known after apply the provider cannot tell whether it is the same
+	// price, and leaving that ID in place would pin the update to the wrong
+	// one.
+	plan := testList(t, priceType, testObject(t, priceType, map[string]attr.Value{
+		"id":             types.StringValue("p-existing"),
+		"amount_type":    types.StringValue("seat_based"),
+		"price_currency": types.StringValue("usd"),
+		"seat_tiers":     types.ObjectUnknown(seatTiersType.AttrTypes),
+	}))
+
+	ids := testPlannedPriceIDs(t, plan, state)
+	if !ids[0].IsUnknown() {
+		t.Errorf("an ID the provider cannot match must be blanked, got %v", ids[0])
+	}
+}
+
+func TestKeepMatchedPriceIDsHandlesUnknownElements(t *testing.T) {
+	priceType := productPriceObjectType(t)
+	state := testList(t, priceType, testObject(t, priceType, map[string]attr.Value{
+		"id":             types.StringValue("p-existing"),
+		"amount_type":    types.StringValue("fixed"),
+		"price_currency": types.StringValue("usd"),
+		"price_amount":   types.Int64Value(990),
+	}))
+	plan := testList(t, priceType,
+		types.ObjectUnknown(priceType.AttrTypes),
+		testObject(t, priceType, map[string]attr.Value{
+			"id":             types.StringValue("p-existing"),
+			"amount_type":    types.StringValue("fixed"),
+			"price_currency": types.StringValue("usd"),
+			"price_amount":   types.Int64Value(990),
+		}),
+	)
+
+	ids := testPlannedPriceIDs(t, plan, state)
+	for index, id := range ids {
+		if !id.IsUnknown() {
+			t.Errorf("price %d: a plan containing an unknown price must blank every ID, got %v", index, id)
+		}
+	}
+}
+
+func mergeAttributes(base, overrides map[string]attr.Value) map[string]attr.Value {
+	merged := make(map[string]attr.Value, len(base))
+	for name, value := range base {
+		merged[name] = value
+	}
+	for name, value := range overrides {
+		merged[name] = value
+	}
+	return merged
+}
+
+func TestCollectionsKnown(t *testing.T) {
+	objectType := types.ObjectType{AttrTypes: map[string]attr.Type{"name": types.StringType}}
+	known := testObject(t, objectType, map[string]attr.Value{"name": types.StringValue("a")})
+	unknownLeaf := testObject(t, objectType, map[string]attr.Value{"name": types.StringUnknown()})
+
+	if !collectionsKnown(testList(t, objectType, known, unknownLeaf)) {
+		t.Error("an unknown leaf is representable: types.String carries it")
+	}
+	if collectionsKnown(types.ListUnknown(objectType)) {
+		t.Error("an unknown list has no Go representation")
+	}
+	if collectionsKnown(testList(t, objectType, types.ObjectUnknown(objectType.AttrTypes))) {
+		t.Error("an unknown element has no Go representation")
+	}
+	if collectionsKnown(testList(t, objectType, types.ObjectNull(objectType.AttrTypes))) {
+		t.Error("a null element cannot be reflected into a struct value")
+	}
+	nested := types.ObjectType{AttrTypes: map[string]attr.Type{"inner": objectType}}
+	if collectionsKnown(testObject(t, nested, map[string]attr.Value{
+		"inner": types.ObjectUnknown(objectType.AttrTypes),
+	})) {
+		t.Error("an unknown nested object has no Go representation")
+	}
+	if !collectionsKnown(testObject(t, nested, map[string]attr.Value{
+		"inner": types.ObjectNull(objectType.AttrTypes),
+	})) {
+		t.Error("a null nested object is representable: it maps to a nil pointer")
 	}
 }

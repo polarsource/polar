@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -243,6 +244,41 @@ func metadataValueToString(value any) string {
 // metadata deletion still surfaces as drift.
 func priorMetadataIsEmptyMap(prior types.Map) bool {
 	return !prior.IsNull() && !prior.IsUnknown() && len(prior.Elements()) == 0
+}
+
+// collectionsKnown reports whether every list and object nested in the value
+// can be reflected into Go slices, structs and pointers.
+//
+// Unknown leaves are fine — types.String and friends carry an unknown state —
+// but an unknown list or object, and a null list element, have no Go
+// representation, and the framework turns the attempt into an error
+// diagnostic blaming the provider. Configuration reaches that shape whenever a
+// collection comes from a module input (every variable is unknown during
+// `terraform validate`) or from a resource that does not exist yet, so callers
+// must check before converting and skip the work instead.
+func collectionsKnown(value attr.Value) bool {
+	switch typed := value.(type) {
+	case types.List:
+		if typed.IsUnknown() {
+			return false
+		}
+		for _, element := range typed.Elements() {
+			if element.IsNull() || !collectionsKnown(element) {
+				return false
+			}
+		}
+	case types.Object:
+		// A null object is representable: it maps to a nil struct pointer.
+		if typed.IsUnknown() {
+			return false
+		}
+		for _, attribute := range typed.Attributes() {
+			if !collectionsKnown(attribute) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // priorListIsEmpty reports whether the prior state holds a known, empty list.

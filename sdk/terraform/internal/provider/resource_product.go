@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/polarsource/terraform-provider-polar/internal/polarapi"
@@ -475,9 +476,57 @@ func unitAmount() validator.String {
 	return unitAmountValidator{}
 }
 
+// productConfigModel is the slice of a product's configuration ValidateConfig
+// inspects. It is read attribute by attribute rather than with Config.Get so
+// that collections the configuration cannot describe yet — `prices = var.prices`
+// in a reusable module, `attached_custom_fields` built from a resource that
+// does not exist yet — skip validation instead of failing it: reflecting an
+// unknown list into a Go slice is an error the framework blames on the
+// provider. attached_custom_fields is simply never read; there is nothing to
+// check about it at plan time.
+type productConfigModel struct {
+	RecurringInterval      types.String
+	RecurringIntervalCount types.Int64
+	MeterInterval          types.String
+	MeterIntervalCount     types.Int64
+	TrialInterval          types.String
+	TrialIntervalCount     types.Int64
+	// Prices is only populated when every price is described well enough to
+	// check, which PricesKnown reports.
+	Prices      []productPriceModel
+	PricesKnown bool
+}
+
+func productConfig(ctx context.Context, config tfsdk.Config, diags *diag.Diagnostics) productConfigModel {
+	var model productConfigModel
+	scalars := []struct {
+		name   string
+		target any
+	}{
+		{"recurring_interval", &model.RecurringInterval},
+		{"recurring_interval_count", &model.RecurringIntervalCount},
+		{"meter_interval", &model.MeterInterval},
+		{"meter_interval_count", &model.MeterIntervalCount},
+		{"trial_interval", &model.TrialInterval},
+		{"trial_interval_count", &model.TrialIntervalCount},
+	}
+	for _, scalar := range scalars {
+		diags.Append(config.GetAttribute(ctx, path.Root(scalar.name), scalar.target)...)
+	}
+
+	var prices types.List
+	diags.Append(config.GetAttribute(ctx, path.Root("prices"), &prices)...)
+	if diags.HasError() || prices.IsNull() || !collectionsKnown(prices) {
+		return model
+	}
+	elementDiags := prices.ElementsAs(ctx, &model.Prices, false)
+	diags.Append(elementDiags...)
+	model.PricesKnown = !elementDiags.HasError()
+	return model
+}
+
 func (r *productResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var config productModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	config := productConfig(ctx, req.Config, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -525,6 +574,9 @@ func (r *productResource) ValidateConfig(ctx context.Context, req resource.Valid
 	}
 	validateMeterCycle(config, resp)
 
+	if !config.PricesKnown {
+		return
+	}
 	metered := false
 	for index, price := range config.Prices {
 		validatePriceAttributes(price, path.Root("prices").AtListIndex(index), resp)
@@ -544,7 +596,7 @@ func (r *productResource) ValidateConfig(ctx context.Context, req resource.Valid
 
 // validateMeterCycle mirrors the server's rule that the meter cycle must
 // re-align with the billing cycle at every renewal.
-func validateMeterCycle(config productModel, resp *resource.ValidateConfigResponse) {
+func validateMeterCycle(config productConfigModel, resp *resource.ValidateConfigResponse) {
 	if config.MeterInterval.IsNull() || config.MeterInterval.IsUnknown() ||
 		config.RecurringInterval.IsNull() || config.RecurringInterval.IsUnknown() ||
 		config.MeterIntervalCount.IsUnknown() || config.RecurringIntervalCount.IsUnknown() {
@@ -821,29 +873,35 @@ func (m keepMatchedPriceIDsModifier) PlanModifyList(ctx context.Context, req pla
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
-	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() ||
-		req.StateValue.IsNull() || req.StateValue.IsUnknown() {
+	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() {
 		return
 	}
 
-	// Nothing to carry over into a price the plan cannot describe yet.
-	for _, element := range req.PlanValue.Elements() {
-		if object, ok := element.(types.Object); !ok || object.IsNull() || object.IsUnknown() {
+	// Every price the plan cannot describe yet — one built from a resource
+	// that does not exist — makes matching impossible. Blanking every ID is
+	// then the only safe answer: Terraform fills a list of nested attributes
+	// by index, so the prior state's IDs would otherwise pin each price to
+	// whatever happened to sit at its position, and the update, which matches
+	// by value, would disagree with the plan it is applying.
+	ids := unknownPriceIDs(len(req.PlanValue.Elements()))
+	if collectionsKnown(req.PlanValue) && !req.StateValue.IsNull() && collectionsKnown(req.StateValue) {
+		var planned, state []productPriceModel
+		resp.Diagnostics.Append(req.PlanValue.ElementsAs(ctx, &planned, false)...)
+		resp.Diagnostics.Append(req.StateValue.ElementsAs(ctx, &state, false)...)
+		if resp.Diagnostics.HasError() {
 			return
 		}
+		ids = plannedPriceIDs(planned, state)
 	}
 
-	var planned, state []productPriceModel
-	resp.Diagnostics.Append(req.PlanValue.ElementsAs(ctx, &planned, false)...)
-	resp.Diagnostics.Append(req.StateValue.ElementsAs(ctx, &state, false)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	ids := plannedPriceIDs(planned, state)
-	elements := make([]attr.Value, 0, len(planned))
+	elements := make([]attr.Value, 0, len(ids))
 	for index, element := range req.PlanValue.Elements() {
-		object := element.(types.Object)
+		object, ok := element.(types.Object)
+		if !ok || object.IsNull() || object.IsUnknown() {
+			// A price that is wholly unknown already implies an unknown ID.
+			elements = append(elements, element)
+			continue
+		}
 		attributes := make(map[string]attr.Value, len(object.Attributes()))
 		for name, value := range object.Attributes() {
 			attributes[name] = value
@@ -863,6 +921,14 @@ func (m keepMatchedPriceIDsModifier) PlanModifyList(ctx context.Context, req pla
 		return
 	}
 	resp.PlanValue = list
+}
+
+func unknownPriceIDs(count int) []types.String {
+	ids := make([]types.String, count)
+	for index := range ids {
+		ids[index] = types.StringUnknown()
+	}
+	return ids
 }
 
 func (r *productResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

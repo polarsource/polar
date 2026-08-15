@@ -2693,6 +2693,82 @@ class TestCycleMeters:
 
 
 @pytest.mark.asyncio
+class TestCheckMeterCycleLag:
+    async def test_raises_on_multi_period_lag(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        now = utc_now()
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = now - timedelta(days=93)
+        subscription.current_meter_period_end = now - timedelta(days=62)
+        await save_fixture(subscription)
+
+        with pytest.raises(SubscriptionMeterCycleLag):
+            subscription_service.check_meter_cycle_lag(subscription)
+
+    async def test_noop_within_one_period(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        now = utc_now()
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = now - timedelta(days=32)
+        # Boundary in the past (due), but the next period lands in the future.
+        subscription.current_meter_period_end = now - timedelta(days=2)
+        await save_fixture(subscription)
+
+        # Does not raise.
+        subscription_service.check_meter_cycle_lag(subscription)
+
+    async def test_noop_without_meter_clock(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = None
+        subscription.meter_interval_count = None
+        subscription.current_meter_period_end = utc_now() - timedelta(days=62)
+        await save_fixture(subscription)
+
+        # Does not raise.
+        subscription_service.check_meter_cycle_lag(subscription)
+
+    async def test_noop_without_boundary(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_end = None
+        await save_fixture(subscription)
+
+        # Does not raise.
+        subscription_service.check_meter_cycle_lag(subscription)
+
+
+@pytest.mark.asyncio
 class TestRevoke:
     async def test_already_canceled(
         self,

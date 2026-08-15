@@ -282,3 +282,71 @@ class TestSubscriptionCycle:
 
         with pytest.raises(SubscriptionMeterCycleLag):
             await subscription_cycle(subscription.id)
+
+    async def test_billing_due_with_multi_period_meter_lag(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # When billing is due AND the meter clock is more than one period behind,
+        # the cycle must still halt for manual catch-up: cycle() would re-arm the
+        # meter clock off the billing period and silently erase the lag.
+        now = utc_now()
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=now,
+            current_period_start=now - timedelta(days=32),
+            current_period_end=now - timedelta(days=2),  # billing_due=True
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = now - timedelta(days=93)
+        subscription.current_meter_period_end = now - timedelta(
+            days=62
+        )  # >1 period lag
+        await save_fixture(subscription)
+
+        session.expunge_all()
+
+        with pytest.raises(SubscriptionMeterCycleLag):
+            await subscription_cycle(subscription.id)
+
+    async def test_billing_due_without_meter_lag_cycles(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # billing_due AND meter_due, but the meter lag is within a single period:
+        # the guard must not over-halt, and the billing cycle proceeds normally.
+        now = utc_now()
+        old_period_end = now - timedelta(days=2)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=now,
+            current_period_start=now - timedelta(days=32),
+            current_period_end=old_period_end,  # billing_due=True
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        # Meter aligned with the billing boundary: due, but next period is ahead.
+        subscription.current_meter_period_start = now - timedelta(days=32)
+        subscription.current_meter_period_end = old_period_end  # meter_due=True, no lag
+        await save_fixture(subscription)
+
+        session.expunge_all()
+
+        await subscription_cycle(subscription.id)
+
+        refreshed = await session.get(Subscription, subscription.id)
+        assert refreshed is not None
+        assert refreshed.scheduler_locked_at is None
+        assert refreshed.current_period_end is not None
+        assert refreshed.current_period_end > old_period_end

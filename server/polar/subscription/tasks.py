@@ -76,7 +76,14 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
             return
 
         if billing_due:
-            # Billing boundary wins: the full cycle also settles the meter period.
+            # Honor the multi-period meter lag guard even when billing is due.
+            # cycle() re-arms the meter clock off the billing period, which would
+            # silently erase the lag instead of halting — so run the same guard
+            # cycle_meters uses (it raises SubscriptionMeterCycleLag to halt for a
+            # manual catch-up) before letting the billing cycle proceed.
+            if meter_due:
+                subscription_service.check_meter_cycle_lag(subscription)
+
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:

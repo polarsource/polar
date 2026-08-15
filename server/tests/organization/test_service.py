@@ -273,6 +273,26 @@ class TestCreate:
         }
 
     @pytest.mark.auth
+    async def test_member_model_and_seats_cannot_be_opted_out_at_creation(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+                feature_settings=OrganizationFeatureSettingsUpdate(
+                    member_model_enabled=False,
+                    seat_based_pricing_enabled=False,
+                ),
+            ),
+            auth_subject,
+        )
+
+        assert organization.feature_settings["member_model_enabled"] is True
+        assert organization.feature_settings["seat_based_pricing_enabled"] is True
+
+    @pytest.mark.auth
     async def test_valid_with_none_subscription_settings(
         self, auth_subject: AuthSubject[User], session: AsyncSession
     ) -> None:

@@ -8,7 +8,6 @@ import { ClosingCta } from './ClosingCta'
 import { Hero } from './Hero/Hero'
 import { Pricing } from './Pricing'
 import { Testimonials } from './Testimonials'
-import { Vision } from './Vision'
 
 export default function Page() {
   return (
@@ -18,7 +17,6 @@ export default function Page() {
       <Meter />
       <MerchantOfRecord />
       <Margins />
-      <Vision />
       <Testimonials />
       <Pricing />
       <ClosingCta />

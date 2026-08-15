@@ -50,8 +50,7 @@ const MeterVignette = () => (
     </Box>
     <Box
       display="block"
-      height="0.375rem"
-      borderRadius="full"
+      height="0.2rem"
       backgroundColor="background-secondary"
       overflow="hidden"
     >
@@ -134,22 +133,22 @@ interface Pillar {
 const PILLARS: Pillar[] = [
   {
     title: 'Usage metering',
-    desc: 'Events aggregated into meters in real time.',
+    desc: 'Every token, agent run and GPU second streams into live meters, priced and ready to bill the moment it happens.',
     vignette: <MeterVignette />,
   },
   {
     title: 'Checkout',
-    desc: 'Hosted checkout that converts, localized and tax-inclusive.',
+    desc: 'A hosted checkout that converts out of the box. Localized currencies, sales tax included, one link to start selling.',
     vignette: <CheckoutVignette />,
   },
   {
     title: 'Cost insights',
-    desc: 'Revenue minus cost, per customer.',
+    desc: 'What each customer pays beside what their usage costs you. True gross margin per customer, updated in real time.',
     vignette: <MarginVignette />,
   },
   {
     title: 'Payouts',
-    desc: 'Settled to your bank. Tax already handled.',
+    desc: 'Revenue settles to your bank account on your schedule. Sales tax already collected, remitted and off your plate.',
     vignette: <PayoutVignette />,
   },
 ]

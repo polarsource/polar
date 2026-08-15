@@ -120,11 +120,19 @@ const NavMenuTrigger = ({
   pathname: string
 }) => {
   return (
-    <Box aria-expanded={isOpen} onMouseEnter={onOpen} onFocus={onOpen}>
-      <Text
-        variant="heading-xxs"
-        color={menu.isActive?.(pathname) ? 'default' : 'muted'}
-      >
+    <Box
+      aria-expanded={isOpen}
+      onMouseEnter={onOpen}
+      onFocus={onOpen}
+      cursor="pointer"
+      color={{
+        base: menu.isActive?.(pathname) ? 'text-primary' : 'text-secondary',
+        hover: 'text-primary',
+      }}
+      transitionProperty="colors"
+      transitionDuration="fast"
+    >
+      <Text variant="heading-xxs" color="inherit">
         {menu.title}
       </Text>
     </Box>

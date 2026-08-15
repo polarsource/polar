@@ -40,8 +40,8 @@ export const Meter = () => (
   <Chapter
     index="01"
     name="Meter everything"
-    title="Every token, accounted for"
-    subtitle="Usage recorded the moment it happens"
+    title="Every token becomes revenue"
+    subtitle="the moment your model streams it"
     description="Tokens, agent runs and GPU seconds flow through live meters and land on the invoice, priced however you sell."
   >
     <Grid
@@ -66,11 +66,11 @@ export const Meter = () => (
             <Graphic />
           </Box>
           <Box flexDirection="column" rowGap="l">
-            <Text variant="heading-s" as="h3">
+            <Text variant="heading-xs" as="h3">
               {title}
             </Text>
 
-            <Text variant="heading-xs" color="muted" wrap="pretty">
+            <Text variant="heading-xxs" color="muted" wrap="pretty">
               {desc}
             </Text>
           </Box>

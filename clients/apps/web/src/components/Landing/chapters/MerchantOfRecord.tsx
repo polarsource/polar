@@ -37,9 +37,9 @@ export const MerchantOfRecord = () => (
   <Chapter
     index="02"
     name="Sell globally"
-    title="We are the merchant of record"
+    title="Polar as the merchant of record"
     subtitle="The liability lands on our name, not yours"
-    description="Polar is the reseller of your product in over 100 markets. Payments, sales tax, fraud, refunds and chargebacks are our responsibility, never your paperwork."
+    description="We act as the reseller of your product in over 100 markets. Payments, sales tax, fraud, refunds and chargebacks are our responsibility, never your paperwork."
   >
     <Pipeline />
   </Chapter>

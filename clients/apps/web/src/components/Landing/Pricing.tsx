@@ -61,6 +61,8 @@ export const Pricing = () => (
   <>
     <span id="pricing" className="block scroll-mt-12 md:scroll-mt-28" />
     <Chapter
+      index="05"
+      name="Pricing"
       title="Pricing that scales with you"
       subtitle="Start free, upgrade as you grow"
       description="No hidden fees. Enterprise needs? Let's talk."

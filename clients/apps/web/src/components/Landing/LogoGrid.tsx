@@ -6,6 +6,8 @@ import {
   Confidence,
   FastAPICloud,
   MiddayWordmark,
+  StillaAI,
+  StillaAIWordmark,
   Tailwind,
 } from './Logos'
 
@@ -16,19 +18,19 @@ interface LogoCell {
 
 const LOGOS: LogoCell[] = [
   {
-    icon: <Tailwind size={22} />,
+    icon: <Tailwind size={28} />,
     link: 'https://tailwindcss.com',
   },
   {
-    icon: <FastAPICloud size={28} />,
+    icon: <FastAPICloud size={36} />,
     link: 'https://fastapicloud.com',
   },
   {
-    icon: <Confidence size={32} />,
+    icon: <Confidence size={36} />,
     link: 'https://confidence.spotify.com',
   },
   {
-    icon: <MiddayWordmark size={32} />,
+    icon: <StillaAIWordmark size={36} />,
     link: 'https://midday.ai',
   },
 ]
@@ -45,14 +47,11 @@ export const LogoGrid = () => (
             width="100%"
             alignItems="center"
             justifyContent="center"
-            minHeight={{ base: '7rem', md: '9rem' }}
+            aspectRatio="1 / 1"
             backgroundColor={{
               base: 'background-secondary',
               hover: 'background-card',
             }}
-            color={{ base: 'text-secondary', hover: 'text-primary' }}
-            transitionProperty="colors"
-            transitionDuration="fast"
           >
             {logo.icon}
           </Box>

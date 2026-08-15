@@ -1,146 +1,30 @@
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Chapter } from '../Chapter'
-import { MarginPulse } from '../graphics/MarginPulse'
-
-interface MarginRow {
-  name: string
-  plan: string
-  tokens: string
-  revenue: number
-  cost: number
-}
-
-const ROWS: MarginRow[] = [
-  {
-    name: 'Jane Doe',
-    plan: 'Enterprise',
-    tokens: '4.1M tokens',
-    revenue: 4200,
-    cost: 294,
-  },
-  {
-    name: 'John Doe',
-    plan: 'Growth',
-    tokens: '3.3M tokens',
-    revenue: 1800,
-    cost: 234,
-  },
-  {
-    name: 'Emily Carter',
-    plan: 'Growth',
-    tokens: '2.6M tokens',
-    revenue: 920,
-    cost: 184,
-  },
-  {
-    name: 'Michael Chen',
-    plan: 'Hobby',
-    tokens: '5.5M tokens',
-    revenue: 480,
-    cost: 389,
-  },
-  {
-    name: 'Sarah Müller',
-    plan: 'Hobby',
-    tokens: '8.7M tokens',
-    revenue: 90,
-    cost: 612,
-  },
-]
-
-const currency = (value: number) =>
-  `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-
-const marginPercent = (row: MarginRow) =>
-  Math.round(((row.revenue - row.cost) / row.revenue) * 100)
-
-const GRID_COLUMNS = {
-  base: '1.4fr 1.2fr',
-  md: '1.8fr 0.9fr 0.9fr 1.5fr',
-}
+import { MarginGap } from '../graphics/MarginGap'
 
 export const Margins = () => (
   <Chapter
     index="03"
     name="Understand"
-    title="Know which customers cost you money"
-    subtitle="Revenue minus cost, in real time"
-    description="Catch the customers bleeding your margins before they bleed your runway."
+    title="The only payment stack that knows your margins"
+    subtitle="Revenue meets cost, customer by customer"
+    description="Polar already collects every payment, so placing inference cost beside it reveals your true gross margin per customer. The $90 plan burning $600 of tokens stops hiding in your averages."
   >
     <Box
       display="grid"
       gridTemplateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
       gap="l"
     >
+      <Box display={{ base: 'none', lg: 'flex' }} />
       <Box
-        minHeight={{ base: '14rem', lg: 'auto' }}
-        overflow="hidden"
-        flexDirection="column"
-        justifyContent="between"
-        padding="xl"
-        rowGap="l"
-      />
-
-      <Box overflow="hidden" display={{ base: 'none', md: 'block' }}>
-        <Box
-          display="grid"
-          gridTemplateColumns={GRID_COLUMNS}
-          alignItems="center"
-          columnGap="l"
-          paddingHorizontal={{ base: 'l', md: '2xl' }}
-          paddingVertical="m"
-          borderBottomWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-        >
-          <Text color="muted">Customer</Text>
-          <Text color="muted" align="right">
-            Revenue
-          </Text>
-          <Text color="muted" align="right">
-            LLM cost
-          </Text>
-          <Text color="muted" align="right">
-            Gross margin
-          </Text>
+        display="block"
+        width="100%"
+        backgroundColor="background-secondary"
+        padding={{ base: 'l', md: '3xl' }}
+      >
+        <Box display="block" width="100%" aspectRatio="4 / 3">
+          <MarginGap />
         </Box>
-
-        {ROWS.map((row, index) => {
-          const margin = marginPercent(row)
-          const negative = margin < 0
-          return (
-            <Box
-              key={row.name}
-              display="grid"
-              gridTemplateColumns={GRID_COLUMNS}
-              alignItems="center"
-              columnGap="l"
-              paddingHorizontal={{ base: 'l', md: '2xl' }}
-              paddingVertical="l"
-              borderBottomWidth={index === ROWS.length - 1 ? 0 : 1}
-              borderStyle="solid"
-              borderColor="border-secondary"
-            >
-              <Box flexDirection="column" rowGap="xs">
-                <Text>{row.name}</Text>
-                <Text color="muted">
-                  {row.plan} · {row.tokens}
-                </Text>
-              </Box>
-              <Text align="right">{currency(row.revenue)}</Text>
-              <Text align="right" color="muted">
-                {currency(row.cost)}
-              </Text>
-              <Box alignItems="center" justifyContent="end" columnGap="m">
-                <Text align="right" color={negative ? 'danger' : undefined}>
-                  {margin > 0 ? '+' : ''}
-                  {margin}%
-                </Text>
-              </Box>
-            </Box>
-          )
-        })}
       </Box>
     </Box>
   </Chapter>

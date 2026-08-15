@@ -69,10 +69,10 @@ export const FeatureCards = () => (
             <Graphic />
           </Box>
           <Box flexDirection="column" rowGap="m">
-            <Text variant="heading-s" as="h3">
+            <Text variant="heading-xs" as="h3">
               {title}
             </Text>
-            <Text variant="heading-xs" color="muted" wrap="pretty">
+            <Text variant="heading-xxs" color="muted" wrap="pretty">
               {desc}
             </Text>
           </Box>

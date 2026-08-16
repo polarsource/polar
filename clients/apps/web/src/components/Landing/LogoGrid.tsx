@@ -41,6 +41,7 @@ export const LogoGrid = () => (
             alignItems="center"
             justifyContent="center"
             aspectRatio="1 / 1"
+            paddingHorizontal="xl"
             backgroundColor={{
               base: 'background-secondary',
               hover: 'background-card',
@@ -48,7 +49,9 @@ export const LogoGrid = () => (
             transitionDuration="fast"
             transitionProperty="colors"
           >
-            {logo.icon}
+            <div className="flex w-full items-center justify-center [&_svg]:max-w-full">
+              {logo.icon}
+            </div>
           </Box>
         </Link>
       </GridItem>

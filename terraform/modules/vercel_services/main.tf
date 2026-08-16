@@ -21,7 +21,7 @@ resource "vercel_project" "this" {
 }
 
 locals {
-  environment_variable_names = nonsensitive(toset(keys(var.environment_variables)))
+  environment_variable_group_names = nonsensitive(toset(keys(var.environment_variable_groups)))
 
   integration_ids = {
     neon    = "icfg_biMWLfepTR29FamF2JyDnPzV"
@@ -36,12 +36,16 @@ resource "vercel_integration_project_access" "this" {
   project_id     = vercel_project.this.id
 }
 
-resource "vercel_project_environment_variable" "this" {
-  for_each = local.environment_variable_names
+resource "vercel_project_environment_variables" "this" {
+  for_each = local.environment_variable_group_names
 
   project_id = vercel_project.this.id
-  key        = coalesce(var.environment_variables[each.key].key, each.key)
-  value      = var.environment_variables[each.key].value
-  target     = var.environment_variables[each.key].target
-  sensitive  = var.environment_variables[each.key].sensitive
+  variables = [
+    for name, variable in var.environment_variable_groups[each.key] : {
+      key       = coalesce(variable.key, name)
+      value     = variable.value
+      target    = variable.target
+      sensitive = variable.sensitive
+    }
+  ]
 }

@@ -43,13 +43,13 @@ variable "enable_production_feedback" {
   default     = null
 }
 
-variable "environment_variables" {
-  description = "Environment variables exposed to the services in the project. The map key is used as the Vercel key unless key is set explicitly."
-  type = map(object({
+variable "environment_variable_groups" {
+  description = "Named groups of environment variables exposed to the services in the project. Variable map keys are used as Vercel keys unless key is set explicitly."
+  type = map(map(object({
     key       = optional(string)
     value     = string
     target    = optional(set(string), ["production", "preview"])
     sensitive = optional(bool, true)
-  }))
+  })))
   sensitive = true
 }

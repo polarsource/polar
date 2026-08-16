@@ -9,4 +9,5 @@ provider "cloudflare" {
 }
 
 provider "vercel" {
+  team = "polar-sh"
 }

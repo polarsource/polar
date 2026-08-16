@@ -1,12 +1,11 @@
 'use client'
 
-import { Text } from '@polar-sh/orbit'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button, Grid } from '@polar-sh/orbit'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
-import { VolumetricSlices } from './graphics/VolumetricSlices'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import { Chapter } from './Chapter'
 
 type Tier = {
   name: string
@@ -60,98 +59,35 @@ export const TIERS: Tier[] = [
 export const Pricing = () => (
   <>
     <span id="pricing" className="block scroll-mt-12 md:scroll-mt-28" />
-    <Box as="section" flexDirection="column" rowGap="5xl">
-      <Box flexDirection="column" rowGap="xl" alignItems="center">
-        <Text variant="heading-xl" as="h2" wrap="balance">
-          Built to scale with you
-        </Text>
-        <Box display="block" maxWidth="56rem">
-          <Text variant="heading-xs" wrap="balance" color="muted">
-            Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
-          </Text>
-        </Box>
-        <Box alignItems="center" columnGap="l" paddingTop="m">
+    <Chapter
+      index="05"
+      name="Pricing"
+      title="Pricing that scales with you"
+      subtitle="Start free, upgrade as you grow"
+      description="No hidden fees. Enterprise needs? Let's talk."
+      cta={
+        <>
           <GetStartedButton size="default" />
           <Link href="mailto:support@polar.sh">
             <Button variant="secondary">Contact Sales</Button>
           </Link>
-        </Box>
-      </Box>
-
+        </>
+      }
+    >
       <Grid
         templateColumns={{
           base: '1fr',
           sm: 'repeat(2, 1fr)',
           xl: 'repeat(4, 1fr)',
         }}
-        gap="s"
+        gap="l"
       >
         {TIERS.map((tier) => (
           <TierCard key={tier.name} tier={tier} />
         ))}
       </Grid>
-      <StartupProgramCard />
-    </Box>
+    </Chapter>
   </>
-)
-
-const StartupProgramCard = () => (
-  <Grid
-    templateColumns={{
-      base: '1fr',
-      sm: 'repeat(2, 1fr)',
-    }}
-    backgroundColor="background-secondary"
-    overflow="hidden"
-  >
-    <Box alignItems="center" justifyContent="center" padding="2xl">
-      <Box width={{ base: '100%', sm: '80%' }} aspectRatio="1 / 1">
-        <VolumetricSlices />
-      </Box>
-    </Box>
-    <Box position="relative" flexDirection="column" rowGap="xl" padding="3xl">
-      <Box
-        position="absolute"
-        top="3rem"
-        bottom="3rem"
-        left={-8}
-        borderLeftWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        display={{ base: 'none', sm: 'block' }}
-      />
-      <Box flexDirection="column" rowGap="xl">
-        <Box flexDirection="column" rowGap="m">
-          <Text variant="heading-s" as="h3">
-            Startup Program
-          </Text>
-          <Box display="block">
-            <Text variant="body" color="muted">
-              A year on our most generous plan.
-            </Text>
-          </Box>
-        </Box>
-        <Box alignItems="baseline" columnGap="m">
-          <Text variant="heading-s" as="span">
-            Free
-          </Text>
-          <Text as="span" variant="body" color="muted">
-            for 12 months
-          </Text>
-        </Box>
-      </Box>
-      <CardSection items={['3.40% + 30¢ per transaction']} />
-      <CardSection
-        check
-        items={TIERS.find((tier) => tier.name === 'Scale')?.features ?? []}
-      />
-      <Box display="block" paddingTop="m">
-        <Link href="/startup-program" prefetch>
-          <Button>Apply now</Button>
-        </Link>
-      </Box>
-    </Box>
-  </Grid>
 )
 
 const TierCard = ({ tier }: { tier: Tier }) => (
@@ -167,7 +103,7 @@ const TierCard = ({ tier }: { tier: Tier }) => (
             {tier.name}
           </Text>
           <Box display="block">
-            <Text variant="body" color="muted">
+            <Text variant="heading-xxs" color="muted">
               {tier.desc}
             </Text>
           </Box>
@@ -189,7 +125,7 @@ const TierCard = ({ tier }: { tier: Tier }) => (
   </Box>
 )
 
-const CardSection = ({
+export const CardSection = ({
   label,
   items,
   check,

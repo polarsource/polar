@@ -81,37 +81,6 @@ const CheckIcon = ({ active }: { active: boolean }) => (
   </Box>
 )
 
-const BankIcon = () => (
-  <Box
-    width="3rem"
-    height="3rem"
-    borderRadius="full"
-    backgroundColor="background-card"
-    color="text-secondary"
-    alignItems="center"
-    justifyContent="center"
-    flexShrink={0}
-  >
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="3" y1="22" x2="21" y2="22" />
-      <line x1="6" y1="18" x2="6" y2="11" />
-      <line x1="10" y1="18" x2="10" y2="11" />
-      <line x1="14" y1="18" x2="14" y2="11" />
-      <line x1="18" y1="18" x2="18" y2="11" />
-      <polygon points="12 2 20 7 4 7" />
-    </svg>
-  </Box>
-)
-
 const ArrowDown = () => (
   <Box justifyContent="center" color="text-tertiary" paddingVertical="m">
     <svg
@@ -133,42 +102,20 @@ const ArrowDown = () => (
 export const Pipeline = () => {
   return (
     <Box
-      position="relative"
-      flexDirection="column"
-      rowGap={{ base: '2xl', md: '4xl' }}
-      paddingTop={{ base: 'l', md: '3xl' }}
-      paddingBottom={{ base: '2xl', md: '4xl' }}
+      display="grid"
+      gridTemplateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+      gap="2xl"
     >
-      <Box
-        display="grid"
-        gridTemplateColumns={{ base: '1fr', lg: '1fr 1fr' }}
-        gap={{ base: '2xl', lg: '4xl' }}
-        alignItems="center"
-      >
-        {/* Accordion */}
-        <Box flexDirection="column" rowGap="2xl">
-          <Box flexDirection="column" rowGap="2xl">
-            <Text variant="heading-l" as="h2" wrap="balance">
-              Everything between usage & revenue
-            </Text>
-            <Text variant="heading-xxs" wrap="balance" color="muted">
-              Raw usage goes in. Revenue comes out. We handle everything in
-              between.
-            </Text>
-          </Box>
-        </Box>
-
-        {/* Flow */}
+      {/* Flow */}
+      <Box borderStyle="solid" borderColor="border-primary" borderWidth={1}>
         <Box
           width="100%"
-          maxWidth={{ base: '100%' }}
+          maxWidth={{ base: '100%', lg: '28rem' }}
           marginHorizontal="auto"
           flexDirection="column"
-          paddingVertical={{ base: '2xl', md: '5xl' }}
-          paddingHorizontal={{ base: '2xl', md: '5xl' }}
+          paddingVertical={{ base: '2xl', md: '4xl' }}
+          paddingHorizontal={{ base: '2xl', md: '4xl' }}
           rowGap="xl"
-          borderWidth={1}
-          borderColor="border-primary"
         >
           {/* Customer */}
           <Box
@@ -232,9 +179,8 @@ export const Pipeline = () => {
             alignItems="center"
             columnGap="l"
             backgroundColor="background-secondary"
-            padding="l"
+            padding="xl"
           >
-            <BankIcon />
             <Box flexDirection="column" rowGap="xs">
               <Box alignItems="baseline" columnGap="s">
                 <Text>Merchant Payout</Text>
@@ -246,6 +192,22 @@ export const Pipeline = () => {
               </Box>
             </Box>
           </Box>
+        </Box>
+      </Box>
+      <Box
+        display={{ base: 'none', lg: 'flex' }}
+        alignItems="center"
+        justifyContent="center"
+        backgroundColor="background-secondary"
+      >
+        <Box display="block" maxWidth="32rem" padding="3xl">
+          <Text variant="heading-xs" wrap="pretty">
+            Your customer consumes usage.
+            <br />
+            Polar bills, collects and complies.
+            <br />
+            You get paid.
+          </Text>
         </Box>
       </Box>
     </Box>

@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ComponentProps, MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 export const NavLink = ({
   href,
@@ -66,14 +68,23 @@ export const NavLink = ({
       target={linkTarget}
       prefetch
       onClick={handleClick}
-      className={twMerge(
-        'dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black dark:hover:text-white',
-        isActive && 'text-black dark:text-white',
-        className,
-      )}
+      className={twMerge(className)}
       {...props}
     >
-      {children}
+      <Box
+        as="span"
+        display="inline-flex"
+        color={{
+          base: isActive ? 'text-primary' : 'text-secondary',
+          hover: 'text-primary',
+        }}
+        transitionProperty="colors"
+        transitionDuration="fast"
+      >
+        <Text variant="heading-xxs" color="inherit">
+          {children}
+        </Text>
+      </Box>
     </Link>
   )
 }

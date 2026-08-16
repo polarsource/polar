@@ -1,6 +1,6 @@
 'use client'
 
-import { InlineModal } from '@polar-sh/orbit'
+import { InlineModal, Text } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { CookiePreferencesModal } from './CookiePreferencesModal'
 
@@ -14,7 +14,9 @@ export const CookiePreferencesButton = () => {
         onClick={show}
         className="dark:hover:text-polar-100 flex flex-row items-center gap-x-1 text-black transition-colors hover:text-gray-500 dark:text-white"
       >
-        Cookie Preferences
+        <Text as="span" variant="heading-xxs" color="inherit">
+          Cookie Preferences
+        </Text>
       </button>
       <InlineModal
         isShown={isShown}

@@ -1,4 +1,3 @@
-import { SectionHeader } from '@/components/Landing/SectionHeader'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
@@ -27,46 +26,34 @@ const PRINCIPLES = [
 ]
 
 export const HowWeWork = () => (
-  <Box as="section" flexDirection="column" rowGap="5xl">
-    <SectionHeader
-      title={
-        <>
-          Fewer people,
-          <br />
-          more ownership
-        </>
-      }
-      description="Our mission is to build the finance layer for the next generation of AI products. To get there, we work by a small set of principles that keep us fast and focused."
-    />
-    <Box as="ul" flexDirection="column">
-      {PRINCIPLES.map((principle, index) => (
-        <Box
-          key={principle.title}
-          as="li"
-          display="flex"
-          flexDirection={{ base: 'column', md: 'row' }}
-          rowGap="xs"
-          columnGap="4xl"
-          paddingVertical="xl"
-          borderTopWidth={index > 0 ? 1 : 0}
-          borderStyle="solid"
-          borderColor="border-primary"
-        >
-          <Box flex={1} alignItems="baseline" columnGap="l">
-            <Text as="span" variant="heading-xxs" color="muted">
-              {String(index + 1).padStart(2, '0')}
-            </Text>
-            <Text variant="heading-xxs" as="h3">
-              {principle.title}
-            </Text>
-          </Box>
-          <Box flex={1}>
-            <Text variant="heading-xxs" color="muted">
-              {principle.description}
-            </Text>
-          </Box>
+  <Box as="ul" flexDirection="column">
+    {PRINCIPLES.map((principle, index) => (
+      <Box
+        key={principle.title}
+        as="li"
+        display="flex"
+        flexDirection={{ base: 'column', md: 'row' }}
+        rowGap="xs"
+        columnGap="xl"
+        paddingVertical="xl"
+        borderTopWidth={index > 0 ? 1 : 0}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
+        <Box flex={1} alignItems="baseline" columnGap="2xl">
+          <Text as="span" variant="heading-s" color="muted" tabularNums>
+            {String(index + 1).padStart(2, '0')}
+          </Text>
+          <Text variant="heading-s" as="h3">
+            {principle.title}
+          </Text>
         </Box>
-      ))}
-    </Box>
+        <Box flex={1}>
+          <Text variant="heading-s" color="muted">
+            {principle.description}
+          </Text>
+        </Box>
+      </Box>
+    ))}
   </Box>
 )

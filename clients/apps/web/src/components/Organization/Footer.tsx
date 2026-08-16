@@ -1,5 +1,5 @@
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import { Grid, GridItem, Text } from '@polar-sh/orbit'
+import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
@@ -8,67 +8,62 @@ import { CookiePreferencesButton } from '../Privacy/CookiePreferencesButton'
 
 const Footer = () => {
   return (
-    // Spacing tokens cap at 96px ('5xl'), so the wrapper and inner paddings
-    // stack to reach the 192px vertical padding on large screens.
     <Box
+      as="footer"
       width="100%"
       flexDirection="column"
-      alignItems="center"
-      marginTop="4xl"
-      paddingVertical={{ lg: '5xl' }}
+      marginTop={{ base: 'none', md: '2xl' }}
+      paddingHorizontal={{ base: 'xl', md: 'none' }}
+      paddingVertical={{ base: '4xl', md: '5xl' }}
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
     >
-      <Box
+      <Grid
         width="100%"
-        maxWidth={{ md: 768, xl: 1280 }}
-        flexDirection="column"
-        alignItems="center"
-        paddingHorizontal={{ base: 'xl', md: 'none' }}
-        paddingVertical={{ base: '4xl', lg: '5xl' }}
+        templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+        gap={{ base: '3xl', lg: 'l' }}
       >
-        <Grid
-          width="100%"
-          templateColumns={{
-            base: '1fr',
-            md: 'repeat(2, 1fr)',
-            lg: 'repeat(6, 1fr)',
-          }}
-          gap={{ base: '3xl', md: '4xl' }}
+        <Box
+          flexDirection="column"
+          justifyContent="between"
+          alignItems="start"
+          rowGap="3xl"
         >
-          <GridItem
-            colSpan={{ md: 2 }}
-            flexDirection="column"
-            justifyContent="between"
-            rowGap="xl"
-          >
-            <PolarLogotype
-              className="ml-2 md:ml-0"
-              logoVariant="logotype"
-              size={120}
-            />
-            <Box flexDirection="column" rowGap="xl">
-              <Link
-                href="/signup"
-                className="w-fit border-b border-current pb-0.5"
+          <PolarLogotype
+            className="ml-2 md:ml-0"
+            logoVariant="logotype"
+            size={120}
+          />
+          <Box flexDirection="column" rowGap="xl">
+            <Link
+              href="/signup"
+              className="w-fit border-b border-current pb-0.5"
+            >
+              <Box
+                as="span"
+                display="inline-flex"
+                alignItems="center"
+                columnGap="s"
+                color="text-primary"
               >
-                <Box
-                  as="span"
-                  display="inline-flex"
-                  alignItems="center"
-                  columnGap="s"
-                  color="text-primary"
-                >
-                  <Text as="span" variant="body" color="inherit">
-                    Get Started
-                  </Text>
-                  <ArrowOutwardOutlined fontSize="inherit" />
-                </Box>
-              </Link>
-              <Text variant="body" color="muted">
-                &copy; Polar Software, Inc. {new Date().getFullYear()}
-              </Text>
-            </Box>
-          </GridItem>
+                <Text as="span" variant="heading-xxs" color="inherit">
+                  Get Started
+                </Text>
+                <ArrowOutwardOutlined fontSize="inherit" />
+              </Box>
+            </Link>
+            <Text variant="body" color="muted">
+              &copy; Polar Software, Inc. {new Date().getFullYear()}
+            </Text>
+          </Box>
+        </Box>
 
+        <Grid
+          templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }}
+          columnGap="l"
+          rowGap="3xl"
+        >
           <FooterSection title="Features">
             <FooterLink href="/features/usage-billing">
               Usage Billing
@@ -119,7 +114,7 @@ const Footer = () => {
             </FooterLink>
           </FooterSection>
         </Grid>
-      </Box>
+      </Grid>
     </Box>
   )
 }
@@ -131,7 +126,7 @@ const FooterSection = ({
   children,
 }: PropsWithChildren<{ title: string }>) => (
   <Box flexDirection="column" rowGap="l">
-    <Text as="h3" color="muted">
+    <Text as="h3" variant="body" color="muted">
       {title}
     </Text>
     <Box flexDirection="column" rowGap="s">
@@ -154,7 +149,7 @@ const FooterLink = ({
       transitionProperty="colors"
       transitionDuration="fast"
     >
-      <Text as="span" color="inherit">
+      <Text as="span" variant="heading-xxs" color="inherit">
         {children}
       </Text>
     </Box>

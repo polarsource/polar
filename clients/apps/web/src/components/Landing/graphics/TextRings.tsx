@@ -23,7 +23,13 @@ const RING_STEP_FRAC = 0.028
 // the font shrinks to keep this gap visible.
 const MIN_GAP_PX = 2
 
-export const TextRings = () => {
+interface TextRingsProps {
+  /** Seconds to advance the animation clock at mount, so multiple
+   * instances can start at different points in the cycle. */
+  timeOffset?: number
+}
+
+export const TextRings = ({ timeOffset = 10 }: TextRingsProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
   const { ref: wrapperRef, inView } = useInView()
@@ -64,7 +70,7 @@ export const TextRings = () => {
     })
 
     let lastTime: number | null = null
-    let time = 0
+    let time = timeOffset
 
     const draw = (now: number) => {
       const dt = lastTime === null ? 0 : (now - lastTime) / 1000
@@ -133,7 +139,7 @@ export const TextRings = () => {
     animRef.current = requestAnimationFrame(draw)
 
     return () => cancelAnimationFrame(animRef.current)
-  }, [inView])
+  }, [inView, timeOffset])
 
   return (
     <div ref={wrapperRef} className="aspect-square w-full">

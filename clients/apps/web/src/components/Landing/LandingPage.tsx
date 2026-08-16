@@ -1,65 +1,27 @@
 'use client'
 
-import { Hero } from '@/components/Landing/Hero/Hero'
-import { Testimonials } from '@/components/Landing/Testimonials'
-import { CostInsights } from './CostInsights'
-import { Dashboard } from './Dashboard'
-import { Features } from './Features'
-import { Logotypes } from './Logotypes'
-import { Pipeline } from './Pipeline'
+import { Margins } from './chapters/Margins'
+import { MerchantOfRecord } from './chapters/MerchantOfRecord'
+import { Meter } from './chapters/Meter'
+import { Platform } from './chapters/Platform'
+import { StartupProgram } from './chapters/StartupProgram'
+import { ClosingCta } from './ClosingCta'
+import { Hero } from './Hero/Hero'
 import { Pricing } from './Pricing'
-import { Section } from './Section'
-import { Upsell } from './Upsell'
-import { Usage } from './Usage'
-import { UseCases } from './UseCases'
-import { Vision } from './Vision'
+import { Testimonials } from './Testimonials'
 
 export default function Page() {
   return (
-    <div className="flex flex-col">
-      <PageContent />
+    <div className="flex w-full flex-col">
+      <Hero />
+      <Platform />
+      <Meter />
+      <MerchantOfRecord />
+      <Margins />
+      <Testimonials />
+      <Pricing />
+      <StartupProgram />
+      <ClosingCta />
     </div>
-  )
-}
-
-const PageContent = () => {
-  return (
-    <>
-      {/* Intro */}
-      <Section className="flex flex-col pt-0 md:pt-0">
-        <Hero />
-        <Logotypes />
-        <Features />
-      </Section>
-
-      {/* Pricing models */}
-      <Section>
-        <Usage />
-      </Section>
-
-      {/* Financial overview */}
-      <Section>
-        <Dashboard />
-        <CostInsights />
-        <UseCases />
-        <Pipeline />
-      </Section>
-
-      {/* Vision */}
-      <Section>
-        <Vision />
-      </Section>
-
-      {/* Social proof */}
-      <Section>
-        <Testimonials />
-      </Section>
-
-      {/* Conversion */}
-      <Section>
-        <Upsell />
-        <Pricing />
-      </Section>
-    </>
   )
 }

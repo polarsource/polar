@@ -1,55 +1,49 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { Text } from '@polar-sh/orbit'
+import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 1 } },
-}
+import { FeatureCards } from '../FeatureCards'
 
 export const Hero = () => {
   return (
-    <motion.div
-      className="relative mx-auto flex max-w-7xl flex-col items-center justify-center gap-8 px-4 py-8 text-center md:py-12"
-      variants={containerVariants}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true }}
+    <Box
+      as="section"
+      width="100%"
+      flexDirection="column"
+      rowGap={{ base: '3xl', md: '4xl' }}
+      paddingTop={{ base: 'm', md: '5xl' }}
+      paddingBottom={{ base: '3xl', md: '5xl' }}
     >
-      <Box
-        maxWidth="64rem"
-        alignItems="center"
-        rowGap="3xl"
-        flexDirection="column"
-      >
-        <Text variant="heading-2xl">Turn Usage Into Revenue</Text>
-      </Box>
-      <motion.p
-        className="dark:text-polar-500 max-w-2xl text-center text-2xl leading-snug! text-balance text-gray-500"
-        variants={itemVariants}
-      >
-        A financial substrate for modern software, from first inference call to
-        net revenue.
-      </motion.p>
       <motion.div
-        className="mt-2 flex flex-col items-center gap-4 md:flex-row md:gap-6"
-        variants={itemVariants}
+        variants={{
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { duration: 1 } },
+        }}
+        initial="hidden"
+        animate="visible"
       >
-        <GetStartedButton size="lg" text="Get Started" />
+        <Box flexDirection="column" rowGap={{ base: '4xl', md: '5xl' }}>
+          <Grid
+            templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+            gap={{ base: '2xl', lg: 'l' }}
+          >
+            <Box flexDirection="column" alignItems="start" rowGap="3xl">
+              <Box flexDirection="column" rowGap="m">
+                <Text variant="heading-xl" as="h1" wrap="balance">
+                  Meet Polar
+                </Text>
+                <Text variant="heading-xl" as="p" color="muted" wrap="balance">
+                  The billing stack for the intelligence era
+                </Text>
+              </Box>
+              <GetStartedButton size="lg" text="Get Started" />
+            </Box>
+          </Grid>
+          <FeatureCards />
+        </Box>
       </motion.div>
-    </motion.div>
+    </Box>
   )
 }

@@ -21,7 +21,22 @@ resource "vercel_project" "this" {
 }
 
 locals {
-  environment_variable_group_names = nonsensitive(toset(keys(var.environment_variable_groups)))
+  environment_variables = flatten([
+    for _, variables in var.environment_variable_groups : [
+      for name, variable in variables : {
+        key       = coalesce(variable.key, name)
+        value     = variable.value
+        target    = variable.target
+        sensitive = variable.sensitive
+      }
+    ]
+  ])
+  environment_variable_identities = nonsensitive([
+    for variable in local.environment_variables : jsonencode({
+      key    = variable.key
+      target = sort(tolist(variable.target))
+    })
+  ])
 
   integration_ids = {
     neon    = "icfg_biMWLfepTR29FamF2JyDnPzV"
@@ -37,15 +52,20 @@ resource "vercel_integration_project_access" "this" {
 }
 
 resource "vercel_project_environment_variables" "this" {
-  for_each = local.environment_variable_group_names
-
   project_id = vercel_project.this.id
   variables = [
-    for name, variable in var.environment_variable_groups[each.key] : {
-      key       = coalesce(variable.key, name)
+    for variable in local.environment_variables : {
+      key       = variable.key
       value     = variable.value
       target    = variable.target
       sensitive = variable.sensitive
     }
   ]
+
+  lifecycle {
+    precondition {
+      condition     = length(local.environment_variable_identities) == length(distinct(local.environment_variable_identities))
+      error_message = "Environment variable key and target combinations must be unique across groups."
+    }
+  }
 }

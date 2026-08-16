@@ -5,7 +5,7 @@ import { MarginGap } from '../graphics/MarginGap'
 export const Margins = () => (
   <Chapter
     index="03"
-    name="Understand"
+    name="Unit economics"
     title="The only billing stack"
     subtitle="that knows your margins"
     description="Polar already collects every payment, so placing inference cost beside it reveals your true gross margin per customer. The $90 plan burning $600 of tokens stops hiding in your averages."

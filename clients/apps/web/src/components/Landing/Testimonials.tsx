@@ -84,7 +84,7 @@ const TestimonialRow = ({ testimonial }: { testimonial: Testimonial }) => (
           </Text>
         </Box>
       </Box>
-      <Box flexDirection="column" rowGap="m">
+      <Box flexDirection="column" rowGap="2xl">
         {testimonial.quote.map((paragraph) => (
           <Text key={paragraph} variant="heading-s" as="p">
             {paragraph}

@@ -51,7 +51,11 @@ export const MarginGap = () => {
 
     let startTime: number | null = null
 
-    const tracePath = (valueAt: (t: number) => number, from: number, to: number) => {
+    const tracePath = (
+      valueAt: (t: number) => number,
+      from: number,
+      to: number,
+    ) => {
       ctx.beginPath()
       for (let i = 0; i <= SAMPLES; i++) {
         const t = from + ((to - from) * i) / SAMPLES
@@ -145,7 +149,13 @@ export const MarginGap = () => {
 
       const labelAlpha = Math.max(0, Math.min(1, (progress - 0.7) / 0.3))
       if (labelAlpha > 0) {
-        drawLabel('Revenue', x(1), y(revenueAt(1)) - 10, labelAlpha * 0.9, 'right')
+        drawLabel(
+          'Revenue',
+          x(1),
+          y(revenueAt(1)) - 10,
+          labelAlpha * 0.9,
+          'right',
+        )
         drawLabel('Cost', x(1), y(costAt(1)) + 18, labelAlpha * 0.45, 'right')
         drawLabel(
           'Gross margin',
@@ -154,8 +164,20 @@ export const MarginGap = () => {
           labelAlpha * 0.6,
           'center',
         )
-        drawLabel('Today', x(TODAY) - 8, padY * 0.55 + 10, labelAlpha * 0.45, 'right')
-        drawLabel('Forecast', x(TODAY) + 8, padY * 0.55 + 10, labelAlpha * 0.45, 'left')
+        drawLabel(
+          'Today',
+          x(TODAY) - 8,
+          padY * 0.55 + 10,
+          labelAlpha * 0.45,
+          'right',
+        )
+        drawLabel(
+          'Forecast',
+          x(TODAY) + 8,
+          padY * 0.55 + 10,
+          labelAlpha * 0.45,
+          'left',
+        )
       }
 
       ctx.globalAlpha = 1

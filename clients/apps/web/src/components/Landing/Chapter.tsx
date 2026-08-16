@@ -8,7 +8,7 @@ interface ChapterMarkerProps {
 }
 
 const ChapterMarker = ({ name }: ChapterMarkerProps) => (
-  <Box alignItems="start">
+  <Box alignItems="start" display={{ md: 'flex', base: 'none' }}>
     <Text variant="heading-l">{name}</Text>
   </Box>
 )

@@ -30,7 +30,7 @@ export default function CompanyPage() {
                 Small team, big ambitions
               </Text>
               <Text variant="heading-xl" as="p" color="muted" wrap="balance">
-                Powering the AI economy
+                Join our quest to build new financial primitives
               </Text>
             </Box>
             <a href="#open-roles">
@@ -46,7 +46,7 @@ export default function CompanyPage() {
         name="Mission"
         title="billing = fn(events)"
         subtitle="Usage in, revenue out"
-        description="Modern software is priced around usage, yet billing systems remain static. We believe analytics and billing belong in the same platform, and we're building Polar to become the standard Events → Analytics → Billing stack for the next generation of software."
+        description="Modern software is priced around usage, yet billing systems remain static. We believe analytics and billing belong in the same platform, and we're building Polar to become the standard stack for the next generation of software."
       >
         <Box flexDirection="column" rowGap={{ base: '3xl', md: '5xl' }}>
           <Box
@@ -56,13 +56,10 @@ export default function CompanyPage() {
           >
             <Box display={{ base: 'none', lg: 'flex' }} />
             <Box flexDirection="column" rowGap="xl">
-              <Text variant="heading-xs" color="muted" wrap="pretty">
+              <Text variant="heading-s" color="muted" wrap="pretty">
                 Real-time event ingestion powers instant unit economics and
                 analytics, leading to deterministic and versioned billing as
                 code.
-              </Text>
-              <Text variant="heading-xs" color="muted" wrap="pretty">
-                Polar is open source and built in the open with our community.
               </Text>
             </Box>
           </Box>
@@ -137,15 +134,15 @@ export default function CompanyPage() {
       >
         <Grid
           templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
-          columnGap="4xl"
+          columnGap="l"
           rowGap="xl"
         >
           {investors.map((investor) => (
             <Box key={investor.name} flexDirection="column">
-              <Text variant="heading-xxs" as="span">
+              <Text variant="heading-xs" as="span">
                 {investor.name}
               </Text>
-              <Text variant="heading-xxs" as="span" color="muted">
+              <Text variant="heading-xs" as="span" color="muted">
                 {investor.company}
               </Text>
             </Box>

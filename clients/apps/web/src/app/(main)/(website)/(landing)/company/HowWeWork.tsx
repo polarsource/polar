@@ -34,22 +34,22 @@ export const HowWeWork = () => (
         display="flex"
         flexDirection={{ base: 'column', md: 'row' }}
         rowGap="xs"
-        columnGap="4xl"
+        columnGap="xl"
         paddingVertical="xl"
         borderTopWidth={index > 0 ? 1 : 0}
         borderStyle="solid"
         borderColor="border-primary"
       >
-        <Box flex={1} alignItems="baseline" columnGap="l">
-          <Text as="span" variant="heading-xxs" color="muted">
+        <Box flex={1} alignItems="baseline" columnGap="2xl">
+          <Text as="span" variant="heading-s" color="muted" tabularNums>
             {String(index + 1).padStart(2, '0')}
           </Text>
-          <Text variant="heading-xxs" as="h3">
+          <Text variant="heading-s" as="h3">
             {principle.title}
           </Text>
         </Box>
         <Box flex={1}>
-          <Text variant="heading-xxs" color="muted">
+          <Text variant="heading-s" color="muted">
             {principle.description}
           </Text>
         </Box>

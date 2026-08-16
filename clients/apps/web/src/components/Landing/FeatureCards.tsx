@@ -68,11 +68,11 @@ export const FeatureCards = () => (
           <Box display="block" aspectRatio="1 / 1">
             <Graphic />
           </Box>
-          <Box flexDirection="column" rowGap="m">
+          <Box flexDirection="column" rowGap="s">
             <Text variant="heading-xs" as="h3">
               {title}
             </Text>
-            <Text variant="heading-xxs" color="muted" wrap="pretty">
+            <Text variant="heading-xxs" color="muted">
               {desc}
             </Text>
           </Box>

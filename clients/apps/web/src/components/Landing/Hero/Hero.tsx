@@ -35,7 +35,7 @@ export const Hero = () => {
                   Meet Polar
                 </Text>
                 <Text variant="heading-xl" as="p" color="muted" wrap="balance">
-                  The financial substrate turning usage into revenue
+                  The billing stack for the intelligence era
                 </Text>
               </Box>
               <GetStartedButton size="lg" text="Get Started" />

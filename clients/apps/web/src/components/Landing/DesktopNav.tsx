@@ -6,7 +6,7 @@ import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { useModal } from '@/components/Modal/useModal'
 import { usePostHog } from '@/hooks/posthog'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import { Button, Grid, GridItem, Modal, Text } from '@polar-sh/orbit'
+import { Button, Grid, Modal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
 import Link from 'next/link'
@@ -170,11 +170,13 @@ const NavMenuPanel = ({
       <Grid
         width="100%"
         maxWidth={1920}
-        templateColumns="repeat(4, 1fr)"
-        gap="4xl"
+        templateColumns="repeat(2, 1fr)"
+        gap="l"
       >
-        <GridItem colSpan={2} flexDirection="column" rowGap="xl">
-          <Text color="muted">{menu.featured.title}</Text>
+        <Box flexDirection="column" alignItems="start" rowGap="xl">
+          <Text variant="body" color="muted">
+            {menu.featured.title}
+          </Text>
           <Box flexDirection="column" alignItems="start" rowGap="l">
             {menu.featured.items.map((item) => (
               <PanelLink
@@ -185,19 +187,28 @@ const NavMenuPanel = ({
               />
             ))}
           </Box>
-        </GridItem>
-        {menu.sections.map((section) => (
-          <GridItem key={section.title} flexDirection="column" rowGap="xl">
-            <Text color="muted">{section.title}</Text>
-            <Box as="ul" flexDirection="column" alignItems="start" rowGap="m">
-              {section.items.map((item) => (
-                <Box as="li" key={item.href + item.label}>
-                  <PanelLink item={item} onNavigate={onNavigate} />
-                </Box>
-              ))}
+        </Box>
+        <Grid templateColumns="repeat(2, 1fr)" columnGap="l" rowGap="3xl">
+          {menu.sections.map((section) => (
+            <Box
+              key={section.title}
+              flexDirection="column"
+              alignItems="start"
+              rowGap="xl"
+            >
+              <Text variant="body" color="muted">
+                {section.title}
+              </Text>
+              <Box as="ul" flexDirection="column" alignItems="start" rowGap="m">
+                {section.items.map((item) => (
+                  <Box as="li" key={item.href + item.label}>
+                    <PanelLink item={item} onNavigate={onNavigate} />
+                  </Box>
+                ))}
+              </Box>
             </Box>
-          </GridItem>
-        ))}
+          ))}
+        </Grid>
       </Grid>
     </motion.div>
   </Box>
@@ -224,7 +235,7 @@ const PanelLink = ({
     >
       <Text
         as="span"
-        variant={featured ? 'heading-m' : 'title'}
+        variant={featured ? 'heading-m' : 'heading-xxs'}
         color="inherit"
       >
         {item.label}

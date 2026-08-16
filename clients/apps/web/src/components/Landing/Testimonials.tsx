@@ -99,7 +99,7 @@ export const Testimonials = () => (
   <Chapter
     index="04"
     name="What people say"
-    title="Trusted by the teams shipping fastest"
+    title="Trusted by teams that ship daily"
     subtitle="From AI startups to infrastructure veterans"
   >
     <Box flexDirection="column" rowGap="3xl" width="100%">

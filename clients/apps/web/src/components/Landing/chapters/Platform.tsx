@@ -166,7 +166,8 @@ export const Platform = () => (
         md: 'repeat(2, 1fr)',
         xl: 'repeat(4, 1fr)',
       }}
-      gap="l"
+      columnGap="l"
+      rowGap={{ base: '3xl', xl: 'l' }}
     >
       {PILLARS.map((pillar) => (
         <Box key={pillar.title} flexDirection="column" rowGap="xl">

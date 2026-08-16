@@ -57,7 +57,7 @@ export const FeatureCards = () => (
           flexDirection="column"
           justifyContent="between"
           rowGap="3xl"
-          padding="3xl"
+          padding={{ base: 'xl', md: '3xl' }}
           backgroundColor={{
             base: 'background-secondary',
             hover: 'background-card',

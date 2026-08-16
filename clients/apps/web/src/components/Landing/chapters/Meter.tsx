@@ -59,7 +59,7 @@ export const Meter = () => (
           flexDirection="column"
           justifyContent="between"
           rowGap="3xl"
-          padding="3xl"
+          padding={{ base: 'xl', md: '3xl' }}
           backgroundColor="background-secondary"
         >
           <Box display="block" aspectRatio="1 / 1">

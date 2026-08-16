@@ -14,7 +14,7 @@ import { useInView } from '@/hooks/useInView'
 
 const ROWS = 14
 const SUCCESS = '#fff'
-const DANGER = 'hsl(233, 4%, 18.5%)'
+const DANGER = 'hsl(0, 0%, 18.5%)'
 
 export const MarginPulse = () => {
   const { ref: wrapperRef, inView } = useInView()

@@ -81,37 +81,6 @@ const CheckIcon = ({ active }: { active: boolean }) => (
   </Box>
 )
 
-const BankIcon = () => (
-  <Box
-    width="3rem"
-    height="3rem"
-    borderRadius="full"
-    backgroundColor="background-card"
-    color="text-secondary"
-    alignItems="center"
-    justifyContent="center"
-    flexShrink={0}
-  >
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="3" y1="22" x2="21" y2="22" />
-      <line x1="6" y1="18" x2="6" y2="11" />
-      <line x1="10" y1="18" x2="10" y2="11" />
-      <line x1="14" y1="18" x2="14" y2="11" />
-      <line x1="18" y1="18" x2="18" y2="11" />
-      <polygon points="12 2 20 7 4 7" />
-    </svg>
-  </Box>
-)
-
 const ArrowDown = () => (
   <Box justifyContent="center" color="text-tertiary" paddingVertical="m">
     <svg

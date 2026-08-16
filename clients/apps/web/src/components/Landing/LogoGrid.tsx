@@ -2,14 +2,7 @@ import { Grid, GridItem } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { JSX } from 'react'
-import {
-  Confidence,
-  FastAPICloud,
-  MiddayWordmark,
-  StillaAI,
-  StillaAIWordmark,
-  Tailwind,
-} from './Logos'
+import { Confidence, FastAPICloud, StillaAIWordmark, Tailwind } from './Logos'
 
 interface LogoCell {
   icon: JSX.Element

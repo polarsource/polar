@@ -147,6 +147,7 @@ func (p *polarProvider) Resources(ctx context.Context) []func() resource.Resourc
 		NewCustomFieldResource,
 		NewDiscountResource,
 		NewMeterResource,
+		NewOrganizationResource,
 		NewProductResource,
 		NewWebhookEndpointResource,
 	}

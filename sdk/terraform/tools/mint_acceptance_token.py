@@ -69,8 +69,8 @@ DEFAULT_COMMENT = "terraform-provider-acceptance-tests"
 # script reuses whatever organization is already there, which may predate that.
 FEATURE_FLAGS = ("member_model_enabled", "seat_based_pricing_enabled")
 
-# Every scope the provider's resources need: meters, products, benefits,
-# discounts, custom fields and webhook endpoints, plus the organization and
+# Every scope the provider's resources need: the organization itself, meters,
+# products, benefits, discounts, custom fields and webhook endpoints, plus the
 # checkout link scopes the roadmap resources will use.
 SCOPES: list[Scope] = [
     Scope.organizations_read,

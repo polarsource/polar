@@ -57,6 +57,12 @@ previously minted, since only the hash is stored and an old token cannot be reco
   conditional immutability).
 - **Archive-on-destroy** for resources without a DELETE endpoint (meters and products):
   destroy maps to `is_archived: true`, Read treats archived as destroyed.
+- **Adopt-on-create, forget-on-destroy** for the update-only singleton (`polar_organization`):
+  create resolves the token's organization instead of creating one, destroy calls nothing,
+  and every settable attribute is `Optional`+`Computed` so an undeclared setting is left
+  unmanaged rather than reset. Its update payload is built from `req.Config`, not the plan —
+  on an update the plan carries the prior state for undeclared attributes, so only the
+  configuration can say what is actually managed.
 - **Server-generated values** (webhook secrets, IDs, timestamps) are `Computed` with
   `UseStateForUnknown`; secrets are `Sensitive`.
 - **Fail at plan time when the API would silently rewrite input** (e.g. `metadata.`
@@ -86,7 +92,6 @@ README.md for the one-time setup checklist.
 ## Roadmap
 
 Remaining catalog resources, in rough order of value:
-`polar_checkout_link`, `polar_metric_dashboard`, `polar_organization` (update-only
-singleton), the four integration-backed benefit types (`discord`, `github_repository`,
-`feature_flag`, `slack_shared_channel`), plus data sources for products, benefits and
-event types.
+`polar_checkout_link`, `polar_metric_dashboard`, the four integration-backed benefit types
+(`discord`, `github_repository`, `feature_flag`, `slack_shared_channel`), plus data sources
+for products, benefits and event types.

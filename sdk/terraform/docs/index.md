@@ -13,8 +13,9 @@ organization; to manage several organizations, configure one provider alias per
 organization.
 
 The token needs the write scopes for the resources you manage, e.g. `products:write`,
-`benefits:write`, `custom_fields:write`, `webhooks:write` and `meters:write`. Write scopes
-imply read access on the corresponding read endpoints.
+`benefits:write`, `custom_fields:write`, `webhooks:write`, `meters:write` and, for
+`polar_organization`, `organizations:write`. Write scopes imply read access on the
+corresponding read endpoints.
 
 ## Example Usage
 

@@ -984,3 +984,524 @@ func TestCollectionsKnown(t *testing.T) {
 		t.Error("a null nested object is representable: it maps to a nil pointer")
 	}
 }
+
+func TestKeepEquivalentURL(t *testing.T) {
+	api := "https://example.com/"
+	prior := types.StringValue("https://example.com")
+	if got := keepEquivalentURL(prior, &api); got != prior {
+		t.Errorf("an equivalent URL should keep the configured spelling, got %v", got)
+	}
+	changed := types.StringValue("https://other.example.com")
+	if got := keepEquivalentURL(changed, &api); got.ValueString() != api {
+		t.Errorf("a different URL should take the API value, got %v", got)
+	}
+	if got := keepEquivalentURL(types.StringNull(), nil); !got.IsNull() {
+		t.Errorf("a nil API value should map to null, got %v", got)
+	}
+	if got := keepEquivalentURL(types.StringNull(), &api); got.ValueString() != api {
+		t.Errorf("no prior spelling should take the API value, got %v", got)
+	}
+}
+
+func TestBoolOrAndFriends(t *testing.T) {
+	if !boolOr(types.BoolNull(), true) {
+		t.Error("an undeclared boolean must keep the API's value")
+	}
+	if boolOr(types.BoolValue(false), true) {
+		t.Error("a declared boolean must win over the API's value")
+	}
+	if int64Or(types.Int64Null(), 7) != 7 || int64Or(types.Int64Value(1), 7) != 1 {
+		t.Error("int64Or should prefer a declared value and fall back to the API's")
+	}
+	if stringOr(types.StringNull(), "a") != "a" || stringOr(types.StringValue("b"), "a") != "b" {
+		t.Error("stringOr should prefer a declared value and fall back to the API's")
+	}
+	current := true
+	if boolPointerOr(types.BoolNull(), nil) != nil {
+		t.Error("an undeclared boolean must keep the API's absent key absent")
+	}
+	if got := boolPointerOr(types.BoolNull(), &current); got == nil || !*got {
+		t.Error("an undeclared boolean must keep the API's pointer")
+	}
+	if got := boolPointerOr(types.BoolValue(false), &current); got == nil || *got {
+		t.Error("a declared boolean must win over the API's pointer")
+	}
+}
+
+// testOrganization is the API's view of an organization whose settings were all
+// changed away from their defaults, so a payload that carries a default has
+// clearly reset something it should have left alone.
+func testOrganization() *polarapi.Organization {
+	pause, allowEmailChange, autoAccept := true, true, int64(500)
+	return &polarapi.Organization{
+		ID:                         "org-1",
+		Slug:                       "acme",
+		Status:                     "active",
+		CreatedAt:                  "2026-01-01T00:00:00Z",
+		Name:                       "Acme",
+		Website:                    testString("https://acme.example.com/"),
+		Socials:                    []polarapi.OrganizationSocial{{Platform: "github", URL: "https://github.com/acme"}},
+		EmbedHosts:                 []string{"acme.example.com"},
+		DefaultPresentmentCurrency: "eur",
+		DefaultTaxBehavior:         "inclusive",
+		FeatureSettings: &polarapi.OrganizationFeatureSettings{
+			SeatBasedPricingEnabled: true,
+			MemberModelEnabled:      true,
+			OverviewMetrics:         []string{"revenue"},
+		},
+		SubscriptionSettings: polarapi.OrganizationSubscriptionSettings{
+			AllowMultipleSubscriptions:   true,
+			ProrationBehavior:            "invoice",
+			BenefitRevocationGracePeriod: 3,
+			PreventTrialAbuse:            true,
+			AllowCustomerUpdates:         false,
+		},
+		CustomerEmailSettings: polarapi.OrganizationCustomerEmailSettings{
+			OrderConfirmation:   true,
+			SubscriptionPaused:  true,
+			SubscriptionUpdated: true,
+		},
+		CustomerPortalSettings: polarapi.OrganizationCustomerPortalSettings{
+			Usage:        polarapi.OrganizationCustomerPortalUsageSettings{Show: true},
+			Subscription: polarapi.OrganizationCustomerPortalSubscriptionSettings{UpdateSeats: true, UpdatePlan: true, Pause: &pause},
+			Customer:     &polarapi.OrganizationCustomerPortalCustomerSettings{AllowEmailChange: &allowEmailChange},
+		},
+		DisputeSettings: polarapi.OrganizationDisputeSettings{AutoAcceptBelowAmount: &autoAccept},
+	}
+}
+
+func testOrganizationUpdatePayload(t *testing.T, config *organizationModel) map[string]any {
+	t.Helper()
+	update, diags := organizationUpdateFromConfig(context.Background(), config, testOrganization())
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	encoded, err := json.Marshal(update)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(encoded, &payload); err != nil {
+		t.Fatal(err)
+	}
+	return payload
+}
+
+// TestOrganizationUpdateFromConfigSendsNothingForAnEmptyConfig is the heart of
+// the singleton's contract: a resource that declares no settings adopts the
+// organization and touches nothing at all.
+func TestOrganizationUpdateFromConfigSendsNothingForAnEmptyConfig(t *testing.T) {
+	config := &organizationModel{
+		Socials:    types.ListNull(organizationSocialType),
+		EmbedHosts: types.SetNull(types.StringType),
+	}
+	update, diags := organizationUpdateFromConfig(context.Background(), config, testOrganization())
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if !update.IsEmpty() {
+		t.Errorf("an empty configuration must produce an empty update, got %+v", update)
+	}
+}
+
+func TestOrganizationUpdateFromConfigSendsOnlyDeclaredAttributes(t *testing.T) {
+	config := &organizationModel{
+		Name:       types.StringValue("Acme Inc"),
+		Socials:    types.ListNull(organizationSocialType),
+		EmbedHosts: types.SetNull(types.StringType),
+	}
+	payload := testOrganizationUpdatePayload(t, config)
+	if len(payload) != 1 || payload["name"] != "Acme Inc" {
+		t.Errorf("only the declared name should be sent, got %v", payload)
+	}
+}
+
+// TestOrganizationUpdateFromConfigCompletesReplacedSettings covers the three
+// settings objects the server replaces wholesale instead of merging: the
+// payload has to carry every key, and the ones the configuration leaves out
+// must come from the organization rather than from a Go zero value.
+func TestOrganizationUpdateFromConfigCompletesReplacedSettings(t *testing.T) {
+	ctx := context.Background()
+	config := &organizationModel{
+		Socials:    types.ListNull(organizationSocialType),
+		EmbedHosts: types.SetNull(types.StringType),
+		SubscriptionSettings: &organizationSubscriptionSettingsModel{
+			ProrationBehavior: types.StringValue("prorate"),
+		},
+		CustomerEmailSettings: &organizationCustomerEmailSettingsModel{
+			SubscriptionPaused: types.BoolValue(false),
+		},
+		CustomerPortalSettings: &organizationCustomerPortalSettingsModel{
+			Usage: &organizationCustomerPortalUsageModel{Show: types.BoolValue(false)},
+		},
+	}
+
+	update, diags := organizationUpdateFromConfig(ctx, config, testOrganization())
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+
+	subscription := update.SubscriptionSettings
+	if subscription == nil || subscription.ProrationBehavior != "prorate" {
+		t.Fatalf("the declared proration behavior should be sent, got %+v", subscription)
+	}
+	if !subscription.AllowMultipleSubscriptions || subscription.BenefitRevocationGracePeriod != 3 {
+		t.Errorf("undeclared subscription settings must keep the organization's values, got %+v", subscription)
+	}
+	if !subscription.PreventTrialAbuse || subscription.AllowCustomerUpdates {
+		t.Errorf("settings this resource does not expose must round-trip unchanged, got %+v", subscription)
+	}
+
+	emails := update.CustomerEmailSettings
+	if emails == nil || emails.SubscriptionPaused {
+		t.Fatalf("the declared email toggle should be sent, got %+v", emails)
+	}
+	if !emails.OrderConfirmation || !emails.SubscriptionUpdated {
+		t.Errorf("undeclared email toggles must keep the organization's values, got %+v", emails)
+	}
+
+	portal := update.CustomerPortalSettings
+	if portal == nil || portal.Usage.Show {
+		t.Fatalf("the declared portal toggle should be sent, got %+v", portal)
+	}
+	if !portal.Subscription.UpdateSeats || portal.Subscription.Pause == nil || !*portal.Subscription.Pause {
+		t.Errorf("an undeclared portal sub-object must keep the organization's values, got %+v", portal.Subscription)
+	}
+	if portal.Customer == nil || portal.Customer.AllowEmailChange == nil || !*portal.Customer.AllowEmailChange {
+		t.Error("the optional customer sub-object must survive: the server drops what the payload omits")
+	}
+}
+
+// TestOrganizationUpdateFromConfigMergesMergedSettings covers the two settings
+// objects the server merges key by key: only the declared keys may be sent, so
+// the staff-managed feature settings keep their values.
+func TestOrganizationUpdateFromConfigMergesMergedSettings(t *testing.T) {
+	ctx := context.Background()
+	metrics, diags := types.ListValueFrom(ctx, types.StringType, []string{"revenue", "orders"})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	config := &organizationModel{
+		Socials:    types.ListNull(organizationSocialType),
+		EmbedHosts: types.SetNull(types.StringType),
+		FeatureSettings: &organizationFeatureSettingsModel{
+			CheckoutLocalizationEnabled: types.BoolValue(true),
+			OverviewMetrics:             metrics,
+		},
+		DisputeSettings: &organizationDisputeSettingsModel{},
+	}
+
+	payload := testOrganizationUpdatePayload(t, config)
+	features, ok := payload["feature_settings"].(map[string]any)
+	if !ok {
+		t.Fatalf("feature_settings should be sent, got %v", payload)
+	}
+	if features["checkout_localization_enabled"] != true {
+		t.Errorf("the declared feature should be sent, got %v", features)
+	}
+	for _, key := range []string{"seat_based_pricing_enabled", "member_model_enabled"} {
+		if _, present := features[key]; present {
+			t.Errorf("%s is not declared and must be left to the server's merge, got %v", key, features)
+		}
+	}
+	if length := len(features["overview_metrics"].([]any)); length != 2 {
+		t.Errorf("the declared overview metrics should be sent, got %v", features)
+	}
+	// A dispute settings block with nothing in it merges nothing, which is the
+	// only honest reading of a declared-but-empty object.
+	disputes, ok := payload["dispute_settings"].(map[string]any)
+	if !ok || len(disputes) != 0 {
+		t.Errorf("an empty dispute settings block should merge nothing, got %v", payload["dispute_settings"])
+	}
+}
+
+func TestOrganizationUpdateFromConfigClearsEmptyCollections(t *testing.T) {
+	ctx := context.Background()
+	socials, diags := types.ListValueFrom(ctx, organizationSocialType, []organizationSocialModel{})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	hosts, diags := types.SetValueFrom(ctx, types.StringType, []string{})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	payload := testOrganizationUpdatePayload(t, &organizationModel{Socials: socials, EmbedHosts: hosts})
+	for _, key := range []string{"socials", "embed_hosts"} {
+		value, present := payload[key]
+		if !present {
+			t.Errorf("an empty %s must be sent: it is how the collection is cleared", key)
+			continue
+		}
+		if length := len(value.([]any)); length != 0 {
+			t.Errorf("%s should be an empty list, got %v", key, value)
+		}
+	}
+}
+
+// TestOrganizationUpdateFromConfigOmitsSocialPlatforms pins that a configured
+// social link only ever contributes its URL: the platform is the API's to
+// decide.
+func TestOrganizationUpdateFromConfigOmitsSocialPlatforms(t *testing.T) {
+	ctx := context.Background()
+	socials, diags := types.ListValueFrom(ctx, organizationSocialType, []organizationSocialModel{{
+		URL:      types.StringValue("https://github.com/acme"),
+		Platform: types.StringValue("linkedin"),
+	}})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	payload := testOrganizationUpdatePayload(t, &organizationModel{
+		Socials:    socials,
+		EmbedHosts: types.SetNull(types.StringType),
+	})
+	links := payload["socials"].([]any)
+	link := links[0].(map[string]any)
+	if _, present := link["platform"]; present {
+		t.Errorf("the platform must not be sent, got %v", link)
+	}
+	if link["url"] != "https://github.com/acme" {
+		t.Errorf("the URL should be sent, got %v", link)
+	}
+}
+
+func TestOrganizationToModel(t *testing.T) {
+	ctx := context.Background()
+	organization := testOrganization()
+	prior := organizationPrior{
+		Website: types.StringValue("https://acme.example.com"),
+		Socials: types.ListNull(organizationSocialType),
+	}
+
+	model, diags := organizationToModel(ctx, organization, prior)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if model.Website.ValueString() != "https://acme.example.com" {
+		t.Errorf("an equivalent website should keep the configured spelling, got %v", model.Website)
+	}
+	if !model.AvatarURL.IsNull() {
+		t.Errorf("an organization without an avatar should read back as null, got %v", model.AvatarURL)
+	}
+	if model.Socials.IsNull() || len(model.Socials.Elements()) != 1 {
+		t.Fatalf("socials should read back as a list of one, got %v", model.Socials)
+	}
+	social := model.Socials.Elements()[0].(types.Object)
+	if social.Attributes()["platform"].(types.String).ValueString() != "github" {
+		t.Errorf("the API's platform should reach state, got %v", social)
+	}
+	if model.CustomerPortalSettings.Subscription.Pause.ValueBool() != true {
+		t.Errorf("an optional portal key present server-side should read back, got %v", model.CustomerPortalSettings)
+	}
+	if model.FeatureSettings == nil || !model.FeatureSettings.SeatBasedPricingEnabled.ValueBool() {
+		t.Errorf("self-serve feature settings should read back, got %+v", model.FeatureSettings)
+	}
+	if model.DisputeSettings.AutoAcceptBelowAmount.ValueInt64() != 500 {
+		t.Errorf("dispute settings should read back, got %+v", model.DisputeSettings)
+	}
+}
+
+// TestOrganizationToModelHandlesAbsentOptionalKeys covers the shapes an
+// organization that never touched a setting comes back as: a null
+// feature_settings object and portal keys the server simply does not store.
+func TestOrganizationToModelHandlesAbsentOptionalKeys(t *testing.T) {
+	ctx := context.Background()
+	organization := testOrganization()
+	organization.FeatureSettings = nil
+	organization.CustomerPortalSettings.Subscription.Pause = nil
+	organization.CustomerPortalSettings.Customer = nil
+	organization.Socials = nil
+
+	model, diags := organizationToModel(ctx, organization, organizationPrior{Socials: types.ListNull(organizationSocialType)})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if model.FeatureSettings != nil {
+		t.Errorf("an organization without feature settings should read back as a null object, got %+v", model.FeatureSettings)
+	}
+	if !model.CustomerPortalSettings.Subscription.Pause.IsNull() {
+		t.Errorf("an absent portal key should read back as null, got %v", model.CustomerPortalSettings.Subscription.Pause)
+	}
+	if model.CustomerPortalSettings.Customer != nil {
+		t.Errorf("an absent portal sub-object should read back as a null object, got %+v", model.CustomerPortalSettings.Customer)
+	}
+	if model.Socials.IsNull() || len(model.Socials.Elements()) != 0 {
+		t.Errorf("no social links should read back as an empty list, got %v", model.Socials)
+	}
+}
+
+func testSocialsList(t *testing.T, socials ...[2]string) types.List {
+	t.Helper()
+	models := make([]organizationSocialModel, 0, len(socials))
+	for _, social := range socials {
+		platform := types.StringNull()
+		if social[1] != "" {
+			platform = types.StringValue(social[1])
+		}
+		models = append(models, organizationSocialModel{URL: types.StringValue(social[0]), Platform: platform})
+	}
+	list, diags := types.ListValueFrom(context.Background(), organizationSocialType, models)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	return list
+}
+
+func TestOrganizationSocialsFromAPIKeepsConfiguredSpelling(t *testing.T) {
+	ctx := context.Background()
+	prior := testSocialsList(t, [2]string{"https://github.com/Acme", "github"})
+	socials, diags := organizationSocialsFromAPI(ctx, []polarapi.OrganizationSocial{
+		{Platform: "github", URL: "https://github.com/Acme"},
+		{Platform: "other", URL: "https://acme.example.com/blog"},
+	}, prior)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if length := len(socials.Elements()); length != 2 {
+		t.Fatalf("expected both links, got %d", length)
+	}
+	first := socials.Elements()[0].(types.Object)
+	if first.Attributes()["url"].(types.String).ValueString() != "https://github.com/Acme" {
+		t.Errorf("the configured spelling should survive, got %v", first)
+	}
+}
+
+func organizationResourceSchema(t *testing.T) schema.Schema {
+	t.Helper()
+	resp := &resource.SchemaResponse{}
+	(&organizationResource{}).Schema(context.Background(), resource.SchemaRequest{}, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatal(resp.Diagnostics)
+	}
+	return resp.Schema
+}
+
+func testOrganizationConfig(t *testing.T) tfsdk.Config {
+	t.Helper()
+	ctx := context.Background()
+	organizationSchema := organizationResourceSchema(t)
+	objectType := organizationSchema.Type().(types.ObjectType)
+	raw, err := testObject(t, objectType, nil).ToTerraformValue(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tfsdk.Config{Raw: raw, Schema: organizationSchema}
+}
+
+func testPlannedSocialPlatforms(t *testing.T, plan, state types.List) []attr.Value {
+	t.Helper()
+	config := testOrganizationConfig(t)
+	req := planmodifier.ListRequest{
+		Path:        path.Root("socials"),
+		Config:      config,
+		ConfigValue: plan,
+		Plan:        tfsdk.Plan{Raw: config.Raw, Schema: config.Schema},
+		PlanValue:   plan,
+		State:       tfsdk.State{Raw: config.Raw, Schema: config.Schema},
+		StateValue:  state,
+	}
+	resp := &planmodifier.ListResponse{PlanValue: plan}
+	keepMatchedSocialPlatforms().PlanModifyList(context.Background(), req, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("planning socials must not fail: %v", resp.Diagnostics)
+	}
+	platforms := make([]attr.Value, 0, len(resp.PlanValue.Elements()))
+	for _, element := range resp.PlanValue.Elements() {
+		platforms = append(platforms, element.(types.Object).Attributes()["platform"])
+	}
+	return platforms
+}
+
+// TestKeepMatchedSocialPlatforms covers the drift trap the platform attribute
+// is: Terraform fills a list of nested attributes by index, so a reordered or
+// replaced link would carry the previous occupant's platform into the plan and
+// the API's derived value would then contradict it.
+func TestKeepMatchedSocialPlatforms(t *testing.T) {
+	state := testSocialsList(t,
+		[2]string{"https://github.com/acme", "github"},
+		[2]string{"https://x.com/acme", "x"},
+	)
+
+	t.Run("reordered links keep their platform", func(t *testing.T) {
+		plan := testSocialsList(t,
+			[2]string{"https://x.com/acme", "github"},
+			[2]string{"https://github.com/acme", "x"},
+		)
+		platforms := testPlannedSocialPlatforms(t, plan, state)
+		if platforms[0].(types.String).ValueString() != "x" || platforms[1].(types.String).ValueString() != "github" {
+			t.Errorf("a reordered link should keep its own platform, got %v", platforms)
+		}
+	})
+
+	t.Run("a replaced link plans an unknown platform", func(t *testing.T) {
+		plan := testSocialsList(t,
+			[2]string{"https://github.com/acme", "github"},
+			[2]string{"https://linkedin.com/company/acme", "x"},
+		)
+		platforms := testPlannedSocialPlatforms(t, plan, state)
+		if platforms[0].(types.String).ValueString() != "github" {
+			t.Errorf("an unchanged link should keep its platform, got %v", platforms[0])
+		}
+		if !platforms[1].IsUnknown() {
+			t.Errorf("a replaced link must plan an unknown platform, got %v", platforms[1])
+		}
+	})
+
+	t.Run("an equivalent URL still matches", func(t *testing.T) {
+		plan := testSocialsList(t, [2]string{"https://GitHub.com/acme", "github"})
+		platforms := testPlannedSocialPlatforms(t, plan, state)
+		if platforms[0].(types.String).ValueString() != "github" {
+			t.Errorf("a URL the server only normalizes should keep its platform, got %v", platforms[0])
+		}
+	})
+}
+
+func TestEmbedHostValidator(t *testing.T) {
+	valid := []string{"example.com", "*.example.com", "localhost:3000", "192.168.1.43:5500",
+		"chrome-extension://abcdef", "xn--caf-dma.com", "localhost:80"}
+	for _, value := range valid {
+		resp := &validator.StringResponse{}
+		embedHost().ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root("embed_hosts"),
+			ConfigValue: types.StringValue(value),
+		}, resp)
+		if resp.Diagnostics.HasError() {
+			t.Errorf("%q should be accepted: %v", value, resp.Diagnostics)
+		}
+	}
+	// Every one of these is stored differently from what was written, which
+	// would leave a diff the next plan can never close.
+	invalid := []string{" example.com", "example.com ", "Example.COM", "café.com", "example.com:443"}
+	for _, value := range invalid {
+		resp := &validator.StringResponse{}
+		embedHost().ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root("embed_hosts"),
+			ConfigValue: types.StringValue(value),
+		}, resp)
+		if !resp.Diagnostics.HasError() {
+			t.Errorf("%q is rewritten by the API and should be rejected at plan time", value)
+		}
+	}
+}
+
+func TestAvatarURLValidator(t *testing.T) {
+	// The API discards logo.dev avatars and stores nothing, so a configuration
+	// naming one can never be satisfied.
+	for _, value := range []string{"https://img.logo.dev/acme.com", "https://logo.dev/acme"} {
+		resp := &validator.StringResponse{}
+		avatarURL().ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root("avatar_url"),
+			ConfigValue: types.StringValue(value),
+		}, resp)
+		if !resp.Diagnostics.HasError() {
+			t.Errorf("%q should be rejected: the API discards it", value)
+		}
+	}
+	resp := &validator.StringResponse{}
+	avatarURL().ValidateString(context.Background(), validator.StringRequest{
+		Path:        path.Root("avatar_url"),
+		ConfigValue: types.StringValue("https://acme.example.com/logo.png"),
+	}, resp)
+	if resp.Diagnostics.HasError() {
+		t.Errorf("an ordinary avatar URL should be accepted: %v", resp.Diagnostics)
+	}
+}

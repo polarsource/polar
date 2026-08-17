@@ -333,6 +333,23 @@ func urlsEquivalent(a, b string) bool {
 		parsedA.Fragment == parsedB.Fragment
 }
 
+// keepEquivalentURL keeps the configured spelling of a URL when the API's
+// stored value denotes the same location (the server lowercases the host, drops
+// the default port and gives a bare domain a trailing slash), so the applied
+// value matches the plan. Mirrors keepEquivalentTimestamp.
+func keepEquivalentURL(prior types.String, api *string) types.String {
+	if api == nil {
+		return types.StringNull()
+	}
+	if prior.IsNull() || prior.IsUnknown() {
+		return types.StringValue(*api)
+	}
+	if urlsEquivalent(prior.ValueString(), *api) {
+		return prior
+	}
+	return types.StringValue(*api)
+}
+
 func stringPointer(value types.String) *string {
 	if value.IsNull() || value.IsUnknown() {
 		return nil
@@ -369,4 +386,47 @@ func int64FromPointer(value *int64) types.Int64 {
 		return types.Int64Null()
 	}
 	return types.Int64Value(*value)
+}
+
+func boolFromPointer(value *bool) types.Bool {
+	if value == nil {
+		return types.BoolNull()
+	}
+	return types.BoolValue(*value)
+}
+
+// The *Or helpers resolve an attribute the configuration may leave out against
+// the value the API currently stores. They back the settings objects the server
+// replaces wholesale rather than merging: the payload has to carry every key,
+// so the ones the configuration does not declare are filled from the API's
+// current state instead of being reset to a zero value.
+func boolOr(value types.Bool, current bool) bool {
+	if value.IsNull() || value.IsUnknown() {
+		return current
+	}
+	return value.ValueBool()
+}
+
+func int64Or(value types.Int64, current int64) int64 {
+	if value.IsNull() || value.IsUnknown() {
+		return current
+	}
+	return value.ValueInt64()
+}
+
+func stringOr(value types.String, current string) string {
+	if value.IsNull() || value.IsUnknown() {
+		return current
+	}
+	return value.ValueString()
+}
+
+// boolPointerOr is boolOr for a key the API itself may not have: an undeclared
+// attribute keeps the API's pointer, absent pointer included.
+func boolPointerOr(value types.Bool, current *bool) *bool {
+	if value.IsNull() || value.IsUnknown() {
+		return current
+	}
+	result := value.ValueBool()
+	return &result
 }

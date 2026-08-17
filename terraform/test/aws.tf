@@ -25,7 +25,7 @@ module "redis" {
 
   name       = "polar-test-worker"
   vpc_id     = module.vpc[0].vpc_id
-  subnet_ids = module.vpc[0].private_subnet_ids
+  subnet_ids = module.vpc[0].secondary_private_subnet_ids
 }
 
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
@@ -43,7 +43,9 @@ module "redis_private_link" {
 
   name                     = "polar-test-worker-redis"
   vpc_id                   = module.vpc[0].vpc_id
-  subnet_ids               = module.vpc[0].private_subnet_ids
+  subnet_ids               = module.vpc[0].secondary_private_subnet_ids
+  nlb_name                 = "polar-test-worker-redis-b"
+  target_group_name        = "polar-test-worker-redis-b"
   redis_host               = module.redis[0].host
   redis_port               = module.redis[0].port
   redis_arn                = module.redis[0].arn

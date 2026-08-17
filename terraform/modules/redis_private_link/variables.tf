@@ -13,6 +13,18 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
+variable "nlb_name" {
+  description = "Override the NLB name; changing it rotates the NLB behind the endpoint service."
+  type        = string
+  default     = null
+}
+
+variable "target_group_name" {
+  description = "Override the target group name; must rotate together with the NLB."
+  type        = string
+  default     = null
+}
+
 variable "redis_host" {
   description = "ElastiCache endpoint hostname to expose through the endpoint service."
   type        = string

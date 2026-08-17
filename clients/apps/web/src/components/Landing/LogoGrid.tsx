@@ -1,6 +1,5 @@
 import { Grid, GridItem } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Link from 'next/link'
 import { JSX } from 'react'
 import { Confidence, FastAPICloud, StillaAIWordmark, Tailwind } from './Logos'
 
@@ -35,7 +34,12 @@ export const LogoGrid = () => (
   >
     {LOGOS.map((logo) => (
       <GridItem key={logo.link}>
-        <Link href={logo.link} target="_blank" className="flex w-full">
+        <a
+          href={logo.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex w-full"
+        >
           <Box
             width="100%"
             alignItems="center"
@@ -53,7 +57,7 @@ export const LogoGrid = () => (
               {logo.icon}
             </div>
           </Box>
-        </Link>
+        </a>
       </GridItem>
     ))}
   </Grid>

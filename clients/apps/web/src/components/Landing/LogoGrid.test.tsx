@@ -1,22 +1,6 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import { ReactNode } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
-vi.mock('next/link', () => ({
-  default: ({
-    href,
-    target,
-    children,
-  }: {
-    href: string
-    target?: string
-    children: ReactNode
-  }) => (
-    <a href={href} target={target}>
-      {children}
-    </a>
-  ),
-}))
+import { render } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@polar-sh/orbit', () => ({
   Grid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -36,51 +20,49 @@ vi.mock('./Logos', () => ({
 
 import { LogoGrid } from './LogoGrid'
 
-const EXPECTED_LINKS: Record<string, string> = {
-  'logo-tailwind': 'https://tailwindcss.com',
-  'logo-fastapicloud': 'https://fastapicloud.com',
-  'logo-confidence': 'https://confidence.spotify.com',
-  'logo-stilla-ai': 'https://stilla.ai',
-}
+const LOGO_LINKS = [
+  'https://tailwindcss.com',
+  'https://fastapicloud.com',
+  'https://confidence.spotify.com',
+  'https://stilla.ai',
+]
 
 describe('LogoGrid', () => {
-  afterEach(() => {
-    cleanup()
+  it('renders a native <a> element for each external logo', () => {
+    const { container } = render(<LogoGrid />)
+
+    const links = container.querySelectorAll('a')
+    expect(links).toHaveLength(LOGO_LINKS.length)
+
+    LOGO_LINKS.forEach((href, index) => {
+      expect(links[index].getAttribute('href')).toBe(href)
+    })
   })
 
-  it('renders one external link per logo', () => {
-    render(<LogoGrid />)
-    expect(screen.getAllByRole('link')).toHaveLength(
-      Object.keys(EXPECTED_LINKS).length,
-    )
-  })
+  it('sets target="_blank" on every logo link', () => {
+    const { container } = render(<LogoGrid />)
 
-  it('opens every logo link in a new tab', () => {
-    render(<LogoGrid />)
-    for (const link of screen.getAllByRole('link')) {
+    const links = container.querySelectorAll('a')
+    links.forEach((link) => {
       expect(link.getAttribute('target')).toBe('_blank')
-    }
+    })
   })
 
-  it('pairs each logo with its correct company URL', () => {
-    render(<LogoGrid />)
-    for (const [testid, url] of Object.entries(EXPECTED_LINKS)) {
-      const link = screen.getByTestId(testid).closest('a')
-      expect(link?.getAttribute('href')).toBe(url)
-    }
-  })
+  it('sets rel="noopener noreferrer" on every logo link', () => {
+    const { container } = render(<LogoGrid />)
 
-  it('links the Stilla AI logo to stilla.ai (not midday.ai)', () => {
-    render(<LogoGrid />)
-    const stillaLink = screen.getByTestId('logo-stilla-ai').closest('a')
-    expect(stillaLink?.getAttribute('href')).toBe('https://stilla.ai')
+    const links = container.querySelectorAll('a')
+    links.forEach((link) => {
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+    })
   })
 
   it('does not link any logo to midday.ai', () => {
-    render(<LogoGrid />)
-    const hrefs = screen
-      .getAllByRole('link')
-      .map((link) => link.getAttribute('href'))
+    const { container } = render(<LogoGrid />)
+
+    const hrefs = Array.from(container.querySelectorAll('a')).map((link) =>
+      link.getAttribute('href'),
+    )
     expect(hrefs).not.toContain('https://midday.ai')
   })
 })

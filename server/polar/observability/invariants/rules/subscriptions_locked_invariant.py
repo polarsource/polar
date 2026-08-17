@@ -33,7 +33,9 @@ class SubscriptionsLockedInvariant(Invariant):
     Failure of this invariant indicate there is an issue with the subscription cycle process.
     """
 
-    LEEWAY = timedelta(minutes=5)
+    # Must exceed `subscription.cycle`'s 600s time_limit: it holds
+    # `scheduler_locked_at` for its whole run.
+    LEEWAY = timedelta(minutes=15)
     LIMIT = 10
 
     async def check(self) -> None:

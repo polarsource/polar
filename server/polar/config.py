@@ -4,11 +4,11 @@ import tempfile
 from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Literal
-from urllib.parse import urlparse
+from typing import Annotated, Any, Literal
+from urllib.parse import parse_qs, unquote, urlparse
 
 from annotated_types import Ge
-from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
+from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn, model_validator
 from pydantic_ai.models import Model, infer_model, parse_model_id
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +28,11 @@ class Environment(StrEnum):
 
 
 def _validate_email_renderer_binary_path(value: Path) -> Path:
+    # On Vercel the binary is produced later in the build (see vercel.toml),
+    # after this import-time check runs.
+    if "VERCEL" in os.environ:
+        return value
+
     if not value.exists() and not value.is_file():
         raise ValueError(
             f"""
@@ -125,7 +130,7 @@ class Settings(BaseSettings):
     # Authentication session
     AUTHENTICATION_SESSION_TTL: timedelta = timedelta(minutes=15)
     AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_auth_session"
-    AUTHENTICATION_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
+    AUTHENTICATION_SESSION_COOKIE_DOMAIN: str | None = "127.0.0.1"
 
     # Email OTP
     EMAIL_OTP_TTL: timedelta = timedelta(minutes=30)
@@ -138,13 +143,13 @@ class Settings(BaseSettings):
     # OAuth2 session state
     OAUTH2_SESSION_STATE_TTL: timedelta = timedelta(minutes=10)
     OAUTH2_SESSION_STATE_COOKIE_KEY: str = "polar_oauth2_state"
-    OAUTH2_SESSION_STATE_COOKIE_DOMAIN: str = "127.0.0.1"
+    OAUTH2_SESSION_STATE_COOKIE_DOMAIN: str | None = "127.0.0.1"
 
     # User session
     USER_SESSION_TTL: timedelta = timedelta(days=31)
     USER_SESSION_FRESHNESS_TTL: timedelta = timedelta(hours=1)
     USER_SESSION_COOKIE_KEY: str = "polar_session"
-    USER_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
+    USER_SESSION_COOKIE_DOMAIN: str | None = "127.0.0.1"
 
     # Customer session
     CUSTOMER_SESSION_TTL: timedelta = timedelta(hours=1)
@@ -172,6 +177,9 @@ class Settings(BaseSettings):
     POSTGRES_PORT_FALLBACK: int | None = None
     POSTGRES_DATABASE: str = "polar"
     POSTGRES_SSL: bool = False
+    # Full connection URL, as injected by managed Postgres integrations
+    # (e.g. Neon). When set, its components take precedence over the parts above.
+    POSTGRES_URL_NON_POOLING: str | None = None
     DATABASE_POOL_SIZE: int = 5
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
@@ -191,6 +199,9 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "127.0.0.1"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
+    # Full connection URL, for managed Redis requiring auth or TLS (rediss://),
+    # which the parts above cannot express. Takes precedence when set.
+    REDIS_URL: str | None = None
 
     # Emails
     EMAIL_RENDERER_BINARY_PATH: Annotated[
@@ -587,7 +598,85 @@ class Settings(BaseSettings):
 
     @property
     def redis_url(self) -> str:
+        if self.REDIS_URL:
+            return self.REDIS_URL
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+    @model_validator(mode="after")
+    def apply_vercel_defaults(self) -> "Settings":
+        """Derive URL and cookie defaults from the deployment's own URL on Vercel.
+
+        Deployment URLs change with every deployment, so these can't be set
+        statically. The app origin serves the API under /api, and cookies are
+        host-only since no fixed Domain can match the deployment host.
+        Explicitly configured values are left untouched.
+        """
+        vercel_url = os.environ.get("VERCEL_URL")
+        if not self.is_vercel() or not vercel_url:
+            return self
+
+        # Production deployments have a stable URL (the assigned domain);
+        # prefer it over the per-deployment URL for generated links.
+        production_url = os.environ.get("VERCEL_PROJECT_PRODUCTION_URL")
+        canonical_url = (
+            production_url
+            if os.environ.get("VERCEL_ENV") == "production" and production_url
+            else vercel_url
+        )
+
+        # Accept every host the deployment is reachable at.
+        allowed_hosts = {
+            host
+            for host in (
+                vercel_url,
+                os.environ.get("VERCEL_BRANCH_URL"),
+                production_url,
+            )
+            if host
+        }
+
+        defaults: dict[str, Any] = {
+            "FRONTEND_BASE_URL": f"https://{canonical_url}",
+            "BASE_URL": f"https://{canonical_url}/api",
+            "CHECKOUT_BASE_URL": (
+                f"https://{canonical_url}/api/v1/checkout-links/{{client_secret}}/redirect"
+            ),
+            "ALLOWED_HOSTS": allowed_hosts,
+            "AUTHENTICATION_SESSION_COOKIE_DOMAIN": None,
+            "OAUTH2_SESSION_STATE_COOKIE_DOMAIN": None,
+            "USER_SESSION_COOKIE_DOMAIN": None,
+        }
+        for field, value in defaults.items():
+            if field not in self.model_fields_set:
+                setattr(self, field, value)
+        return self
+
+    @model_validator(mode="after")
+    def apply_postgres_url_non_pooling(self) -> "Settings":
+        if self.POSTGRES_URL_NON_POOLING is None:
+            return self
+
+        url = urlparse(self.POSTGRES_URL_NON_POOLING)
+        if url.scheme not in ("postgres", "postgresql"):
+            raise ValueError(
+                "POSTGRES_URL_NON_POOLING must be a postgres:// or postgresql:// URL"
+            )
+
+        if url.username:
+            self.POSTGRES_USER = unquote(url.username)
+        if url.password:
+            self.POSTGRES_PWD = unquote(url.password)
+        if url.hostname:
+            self.POSTGRES_HOST = url.hostname
+        if url.port:
+            self.POSTGRES_PORT = url.port
+        database = url.path.lstrip("/")
+        if database:
+            self.POSTGRES_DATABASE = database
+        sslmode = parse_qs(url.query).get("sslmode", [None])[0]
+        if sslmode is not None:
+            self.POSTGRES_SSL = sslmode != "disable"
+        return self
 
     def _build_postgres_dsn(
         self,
@@ -682,6 +771,9 @@ class Settings(BaseSettings):
 
     def is_test(self) -> bool:
         return self.is_environment({Environment.test})
+
+    def is_vercel(self) -> bool:
+        return "VERCEL" in os.environ
 
     def generate_external_url(self, path: str) -> str:
         return f"{self.BASE_URL}{path}"

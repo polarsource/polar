@@ -1,0 +1,105 @@
+# Polar on Vercel: the Next.js frontend and the FastAPI API deploy as two
+# services from this one config. The API service builds from
+# server/pyproject.toml (see [tool.vercel] there).
+
+[services.web]
+root = "clients/apps/web"
+buildCommand = "cd ../.. && turbo run build --filter=web"
+
+# SSR reaches the API privately over the service binding (POLAR_API_URL).
+[[services.web.bindings]]
+type = "service"
+service = "api"
+format = "url"
+env = "POLAR_API_URL"
+
+[services.api]
+root = "server"
+entrypoint = "pyproject.toml"
+# Build the email renderer binary and backoffice assets so they ship in the
+# Function bundle; run migrations last, closest to the deploy.
+buildCommand = "uv run task emails && uv run task backoffice && uv run task db_migrate"
+
+# An api.* host serves the whole API at its native paths, mirroring the
+# polar.sh / api.polar.sh split. On the app origin the whole API is mounted
+# under /api (see RootPathMiddleware), forwarded unstripped so generated URLs
+# stay correct on both hosts. The two Next.js route handlers and the Mintlify
+# docs endpoint living under /api are carved out ahead of the catch-all.
+
+[[rewrites]]
+source = "/:path(.*)"
+has = [{ type = "host", value = { pre = "api." } }]
+destination = { type = "service", service = "api" }
+
+[[rewrites]]
+source = "/api/og"
+destination = { type = "service", service = "web" }
+
+[[rewrites]]
+source = "/api/startup-program"
+destination = { type = "service", service = "web" }
+
+[[rewrites]]
+source = "/api/request"
+destination = "https://polar.mintlify.app/_mintlify/api/request"
+
+[[rewrites]]
+source = "/api/:path(.*)?"
+destination = { type = "service", service = "api" }
+
+[[rewrites]]
+source = "/_mintlify/api/:path+"
+destination = "https://polar.mintlify.app/_mintlify/api/:path+"
+
+[[rewrites]]
+source = "/docs"
+destination = "https://polar.mintlify.dev/docs"
+
+[[rewrites]]
+source = "/docs/llms.txt"
+destination = "https://polar.mintlify.app/llms.txt"
+
+[[rewrites]]
+source = "/docs/llms-full.txt"
+destination = "https://polar.mintlify.app/llms-full.txt"
+
+[[rewrites]]
+source = "/docs/sitemap.xml"
+destination = "https://polar.mintlify.app/sitemap.xml"
+
+[[rewrites]]
+source = "/docs/robots.txt"
+destination = "https://polar.mintlify.app/robots.txt"
+
+[[rewrites]]
+source = "/docs/:path*"
+destination = "https://polar.mintlify.dev/docs/:path*"
+
+[[rewrites]]
+source = "/mintlify-assets/:path+"
+destination = "https://polar.mintlify.app/mintlify-assets/:path+"
+
+[[rewrites]]
+source = "/ingest/static/:path(.*)"
+destination = "https://us-assets.i.posthog.com/static/:path"
+
+[[rewrites]]
+source = "/ingest/:path(.*)"
+destination = "https://us.i.posthog.com/:path"
+
+[[rewrites]]
+source = "/:path(.*)"
+destination = { type = "service", service = "web" }
+
+[build.env]
+VERCEL_CLI_VERSION = "vercel@latest"
+# The api bundle exceeds the classic Lambda caps; build it as a large
+# function. Read at build time, so it must be build env, not [env].
+VERCEL_SUPPORT_LARGE_FUNCTIONS = "1"
+# Opts the frontend into services-only behavior.
+NEXT_PUBLIC_POLAR_VERCEL_SERVICES_ENABLED = "1"
+# Services deployments don't wire the Next image optimizer yet; serve images
+# unoptimized until that lands.
+NEXT_IMAGE_UNOPTIMIZED = "1"
+# The browser reaches the API same-origin under /api; SSR uses the binding.
+NEXT_PUBLIC_API_URL = "/api"

@@ -18,6 +18,18 @@ if (
   process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = baseUrl
 }
 
+// Vercel services deployments: deployment URLs change with
+// every deployment, so derive base from the deployment's own URL
+const VERCEL_SERVICES =
+  process.env.NEXT_PUBLIC_POLAR_VERCEL_SERVICES_ENABLED === '1'
+if (
+  VERCEL_SERVICES &&
+  !process.env.NEXT_PUBLIC_FRONTEND_BASE_URL &&
+  process.env.VERCEL_URL
+) {
+  process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = `https://${process.env.VERCEL_URL}`
+}
+
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =
@@ -114,6 +126,8 @@ const nextConfig = {
   },
 
   images: {
+    // Vercel services deployments do not wire the image optimizer yet
+    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === '1',
     remotePatterns: [
       ...(process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
         ? [

@@ -2,6 +2,7 @@
   "$schema": "https://v2-9-4.turborepo.dev/schema.json",
   "globalDependencies": ["**/.env.*local"],
   "globalEnv": [
+    "NEXT_IMAGE_UNOPTIMIZED",
     "POLAR_API_URL",
     "EXPO_PUBLIC_POLAR_SERVER_URL",
     "NODE_ENV",

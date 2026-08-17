@@ -1,5 +1,6 @@
 'use client'
 
+import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useMultipleMeterQuantities } from '@/hooks/queries/meters'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
@@ -46,11 +47,8 @@ const getOverages = (cm: CustomerMeterWithSubscription) => {
   if (!unitPrice) return null
 
   const overageUnits = Math.abs(cm.balance)
-  const overageCost = overageUnits * parseFloat(unitPrice.unit_amount)
   return {
-    cost: unitPrice.cap_amount
-      ? Math.min(overageCost, unitPrice.cap_amount)
-      : overageCost,
+    cost: estimateMeteredCost(unitPrice, overageUnits),
     currency: unitPrice.price_currency,
   }
 }

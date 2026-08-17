@@ -90,7 +90,8 @@
               "engineering/design-documents/api-versioning",
               "engineering/design-documents/payout-reviews",
               "engineering/design-documents/secrets-encryption",
-              "engineering/design-documents/merchant-migrations"
+              "engineering/design-documents/merchant-migrations",
+              "engineering/design-documents/customer-merge"
             ]
           },
           {

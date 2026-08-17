@@ -45,3 +45,59 @@ export const getActiveCurrencies = (
   }
   return Array.from(currencies)
 }
+
+type MeteredTiers = NonNullable<schemas['ProductPriceMeteredUnit']['tiers']>
+
+const parseTiers = (tiers: MeteredTiers['tiers']) =>
+  tiers
+    .map((tier) => ({
+      upTo: tier.up_to,
+      pricePerUnit: Number.parseFloat(String(tier.price_per_unit)),
+    }))
+    .sort(
+      (a, b) =>
+        Number(a.upTo === null) - Number(b.upTo === null) ||
+        (a.upTo ?? 0) - (b.upTo ?? 0),
+    )
+
+const tieredCost = (
+  { tier_type, tiers }: MeteredTiers,
+  units: number,
+): number => {
+  const parsed = parseTiers(tiers)
+
+  if (tier_type === 'volume') {
+    const tier = parsed.find((t) => t.upTo === null || units <= t.upTo)
+    return tier ? units * tier.pricePerUnit : 0
+  }
+
+  let total = 0
+  let remaining = units
+  let previousUpTo = 0
+  for (const { upTo, pricePerUnit } of parsed) {
+    if (remaining <= 0) break
+    const capacity = upTo === null ? null : upTo - previousUpTo
+    const unitsInTier =
+      capacity === null ? remaining : Math.min(remaining, capacity)
+    total += unitsInTier * pricePerUnit
+    remaining -= unitsInTier
+    if (upTo !== null) previousUpTo = upTo
+  }
+  return total
+}
+
+export const estimateMeteredCost = (
+  price: schemas['ProductPriceMeteredUnit'],
+  units: number,
+): number => {
+  if (units <= 0) {
+    return 0
+  }
+  const cost = price.tiers
+    ? tieredCost(price.tiers, units)
+    : units * Number.parseFloat(price.unit_amount ?? '0')
+  if (price.cap_amount != null) {
+    return Math.min(cost, price.cap_amount)
+  }
+  return cost
+}

@@ -27,7 +27,7 @@ from polar.refund.schemas import RefundCreate
 from polar.refund.service import (
     MissingRelatedDispute,
     RefundedAlready,
-    RefundUnknownPayment,
+    RefundPaymentTransactionNotFound,
 )
 from polar.refund.service import refund as refund_service
 from polar.tax.calculation import TaxCalculationService
@@ -219,7 +219,7 @@ class TestCreate(StripeRefund):
         )
         await session.delete(transaction)
 
-        with pytest.raises(RefundUnknownPayment):
+        with pytest.raises(RefundPaymentTransactionNotFound) as exc_info:
             await refund_service.create(
                 session,
                 order,
@@ -231,6 +231,11 @@ class TestCreate(StripeRefund):
                     revoke_benefits=False,
                 ),
             )
+
+        assert exc_info.value.payment_id == payment.id
+        assert exc_info.value.message == (
+            f"Payment transaction not found for payment: {payment.id}"
+        )
 
     async def test_create_repeatedly(
         self,

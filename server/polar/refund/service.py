@@ -70,6 +70,13 @@ class RefundUnknownPayment(ResourceNotFound):
         super().__init__(message, 404)
 
 
+class RefundPaymentTransactionNotFound(ResourceNotFound):
+    def __init__(self, payment_id: UUID) -> None:
+        self.payment_id = payment_id
+        message = f"Payment transaction not found for payment: {payment_id}"
+        super().__init__(message, 404)
+
+
 class RefundedAlready(RefundError):
     def __init__(self, order: Order) -> None:
         self.order = order
@@ -245,7 +252,7 @@ class RefundService:
             payment.id
         )
         if payment_transaction is None:
-            raise RefundUnknownPayment(payment.id, payment_type="order")
+            raise RefundPaymentTransactionNotFound(payment.id)
 
         if payment.processor == PaymentProcessor.stripe:
             refund_total = refund_amount + refund_tax_amount

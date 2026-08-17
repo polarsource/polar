@@ -27,7 +27,7 @@ from polar.kit.db.postgres import (
     create_async_sessionmaker,
     create_sync_sessionmaker,
 )
-from polar.kit.versioning import add_versioned_routers
+from polar.kit.versioning import VERSION_HEADER, add_versioned_routers
 from polar.logfire import (
     configure_logfire,
     instrument_fastapi,
@@ -100,7 +100,8 @@ def configure_cors(app: FastAPI) -> None:
         allow_origins=["*"],
         allow_credentials=False,  # No cookies allowed
         allow_methods=["*"],
-        allow_headers=["Authorization"],  # Allow Authorization header to pass tokens
+        allow_headers=["Authorization", VERSION_HEADER],
+        expose_headers=[VERSION_HEADER],
     )
     configs.append(api_config)
 

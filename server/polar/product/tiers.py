@@ -57,7 +57,7 @@ class Tiers(BaseModel):
                 )
         return sorted_tiers
 
-    def calculate(self, quantity: int) -> Decimal:
+    def calculate(self, quantity: Decimal | int) -> Decimal:
         if quantity < 0:
             raise InvalidQuantityError(f"Negative quantity: {quantity}")
         if quantity == 0:
@@ -69,13 +69,13 @@ class Tiers(BaseModel):
             case TierType.graduated:
                 return self._calculate_graduated(quantity)
 
-    def _calculate_volume(self, quantity: int) -> Decimal:
+    def _calculate_volume(self, quantity: Decimal | int) -> Decimal:
         for tier in self.tiers:
             if tier.bound is None or quantity <= tier.bound:
                 return tier.unit_amount * quantity
         raise InvalidQuantityError(f"No tier covers quantity {quantity}")
 
-    def _calculate_graduated(self, quantity: int) -> Decimal:
+    def _calculate_graduated(self, quantity: Decimal | int) -> Decimal:
         total = Decimal(0)
         remaining = quantity
         previous_bound = 0

@@ -338,8 +338,11 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
 class TieredPrice:
     """Mixin for prices billed from a shared list of tiers.
 
-    `get_tiered_amount` returns cents for a whole-unit quantity.
-    Subclasses interpret those units (seats, metered usage, …).
+    `get_tiered_amount` returns cents for a quantity. Bounds are whole
+    units, but the quantity need not be: metered usage is consumed rather
+    than purchased, and an inclusive bound places a fractional quantity
+    unambiguously. Subclasses interpret those units (seats, metered
+    usage, …).
     """
 
     __abstract__ = True
@@ -363,7 +366,7 @@ class TieredPrice:
         default=None,
     )
 
-    def get_tiered_amount(self, quantity: int) -> Decimal:
+    def get_tiered_amount(self, quantity: Decimal | int) -> Decimal:
         return self.tiers.calculate(quantity)
 
     def get_minimum_units(self) -> int:

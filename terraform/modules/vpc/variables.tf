@@ -15,6 +15,12 @@ variable "secondary_cidr_block" {
   default     = null
 }
 
+variable "primary_private_subnets_enabled" {
+  description = "Set to false to delete the primary-CIDR private subnets once workloads have moved to the secondary ones."
+  type        = bool
+  default     = true
+}
+
 variable "availability_zones" {
   description = "Availability zones for the private subnets. The first also hosts the NAT gateway's public subnet."
   type        = list(string)

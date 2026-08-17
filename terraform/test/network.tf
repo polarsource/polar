@@ -13,10 +13,11 @@ module "vpc" {
   count  = local.test_enabled ? 1 : 0
   source = "../modules/vpc"
 
-  name                 = "polar-test"
-  secondary_cidr_block = "10.22.0.0/16"
-  availability_zones   = ["us-east-2a", "us-east-2b", "us-east-2c"]
-  eip_allocation_id    = module.egress_ip[0].allocation_id
+  name                            = "polar-test"
+  secondary_cidr_block            = "10.22.0.0/16"
+  primary_private_subnets_enabled = false
+  availability_zones              = ["us-east-2a", "us-east-2b", "us-east-2c"]
+  eip_allocation_id               = module.egress_ip[0].allocation_id
 }
 
 resource "aws_security_group" "lambda" {

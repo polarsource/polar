@@ -15,3 +15,4 @@ async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
     assert "Scope" in schema["components"]["schemas"]
 
     assert len(schema["webhooks"]) > 0
+    assert schema["info"]["version"] == str(version)

@@ -22,7 +22,7 @@ from tests.fixtures.random_objects import (
 class TestSearch:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(uuid.uuid4()),
                 "query": "test",
@@ -37,7 +37,7 @@ class TestSearch:
         organization: Organization,
     ) -> None:
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(organization.id),
                 "query": "test",
@@ -63,7 +63,7 @@ class TestSearch:
         )
 
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(organization.id),
                 "query": "Premium",
@@ -95,7 +95,7 @@ class TestSearch:
         await save_fixture(product)
 
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(organization.id),
                 "query": "free",
@@ -125,7 +125,7 @@ class TestSearch:
         )
 
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(organization.id),
                 "query": "test@example",
@@ -155,7 +155,7 @@ class TestSearch:
         )
 
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(organization.id),
                 "query": "Free",
@@ -190,7 +190,7 @@ class TestSearch:
         )
 
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(organization.id),
                 "query": "Test",
@@ -223,7 +223,7 @@ class TestSearch:
         )
 
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(organization.id),
                 "query": "test",
@@ -258,7 +258,7 @@ class TestSearch:
         )
 
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(organization.id),
                 "query": "search",
@@ -287,7 +287,7 @@ class TestSearch:
         )
 
         response = await client.get(
-            "/search",
+            "/v1/search",
             params={
                 "organization_id": str(organization.id),
                 "query": "Test",

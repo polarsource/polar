@@ -147,7 +147,7 @@ def _parse_minimum_units(data: TiersData) -> int:
     return data.get("minimum_units") or 0
 
 
-def _calculate_volume(quantity: int, tiers: list[_ParsedTier]) -> Decimal:
+def _calculate_volume(quantity: Decimal | int, tiers: list[_ParsedTier]) -> Decimal:
     for tier in tiers:
         up_to = tier["up_to"]
         if up_to is None or quantity <= up_to:
@@ -155,7 +155,7 @@ def _calculate_volume(quantity: int, tiers: list[_ParsedTier]) -> Decimal:
     raise InvalidQuantityError(f"No tier covers quantity {quantity}")
 
 
-def _calculate_graduated(quantity: int, tiers: list[_ParsedTier]) -> Decimal:
+def _calculate_graduated(quantity: Decimal | int, tiers: list[_ParsedTier]) -> Decimal:
     total = Decimal(0)
     remaining = quantity
     previous_up_to = 0
@@ -531,9 +531,12 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
 class TieredPrice:
     """Mixin for prices that bill from a shared list of tiers.
 
-    Gives you the amount in cents for a quantity of whole units, and the
-    unit range those tiers cover. The price class is responsible for
-    translating that into its own terms (seats, integer cents, …).
+    Gives you the amount in cents for a quantity, and the unit range those
+    tiers cover. Tier bounds are whole units, but the quantity need not be:
+    metered usage is consumed, not purchased, so a fractional quantity is
+    still unambiguous against an integer bound. The price class is
+    responsible for translating the result into its own terms (seats,
+    integer cents, …).
     """
 
     __abstract__ = True
@@ -552,7 +555,7 @@ class TieredPrice:
             raise InvalidTiersError("Price has no tiers")
         return self.tiers
 
-    def get_tiered_amount(self, quantity: int) -> Decimal:
+    def get_tiered_amount(self, quantity: Decimal | int) -> Decimal:
         data = self.get_tiers_data()
         tier_type = _parse_tier_type(data)
         tiers = _parse_tiers(data)

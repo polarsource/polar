@@ -39,6 +39,7 @@ from polar.product.guard import (
     is_metered_price,
     is_seat_price,
 )
+from polar.product.tiers import Tiers, TierType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -105,7 +106,7 @@ async def create_metered_event_billing_entry(
     customer: Customer,
     price: ProductPrice,
     subscription: Subscription,
-    tokens: int,
+    tokens: float,
     pending: bool = True,
     order: Order | None = None,
     metadata_key: str = "tokens",
@@ -763,6 +764,210 @@ class TestCreateOrderItemsFromPending:
         for entry in entries[1:]:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
+
+    async def test_tiered_graduated_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        assert is_metered_price(price)
+        price.unit_amount = None
+        price.tiers = Tiers.model_validate(
+            {
+                "type": TierType.graduated,
+                "tiers": [
+                    {"bound": 30, "unit_amount": "100"},
+                    {"bound": None, "unit_amount": "50"},
+                ],
+            }
+        )
+        await save_fixture(price)
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=20,
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=30,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            # 30 units at 100 + 20 units at 50
+            assert order_item.amount == 40_00
+            assert "graduated pricing" in order_item.label
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+    async def test_tiered_volume_price_with_credits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        assert is_metered_price(price)
+        price.unit_amount = None
+        price.tiers = Tiers.model_validate(
+            {
+                "type": TierType.volume,
+                "tiers": [
+                    {"bound": 30, "unit_amount": "100"},
+                    {"bound": None, "unit_amount": "80"},
+                ],
+            }
+        )
+        await save_fixture(price)
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=50,
+        )
+        await create_credit_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            meter=meter,
+            units=25,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            # Credits net first: 50 - 25 = 25 units, dropping into the first
+            # volume tier, whose rate applies to all net units.
+            assert order_item.amount == 25_00
+            assert "volume pricing" in order_item.label
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+    async def test_tiered_price_fractional_consumption(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        # Tier bounds are whole units, but consumption is a float coming off
+        # the meter. It stays exact through to the amount — no floor, no
+        # rounding until the total.
+        price = product_metered_unit.prices[0]
+        assert is_metered_price(price)
+        price.unit_amount = None
+        price.tiers = Tiers.model_validate(
+            {
+                "type": TierType.graduated,
+                "tiers": [
+                    {"bound": 10, "unit_amount": "100"},
+                    {"bound": None, "unit_amount": "50"},
+                ],
+            }
+        )
+        await save_fixture(price)
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=15.5,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            # 10 units at 100 + 5.5 units at 50
+            assert order_item.amount == 12_75
+            assert "graduated pricing" in order_item.label
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+    async def test_tiered_price_max_aggregation(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        meter_max = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="servers"
+            ),
+            organization=organization,
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(10_00), None, "usd")],
+        )
+        price = product.prices[0]
+        assert is_metered_price(price)
+        price.unit_amount = None
+        price.tiers = Tiers.model_validate(
+            {
+                "type": TierType.graduated,
+                "tiers": [
+                    {"bound": 2, "unit_amount": "1000"},
+                    {"bound": None, "unit_amount": "500"},
+                ],
+            }
+        )
+        await save_fixture(price)
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        for servers in (1, 3, 2):
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=subscription,
+                tokens=servers,
+                metadata_key="servers",
+            )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            # max is 3 servers: 2 at 1000 + 1 at 500
+            assert order_item.amount == 25_00
+            assert "graduated pricing" in order_item.label
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
 
     async def test_count_meter_excludes_system_entries(
         self,

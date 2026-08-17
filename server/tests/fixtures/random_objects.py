@@ -136,7 +136,7 @@ from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
 from polar.product.price_set import PriceSet
-from polar.product.tiers import SeatTierType
+from polar.product.tiers import SeatTierType, Tiers
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID
 from tests.fixtures.database import SaveFixture
@@ -603,8 +603,9 @@ async def create_product_price_metered_unit(
     *,
     product: Product,
     meter: Meter,
-    unit_amount: Decimal = Decimal(100),
+    unit_amount: Decimal | None = Decimal(100),
     cap_amount: int | None = None,
+    tiers: Tiers | None = None,
     currency: str = "usd",
     tax_behavior: TaxBehavior | None = None,
 ) -> ProductPriceMeteredUnit:
@@ -613,6 +614,7 @@ async def create_product_price_metered_unit(
         tax_behavior=tax_behavior,
         unit_amount=unit_amount,
         cap_amount=cap_amount,
+        tiers=tiers,
         meter=meter,
         product=product,
     )

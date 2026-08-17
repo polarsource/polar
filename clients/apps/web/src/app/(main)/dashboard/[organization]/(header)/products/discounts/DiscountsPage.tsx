@@ -54,7 +54,7 @@ interface ClientPageProps {
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const { pagination, setPagination, sorting, setSorting, resetPage } =
     useDataTableQueryState({
-      defaultSorting: [{ id: 'name', desc: false }],
+      defaultSorting: [{ id: 'created_at', desc: true }],
     })
 
   const [{ query }, setFilters] = useQueryStates(filterParsers)

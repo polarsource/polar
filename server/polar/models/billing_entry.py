@@ -54,6 +54,16 @@ class BillingEntry(RecordModel):
                 "deleted_at IS NULL AND order_item_id IS NULL AND type != 'metered'"
             ),
         ),
+        # Keyset walk in `BillingEntryRepository._link_pending`, one price at a
+        # time: `id` last lets each batch resume with `id > last`. Only
+        # unlinked rows live here.
+        Index(
+            "ix_billing_entry_pending_link",
+            "subscription_id",
+            "product_price_id",
+            "id",
+            postgresql_where=text("deleted_at IS NULL AND order_item_id IS NULL"),
+        ),
     )
 
     start_timestamp: Mapped[datetime] = mapped_column(

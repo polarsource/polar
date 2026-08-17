@@ -2054,3 +2054,202 @@ class TestFixedSeatProrations:
         assert subscription.amount == (
             fixed_price.price_amount + seat_price.calculate_amount(seats)
         )
+
+
+def _discount_amounts_by_price(
+    billing_entries: Sequence[BillingEntry],
+) -> dict[tuple[UUID, BillingEntryDirection], int | None]:
+    return {
+        (entry.product_price_id, entry.direction): entry.discount_amount
+        for entry in billing_entries
+    }
+
+
+GO_AMOUNT = 10_00
+PRO_AMOUNT = 20_00
+
+
+async def _go_and_pro_products(
+    save_fixture: SaveFixture, organization: Organization
+) -> tuple[Product, Product]:
+    go = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(GO_AMOUNT, "usd")],
+    )
+    pro = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(PRO_AMOUNT, "usd")],
+    )
+    return go, pro
+
+
+@pytest.mark.asyncio
+class TestProrationDiscountProductApplicability:
+    """Product applicability gates redemption, not the subscription's lifetime.
+
+    Once a discount is attached, it applies to every proration (credit and debit)
+    regardless of whether it is applicable to the product being billed, mirroring
+    the recurring cycle. This keeps credits and debits symmetric with the charge,
+    so switching plans can neither over- nor under-refund.
+    """
+
+    async def test_switch_to_ineligible_product_discounts_both_prorations(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        go, pro = await _go_and_pro_products(save_fixture, organization)
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+            products=[go],
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=pro,
+            customer=customer,
+            discount=discount,
+            current_period_start=CYCLE_START,
+            current_period_end=CYCLE_END,
+        )
+
+        with freezegun.freeze_time(UPDATE_TIME):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=go.id,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+
+            repository = BillingEntryRepository.from_session(session)
+            entries = await repository.get_pending_by_subscription(subscription.id)
+
+        amounts = _amounts_by_price(entries)
+        discounts = _discount_amounts_by_price(entries)
+
+        # Credit for the remaining Pro time keeps the discount even though the
+        # discount is restricted to Go — matching how Pro was charged.
+        pro_credit = (_fixed_price_id(pro), BillingEntryDirection.credit)
+        assert discounts[pro_credit] == 10_00
+        assert amounts[pro_credit] == int((PRO_AMOUNT - 10_00) * 0.5)
+
+        # Debit for the new Go plan also receives the discount.
+        go_debit = (_fixed_price_id(go), BillingEntryDirection.debit)
+        assert discounts[go_debit] == 5_00
+        assert amounts[go_debit] == int((GO_AMOUNT - 5_00) * 0.5)
+
+    async def test_switch_from_ineligible_product_discounts_both_prorations(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        go, pro = await _go_and_pro_products(save_fixture, organization)
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+            products=[go],
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=go,
+            customer=customer,
+            discount=discount,
+            current_period_start=CYCLE_START,
+            current_period_end=CYCLE_END,
+        )
+
+        with freezegun.freeze_time(UPDATE_TIME):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=pro.id,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+
+            repository = BillingEntryRepository.from_session(session)
+            entries = await repository.get_pending_by_subscription(subscription.id)
+
+        amounts = _amounts_by_price(entries)
+        discounts = _discount_amounts_by_price(entries)
+
+        go_credit = (_fixed_price_id(go), BillingEntryDirection.credit)
+        assert discounts[go_credit] == 5_00
+        assert amounts[go_credit] == int((GO_AMOUNT - 5_00) * 0.5)
+
+        # Debit for the new Pro plan also receives the discount, even though the
+        # discount is restricted to Go.
+        pro_debit = (_fixed_price_id(pro), BillingEntryDirection.debit)
+        assert discounts[pro_debit] == 10_00
+        assert amounts[pro_debit] == int((PRO_AMOUNT - 10_00) * 0.5)
+
+    async def test_unrestricted_discount_still_applies_after_switch(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        go, pro = await _go_and_pro_products(save_fixture, organization)
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=go,
+            customer=customer,
+            discount=discount,
+            current_period_start=CYCLE_START,
+            current_period_end=CYCLE_END,
+        )
+
+        with freezegun.freeze_time(UPDATE_TIME):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=pro.id,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+
+            repository = BillingEntryRepository.from_session(session)
+            entries = await repository.get_pending_by_subscription(subscription.id)
+
+        amounts = _amounts_by_price(entries)
+        discounts = _discount_amounts_by_price(entries)
+
+        go_credit = (_fixed_price_id(go), BillingEntryDirection.credit)
+        assert discounts[go_credit] == 5_00
+        assert amounts[go_credit] == int((GO_AMOUNT - 5_00) * 0.5)
+
+        pro_debit = (_fixed_price_id(pro), BillingEntryDirection.debit)
+        assert discounts[pro_debit] == 10_00
+        assert amounts[pro_debit] == int((PRO_AMOUNT - 10_00) * 0.5)

@@ -24,7 +24,7 @@ const LOGOS: LogoCell[] = [
   },
   {
     icon: <StillaAIWordmark size={36} />,
-    link: 'https://midday.ai',
+    link: 'https://stilla.ai',
   },
 ]
 

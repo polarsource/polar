@@ -97,9 +97,21 @@ async def organization_unsnooze_expired() -> None:
     max_retries=0,
 )
 async def organization_offboard_expired() -> None:
-    """Auto-transition offboarding orgs to offboarded once the period elapses."""
+    """Enqueue a per-org job for each offboarding org past the wind-down floor."""
     async with AsyncSessionMaker() as session:
         await organization_service.offboard_expired_organizations(session)
+
+
+@actor(
+    actor_name="organization.offboard_expired_one",
+    priority=TaskPriority.LOW,
+)
+async def organization_offboard_expired_one(organization_id: uuid.UUID) -> None:
+    """Complete offboarding for one org if the chargeback window has also elapsed."""
+    async with AsyncSessionMaker() as session:
+        await organization_service.complete_expired_offboarding(
+            session, organization_id
+        )
 
 
 @actor(

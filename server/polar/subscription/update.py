@@ -124,7 +124,6 @@ def _generate_product_debit_proration_billing_entries(
     new_cycle_start: datetime,
     new_cycle_end: datetime,
     new_discount: Discount | None,
-    discount_updated: bool,
 ) -> list[BillingEntry]:
     new_cycle_pct_remaining = _calculate_time_proration(
         new_cycle_start, new_cycle_end, applies_at
@@ -136,10 +135,7 @@ def _generate_product_debit_proration_billing_entries(
     )
 
     discount_amounts = [0] * len(priced_entries)
-    if new_discount and (
-        not discount_updated
-        or new_discount.is_applicable(new_product, subscription.currency)
-    ):
+    if new_discount:
         discount_amounts = new_discount.allocate_discount_amounts(
             [base_amount for _, base_amount in priced_entries], subscription.currency
         )
@@ -218,7 +214,6 @@ def _generate_product_subscription_update(
             new_cycle_start=new_cycle_start,
             new_cycle_end=new_cycle_end,
             new_discount=new_discount,
-            discount_updated=subscription_update.discount is not None,
         )
     )
 

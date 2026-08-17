@@ -36,7 +36,6 @@ from polar.product.guard import (
 from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
-from polar.subscription.update import generate_subscription_update
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
@@ -2094,8 +2093,8 @@ class TestProrationDiscountProductApplicability:
 
     Once a discount is attached, it applies to every proration (credit and debit)
     regardless of whether it is applicable to the product being billed, mirroring
-    the recurring cycle. A newly attached discount is still checked against the
-    updated product.
+    the recurring cycle. This keeps credits and debits symmetric with the charge,
+    so switching plans can neither over- nor under-refund.
     """
 
     async def test_switch_to_ineligible_product_discounts_both_prorations(
@@ -2204,44 +2203,6 @@ class TestProrationDiscountProductApplicability:
         pro_debit = (_fixed_price_id(pro), BillingEntryDirection.debit)
         assert discounts[pro_debit] == 10_00
         assert amounts[pro_debit] == int((PRO_AMOUNT - 10_00) * 0.5)
-
-    async def test_new_discount_checks_product_applicability(
-        self,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        go, pro = await _go_and_pro_products(save_fixture, organization)
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=5000,
-            duration=DiscountDuration.forever,
-            organization=organization,
-            products=[go],
-        )
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=go,
-            customer=customer,
-            current_period_start=CYCLE_START,
-            current_period_end=CYCLE_END,
-        )
-
-        with freezegun.freeze_time(UPDATE_TIME):
-            _, entries = generate_subscription_update(
-                subscription,
-                SubscriptionProrationBehavior.prorate,
-                product=pro,
-                discount=discount,
-            )
-
-        debit = next(
-            entry for entry in entries if entry.direction == BillingEntryDirection.debit
-        )
-        assert debit.product_price.id == _fixed_price_id(pro)
-        assert not debit.discount_amount
-        assert debit.amount == int(PRO_AMOUNT * 0.5)
 
     async def test_unrestricted_discount_still_applies_after_switch(
         self,

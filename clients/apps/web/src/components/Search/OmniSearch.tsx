@@ -104,7 +104,10 @@ export const OmniSearch = ({
 
       const loadingTimer = setTimeout(() => setLoading(true), 150)
       try {
-        const url = new URL(`${getServerURL()}/search`, window.location.origin)
+        const url = new URL(
+          `${getServerURL()}/v1/search`,
+          window.location.origin,
+        )
         url.searchParams.set('organization_id', organization.id)
         url.searchParams.set('query', searchQuery)
         url.searchParams.set('limit', '5')

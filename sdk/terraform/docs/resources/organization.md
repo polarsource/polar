@@ -36,7 +36,7 @@ rest in the dashboard — including the settings objects the API replaces wholes
 provider completes from the organization's current values before sending them.
 
 The flip side: **removing an attribute stops managing it, it does not clear it.** To clear a
-value, change it in the dashboard — or, for `socials`, `embed_hosts` and
+value, change it in the dashboard — or, for `embed_hosts` and
 `feature_settings.overview_metrics`, declare an empty collection, which the API does treat as
 "remove them all".
 
@@ -52,11 +52,6 @@ resource "polar_organization" "this" {
   name    = "Acme"
   email   = "support@acme.com"
   website = "https://acme.com/"
-
-  socials = [
-    { url = "https://github.com/acme" },
-    { url = "https://x.com/acme" },
-  ]
 
   # Hosts allowed to open an embedded checkout.
   embed_hosts = [
@@ -110,11 +105,6 @@ read it.
   resolves and accepts mail, so a domain without MX records is rejected.
 - `website` (String) The organization's official website. Stored normalized (lowercase host,
   trailing slash on a bare domain); an equivalent spelling is kept as written.
-- `avatar_url` (String) URL of the logo shown in checkout, the customer portal and emails.
-  Upload the image through the files API or the dashboard first — this only points at it.
-  logo.dev URLs are rejected at plan time: the API discards them and stores no avatar.
-- `socials` (Attributes List) Links to the organization's social profiles, in display order.
-  Declare an empty list to remove them all. See [below](#nestedatt--socials).
 - `embed_hosts` (Set of String) Hosts allowed to embed this organization's checkout. An entry
   is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for
   local hosts (`localhost`, any `.localhost` or `.local` name, loopback and private addresses).
@@ -144,20 +134,6 @@ read it.
 - `status` (String) The organization's review status, e.g. `created`, `under_review`, `active`
   or `denied`. Set by Polar as the organization is reviewed.
 - `created_at` (String) Creation timestamp of the organization.
-
-<a id="nestedatt--socials"></a>
-### Nested Schema for `socials`
-
-Required:
-
-- `url` (String) The URL of the profile.
-
-Read-Only:
-
-- `platform` (String) The platform the URL points at, e.g. `github`, `x` or `linkedin`, and
-  `other` for anything Polar does not recognize. **Derived from the URL by the API**, which
-  overwrites whatever a caller sends, so it cannot be set — the provider does not even send it.
-  Reordering or replacing a link re-derives it.
 
 <a id="nestedatt--subscription_settings"></a>
 ### Nested Schema for `subscription_settings`
@@ -231,6 +207,8 @@ Optional:
 Some of the organization's fields deliberately have no attribute here:
 
 - **`slug`** is immutable after creation; it is read-only above.
+- **`avatar_url`** and **`socials`** are branding rather than operational configuration:
+  manage them in the dashboard, next to the rest of the organization's public presentation.
 - **`details`** (the compliance/KYC questionnaire) and **`country`** belong to onboarding and
   review, not to infrastructure-as-code. Fill them in the dashboard.
 - **`sso_enforced`** cannot be set by an access token at all: the API only accepts it from a

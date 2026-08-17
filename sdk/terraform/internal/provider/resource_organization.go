@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"unicode"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -42,39 +40,21 @@ type organizationResource struct {
 	client *polarapi.Client
 }
 
-type organizationSocialModel struct {
-	URL      types.String `tfsdk:"url"`
-	Platform types.String `tfsdk:"platform"`
-}
-
-var organizationSocialType = types.ObjectType{AttrTypes: map[string]attr.Type{
-	"url":      types.StringType,
-	"platform": types.StringType,
-}}
-
-// organizationPrior is the slice of a plan — or, when refreshing, of the prior
-// state — that decides how the applied values are spelled. It is read attribute
-// by attribute rather than with Get: on create every computed attribute the
-// configuration leaves out is unknown, and an unknown object or list has no Go
-// representation, which the framework turns into an error blaming the provider.
-type organizationPrior struct {
-	Website   types.String
-	AvatarURL types.String
-	Socials   types.List
-}
-
 // attributeSource is the part of tfsdk.Plan, tfsdk.State and tfsdk.Config that
-// organizationPriorFrom needs.
+// organizationPriorWebsite needs.
 type attributeSource interface {
 	GetAttribute(ctx context.Context, path path.Path, target any) diag.Diagnostics
 }
 
-func organizationPriorFrom(ctx context.Context, source attributeSource, diags *diag.Diagnostics) organizationPrior {
-	prior := organizationPrior{Socials: types.ListNull(organizationSocialType)}
-	diags.Append(source.GetAttribute(ctx, path.Root("website"), &prior.Website)...)
-	diags.Append(source.GetAttribute(ctx, path.Root("avatar_url"), &prior.AvatarURL)...)
-	diags.Append(source.GetAttribute(ctx, path.Root("socials"), &prior.Socials)...)
-	return prior
+// organizationPriorWebsite reads the website a plan — or, when refreshing, the
+// prior state — carries, which decides how the applied value is spelled. It is
+// read on its own rather than with Get: on create every computed attribute the
+// configuration leaves out is unknown, and an unknown object has no Go
+// representation, which the framework turns into an error blaming the provider.
+func organizationPriorWebsite(ctx context.Context, source attributeSource, diags *diag.Diagnostics) types.String {
+	var website types.String
+	diags.Append(source.GetAttribute(ctx, path.Root("website"), &website)...)
+	return website
 }
 
 type organizationSubscriptionSettingsModel struct {
@@ -139,8 +119,6 @@ type organizationModel struct {
 	Name                       types.String                             `tfsdk:"name"`
 	Email                      types.String                             `tfsdk:"email"`
 	Website                    types.String                             `tfsdk:"website"`
-	AvatarURL                  types.String                             `tfsdk:"avatar_url"`
-	Socials                    types.List                               `tfsdk:"socials"`
 	EmbedHosts                 types.Set                                `tfsdk:"embed_hosts"`
 	DefaultPresentmentCurrency types.String                             `tfsdk:"default_presentment_currency"`
 	DefaultTaxBehavior         types.String                             `tfsdk:"default_tax_behavior"`
@@ -199,7 +177,9 @@ func (r *organizationResource) Schema(ctx context.Context, req resource.SchemaRe
 			"Only the settings the configuration declares are managed. Every other setting keeps its " +
 			"dashboard value and never shows up as drift — which also means removing an attribute stops " +
 			"managing it rather than clearing it. To clear a value, change it in the dashboard (or, for " +
-			"`socials` and `embed_hosts`, declare an empty collection).\n\n" +
+			"`embed_hosts`, declare an empty collection).\n\n" +
+			"Branding — the organization's avatar and its social profile links — is deliberately not " +
+			"managed here; it belongs in the dashboard.\n\n" +
 			"Applying the first change to an organization that has never been updated stamps its " +
 			"`onboarded_at` server-side, which retires the dashboard's onboarding flow.",
 		Attributes: map[string]schema.Attribute{
@@ -254,36 +234,6 @@ func (r *organizationResource) Schema(ctx context.Context, req resource.SchemaRe
 					"trailing slash on a bare domain); an equivalent spelling is kept as written.",
 				Optional: true,
 				Computed: true,
-			},
-			"avatar_url": schema.StringAttribute{
-				MarkdownDescription: "URL of the logo shown in checkout, the customer portal and emails. " +
-					"Upload the image through the files API or the dashboard first — this only points at it.",
-				Optional: true,
-				Computed: true,
-				Validators: []validator.String{
-					avatarURL(),
-				},
-			},
-			"socials": schema.ListNestedAttribute{
-				MarkdownDescription: "Links to the organization's social profiles, in display order. " +
-					"Declare an empty list to remove them all.",
-				Optional:      true,
-				Computed:      true,
-				PlanModifiers: []planmodifier.List{keepMatchedSocialPlatforms()},
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"url": schema.StringAttribute{
-							MarkdownDescription: "The URL of the profile.",
-							Required:            true,
-						},
-						"platform": schema.StringAttribute{
-							MarkdownDescription: "The platform the URL points at, e.g. `github`, `x` or " +
-								"`linkedin`, and `other` for anything Polar does not recognize. " +
-								"Derived from the URL by the API, which is why it cannot be set.",
-							Computed: true,
-						},
-					},
-				},
 			},
 			"embed_hosts": schema.SetAttribute{
 				MarkdownDescription: "Hosts allowed to embed this organization's checkout. An entry is a host " +
@@ -475,7 +425,7 @@ func (r *organizationResource) Configure(ctx context.Context, req resource.Confi
 func (r *organizationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var config organizationModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
-	prior := organizationPriorFrom(ctx, req.Plan, &resp.Diagnostics)
+	priorWebsite := organizationPriorWebsite(ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -491,7 +441,7 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	model, diags := organizationToModel(ctx, organization, prior)
+	model, diags := organizationToModel(ctx, organization, priorWebsite)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -502,7 +452,7 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 func (r *organizationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var id types.String
 	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("id"), &id)...)
-	prior := organizationPriorFrom(ctx, req.State, &resp.Diagnostics)
+	priorWebsite := organizationPriorWebsite(ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -520,7 +470,7 @@ func (r *organizationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	model, diags := organizationToModel(ctx, organization, prior)
+	model, diags := organizationToModel(ctx, organization, priorWebsite)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -533,7 +483,7 @@ func (r *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 	var id types.String
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("id"), &id)...)
-	prior := organizationPriorFrom(ctx, req.Plan, &resp.Diagnostics)
+	priorWebsite := organizationPriorWebsite(ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -553,7 +503,7 @@ func (r *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	model, diags := organizationToModel(ctx, organization, prior)
+	model, diags := organizationToModel(ctx, organization, priorWebsite)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -662,24 +612,8 @@ func organizationUpdateFromConfig(
 		Name:                       stringPointer(config.Name),
 		Email:                      stringPointer(config.Email),
 		Website:                    stringPointer(config.Website),
-		AvatarURL:                  stringPointer(config.AvatarURL),
 		DefaultPresentmentCurrency: stringPointer(config.DefaultPresentmentCurrency),
 		DefaultTaxBehavior:         stringPointer(config.DefaultTaxBehavior),
-	}
-
-	if !config.Socials.IsNull() && !config.Socials.IsUnknown() {
-		var declared []organizationSocialModel
-		diags.Append(config.Socials.ElementsAs(ctx, &declared, false)...)
-		if diags.HasError() {
-			return update, diags
-		}
-		// The platform is derived from the URL server-side, so only the URL is
-		// ever sent.
-		socials := make([]polarapi.OrganizationSocial, 0, len(declared))
-		for _, social := range declared {
-			socials = append(socials, polarapi.OrganizationSocial{URL: social.URL.ValueString()})
-		}
-		update.Socials = &socials
 	}
 
 	if !config.EmbedHosts.IsNull() && !config.EmbedHosts.IsUnknown() {
@@ -792,15 +726,12 @@ func organizationCustomerPortalSettingsToAPI(
 }
 
 func organizationToModel(
-	ctx context.Context, organization *polarapi.Organization, prior organizationPrior,
+	ctx context.Context, organization *polarapi.Organization, priorWebsite types.String,
 ) (organizationModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	embedHosts, hostDiags := types.SetValueFrom(ctx, types.StringType, organization.EmbedHosts)
 	diags.Append(hostDiags...)
-
-	socials, socialDiags := organizationSocialsFromAPI(ctx, organization.Socials, prior.Socials)
-	diags.Append(socialDiags...)
 
 	featureSettings, featureDiags := organizationFeatureSettingsFromAPI(ctx, organization.FeatureSettings)
 	diags.Append(featureDiags...)
@@ -815,9 +746,7 @@ func organizationToModel(
 		CreatedAt:                  types.StringValue(organization.CreatedAt),
 		Name:                       types.StringValue(organization.Name),
 		Email:                      stringFromPointer(organization.Email),
-		Website:                    keepEquivalentURL(prior.Website, organization.Website),
-		AvatarURL:                  keepEquivalentURL(prior.AvatarURL, organization.AvatarURL),
-		Socials:                    socials,
+		Website:                    keepEquivalentURL(priorWebsite, organization.Website),
 		EmbedHosts:                 embedHosts,
 		DefaultPresentmentCurrency: types.StringValue(organization.DefaultPresentmentCurrency),
 		DefaultTaxBehavior:         types.StringValue(organization.DefaultTaxBehavior),
@@ -833,49 +762,6 @@ func organizationToModel(
 		},
 		FeatureSettings: featureSettings,
 	}, diags
-}
-
-// organizationSocialsFromAPI maps the API's links back in the order it stores
-// them — the same order they were sent in — keeping the configured spelling of
-// a URL the server only normalized. An organization with no links reads back as
-// an empty list rather than null: the attribute is computed, so the API's
-// answer is always a known value.
-func organizationSocialsFromAPI(
-	ctx context.Context, socials []polarapi.OrganizationSocial, prior types.List,
-) (types.List, diag.Diagnostics) {
-	priorURLs := priorSocialURLs(prior)
-	models := make([]organizationSocialModel, 0, len(socials))
-	for index, social := range socials {
-		priorURL := types.StringNull()
-		if index < len(priorURLs) {
-			priorURL = priorURLs[index]
-		}
-		models = append(models, organizationSocialModel{
-			URL:      keepEquivalentURL(priorURL, &social.URL),
-			Platform: types.StringValue(social.Platform),
-		})
-	}
-	return types.ListValueFrom(ctx, organizationSocialType, models)
-}
-
-func priorSocialURLs(prior types.List) []types.String {
-	if prior.IsNull() || prior.IsUnknown() {
-		return nil
-	}
-	urls := make([]types.String, 0, len(prior.Elements()))
-	for _, element := range prior.Elements() {
-		object, ok := element.(types.Object)
-		if !ok || object.IsNull() || object.IsUnknown() {
-			urls = append(urls, types.StringNull())
-			continue
-		}
-		url, ok := object.Attributes()["url"].(types.String)
-		if !ok {
-			url = types.StringNull()
-		}
-		urls = append(urls, url)
-	}
-	return urls
 }
 
 func organizationCustomerEmailSettingsFromAPI(
@@ -941,144 +827,6 @@ func organizationFeatureSettingsFromAPI(
 		CheckoutLocalizationEnabled: types.BoolValue(settings.CheckoutLocalizationEnabled),
 		OverviewMetrics:             overviewMetrics,
 	}, diags
-}
-
-// keepMatchedSocialPlatforms re-derives the platform Terraform proposes for
-// each social link. The platform is computed, so Terraform carries the value
-// stored at the same position forward — which is the wrong platform as soon as
-// links are reordered or one is replaced, and the API's own value would then
-// contradict the plan. A link whose URL is still in state keeps that link's
-// platform; anything else is left unknown for the API to fill in.
-type keepMatchedSocialPlatformsModifier struct{}
-
-func keepMatchedSocialPlatforms() planmodifier.List {
-	return keepMatchedSocialPlatformsModifier{}
-}
-
-func (m keepMatchedSocialPlatformsModifier) Description(ctx context.Context) string {
-	return "Keeps the platform of social links whose URL is unchanged, and leaves it unknown for the rest."
-}
-
-func (m keepMatchedSocialPlatformsModifier) MarkdownDescription(ctx context.Context) string {
-	return m.Description(ctx)
-}
-
-func (m keepMatchedSocialPlatformsModifier) PlanModifyList(
-	ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse,
-) {
-	// Nothing to carry over when creating or destroying.
-	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
-		return
-	}
-	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() || !collectionsKnown(req.PlanValue) {
-		return
-	}
-
-	platforms := priorSocialPlatforms(req.StateValue)
-	elements := make([]attr.Value, 0, len(req.PlanValue.Elements()))
-	for _, element := range req.PlanValue.Elements() {
-		object, ok := element.(types.Object)
-		if !ok || object.IsNull() || object.IsUnknown() {
-			elements = append(elements, element)
-			continue
-		}
-		attributes := make(map[string]attr.Value, len(object.Attributes()))
-		for name, value := range object.Attributes() {
-			attributes[name] = value
-		}
-		attributes["platform"] = matchSocialPlatform(object.Attributes()["url"], platforms)
-
-		value, diags := types.ObjectValue(object.AttributeTypes(ctx), attributes)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		elements = append(elements, value)
-	}
-
-	list, diags := types.ListValue(req.PlanValue.ElementType(ctx), elements)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.PlanValue = list
-}
-
-// priorSocialPlatform pairs a URL in state with the platform stored for it.
-type priorSocialPlatform struct {
-	url      string
-	platform attr.Value
-}
-
-func priorSocialPlatforms(state types.List) []priorSocialPlatform {
-	if state.IsNull() || state.IsUnknown() {
-		return nil
-	}
-	platforms := make([]priorSocialPlatform, 0, len(state.Elements()))
-	for _, element := range state.Elements() {
-		object, ok := element.(types.Object)
-		if !ok || object.IsNull() || object.IsUnknown() {
-			continue
-		}
-		url, ok := object.Attributes()["url"].(types.String)
-		if !ok || url.IsNull() || url.IsUnknown() {
-			continue
-		}
-		platform := object.Attributes()["platform"]
-		if platform == nil || platform.IsNull() || platform.IsUnknown() {
-			continue
-		}
-		platforms = append(platforms, priorSocialPlatform{url: url.ValueString(), platform: platform})
-	}
-	return platforms
-}
-
-func matchSocialPlatform(plannedURL attr.Value, platforms []priorSocialPlatform) attr.Value {
-	url, ok := plannedURL.(types.String)
-	if !ok || url.IsNull() || url.IsUnknown() {
-		return types.StringUnknown()
-	}
-	for _, candidate := range platforms {
-		if urlsEquivalent(url.ValueString(), candidate.url) {
-			return candidate.platform
-		}
-	}
-	return types.StringUnknown()
-}
-
-// avatarURL rejects the logo.dev URLs the API silently discards: it stores a
-// null instead, which would contradict the planned value.
-type avatarURLValidator struct{}
-
-func (v avatarURLValidator) Description(ctx context.Context) string {
-	return "must not be a logo.dev URL"
-}
-
-func (v avatarURLValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v avatarURLValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	parsed, err := url.Parse(req.ConfigValue.ValueString())
-	if err != nil {
-		return
-	}
-	host := strings.ToLower(parsed.Hostname())
-	if host == "logo.dev" || strings.HasSuffix(host, ".logo.dev") {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Logo.dev avatar",
-			"The Polar API discards logo.dev avatars — it stores no avatar at all — which would leave a "+
-				"permanent diff. Upload the image to Polar and point at the stored file instead.",
-		)
-	}
-}
-
-func avatarURL() validator.String {
-	return avatarURLValidator{}
 }
 
 // embedHost rejects the entries the API would rewrite before storing. The

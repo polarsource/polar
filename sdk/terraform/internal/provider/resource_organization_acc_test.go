@@ -15,8 +15,8 @@ import (
 
 // The organization is the one thing the whole suite shares — every other test
 // creates its resources inside it — so these tests only touch settings nothing
-// else reads: the name, the website, the social links, the embed allowlist and
-// the subscription settings. The values are deliberately not random beyond the
+// else reads: the name, the website, the embed allowlist, the subscription
+// settings and one customer email toggle. The values are deliberately not random beyond the
 // name's suffix, so a rerun after an interrupted destroy converges instead of
 // accumulating, and t.Cleanup puts the organization back the way it was found.
 const (
@@ -45,17 +45,12 @@ func testAccOrganizationFixture(t *testing.T) *polarapi.Organization {
 	original := organizations[0]
 
 	t.Cleanup(func() {
-		socials := make([]polarapi.OrganizationSocial, 0, len(original.Socials))
-		for _, social := range original.Socials {
-			socials = append(socials, polarapi.OrganizationSocial{URL: social.URL})
-		}
 		hosts := original.EmbedHosts
 		if hosts == nil {
 			hosts = []string{}
 		}
 		restore := polarapi.OrganizationUpdate{
 			Name:                  &original.Name,
-			Socials:               &socials,
 			EmbedHosts:            &hosts,
 			SubscriptionSettings:  &original.SubscriptionSettings,
 			CustomerEmailSettings: &original.CustomerEmailSettings,
@@ -130,11 +125,6 @@ func TestAccOrganizationResource(t *testing.T) {
   name    = %q
   website = %q
 
-  socials = [
-    { url = "https://github.com/polarsource" },
-    { url = "https://x.com/polar_sh" },
-  ]
-
   embed_hosts = [%q, "*.%s"]
 
   subscription_settings = {
@@ -153,12 +143,6 @@ func TestAccOrganizationResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("polar_organization.test", "name", name+" v2"),
 					resource.TestCheckResourceAttr("polar_organization.test", "website", testAccOrganizationWebsite),
-					// The API derives the platform from the URL, overwriting
-					// anything a caller sends, so the provider never sends one.
-					resource.TestCheckResourceAttr("polar_organization.test", "socials.#", "2"),
-					resource.TestCheckResourceAttr("polar_organization.test", "socials.0.url", "https://github.com/polarsource"),
-					resource.TestCheckResourceAttr("polar_organization.test", "socials.0.platform", "github"),
-					resource.TestCheckResourceAttr("polar_organization.test", "socials.1.platform", "x"),
 					resource.TestCheckResourceAttr("polar_organization.test", "embed_hosts.#", "2"),
 					resource.TestCheckResourceAttr("polar_organization.test", "subscription_settings.benefit_revocation_grace_period", "7"),
 					// The two subscription settings the step does not declare
@@ -181,29 +165,25 @@ func TestAccOrganizationResource(t *testing.T) {
 					expectAttr("polar_organization.test", "id", &organizationID),
 				),
 			},
-			// Reordering the links re-derives each platform rather than
-			// carrying the previous occupant's over, and a shorter allowlist
-			// replaces the stored one.
+			// A shorter allowlist replaces the stored one rather than merging
+			// into it, and the settings this step stops declaring are left
+			// where the previous step put them.
 			{
 				Config: testAccOrganizationConfig(fmt.Sprintf(`
   name = %q
 
-  socials = [
-    { url = "https://x.com/polar_sh" },
-    { url = "https://github.com/polarsource" },
-  ]
-
   embed_hosts = [%q]
 `, name+" v2", testAccOrganizationHost)),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("polar_organization.test", "socials.0.platform", "x"),
-					resource.TestCheckResourceAttr("polar_organization.test", "socials.1.platform", "github"),
 					resource.TestCheckResourceAttr("polar_organization.test", "embed_hosts.#", "1"),
 					resource.TestCheckResourceAttr("polar_organization.test", "embed_hosts.0", testAccOrganizationHost),
-					// The website is no longer declared: it stays on the
-					// organization and stays in state, because an attribute
-					// that is not declared is not managed.
+					// The website and the subscription grace period are no
+					// longer declared: they stay on the organization and stay
+					// in state, because an attribute that is not declared is
+					// not managed.
 					resource.TestCheckResourceAttr("polar_organization.test", "website", testAccOrganizationWebsite),
+					resource.TestCheckResourceAttr("polar_organization.test",
+						"subscription_settings.benefit_revocation_grace_period", "7"),
 					expectAttr("polar_organization.test", "id", &organizationID),
 				),
 			},
@@ -212,7 +192,6 @@ func TestAccOrganizationResource(t *testing.T) {
 			{
 				Config: testAccOrganizationConfig(fmt.Sprintf(`
   name        = %q
-  socials     = []
   embed_hosts = []
 
   subscription_settings = {
@@ -230,7 +209,6 @@ func TestAccOrganizationResource(t *testing.T) {
 					original.CustomerEmailSettings.SubscriptionRenewalReminder, !localization)),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("polar_organization.test", "name", original.Name),
-					resource.TestCheckResourceAttr("polar_organization.test", "socials.#", "0"),
 					resource.TestCheckResourceAttr("polar_organization.test", "embed_hosts.#", "0"),
 					resource.TestCheckResourceAttr("polar_organization.test",
 						"customer_email_settings.subscription_renewal_reminder",

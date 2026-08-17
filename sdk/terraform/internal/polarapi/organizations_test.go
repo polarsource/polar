@@ -25,18 +25,16 @@ func TestOrganizationUpdateSendsOnlyDeclaredKeys(t *testing.T) {
 // cleared: an empty list is a value, not an omission, so it has to survive
 // serialization.
 func TestOrganizationUpdateSendsEmptyCollections(t *testing.T) {
-	socials := []OrganizationSocial{}
 	hosts := []string{}
 	metrics := []string{}
 	encoded, err := json.Marshal(OrganizationUpdate{
-		Socials:         &socials,
 		EmbedHosts:      &hosts,
 		FeatureSettings: &OrganizationFeatureSettingsUpdate{OverviewMetrics: &metrics},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := `{"socials":[],"embed_hosts":[],"feature_settings":{"overview_metrics":[]}}`
+	expected := `{"embed_hosts":[],"feature_settings":{"overview_metrics":[]}}`
 	if string(encoded) != expected {
 		t.Errorf("empty collections must be sent, not omitted:\n got %s\nwant %s", encoded, expected)
 	}
@@ -53,19 +51,6 @@ func TestOrganizationFeatureSettingsUpdateSendsFalse(t *testing.T) {
 	}
 	if string(encoded) != `{"checkout_localization_enabled":false}` {
 		t.Errorf("a false feature setting must be sent, got %s", encoded)
-	}
-}
-
-// TestOrganizationSocialOmitsPlatform pins that the provider never sends a
-// platform: the server derives it from the URL and overwrites whatever it is
-// given, so sending one could only ever contradict the stored value.
-func TestOrganizationSocialOmitsPlatform(t *testing.T) {
-	encoded, err := json.Marshal(OrganizationSocial{URL: "https://github.com/polarsource"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(encoded) != `{"url":"https://github.com/polarsource"}` {
-		t.Errorf("the platform must not be sent, got %s", encoded)
 	}
 }
 

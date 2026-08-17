@@ -6,15 +6,6 @@ import (
 	"strconv"
 )
 
-// OrganizationSocial is one entry of an organization's social links. The
-// platform is derived from the URL server-side (see `detect_platform_from_url`
-// in server/polar/organization/schemas.py), which is why it is never sent: a
-// caller-supplied platform is overwritten anyway.
-type OrganizationSocial struct {
-	Platform string `json:"platform,omitempty"`
-	URL      string `json:"url"`
-}
-
 // OrganizationSubscriptionSettings carries every key of the server's
 // `OrganizationSubscriptionSettings` TypedDict, which is total: an update
 // missing one is a 422, and the server replaces the whole object rather than
@@ -112,10 +103,8 @@ type Organization struct {
 	Name                       string                             `json:"name"`
 	Slug                       string                             `json:"slug"`
 	Status                     string                             `json:"status"`
-	AvatarURL                  *string                            `json:"avatar_url"`
 	Email                      *string                            `json:"email"`
 	Website                    *string                            `json:"website"`
-	Socials                    []OrganizationSocial               `json:"socials"`
 	EmbedHosts                 []string                           `json:"embed_hosts"`
 	DefaultPresentmentCurrency string                             `json:"default_presentment_currency"`
 	DefaultTaxBehavior         string                             `json:"default_tax_behavior"`
@@ -133,16 +122,15 @@ type Organization struct {
 // never sends a key for an attribute the configuration leaves out — undeclared
 // settings stay unmanaged.
 //
-// slug, details (KYC), country and sso_enforced are deliberately absent: the
-// slug is immutable, details and country belong to onboarding, and an
-// organization access token cannot set sso_enforced (the endpoint requires an
-// SSO-authenticated user session).
+// slug, details (KYC), country, sso_enforced, avatar_url and socials are
+// deliberately absent: the slug is immutable, details and country belong to
+// onboarding, an organization access token cannot set sso_enforced (the
+// endpoint requires an SSO-authenticated user session), and the avatar and
+// social links are branding, managed in the dashboard.
 type OrganizationUpdate struct {
 	Name                       *string                             `json:"name,omitempty"`
 	Email                      *string                             `json:"email,omitempty"`
 	Website                    *string                             `json:"website,omitempty"`
-	AvatarURL                  *string                             `json:"avatar_url,omitempty"`
-	Socials                    *[]OrganizationSocial               `json:"socials,omitempty"`
 	EmbedHosts                 *[]string                           `json:"embed_hosts,omitempty"`
 	DefaultPresentmentCurrency *string                             `json:"default_presentment_currency,omitempty"`
 	DefaultTaxBehavior         *string                             `json:"default_tax_behavior,omitempty"`

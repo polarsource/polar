@@ -1040,7 +1040,6 @@ func testOrganization() *polarapi.Organization {
 		CreatedAt:                  "2026-01-01T00:00:00Z",
 		Name:                       "Acme",
 		Website:                    testString("https://acme.example.com/"),
-		Socials:                    []polarapi.OrganizationSocial{{Platform: "github", URL: "https://github.com/acme"}},
 		EmbedHosts:                 []string{"acme.example.com"},
 		DefaultPresentmentCurrency: "eur",
 		DefaultTaxBehavior:         "inclusive",
@@ -1092,7 +1091,6 @@ func testOrganizationUpdatePayload(t *testing.T, config *organizationModel) map[
 // organization and touches nothing at all.
 func TestOrganizationUpdateFromConfigSendsNothingForAnEmptyConfig(t *testing.T) {
 	config := &organizationModel{
-		Socials:    types.ListNull(organizationSocialType),
 		EmbedHosts: types.SetNull(types.StringType),
 	}
 	update, diags := organizationUpdateFromConfig(context.Background(), config, testOrganization())
@@ -1107,7 +1105,6 @@ func TestOrganizationUpdateFromConfigSendsNothingForAnEmptyConfig(t *testing.T) 
 func TestOrganizationUpdateFromConfigSendsOnlyDeclaredAttributes(t *testing.T) {
 	config := &organizationModel{
 		Name:       types.StringValue("Acme Inc"),
-		Socials:    types.ListNull(organizationSocialType),
 		EmbedHosts: types.SetNull(types.StringType),
 	}
 	payload := testOrganizationUpdatePayload(t, config)
@@ -1123,7 +1120,6 @@ func TestOrganizationUpdateFromConfigSendsOnlyDeclaredAttributes(t *testing.T) {
 func TestOrganizationUpdateFromConfigCompletesReplacedSettings(t *testing.T) {
 	ctx := context.Background()
 	config := &organizationModel{
-		Socials:    types.ListNull(organizationSocialType),
 		EmbedHosts: types.SetNull(types.StringType),
 		SubscriptionSettings: &organizationSubscriptionSettingsModel{
 			ProrationBehavior: types.StringValue("prorate"),
@@ -1182,7 +1178,6 @@ func TestOrganizationUpdateFromConfigMergesMergedSettings(t *testing.T) {
 		t.Fatal(diags)
 	}
 	config := &organizationModel{
-		Socials:    types.ListNull(organizationSocialType),
 		EmbedHosts: types.SetNull(types.StringType),
 		FeatureSettings: &organizationFeatureSettingsModel{
 			CheckoutLocalizationEnabled: types.BoolValue(true),
@@ -1215,79 +1210,31 @@ func TestOrganizationUpdateFromConfigMergesMergedSettings(t *testing.T) {
 	}
 }
 
-func TestOrganizationUpdateFromConfigClearsEmptyCollections(t *testing.T) {
+func TestOrganizationUpdateFromConfigClearsAnEmptyEmbedAllowlist(t *testing.T) {
 	ctx := context.Background()
-	socials, diags := types.ListValueFrom(ctx, organizationSocialType, []organizationSocialModel{})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
 	hosts, diags := types.SetValueFrom(ctx, types.StringType, []string{})
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	payload := testOrganizationUpdatePayload(t, &organizationModel{Socials: socials, EmbedHosts: hosts})
-	for _, key := range []string{"socials", "embed_hosts"} {
-		value, present := payload[key]
-		if !present {
-			t.Errorf("an empty %s must be sent: it is how the collection is cleared", key)
-			continue
-		}
-		if length := len(value.([]any)); length != 0 {
-			t.Errorf("%s should be an empty list, got %v", key, value)
-		}
+	payload := testOrganizationUpdatePayload(t, &organizationModel{EmbedHosts: hosts})
+	value, present := payload["embed_hosts"]
+	if !present {
+		t.Fatal("an empty embed_hosts must be sent: it is how the allowlist is cleared")
 	}
-}
-
-// TestOrganizationUpdateFromConfigOmitsSocialPlatforms pins that a configured
-// social link only ever contributes its URL: the platform is the API's to
-// decide.
-func TestOrganizationUpdateFromConfigOmitsSocialPlatforms(t *testing.T) {
-	ctx := context.Background()
-	socials, diags := types.ListValueFrom(ctx, organizationSocialType, []organizationSocialModel{{
-		URL:      types.StringValue("https://github.com/acme"),
-		Platform: types.StringValue("linkedin"),
-	}})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	payload := testOrganizationUpdatePayload(t, &organizationModel{
-		Socials:    socials,
-		EmbedHosts: types.SetNull(types.StringType),
-	})
-	links := payload["socials"].([]any)
-	link := links[0].(map[string]any)
-	if _, present := link["platform"]; present {
-		t.Errorf("the platform must not be sent, got %v", link)
-	}
-	if link["url"] != "https://github.com/acme" {
-		t.Errorf("the URL should be sent, got %v", link)
+	if length := len(value.([]any)); length != 0 {
+		t.Errorf("embed_hosts should be an empty list, got %v", value)
 	}
 }
 
 func TestOrganizationToModel(t *testing.T) {
 	ctx := context.Background()
 	organization := testOrganization()
-	prior := organizationPrior{
-		Website: types.StringValue("https://acme.example.com"),
-		Socials: types.ListNull(organizationSocialType),
-	}
-
-	model, diags := organizationToModel(ctx, organization, prior)
+	model, diags := organizationToModel(ctx, organization, types.StringValue("https://acme.example.com"))
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
 	if model.Website.ValueString() != "https://acme.example.com" {
 		t.Errorf("an equivalent website should keep the configured spelling, got %v", model.Website)
-	}
-	if !model.AvatarURL.IsNull() {
-		t.Errorf("an organization without an avatar should read back as null, got %v", model.AvatarURL)
-	}
-	if model.Socials.IsNull() || len(model.Socials.Elements()) != 1 {
-		t.Fatalf("socials should read back as a list of one, got %v", model.Socials)
-	}
-	social := model.Socials.Elements()[0].(types.Object)
-	if social.Attributes()["platform"].(types.String).ValueString() != "github" {
-		t.Errorf("the API's platform should reach state, got %v", social)
 	}
 	if model.CustomerPortalSettings.Subscription.Pause.ValueBool() != true {
 		t.Errorf("an optional portal key present server-side should read back, got %v", model.CustomerPortalSettings)
@@ -1309,9 +1256,8 @@ func TestOrganizationToModelHandlesAbsentOptionalKeys(t *testing.T) {
 	organization.FeatureSettings = nil
 	organization.CustomerPortalSettings.Subscription.Pause = nil
 	organization.CustomerPortalSettings.Customer = nil
-	organization.Socials = nil
 
-	model, diags := organizationToModel(ctx, organization, organizationPrior{Socials: types.ListNull(organizationSocialType)})
+	model, diags := organizationToModel(ctx, organization, types.StringNull())
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
@@ -1324,135 +1270,6 @@ func TestOrganizationToModelHandlesAbsentOptionalKeys(t *testing.T) {
 	if model.CustomerPortalSettings.Customer != nil {
 		t.Errorf("an absent portal sub-object should read back as a null object, got %+v", model.CustomerPortalSettings.Customer)
 	}
-	if model.Socials.IsNull() || len(model.Socials.Elements()) != 0 {
-		t.Errorf("no social links should read back as an empty list, got %v", model.Socials)
-	}
-}
-
-func testSocialsList(t *testing.T, socials ...[2]string) types.List {
-	t.Helper()
-	models := make([]organizationSocialModel, 0, len(socials))
-	for _, social := range socials {
-		platform := types.StringNull()
-		if social[1] != "" {
-			platform = types.StringValue(social[1])
-		}
-		models = append(models, organizationSocialModel{URL: types.StringValue(social[0]), Platform: platform})
-	}
-	list, diags := types.ListValueFrom(context.Background(), organizationSocialType, models)
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	return list
-}
-
-func TestOrganizationSocialsFromAPIKeepsConfiguredSpelling(t *testing.T) {
-	ctx := context.Background()
-	prior := testSocialsList(t, [2]string{"https://github.com/Acme", "github"})
-	socials, diags := organizationSocialsFromAPI(ctx, []polarapi.OrganizationSocial{
-		{Platform: "github", URL: "https://github.com/Acme"},
-		{Platform: "other", URL: "https://acme.example.com/blog"},
-	}, prior)
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	if length := len(socials.Elements()); length != 2 {
-		t.Fatalf("expected both links, got %d", length)
-	}
-	first := socials.Elements()[0].(types.Object)
-	if first.Attributes()["url"].(types.String).ValueString() != "https://github.com/Acme" {
-		t.Errorf("the configured spelling should survive, got %v", first)
-	}
-}
-
-func organizationResourceSchema(t *testing.T) schema.Schema {
-	t.Helper()
-	resp := &resource.SchemaResponse{}
-	(&organizationResource{}).Schema(context.Background(), resource.SchemaRequest{}, resp)
-	if resp.Diagnostics.HasError() {
-		t.Fatal(resp.Diagnostics)
-	}
-	return resp.Schema
-}
-
-func testOrganizationConfig(t *testing.T) tfsdk.Config {
-	t.Helper()
-	ctx := context.Background()
-	organizationSchema := organizationResourceSchema(t)
-	objectType := organizationSchema.Type().(types.ObjectType)
-	raw, err := testObject(t, objectType, nil).ToTerraformValue(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return tfsdk.Config{Raw: raw, Schema: organizationSchema}
-}
-
-func testPlannedSocialPlatforms(t *testing.T, plan, state types.List) []attr.Value {
-	t.Helper()
-	config := testOrganizationConfig(t)
-	req := planmodifier.ListRequest{
-		Path:        path.Root("socials"),
-		Config:      config,
-		ConfigValue: plan,
-		Plan:        tfsdk.Plan{Raw: config.Raw, Schema: config.Schema},
-		PlanValue:   plan,
-		State:       tfsdk.State{Raw: config.Raw, Schema: config.Schema},
-		StateValue:  state,
-	}
-	resp := &planmodifier.ListResponse{PlanValue: plan}
-	keepMatchedSocialPlatforms().PlanModifyList(context.Background(), req, resp)
-	if resp.Diagnostics.HasError() {
-		t.Fatalf("planning socials must not fail: %v", resp.Diagnostics)
-	}
-	platforms := make([]attr.Value, 0, len(resp.PlanValue.Elements()))
-	for _, element := range resp.PlanValue.Elements() {
-		platforms = append(platforms, element.(types.Object).Attributes()["platform"])
-	}
-	return platforms
-}
-
-// TestKeepMatchedSocialPlatforms covers the drift trap the platform attribute
-// is: Terraform fills a list of nested attributes by index, so a reordered or
-// replaced link would carry the previous occupant's platform into the plan and
-// the API's derived value would then contradict it.
-func TestKeepMatchedSocialPlatforms(t *testing.T) {
-	state := testSocialsList(t,
-		[2]string{"https://github.com/acme", "github"},
-		[2]string{"https://x.com/acme", "x"},
-	)
-
-	t.Run("reordered links keep their platform", func(t *testing.T) {
-		plan := testSocialsList(t,
-			[2]string{"https://x.com/acme", "github"},
-			[2]string{"https://github.com/acme", "x"},
-		)
-		platforms := testPlannedSocialPlatforms(t, plan, state)
-		if platforms[0].(types.String).ValueString() != "x" || platforms[1].(types.String).ValueString() != "github" {
-			t.Errorf("a reordered link should keep its own platform, got %v", platforms)
-		}
-	})
-
-	t.Run("a replaced link plans an unknown platform", func(t *testing.T) {
-		plan := testSocialsList(t,
-			[2]string{"https://github.com/acme", "github"},
-			[2]string{"https://linkedin.com/company/acme", "x"},
-		)
-		platforms := testPlannedSocialPlatforms(t, plan, state)
-		if platforms[0].(types.String).ValueString() != "github" {
-			t.Errorf("an unchanged link should keep its platform, got %v", platforms[0])
-		}
-		if !platforms[1].IsUnknown() {
-			t.Errorf("a replaced link must plan an unknown platform, got %v", platforms[1])
-		}
-	})
-
-	t.Run("an equivalent URL still matches", func(t *testing.T) {
-		plan := testSocialsList(t, [2]string{"https://GitHub.com/acme", "github"})
-		platforms := testPlannedSocialPlatforms(t, plan, state)
-		if platforms[0].(types.String).ValueString() != "github" {
-			t.Errorf("a URL the server only normalizes should keep its platform, got %v", platforms[0])
-		}
-	})
 }
 
 func TestEmbedHostValidator(t *testing.T) {
@@ -1480,28 +1297,5 @@ func TestEmbedHostValidator(t *testing.T) {
 		if !resp.Diagnostics.HasError() {
 			t.Errorf("%q is rewritten by the API and should be rejected at plan time", value)
 		}
-	}
-}
-
-func TestAvatarURLValidator(t *testing.T) {
-	// The API discards logo.dev avatars and stores nothing, so a configuration
-	// naming one can never be satisfied.
-	for _, value := range []string{"https://img.logo.dev/acme.com", "https://logo.dev/acme"} {
-		resp := &validator.StringResponse{}
-		avatarURL().ValidateString(context.Background(), validator.StringRequest{
-			Path:        path.Root("avatar_url"),
-			ConfigValue: types.StringValue(value),
-		}, resp)
-		if !resp.Diagnostics.HasError() {
-			t.Errorf("%q should be rejected: the API discards it", value)
-		}
-	}
-	resp := &validator.StringResponse{}
-	avatarURL().ValidateString(context.Background(), validator.StringRequest{
-		Path:        path.Root("avatar_url"),
-		ConfigValue: types.StringValue("https://acme.example.com/logo.png"),
-	}, resp)
-	if resp.Diagnostics.HasError() {
-		t.Errorf("an ordinary avatar URL should be accepted: %v", resp.Diagnostics)
 	}
 }

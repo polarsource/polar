@@ -5,11 +5,6 @@ resource "polar_organization" "this" {
   email   = "support@acme.com"
   website = "https://acme.com/"
 
-  socials = [
-    { url = "https://github.com/acme" },
-    { url = "https://x.com/acme" },
-  ]
-
   # Hosts allowed to open an embedded checkout.
   embed_hosts = [
     "acme.com",

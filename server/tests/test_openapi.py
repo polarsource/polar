@@ -1,11 +1,17 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.kit.versioning import APIVersion
+from polar.version import VERSIONS
+
 
 @pytest.mark.asyncio
-async def test_openapi(client: AsyncClient) -> None:
-    response = await client.get("/openapi.json")
+@pytest.mark.parametrize("version", VERSIONS)
+async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
+    response = await client.get(f"{version}/openapi.json")
     assert response.status_code == 200
 
     schema = response.json()
     assert "Scope" in schema["components"]["schemas"]
+
+    assert len(schema["webhooks"]) > 0

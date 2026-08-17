@@ -15,6 +15,7 @@ from polar.kit.versioning import (
 )
 from polar.openapi import get_openapi
 from polar.version import CURRENT_API_VERSION, VERSIONS
+from polar.webhook.webhooks import get_webhook_routes
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -30,6 +31,7 @@ if __name__ == "__main__":
     schema = get_openapi(
         arguments.version,
         routes_for_version(router.routes, arguments.version),
+        get_webhook_routes(),
     )
     json.dump(schema, sys.stdout)
     sys.stdout.flush()

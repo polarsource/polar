@@ -59,7 +59,9 @@ def test_versioned_routes() -> None:
         return "next-only"
 
     app = FastAPI(openapi_url=None)
-    add_versioned_routers(app, router, [current_version, next_version], current_version)
+    add_versioned_routers(
+        app, router, [], [current_version, next_version], current_version
+    )
     app.dependency_overrides[dependency] = lambda: "overridden"
     client = TestClient(app)
 
@@ -96,6 +98,7 @@ def test_rejects_ambiguous_exact_routes() -> None:
         add_versioned_routers(
             FastAPI(openapi_url=None),
             router,
+            [],
             [next_version],
             next_version,
         )

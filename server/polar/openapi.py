@@ -60,13 +60,16 @@ class APITag(StrEnum):
         ]
 
 
-def get_openapi(version: "APIVersion", routes: Sequence[BaseRoute]) -> dict[str, Any]:
+def get_openapi(
+    version: "APIVersion", routes: Sequence[BaseRoute], webhooks: Sequence[BaseRoute]
+) -> dict[str, Any]:
     openapi_schema = _get_openapi(
         title="Polar API",
         version=str(version),
         summary="Polar HTTP and Webhooks API",
         description="Read the docs at https://polar.sh/docs/api-reference",
         routes=routes,
+        webhooks=webhooks,
         tags=APITag.metadata(),  # type: ignore
         servers=[
             {

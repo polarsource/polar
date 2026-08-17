@@ -215,11 +215,13 @@ def routes_for_version(
 
 
 def _create_openapi_endpoint(
-    version: APIVersion, routes: Sequence[BaseRoute]
+    version: APIVersion,
+    routes: Sequence[BaseRoute],
+    webhooks: Sequence[BaseRoute],
 ) -> Callable[[], Awaitable[JSONResponse]]:
     @functools.cache
     def get_schema() -> dict[str, typing.Any]:
-        return get_openapi(version=version, routes=routes)
+        return get_openapi(version=version, routes=routes, webhooks=webhooks)
 
     async def openapi() -> JSONResponse:
         return JSONResponse(get_schema())
@@ -230,6 +232,7 @@ def _create_openapi_endpoint(
 def add_versioned_routers(
     app: FastAPI,
     api_router: APIRouter,
+    webhooks: Sequence[BaseRoute],
     versions: Iterable[APIVersion],
     default_version: APIVersion,
 ) -> None:
@@ -251,7 +254,7 @@ def add_versioned_routers(
         version_routes = routes_for_version(api_routes, version)
         app.add_api_route(
             f"/{version}/openapi.json",
-            _create_openapi_endpoint(version, version_routes),
+            _create_openapi_endpoint(version, version_routes, webhooks),
             methods=["GET"],
             include_in_schema=False,
             name=f"openapi:{version}",

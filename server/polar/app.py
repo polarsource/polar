@@ -69,6 +69,7 @@ from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
 from polar.sentry import configure_sentry
 from polar.version import CURRENT_API_VERSION, VERSIONS
+from polar.webhook.webhooks import get_webhook_routes
 
 from . import rate_limit
 
@@ -246,7 +247,13 @@ def create_app() -> FastAPI:
     if settings.CHECKOUT_LINK_HOST is not None:
         app.host(settings.CHECKOUT_LINK_HOST, checkout_link_redirect_app)
 
-    add_versioned_routers(app, router, VERSIONS, CURRENT_API_VERSION)
+    add_versioned_routers(
+        app,
+        router,
+        get_webhook_routes(),
+        VERSIONS,
+        CURRENT_API_VERSION,
+    )
 
     return app
 

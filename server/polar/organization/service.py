@@ -1551,28 +1551,71 @@ class OrganizationService:
     async def offboard_expired_organizations(
         self, session: AsyncSession
     ) -> Sequence[Organization]:
-        """Auto-transition offboarding orgs to the terminal offboarded state.
+        """Enqueue a per-org job for each offboarding org past the wind-down floor.
 
-        Run periodically by a worker once the offboarding period has elapsed
-        since both the org's last paid order (chargeback safety) and its
-        entry into offboarding (merchant wind-down floor). Returns the orgs
-        transitioned.
+        The cron only filters on when the org entered offboarding. Each
+        follow-up job re-checks the last paid order so a payment still inside
+        the chargeback window blocks the terminal transition. Returns the
+        organizations enqueued.
         """
         repository = OrganizationRepository.from_session(session)
         cutoff = datetime.now(UTC) - settings.ORGANIZATION_OFFBOARDING_PERIOD
-        # The candidate query takes FOR UPDATE on each org row, so a concurrent
-        # admin status change either falls out of the WHERE clause or waits
-        # behind our lock — no per-row re-check needed.
         candidates = await repository.get_offboarding_past_period(cutoff)
-        transitioned: list[Organization] = []
+        log.info(
+            "offboard_expired.candidates",
+            count=len(candidates),
+            cutoff=cutoff.isoformat(),
+        )
         for organization in candidates:
-            self._transition_to_offboarded(
-                session,
-                organization,
-                "Automatically offboarded after the offboarding period elapsed.",
+            enqueue_job(
+                "organization.offboard_expired_one",
+                organization_id=organization.id,
             )
-            transitioned.append(organization)
-        return transitioned
+        return candidates
+
+    async def complete_expired_offboarding(
+        self, session: AsyncSession, organization_id: UUID
+    ) -> Organization | None:
+        """Transition one offboarding org to offboarded if both gates have elapsed.
+
+        Locks the org row. Skips if status changed, or if the later of last
+        paid (not fully refunded) order and offboarding-entry is still inside
+        the offboarding period.
+        """
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id, for_update=True)
+        if (
+            organization is None
+            or organization.status != OrganizationStatus.OFFBOARDING
+        ):
+            return None
+
+        cutoff = datetime.now(UTC) - settings.ORGANIZATION_OFFBOARDING_PERIOD
+        last_paid_order_at = await repository.get_last_paid_order_at(organization.id)
+        anchors = [
+            d
+            for d in (last_paid_order_at, organization.status_updated_at)
+            if d is not None
+        ]
+        if not anchors:
+            anchors = [organization.created_at]
+        anchor = max(anchors)
+        if anchor > cutoff:
+            log.info(
+                "offboard_expired.skipped_recent_order",
+                organization_id=str(organization.id),
+                last_paid_order_at=(
+                    last_paid_order_at.isoformat() if last_paid_order_at else None
+                ),
+            )
+            return None
+
+        self._transition_to_offboarded(
+            session,
+            organization,
+            "Automatically offboarded after the offboarding period elapsed.",
+        )
+        return organization
 
     async def cancel_expired_organizations_subscriptions(
         self, session: AsyncSession

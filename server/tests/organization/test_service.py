@@ -4656,6 +4656,91 @@ class TestOffboardExpiredOrganizations:
         )
         await save_fixture(organization)
 
+    async def test_past_status_floor_enqueues(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=121
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=10),
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert len(result) == 1
+        assert result[0].id == organization.id
+        assert result[0].status == OrganizationStatus.OFFBOARDING
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboard_expired_one",
+            organization_id=organization.id,
+        )
+
+    async def test_recent_offboarding_not_enqueued(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=4
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=149),
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+        enqueue_job_mock.assert_not_called()
+
+    async def test_recent_offboarding_no_orders_not_enqueued(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=10
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+
+@pytest.mark.asyncio
+class TestCompleteExpiredOffboarding:
+    async def _make_offboarding(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        *,
+        status_updated_days_ago: int,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.status_updated_at = datetime.now(UTC) - timedelta(
+            days=status_updated_days_ago
+        )
+        await save_fixture(organization)
+
     async def test_both_anchors_old_transitions(
         self,
         mocker: MockerFixture,
@@ -4664,8 +4749,6 @@ class TestOffboardExpiredOrganizations:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Both gates clear: chargeback window expired and merchant has had
-        # their wind-down period in offboarding.
         await self._make_offboarding(
             save_fixture, organization, status_updated_days_ago=121
         )
@@ -4677,11 +4760,12 @@ class TestOffboardExpiredOrganizations:
         )
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
-        result = await organization_service.offboard_expired_organizations(session)
+        result = await organization_service.complete_expired_offboarding(
+            session, organization.id
+        )
 
-        assert len(result) == 1
-        assert result[0].id == organization.id
-        assert result[0].status == OrganizationStatus.OFFBOARDED
+        assert result is not None
+        assert result.status == OrganizationStatus.OFFBOARDED
         enqueue_job_mock.assert_called_once_with(
             "organization.offboarded", organization_id=organization.id
         )
@@ -4693,9 +4777,6 @@ class TestOffboardExpiredOrganizations:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Regression: an org freshly put into offboarding must still get its
-        # full wind-down period even if its last payment is already past the
-        # chargeback window. Anchor = MAX(last_paid, status_updated_at).
         await self._make_offboarding(
             save_fixture, organization, status_updated_days_ago=4
         )
@@ -4706,9 +4787,11 @@ class TestOffboardExpiredOrganizations:
             created_at=datetime.now(UTC) - timedelta(days=149),
         )
 
-        result = await organization_service.offboard_expired_organizations(session)
+        result = await organization_service.complete_expired_offboarding(
+            session, organization.id
+        )
 
-        assert result == []
+        assert result is None
         assert organization.status == OrganizationStatus.OFFBOARDING
 
     async def test_recent_paid_order_skipped(
@@ -4718,7 +4801,6 @@ class TestOffboardExpiredOrganizations:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Old offboarding date, but a recent paid order anchors the window.
         await self._make_offboarding(
             save_fixture, organization, status_updated_days_ago=200
         )
@@ -4729,9 +4811,11 @@ class TestOffboardExpiredOrganizations:
             created_at=datetime.now(UTC) - timedelta(days=10),
         )
 
-        result = await organization_service.offboard_expired_organizations(session)
+        result = await organization_service.complete_expired_offboarding(
+            session, organization.id
+        )
 
-        assert result == []
+        assert result is None
         assert organization.status == OrganizationStatus.OFFBOARDING
 
     async def test_partially_refunded_recent_order_skipped(
@@ -4741,7 +4825,6 @@ class TestOffboardExpiredOrganizations:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Partially refunded orders still count as paid-and-not-fully-refunded.
         await self._make_offboarding(
             save_fixture, organization, status_updated_days_ago=200
         )
@@ -4752,9 +4835,11 @@ class TestOffboardExpiredOrganizations:
             created_at=datetime.now(UTC) - timedelta(days=10),
         )
 
-        result = await organization_service.offboard_expired_organizations(session)
+        result = await organization_service.complete_expired_offboarding(
+            session, organization.id
+        )
 
-        assert result == []
+        assert result is None
         assert organization.status == OrganizationStatus.OFFBOARDING
 
     async def test_fully_refunded_order_falls_back_to_status_updated_at(
@@ -4765,8 +4850,6 @@ class TestOffboardExpiredOrganizations:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # A fully refunded order is ignored, so the window falls back to the
-        # offboarding-entry date, which is old enough here.
         await self._make_offboarding(
             save_fixture, organization, status_updated_days_ago=121
         )
@@ -4778,10 +4861,12 @@ class TestOffboardExpiredOrganizations:
         )
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
-        result = await organization_service.offboard_expired_organizations(session)
+        result = await organization_service.complete_expired_offboarding(
+            session, organization.id
+        )
 
-        assert len(result) == 1
-        assert result[0].status == OrganizationStatus.OFFBOARDED
+        assert result is not None
+        assert result.status == OrganizationStatus.OFFBOARDED
         enqueue_job_mock.assert_called_once_with(
             "organization.offboarded", organization_id=organization.id
         )
@@ -4798,28 +4883,15 @@ class TestOffboardExpiredOrganizations:
         )
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
-        result = await organization_service.offboard_expired_organizations(session)
+        result = await organization_service.complete_expired_offboarding(
+            session, organization.id
+        )
 
-        assert len(result) == 1
-        assert result[0].status == OrganizationStatus.OFFBOARDED
+        assert result is not None
+        assert result.status == OrganizationStatus.OFFBOARDED
         enqueue_job_mock.assert_called_once_with(
             "organization.offboarded", organization_id=organization.id
         )
-
-    async def test_recent_offboarding_no_orders_skipped(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        await self._make_offboarding(
-            save_fixture, organization, status_updated_days_ago=10
-        )
-
-        result = await organization_service.offboard_expired_organizations(session)
-
-        assert result == []
-        assert organization.status == OrganizationStatus.OFFBOARDING
 
     async def test_old_offboarding_recent_paid_order_skipped(
         self,
@@ -4828,9 +4900,6 @@ class TestOffboardExpiredOrganizations:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Mirror of the resumeset case: chargeback gate clears (offboarding is
-        # ancient) but the merchant just took a payment, so we must wait
-        # another 120 days from that payment before the terminal transition.
         await self._make_offboarding(
             save_fixture, organization, status_updated_days_ago=200
         )
@@ -4841,10 +4910,24 @@ class TestOffboardExpiredOrganizations:
             created_at=datetime.now(UTC) - timedelta(days=4),
         )
 
-        result = await organization_service.offboard_expired_organizations(session)
+        result = await organization_service.complete_expired_offboarding(
+            session, organization.id
+        )
 
-        assert result == []
+        assert result is None
         assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_not_offboarding_is_noop(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        result = await organization_service.complete_expired_offboarding(
+            session, organization.id
+        )
+
+        assert result is None
+        assert organization.status != OrganizationStatus.OFFBOARDED
 
 
 @pytest.mark.asyncio

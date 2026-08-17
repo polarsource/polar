@@ -229,41 +229,24 @@ class OrganizationRepository(
     async def get_offboarding_past_period(
         self, cutoff: datetime, *, limit: int = OFFBOARD_EXPIRED_BATCH_SIZE
     ) -> Sequence[Organization]:
-        """Offboarding orgs whose offboarding period has elapsed.
+        """Offboarding orgs past the merchant wind-down floor.
 
-        Anchor = the later of (a) the most recent paid order that hasn't been
-        fully refunded — the post-chargeback-risk window, and (b) when the org
-        entered offboarding (``status_updated_at``) — the merchant wind-down
-        floor. Both gates must clear, so a merchant freshly put into
-        offboarding always gets the full wind-down period even if their last
-        payment is already past the chargeback window. Orgs with no paid
-        orders use ``status_updated_at`` alone (PostgreSQL ``GREATEST`` skips
-        NULLs).
-
-        ``FOR UPDATE`` on the org row: a concurrent admin status change either
-        commits before our SELECT (and the row falls out of the WHERE clause)
-        or waits behind our lock — eliminating the read/transition race.
+        Floor = when the org entered offboarding (``status_updated_at``,
+        falling back to ``created_at``). The last-paid-order / chargeback
+        gate is checked per org by the follow-up task, not here: a joined
+        ``MAX(orders.created_at)`` timed out the production cron.
         """
-        last_paid_order_at = (
-            select(func.max(Order.created_at))
-            .where(
-                Order.organization_id == Organization.id,
-                Order.status.in_(OrderStatus.paid_statuses()),
-                Order.deleted_at.is_(None),
-            )
-            .correlate(Organization)
-            .scalar_subquery()
+        status_entered_at = func.coalesce(
+            Organization.status_updated_at, Organization.created_at
         )
-        anchor = func.greatest(last_paid_order_at, Organization.status_updated_at)
         statement = (
             self.get_base_statement()
             .where(
                 Organization.status == OrganizationStatus.OFFBOARDING,
-                anchor <= cutoff,
+                status_entered_at <= cutoff,
             )
-            .order_by(anchor.asc())
+            .order_by(status_entered_at.asc())
             .limit(limit)
-            .with_for_update(of=Organization)
         )
         return await self.get_all(statement)
 
@@ -307,9 +290,8 @@ class OrganizationRepository(
     async def get_last_paid_order_at(self, organization_id: UUID) -> datetime | None:
         """Most recent paid (not fully refunded) order date for an org.
 
-        Same chargeback-risk anchor as ``get_offboarding_past_period``, but for
-        a single organization — lets the backoffice surface how much of the
-        offboarding wind-down period remains before an auto-offboard.
+        Chargeback-risk anchor for a single organization — used by the
+        per-org auto-offboard task and the backoffice remaining-window UI.
         """
         statement = select(func.max(Order.created_at)).where(
             Order.organization_id == organization_id,

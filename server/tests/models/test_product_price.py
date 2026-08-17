@@ -333,6 +333,31 @@ class TestGetTieredAmount:
         )
         assert price.get_tiered_amount(5) == price.tiers.calculate(5)
 
+    def test_fractional_quantity(self) -> None:
+        # Bounds are whole units, the quantity need not be: an inclusive
+        # bound still places a fractional quantity unambiguously.
+        price = _make_tiered_price(_tiers_data(TierType.volume, SHARED_MULTI_TIER))
+        assert price.get_tiered_amount(Decimal("9.5")) == Decimal("9.5") * 1000
+        assert price.get_tiered_amount(Decimal("10.5")) == Decimal("10.5") * 800
+
+    def test_fractional_quantity_on_and_below_a_bound(self) -> None:
+        price = _make_tiered_price(_tiers_data(TierType.volume, SHARED_MULTI_TIER))
+        assert price.get_tiered_amount(Decimal("10.0")) == Decimal("10.0") * 1000
+        assert price.get_tiered_amount(Decimal("9.999")) == Decimal("9.999") * 1000
+        assert price.get_tiered_amount(Decimal("10.001")) == Decimal("10.001") * 800
+
+    def test_fractional_quantity_straddles_a_bound(self) -> None:
+        # 9.8 splits into 9.8 inside the first tier; 15.5 into 10 + 5.5.
+        price = _make_tiered_price(_tiers_data(TierType.graduated, SHARED_MULTI_TIER))
+        assert price.get_tiered_amount(Decimal("9.8")) == Decimal("9.8") * 1000
+        assert (
+            price.get_tiered_amount(Decimal("15.5")) == 10 * 1000 + Decimal("5.5") * 800
+        )
+        assert (
+            price.get_tiered_amount(Decimal("50.25"))
+            == 10 * 1000 + 40 * 800 + Decimal("0.25") * 600
+        )
+
 
 class TestSeatTiersApiView:
     def test_constructor_populates_shared_columns(self) -> None:

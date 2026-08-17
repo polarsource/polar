@@ -31,6 +31,6 @@ resource "aws_security_group" "lambda" {
 }
 
 locals {
-  lambda_subnet_ids         = module.vpc.private_subnet_ids
+  lambda_subnet_ids         = module.vpc.secondary_private_subnet_ids
   lambda_security_group_ids = [aws_security_group.lambda.id]
 }

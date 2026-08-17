@@ -27,3 +27,8 @@ output "redis_endpoint_service_name" {
   description = "VPC endpoint service name for the worker Redis. Provide to Render when creating the private link."
   value       = module.redis_private_link.service_name
 }
+
+output "redis_endpoint_service_name_b" {
+  description = "VPC endpoint service name for the worker Redis on the secondary subnets. Provide to Render when creating the private link."
+  value       = module.redis_private_link_b.service_name
+}

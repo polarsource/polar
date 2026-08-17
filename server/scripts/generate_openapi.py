@@ -26,6 +26,8 @@ if __name__ == "__main__":
         default=CURRENT_API_VERSION,
     )
     arguments = parser.parse_args()
+    if arguments.version not in VERSIONS:
+        parser.error(f"Unsupported API version: {arguments.version}")
 
     finalize_versioned_routes(router.routes, VERSIONS)
     schema = get_openapi(

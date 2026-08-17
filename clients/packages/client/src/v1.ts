@@ -4,28 +4,6 @@
  */
 
 export interface paths {
-  '/search': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Search
-     * @description Internal search endpoint for dashboard.
-     *
-     *     **Scopes**: `customers:read` `customers:write` `orders:read` `products:read` `products:write` `subscriptions:read` `subscriptions:write`
-     */
-    get: operations['search:search']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/users/me': {
     parameters: {
       query?: never
@@ -5984,6 +5962,28 @@ export interface paths {
      *     **Scopes**: `payouts:write`
      */
     post: operations['payouts:generate_invoice']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/search': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Search
+     * @description Internal search endpoint for dashboard.
+     *
+     *     **Scopes**: `customers:read` `customers:write` `orders:read` `products:read` `products:write` `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['search:search']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -38070,42 +38070,6 @@ export interface components {
 }
 export type $defs = Record<string, never>
 export interface operations {
-  'search:search': {
-    parameters: {
-      query: {
-        /** @description Organization ID to search within */
-        organization_id: string
-        /** @description Search query string */
-        query: string
-        /** @description Maximum number of results */
-        limit?: number
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SearchResults']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'users:get_authenticated': {
     parameters: {
       query?: never
@@ -57592,6 +57556,42 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'search:search': {
+    parameters: {
+      query: {
+        /** @description Organization ID to search within */
+        organization_id: string
+        /** @description Search query string */
+        query: string
+        /** @description Maximum number of results */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SearchResults']
         }
       }
       /** @description Validation Error */

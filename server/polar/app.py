@@ -68,7 +68,6 @@ from polar.postgres import (
 )
 from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
-from polar.search.endpoints import router as search_router
 from polar.sentry import configure_sentry
 from polar.version import CURRENT_API_VERSION, APIVersionMiddleware
 from polar.webhook.webhooks import document_webhooks
@@ -251,9 +250,6 @@ def create_app() -> FastAPI:
 
     # /healthz
     app.include_router(health_router)
-
-    # /search
-    app.include_router(search_router)
 
     if settings.BACKOFFICE_HOST is None:
         app.mount("/backoffice", backoffice_app)

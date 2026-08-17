@@ -98,7 +98,11 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from .repository import OrganizationRepository, OrganizationReviewRepository
+from .repository import (
+    OFFBOARD_EXPIRED_BATCH_SIZE,
+    OrganizationRepository,
+    OrganizationReviewRepository,
+)
 from .schemas import (
     OrganizationCreate,
     OrganizationDeletionBlockedReason,
@@ -1566,6 +1570,14 @@ class OrganizationService:
             count=len(candidates),
             cutoff=cutoff.isoformat(),
         )
+        # Orgs blocked by a recent payment stay in the candidate set until their
+        # chargeback window closes, so a saturated batch could keep newly
+        # eligible orgs waiting behind them.
+        if len(candidates) == OFFBOARD_EXPIRED_BATCH_SIZE:
+            log.warning(
+                "offboard_expired.batch_saturated",
+                limit=OFFBOARD_EXPIRED_BATCH_SIZE,
+            )
         for organization in candidates:
             enqueue_job(
                 "organization.offboard_expired_one",
@@ -1592,14 +1604,12 @@ class OrganizationService:
 
         cutoff = datetime.now(UTC) - settings.ORGANIZATION_OFFBOARDING_PERIOD
         last_paid_order_at = await repository.get_last_paid_order_at(organization.id)
-        anchors = [
-            d
-            for d in (last_paid_order_at, organization.status_updated_at)
-            if d is not None
-        ]
-        if not anchors:
-            anchors = [organization.created_at]
-        anchor = max(anchors)
+        status_entered_at = organization.status_updated_at or organization.created_at
+        anchor = (
+            max(last_paid_order_at, status_entered_at)
+            if last_paid_order_at is not None
+            else status_entered_at
+        )
         if anchor > cutoff:
             log.info(
                 "offboard_expired.skipped_recent_order",

@@ -59,7 +59,7 @@ const DashboardLayout = (
         </div>
         <div
           className={twMerge(
-            'relative flex h-full w-full flex-col',
+            'relative flex h-full min-w-0 flex-1 flex-col',
             props.className,
           )}
         >

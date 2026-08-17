@@ -290,54 +290,6 @@ class LegacyRecurringProductPriceCustom(
     }
 
 
-class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
-    amount_type: Mapped[Literal[ProductPriceAmountType.metered_unit]] = mapped_column(
-        use_existing_column=True, default=ProductPriceAmountType.metered_unit
-    )
-    unit_amount: Mapped[Decimal] = mapped_column(
-        Numeric(17, 12),  # 12 decimal places, 17 digits total
-        # Polymorphic columns must be nullable, as they don't apply to other types
-        nullable=True,
-    )
-    cap_amount: Mapped[int | None] = mapped_column(
-        "cap_amount_v2", BigInteger, nullable=True
-    )
-    meter_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("meters.id"),
-        # Polymorphic columns must be nullable, as they don't apply to other types
-        nullable=True,
-        index=True,
-    )
-
-    @declared_attr
-    def meter(cls) -> Mapped["Meter"]:
-        # For convenience, eager load it, at it's embedded in all schemas outputting a price
-        return relationship("Meter", lazy="joined")
-
-    def get_amount_and_label(self, units: float) -> tuple[int, str]:
-        label = f"({format_decimal(max(0, units), locale='en_US')} consumed units"
-
-        label += f") × {format_currency(self.unit_amount, self.price_currency, decimal_quantization=False)}"
-
-        billable_units = Decimal(max(0, units))
-        raw_amount = self.unit_amount * billable_units
-        amount = polar_round(raw_amount)
-
-        if self.cap_amount is not None and amount > self.cap_amount:
-            amount = self.cap_amount
-            label += (
-                f" — Capped at {format_currency(self.cap_amount, self.price_currency)}"
-            )
-
-        return amount, label
-
-    __mapper_args__ = {
-        "polymorphic_identity": ProductPriceAmountType.metered_unit,
-        "polymorphic_load": "inline",
-    }
-
-
 class TieredPrice:
     """Mixin for prices billed from a shared list of tiers.
 
@@ -390,6 +342,66 @@ class TieredPrice:
         if self.maximum_units is not None:
             return self.maximum_units
         return self.tiers.last_bound
+
+
+class ProductPriceMeteredUnit(TieredPrice, NewProductPrice, ProductPrice):
+    amount_type: Mapped[Literal[ProductPriceAmountType.metered_unit]] = mapped_column(
+        use_existing_column=True, default=ProductPriceAmountType.metered_unit
+    )
+    unit_amount: Mapped[Decimal | None] = mapped_column(
+        Numeric(17, 12),  # 12 decimal places, 17 digits total
+        # Polymorphic columns must be nullable, as they don't apply to other types
+        # None for tiered prices: exactly one of unit_amount and tiers is set
+        nullable=True,
+    )
+    cap_amount: Mapped[int | None] = mapped_column(
+        "cap_amount_v2", BigInteger, nullable=True
+    )
+    meter_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("meters.id"),
+        # Polymorphic columns must be nullable, as they don't apply to other types
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def meter(cls) -> Mapped["Meter"]:
+        # For convenience, eager load it, at it's embedded in all schemas outputting a price
+        return relationship("Meter", lazy="joined")
+
+    def get_amount_and_label(self, units: float) -> tuple[int, str]:
+        billable_units = Decimal(max(0, units))
+        formatted_units = format_decimal(max(0, units), locale="en_US")
+
+        if self.tiers is not None:
+            label = f"({formatted_units} consumed units, {self.tiers.type} pricing)"
+            raw_amount = self.get_tiered_amount(billable_units)
+        else:
+            if self.unit_amount is None:
+                raise ValueError("Metered price has neither unit_amount nor tiers")
+            label = f"({formatted_units} consumed units) × {format_currency(self.unit_amount, self.price_currency, decimal_quantization=False)}"
+            raw_amount = self.unit_amount * billable_units
+
+        amount = polar_round(raw_amount)
+
+        if self.cap_amount is not None and amount > self.cap_amount:
+            amount = self.cap_amount
+            label += (
+                f" — Capped at {format_currency(self.cap_amount, self.price_currency)}"
+            )
+
+        return amount, label
+
+    @property
+    def is_free(self) -> bool:
+        """Metered prices are never free: the amount depends on usage."""
+        return False
+
+    __mapper_args__ = {
+        "polymorphic_identity": ProductPriceAmountType.metered_unit,
+        "polymorphic_load": "inline",
+    }
 
 
 class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):

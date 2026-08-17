@@ -424,15 +424,26 @@ class ProductPriceMeteredCreateBase(ProductPriceCreateBase):
 
 class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     """
-    Schema to create a metered price with a fixed unit price.
+    Schema to create a metered price, with either a fixed unit price or pricing tiers.
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
-    unit_amount: Decimal = Field(
+    unit_amount: Decimal | None = Field(
+        default=None,
         gt=0,
         max_digits=17,
         decimal_places=12,
-        description="The price per unit in cents. Supports up to 12 decimal places.",
+        description=(
+            "The price per unit in cents. Supports up to 12 decimal places. "
+            "Mutually exclusive with `tiers`."
+        ),
+    )
+    tiers: Tiers | None = Field(
+        default=None,
+        description=(
+            "Tiered pricing based on consumed units. "
+            "Mutually exclusive with `unit_amount`."
+        ),
     )
     cap_amount: Int32 | None = Field(
         default=None,
@@ -442,6 +453,21 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
             "regardless of the number of units consumed."
         ),
     )
+
+    @model_validator(mode="after")
+    def validate_unit_amount_or_tiers(self) -> Self:
+        if (self.unit_amount is None) == (self.tiers is None):
+            raise ValueError("Set either unit_amount or tiers, not both")
+        return self
+
+    @model_validator(mode="after")
+    def validate_last_tier_unbounded(self) -> Self:
+        if self.tiers is not None and self.tiers.last_bound is not None:
+            raise ValueError(
+                "The last tier must be unbounded (bound set to null), "
+                "since usage has no upper limit"
+            )
+        return self
 
     def get_model_class(self) -> builtins.type[ProductPriceMeteredUnitModel]:
         return ProductPriceMeteredUnitModel
@@ -946,11 +972,23 @@ class ProductPriceMeter(IDSchema):
 
 class ProductPriceMeteredUnit(ProductPriceBase):
     """
-    A metered, usage-based, price for a product, with a fixed unit price.
+    A metered, usage-based, price for a product, with either a fixed unit
+    price or pricing tiers.
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
-    unit_amount: Decimal = Field(description="The price per unit in cents.")
+    unit_amount: Decimal | None = Field(
+        description=(
+            "The price per unit in cents. `null` for tiered prices: "
+            "read the rates from `tiers` instead."
+        )
+    )
+    tiers: Tiers | None = Field(
+        description=(
+            "The pricing tiers based on consumed units. `null` for prices "
+            "with a fixed unit price."
+        )
+    )
     cap_amount: int | None = Field(
         description=(
             "The maximum amount in cents that can be charged, "

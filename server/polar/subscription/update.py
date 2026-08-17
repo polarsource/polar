@@ -79,11 +79,6 @@ def _generate_product_credit_proration_billing_entries(
         seats=subscription.seats,
     )
 
-    # Product applicability gates redemption, not the subscription's lifetime: once
-    # attached, the discount applies to every charge and credit regardless of the
-    # product being billed, mirroring the recurring cycle. Gating the proration here
-    # would desync it from the charge and break conservation (credit a plan that was
-    # billed net at its gross rate, or vice versa).
     discount_amounts = [0] * len(priced_entries)
     if subscription.discount:
         discount_amounts = subscription.discount.allocate_discount_amounts(

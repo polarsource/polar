@@ -329,12 +329,14 @@ class MeterService:
         event_repository = EventRepository.from_session(session)
         if customer_id is not None:
             event_clauses.append(
-                event_repository.get_customer_id_filter_clause(customer_id)
+                event_repository.get_customer_id_filter_clause(
+                    meter.organization_id, customer_id
+                )
             )
         if external_customer_id is not None:
             event_clauses.append(
                 event_repository.get_external_customer_id_filter_clause(
-                    external_customer_id
+                    meter.organization_id, external_customer_id
                 )
             )
         if metadata is not None:

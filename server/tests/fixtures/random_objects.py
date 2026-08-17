@@ -121,6 +121,7 @@ from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceType,
     SeatTierType,
+    TiersData,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.support_case import (
@@ -604,8 +605,9 @@ async def create_product_price_metered_unit(
     *,
     product: Product,
     meter: Meter,
-    unit_amount: Decimal = Decimal(100),
+    unit_amount: Decimal | None = Decimal(100),
     cap_amount: int | None = None,
+    tiers: TiersData | None = None,
     currency: str = "usd",
     tax_behavior: TaxBehavior | None = None,
 ) -> ProductPriceMeteredUnit:
@@ -614,6 +616,7 @@ async def create_product_price_metered_unit(
         tax_behavior=tax_behavior,
         unit_amount=unit_amount,
         cap_amount=cap_amount,
+        tiers=tiers,
         meter=meter,
         product=product,
     )

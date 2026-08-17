@@ -1,7 +1,7 @@
 import builtins
 from collections.abc import Sequence
 from decimal import Decimal
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Any, Literal, Self, cast
 
 from pydantic import (
     UUID4,
@@ -11,6 +11,7 @@ from pydantic import (
     Tag,
     ValidationInfo,
     computed_field,
+    field_serializer,
     field_validator,
     model_validator,
 )
@@ -58,11 +59,14 @@ from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
+    InvalidTiersError,
     NonContiguousTiersError,
     ProductPriceAmountType,
     ProductPriceSource,
     ProductPriceType,
     SeatTierType,
+    TiersData,
+    TierType,
     UnboundedTierNotLastError,
     seat_tiers_to_tiers_data,
     validate_tiers_data,
@@ -356,17 +360,77 @@ class ProductPriceMeteredCreateBase(ProductPriceCreateBase):
     meter_id: UUID4 = Field(description="The ID of the meter associated to the price.")
 
 
+class ProductPriceMeteredTier(Schema):
+    """
+    A pricing tier for metered pricing: a per-unit rate applying up to an
+    inclusive upper bound. A tier starts where the previous one ends; the
+    first starts at zero.
+    """
+
+    up_to: int | None = Field(
+        gt=0,
+        description=(
+            "Upper bound of the tier in units (inclusive). "
+            "`null` for the unbounded last tier."
+        ),
+    )
+    price_per_unit: Decimal = Field(
+        ge=0,
+        max_digits=17,
+        decimal_places=12,
+        description=(
+            "The price per unit in cents for this tier. "
+            "Supports up to 12 decimal places."
+        ),
+    )
+
+    @field_serializer("price_per_unit")
+    def _serialize_decimal(self, value: Decimal) -> str:
+        return str(value)
+
+
+class ProductPriceMeteredTiers(Schema):
+    """
+    Tiered pricing configuration for a metered price.
+    """
+
+    tier_type: TierType = Field(
+        description=(
+            "How tiers convert usage into an amount: `volume` bills the whole "
+            "quantity at the rate of the tier it falls in, `graduated` bills "
+            "each tier's portion at that tier's rate."
+        )
+    )
+    tiers: list[ProductPriceMeteredTier] = Field(
+        min_length=1, description="The pricing tiers."
+    )
+
+    def to_tiers_data(self) -> TiersData:
+        return cast(TiersData, self.model_dump())
+
+
 class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     """
-    Schema to create a metered price with a fixed unit price.
+    Schema to create a metered price, with either a fixed unit price or pricing tiers.
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
-    unit_amount: Decimal = Field(
+    unit_amount: Decimal | None = Field(
+        default=None,
         gt=0,
         max_digits=17,
         decimal_places=12,
-        description="The price per unit in cents. Supports up to 12 decimal places.",
+        description=(
+            "The price per unit in cents. Supports up to 12 decimal places. "
+            "Mutually exclusive with `tiers`."
+        ),
+    )
+    tiers: ProductPriceMeteredTiers | None = Field(
+        default=None,
+        description=(
+            "Tiered pricing based on consumed units. "
+            "Mutually exclusive with `unit_amount`."
+        ),
     )
     cap_amount: Int32 | None = Field(
         default=None,
@@ -376,6 +440,31 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
             "regardless of the number of units consumed."
         ),
     )
+
+    @model_validator(mode="after")
+    def validate_unit_amount_or_tiers(self) -> Self:
+        if (self.unit_amount is None) == (self.tiers is None):
+            raise ValueError("Set either unit_amount or tiers, not both")
+        return self
+
+    @model_validator(mode="after")
+    def validate_tiers(self) -> Self:
+        """Validation runs on creation only: the read schema stays permissive,
+        so a drifted stored row can never fail response serialization."""
+        if self.tiers is None:
+            return self
+
+        try:
+            validate_tiers_data(self.tiers.to_tiers_data())
+        except InvalidTiersError as e:
+            raise ValueError(str(e)) from None
+
+        if all(tier.up_to is not None for tier in self.tiers.tiers):
+            raise ValueError(
+                "The last tier must be unbounded (up_to set to null), "
+                "since usage has no upper limit"
+            )
+        return self
 
     def get_model_class(self) -> builtins.type[ProductPriceMeteredUnitModel]:
         return ProductPriceMeteredUnitModel
@@ -804,11 +893,23 @@ class ProductPriceMeter(IDSchema):
 
 class ProductPriceMeteredUnit(ProductPriceBase):
     """
-    A metered, usage-based, price for a product, with a fixed unit price.
+    A metered, usage-based, price for a product, with either a fixed unit
+    price or pricing tiers.
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
-    unit_amount: Decimal = Field(description="The price per unit in cents.")
+    unit_amount: Decimal | None = Field(
+        description=(
+            "The price per unit in cents. `null` for tiered prices: "
+            "read the rates from `tiers` instead."
+        )
+    )
+    tiers: ProductPriceMeteredTiers | None = Field(
+        description=(
+            "The pricing tiers based on consumed units. `null` for prices "
+            "with a fixed unit price."
+        )
+    )
     cap_amount: int | None = Field(
         description=(
             "The maximum amount in cents that can be charged, "

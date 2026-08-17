@@ -8,7 +8,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.visibility import Visibility
 from polar.models import Organization
-from polar.models.product_price import ProductPriceAmountType
+from polar.models.product_price import ProductPriceAmountType, TierType
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
     BenefitPublicList,
@@ -202,6 +202,118 @@ class TestProductPriceMeteredUnitCreate:
         assert len(errors) == 1
         assert errors[0]["type"] == "less_than_equal"
         assert errors[0]["loc"] == ("cap_amount",)
+
+
+def _metered_tiers_payload(
+    tiers: list[dict[str, Any]], tier_type: str = "graduated"
+) -> dict[str, Any]:
+    return {
+        "amount_type": ProductPriceAmountType.metered_unit,
+        "price_currency": PresentmentCurrency.usd,
+        "meter_id": METER_ID,
+        "tiers": {"tier_type": tier_type, "tiers": tiers},
+    }
+
+
+UNBOUNDED_METERED_TIERS: list[dict[str, Any]] = [
+    {"up_to": 1000, "price_per_unit": "0.5"},
+    {"up_to": None, "price_per_unit": "0.25"},
+]
+
+
+class TestProductPriceMeteredUnitCreateTiers:
+    def test_valid_tiered_price(self) -> None:
+        schema = ProductPriceMeteredUnitCreate.model_validate(
+            _metered_tiers_payload(UNBOUNDED_METERED_TIERS)
+        )
+        assert schema.unit_amount is None
+        assert schema.tiers is not None
+        assert schema.tiers.tier_type == TierType.graduated
+
+    def test_model_dump_matches_storage_format(self) -> None:
+        schema = ProductPriceMeteredUnitCreate.model_validate(
+            _metered_tiers_payload(UNBOUNDED_METERED_TIERS, tier_type="volume")
+        )
+        dumped = schema.model_dump()["tiers"]
+        assert dumped == {
+            "tier_type": TierType.volume,
+            "tiers": [
+                {"up_to": 1000, "price_per_unit": "0.5"},
+                {"up_to": None, "price_per_unit": "0.25"},
+            ],
+        }
+
+    def test_both_unit_amount_and_tiers_rejected(self) -> None:
+        payload = _metered_tiers_payload(UNBOUNDED_METERED_TIERS)
+        payload["unit_amount"] = "1.0"
+        with pytest.raises(ValidationError, match="either unit_amount or tiers"):
+            ProductPriceMeteredUnitCreate.model_validate(payload)
+
+    def test_neither_unit_amount_nor_tiers_rejected(self) -> None:
+        payload = _metered_tiers_payload(UNBOUNDED_METERED_TIERS)
+        del payload["tiers"]
+        with pytest.raises(ValidationError, match="either unit_amount or tiers"):
+            ProductPriceMeteredUnitCreate.model_validate(payload)
+
+    def test_last_tier_must_be_unbounded(self) -> None:
+        with pytest.raises(ValidationError, match="must be unbounded"):
+            ProductPriceMeteredUnitCreate.model_validate(
+                _metered_tiers_payload(
+                    [
+                        {"up_to": 1000, "price_per_unit": "0.5"},
+                    ]
+                )
+            )
+
+    def test_duplicate_up_to_rejected(self) -> None:
+        with pytest.raises(ValidationError, match="must be unique"):
+            ProductPriceMeteredUnitCreate.model_validate(
+                _metered_tiers_payload(
+                    [
+                        {"up_to": 1000, "price_per_unit": "0.5"},
+                        {"up_to": 1000, "price_per_unit": "0.25"},
+                        {"up_to": None, "price_per_unit": "0.1"},
+                    ]
+                )
+            )
+
+    def test_zero_up_to_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            ProductPriceMeteredUnitCreate.model_validate(
+                _metered_tiers_payload(
+                    [
+                        {"up_to": 0, "price_per_unit": "0.5"},
+                        {"up_to": None, "price_per_unit": "0.25"},
+                    ]
+                )
+            )
+
+    def test_negative_rate_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            ProductPriceMeteredUnitCreate.model_validate(
+                _metered_tiers_payload([{"up_to": None, "price_per_unit": "-1"}])
+            )
+
+    def test_zero_rate_allowed(self) -> None:
+        schema = ProductPriceMeteredUnitCreate.model_validate(
+            _metered_tiers_payload(
+                [
+                    {"up_to": 100, "price_per_unit": "0"},
+                    {"up_to": None, "price_per_unit": "0.5"},
+                ]
+            )
+        )
+        assert schema.tiers is not None
+
+    def test_flat_price_still_valid(self) -> None:
+        schema = ProductPriceMeteredUnitCreate(
+            amount_type=ProductPriceAmountType.metered_unit,
+            price_currency=PresentmentCurrency.usd,
+            unit_amount=Decimal("1.0"),
+            meter_id=METER_ID,
+        )
+        assert schema.tiers is None
+        assert schema.unit_amount == Decimal("1.0")
 
 
 class TestProductPriceFixedCurrencyMinimums:

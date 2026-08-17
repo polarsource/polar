@@ -94,6 +94,204 @@ async def test_get_amount_and_label(
     assert label == expected_label
 
 
+METERED_VOLUME_TIERS: TiersData = {
+    "tier_type": TierType.volume,
+    "tiers": [
+        {"up_to": 100, "price_per_unit": "10"},
+        {"up_to": 1000, "price_per_unit": "8"},
+        {"up_to": None, "price_per_unit": "5"},
+    ],
+}
+
+METERED_GRADUATED_TIERS: TiersData = {
+    "tier_type": TierType.graduated,
+    "tiers": METERED_VOLUME_TIERS["tiers"],
+}
+
+
+@pytest.mark.asyncio
+class TestMeteredTieredAmountAndLabel:
+    @pytest.mark.parametrize(
+        ("tiers", "cap_amount", "units", "expected_amount", "expected_label"),
+        [
+            # Volume: quantity in each tier
+            (
+                METERED_VOLUME_TIERS,
+                None,
+                50,
+                500,
+                "(50 consumed units, volume pricing)",
+            ),
+            (
+                METERED_VOLUME_TIERS,
+                None,
+                500,
+                4_000,
+                "(500 consumed units, volume pricing)",
+            ),
+            (
+                METERED_VOLUME_TIERS,
+                None,
+                5000,
+                25_000,
+                "(5,000 consumed units, volume pricing)",
+            ),
+            # Quantity exactly on a bound bills in that tier (up_to is inclusive)
+            (
+                METERED_VOLUME_TIERS,
+                None,
+                100,
+                1_000,
+                "(100 consumed units, volume pricing)",
+            ),
+            # Graduated: spans tiers, boundary, unlimited tail
+            (
+                METERED_GRADUATED_TIERS,
+                None,
+                50,
+                500,
+                "(50 consumed units, graduated pricing)",
+            ),
+            (
+                METERED_GRADUATED_TIERS,
+                None,
+                100,
+                1_000,
+                "(100 consumed units, graduated pricing)",
+            ),
+            (
+                METERED_GRADUATED_TIERS,
+                None,
+                500,
+                4_200,
+                "(500 consumed units, graduated pricing)",
+            ),
+            (
+                METERED_GRADUATED_TIERS,
+                None,
+                5000,
+                28_200,
+                "(5,000 consumed units, graduated pricing)",
+            ),
+            # Fractional quantity keeps full precision
+            (
+                METERED_GRADUATED_TIERS,
+                None,
+                150.5,
+                1_404,
+                "(150.5 consumed units, graduated pricing)",
+            ),
+            # Cap clamps the tiered total
+            (
+                METERED_VOLUME_TIERS,
+                20_000,
+                5000,
+                20_000,
+                "(5,000 consumed units, volume pricing) — Capped at $200.00",
+            ),
+            # Zero and negative quantities bill nothing
+            (METERED_VOLUME_TIERS, None, 0, 0, "(0 consumed units, volume pricing)"),
+            (
+                METERED_GRADUATED_TIERS,
+                None,
+                -5,
+                0,
+                "(0 consumed units, graduated pricing)",
+            ),
+        ],
+    )
+    async def test_tiered_amounts(
+        self,
+        tiers: TiersData,
+        cap_amount: int | None,
+        units: float,
+        expected_amount: int,
+        expected_label: str,
+        save_fixture: SaveFixture,
+        product: Product,
+        meter: Meter,
+    ) -> None:
+        price = await create_product_price_metered_unit(
+            save_fixture,
+            product=product,
+            meter=meter,
+            unit_amount=None,
+            cap_amount=cap_amount,
+            tiers=tiers,
+        )
+
+        amount, label = price.get_amount_and_label(units)
+        assert amount == expected_amount
+        assert label == expected_label
+
+    async def test_zero_rate_first_tier_bills_nothing(
+        self, save_fixture: SaveFixture, product: Product, meter: Meter
+    ) -> None:
+        price = await create_product_price_metered_unit(
+            save_fixture,
+            product=product,
+            meter=meter,
+            unit_amount=None,
+            tiers={
+                "tier_type": TierType.graduated,
+                "tiers": [
+                    {"up_to": 1000, "price_per_unit": "0"},
+                    {"up_to": None, "price_per_unit": "10"},
+                ],
+            },
+        )
+
+        assert price.get_amount_and_label(500)[0] == 0
+        assert price.get_amount_and_label(1500)[0] == 5_000
+
+    async def test_total_rounded_once_not_per_tier(
+        self, save_fixture: SaveFixture, product: Product, meter: Meter
+    ) -> None:
+        # Each tier portion is 0.4 cents; per-tier rounding would bill 0.
+        price = await create_product_price_metered_unit(
+            save_fixture,
+            product=product,
+            meter=meter,
+            unit_amount=None,
+            tiers={
+                "tier_type": TierType.graduated,
+                "tiers": [
+                    {"up_to": 2, "price_per_unit": "0.2"},
+                    {"up_to": None, "price_per_unit": "0.2"},
+                ],
+            },
+        )
+
+        assert price.get_amount_and_label(4)[0] == 1
+
+    async def test_single_unbounded_tier_equals_flat(
+        self, save_fixture: SaveFixture, product: Product, meter: Meter
+    ) -> None:
+        tiered = await create_product_price_metered_unit(
+            save_fixture,
+            product=product,
+            meter=meter,
+            unit_amount=None,
+            tiers={
+                "tier_type": TierType.volume,
+                "tiers": [{"up_to": None, "price_per_unit": "0.5"}],
+            },
+        )
+        flat = await create_product_price_metered_unit(
+            save_fixture, product=product, meter=meter, unit_amount=Decimal("0.5")
+        )
+
+        assert tiered.get_amount_and_label(100)[0] == flat.get_amount_and_label(100)[0]
+
+    async def test_flat_price_is_not_free(
+        self, save_fixture: SaveFixture, product: Product, meter: Meter
+    ) -> None:
+        price = await create_product_price_metered_unit(
+            save_fixture, product=product, meter=meter, unit_amount=Decimal(100)
+        )
+        assert price.is_free is False
+
+
 class TestFixedPriceIsFree:
     """A fixed price with an amount of 0 is the free-pricing representation and must
     behave like a free price (`is_free` is True)."""
@@ -545,6 +743,17 @@ class TestValidateTiersData:
                 TierType.volume,
                 [{"up_to": None, "price_per_unit": "500"}],
                 minimum_units=1000,
+            )
+        )
+
+    def test_zero_rate_is_valid(self) -> None:
+        validate_tiers_data(
+            _tiers_data(
+                TierType.graduated,
+                [
+                    {"up_to": 10, "price_per_unit": "0"},
+                    {"up_to": None, "price_per_unit": "500"},
+                ],
             )
         )
 

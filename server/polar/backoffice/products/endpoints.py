@@ -59,6 +59,8 @@ def _format_price_display(price: ProductPrice) -> str:
                 return f"From {price_display} / seat"
             return f"{price_display} / seat"
     elif is_metered_price(price):
+        if price.unit_amount is None:
+            return f"{price.meter.name}: {price.tier_type} pricing ({len(price.get_tiers_data()['tiers'])} tiers)"
         return f"{price.meter.name}: {formatters.currency(price.unit_amount, price.price_currency, decimal_quantization=False)} / unit"
     return "N/A"
 

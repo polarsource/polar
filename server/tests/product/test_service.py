@@ -28,6 +28,7 @@ from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
+    ProductPriceMeteredUnit,
 )
 from polar.organization_review.schemas import ReviewContext
 from polar.postgres import AsyncSession
@@ -49,6 +50,9 @@ from polar.product.schemas import (
     ProductPriceSeatTier,
     ProductPriceSeatTiers,
     ProductUpdate,
+)
+from polar.product.schemas import (
+    ProductPriceMeteredUnit as ProductPriceMeteredUnitSchema,
 )
 from polar.product.service import product as product_service
 from polar.product.sorting import ProductSortProperty
@@ -715,6 +719,56 @@ class TestCreate:
         assert product.organization_id == organization.id
 
         assert len(product.prices) == len(create_schema.prices)
+
+    @pytest.mark.auth
+    async def test_valid_tiered_metered_price(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        create_schema = ProductCreateRecurring(
+            name="Recurring tiered metered",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            organization_id=organization.id,
+            prices=[
+                ProductPriceMeteredUnitCreate.model_validate(
+                    {
+                        "amount_type": ProductPriceAmountType.metered_unit,
+                        "price_currency": PresentmentCurrency.usd,
+                        "meter_id": METER_ID,
+                        "tiers": {
+                            "tier_type": "graduated",
+                            "tiers": [
+                                {"up_to": 1000, "price_per_unit": "0.5"},
+                                {"up_to": None, "price_per_unit": "0.25"},
+                            ],
+                        },
+                    }
+                )
+            ],
+        )
+
+        product = await product_service.create(session, create_schema, auth_subject)
+
+        price = product.prices[0]
+        assert isinstance(price, ProductPriceMeteredUnit)
+        assert price.unit_amount is None
+        assert price.tiers == {
+            "tier_type": "graduated",
+            "tiers": [
+                {"up_to": 1000, "price_per_unit": "0.5"},
+                {"up_to": None, "price_per_unit": "0.25"},
+            ],
+        }
+        assert price.get_amount_and_label(2000)[0] == 750
+
+        read = ProductPriceMeteredUnitSchema.model_validate(price)
+        assert read.unit_amount is None
+        assert read.tiers is not None
+        assert read.tiers.tiers[0].price_per_unit == Decimal("0.5")
 
     @pytest.mark.auth
     async def test_invalid_several_static_prices(

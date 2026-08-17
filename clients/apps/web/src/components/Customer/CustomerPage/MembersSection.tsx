@@ -14,6 +14,7 @@ import {
   Status,
   type StatusColor,
   Text,
+  Truncated,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -176,7 +177,9 @@ export const MembersSection = ({
             header: 'External ID',
             accessorKey: 'external_id',
             cell: ({ row: { original } }) => (
-              <Text>{original.external_id ?? '—'}</Text>
+              <Truncated>
+                <Text>{original.external_id ?? '—'}</Text>
+              </Truncated>
             ),
           },
           {

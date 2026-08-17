@@ -134,11 +134,11 @@ def _generate_product_debit_proration_billing_entries(
         seats=subscription.seats,
     )
 
-    # Applies regardless of whether the discount is applicable to `new_product` —
-    # see the credit path: the discount follows the subscription, not the product,
-    # so the debit stays symmetric with the recurring charge for the same plan.
     discount_amounts = [0] * len(priced_entries)
-    if new_discount:
+    # All prices belong to `new_product`, so applicability is evaluated once and
+    # gates the whole allocation. Unlike the credit path, the discount may not
+    # apply to the product being switched to.
+    if new_discount and new_discount.is_applicable(new_product, subscription.currency):
         discount_amounts = new_discount.allocate_discount_amounts(
             [base_amount for _, base_amount in priced_entries], subscription.currency
         )

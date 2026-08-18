@@ -48,18 +48,31 @@ variable "timeout_seconds" {
   description = "Lambda function timeout. Must stay below the queue visibility timeout."
   type        = number
   default     = 120
+  nullable    = false
 }
 
 variable "memory_size" {
   description = "Lambda memory in MB."
   type        = number
   default     = 2048
+  nullable    = false
 }
 
 variable "reserved_concurrency" {
-  description = "null leaves the function unreserved (-1). Bounds warm containers, and therefore DB connections."
+  description = "Dedicated concurrency slots: a guaranteed floor that is also a hard ceiling. null leaves the function unreserved. Mutually exclusive with max_concurrency."
   type        = number
-  default     = 5
+  default     = null
+}
+
+variable "max_concurrency" {
+  description = "Caps concurrent invocations at the SQS poller without reserving from the account pool. null leaves consumption uncapped. Mutually exclusive with reserved_concurrency."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.max_concurrency == null || try(var.max_concurrency >= 2, false)
+    error_message = "AWS requires maximum_concurrency to be at least 2."
+  }
 }
 
 variable "max_retries" {
@@ -73,6 +86,7 @@ variable "enabled" {
   description = "Event source mapping toggle. false provisions the worker dormant."
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "subnet_ids" {

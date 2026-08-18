@@ -245,4 +245,18 @@ resource "aws_lambda_event_source_mapping" "task" {
   batch_size              = 1
   enabled                 = var.enabled
   function_response_types = ["ReportBatchItemFailures"]
+
+  dynamic "scaling_config" {
+    for_each = var.max_concurrency != null ? [var.max_concurrency] : []
+    content {
+      maximum_concurrency = scaling_config.value
+    }
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.max_concurrency == null || var.reserved_concurrency == null
+      error_message = "max_concurrency and reserved_concurrency are mutually exclusive: a reservation is already a hard cap; combining them is redundant at best and reintroduces throttling at worst."
+    }
+  }
 }

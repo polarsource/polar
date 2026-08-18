@@ -101,12 +101,12 @@ locals {
   }
 
   lambda_worker_queues = {
-    "high-priority"         = { timeout_seconds = 120 }
-    "medium-priority"       = { timeout_seconds = 120 }
-    "low-priority"          = { timeout_seconds = 660 }
-    "webhooks"              = { timeout_seconds = 120, max_retries = 250 } # Must stay above webhook_event.send's max_retries.
-    "tinybird"              = { timeout_seconds = 120 }
-    "invoices-and-receipts" = { timeout_seconds = 240 }
+    "high-priority"         = {}
+    "medium-priority"       = { max_parallel_tasks = 8 }
+    "low-priority"          = { max_parallel_tasks = 16, task_time_limit_seconds = 660 }
+    "webhooks"              = { max_parallel_tasks = 16, max_retries = 250 } # Must stay above webhook_event.send's max_retries.
+    "tinybird"              = { max_parallel_tasks = 128 }
+    "invoices-and-receipts" = { max_parallel_tasks = 3, task_time_limit_seconds = 240 }
   }
 }
 
@@ -154,9 +154,12 @@ module "lambda_worker_queue" {
   queue_name               = "${local.worker_sqs_queue_prefix}-${each.key}"
   queue_prefix             = local.worker_sqs_queue_prefix
   image_uri                = "${module.lambda_worker_ecr[0].repository_url}:latest"
-  enabled                  = true
-  timeout_seconds          = each.value.timeout_seconds
+  enabled                  = try(each.value.processing_enabled, null)
+  timeout_seconds          = try(each.value.task_time_limit_seconds, null)
+  max_concurrency          = try(each.value.max_parallel_tasks, null)
+  reserved_concurrency     = try(each.value.guaranteed_parallel_tasks, null)
   max_retries              = try(each.value.max_retries, null)
+  memory_size              = try(each.value.memory_mb, null)
   tags                     = local.lambda_worker_tags
   subnet_ids               = local.lambda_subnet_ids
   security_group_ids       = local.lambda_security_group_ids

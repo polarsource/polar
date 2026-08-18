@@ -279,6 +279,36 @@ into `(sum, count)`, but `unique` does not merge exactly without keeping the und
 `get_quantities` already carves `avg` and `unique` out of its optimised path, so that constraint
 is pre-existing.
 
+## Security considerations
+
+**Data stored.** `meter_periods` holds a window, an aggregate quantity, credited units, and what
+has been charged, keyed by subscription, meter and price. No customer-identifying data and no
+event payloads: the quantity is a number derived at settlement, and the events it came from stay
+where they are. It is billing state at the same trust tier as `order_item`, and inherits the
+organization scoping of the subscription it hangs off.
+
+**Trust boundary.** The window is the boundary. `[starts_at, ends_at)` is fixed when the period
+opens and never updated, so an invoice cannot change what a later invoice sees. That is the
+property whose absence produced the enterprise seat overcharge (`polar-internal#113`), where the
+first invoice of a period consumed the allowance entry and every later one billed usage with no
+credit against it.
+
+**Attribution.** Quantity is scoped on `BillingEntry.subscription_id`, so a period only ever sees
+usage that ingestion already attributed to that subscription — seat member to seat holder, the
+trial boundary, the price in force. Each event produces exactly one entry against exactly one
+subscription, so a customer holding two subscriptions on one meter cannot be billed by both.
+Re-deriving attribution from events at settlement is what would reopen that.
+
+**Exposure.** No public API reads or writes periods. The switch is staff-only, absent from
+`OrganizationFeatureSettingsUpdate`, and settable from the backoffice; opening a period is a
+backoffice action. Nothing here widens what an organization can see about another.
+
+**The integrity risk is reversal, not access.** Turning the switch off after a period has settled
+double-bills: those entries were billed but never linked, so the sweep finds them pending and
+charges them again. Nothing in the schema prevents the flag being unset — the backoffice renders
+it as an ordinary checkbox — so it is a procedural constraint today. Reversing it safely means
+marking the affected entries first.
+
 ## Rollout
 
 The switch is `feature_settings.metered_billing_periods_enabled`, staff-managed (absent from

@@ -11,21 +11,32 @@ export type PriceEntry = { price: AnyPrice; index: number }
 
 // The meter cycle governs meter resets, meter-credit grants and overage settlement, so it
 // only earns its place once the product has something metered — a metered price or a
-// meter-credit benefit. An existing product shows its saved cycle regardless: the API
-// accepts `meter_interval` on create only, so there it's a read-only fact, not a choice.
+// meter-credit benefit — in an organization the feature is rolled out to. An existing
+// product shows its saved cycle regardless: the API accepts `meter_interval` on create
+// only, so there it's a read-only fact, not a choice, and hiding it would hide a setting
+// the product is already billing on.
 export const shouldShowMeterCycle = ({
+  isEnabledForOrganization,
   isRecurring,
   hasMeteredPrice,
   hasMeterCreditBenefit,
   hasSavedMeterCycle,
 }: {
+  isEnabledForOrganization: boolean
   isRecurring: boolean
   hasMeteredPrice: boolean
   hasMeterCreditBenefit: boolean
   hasSavedMeterCycle: boolean
-}): boolean =>
-  isRecurring &&
-  (hasMeteredPrice || hasMeterCreditBenefit || hasSavedMeterCycle)
+}): boolean => {
+  if (hasSavedMeterCycle) {
+    return isRecurring
+  }
+  return (
+    isEnabledForOrganization &&
+    isRecurring &&
+    (hasMeteredPrice || hasMeterCreditBenefit)
+  )
+}
 
 export const hasPriceCurrency = (
   price: AnyPrice,

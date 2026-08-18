@@ -150,6 +150,8 @@ export const ProductPricingSection = ({
   const meterInterval = watch('meter_interval')
 
   const showMeterCycle = shouldShowMeterCycle({
+    isEnabledForOrganization:
+      organization.feature_settings?.meter_cycling_enabled ?? false,
     isRecurring: productType === 'recurring',
     hasMeteredPrice: (watchedPrices ?? []).some((price) =>
       isMeteredPrice(price as ProductPrice),

@@ -2,26 +2,27 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
+from sqlalchemy import select
 
+from polar.kit.db.postgres import AsyncSession
 from polar.models import Meter, Product
 from polar.models.product_price import (
-    InvalidQuantityError,
-    InvalidTiersError,
-    NonContiguousTiersError,
     ProductPriceFixed,
     ProductPriceSeatUnit,
-    SeatTierType,
-    Tier,
     TieredPrice,
-    TiersData,
+)
+from polar.product.tiers import (
+    InvalidQuantityError,
+    SeatTierType,
+    Tiers,
     TierType,
-    UnboundedTierNotLastError,
-    seat_tiers_to_tiers_data,
-    seat_tiers_unit_bounds,
-    validate_tiers_data,
+    seat_tiers_to_tiers,
 )
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_product_price_metered_unit
+from tests.fixtures.random_objects import (
+    create_product_price_metered_unit,
+    create_product_price_seat_unit,
+)
 
 
 @pytest.mark.asyncio
@@ -262,23 +263,23 @@ class TestGraduatedPricing:
         assert price.calculate_amount(15) == 10 * 20000 + 5 * 6000
 
 
-def _tiers_data(tier_type: TierType, tiers: list[Tier]) -> TiersData:
-    return {"type": tier_type, "tiers": tiers}
+def _tiers_data(tier_type: TierType, tiers: list[dict[str, Any]]) -> Tiers:
+    return Tiers.model_validate({"type": tier_type, "tiers": tiers})
 
 
 def _make_tiered_price(
-    data: TiersData,
+    tiers: Tiers,
     minimum_units: int | None = None,
     maximum_units: int | None = None,
 ) -> TieredPrice:
     price = object.__new__(TieredPrice)
-    price.tiers = data
+    price.tiers = tiers
     price.minimum_units = minimum_units
     price.maximum_units = maximum_units
     return price
 
 
-SHARED_MULTI_TIER: list[Tier] = [
+SHARED_MULTI_TIER: list[dict[str, Any]] = [
     {"bound": 10, "unit_amount": "1000"},
     {"bound": 50, "unit_amount": "800"},
     {"bound": None, "unit_amount": "600"},
@@ -405,274 +406,11 @@ class TestGetTieredAmountContract:
         with pytest.raises(InvalidQuantityError):
             price.get_tiered_amount(-5)
 
-    def test_missing_tier_type_raises(self) -> None:
-        price = _make_tiered_price({"tiers": SHARED_MULTI_TIER})  # type: ignore[typeddict-item]
-        with pytest.raises(InvalidTiersError, match="Missing or unknown tier_type"):
-            price.get_tiered_amount(10)
-
-    def test_unknown_tier_type_raises(self) -> None:
-        price = _make_tiered_price(
-            {"type": "stepped", "tiers": SHARED_MULTI_TIER}  # type: ignore[typeddict-item]
-        )
-        with pytest.raises(InvalidTiersError, match="Missing or unknown tier_type"):
-            price.get_tiered_amount(10)
-
-
-class TestValidateTiersData:
-    def test_valid_multi_tier(self) -> None:
-        validate_tiers_data(_tiers_data(TierType.volume, SHARED_MULTI_TIER))
-
-    def test_valid_single_unbounded_tier(self) -> None:
-        validate_tiers_data(
-            _tiers_data(
-                TierType.graduated,
-                [{"bound": None, "unit_amount": "500"}],
-            )
-        )
-
-    def test_valid_unsorted_input(self) -> None:
-        validate_tiers_data(
-            _tiers_data(TierType.volume, list(reversed(SHARED_MULTI_TIER)))
-        )
-
-    def test_valid_unit_bounds(self) -> None:
-        validate_tiers_data(
-            _tiers_data(TierType.volume, SHARED_MULTI_TIER),
-            minimum_units=5,
-            maximum_units=100,
-        )
-
-    def test_empty_tiers_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="At least one tier is required"):
-            validate_tiers_data(_tiers_data(TierType.volume, []))
-
-    def test_missing_tier_type_raises(self) -> None:
-        data: Any = {"tiers": SHARED_MULTI_TIER}
-        with pytest.raises(InvalidTiersError, match="Missing or unknown tier_type"):
-            validate_tiers_data(data)
-
-    def test_negative_price_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="unit_amount must be >= 0"):
-            validate_tiers_data(
-                _tiers_data(
-                    TierType.volume,
-                    [{"bound": None, "unit_amount": "-500"}],
-                )
-            )
-
-    def test_zero_bound_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="bound must be > 0"):
-            validate_tiers_data(
-                _tiers_data(
-                    TierType.volume,
-                    [
-                        {"bound": 0, "unit_amount": "500"},
-                        {"bound": None, "unit_amount": "300"},
-                    ],
-                )
-            )
-
-    def test_two_unbounded_tiers_raises(self) -> None:
-        with pytest.raises(UnboundedTierNotLastError):
-            validate_tiers_data(
-                _tiers_data(
-                    TierType.volume,
-                    [
-                        {"bound": None, "unit_amount": "500"},
-                        {"bound": None, "unit_amount": "300"},
-                    ],
-                )
-            )
-
-    def test_duplicate_bound_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="must be unique"):
-            validate_tiers_data(
-                _tiers_data(
-                    TierType.volume,
-                    [
-                        {"bound": 10, "unit_amount": "500"},
-                        {"bound": 10, "unit_amount": "300"},
-                    ],
-                )
-            )
-
-    def test_negative_minimum_units_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="minimum_units must be >= 0"):
-            validate_tiers_data(
-                _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
-                minimum_units=-1,
-            )
-
-    def test_minimum_units_above_last_bounded_tier_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="minimum_units must not exceed"):
-            validate_tiers_data(
-                _tiers_data(TierType.volume, [{"bound": 10, "unit_amount": "500"}]),
-                minimum_units=11,
-            )
-
-    def test_minimum_units_with_unbounded_last_tier(self) -> None:
-        validate_tiers_data(
-            _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
-            minimum_units=1000,
-        )
-
-    def test_zero_maximum_units_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="maximum_units must be > 0"):
-            validate_tiers_data(
-                _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
-                maximum_units=0,
-            )
-
-    def test_maximum_units_below_minimum_raises(self) -> None:
-        with pytest.raises(
-            InvalidTiersError, match="maximum_units must be >= minimum_units"
-        ):
-            validate_tiers_data(
-                _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
-                minimum_units=10,
-                maximum_units=5,
-            )
-
-    def test_maximum_units_above_last_bounded_tier_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="maximum_units must not exceed"):
-            validate_tiers_data(
-                _tiers_data(TierType.volume, [{"bound": 10, "unit_amount": "500"}]),
-                maximum_units=11,
-            )
-
-    def test_maximum_units_with_unbounded_last_tier(self) -> None:
-        validate_tiers_data(
-            _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
-            maximum_units=1000,
-        )
-
-
-class TestSeatTiersToTiersData:
-    def test_converts_max_seats_to_bound(self) -> None:
-        result = seat_tiers_to_tiers_data(
-            {
-                "seat_tier_type": SeatTierType.graduated,
-                "tiers": [
-                    {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
-                    {"min_seats": 11, "max_seats": None, "price_per_seat": 800},
-                ],
-            }
-        )
-        assert result == {
-            "type": TierType.graduated,
-            "tiers": [
-                {"bound": 10, "unit_amount": "1000"},
-                {"bound": None, "unit_amount": "800"},
-            ],
-        }
-
-    def test_missing_seat_tier_type_defaults_to_volume(self) -> None:
-        result = seat_tiers_to_tiers_data(
-            {"tiers": [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}]}  # type: ignore[typeddict-item]
-        )
-        assert result["type"] == TierType.volume
-
-    def test_sorts_tiers(self) -> None:
-        result = seat_tiers_to_tiers_data(
-            {
-                "seat_tier_type": SeatTierType.volume,
-                "tiers": [
-                    {"min_seats": 11, "max_seats": None, "price_per_seat": 800},
-                    {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
-                ],
-            }
-        )
-        assert [t["bound"] for t in result["tiers"]] == [10, None]
-
-    def test_missing_max_seats_key(self) -> None:
-        result = seat_tiers_to_tiers_data(
-            {
-                "seat_tier_type": SeatTierType.volume,
-                "tiers": [{"min_seats": 1, "price_per_seat": 500}],  # type: ignore[typeddict-item]
-            }
-        )
-        assert result["tiers"][0]["bound"] is None
-
-    def test_gap_raises(self) -> None:
-        # A gap cannot be represented with bound bounds, so translation must
-        # reject it instead of silently swallowing it.
-        with pytest.raises(NonContiguousTiersError):
-            seat_tiers_to_tiers_data(
-                {
-                    "seat_tier_type": SeatTierType.volume,
-                    "tiers": [
-                        {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
-                        {"min_seats": 12, "max_seats": None, "price_per_seat": 800},
-                    ],
-                }
-            )
-
-    def test_overlap_raises(self) -> None:
-        with pytest.raises(NonContiguousTiersError):
-            seat_tiers_to_tiers_data(
-                {
-                    "seat_tier_type": SeatTierType.volume,
-                    "tiers": [
-                        {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
-                        {"min_seats": 8, "max_seats": None, "price_per_seat": 800},
-                    ],
-                }
-            )
-
-    def test_unbounded_tier_not_last_raises(self) -> None:
-        with pytest.raises(UnboundedTierNotLastError):
-            seat_tiers_to_tiers_data(
-                {
-                    "seat_tier_type": SeatTierType.volume,
-                    "tiers": [
-                        {"min_seats": 1, "max_seats": None, "price_per_seat": 1000},
-                        {"min_seats": 11, "max_seats": 20, "price_per_seat": 800},
-                    ],
-                }
-            )
-
-
-class TestSeatTiersUnitBounds:
-    def test_first_min_and_last_max(self) -> None:
-        assert seat_tiers_unit_bounds(
-            {
-                "seat_tier_type": SeatTierType.volume,
-                "tiers": [
-                    {"min_seats": 5, "max_seats": 10, "price_per_seat": 1000},
-                    {"min_seats": 11, "max_seats": 20, "price_per_seat": 800},
-                ],
-            }
-        ) == (5, 20)
-
-    def test_unbounded_last_tier(self) -> None:
-        assert seat_tiers_unit_bounds(
-            {
-                "seat_tier_type": SeatTierType.volume,
-                "tiers": [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}],
-            }
-        ) == (1, None)
-
-    def test_sorts_tiers(self) -> None:
-        assert seat_tiers_unit_bounds(
-            {
-                "seat_tier_type": SeatTierType.volume,
-                "tiers": [
-                    {"min_seats": 11, "max_seats": None, "price_per_seat": 800},
-                    {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
-                ],
-            }
-        ) == (1, None)
-
-    def test_empty_tiers(self) -> None:
-        assert seat_tiers_unit_bounds(
-            {"seat_tier_type": SeatTierType.volume, "tiers": []}
-        ) == (None, None)
-
 
 class TestSeatTiersDualWrite:
     def test_constructor_populates_tiers(self) -> None:
         price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
-        assert price.tiers == seat_tiers_to_tiers_data(price.seat_tiers)
+        assert price.tiers == seat_tiers_to_tiers(price.seat_tiers)
         assert price.minimum_units == 1
         assert price.maximum_units is None
 
@@ -682,23 +420,57 @@ class TestSeatTiersDualWrite:
             "seat_tier_type": SeatTierType.volume,
             "tiers": [{"min_seats": 5, "max_seats": 20, "price_per_seat": 250}],
         }
-        assert price.tiers == {
-            "type": TierType.volume,
-            "tiers": [
-                {"bound": 20, "unit_amount": "250"},
-            ],
-        }
+        assert price.tiers == _tiers_data(
+            TierType.volume,
+            [{"bound": 20, "unit_amount": "250"}],
+        )
         assert price.minimum_units == 5
         assert price.maximum_units == 20
 
     def test_dual_written_seat_data_passes_validation(self) -> None:
         price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
         assert price.tiers is not None
-        validate_tiers_data(
-            price.tiers,
+        price.tiers.validate_unit_bounds(
             minimum_units=price.minimum_units,
             maximum_units=price.maximum_units,
         )
+
+    def test_billing_reads_shared_columns(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
+        assert price.tiers is not None
+        assert price.calculate_amount(15) == int(price.tiers.calculate(15))
+        assert price.get_minimum_seats() == max(1, price.minimum_units or 0)
+        assert price.get_maximum_seats() == price.maximum_units
+
+    @pytest.mark.asyncio
+    async def test_database_round_trip_returns_tiers_model(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+    ) -> None:
+        price = await create_product_price_seat_unit(
+            save_fixture,
+            product=product,
+            tiers=MULTI_TIER,
+            seat_tier_type=SeatTierType.graduated,
+        )
+
+        tiers = (
+            await session.execute(
+                select(ProductPriceSeatUnit.tiers).where(
+                    ProductPriceSeatUnit.id == price.id
+                )
+            )
+        ).scalar_one()
+
+        assert isinstance(tiers, Tiers)
+        assert tiers.type == TierType.graduated
+        assert [tier.unit_amount for tier in tiers.tiers] == [
+            Decimal("1000"),
+            Decimal("800"),
+            Decimal("600"),
+        ]
 
 
 class TestMinimumMaximumUnits:

@@ -5,11 +5,8 @@ from sqlalchemy import select
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Product
-from polar.models.product_price import (
-    ProductPriceSeatUnit,
-    SeatTierType,
-    seat_tiers_to_tiers_data,
-)
+from polar.models.product_price import ProductPriceSeatUnit
+from polar.product.tiers import SeatTierType, seat_tiers_to_tiers
 from scripts.backfill_product_price_tiers import run_backfill
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product_price_seat_unit
@@ -66,7 +63,7 @@ class TestBackfillProductPriceTiers:
 
         assert updated == 1
         tiers, minimum_units, maximum_units = await _get_tier_columns(session, price)
-        assert tiers == seat_tiers_to_tiers_data(
+        assert tiers == seat_tiers_to_tiers(
             {
                 "seat_tier_type": SeatTierType.graduated,
                 "tiers": TIERS,  # type: ignore[typeddict-item]

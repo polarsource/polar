@@ -727,3 +727,15 @@ class TestProductPriceSeatTiers:
                     ],
                 }
             )
+
+    def test_duplicate_bound_keeps_seat_wording(self) -> None:
+        with pytest.raises(ValidationError, match="max_seats values must be unique"):
+            ProductPriceSeatTiers.model_validate(
+                {
+                    "seat_tier_type": "volume",
+                    "tiers": [
+                        {"min_seats": 1, "max_seats": 10, "price_per_seat": 500},
+                        {"min_seats": 11, "max_seats": 10, "price_per_seat": 300},
+                    ],
+                }
+            )

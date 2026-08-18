@@ -9,6 +9,7 @@ from pydantic import (
     Discriminator,
     Field,
     Tag,
+    ValidationError,
     ValidationInfo,
     computed_field,
     field_validator,
@@ -58,16 +59,9 @@ from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
-    NonContiguousTiersError,
     ProductPriceAmountType,
     ProductPriceSource,
     ProductPriceType,
-    SeatTiersData,
-    SeatTierType,
-    UnboundedTierNotLastError,
-    seat_tiers_to_tiers_data,
-    seat_tiers_unit_bounds,
-    validate_tiers_data,
 )
 from polar.models.product_price import (
     ProductPriceCustom as ProductPriceCustomModel,
@@ -83,6 +77,14 @@ from polar.models.product_price import (
 )
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
+from polar.product.tiers import (
+    NonContiguousTiersError,
+    SeatTiersData,
+    SeatTierType,
+    UnboundedTierNotLastError,
+    seat_tiers_to_tiers,
+    seat_tiers_unit_bounds,
+)
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 64
@@ -303,8 +305,8 @@ class ProductPriceSeatTiers(Schema):
         }
         try:
             minimum_units, maximum_units = seat_tiers_unit_bounds(seat_tiers)
-            validate_tiers_data(
-                seat_tiers_to_tiers_data(seat_tiers),
+            shared_tiers = seat_tiers_to_tiers(seat_tiers)
+            shared_tiers.validate_unit_bounds(
                 minimum_units=minimum_units,
                 maximum_units=maximum_units,
             )
@@ -314,6 +316,22 @@ class ProductPriceSeatTiers(Schema):
             ) from None
         except NonContiguousTiersError as e:
             raise ValueError(str(e)) from None
+        except ValidationError as e:
+            error = e.errors()[0]
+            if error["type"] == "duplicate_tier_bound":
+                bound = error["ctx"]["bound"]
+                raise ValueError(
+                    f"Tier max_seats values must be unique, got {bound} twice"
+                ) from None
+            raise ValueError(error["msg"]) from None
+        except ValueError as e:
+            message = (
+                str(e)
+                .replace("minimum_units", "minimum_seats")
+                .replace("maximum_units", "maximum_seats")
+                .replace("last tier's bound", "last tier's max_seats")
+            )
+            raise ValueError(message) from None
 
         return sorted_tiers
 

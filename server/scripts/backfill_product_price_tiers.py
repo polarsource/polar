@@ -10,13 +10,9 @@ import typer
 from sqlalchemy import func, select
 
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
-from polar.models.product_price import (
-    ProductPriceSeatUnit,
-    seat_tiers_to_tiers_data,
-    seat_tiers_unit_bounds,
-    validate_tiers_data,
-)
+from polar.models.product_price import ProductPriceSeatUnit
 from polar.postgres import create_async_engine
+from polar.product.tiers import seat_tiers_to_tiers, seat_tiers_unit_bounds
 from scripts.helper import configure_script_logging, typer_async
 
 cli = typer.Typer()
@@ -73,16 +69,15 @@ async def _run(session: AsyncSession, *, batch_size: int, dry_run: bool) -> int:
             break
 
         for price in prices:
-            tiers_data = seat_tiers_to_tiers_data(price.seat_tiers)
+            tiers = seat_tiers_to_tiers(price.seat_tiers)
             minimum_units, maximum_units = seat_tiers_unit_bounds(price.seat_tiers)
             # Crash on corrupt legacy rows rather than copying them into the
             # canonical columns.
-            validate_tiers_data(
-                tiers_data,
+            tiers.validate_unit_bounds(
                 minimum_units=minimum_units,
                 maximum_units=maximum_units,
             )
-            price.tiers = tiers_data
+            price.tiers = tiers
             price.minimum_units = minimum_units
             price.maximum_units = maximum_units
         last_id = prices[-1].id

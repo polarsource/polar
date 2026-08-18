@@ -166,7 +166,7 @@ class EmailOTPFactor(EmailOTPFactorBase):
 class TOTPFactor(TOTPFactorBase):
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-        super().__init__()
+        super().__init__(algorithm="sha1")
 
     async def get_by_identity_id(
         self, identity_id: uuid.UUID

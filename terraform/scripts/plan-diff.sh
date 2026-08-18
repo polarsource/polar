@@ -62,6 +62,11 @@ echo "$JSON" | jq -r --arg filter "$FILTER" --argjson ws "$WS" '
   def maybevis($ws):
     if $ws == 1 and (. != "(sensitive)") and (. != "(known after apply)") and (. != "null")
     then vis else . end;
+  # Sensitivity trees may collapse a whole map to `true`, which getpath cannot index.
+  def sens($t; $p):
+    (reduce $p[] as $k ($t; if . == true then true elif type == "object" then .[$k] else null end)) == true;
+  def haspath($t; $p):
+    try ($t | getpath($p[:-1]) | has($p[-1])) catch false;
 
   .resource_changes[]
   | select(.change.actions != ["no-op"])
@@ -78,9 +83,9 @@ echo "$JSON" | jq -r --arg filter "$FILTER" --argjson ws "$WS" '
       | ($a|getpath($p)) as $av
       | select($bv != $av)
       | ($p|map(tostring)|join(".")) as $key
-      | (if ($bv == null and (($bs|getpath($p)?) == true)) then "(sensitive)" else fmt($bv) end) as $bshow
-      | (if ($u|getpath($p)?) == true then "(known after apply)"
-         elif ($av == null and (($as|getpath($p)?) == true)) then "(sensitive)"
+      | (if ($bv == null and sens($bs; $p) and haspath($b; $p)) then "(sensitive)" else fmt($bv) end) as $bshow
+      | (if (($u|try getpath($p) catch false) == true) then "(known after apply)"
+         elif ($av == null and sens($as; $p) and haspath($a; $p)) then "(sensitive)"
          else fmt($av) end) as $ashow
       | "  \($key):  \($bshow|maybevis($ws))  ->  \($ashow|maybevis($ws))" ] as $lines
   | "\(.address)  (\(.change.actions|join("+")))",

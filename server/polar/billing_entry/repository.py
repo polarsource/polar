@@ -219,7 +219,12 @@ class BillingEntryRepository(
                 BillingEntry.order_item_id.is_(None),
                 BillingEntry.subscription_id == subscription_id,
             )
-            .order_by(BillingEntry.product_price_id.asc())
+            .order_by(
+                BillingEntry.product_price_id.asc(),
+                BillingEntry.start_timestamp.asc(),
+                BillingEntry.created_at.asc(),
+                BillingEntry.id.asc(),
+            )
             .options(*options)
         )
         if cutoff is not None:

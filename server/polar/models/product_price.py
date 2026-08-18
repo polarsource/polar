@@ -557,7 +557,7 @@ class TieredPrice:
     __abstract__ = True
 
     tiers: Mapped[TiersData | None] = mapped_column(
-        postgresql.JSONB,
+        postgresql.JSONB(none_as_null=True),
         use_existing_column=True,
         nullable=True,
         default=None,

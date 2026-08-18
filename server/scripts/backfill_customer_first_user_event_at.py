@@ -90,8 +90,8 @@ async def organization_ids_with_user_events() -> set[UUID]:
             .where(table.c.source == EventSource.user)
             .group_by(table.c.organization_id)
         )
-        sql, template = _compile(statement)
-        rows = await tinybird_client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await tinybird_client.query(sql, parameters=params, db_statement=sql)
         organization_ids.update(_parse_uuid(row["organization_id"]) for row in rows)
 
     return organization_ids
@@ -126,8 +126,8 @@ async def _pages_by_key(
             .order_by(key_column)
             .limit(PAGE_SIZE)
         )
-        sql, template = _compile(statement)
-        rows = await tinybird_client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await tinybird_client.query(sql, parameters=params, db_statement=sql)
 
         if not rows:
             break

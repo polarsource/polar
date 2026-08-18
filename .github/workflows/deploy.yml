@@ -334,10 +334,12 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
       - name: Update test Lambda function code
         run: |
-          aws lambda update-function-code \
-            --function-name polar-test-worker-default \
-            --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-test-lambda-worker:sha-${{ github.sha }}" \
-            --publish
+          for name in default high-priority medium-priority low-priority webhooks tinybird invoices-and-receipts; do
+            aws lambda update-function-code \
+              --function-name "polar-test-worker-$name" \
+              --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-test-lambda-worker:sha-${{ github.sha }}" \
+              --publish
+          done
 
   deploy-lambda-sandbox:
     name: "Deploy Lambda Worker to Sandbox 🧪"
@@ -358,10 +360,12 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
       - name: Update sandbox Lambda function code
         run: |
-          aws lambda update-function-code \
-            --function-name polar-sandbox-worker-default \
-            --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}" \
-            --publish
+          for name in default high-priority medium-priority low-priority webhooks tinybird invoices-and-receipts; do
+            aws lambda update-function-code \
+              --function-name "polar-sandbox-worker-$name" \
+              --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}" \
+              --publish
+          done
 
   deploy-lambda-production:
     name: "Deploy Lambda Worker to Production 🚀"
@@ -382,10 +386,12 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
       - name: Update production Lambda function code
         run: |
-          aws lambda update-function-code \
-            --function-name polar-production-worker-default \
-            --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-production-lambda-worker:sha-${{ github.sha }}" \
-            --publish
+          for name in default high-priority medium-priority low-priority webhooks tinybird invoices-and-receipts; do
+            aws lambda update-function-code \
+              --function-name "polar-production-worker-$name" \
+              --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-production-lambda-worker:sha-${{ github.sha }}" \
+              --publish
+          done
 
   deploy-sandbox:
     name: "Deploy to Sandbox 🧪"

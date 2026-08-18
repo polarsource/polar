@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import boto3
+import dramatiq
 import structlog
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -95,8 +96,9 @@ def get_consumer_scheduler_client() -> "EventBridgeSchedulerClient":
 sqs_client = get_sqs_client()
 
 
-def actor_to_queue_name(_actor_name: str) -> str:
-    return f"{settings.WORKER_SQS_QUEUE_PREFIX}-default"
+def actor_to_queue_name(actor_name: str) -> str:
+    queue_name = dramatiq.get_broker().get_actor(actor_name).queue_name
+    return f"{settings.WORKER_SQS_QUEUE_PREFIX}-{queue_name.replace('_', '-')}"
 
 
 _queue_url_cache: dict[tuple[int, str], str] = {}
@@ -109,6 +111,22 @@ def get_queue_url(client: "SQSClient", queue_name: str) -> str:
         url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
         _queue_url_cache[cache_key] = url
     return url
+
+
+def resolve_queue_url(client: "SQSClient", queue_name: str) -> str:
+    """Fall back to the default queue while a per-queue rollout is in flight."""
+    try:
+        return get_queue_url(client, queue_name)
+    except client.exceptions.QueueDoesNotExist:
+        default_queue_name = f"{settings.WORKER_SQS_QUEUE_PREFIX}-default"
+        if queue_name == default_queue_name:
+            raise
+        log.warning(
+            "polar.worker.sqs_queue_missing_fallback",
+            queue=queue_name,
+            fallback=default_queue_name,
+        )
+        return get_queue_url(client, default_queue_name)
 
 
 def build_envelope(
@@ -221,7 +239,7 @@ def send_jobs_sync(jobs: list[Job]) -> None:
         entries.append(entry)
 
     for queue_name, entries in by_queue.items():
-        queue_url = get_queue_url(client, queue_name)
+        queue_url = resolve_queue_url(client, queue_name)
         for batch in itertools.batched(entries, SQS_BATCH_SIZE):
             response = client.send_message_batch(
                 QueueUrl=queue_url, Entries=list(batch)
@@ -247,6 +265,7 @@ __all__ = [
     "get_queue_url",
     "get_sqs_client",
     "parse_envelope",
+    "resolve_queue_url",
     "schedule_delayed_message",
     "send_jobs",
     "send_jobs_sync",

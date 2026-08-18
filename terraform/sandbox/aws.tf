@@ -90,10 +90,10 @@ locals {
     POLAR_LOG_LEVEL                   = "INFO"
     POLAR_TESTING                     = "0"
     POLAR_POSTGRES_DATABASE           = "polar_sandbox"
-    POLAR_POSTGRES_HOST               = local.db_external_host
-    POLAR_POSTGRES_PORT               = local.db_port
+    POLAR_POSTGRES_HOST               = module.pgbouncer_aws.host
+    POLAR_POSTGRES_PORT               = module.pgbouncer_aws.port
     POLAR_POSTGRES_USER               = local.db_user
-    POLAR_POSTGRES_SSL                = "true"
+    POLAR_POSTGRES_SSL                = "false"
     POLAR_REDIS_HOST                  = module.redis.host
     POLAR_REDIS_PORT                  = tostring(module.redis.port)
     POLAR_REDIS_DB                    = "1"

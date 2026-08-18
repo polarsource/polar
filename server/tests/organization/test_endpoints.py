@@ -512,6 +512,115 @@ class TestUpdateOrganization:
         assert settings["customer"]["allow_email_change"] is True
 
     @pytest.mark.auth
+    async def test_partial_update_customer_email_settings(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Turn one flag off, then turn a different flag off in a separate
+        # request: the first change must survive the second, proving the
+        # settings are merged rather than replaced wholesale.
+        first = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"customer_email_settings": {"subscription_confirmation": False}},
+        )
+        assert first.status_code == 200
+        assert (
+            first.json()["customer_email_settings"]["subscription_confirmation"]
+            is False
+        )
+
+        second = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"customer_email_settings": {"order_confirmation": False}},
+        )
+        assert second.status_code == 200
+        email_settings = second.json()["customer_email_settings"]
+        assert email_settings["order_confirmation"] is False
+        assert email_settings["subscription_confirmation"] is False
+
+    @pytest.mark.auth
+    async def test_update_customer_email_settings_full_object(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_email_settings": {
+                    "order_confirmation": False,
+                    "payment_method_expiration_reminder": False,
+                    "subscription_cancellation": False,
+                    "subscription_confirmation": False,
+                    "subscription_cycled": False,
+                    "subscription_cycled_after_trial": False,
+                    "subscription_past_due": False,
+                    "subscription_paused": False,
+                    "subscription_resumed": False,
+                    "subscription_renewal_reminder": False,
+                    "subscription_revoked": False,
+                    "subscription_trial_conversion_reminder": False,
+                    "subscription_uncanceled": False,
+                    "subscription_updated": False,
+                }
+            },
+        )
+        assert response.status_code == 200
+        email_settings = response.json()["customer_email_settings"]
+        assert all(value is False for value in email_settings.values())
+
+    @pytest.mark.auth
+    async def test_partial_update_subscription_settings(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        first = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"subscription_settings": {"allow_multiple_subscriptions": True}},
+        )
+        assert first.status_code == 200
+        assert (
+            first.json()["subscription_settings"]["allow_multiple_subscriptions"]
+            is True
+        )
+
+        second = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"subscription_settings": {"prevent_trial_abuse": True}},
+        )
+        assert second.status_code == 200
+        subscription_settings = second.json()["subscription_settings"]
+        assert subscription_settings["prevent_trial_abuse"] is True
+        # The field set by the first request is preserved by the second.
+        assert subscription_settings["allow_multiple_subscriptions"] is True
+
+    @pytest.mark.auth
+    async def test_partial_update_customer_portal_settings_deep_merge(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A nested partial update must deep-merge: changing one key of
+        # `subscription` leaves the sibling keys and the other groups intact.
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {"subscription": {"update_seats": False}}
+            },
+        )
+        assert response.status_code == 200
+        portal_settings = response.json()["customer_portal_settings"]
+        assert portal_settings["subscription"]["update_seats"] is False
+        assert portal_settings["subscription"]["update_plan"] is True
+        assert portal_settings["usage"]["show"] is True
+
+    @pytest.mark.auth
     async def test_submit_for_review_requires_relevant_fields(
         self,
         client: AsyncClient,

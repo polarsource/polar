@@ -17917,6 +17917,11 @@ export interface components {
       /** Allow Email Change */
       allow_email_change?: boolean
     }
+    /** CustomerPortalCustomerSettingsUpdate */
+    CustomerPortalCustomerSettingsUpdate: {
+      /** Allow Email Change */
+      allow_email_change?: boolean | null
+    }
     /** CustomerPortalCustomerUpdate */
     CustomerPortalCustomerUpdate: {
       /** Billing Name */
@@ -18019,10 +18024,24 @@ export interface components {
       /** Pause */
       pause?: boolean
     }
+    /** CustomerPortalSubscriptionSettingsUpdate */
+    CustomerPortalSubscriptionSettingsUpdate: {
+      /** Update Seats */
+      update_seats?: boolean | null
+      /** Update Plan */
+      update_plan?: boolean | null
+      /** Pause */
+      pause?: boolean | null
+    }
     /** CustomerPortalUsageSettings */
     CustomerPortalUsageSettings: {
       /** Show */
       show: boolean
+    }
+    /** CustomerPortalUsageSettingsUpdate */
+    CustomerPortalUsageSettingsUpdate: {
+      /** Show */
+      show?: boolean | null
     }
     /**
      * CustomerProduct
@@ -27456,11 +27475,64 @@ export interface components {
       /** Subscription Updated */
       subscription_updated: boolean
     }
+    /**
+     * OrganizationCustomerEmailSettingsUpdate
+     * @description Partial update for customer email settings.
+     *
+     *     Every field is optional: only the flags provided are changed, the rest keep
+     *     their current value.
+     */
+    OrganizationCustomerEmailSettingsUpdate: {
+      /** Order Confirmation */
+      order_confirmation?: boolean | null
+      /** Payment Method Expiration Reminder */
+      payment_method_expiration_reminder?: boolean | null
+      /** Subscription Cancellation */
+      subscription_cancellation?: boolean | null
+      /** Subscription Confirmation */
+      subscription_confirmation?: boolean | null
+      /** Subscription Cycled */
+      subscription_cycled?: boolean | null
+      /** Subscription Cycled After Trial */
+      subscription_cycled_after_trial?: boolean | null
+      /** Subscription Past Due */
+      subscription_past_due?: boolean | null
+      /** Subscription Paused */
+      subscription_paused?: boolean | null
+      /** Subscription Resumed */
+      subscription_resumed?: boolean | null
+      /** Subscription Renewal Reminder */
+      subscription_renewal_reminder?: boolean | null
+      /** Subscription Revoked */
+      subscription_revoked?: boolean | null
+      /** Subscription Trial Conversion Reminder */
+      subscription_trial_conversion_reminder?: boolean | null
+      /** Subscription Uncanceled */
+      subscription_uncanceled?: boolean | null
+      /** Subscription Updated */
+      subscription_updated?: boolean | null
+    }
     /** OrganizationCustomerPortalSettings */
     OrganizationCustomerPortalSettings: {
       usage: components['schemas']['CustomerPortalUsageSettings']
       subscription: components['schemas']['CustomerPortalSubscriptionSettings']
       customer?: components['schemas']['CustomerPortalCustomerSettings']
+    }
+    /**
+     * OrganizationCustomerPortalSettingsUpdate
+     * @description Partial update for customer portal settings.
+     *
+     *     Every field is optional and merged into the current settings: only the
+     *     nested keys provided are changed, the rest keep their current value.
+     */
+    OrganizationCustomerPortalSettingsUpdate: {
+      usage?: components['schemas']['CustomerPortalUsageSettingsUpdate'] | null
+      subscription?:
+        | components['schemas']['CustomerPortalSubscriptionSettingsUpdate']
+        | null
+      customer?:
+        | components['schemas']['CustomerPortalCustomerSettingsUpdate']
+        | null
     }
     /** OrganizationCustomerSession */
     OrganizationCustomerSession: {
@@ -28829,6 +28901,24 @@ export interface components {
       /** Allow Customer Updates */
       allow_customer_updates: boolean
     }
+    /**
+     * OrganizationSubscriptionSettingsUpdate
+     * @description Partial update for subscription settings.
+     *
+     *     Every field is optional: only the fields provided are changed, the rest keep
+     *     their current value.
+     */
+    OrganizationSubscriptionSettingsUpdate: {
+      /** Allow Multiple Subscriptions */
+      allow_multiple_subscriptions?: boolean | null
+      proration_behavior?: ('invoice' | 'prorate' | 'next_period') | null
+      /** Benefit Revocation Grace Period */
+      benefit_revocation_grace_period?: number | null
+      /** Prevent Trial Abuse */
+      prevent_trial_abuse?: boolean | null
+      /** Allow Customer Updates */
+      allow_customer_updates?: boolean | null
+    }
     /** OrganizationSubscriptionUpdate */
     OrganizationSubscriptionUpdate: {
       /**
@@ -29137,13 +29227,13 @@ export interface components {
         | components['schemas']['OrganizationFeatureSettingsUpdate']
         | null
       subscription_settings?:
-        | components['schemas']['OrganizationSubscriptionSettings']
+        | components['schemas']['OrganizationSubscriptionSettingsUpdate']
         | null
       customer_email_settings?:
-        | components['schemas']['OrganizationCustomerEmailSettings']
+        | components['schemas']['OrganizationCustomerEmailSettingsUpdate']
         | null
       customer_portal_settings?:
-        | components['schemas']['OrganizationCustomerPortalSettings']
+        | components['schemas']['OrganizationCustomerPortalSettingsUpdate']
         | null
       dispute_settings?:
         | components['schemas']['OrganizationDisputeSettingsUpdate']
@@ -66921,6 +67011,9 @@ export const organizationStatusValues: ReadonlyArray<
 ]
 export const organizationSubscriptionSettingsProration_behaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']
+> = ['invoice', 'prorate', 'next_period']
+export const organizationSubscriptionSettingsUpdateProration_behaviorAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettingsUpdate']['proration_behavior']
 > = ['invoice', 'prorate', 'next_period']
 export const organizationUpdateCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationUpdate']['country']

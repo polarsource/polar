@@ -31,12 +31,18 @@ interface ProductListItemProps {
   product: schemas['Product'] | schemas['CheckoutProduct']
   organization: schemas['Organization']
   currency: string
+  checked?: boolean
+  onCheckedChange?: (checked: boolean, event: React.MouseEvent) => void
+  checkboxVisible?: boolean
 }
 
 export const ProductListItem = ({
   product,
   organization,
   currency,
+  checked,
+  onCheckedChange,
+  checkboxVisible,
 }: ProductListItemProps) => {
   const router = useRouter()
   const {
@@ -88,7 +94,13 @@ export const ProductListItem = ({
   return (
     <>
       <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
-        <ListItem className="flex flex-row items-center justify-between gap-x-6 pr-3">
+        <ListItem
+          className="flex flex-row items-center justify-between gap-x-6 pr-3"
+          checked={checked}
+          onCheckedChange={onCheckedChange}
+          checkboxVisible={checkboxVisible}
+          checkboxLabel={`Select ${product.name}`}
+        >
           <div className="flex min-w-0 grow flex-row items-center gap-x-4 text-sm">
             <div className="flex min-w-0 flex-row items-center gap-x-2">
               <span className="truncate">{product.name}</span>

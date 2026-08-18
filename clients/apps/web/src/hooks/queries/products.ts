@@ -1,4 +1,5 @@
 import { getQueryClient } from '@/utils/api/query'
+import { runBulk } from '@/utils/bulk'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
@@ -116,6 +117,32 @@ export const useUpdateProduct = (organization: schemas['Organization']) =>
       queryClient.invalidateQueries({
         queryKey: ['products', { id: variables.id }],
       })
+    },
+  })
+
+export const useUpdateProducts = () =>
+  useMutation({
+    mutationFn: ({
+      products,
+      body,
+    }: {
+      products: schemas['Product'][]
+      body: schemas['ProductUpdate']
+    }) =>
+      runBulk(products, async (product) => {
+        const { error } = await api.PATCH('/v1/products/{id}', {
+          params: { path: { id: product.id } },
+          body,
+        })
+        if (error) {
+          throw error
+        }
+      }),
+    onSuccess: (result) => {
+      if (result.succeeded.length === 0) {
+        return
+      }
+      getQueryClient().invalidateQueries({ queryKey: ['products'] })
     },
   })
 

@@ -51,8 +51,8 @@ type MeteredTiers = NonNullable<schemas['ProductPriceMeteredUnit']['tiers']>
 const parseTiers = (tiers: MeteredTiers['tiers']) =>
   tiers
     .map((tier) => ({
-      upTo: tier.up_to,
-      pricePerUnit: Number.parseFloat(String(tier.price_per_unit)),
+      upTo: tier.bound,
+      pricePerUnit: Number.parseFloat(String(tier.unit_amount)),
     }))
     .sort(
       (a, b) =>
@@ -61,13 +61,17 @@ const parseTiers = (tiers: MeteredTiers['tiers']) =>
     )
 
 const tieredCost = (
-  { tier_type, tiers }: MeteredTiers,
+  { type: tierType, tiers }: MeteredTiers,
   units: number,
 ): number => {
   const parsed = parseTiers(tiers)
 
-  if (tier_type === 'volume') {
-    const tier = parsed.find((t) => t.upTo === null || units <= t.upTo)
+  if (tierType === 'volume') {
+    // A bounded last tier can't be created through the API, but if usage ever
+    // lands past every bound, the top rate is a better estimate than nothing.
+    const tier =
+      parsed.find((t) => t.upTo === null || units <= t.upTo) ??
+      parsed[parsed.length - 1]
     return tier ? units * tier.pricePerUnit : 0
   }
 

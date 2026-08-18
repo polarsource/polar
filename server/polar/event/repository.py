@@ -21,7 +21,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -291,53 +291,41 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     def get_customer_id_filter_clause(
         self, organization_id: UUID, customer_id: Sequence[UUID]
     ) -> ColumnElement[bool]:
-        event_by_customer_id = aliased(Event)
-        event_by_external_customer_id = aliased(Event)
         external_customer_ids = select(Customer.external_id).where(
             Customer.organization_id == organization_id,
             Customer.id.in_(customer_id),
             Customer.external_id.is_not(None),
         )
-        matching_event_ids = (
-            select(event_by_customer_id.id)
-            .where(
-                event_by_customer_id.organization_id == organization_id,
-                event_by_customer_id.customer_id.in_(customer_id),
-            )
-            .union_all(
-                select(event_by_external_customer_id.id).where(
-                    event_by_external_customer_id.organization_id == organization_id,
-                    event_by_external_customer_id.external_customer_id.in_(
-                        external_customer_ids
-                    ),
-                )
-            )
+        events_by_customer_id = select(Event.id).where(
+            Event.organization_id == organization_id,
+            Event.customer_id.in_(customer_id),
+        )
+        events_by_external_customer_id = select(Event.id).where(
+            Event.organization_id == organization_id,
+            Event.external_customer_id.in_(external_customer_ids),
+        )
+        matching_event_ids = events_by_customer_id.union_all(
+            events_by_external_customer_id
         )
         return Event.id.in_(matching_event_ids)
 
     def get_external_customer_id_filter_clause(
         self, organization_id: UUID, external_customer_id: Sequence[str]
     ) -> ColumnElement[bool]:
-        event_by_external_customer_id = aliased(Event)
-        event_by_customer_id = aliased(Event)
         customer_ids = select(Customer.id).where(
             Customer.organization_id == organization_id,
             Customer.external_id.in_(external_customer_id),
         )
-        matching_event_ids = (
-            select(event_by_external_customer_id.id)
-            .where(
-                event_by_external_customer_id.organization_id == organization_id,
-                event_by_external_customer_id.external_customer_id.in_(
-                    external_customer_id
-                ),
-            )
-            .union_all(
-                select(event_by_customer_id.id).where(
-                    event_by_customer_id.organization_id == organization_id,
-                    event_by_customer_id.customer_id.in_(customer_ids),
-                )
-            )
+        events_by_external_customer_id = select(Event.id).where(
+            Event.organization_id == organization_id,
+            Event.external_customer_id.in_(external_customer_id),
+        )
+        events_by_customer_id = select(Event.id).where(
+            Event.organization_id == organization_id,
+            Event.customer_id.in_(customer_ids),
+        )
+        matching_event_ids = events_by_external_customer_id.union_all(
+            events_by_customer_id
         )
         return Event.id.in_(matching_event_ids)
 

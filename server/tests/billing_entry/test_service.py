@@ -847,7 +847,8 @@ class TestCreateOrderItemsFromPending:
             # Credits net first: 50 - 25 = 25 units, dropping into the first
             # volume tier, whose rate applies to all net units.
             assert order_item.amount == 25_00
-            assert "volume pricing" in order_item.label
+            # Volume bills everything at one rate, so the label names it.
+            assert order_item.label.endswith("(25 consumed units) × $1.00")
             await create_order(
                 save_fixture, customer=customer, order_items=list(order_items)
             )

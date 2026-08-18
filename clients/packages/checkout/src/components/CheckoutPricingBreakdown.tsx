@@ -23,6 +23,7 @@ import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
 import DetailRow from './DetailRow'
 import MeteredPriceLabel from './MeteredPriceLabel'
+import MeteredTierRows, { hasMeteredTierRows } from './MeteredTierRows'
 import SeatDetailRow from './SeatDetailRow'
 
 function formatShortDate(date: Date, locale: AcceptedLocale): string {
@@ -288,17 +289,22 @@ const CheckoutPricingBreakdown = ({
             />
           )}
           {meteredPrices.map((meteredPrice) => (
-            <DetailRow
-              title={meteredPrice.meter.name}
-              key={meteredPrice.id}
-              emphasis
-            >
-              <MeteredPriceLabel
+            <div key={meteredPrice.id} className="flex flex-col gap-y-1">
+              <DetailRow title={meteredPrice.meter.name} emphasis>
+                {!hasMeteredTierRows(meteredPrice) && (
+                  <MeteredPriceLabel
+                    price={meteredPrice}
+                    locale={locale}
+                    discount={checkout.discount}
+                  />
+                )}
+              </DetailRow>
+              <MeteredTierRows
                 price={meteredPrice}
                 locale={locale}
                 discount={checkout.discount}
               />
-            </DetailRow>
+            </div>
           ))}
         </>
       ) : (

@@ -94,6 +94,23 @@ export default {
         },
       },
       additionalMeteredUsage: 'Additional metered usage',
+      tiers: {
+        range: {
+          value: '{from}–{to}',
+          _llmContext:
+            'A usage range in a metered price\'s tier table on checkout, e.g. "1–1,000". Both values are already-formatted unit counts. Keep it a bare numeric range with no unit noun.',
+        },
+        andAbove: {
+          value: '{from}+',
+          _llmContext:
+            'The final, unbounded usage range in a metered price\'s tier table, e.g. "1,001+". {from} is an already-formatted unit count.',
+        },
+        volumeExplainer: {
+          value: 'All usage is billed at the rate for the range it falls in',
+          _llmContext:
+            "Caption under a volume-tiered metered price's tier table on checkout, explaining that crossing into a higher range reprices the entire usage, not just the part above the bound.",
+        },
+      },
       upTo: {
         value: 'up to {units}',
         _llmContext:

@@ -605,6 +605,46 @@ describe('CheckoutPricingBreakdown', () => {
       expect(screen.getByTestId('detail-row-API Calls')).toBeInTheDocument()
     })
 
+    it('leaves the rate to the tier rows instead of repeating the first tier', () => {
+      const meteredPrice = createMeteredPrice({
+        id: 'price_metered_1',
+        unit_amount: null,
+        tiers: {
+          tier_type: 'graduated',
+          tiers: [
+            { up_to: 1000, price_per_unit: '50' },
+            { up_to: null, price_per_unit: '20' },
+          ],
+        },
+        meter: {
+          id: 'meter_1',
+          name: 'API Requests',
+          unit: 'scalar' as const,
+          custom_label: null,
+          custom_multiplier: null,
+        },
+      })
+      const checkout = createCheckout({
+        amount: 999,
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
+        prices: {
+          prod_1: [createCheckout().product_price, meteredPrice],
+        },
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const header = screen.getByTestId('detail-row-API Requests')
+      expect(header).not.toHaveTextContent('$0.50')
+      expect(header).not.toHaveTextContent('up to')
+      expect(screen.getByTestId('detail-row-1–1,000')).toHaveTextContent(
+        '$0.50',
+      )
+      expect(screen.getByTestId('detail-row-1,001+')).toHaveTextContent('$0.20')
+    })
+
     it('strikes through the original rate when a percentage discount is active', () => {
       const meteredPrice = createMeteredPrice({
         id: 'price_metered_1',

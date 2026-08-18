@@ -1,5 +1,6 @@
 import { isLegacyRecurringPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
+import { MeteredPriceLabel } from '@polar-sh/checkout/components'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
@@ -13,6 +14,12 @@ function isSeatBasedPrice(
   return price.amount_type === 'seat_based'
 }
 
+function isMeteredPrice(
+  price: schemas['ProductPrice'],
+): price is schemas['ProductPriceMeteredUnit'] {
+  return price.amount_type === 'metered_unit'
+}
+
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
   currency,
@@ -23,8 +30,24 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       ['fixed', 'custom', 'seat_based'].includes(amount_type),
   )
 
+  // A product can be priced on usage alone, with no static price to show.
   if (!staticPrice) {
-    return null
+    const meteredPrices = product.prices.filter(
+      (price): price is schemas['ProductPriceMeteredUnit'] =>
+        isMeteredPrice(price) && price.price_currency === currency,
+    )
+
+    if (meteredPrices.length === 0) {
+      return null
+    }
+
+    return (
+      <span className="flex flex-col items-end text-[min(1em,24px)]">
+        {meteredPrices.map((price) => (
+          <MeteredPriceLabel key={price.id} price={price} />
+        ))}
+      </span>
+    )
   }
 
   if (staticPrice.amount_type === 'fixed' && staticPrice.price_amount !== 0) {

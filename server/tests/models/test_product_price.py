@@ -120,21 +120,21 @@ class TestMeteredTieredAmountAndLabel:
                 None,
                 50,
                 500,
-                "(50 consumed units, volume pricing)",
+                "(50 consumed units) × $0.10",
             ),
             (
                 METERED_VOLUME_TIERS,
                 None,
                 500,
                 4_000,
-                "(500 consumed units, volume pricing)",
+                "(500 consumed units) × $0.08",
             ),
             (
                 METERED_VOLUME_TIERS,
                 None,
                 5000,
                 25_000,
-                "(5,000 consumed units, volume pricing)",
+                "(5,000 consumed units) × $0.05",
             ),
             # Quantity exactly on a bound bills in that tier (up_to is inclusive)
             (
@@ -142,7 +142,7 @@ class TestMeteredTieredAmountAndLabel:
                 None,
                 100,
                 1_000,
-                "(100 consumed units, volume pricing)",
+                "(100 consumed units) × $0.10",
             ),
             # Graduated: spans tiers, boundary, unlimited tail
             (
@@ -187,10 +187,10 @@ class TestMeteredTieredAmountAndLabel:
                 20_000,
                 5000,
                 20_000,
-                "(5,000 consumed units, volume pricing) — Capped at $200.00",
+                "(5,000 consumed units) × $0.05 — Capped at $200.00",
             ),
             # Zero and negative quantities bill nothing
-            (METERED_VOLUME_TIERS, None, 0, 0, "(0 consumed units, volume pricing)"),
+            (METERED_VOLUME_TIERS, None, 0, 0, "(0 consumed units) × $0.10"),
             (
                 METERED_GRADUATED_TIERS,
                 None,

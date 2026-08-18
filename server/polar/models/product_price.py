@@ -147,12 +147,22 @@ def _parse_minimum_units(data: TiersData) -> int:
     return data.get("minimum_units") or 0
 
 
-def _calculate_volume(quantity: Decimal | int, tiers: list[_ParsedTier]) -> Decimal:
+def _find_volume_rate(
+    quantity: Decimal | int, tiers: list[_ParsedTier]
+) -> Decimal | None:
+    """The single rate a volume price bills the whole quantity at, if one covers it."""
     for tier in tiers:
         up_to = tier["up_to"]
         if up_to is None or quantity <= up_to:
-            return tier["price_per_unit"] * quantity
-    raise InvalidQuantityError(f"No tier covers quantity {quantity}")
+            return tier["price_per_unit"]
+    return None
+
+
+def _calculate_volume(quantity: Decimal | int, tiers: list[_ParsedTier]) -> Decimal:
+    rate = _find_volume_rate(quantity, tiers)
+    if rate is None:
+        raise InvalidQuantityError(f"No tier covers quantity {quantity}")
+    return rate * quantity
 
 
 def _calculate_graduated(quantity: Decimal | int, tiers: list[_ParsedTier]) -> Decimal:
@@ -525,6 +535,10 @@ class TieredPrice:
             case TierType.graduated:
                 return _calculate_graduated(quantity, tiers)
 
+    def get_volume_unit_price(self, quantity: Decimal | int) -> Decimal | None:
+        """The rate a volume price bills `quantity` at, or None if no tier covers it."""
+        return _find_volume_rate(quantity, _parse_tiers(self.get_tiers_data()))
+
     def get_minimum_units(self) -> int:
         """The smallest purchasable quantity (inclusive), 0 when unset.
         Enforced by the purchase layer, not the pricing engine."""
@@ -569,8 +583,18 @@ class ProductPriceMeteredUnit(TieredPrice, NewProductPrice, ProductPrice):
         formatted_units = format_decimal(max(0, units), locale="en_US")
 
         if self.tiers is not None:
-            label = f"({formatted_units} consumed units, {self.tier_type} pricing)"
             raw_amount = self.get_tiered_amount(billable_units)
+            # Volume bills the whole quantity at one rate, so it reads exactly
+            # like a flat price and stays reconcilable by multiplication.
+            volume_rate = (
+                self.get_volume_unit_price(billable_units)
+                if self.tier_type is TierType.volume
+                else None
+            )
+            if volume_rate is not None:
+                label = f"({formatted_units} consumed units) × {format_currency(volume_rate, self.price_currency, decimal_quantization=False)}"
+            else:
+                label = f"({formatted_units} consumed units, {self.tier_type} pricing)"
         else:
             if self.unit_amount is None:
                 raise InvalidTiersError(

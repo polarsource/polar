@@ -1184,6 +1184,35 @@ class SubscriptionService:
 
         await order_service.settle_meter_cycle_order(session, subscription)
 
+    def check_meter_cycle_lag(self, subscription: Subscription) -> None:
+        """Raise ``SubscriptionMeterCycleLag`` when the meter clock is more
+        than one period behind ``now``, halting the cycle for manual catch-up.
+
+        No-op when the subscription has no meter clock configured
+        (``meter_interval``/``current_meter_period_end`` unset), so the billing
+        cycle can proceed normally. Shared by ``cycle_meters`` (meter-only path)
+        and the cycling task's billing path so the guard holds regardless of
+        which boundary triggered the run.
+        """
+        boundary = subscription.current_meter_period_end
+        if (
+            boundary is None
+            or subscription.meter_interval is None
+            or subscription.meter_interval_count is None
+        ):
+            return
+        next_period_end = subscription.meter_interval.get_next_period(
+            boundary,
+            subscription.anchor_day,
+            subscription.meter_interval_count,
+        )
+        now = utc_now()
+        if next_period_end <= now:
+            # >1 period elapsed. Replaying per period is unsafe — async grants
+            # would race the next settlement — so halt (lock left set) and page
+            # for a manual catch-up.
+            raise SubscriptionMeterCycleLag(subscription, boundary, now)
+
     async def cycle_meters(
         self, session: AsyncSession, subscription: Subscription
     ) -> Subscription:
@@ -1234,16 +1263,13 @@ class SubscriptionService:
                 subscription, update_dict={"scheduler_locked_at": None}
             )
 
+        self.check_meter_cycle_lag(subscription)
+
         next_period_end = subscription.meter_interval.get_next_period(
             boundary,
             subscription.anchor_day,
             subscription.meter_interval_count,
         )
-        if next_period_end <= now:
-            # >1 period elapsed. Replaying per period is unsafe — async grants would
-            # race the next settlement — so halt (lock left set) and page for a
-            # manual catch-up.
-            raise SubscriptionMeterCycleLag(subscription, boundary, now)
 
         # Drop a lapsed discount before settling: the meter-cycle order applies
         # `subscription.discount`, so mirror the billing cycle's expiry check

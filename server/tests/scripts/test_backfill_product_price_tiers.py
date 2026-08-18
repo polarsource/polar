@@ -33,7 +33,7 @@ async def _legacy_seat_price(
         tiers=TIERS,
         seat_tier_type=SeatTierType.graduated,
     )
-    price.tiers = None
+    price.tiers = None  # type: ignore[assignment]
     price.minimum_units = None
     price.maximum_units = None
     await save_fixture(price)

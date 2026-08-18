@@ -343,7 +343,7 @@ class TieredPrice:
 
     __abstract__ = True
 
-    tiers: Mapped[Tiers | None] = mapped_column(
+    tiers: Mapped[Tiers] = mapped_column(
         TiersType(none_as_null=True),
         use_existing_column=True,
         nullable=True,
@@ -362,14 +362,8 @@ class TieredPrice:
         default=None,
     )
 
-    def get_tiers(self) -> Tiers:
-        """The tiers this price bills on."""
-        if self.tiers is None:
-            raise ValueError("Price has no tiers")
-        return self.tiers
-
     def get_tiered_amount(self, quantity: int) -> Decimal:
-        return self.get_tiers().calculate(quantity)
+        return self.tiers.calculate(quantity)
 
     def get_minimum_units(self) -> int:
         """The smallest purchasable quantity (inclusive), 0 when unset.
@@ -381,7 +375,7 @@ class TieredPrice:
         open-ended. Defaults to the last tier's bound when unset."""
         if self.maximum_units is not None:
             return self.maximum_units
-        return self.get_tiers().last_bound
+        return self.tiers.last_bound
 
 
 class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
@@ -413,7 +407,7 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
 
     @property
     def is_free(self) -> bool:
-        return all(tier.unit_amount == 0 for tier in self.get_tiers().tiers)
+        return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,
@@ -431,7 +425,7 @@ def _write_tiers_from_seat_tiers(
     """Dual-write to the shared `tiers`, `minimum_units` and `maximum_units`
     columns. Delete when `seat_tiers` is dropped."""
     if value is None:
-        target.tiers = None
+        target.tiers = None  # type: ignore[assignment]
         target.minimum_units = None
         target.maximum_units = None
     else:

@@ -58,10 +58,14 @@ from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
+    NonContiguousTiersError,
     ProductPriceAmountType,
     ProductPriceSource,
     ProductPriceType,
     SeatTierType,
+    UnboundedTierNotLastError,
+    seat_tiers_to_tiers_data,
+    validate_tiers_data,
 )
 from polar.models.product_price import (
     ProductPriceCustom as ProductPriceCustomModel,
@@ -280,31 +284,32 @@ class ProductPriceSeatTiers(Schema):
         cls, v: list[ProductPriceSeatTier]
     ) -> list[ProductPriceSeatTier]:
         """Validate that tiers form continuous ranges without gaps or overlaps."""
-        if not v:
-            raise ValueError("At least one tier is required")
-
-        # Sort by min_seats
         sorted_tiers = sorted(v, key=lambda t: t.min_seats)
-
-        # First tier must start at >= 1
         if sorted_tiers[0].min_seats < 1:
             raise ValueError("First tier must start at min_seats >= 1")
 
-        # Validate continuous ranges without gaps/overlaps
-        for i in range(len(sorted_tiers) - 1):
-            current = sorted_tiers[i]
-            next_tier = sorted_tiers[i + 1]
-
-            if current.max_seats is None:
-                raise ValueError(
-                    "Only the last tier can have unlimited max_seats (None)"
+        try:
+            validate_tiers_data(
+                seat_tiers_to_tiers_data(
+                    {
+                        "seat_tier_type": SeatTierType.volume,
+                        "tiers": [
+                            {
+                                "min_seats": tier.min_seats,
+                                "max_seats": tier.max_seats,
+                                "price_per_seat": tier.price_per_seat,
+                            }
+                            for tier in sorted_tiers
+                        ],
+                    }
                 )
-
-            if next_tier.min_seats != current.max_seats + 1:
-                raise ValueError(
-                    "Gap or overlap between tiers: "
-                    + f"tier ending at {current.max_seats} and tier starting at {next_tier.min_seats}"
-                )
+            )
+        except UnboundedTierNotLastError:
+            raise ValueError(
+                "Only the last tier can have unlimited max_seats (None)"
+            ) from None
+        except NonContiguousTiersError as e:
+            raise ValueError(str(e)) from None
 
         return sorted_tiers
 

@@ -18,6 +18,7 @@ from polar.product.schemas import (
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
     ProductPriceMeteredUnitCreate,
+    ProductPriceSeatTiers,
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import METER_ID, create_benefit
@@ -698,4 +699,31 @@ class TestProductCreateMeterInterval:
             _recurring_product(
                 recurring_interval=SubscriptionRecurringInterval.month,
                 meter_interval=SubscriptionRecurringInterval.year,
+            )
+
+
+class TestProductPriceSeatTiers:
+    def test_unbounded_not_last_keeps_seat_wording(self) -> None:
+        with pytest.raises(ValidationError, match="unlimited max_seats"):
+            ProductPriceSeatTiers.model_validate(
+                {
+                    "seat_tier_type": "volume",
+                    "tiers": [
+                        {"min_seats": 1, "max_seats": None, "price_per_seat": 500},
+                        {"min_seats": 11, "max_seats": 20, "price_per_seat": 300},
+                    ],
+                }
+            )
+
+    def test_earlier_gap_wins_over_later_unbounded(self) -> None:
+        with pytest.raises(ValidationError, match="Gap or overlap"):
+            ProductPriceSeatTiers.model_validate(
+                {
+                    "seat_tier_type": "volume",
+                    "tiers": [
+                        {"min_seats": 1, "max_seats": 10, "price_per_seat": 500},
+                        {"min_seats": 20, "max_seats": None, "price_per_seat": 300},
+                        {"min_seats": 21, "max_seats": 30, "price_per_seat": 200},
+                    ],
+                }
             )

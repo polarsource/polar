@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
@@ -34,10 +35,8 @@ export const FieldName = () => {
         required: 'This field is required',
       }}
       render={({ field }) => (
-        <FormItem className="flex flex-col gap-4">
-          <div className="flex flex-row items-center justify-between">
-            <FormLabel>Application Name</FormLabel>
-          </div>
+        <FormItem>
+          <FormLabel>Application Name</FormLabel>
           <FormControl>
             <Input {...field} placeholder="My OAuth Application" />
           </FormControl>
@@ -97,14 +96,9 @@ export const FieldClientType = () => {
 
 export const FieldClientID = ({ clientId }: { clientId: string }) => {
   return (
-    <FormItem className="flex flex-col gap-4">
-      <div className="flex flex-row items-center justify-between">
-        <FormLabel>Client ID</FormLabel>
-      </div>
-      <FormControl>
-        <Input value={clientId} placeholder="Client ID" readOnly />
-      </FormControl>
-      <FormMessage />
+    <FormItem>
+      <FormLabel>Client ID</FormLabel>
+      <CopyToClipboardInput value={clientId} variant="mono" />
     </FormItem>
   )
 }
@@ -115,14 +109,9 @@ export const FieldClientSecret = ({
   clientSecret: string
 }) => {
   return (
-    <FormItem className="flex flex-col gap-4">
-      <div className="flex flex-row items-center justify-between">
-        <FormLabel>Client Secret</FormLabel>
-      </div>
-      <FormControl>
-        <Input value={clientSecret} placeholder="Client Secret" readOnly />
-      </FormControl>
-      <FormMessage />
+    <FormItem>
+      <FormLabel>Client Secret</FormLabel>
+      <CopyToClipboardInput value={clientSecret} variant="mono" />
       <FormDescription>
         This is a sensitive value. Don&apos;t embed it in a public client like a
         SPA or mobile app.{' '}
@@ -153,11 +142,11 @@ export const FieldRedirectURIs = () => {
   })
 
   return (
-    <div className="flex flex-col gap-y-4">
+    <div>
       <div className="flex flex-row items-center justify-between gap-x-4">
         <FormLabel>Redirect URIs</FormLabel>
         <Button
-          className="aspect-square w-8"
+          className="aspect-square h-8 w-8"
           size="icon"
           variant="secondary"
           onClick={(e) => {
@@ -253,10 +242,8 @@ export const FieldClientURI = () => {
         required: 'A URL to your homepage is required',
       }}
       render={({ field }) => (
-        <FormItem className="flex flex-col gap-4">
-          <div className="flex flex-row items-center justify-between">
-            <FormLabel>Homepage URL</FormLabel>
-          </div>
+        <FormItem>
+          <FormLabel>Homepage URL</FormLabel>
           <FormControl>
             <Input
               {...field}
@@ -279,10 +266,8 @@ export const FieldTOS = () => {
       control={control}
       name="tos_uri"
       render={({ field }) => (
-        <FormItem className="flex flex-col gap-4">
-          <div className="flex flex-row items-center justify-between">
-            <FormLabel>Terms of Service</FormLabel>
-          </div>
+        <FormItem>
+          <FormLabel>Terms of Service</FormLabel>
           <FormControl>
             <Input
               {...field}
@@ -305,10 +290,8 @@ export const FieldPrivacy = () => {
       control={control}
       name="policy_uri"
       render={({ field }) => (
-        <FormItem className="flex flex-col gap-4">
-          <div className="flex flex-row items-center justify-between">
-            <FormLabel>Privacy Policy</FormLabel>
-          </div>
+        <FormItem>
+          <FormLabel>Privacy Policy</FormLabel>
           <FormControl>
             <Input
               {...field}

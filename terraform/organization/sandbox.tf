@@ -42,6 +42,16 @@ module "sandbox_application_access" {
   }
 }
 
+module "sandbox_athena_spans" {
+  source = "../modules/athena_spans"
+  providers = {
+    aws = aws.us_east_2
+  }
+
+  environment      = "sandbox"
+  logs_bucket_name = "polar-sandbox-logs"
+}
+
 data "aws_s3_object" "sandbox_image_resizer_package" {
   bucket = aws_s3_bucket.production_lambda_artifacts.id
   key    = "image-resizer/package.zip"

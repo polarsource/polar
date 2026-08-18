@@ -24,8 +24,7 @@ output "cron_job_ids" {
 }
 
 output "worker_env_vars" {
-  description = "Non-secret env vars shared with the Lambda task workers. Mirrors the env groups linked to the Render workers. Marked sensitive because some values derive from sensitive variables."
-  sensitive   = true
+  description = "Non-secret env vars shared with the Lambda task workers. Mirrors the env groups linked to the Render workers. Public-by-name values from sensitive variables are declassified so plans stay readable."
   value = merge(
     {
       POLAR_ENV                                  = local.environment
@@ -47,9 +46,9 @@ output "worker_env_vars" {
       POLAR_TAX_PROCESSORS                       = var.backend_config.tax_processors
       POLAR_TAX_RECORD_PROCESSOR                 = var.backend_config.tax_record_processor
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = var.backend_config.customer_portal_url_overrides
-      POLAR_CURRENT_JWK_KID                      = var.backend_secrets.current_jwk_kid
-      POLAR_STRIPE_PUBLISHABLE_KEY               = var.backend_secrets.stripe_publishable_key
-      POLAR_LOGO_DEV_PUBLISHABLE_KEY             = var.backend_secrets.logo_dev_publishable_key
+      POLAR_CURRENT_JWK_KID                      = nonsensitive(var.backend_secrets.current_jwk_kid)
+      POLAR_STRIPE_PUBLISHABLE_KEY               = nonsensitive(var.backend_secrets.stripe_publishable_key)
+      POLAR_LOGO_DEV_PUBLISHABLE_KEY             = nonsensitive(var.backend_secrets.logo_dev_publishable_key)
       POLAR_AWS_REGION                           = var.aws_s3_config.region
       POLAR_AWS_SIGNATURE_VERSION                = var.aws_s3_config.signature_version
       POLAR_AWS_KMS_KEY_ID                       = var.aws_kms_config.key_id
@@ -68,32 +67,32 @@ output "worker_env_vars" {
       POLAR_BACKOFFICE_HOST    = var.backend_config.backoffice_host
       POLAR_CHECKOUT_LINK_HOST = var.backend_config.checkout_link_host
     } : {},
-    var.logfire_config != null ? {
-      POLAR_LOGFIRE_PROJECT_NAME = var.logfire_config.project_name
+    nonsensitive(var.logfire_config != null) ? {
+      POLAR_LOGFIRE_PROJECT_NAME = nonsensitive(var.logfire_config.project_name)
     } : {},
-    var.prometheus_config != null ? {
-      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_URL      = "${var.prometheus_config.url}/api/prom/push"
-      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_USERNAME = var.prometheus_config.username
-      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL = var.prometheus_config.interval
+    nonsensitive(var.prometheus_config != null) ? {
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_URL      = nonsensitive("${var.prometheus_config.url}/api/prom/push")
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_USERNAME = nonsensitive(var.prometheus_config.username)
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL = nonsensitive(var.prometheus_config.interval)
     } : {},
-    var.prometheus_config != null && try(var.prometheus_config.query_key, null) != null ? {
-      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_URL  = "${var.prometheus_config.url}/api/prom"
-      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_USER = var.prometheus_config.username
+    nonsensitive(var.prometheus_config != null && try(var.prometheus_config.query_key, null) != null) ? {
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_URL  = nonsensitive("${var.prometheus_config.url}/api/prom")
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_USER = nonsensitive(var.prometheus_config.username)
     } : {},
-    var.slo_report_config != null ? {
-      POLAR_SLACK_CHANNEL = var.slo_report_config.slack_channel
+    nonsensitive(var.slo_report_config != null) ? {
+      POLAR_SLACK_CHANNEL = nonsensitive(var.slo_report_config.slack_channel)
     } : {},
-    var.tinybird_config != null ? {
-      POLAR_TINYBIRD_API_URL             = var.tinybird_config.api_url
-      POLAR_TINYBIRD_CLICKHOUSE_URL      = var.tinybird_config.clickhouse_url
-      POLAR_TINYBIRD_CLICKHOUSE_USERNAME = var.tinybird_config.clickhouse_username
-      POLAR_TINYBIRD_WORKSPACE           = var.tinybird_config.workspace
+    nonsensitive(var.tinybird_config != null) ? {
+      POLAR_TINYBIRD_API_URL             = nonsensitive(var.tinybird_config.api_url)
+      POLAR_TINYBIRD_CLICKHOUSE_URL      = nonsensitive(var.tinybird_config.clickhouse_url)
+      POLAR_TINYBIRD_CLICKHOUSE_USERNAME = nonsensitive(var.tinybird_config.clickhouse_username)
+      POLAR_TINYBIRD_WORKSPACE           = nonsensitive(var.tinybird_config.workspace)
     } : {},
-    var.polar_self_config != null ? {
-      POLAR_POLAR_ORGANIZATION_ID  = var.polar_self_config.organization_id
-      POLAR_POLAR_FREE_PRODUCT_ID  = var.polar_self_config.free_product_id
-      POLAR_POLAR_SCALE_PRODUCT_ID = var.polar_self_config.scale_product_id
-      POLAR_POLAR_API_URL          = var.polar_self_config.api_url
+    nonsensitive(var.polar_self_config != null) ? {
+      POLAR_POLAR_ORGANIZATION_ID  = nonsensitive(var.polar_self_config.organization_id)
+      POLAR_POLAR_FREE_PRODUCT_ID  = nonsensitive(var.polar_self_config.free_product_id)
+      POLAR_POLAR_SCALE_PRODUCT_ID = nonsensitive(var.polar_self_config.scale_product_id)
+      POLAR_POLAR_API_URL          = nonsensitive(var.polar_self_config.api_url)
     } : {},
   )
 }

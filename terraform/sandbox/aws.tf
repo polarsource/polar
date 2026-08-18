@@ -81,6 +81,8 @@ locals {
   files_bucket_name        = "polar-sandbox-files"
   files_public_bucket_name = "polar-public-sandbox-files"
 
+  lambda_worker_queue_prefix = "polar-sandbox-tasks"
+
   lambda_worker_environment = merge(
     module.sandbox.worker_env_vars,
     {
@@ -95,7 +97,7 @@ locals {
       POLAR_REDIS_DB                = "1"
       POLAR_WORKER_SQS_ENABLED      = "true"
       POLAR_WORKER_SQS_ACTORS       = var.worker_sqs_actors
-      POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-sandbox-tasks"
+      POLAR_WORKER_SQS_QUEUE_PREFIX = local.lambda_worker_queue_prefix
     },
   )
 
@@ -141,7 +143,8 @@ module "lambda_worker" {
 
   environment              = "sandbox"
   name                     = local.lambda_worker_name
-  queue_name               = "polar-sandbox-tasks-${local.lambda_worker_name}"
+  queue_name               = "${local.lambda_worker_queue_prefix}-${local.lambda_worker_name}"
+  queue_prefix             = local.lambda_worker_queue_prefix
   image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled                  = true
   reserved_concurrency     = local.lambda_worker_reserved_concurrency
@@ -162,7 +165,8 @@ module "lambda_worker_queue" {
 
   environment              = "sandbox"
   name                     = each.key
-  queue_name               = "polar-sandbox-tasks-${each.key}"
+  queue_name               = "${local.lambda_worker_queue_prefix}-${each.key}"
+  queue_prefix             = local.lambda_worker_queue_prefix
   image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled                  = true
   timeout_seconds          = each.value.timeout_seconds

@@ -28,6 +28,11 @@ variable "queue_name" {
   type        = string
 }
 
+variable "queue_prefix" {
+  description = "Shared prefix of all task queues in this environment. Grants the worker SendMessage on every sibling queue for cross-queue sub-enqueues; the pattern also matches sibling DLQs, which is accepted."
+  type        = string
+}
+
 variable "image_uri" {
   description = "Container image URI the worker Lambda runs."
   type        = string

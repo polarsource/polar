@@ -5,6 +5,8 @@ locals {
 
 data "aws_caller_identity" "current" {}
 
+data "aws_region" "current" {}
+
 resource "aws_sqs_queue" "dlq" {
   name                      = "${var.queue_name}-dlq"
   message_retention_seconds = 1209600
@@ -17,6 +19,13 @@ resource "aws_sqs_queue" "task" {
 
   # Visibility must exceed the function timeout so a slow task is not redelivered while still running.
   visibility_timeout_seconds = max(180, var.timeout_seconds + 60)
+
+  lifecycle {
+    precondition {
+      condition     = substr(var.queue_name, 0, length(var.queue_prefix) + 1) == "${var.queue_prefix}-"
+      error_message = "queue_name must start with queue_prefix, or the SendSiblingQueues grant will not cover this queue."
+    }
+  }
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dlq.arn
@@ -138,7 +147,7 @@ data "aws_iam_policy_document" "lambda" {
       "sqs:SendMessage",
       "sqs:GetQueueUrl",
     ]
-    resources = [replace(aws_sqs_queue.task.arn, aws_sqs_queue.task.name, "polar-${var.environment}-tasks-*")]
+    resources = ["arn:aws:sqs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${var.queue_prefix}-*"]
   }
 
   dynamic "statement" {

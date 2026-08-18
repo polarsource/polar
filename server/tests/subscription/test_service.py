@@ -1258,6 +1258,44 @@ class TestCycle:
             session, updated_subscription, reset_at=utc_now()
         )
 
+    @pytest.mark.parametrize(
+        ("cancel_at_period_end", "expected_delay"),
+        [(False, None), (True, 60 * 60 * 1000)],
+    )
+    async def test_delays_settlement_only_when_cancelling(
+        self,
+        cancel_at_period_end: bool,
+        expected_delay: int | None,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        """A cancellation has no later invoice, so it waits for the entry fan-out
+        before settling; a renewal has one and does not."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+            cancel_at_period_end=cancel_at_period_end,
+        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.cycle(session, ctx, subscription)
+
+        order_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args and call.args[0] == "order.create_subscription_order"
+        ]
+        assert len(order_calls) == 1
+        assert order_calls[0].kwargs["delay"] == expected_delay
+
     @freeze_time("2024-01-15 12:00:00")
     async def test_preserves_period_end_when_cycling_late(
         self,
@@ -1380,6 +1418,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            delay=None,
         )
 
         assert_webhook_sent_once(
@@ -1679,6 +1718,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
+            delay=60 * 60 * 1000,
         )
 
         assert_webhook_not_sent(
@@ -1771,6 +1811,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=previous_current_period_end.isoformat(),
+            delay=None,
         )
 
         assert_webhook_sent_once(
@@ -1864,6 +1905,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
+            delay=60 * 60 * 1000,
         )
         # The after-trial billing reason must NOT have been enqueued.
         for mock_call in enqueue_job_mock.call_args_list:
@@ -2157,6 +2199,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            delay=None,
         )
 
         enqueue_job_mock.assert_any_call(
@@ -2286,6 +2329,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            delay=None,
         )
 
         assert not any(
@@ -4592,6 +4636,7 @@ class TestUpdate:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            delay=None,
         )
 
     async def test_seats_update(
@@ -4867,6 +4912,7 @@ class TestUpdate:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            delay=None,
         )
 
         assert_webhook_sent_once(
@@ -5097,6 +5143,7 @@ class TestUpdateProduct:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            delay=None,
         )
 
     async def test_trial_to_no_trial_product_ends_trial(
@@ -5136,6 +5183,7 @@ class TestUpdateProduct:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            delay=None,
         )
 
     async def test_trial_product_change_skips_proration_billing(

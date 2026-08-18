@@ -29,7 +29,7 @@ locals {
   read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
 
   # Redis connection info
-  redis_host = render_redis.redis.id
+  redis_host = var.redis_private_link_host
   redis_port = "6379"
 
   # Forwarded allow IPs: Cloudflare ranges + Render proxy
@@ -160,6 +160,7 @@ module "production" {
     plan                   = "pro_plus"
     web_concurrency        = "6"
     forwarded_allow_ips    = local.forwarded_allow_ips
+    redis_db               = "1"
   }
 
   postgres_config = {

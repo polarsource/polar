@@ -1,12 +1,12 @@
 import inspect
 import json
 import typing
+from collections.abc import Sequence
 from datetime import datetime
 from inspect import Parameter, Signature
 from typing import Annotated, Any, Literal, assert_never, get_args, get_origin
 
 from babel.dates import format_date
-from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from makefun import with_signature
 from pydantic import (
@@ -1582,12 +1582,19 @@ class WebhookAPIRoute(APIRoute):
             self.body_field.mode = "serialization"
 
 
-def document_webhooks(app: FastAPI) -> None:
+def get_webhook_routes() -> Sequence[WebhookAPIRoute]:
+    """
+    Returns a list of WebhookAPIRoute for all webhook payloads.
+
+    This is used to generate the OpenAPI schema for the webhook endpoints.
+    """
+
     def _endpoint(body: Any) -> None: ...
 
     webhooks_schemas: tuple[type[BaseWebhookPayload]] = typing.get_args(
         typing.get_args(WebhookPayload)[0]
     )
+    routes: list[WebhookAPIRoute] = []
     for webhook_schema in webhooks_schemas:
         signature = Signature(
             [
@@ -1603,13 +1610,17 @@ def document_webhooks(app: FastAPI) -> None:
         event_type: WebhookEventType = get_args(event_type_annotation)[0]
 
         endpoint = with_signature(signature)(_endpoint)
-
-        app.webhooks.add_api_route(
-            event_type,
-            endpoint,
-            methods=["POST"],
-            summary=event_type,
-            description=inspect.getdoc(webhook_schema),
-            openapi_extra={"x-mint": {"metadata": {"sidebarTitle": event_type.value}}},
-            route_class_override=WebhookAPIRoute,
+        routes.append(
+            WebhookAPIRoute(
+                event_type,
+                endpoint,
+                methods=["POST"],
+                summary=event_type,
+                description=inspect.getdoc(webhook_schema),
+                openapi_extra={
+                    "x-mint": {"metadata": {"sidebarTitle": event_type.value}}
+                },
+            )
         )
+
+    return routes

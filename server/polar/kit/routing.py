@@ -183,6 +183,11 @@ class PaginationAPIRoute(APIRoute):
             self.openapi_extra = {**openapi_extra, "x-polar-pagination": pagination}
 
 
+def generate_unique_id_function(route: APIRoute) -> str:
+    parts = [str(tag) for tag in route.tags if tag not in APITag] + [route.name]
+    return ":".join(parts)
+
+
 def _inherit_signature_from[**P, T](
     _to: Callable[P, T],
 ) -> Callable[[Callable[..., T]], Callable[P, T]]:
@@ -198,6 +203,7 @@ def get_api_router_class(route_class: type[APIRoute]) -> type[_APIRouter]:
         @_inherit_signature_from(_APIRouter.__init__)
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             kwargs["route_class"] = route_class
+            kwargs["generate_unique_id_function"] = generate_unique_id_function
             super().__init__(*args, **kwargs)
 
     return _CustomAPIRouter

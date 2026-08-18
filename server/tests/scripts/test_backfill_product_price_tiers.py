@@ -1,12 +1,16 @@
 from typing import Any
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Product
 from polar.models.product_price import ProductPriceSeatUnit
-from polar.product.tiers import SeatTierType, seat_tiers_to_tiers
+from polar.product.tiers import (
+    NonContiguousTiersError,
+    SeatTierType,
+    seat_tiers_to_tiers,
+)
 from scripts.backfill_product_price_tiers import run_backfill
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product_price_seat_unit
@@ -59,7 +63,7 @@ class TestBackfillProductPriceTiers:
     ) -> None:
         price = await _legacy_seat_price(save_fixture, product)
 
-        updated = await run_backfill(batch_size=10, dry_run=False, session=session)
+        updated = await run_backfill(dry_run=False, session=session)
 
         assert updated == 1
         tiers, minimum_units, maximum_units = await _get_tier_columns(session, price)
@@ -80,9 +84,38 @@ class TestBackfillProductPriceTiers:
     ) -> None:
         price = await _legacy_seat_price(save_fixture, product)
 
-        counted = await run_backfill(batch_size=10, dry_run=True, session=session)
+        counted = await run_backfill(dry_run=True, session=session)
 
         assert counted == 1
+        assert await _get_tier_columns(session, price) == (None, None, None)
+
+    async def test_dry_run_raises_on_invalid_tiers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+    ) -> None:
+        price = await _legacy_seat_price(save_fixture, product)
+        # Bypass the dual-write setter so we can persist corrupt legacy JSON.
+        await session.execute(
+            update(ProductPriceSeatUnit)
+            .where(ProductPriceSeatUnit.id == price.id)
+            .values(
+                seat_tiers={
+                    "seat_tier_type": SeatTierType.volume,
+                    "tiers": [
+                        {"min_seats": 1, "max_seats": 5, "price_per_seat": 1000},
+                        {"min_seats": 10, "max_seats": None, "price_per_seat": 800},
+                    ],
+                }
+            )
+        )
+        await session.flush()
+        session.expire(price)
+
+        with pytest.raises(NonContiguousTiersError):
+            await run_backfill(dry_run=True, session=session)
+
         assert await _get_tier_columns(session, price) == (None, None, None)
 
     async def test_idempotent(
@@ -93,9 +126,9 @@ class TestBackfillProductPriceTiers:
     ) -> None:
         price = await _legacy_seat_price(save_fixture, product)
 
-        await run_backfill(batch_size=10, dry_run=False, session=session)
+        await run_backfill(dry_run=False, session=session)
         first = await _get_tier_columns(session, price)
-        await run_backfill(batch_size=10, dry_run=False, session=session)
+        await run_backfill(dry_run=False, session=session)
         second = await _get_tier_columns(session, price)
 
         assert first == second

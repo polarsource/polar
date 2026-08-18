@@ -16,7 +16,12 @@ import {
   Text,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { FormField } from '@polar-sh/ui/components/ui/form'
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
@@ -91,8 +96,10 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
       </Box>
       {enabled && (
         <Box flexDirection="column" rowGap="s">
-          <Box alignItems="center" columnGap="m">
-            <Text variant="caption">Every</Text>
+          <Box alignItems="start" columnGap="m">
+            <Box height={40} alignItems="center">
+              <Text variant="caption">Every</Text>
+            </Box>
             <FormField
               control={control}
               name="meter_interval_count"
@@ -105,17 +112,28 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
                 },
               }}
               render={({ field }) => (
-                <Input
-                  type="text"
-                  pattern="\d*"
-                  value={field.value ?? ''}
-                  onChange={(e) => {
-                    const parsedValue = parseInt(e.target.value)
-                    field.onChange(isNaN(parsedValue) ? '' : parsedValue)
-                  }}
-                  disabled={disabled}
-                  className="min-w-12"
-                />
+                <FormItem className="flex-1">
+                  <FormControl>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d*"
+                      value={field.value ?? ''}
+                      // Digits only, and keep every one the merchant typed: parsing a
+                      // partial entry would store a cadence they didn't ask for.
+                      onChange={(e) => {
+                        const entered = e.target.value
+                        if (!/^\d*$/.test(entered)) {
+                          return
+                        }
+                        field.onChange(entered === '' ? null : Number(entered))
+                      }}
+                      disabled={disabled}
+                      className="min-w-12"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
             <FormField

@@ -38,8 +38,9 @@ export const meterIntervalDividesBillingInterval = (
   }
 }
 
-// The coarsest meter interval that always divides the given billing interval, used as the
-// default when the meter cycle is enabled.
+// The cadence the meter cycle starts on when it's enabled: monthly under month/year
+// billing, daily under day/week billing. Both divide their family's billing intervals, and
+// both are finer than the billing cycle — a meter cycle equal to it would be a no-op.
 export const defaultMeterInterval = (
   billingInterval: RecurringInterval,
 ): RecurringInterval =>

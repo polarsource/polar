@@ -542,3 +542,11 @@ resource "tfe_variable" "turnstile_secret_sandbox" {
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "grafana_cloud_aws_external_id_sandbox" {
+  key             = "grafana_cloud_aws_external_id"
+  value           = "2341705"
+  category        = "terraform"
+  description     = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
+  variable_set_id = tfe_variable_set.sandbox.id
+}

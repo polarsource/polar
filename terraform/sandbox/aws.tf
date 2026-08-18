@@ -121,6 +121,11 @@ locals {
   lambda_worker_name                 = "default"
   lambda_worker_reserved_concurrency = null
 
+  lambda_worker_tags = {
+    Environment = "sandbox"
+    Service     = "task-worker"
+  }
+
   lambda_worker_queues = {
     "high-priority"         = { timeout_seconds = 120 }
     "medium-priority"       = { timeout_seconds = 120 }
@@ -140,6 +145,7 @@ module "lambda_worker" {
   image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled                  = true
   reserved_concurrency     = local.lambda_worker_reserved_concurrency
+  tags                     = local.lambda_worker_tags
   subnet_ids               = local.lambda_subnet_ids
   security_group_ids       = local.lambda_security_group_ids
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
@@ -158,6 +164,7 @@ module "lambda_worker_queue" {
   image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled                  = true
   timeout_seconds          = each.value.timeout_seconds
+  tags                     = local.lambda_worker_tags
   subnet_ids               = local.lambda_subnet_ids
   security_group_ids       = local.lambda_security_group_ids
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
@@ -272,4 +279,13 @@ module "guardduty_scan_events" {
   queue_url         = module.lambda_worker.queue_url
   dlq_arn           = module.lambda_worker.dlq_arn
   dlq_url           = module.lambda_worker.dlq_url
+}
+
+module "grafana_cloudwatch_role" {
+  source = "../modules/grafana_cloudwatch_role"
+
+  name                     = "polar-sandbox-grafana-cloudwatch"
+  external_id              = var.grafana_cloud_aws_external_id
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+  tags                     = local.lambda_worker_tags
 }

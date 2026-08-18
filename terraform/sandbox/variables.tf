@@ -461,3 +461,8 @@ variable "redis_private_link_host" {
   description = "DNS name of the Render private link to the sandbox worker Redis"
   type        = string
 }
+
+variable "grafana_cloud_aws_external_id" {
+  description = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
+  type        = string
+}

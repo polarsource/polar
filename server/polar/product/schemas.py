@@ -285,7 +285,7 @@ class ProductPriceSeatTiers(Schema):
     def validate_tiers(
         cls, v: list[ProductPriceSeatTier]
     ) -> list[ProductPriceSeatTier]:
-        """Validate that tiers form continuous ranges without gaps or overlaps."""
+        """Validate that tiers are well-formed and form continuous ranges."""
         sorted_tiers = sorted(v, key=lambda t: t.min_seats)
         if sorted_tiers[0].min_seats < 1:
             raise ValueError("First tier must start at min_seats >= 1")

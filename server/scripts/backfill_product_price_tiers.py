@@ -1,14 +1,9 @@
 """Backfill the shared `tiers`, `minimum_units` and `maximum_units` columns
 on seat-based product prices.
 
-Translates each row's legacy `seat_tiers` (inclusive seat ranges) to the
-shared tiers format (per-tier `up_to` bounds) and the unit-bound columns
-with the same functions the dual-write hook uses for new rows, so
-backfilled and freshly written rows are byte-identical.
-
-The translation is deterministic, so the script is idempotent: re-running it
-recomputes the same value for every seat price, including rows already
-backfilled or dual-written.
+Translates each row's legacy `seat_tiers` with the same functions the
+dual-write hook uses, so backfilled and newly written rows match.
+Re-running the script is safe: the translation is deterministic.
 """
 
 import typer

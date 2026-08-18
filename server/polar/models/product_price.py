@@ -68,12 +68,12 @@ class TierType(StrEnum):
 
 
 class Tier(TypedDict):
-    """A per-unit rate applying up to `up_to` units, inclusive.
+    """A per-unit rate up to and including `up_to`.
 
-    Each tier starts where the previous one ends, the first at zero, and
-    `up_to` is None on the last tier if it's unbounded. Rates are in cents
-    and may be fractional, so they're stored as strings and parsed to
-    Decimal before any math.
+    Each tier starts where the previous one ended. The first starts at
+    zero. `up_to` is None on the last tier if it's unbounded. Rates are
+    in cents and may be fractional, so they're stored as strings and
+    parsed to Decimal before any math.
     """
 
     up_to: int | None
@@ -100,8 +100,7 @@ class UnboundedTierNotLastError(InvalidTiersError):
 
 
 class NonContiguousTiersError(InvalidTiersError):
-    """Gap or overlap in legacy seat tiers, caught before translating to the
-    shared format, where non-contiguous ranges cannot be represented."""
+    """Raised when translating seat tiers that have a gap or overlap."""
 
     def __init__(self, previous_max_seats: int, next_min_seats: int) -> None:
         super().__init__(
@@ -270,8 +269,7 @@ def seat_tiers_to_tiers_data(seat_tiers: SeatTiersData) -> TiersData:
 
 
 def seat_tiers_unit_bounds(seat_tiers: SeatTiersData) -> tuple[int | None, int | None]:
-    """The purchasable quantity bounds implied by legacy seat tiers: the
-    first tier's min_seats and the last tier's max_seats."""
+    """Return the first tier's min_seats and the last tier's max_seats."""
     sorted_seat_tiers = sorted(
         seat_tiers.get("tiers", []), key=lambda t: t["min_seats"]
     )
@@ -547,11 +545,10 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
 
 
 class TieredPrice:
-    """Mixin for prices that bill from a shared list of tiers.
+    """Mixin for prices billed from a shared list of tiers.
 
-    Gives you the amount in cents for a quantity of whole units, and the
-    unit range those tiers cover. The price class is responsible for
-    translating that into its own terms (seats, integer cents, …).
+    `get_tiered_amount` returns cents for a whole-unit quantity.
+    Subclasses interpret those units (seats, metered usage, …).
     """
 
     __abstract__ = True
@@ -576,8 +573,7 @@ class TieredPrice:
     )
 
     def get_tiers_data(self) -> TiersData:
-        """The tiers this price bills on. A type mid-migration overrides this
-        to read from its legacy column instead."""
+        """The tiers this price bills on."""
         if self.tiers is None:
             raise InvalidTiersError("Price has no tiers")
         return self.tiers
@@ -605,8 +601,7 @@ class TieredPrice:
 
     def get_maximum_units(self) -> int | None:
         """The largest purchasable quantity (inclusive), or None if
-        open-ended. Falls back to the end of the last tier, past which a
-        quantity can't be priced anyway."""
+        open-ended. Defaults to the last tier's up_to when unset."""
         if self.maximum_units is not None:
             return self.maximum_units
         tiers = _parse_tiers(self.get_tiers_data())
@@ -616,6 +611,11 @@ class TieredPrice:
 
 
 class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
+    """Seat-based price. Billing still reads `seat_tiers`; the shared
+    columns are dual-written. Delete the overrides when reads move to
+    `tiers`.
+    """
+
     amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.seat_based
     )
@@ -625,18 +625,13 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
     )
 
     def get_tiers_data(self) -> TiersData:
-        """`seat_tiers` is still the source of truth, delete this override once reads move to `tiers`."""
         return seat_tiers_to_tiers_data(self.seat_tiers)
 
     def get_minimum_units(self) -> int:
-        """Same migration state as `get_tiers_data`: read from `seat_tiers`
-        until the `minimum_units` column takes over."""
         minimum_units, _ = seat_tiers_unit_bounds(self.seat_tiers)
         return minimum_units or 0
 
     def get_maximum_units(self) -> int | None:
-        """Same migration state as `get_tiers_data`: read from `seat_tiers`
-        until the `maximum_units` column takes over."""
         _, maximum_units = seat_tiers_unit_bounds(self.seat_tiers)
         return maximum_units
 
@@ -674,7 +669,7 @@ def _write_tiers_from_seat_tiers(
     initiator: Event,
 ) -> None:
     """Dual-write to the shared `tiers`, `minimum_units` and `maximum_units`
-    columns, delete when `seat_tiers` is dropped."""
+    columns. Delete when `seat_tiers` is dropped."""
     if value is None:
         target.tiers = None
         target.minimum_units = None

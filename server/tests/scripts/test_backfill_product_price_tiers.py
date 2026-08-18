@@ -24,8 +24,8 @@ async def _legacy_seat_price(
     save_fixture: SaveFixture,
     product: Product,
 ) -> ProductPriceSeatUnit:
-    """A seat price whose `tiers`, `minimum_units` and `maximum_units` columns
-    are empty, as rows written before the dual-write hook are."""
+    """A seat price with empty shared columns, like rows written
+    before the dual-write hook existed."""
     price = await create_product_price_seat_unit(
         save_fixture,
         product=product,

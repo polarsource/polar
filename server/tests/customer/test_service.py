@@ -848,7 +848,9 @@ class TestUpdate:
                 customer,
                 CustomerUpdate(tax_id="INVALID"),
             )
-        assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "tax_id")
+        assert errors[0]["input"] == "INVALID"
 
     async def test_valid_tax_id(
         self,
@@ -897,7 +899,9 @@ class TestUpdate:
                     billing_address=AddressInput(country=CountryAlpha2Input("US"))
                 ),
             )
-        assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "tax_id")
+        assert errors[0]["input"] == "FR61954506077"
 
     async def test_clear_tax_id_with_empty_string(
         self,

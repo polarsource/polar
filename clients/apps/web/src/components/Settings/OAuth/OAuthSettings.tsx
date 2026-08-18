@@ -62,14 +62,15 @@ const OAuthSettings = () => {
       ) : (
         <ListGroup.Item>
           <p className="dark:text-polar-400 text-sm text-gray-500">
-            You don&apos;t have any configured OAuth Applications
+            You haven&rsquo;t created any OAuth applications yet. Create one to
+            get started.
           </p>
         </ListGroup.Item>
       )}
       <ListGroup.Item>
         <div className="flex flex-row items-center gap-x-4">
           <Button asChild onClick={showNewOAuthClientModal}>
-            New OAuth App
+            Create OAuth App
           </Button>
         </div>
       </ListGroup.Item>

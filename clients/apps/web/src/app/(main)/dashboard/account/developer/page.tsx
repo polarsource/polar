@@ -14,7 +14,7 @@ export default function Page() {
       <Section id="oauth">
         <SectionDescription
           title="OAuth Applications"
-          description="Your configured OAuth Applications"
+          description="Your configured OAuth applications"
         />
 
         <OAuthSettings />

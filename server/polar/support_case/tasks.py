@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import joinedload
@@ -176,7 +177,7 @@ async def merge_case_attachments(case_id: UUID, attachment_ids: list[UUID]) -> N
             f"{case.organization_id}/{uuid4()}/{filename}"
         )
         s3_service = S3_SERVICES[FileServiceTypes.support_case_attachment]
-        s3_service.upload(merged, path, "application/pdf")
+        await asyncio.to_thread(s3_service.upload, merged, path, "application/pdf")
 
         file = File(
             organization=case.organization,

@@ -20,7 +20,11 @@ def get_client(
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
         config=Config(
-            region_name=settings.AWS_REGION, signature_version=signature_version
+            region_name=settings.AWS_REGION,
+            signature_version=signature_version,
+            connect_timeout=settings.AWS_S3_CONNECT_TIMEOUT_SECONDS,
+            read_timeout=settings.AWS_S3_READ_TIMEOUT_SECONDS,
+            retries={"mode": "standard", "max_attempts": settings.AWS_S3_MAX_ATTEMPTS},
         ),
     )
 

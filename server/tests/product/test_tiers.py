@@ -11,6 +11,7 @@ from polar.product.tiers import (
     UnboundedTierNotLastError,
     seat_tiers_to_tiers,
     seat_tiers_unit_bounds,
+    validate_unit_bounds,
 )
 
 
@@ -43,13 +44,6 @@ class TestTiersValidation:
             list(reversed(SHARED_MULTI_TIER)),
         )
         assert [tier.bound for tier in tiers.tiers] == [10, 50, None]
-
-    def test_valid_unit_bounds(self) -> None:
-        tiers = _tiers_data(TierType.volume, SHARED_MULTI_TIER)
-        tiers.validate_unit_bounds(
-            minimum_units=5,
-            maximum_units=100,
-        )
 
     def test_empty_tiers_raises(self) -> None:
         with pytest.raises(ValidationError) as exc:
@@ -126,29 +120,40 @@ class TestTiersValidation:
         assert serialized["tiers"][0]["bound"] is None
         assert serialized["tiers"][0]["unit_amount"] == "1E-12"
 
+
+class TestValidateUnitBounds:
+    def test_valid_unit_bounds(self) -> None:
+        tiers = _tiers_data(TierType.volume, SHARED_MULTI_TIER)
+        validate_unit_bounds(
+            tiers,
+            minimum_units=5,
+            maximum_units=100,
+        )
+
     def test_negative_minimum_units_raises(self) -> None:
         tiers = _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}])
         with pytest.raises(ValueError, match="minimum_units must be >= 0"):
-            tiers.validate_unit_bounds(minimum_units=-1)
+            validate_unit_bounds(tiers, minimum_units=-1)
 
     def test_minimum_units_above_last_bounded_tier_raises(self) -> None:
         tiers = _tiers_data(TierType.volume, [{"bound": 10, "unit_amount": "500"}])
         with pytest.raises(ValueError, match="minimum_units must not exceed"):
-            tiers.validate_unit_bounds(minimum_units=11)
+            validate_unit_bounds(tiers, minimum_units=11)
 
     def test_minimum_units_with_unbounded_last_tier(self) -> None:
         tiers = _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}])
-        tiers.validate_unit_bounds(minimum_units=1000)
+        validate_unit_bounds(tiers, minimum_units=1000)
 
     def test_zero_maximum_units_raises(self) -> None:
         tiers = _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}])
         with pytest.raises(ValueError, match="maximum_units must be > 0"):
-            tiers.validate_unit_bounds(maximum_units=0)
+            validate_unit_bounds(tiers, maximum_units=0)
 
     def test_maximum_units_below_minimum_raises(self) -> None:
         tiers = _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}])
         with pytest.raises(ValueError, match="maximum_units must be >= minimum_units"):
-            tiers.validate_unit_bounds(
+            validate_unit_bounds(
+                tiers,
                 minimum_units=10,
                 maximum_units=5,
             )
@@ -156,11 +161,11 @@ class TestTiersValidation:
     def test_maximum_units_above_last_bounded_tier_raises(self) -> None:
         tiers = _tiers_data(TierType.volume, [{"bound": 10, "unit_amount": "500"}])
         with pytest.raises(ValueError, match="maximum_units must not exceed"):
-            tiers.validate_unit_bounds(maximum_units=11)
+            validate_unit_bounds(tiers, maximum_units=11)
 
     def test_maximum_units_with_unbounded_last_tier(self) -> None:
         tiers = _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}])
-        tiers.validate_unit_bounds(maximum_units=1000)
+        validate_unit_bounds(tiers, maximum_units=1000)
 
 
 class TestSeatTiersToTiers:
@@ -243,6 +248,18 @@ class TestSeatTiersToTiers:
                     "tiers": [
                         {"min_seats": 1, "max_seats": None, "price_per_seat": 1000},
                         {"min_seats": 11, "max_seats": 20, "price_per_seat": 800},
+                    ],
+                }
+            )
+
+    def test_duplicate_max_seats_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="bound values must be unique"):
+            seat_tiers_to_tiers(
+                {
+                    "seat_tier_type": SeatTierType.volume,
+                    "tiers": [
+                        {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
+                        {"min_seats": 11, "max_seats": 10, "price_per_seat": 800},
                     ],
                 }
             )

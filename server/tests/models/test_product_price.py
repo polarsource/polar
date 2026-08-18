@@ -17,6 +17,7 @@ from polar.product.tiers import (
     Tiers,
     TierType,
     seat_tiers_to_tiers,
+    validate_unit_bounds,
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -430,7 +431,8 @@ class TestSeatTiersDualWrite:
     def test_dual_written_seat_data_passes_validation(self) -> None:
         price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
         assert price.tiers is not None
-        price.tiers.validate_unit_bounds(
+        validate_unit_bounds(
+            price.tiers,
             minimum_units=price.minimum_units,
             maximum_units=price.maximum_units,
         )

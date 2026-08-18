@@ -9,7 +9,6 @@ from pydantic import (
     Discriminator,
     Field,
     Tag,
-    ValidationError,
     ValidationInfo,
     computed_field,
     field_validator,
@@ -84,6 +83,7 @@ from polar.product.tiers import (
     UnboundedTierNotLastError,
     seat_tiers_to_tiers,
     seat_tiers_unit_bounds,
+    validate_unit_bounds,
 )
 
 PRODUCT_NAME_MIN_LENGTH = 3
@@ -287,7 +287,11 @@ class ProductPriceSeatTiers(Schema):
     def validate_tiers(
         cls, v: list[ProductPriceSeatTier]
     ) -> list[ProductPriceSeatTier]:
-        """Validate that tiers are well-formed and form continuous ranges."""
+        """
+        Validate that tiers are well-formed and form continuous ranges.
+
+        This will be slimmed down once we make the move to the shared tiers data.
+        """
         sorted_tiers = sorted(v, key=lambda t: t.min_seats)
         if sorted_tiers[0].min_seats < 1:
             raise ValueError("First tier must start at min_seats >= 1")
@@ -306,7 +310,8 @@ class ProductPriceSeatTiers(Schema):
         try:
             minimum_units, maximum_units = seat_tiers_unit_bounds(seat_tiers)
             shared_tiers = seat_tiers_to_tiers(seat_tiers)
-            shared_tiers.validate_unit_bounds(
+            validate_unit_bounds(
+                shared_tiers,
                 minimum_units=minimum_units,
                 maximum_units=maximum_units,
             )
@@ -316,19 +321,12 @@ class ProductPriceSeatTiers(Schema):
             ) from None
         except NonContiguousTiersError as e:
             raise ValueError(str(e)) from None
-        except ValidationError as e:
-            error = e.errors()[0]
-            if error["type"] == "duplicate_tier_bound":
-                bound = error["ctx"]["bound"]
-                raise ValueError(
-                    f"Tier max_seats values must be unique, got {bound} twice"
-                ) from None
-            raise ValueError(error["msg"]) from None
         except ValueError as e:
             message = (
                 str(e)
                 .replace("minimum_units", "minimum_seats")
                 .replace("maximum_units", "maximum_seats")
+                .replace("bound values", "max_seats values")
                 .replace("last tier's bound", "last tier's max_seats")
             )
             raise ValueError(message) from None

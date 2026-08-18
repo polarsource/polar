@@ -3,7 +3,7 @@ from enum import StrEnum
 from itertools import pairwise
 from typing import Any, TypedDict
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError
 from sqlalchemy import Dialect, TypeDecorator
 from sqlalchemy.dialects.postgresql import JSONB
@@ -57,35 +57,6 @@ class Tiers(BaseModel):
                 )
         return sorted_tiers
 
-    def validate_unit_bounds(
-        self,
-        *,
-        minimum_units: int | None = None,
-        maximum_units: int | None = None,
-    ) -> None:
-        last_bound = self.tiers[-1].bound
-        if minimum_units is not None:
-            if minimum_units < 0:
-                raise ValueError(f"minimum_units must be >= 0, got {minimum_units}")
-            if last_bound is not None and minimum_units > last_bound:
-                raise ValueError(
-                    f"minimum_units must not exceed the last tier's bound, "
-                    f"got {minimum_units} > {last_bound}"
-                )
-        if maximum_units is not None:
-            if maximum_units <= 0:
-                raise ValueError(f"maximum_units must be > 0, got {maximum_units}")
-            if minimum_units is not None and maximum_units < minimum_units:
-                raise ValueError(
-                    f"maximum_units must be >= minimum_units, "
-                    f"got {maximum_units} < {minimum_units}"
-                )
-            if last_bound is not None and maximum_units > last_bound:
-                raise ValueError(
-                    f"maximum_units must not exceed the last tier's bound, "
-                    f"got {maximum_units} > {last_bound}"
-                )
-
     def calculate(self, quantity: int) -> Decimal:
         if quantity < 0:
             raise InvalidQuantityError(f"Negative quantity: {quantity}")
@@ -126,6 +97,40 @@ class Tiers(BaseModel):
     @property
     def last_bound(self) -> int | None:
         return self.tiers[-1].bound
+
+
+def validate_unit_bounds(
+    tiers: Tiers,
+    *,
+    minimum_units: int | None = None,
+    maximum_units: int | None = None,
+) -> None:
+    """Check purchasable quantity columns against the rate schedule.
+
+    `minimum_units` / `maximum_units` live on the price, not in `tiers`.
+    """
+    last_bound = tiers.last_bound
+    if minimum_units is not None:
+        if minimum_units < 0:
+            raise ValueError(f"minimum_units must be >= 0, got {minimum_units}")
+        if last_bound is not None and minimum_units > last_bound:
+            raise ValueError(
+                f"minimum_units must not exceed the last tier's bound, "
+                f"got {minimum_units} > {last_bound}"
+            )
+    if maximum_units is not None:
+        if maximum_units <= 0:
+            raise ValueError(f"maximum_units must be > 0, got {maximum_units}")
+        if minimum_units is not None and maximum_units < minimum_units:
+            raise ValueError(
+                f"maximum_units must be >= minimum_units, "
+                f"got {maximum_units} < {minimum_units}"
+            )
+        if last_bound is not None and maximum_units > last_bound:
+            raise ValueError(
+                f"maximum_units must not exceed the last tier's bound, "
+                f"got {maximum_units} > {last_bound}"
+            )
 
 
 class TiersType(TypeDecorator[Any]):
@@ -203,14 +208,19 @@ def seat_tiers_to_tiers(seat_tiers: SeatTiersData) -> Tiers:
         if next_tier["min_seats"] != max_seats + 1:
             raise NonContiguousTiersError(max_seats, next_tier["min_seats"])
 
-    tiers = [
-        Tier(
-            bound=tier.get("max_seats"),
-            unit_amount=Decimal(tier["price_per_seat"]),
+    try:
+        return Tiers(
+            type=tier_type,
+            tiers=[
+                Tier(
+                    bound=tier.get("max_seats"),
+                    unit_amount=Decimal(tier["price_per_seat"]),
+                )
+                for tier in sorted_seat_tiers
+            ],
         )
-        for tier in sorted_seat_tiers
-    ]
-    return Tiers(type=tier_type, tiers=tiers)
+    except ValidationError as e:
+        raise ValueError(e.errors()[0]["msg"]) from None
 
 
 def seat_tiers_unit_bounds(seat_tiers: SeatTiersData) -> tuple[int | None, int | None]:

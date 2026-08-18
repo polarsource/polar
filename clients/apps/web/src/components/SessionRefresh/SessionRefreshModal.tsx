@@ -22,7 +22,9 @@ export const SessionRefreshModal = () => {
       description="For your security, this action requires that you signed in recently. Sign in again to continue."
       onConfirm={() => {
         const returnTo = `${window.location.pathname}${window.location.search}`
-        router.push(`/auth?return_to=${encodeURIComponent(returnTo)}`)
+        router.push(
+          `/auth?return_to=${encodeURIComponent(returnTo)}&refresh`,
+        )
       }}
     />
   )

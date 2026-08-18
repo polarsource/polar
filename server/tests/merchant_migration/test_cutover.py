@@ -221,6 +221,29 @@ class TestRun:
         assert paused_subscription.trial_end == trial_end
         assert paused_subscription.current_period_end == trial_end
 
+    async def test_bills_a_trial_at_its_end_not_the_period_end(
+        self,
+        cutover: RunCutover,
+        copied_card: PaymentMethod,
+        paused_subscription: Subscription,
+    ) -> None:
+        """The scheduler converts a trial at `current_period_end`, so a source
+        reporting a later period end would convert it weeks late."""
+        trial_end = utc_now() + timedelta(days=10)
+
+        outcome = await cutover(
+            _source(
+                status=CanonicalSubscriptionStatus.trialing,
+                current_period_end=utc_now() + timedelta(days=45),
+                trial_end=trial_end,
+            )
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert paused_subscription.status == SubscriptionStatus.trialing
+        assert paused_subscription.trial_end == trial_end
+        assert paused_subscription.current_period_end == trial_end
+
     async def test_rebuilds_a_period_the_source_reports_backwards(
         self,
         cutover: RunCutover,

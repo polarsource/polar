@@ -700,8 +700,9 @@ class SubscriptionService:
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count or 1
         start = current_period_start or utc_now()
+        anchor = anchor_day or start.day
         next_period = recurring_interval.get_next_period(
-            start, start.day, recurring_interval_count
+            start, anchor, recurring_interval_count
         )
         # A source end that predates the start would invert the period, which
         # would then feed the renewal maths at cutover.
@@ -715,7 +716,7 @@ class SubscriptionService:
             status=SubscriptionStatus.paused,
             paused_at=utc_now(),
             started_at=start,
-            anchor_day=anchor_day or start.day,
+            anchor_day=anchor,
             current_period_start=start,
             current_period_end=end,
             cancel_at_period_end=False,
@@ -768,7 +769,9 @@ class SubscriptionService:
         # the anchor is corrected on the way through.
         if anchor_day is not None:
             subscription.anchor_day = anchor_day
-        subscription.current_period_end = current_period_end
+        # The scheduler converts a trial at `current_period_end`, so while
+        # trialing the two have to agree or the customer is billed late.
+        subscription.current_period_end = trial_end or current_period_end
         subscription.payment_method = payment_method
         subscription.initialize_meter_period(
             None if trial_end else current_period_start

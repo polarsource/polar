@@ -13,6 +13,7 @@ import { Testimonials } from './Testimonials'
 export default function Page() {
   return (
     <div className="flex w-full flex-col">
+      Hello!
       <Hero />
       <Platform />
       <Meter />

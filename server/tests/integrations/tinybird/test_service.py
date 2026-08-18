@@ -501,6 +501,30 @@ class TestTinybirdEventsQuery:
         assert customer_stats[0].occurrences == 4
         assert len(variance) >= 1
 
+    async def test_property_group_stats_on_custom_metadata_key(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        events = [
+            create_test_event(
+                organization_id=org_id,
+                name="checkout",
+                source=EventSource.user,
+                user_metadata={"tier": tier},
+            )
+            for tier in ("pro", "pro", "free")
+        ]
+        await tinybird_client.ingest(
+            DATASOURCE_EVENTS, [_event_to_tinybird(e) for e in events], wait=True
+        )
+
+        stats = await TinybirdEventsQuery([org_id]).get_property_group_stats(
+            "tier", ["_cost.amount"]
+        )
+
+        by_value = {s.value: s.occurrences for s in stats}
+        assert by_value == {"pro": 2, "free": 1}
+
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
 @pytest.mark.asyncio

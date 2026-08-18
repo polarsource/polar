@@ -1221,9 +1221,10 @@ class TinybirdEventsQuery:
                     ).label(f"{label}_sum")
                 )
 
+        group_value = group_col.label("value")
         statement = (
             sqlalchemy.select(
-                group_col.label("value"),
+                group_value,
                 func.count().label("occurrences"),
                 literal_column(
                     "uniqExact(if(customer_id IS NOT NULL,"
@@ -1235,7 +1236,7 @@ class TinybirdEventsQuery:
             .select_from(events_table)
             .where(base_filter)
             .where(group_col != "")
-            .group_by(group_col)
+            .group_by(group_value)
         )
 
         for f in self._filters:

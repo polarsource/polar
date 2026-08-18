@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 from httpx import AsyncClient
@@ -13,6 +14,7 @@ from polar.models.account import Account
 from polar.models.organization import (
     EMBED_HOSTS_ENFORCED_FROM,
     Organization,
+    OrganizationCustomerEmailSettings,
     OrganizationStatus,
 )
 from polar.models.organization_sso_connection import (
@@ -539,6 +541,34 @@ class TestUpdateOrganization:
         email_settings = second.json()["customer_email_settings"]
         assert email_settings["order_confirmation"] is False
         assert email_settings["subscription_confirmation"] is False
+
+    @pytest.mark.auth
+    async def test_partial_update_customer_email_settings_reminder_follows_new_cycle(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A legacy organization without an explicit
+        # `payment_method_expiration_reminder`: its fallback is derived from
+        # `subscription_cycled`. Changing the cycle in the same request must
+        # re-derive the persisted reminder from the new value, not the old one.
+        organization.customer_email_settings = cast(
+            OrganizationCustomerEmailSettings,
+            {"subscription_cycled": True},
+        )
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"customer_email_settings": {"subscription_cycled": False}},
+        )
+
+        assert response.status_code == 200
+        email_settings = response.json()["customer_email_settings"]
+        assert email_settings["subscription_cycled"] is False
+        assert email_settings["payment_method_expiration_reminder"] is False
 
     @pytest.mark.auth
     async def test_update_customer_email_settings_full_object(

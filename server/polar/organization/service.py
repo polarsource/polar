@@ -56,7 +56,6 @@ from polar.models.organization import (
     STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
-    OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
     OrganizationDetails,
     OrganizationDisputeSettings,
@@ -585,16 +584,17 @@ class OrganizationService:
             )
 
         if update_schema.customer_email_settings is not None:
-            organization.customer_email_settings = cast(
-                OrganizationCustomerEmailSettings,
-                {
-                    **resolve_default_customer_email_settings(
-                        organization.customer_email_settings
-                    ),
-                    **update_schema.customer_email_settings.model_dump(
-                        mode="json", exclude_unset=True, exclude_none=True
-                    ),
-                },
+            merged_email_settings = {
+                **organization.customer_email_settings,
+                **update_schema.customer_email_settings.model_dump(
+                    mode="json", exclude_unset=True, exclude_none=True
+                ),
+            }
+            # Resolve defaults after merging so a legacy organization that lacks
+            # `payment_method_expiration_reminder` derives its fallback from the
+            # `subscription_cycled` value set in this same request, not the old one.
+            organization.customer_email_settings = (
+                resolve_default_customer_email_settings(merged_email_settings)
             )
 
         if update_schema.customer_portal_settings is not None:

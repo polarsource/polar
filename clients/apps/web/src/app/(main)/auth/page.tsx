@@ -20,16 +20,25 @@ export default async function Page(props: {
     error?: string
     return_to?: string
     from?: string
+    refresh?: string
   }>
 }) {
+  const searchParams = await props.searchParams
+
+  // Already-authenticated users have no reason to see the login form, so send
+  // them into the app. The exception is a re-authentication flow (see
+  // SessionRefreshModal), which sets `refresh` and expects the form to render
+  // so the user can sign in again for a sensitive action.
   const user = await getAuthenticatedUser()
-  if (user) {
-    redirect('/start')
+  if (user && searchParams.refresh === undefined) {
+    const { return_to } = searchParams
+    const isSafeReturnTo =
+      !!return_to && return_to.startsWith('/') && !return_to.startsWith('//')
+    redirect(isSafeReturnTo ? return_to : '/start')
   }
 
   const api = await getServerSideAPI()
   const authenticationSession = await checkAuthenticationSession(api)
-  const searchParams = await props.searchParams
 
   const redirectPath = getAuthenticationSessionRedirectPath(
     authenticationSession,

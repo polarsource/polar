@@ -1,9 +1,5 @@
 'use client'
 
-import {
-  getAuthenticationSessionRedirectPath,
-  getOrgAuthenticationSessionCompleteURL,
-} from '@/utils/auth'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { SpinnerNoMargin, Text } from '@polar-sh/orbit'
@@ -55,27 +51,6 @@ const OrgAuth = ({ slug, returnTo }: { slug: string; returnTo?: string }) => {
     initialized.current = true
 
     const init = async () => {
-      const { data: existing, response } = await api.GET('/v1/auth/status')
-
-      // /status is global and omits org SSO factors, so only trust it after an
-      // identity is attached (return-from-callback): advance or complete.
-      if (response.ok && existing && existing.identity_id) {
-        if (existing.available_factors.length === 0) {
-          setStatus('completing')
-          window.location.href = getOrgAuthenticationSessionCompleteURL(slug)
-          return
-        }
-        const redirectPath = getAuthenticationSessionRedirectPath(existing)
-        if (redirectPath) {
-          setStatus('completing')
-          router.push(redirectPath)
-          return
-        }
-        setSession(existing)
-        setStatus('ready')
-        return
-      }
-
       // Start an org-scoped session to get this org's factors (SSO + base).
       const { data: started, error } = await api.POST('/v1/auth/{slug}/start', {
         params: { path: { slug } },

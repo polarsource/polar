@@ -1,8 +1,14 @@
 import AuthHeader from '@/components/Auth/AuthHeader'
 import AuthTermsFooter from '@/components/Auth/AuthTermsFooter'
 import OrgAuth from '@/components/Auth/OrgAuth'
+import {
+  checkAuthenticationSession,
+  getAuthenticationSessionRedirectPath,
+} from '@/utils/auth'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { Box } from '@polar-sh/orbit/Box'
 import { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
   title: 'Sign in with SSO to Polar',
@@ -12,6 +18,16 @@ export default async function Page(props: {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ error?: string; return_to?: string }>
 }) {
+  const api = await getServerSideAPI()
+  const authenticationSession = await checkAuthenticationSession(api)
+
+  const redirectPath = getAuthenticationSessionRedirectPath(
+    authenticationSession,
+  )
+  if (redirectPath) {
+    redirect(redirectPath)
+  }
+
   const { slug } = await props.params
   const { error, return_to } = await props.searchParams
   // Land on the SSO organization's dashboard by default — the scoped session

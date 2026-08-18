@@ -103,8 +103,6 @@ export const ProductPricingSection = ({
     }
 
     setValue('recurring_interval_count', null)
-    setValue('meter_interval', null)
-    setValue('meter_interval_count', null)
     const currentPrices = getValues('prices')
     if (!currentPrices) return
     const filteredPrices = currentPrices.filter(
@@ -160,12 +158,13 @@ export const ProductPricingSection = ({
     hasSavedMeterCycle: !!update && !!meterInterval,
   })
 
+  // Covers the one-time switch too: a one-time product never shows the meter cycle.
   useEffect(() => {
-    if (!showMeterCycle && getValues('meter_interval')) {
+    if (!showMeterCycle && meterInterval) {
       setValue('meter_interval', null)
       setValue('meter_interval_count', null)
     }
-  }, [showMeterCycle, getValues, setValue])
+  }, [showMeterCycle, meterInterval, setValue])
 
   const handleAmountTypeChange = useCallback(
     (

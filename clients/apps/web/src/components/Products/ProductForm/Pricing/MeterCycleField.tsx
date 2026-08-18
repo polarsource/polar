@@ -4,7 +4,7 @@ import {
   defaultMeterInterval,
   meterIntervalDividesBillingInterval,
 } from '@/utils/meterInterval'
-import { enums, schemas } from '@polar-sh/client'
+import { enums } from '@polar-sh/client'
 import {
   Input,
   Select,
@@ -53,24 +53,15 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
     [setValue, billingInterval],
   )
 
-  const validate = useCallback(
-    (value: schemas['RecurringInterval'] | null | undefined) => {
-      if (!value || !billingInterval) {
-        return true
-      }
-      return (
-        meterIntervalDividesBillingInterval(
-          value,
-          Number(meterIntervalCount ?? 1),
-          billingInterval,
-          Number(billingIntervalCount ?? 1),
-        ) || INVALID_MESSAGE
-      )
-    },
-    [billingInterval, billingIntervalCount, meterIntervalCount],
-  )
-
-  const invalid = enabled && validate(meterInterval) !== true
+  const dividesBillingCycle =
+    !meterInterval ||
+    !billingInterval ||
+    meterIntervalDividesBillingInterval(
+      meterInterval,
+      Number(meterIntervalCount ?? 1),
+      billingInterval,
+      Number(billingIntervalCount ?? 1),
+    )
 
   return (
     <Box flexDirection="column" rowGap="l">
@@ -130,7 +121,7 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
             <FormField
               control={control}
               name="meter_interval"
-              rules={{ validate }}
+              rules={{ validate: () => dividesBillingCycle || INVALID_MESSAGE }}
               render={({ field }) => (
                 <Box>
                   <Select
@@ -154,7 +145,7 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
               )}
             />
           </Box>
-          {invalid && (
+          {!dividesBillingCycle && (
             <Text variant="caption" color="error">
               {INVALID_MESSAGE}
             </Text>

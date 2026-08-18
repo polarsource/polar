@@ -11,6 +11,7 @@ export {
   orderStatusValues,
   presentmentCurrencyValues,
   propertyAggregationFuncValues,
+  recurringIntervalValues,
   refundReasonValues,
   stripeAccountCountryValues,
   subscriptionExportColumnValues,

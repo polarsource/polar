@@ -3,12 +3,13 @@ import re
 import subprocess
 import sys
 
-from generator.emitter import Prerelease
 from generator.docs_openapi import generate_docs_openapi
+from generator.emitter import Prerelease
 from generator.openapi import GENERATOR_DIR, ROOT, generate_openapi
 
 LANGUAGES = ["python", "typescript"]
 GENERATED_PATHS = ["docs/openapi.json", "sdk/python", "sdk/typescript"]
+OPENAPI_DIRECTORY = GENERATOR_DIR / "openapi"
 
 
 def validate_version(version: str) -> bool:
@@ -17,18 +18,19 @@ def validate_version(version: str) -> bool:
 
 
 def regenerate_openapi() -> None:
-    generate_openapi(GENERATOR_DIR / "openapi.json")
+    generate_openapi(OPENAPI_DIRECTORY)
 
 
 def generate_sdk(
     language: str, version: str, prerelease: Prerelease | None = None
 ) -> None:
+    openapi_files = list((GENERATOR_DIR / "openapi").glob("*.json"))
     cmd = [
         sys.executable,
         "-m",
         "cli",
         "generate",
-        str(GENERATOR_DIR / "openapi.json"),
+        *openapi_files,
         str(GENERATOR_DIR.parent / language),
         "--language",
         language,
@@ -86,7 +88,7 @@ def release_sdk(
     if dry_run:
         print("[DRY RUN] Would perform:")
         if not skip_openapi:
-            print("  - Regenerate OpenAPI spec")
+            print("  - Regenerate OpenAPI specs")
         print("  - Regenerate Python SDK")
         print("  - Regenerate TypeScript SDK")
         print("  - Regenerate docs OpenAPI schema with SDK code samples")

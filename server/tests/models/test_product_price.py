@@ -263,7 +263,7 @@ class TestGraduatedPricing:
 
 
 def _tiers_data(tier_type: TierType, tiers: list[Tier]) -> TiersData:
-    return {"tier_type": tier_type, "tiers": tiers}
+    return {"type": tier_type, "tiers": tiers}
 
 
 def _make_tiered_price(
@@ -279,9 +279,9 @@ def _make_tiered_price(
 
 
 SHARED_MULTI_TIER: list[Tier] = [
-    {"up_to": 10, "price_per_unit": "1000"},
-    {"up_to": 50, "price_per_unit": "800"},
-    {"up_to": None, "price_per_unit": "600"},
+    {"bound": 10, "unit_amount": "1000"},
+    {"bound": 50, "unit_amount": "800"},
+    {"bound": None, "unit_amount": "600"},
 ]
 
 
@@ -290,7 +290,7 @@ class TestGetTieredAmountVolume:
         price = _make_tiered_price(
             _tiers_data(
                 TierType.volume,
-                [{"up_to": None, "price_per_unit": "500"}],
+                [{"bound": None, "unit_amount": "500"}],
             )
         )
         assert price.get_tiered_amount(1) == 500
@@ -300,7 +300,7 @@ class TestGetTieredAmountVolume:
         price = _make_tiered_price(
             _tiers_data(
                 TierType.volume,
-                [{"up_to": None, "price_per_unit": "0.5"}],
+                [{"bound": None, "unit_amount": "0.5"}],
             )
         )
         assert price.get_tiered_amount(10) == Decimal("5")
@@ -312,7 +312,7 @@ class TestGetTieredAmountVolume:
         assert price.get_tiered_amount(50) == 50 * 800
         assert price.get_tiered_amount(51) == 51 * 600
 
-    def test_boundary_is_inclusive_up_to(self) -> None:
+    def test_boundary_is_inclusive_bound(self) -> None:
         price = _make_tiered_price(_tiers_data(TierType.volume, SHARED_MULTI_TIER))
         assert price.get_tiered_amount(10) == 10 * 1000
 
@@ -322,8 +322,8 @@ class TestGetTieredAmountVolume:
             _tiers_data(
                 TierType.volume,
                 [
-                    {"up_to": 10, "price_per_unit": "20000"},
-                    {"up_to": None, "price_per_unit": "6000"},
+                    {"bound": 10, "unit_amount": "20000"},
+                    {"bound": None, "unit_amount": "6000"},
                 ],
             ),
             minimum_units=10,
@@ -334,7 +334,7 @@ class TestGetTieredAmountVolume:
         price = _make_tiered_price(
             _tiers_data(
                 TierType.volume,
-                [{"up_to": 10, "price_per_unit": "500"}],
+                [{"bound": 10, "unit_amount": "500"}],
             )
         )
         with pytest.raises(InvalidQuantityError):
@@ -363,7 +363,7 @@ class TestGetTieredAmountGraduated:
         price = _make_tiered_price(
             _tiers_data(
                 TierType.graduated,
-                [{"up_to": 10, "price_per_unit": "500"}],
+                [{"bound": 10, "unit_amount": "500"}],
             )
         )
         assert price.get_tiered_amount(15) == 10 * 500
@@ -375,8 +375,8 @@ class TestGetTieredAmountGraduated:
             _tiers_data(
                 TierType.graduated,
                 [
-                    {"up_to": 10, "price_per_unit": "20000"},
-                    {"up_to": None, "price_per_unit": "6000"},
+                    {"bound": 10, "unit_amount": "20000"},
+                    {"bound": None, "unit_amount": "6000"},
                 ],
             ),
             minimum_units=10,
@@ -412,7 +412,7 @@ class TestGetTieredAmountContract:
 
     def test_unknown_tier_type_raises(self) -> None:
         price = _make_tiered_price(
-            {"tier_type": "stepped", "tiers": SHARED_MULTI_TIER}  # type: ignore[typeddict-item]
+            {"type": "stepped", "tiers": SHARED_MULTI_TIER}  # type: ignore[typeddict-item]
         )
         with pytest.raises(InvalidTiersError, match="Missing or unknown tier_type"):
             price.get_tiered_amount(10)
@@ -426,7 +426,7 @@ class TestValidateTiersData:
         validate_tiers_data(
             _tiers_data(
                 TierType.graduated,
-                [{"up_to": None, "price_per_unit": "500"}],
+                [{"bound": None, "unit_amount": "500"}],
             )
         )
 
@@ -452,22 +452,22 @@ class TestValidateTiersData:
             validate_tiers_data(data)
 
     def test_negative_price_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="price_per_unit must be >= 0"):
+        with pytest.raises(InvalidTiersError, match="unit_amount must be >= 0"):
             validate_tiers_data(
                 _tiers_data(
                     TierType.volume,
-                    [{"up_to": None, "price_per_unit": "-500"}],
+                    [{"bound": None, "unit_amount": "-500"}],
                 )
             )
 
-    def test_zero_up_to_raises(self) -> None:
-        with pytest.raises(InvalidTiersError, match="up_to must be > 0"):
+    def test_zero_bound_raises(self) -> None:
+        with pytest.raises(InvalidTiersError, match="bound must be > 0"):
             validate_tiers_data(
                 _tiers_data(
                     TierType.volume,
                     [
-                        {"up_to": 0, "price_per_unit": "500"},
-                        {"up_to": None, "price_per_unit": "300"},
+                        {"bound": 0, "unit_amount": "500"},
+                        {"bound": None, "unit_amount": "300"},
                     ],
                 )
             )
@@ -478,20 +478,20 @@ class TestValidateTiersData:
                 _tiers_data(
                     TierType.volume,
                     [
-                        {"up_to": None, "price_per_unit": "500"},
-                        {"up_to": None, "price_per_unit": "300"},
+                        {"bound": None, "unit_amount": "500"},
+                        {"bound": None, "unit_amount": "300"},
                     ],
                 )
             )
 
-    def test_duplicate_up_to_raises(self) -> None:
+    def test_duplicate_bound_raises(self) -> None:
         with pytest.raises(InvalidTiersError, match="must be unique"):
             validate_tiers_data(
                 _tiers_data(
                     TierType.volume,
                     [
-                        {"up_to": 10, "price_per_unit": "500"},
-                        {"up_to": 10, "price_per_unit": "300"},
+                        {"bound": 10, "unit_amount": "500"},
+                        {"bound": 10, "unit_amount": "300"},
                     ],
                 )
             )
@@ -499,31 +499,27 @@ class TestValidateTiersData:
     def test_negative_minimum_units_raises(self) -> None:
         with pytest.raises(InvalidTiersError, match="minimum_units must be >= 0"):
             validate_tiers_data(
-                _tiers_data(
-                    TierType.volume, [{"up_to": None, "price_per_unit": "500"}]
-                ),
+                _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
                 minimum_units=-1,
             )
 
     def test_minimum_units_above_last_bounded_tier_raises(self) -> None:
         with pytest.raises(InvalidTiersError, match="minimum_units must not exceed"):
             validate_tiers_data(
-                _tiers_data(TierType.volume, [{"up_to": 10, "price_per_unit": "500"}]),
+                _tiers_data(TierType.volume, [{"bound": 10, "unit_amount": "500"}]),
                 minimum_units=11,
             )
 
     def test_minimum_units_with_unbounded_last_tier(self) -> None:
         validate_tiers_data(
-            _tiers_data(TierType.volume, [{"up_to": None, "price_per_unit": "500"}]),
+            _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
             minimum_units=1000,
         )
 
     def test_zero_maximum_units_raises(self) -> None:
         with pytest.raises(InvalidTiersError, match="maximum_units must be > 0"):
             validate_tiers_data(
-                _tiers_data(
-                    TierType.volume, [{"up_to": None, "price_per_unit": "500"}]
-                ),
+                _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
                 maximum_units=0,
             )
 
@@ -532,9 +528,7 @@ class TestValidateTiersData:
             InvalidTiersError, match="maximum_units must be >= minimum_units"
         ):
             validate_tiers_data(
-                _tiers_data(
-                    TierType.volume, [{"up_to": None, "price_per_unit": "500"}]
-                ),
+                _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
                 minimum_units=10,
                 maximum_units=5,
             )
@@ -542,19 +536,19 @@ class TestValidateTiersData:
     def test_maximum_units_above_last_bounded_tier_raises(self) -> None:
         with pytest.raises(InvalidTiersError, match="maximum_units must not exceed"):
             validate_tiers_data(
-                _tiers_data(TierType.volume, [{"up_to": 10, "price_per_unit": "500"}]),
+                _tiers_data(TierType.volume, [{"bound": 10, "unit_amount": "500"}]),
                 maximum_units=11,
             )
 
     def test_maximum_units_with_unbounded_last_tier(self) -> None:
         validate_tiers_data(
-            _tiers_data(TierType.volume, [{"up_to": None, "price_per_unit": "500"}]),
+            _tiers_data(TierType.volume, [{"bound": None, "unit_amount": "500"}]),
             maximum_units=1000,
         )
 
 
 class TestSeatTiersToTiersData:
-    def test_converts_max_seats_to_up_to(self) -> None:
+    def test_converts_max_seats_to_bound(self) -> None:
         result = seat_tiers_to_tiers_data(
             {
                 "seat_tier_type": SeatTierType.graduated,
@@ -565,10 +559,10 @@ class TestSeatTiersToTiersData:
             }
         )
         assert result == {
-            "tier_type": TierType.graduated,
+            "type": TierType.graduated,
             "tiers": [
-                {"up_to": 10, "price_per_unit": "1000"},
-                {"up_to": None, "price_per_unit": "800"},
+                {"bound": 10, "unit_amount": "1000"},
+                {"bound": None, "unit_amount": "800"},
             ],
         }
 
@@ -576,7 +570,7 @@ class TestSeatTiersToTiersData:
         result = seat_tiers_to_tiers_data(
             {"tiers": [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}]}  # type: ignore[typeddict-item]
         )
-        assert result["tier_type"] == TierType.volume
+        assert result["type"] == TierType.volume
 
     def test_sorts_tiers(self) -> None:
         result = seat_tiers_to_tiers_data(
@@ -588,7 +582,7 @@ class TestSeatTiersToTiersData:
                 ],
             }
         )
-        assert [t["up_to"] for t in result["tiers"]] == [10, None]
+        assert [t["bound"] for t in result["tiers"]] == [10, None]
 
     def test_missing_max_seats_key(self) -> None:
         result = seat_tiers_to_tiers_data(
@@ -597,10 +591,10 @@ class TestSeatTiersToTiersData:
                 "tiers": [{"min_seats": 1, "price_per_seat": 500}],  # type: ignore[typeddict-item]
             }
         )
-        assert result["tiers"][0]["up_to"] is None
+        assert result["tiers"][0]["bound"] is None
 
     def test_gap_raises(self) -> None:
-        # A gap cannot be represented with up_to bounds, so translation must
+        # A gap cannot be represented with bound bounds, so translation must
         # reject it instead of silently swallowing it.
         with pytest.raises(NonContiguousTiersError):
             seat_tiers_to_tiers_data(
@@ -689,9 +683,9 @@ class TestSeatTiersDualWrite:
             "tiers": [{"min_seats": 5, "max_seats": 20, "price_per_seat": 250}],
         }
         assert price.tiers == {
-            "tier_type": TierType.volume,
+            "type": TierType.volume,
             "tiers": [
-                {"up_to": 20, "price_per_unit": "250"},
+                {"bound": 20, "unit_amount": "250"},
             ],
         }
         assert price.minimum_units == 5
@@ -729,8 +723,8 @@ class TestMinimumMaximumUnits:
             _tiers_data(
                 TierType.volume,
                 [
-                    {"up_to": 10, "price_per_unit": "500"},
-                    {"up_to": 20, "price_per_unit": "300"},
+                    {"bound": 10, "unit_amount": "500"},
+                    {"bound": 20, "unit_amount": "300"},
                 ],
             )
         )

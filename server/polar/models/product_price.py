@@ -33,6 +33,7 @@ from polar.enums import (
     SubscriptionRecurringInterval,
     TaxBehaviorOption,
 )
+from polar.exceptions import PolarError
 from polar.kit.currency import format_currency
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
@@ -68,16 +69,16 @@ class TierType(StrEnum):
 
 
 class Tier(TypedDict):
-    """A per-unit rate up to and including `up_to`.
+    """A per-unit rate up to and including `bound`.
 
     Each tier starts where the previous one ended. The first starts at
-    zero. `up_to` is None on the last tier if it's unbounded. Rates are
+    zero. `bound` is None on the last tier if it's unbounded. Rates are
     in cents and may be fractional, so they're stored as strings and
     parsed to Decimal before any math.
     """
 
-    up_to: int | None
-    price_per_unit: str
+    bound: int | None
+    unit_amount: str
 
 
 class TiersData(TypedDict):
@@ -86,12 +87,17 @@ class TiersData(TypedDict):
     `maximum_units` columns, not here.
     """
 
-    tier_type: TierType
+    type: TierType
     tiers: list[Tier]
 
 
-class InvalidTiersError(ValueError):
-    pass
+class TiersError(PolarError):
+    """Base error for invalid or unusable tiered pricing data."""
+
+
+class InvalidTiersError(TiersError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, status_code=400)
 
 
 class UnboundedTierNotLastError(InvalidTiersError):
@@ -111,12 +117,13 @@ class NonContiguousTiersError(InvalidTiersError):
         self.next_min_seats = next_min_seats
 
 
-class InvalidQuantityError(ValueError):
-    pass
+class InvalidQuantityError(TiersError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, status_code=400)
 
 
 def _parse_tier_type(data: TiersData) -> TierType:
-    tier_type = data.get("tier_type")
+    tier_type = data.get("type")
     try:
         return TierType(tier_type)
     except ValueError as e:
@@ -124,45 +131,45 @@ def _parse_tier_type(data: TiersData) -> TierType:
 
 
 class _ParsedTier(TypedDict):
-    up_to: int | None
-    price_per_unit: Decimal
+    bound: int | None
+    unit_amount: Decimal
 
 
 def _parse_tiers(data: TiersData) -> list[_ParsedTier]:
     parsed: list[_ParsedTier] = [
         {
-            "up_to": tier["up_to"],
-            "price_per_unit": Decimal(tier["price_per_unit"]),
+            "bound": tier["bound"],
+            "unit_amount": Decimal(tier["unit_amount"]),
         }
         for tier in data.get("tiers", [])
     ]
-    return sorted(parsed, key=lambda t: (t["up_to"] is None, t["up_to"] or 0))
+    return sorted(parsed, key=lambda t: (t["bound"] is None, t["bound"] or 0))
 
 
 def _calculate_volume(quantity: int, tiers: list[_ParsedTier]) -> Decimal:
     for tier in tiers:
-        up_to = tier["up_to"]
-        if up_to is None or quantity <= up_to:
-            return tier["price_per_unit"] * quantity
+        bound = tier["bound"]
+        if bound is None or quantity <= bound:
+            return tier["unit_amount"] * quantity
     raise InvalidQuantityError(f"No tier covers quantity {quantity}")
 
 
 def _calculate_graduated(quantity: int, tiers: list[_ParsedTier]) -> Decimal:
     total = Decimal(0)
     remaining = quantity
-    previous_up_to = 0
+    previous_bound = 0
     for tier in tiers:
         if remaining <= 0:
             break
-        up_to = tier["up_to"]
-        tier_capacity = (up_to - previous_up_to) if up_to is not None else None
+        bound = tier["bound"]
+        tier_capacity = (bound - previous_bound) if bound is not None else None
         units_in_tier = (
             remaining if tier_capacity is None else min(remaining, tier_capacity)
         )
-        total += units_in_tier * tier["price_per_unit"]
+        total += units_in_tier * tier["unit_amount"]
         remaining -= units_in_tier
-        if up_to is not None:
-            previous_up_to = up_to
+        if bound is not None:
+            previous_bound = bound
     return total
 
 
@@ -179,31 +186,31 @@ def validate_tiers_data(
         raise InvalidTiersError("At least one tier is required")
 
     for tier in tiers:
-        if tier["price_per_unit"] < 0:
+        if tier["unit_amount"] < 0:
             raise InvalidTiersError(
-                f"Tier price_per_unit must be >= 0, got {tier['price_per_unit']}"
+                f"Tier unit_amount must be >= 0, got {tier['unit_amount']}"
             )
-        up_to = tier["up_to"]
-        if up_to is not None and up_to <= 0:
-            raise InvalidTiersError(f"Tier up_to must be > 0, got {up_to}")
+        bound = tier["bound"]
+        if bound is not None and bound <= 0:
+            raise InvalidTiersError(f"Tier bound must be > 0, got {bound}")
 
     for current, next_tier in pairwise(tiers):
         # Tiers are sorted with None last, so a duplicate None lands here.
-        if current["up_to"] is None:
+        if current["bound"] is None:
             raise UnboundedTierNotLastError()
-        if next_tier["up_to"] == current["up_to"]:
+        if next_tier["bound"] == current["bound"]:
             raise InvalidTiersError(
-                f"Tier up_to values must be unique, got {current['up_to']} twice"
+                f"Tier bound values must be unique, got {current['bound']} twice"
             )
 
-    last_up_to = tiers[-1]["up_to"]
+    last_bound = tiers[-1]["bound"]
     if minimum_units is not None:
         if minimum_units < 0:
             raise InvalidTiersError(f"minimum_units must be >= 0, got {minimum_units}")
-        if last_up_to is not None and minimum_units > last_up_to:
+        if last_bound is not None and minimum_units > last_bound:
             raise InvalidTiersError(
-                f"minimum_units must not exceed the last tier's up_to, "
-                f"got {minimum_units} > {last_up_to}"
+                f"minimum_units must not exceed the last tier's bound, "
+                f"got {minimum_units} > {last_bound}"
             )
     if maximum_units is not None:
         if maximum_units <= 0:
@@ -213,10 +220,10 @@ def validate_tiers_data(
                 f"maximum_units must be >= minimum_units, "
                 f"got {maximum_units} < {minimum_units}"
             )
-        if last_up_to is not None and maximum_units > last_up_to:
+        if last_bound is not None and maximum_units > last_bound:
             raise InvalidTiersError(
-                f"maximum_units must not exceed the last tier's up_to, "
-                f"got {maximum_units} > {last_up_to}"
+                f"maximum_units must not exceed the last tier's bound, "
+                f"got {maximum_units} > {last_bound}"
             )
 
 
@@ -243,7 +250,7 @@ class SeatTiersData(TypedDict):
 def seat_tiers_to_tiers_data(seat_tiers: SeatTiersData) -> TiersData:
     """Translate the legacy seat tier format to the shared tiers format.
 
-    Each tier's max_seats becomes `up_to`. Gaps and overlaps raise, since the
+    Each tier's max_seats becomes `bound`. Gaps and overlaps raise, since the
     shared format can't represent them. A missing seat_tier_type means volume.
     """
     tier_type = TierType(seat_tiers.get("seat_tier_type", SeatTierType.volume))
@@ -260,12 +267,12 @@ def seat_tiers_to_tiers_data(seat_tiers: SeatTiersData) -> TiersData:
 
     tiers: list[Tier] = [
         {
-            "up_to": tier.get("max_seats"),
-            "price_per_unit": str(tier["price_per_seat"]),
+            "bound": tier.get("max_seats"),
+            "unit_amount": str(tier["price_per_seat"]),
         }
         for tier in sorted_seat_tiers
     ]
-    return {"tier_type": tier_type, "tiers": tiers}
+    return {"type": tier_type, "tiers": tiers}
 
 
 def seat_tiers_unit_bounds(seat_tiers: SeatTiersData) -> tuple[int | None, int | None]:
@@ -601,13 +608,13 @@ class TieredPrice:
 
     def get_maximum_units(self) -> int | None:
         """The largest purchasable quantity (inclusive), or None if
-        open-ended. Defaults to the last tier's up_to when unset."""
+        open-ended. Defaults to the last tier's bound when unset."""
         if self.maximum_units is not None:
             return self.maximum_units
         tiers = _parse_tiers(self.get_tiers_data())
         if not tiers:
             return None
-        return tiers[-1]["up_to"]
+        return tiers[-1]["bound"]
 
 
 class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
@@ -653,7 +660,7 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
         tiers = self.get_tiers_data()["tiers"]
         if not tiers:
             return True
-        return all(Decimal(tier["price_per_unit"]) == 0 for tier in tiers)
+        return all(Decimal(tier["unit_amount"]) == 0 for tier in tiers)
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,

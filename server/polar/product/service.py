@@ -198,6 +198,19 @@ class ProductService:
         )
         errors.extend(prices_errors)
 
+        meter_interval = getattr(create_schema, "meter_interval", None)
+        if meter_interval is not None and not organization.feature_settings.get(
+            "meter_cycling_enabled", False
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "meter_interval"),
+                    "msg": "Separate meter cycling is not enabled for this organization.",
+                    "input": meter_interval,
+                }
+            )
+
         product = await repository.create(
             Product(
                 organization=organization,

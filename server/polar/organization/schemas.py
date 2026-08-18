@@ -200,6 +200,13 @@ class OrganizationFeatureSettings(Schema):
             "(off-session charges against a saved payment method)."
         ),
     )
+    meter_cycling_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization can set a separate meter cycle on recurring "
+            "products (a meter interval independent of the billing interval)."
+        ),
+    )
     slack_benefit_enabled: bool = Field(
         False, description="Enables the slack shared channel benefit"
     )

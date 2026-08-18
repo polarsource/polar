@@ -13,6 +13,8 @@ module "vercel" {
   name     = "polar-test"
   git_repo = "polarsource/polar"
 
+  preview_deployments_disabled = false
+
   domains = [
     {
       name = "test.polar.sh"

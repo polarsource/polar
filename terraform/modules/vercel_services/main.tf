@@ -2,10 +2,11 @@ resource "vercel_project" "this" {
   name      = var.name
   framework = "services"
 
-  build_machine_type         = var.build_machine_type
-  resource_config            = var.resource_config
-  enable_preview_feedback    = var.enable_preview_feedback
-  enable_production_feedback = var.enable_production_feedback
+  build_machine_type           = var.build_machine_type
+  resource_config              = var.resource_config
+  preview_deployments_disabled = var.preview_deployments_disabled
+  enable_preview_feedback      = var.enable_preview_feedback
+  enable_production_feedback   = var.enable_production_feedback
 
   automatically_expose_system_environment_variables = true
 

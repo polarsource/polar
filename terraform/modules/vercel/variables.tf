@@ -69,6 +69,11 @@ variable "enable_preview_feedback" {
   default     = null
 }
 
+variable "preview_deployments_disabled" {
+  description = "Disable creation of Preview Deployments for this project"
+  type        = bool
+}
+
 variable "enable_production_feedback" {
   description = "Enable the Vercel Toolbar on production deployments"
   type        = bool

@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -288,25 +288,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
-    def get_customer_id_filter_clause(
-        self, customer_id: Sequence[UUID]
+    def get_customer_filter_clause(
+        self,
+        organization_id: UUID,
+        customer_id: Collection[UUID],
+        external_customer_id: Collection[str],
     ) -> ColumnElement[bool]:
-        return or_(
-            Event.customer_id.in_(customer_id),
-            Event.external_customer_id.in_(
-                select(Customer.external_id).where(Customer.id.in_(customer_id))
-            ),
-        )
-
-    def get_external_customer_id_filter_clause(
-        self, external_customer_id: Sequence[str]
-    ) -> ColumnElement[bool]:
-        return or_(
-            Event.external_customer_id.in_(external_customer_id),
-            Event.customer_id.in_(
-                select(Customer.id).where(
-                    Customer.external_id.in_(external_customer_id)
-                )
+        return and_(
+            Event.organization_id == organization_id,
+            or_(
+                Event.customer_id.in_(customer_id),
+                Event.external_customer_id.in_(external_customer_id),
             ),
         )
 

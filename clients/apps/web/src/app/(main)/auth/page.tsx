@@ -8,6 +8,7 @@ import {
   getAuthenticationSessionRedirectPath,
   type LoginMethod,
 } from '@/utils/auth'
+import { getAuthenticatedUser } from '@/utils/user'
 import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
@@ -21,6 +22,11 @@ export default async function Page(props: {
     from?: string
   }>
 }) {
+  const user = await getAuthenticatedUser()
+  if (user) {
+    redirect('/start')
+  }
+
   const api = await getServerSideAPI()
   const authenticationSession = await checkAuthenticationSession(api)
   const searchParams = await props.searchParams

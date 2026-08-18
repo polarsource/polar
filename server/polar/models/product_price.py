@@ -355,7 +355,7 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
         nullable=True,
     )
     tiers: Mapped[dict[str, Any] | None] = mapped_column(
-        postgresql.JSONB,
+        postgresql.JSONB(none_as_null=True),
         nullable=True,
         default=None,
     )

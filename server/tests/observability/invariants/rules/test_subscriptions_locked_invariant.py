@@ -32,7 +32,7 @@ async def test_failure(
         status=SubscriptionStatus.active,
         product=product,
         customer=customer,
-        scheduler_locked_at=utc_now() - timedelta(minutes=10),
+        scheduler_locked_at=utc_now() - timedelta(minutes=20),
     )
 
     with pytest.raises(SubscriptionsLockedInvariantError) as exc_info:
@@ -56,7 +56,7 @@ async def test_failure_over_limit(
             status=SubscriptionStatus.active,
             product=product,
             customer=customer,
-            scheduler_locked_at=utc_now() - timedelta(minutes=10),
+            scheduler_locked_at=utc_now() - timedelta(minutes=20),
         )
 
     with pytest.raises(SubscriptionsLockedInvariantError) as exc_info:

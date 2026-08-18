@@ -1,10 +1,9 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from itertools import batched
-from typing import cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, and_, func, or_, select, update
+from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
 from polar.config import settings
@@ -159,36 +158,51 @@ class BillingEntryRepository(
         *,
         cutoff: datetime,
     ) -> None:
-        pending_ids = select(BillingEntry.id).where(
-            BillingEntry.subscription_id == subscription_id,
-            BillingEntry.deleted_at.is_(None),
-            BillingEntry.order_item_id.is_(None),
-            BillingEntry.product_price_id.in_(
-                select(ProductPriceMeteredUnit.id).where(
-                    ProductPriceMeteredUnit.meter_id == meter_id
-                )
-            ),
-            BillingEntry.start_timestamp < cutoff,
-            BillingEntry.created_at <= cutoff,
+        # `ix_billing_entry_pending_link` serves the id-ordered scan for one
+        # price at a time.
+        price_ids = await self.session.scalars(
+            select(ProductPriceMeteredUnit.id).where(
+                ProductPriceMeteredUnit.meter_id == meter_id
+            )
         )
-        await self._link_pending(pending_ids, order_item_id)
+        for product_price_id in price_ids:
+            await self.link_pending_by_subscription_and_price(
+                subscription_id, product_price_id, order_item_id, cutoff=cutoff
+            )
 
     async def _link_pending(
         self, pending_ids: Select[tuple[UUID]], order_item_id: UUID
     ) -> None:
-        batch_ids = pending_ids.limit(_LINK_PENDING_BATCH_SIZE)
-        statement = (
-            update(BillingEntry)
-            .where(BillingEntry.id.in_(batch_ids))
-            .values(order_item_id=order_item_id)
-            .execution_options(synchronize_session=False)
-        )
+        # Keyset pagination: a bare `LIMIT` restart would re-scan rows already
+        # updated in this transaction, making the loop quadratic.
+        last_id: UUID | None = None
         while True:
-            result = cast(
-                CursorResult[BillingEntry], await self.session.execute(statement)
+            batch_ids = pending_ids
+            if last_id is not None:
+                batch_ids = batch_ids.where(BillingEntry.id > last_id)
+            batch_ids = batch_ids.order_by(BillingEntry.id).limit(
+                _LINK_PENDING_BATCH_SIZE
             )
-            if result.rowcount < _LINK_PENDING_BATCH_SIZE:
+            updated = (
+                update(BillingEntry)
+                .where(BillingEntry.id.in_(batch_ids))
+                .values(order_item_id=order_item_id)
+                .returning(BillingEntry.id)
+                .cte("updated_billing_entry")
+            )
+            # Postgres has no max(uuid), hence the ordered scalar subquery.
+            statement = select(
+                func.count(),
+                select(updated.c.id)
+                .order_by(updated.c.id.desc())
+                .limit(1)
+                .scalar_subquery(),
+            ).select_from(updated)
+            updated_count, batch_last_id = (await self.session.execute(statement)).one()
+            if updated_count < _LINK_PENDING_BATCH_SIZE:
                 break
+            assert batch_last_id is not None
+            last_id = batch_last_id
 
     async def lock_pending_by_subscription(self, subscription_id: UUID) -> None:
         """

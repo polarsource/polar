@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 import pytest_asyncio
 from pytest_mock import MockerFixture
-from sqlalchemy import Update
+from sqlalchemy import Select
 
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
@@ -622,11 +622,20 @@ class TestCreateOrderItemsFromPending:
         billing_entry_updates = [
             call.args[0]
             for call in execute_spy.call_args_list
-            if isinstance(call.args[0], Update)
-            and getattr(call.args[0].table, "name", None) == BillingEntry.__tablename__
+            if isinstance(call.args[0], Select)
+            and f"UPDATE {BillingEntry.__tablename__}" in str(call.args[0])
         ]
         assert len(billing_entry_updates) > len(order_items)
-        assert all("LIMIT" in str(statement) for statement in billing_entry_updates)
+        # The batch LIMIT and the last-id subquery LIMIT.
+        assert all(
+            str(statement).count("LIMIT") == 2 for statement in billing_entry_updates
+        )
+        keyset_statements = [
+            statement
+            for statement in billing_entry_updates
+            if f"{BillingEntry.__tablename__}.id > " in str(statement)
+        ]
+        assert len(keyset_statements) >= len(order_items)
 
     @pytest.mark.parametrize(
         ("entry_type", "new_seats", "expected_transition"),

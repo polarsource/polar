@@ -43,7 +43,12 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="subscription.cycle", priority=TaskPriority.LOW)
+@actor(
+    actor_name="subscription.cycle",
+    priority=TaskPriority.LOW,
+    # The meter-only branch links pending billing entries inline; doesn't fit 60s.
+    time_limit=600_000,
+)
 async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)

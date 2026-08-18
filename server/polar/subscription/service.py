@@ -1047,16 +1047,25 @@ class SubscriptionService:
 
         return subscription
 
-    def _clear_expired_discount(self, subscription: Subscription) -> None:
+    def _clear_expired_discount(
+        self,
+        subscription: Subscription,
+        period_start: datetime | None = None,
+    ) -> None:
         if subscription.discount is None:
             return
 
         if subscription.discount_applied_at is None:
             subscription.discount_applied_at = subscription.current_period_start
 
+        # Meter cycles settle at the meter-period boundary, which advances
+        # independently of (and faster than) the billing period. Check against
+        # that boundary so calendar-month discounts expire on time even when
+        # the billing period hasn't rolled over yet.
+        check_period_start = period_start or subscription.current_period_start
         if subscription.discount.is_repetition_expired(
             subscription.discount_applied_at,
-            subscription.current_period_start,
+            check_period_start,
         ):
             subscription.discount = None
 
@@ -1238,8 +1247,10 @@ class SubscriptionService:
 
         # Drop a lapsed discount before settling: the meter-cycle order applies
         # `subscription.discount`, so mirror the billing cycle's expiry check
-        # instead of relying on it to have run first.
-        self._clear_expired_discount(subscription)
+        # instead of relying on it to have run first. Pass the meter boundary
+        # as the period start so calendar-month durations expire on time even
+        # when the billing period hasn't advanced.
+        self._clear_expired_discount(subscription, period_start=boundary)
 
         # Settle before reset: settlement reads the window that reset closes.
         await self._settle_meter_cycle(session, subscription)

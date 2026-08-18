@@ -2583,6 +2583,147 @@ class TestCycleMeters:
 
         assert updated.discount is None
 
+    async def test_clears_expired_repeating_discount_at_meter_boundary(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """A repeating discount must expire at the meter boundary, not wait
+        for the billing period to roll over. This is the core calendar-months
+        guarantee from docs/features/discounts.mdx."""
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            organization=organization,
+        )
+        # Yearly billing period starting Jan 1; discount applied at the same time.
+        billing_start = datetime(2026, 1, 1, tzinfo=UTC)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            current_period_start=billing_start,
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+            scheduler_locked_at=utc_now(),
+        )
+        assert subscription.discount_applied_at == billing_start
+
+        # Monthly meter cycle whose boundary (Apr 1) is past the 3-month window.
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = datetime(2026, 3, 1, tzinfo=UTC)
+        subscription.current_meter_period_end = datetime(2026, 4, 1, tzinfo=UTC)
+        await save_fixture(subscription)
+
+        with freezegun.freeze_time(datetime(2026, 4, 1, 0, 0, 1, tzinfo=UTC)):
+            updated = await subscription_service.cycle_meters(session, subscription)
+
+        assert updated.discount is None
+
+    async def test_does_not_clear_active_repeating_discount_at_meter_boundary(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """A repeating discount still within its duration window must survive
+        a meter cycle."""
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            organization=organization,
+        )
+        billing_start = datetime(2026, 1, 1, tzinfo=UTC)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            current_period_start=billing_start,
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+            scheduler_locked_at=utc_now(),
+        )
+        assert subscription.discount_applied_at == billing_start
+
+        # Feb 1 boundary is still within the 3-month window (Jan–Mar).
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = datetime(2025, 12, 31, tzinfo=UTC)
+        subscription.current_meter_period_end = datetime(2026, 2, 1, tzinfo=UTC)
+        await save_fixture(subscription)
+
+        with freezegun.freeze_time(datetime(2026, 2, 1, 0, 0, 1, tzinfo=UTC)):
+            updated = await subscription_service.cycle_meters(session, subscription)
+
+        assert updated.discount == discount
+
+    async def test_repeating_discount_expires_exactly_at_window_end(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """A 3-month discount applied Jan 1 covers Jan, Feb, and Mar. The Mar 1
+        meter boundary is the last period that gets the discount; the Apr 1
+        boundary is the first that doesn't."""
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            organization=organization,
+        )
+        billing_start = datetime(2026, 1, 1, tzinfo=UTC)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            current_period_start=billing_start,
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+            scheduler_locked_at=utc_now(),
+        )
+        assert subscription.discount_applied_at == billing_start
+
+        # Mar 1 boundary: end_at = Jan 1 + 2 months = Mar 1; Mar 1 > Mar 1 is False.
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = datetime(2026, 2, 1, tzinfo=UTC)
+        subscription.current_meter_period_end = datetime(2026, 3, 1, tzinfo=UTC)
+        await save_fixture(subscription)
+
+        with freezegun.freeze_time(datetime(2026, 3, 1, 0, 0, 1, tzinfo=UTC)):
+            updated = await subscription_service.cycle_meters(session, subscription)
+        assert updated.discount == discount
+
+        # Apr 1 boundary: end_at = Mar 1; Apr 1 > Mar 1 is True → cleared.
+        updated.current_meter_period_start = datetime(2026, 3, 1, tzinfo=UTC)
+        updated.current_meter_period_end = datetime(2026, 4, 1, tzinfo=UTC)
+        updated.scheduler_locked_at = utc_now()
+        await save_fixture(updated)
+
+        with freezegun.freeze_time(datetime(2026, 4, 1, 0, 0, 1, tzinfo=UTC)):
+            updated = await subscription_service.cycle_meters(session, updated)
+        assert updated.discount is None
+
     async def test_raises_and_halts_on_multi_period_lag(
         self,
         session: AsyncSession,

@@ -74,7 +74,7 @@ module "service" {
     DB_HOST            = var.database.host
     DB_PORT            = var.database.port
     DB_USER            = var.database.user
-    SERVER_TLS_SSLMODE = "require"
+    SERVER_TLS_SSLMODE = "verify-full"
   }
 
   secrets = {

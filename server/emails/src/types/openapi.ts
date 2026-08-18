@@ -2163,6 +2163,12 @@ export interface components {
        */
       off_session_charges_enabled: boolean
       /**
+       * Meter Cycling Enabled
+       * @description If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).
+       * @default false
+       */
+      meter_cycling_enabled: boolean
+      /**
        * Slack Benefit Enabled
        * @description Enables the slack shared channel benefit
        * @default false

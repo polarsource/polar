@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 from unittest.mock import call
 
@@ -33,6 +34,49 @@ async def test_get_by_id(
 
     result = await repository.get_by_id(customer.id, include_deleted=True)
     assert result == customer
+
+
+@pytest.mark.asyncio
+async def test_resolve_customer_identifiers(
+    save_fixture: SaveFixture,
+    repository: CustomerRepository,
+    organization: Organization,
+    organization_second: Organization,
+) -> None:
+    external_customer = await create_customer(
+        save_fixture,
+        organization=organization,
+        external_id="external-customer",
+        email="external-customer@example.com",
+    )
+    customer = await create_customer(
+        save_fixture,
+        organization=organization,
+        email="customer@example.com",
+    )
+    await create_customer(
+        save_fixture,
+        organization=organization_second,
+        external_id="other-organization-customer",
+    )
+    unknown_customer_id = uuid.uuid4()
+
+    result = await repository.resolve_customer_identifiers(
+        organization.id,
+        [external_customer.id, customer.id, unknown_customer_id],
+        [
+            "external-customer",
+            "unknown-external-customer",
+            "other-organization-customer",
+        ],
+    )
+
+    assert result == {
+        (external_customer.id, "external-customer"),
+        (customer.id, None),
+        (None, "unknown-external-customer"),
+        (None, "other-organization-customer"),
+    }
 
 
 @pytest.mark.asyncio

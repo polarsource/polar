@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -288,46 +288,19 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
-    def get_customer_id_filter_clause(
-        self, organization_id: UUID, customer_id: Sequence[UUID]
+    def get_customer_filter_clause(
+        self,
+        organization_id: UUID,
+        customer_id: Collection[UUID],
+        external_customer_id: Collection[str],
     ) -> ColumnElement[bool]:
-        external_customer_ids = select(Customer.external_id).where(
-            Customer.organization_id == organization_id,
-            Customer.id.in_(customer_id),
-            Customer.external_id.is_not(None),
-        )
-        events_by_customer_id = select(Event.id).where(
+        return and_(
             Event.organization_id == organization_id,
-            Event.customer_id.in_(customer_id),
+            or_(
+                Event.customer_id.in_(customer_id),
+                Event.external_customer_id.in_(external_customer_id),
+            ),
         )
-        events_by_external_customer_id = select(Event.id).where(
-            Event.organization_id == organization_id,
-            Event.external_customer_id.in_(external_customer_ids),
-        )
-        matching_event_ids = events_by_customer_id.union_all(
-            events_by_external_customer_id
-        )
-        return Event.id.in_(matching_event_ids)
-
-    def get_external_customer_id_filter_clause(
-        self, organization_id: UUID, external_customer_id: Sequence[str]
-    ) -> ColumnElement[bool]:
-        customer_ids = select(Customer.id).where(
-            Customer.organization_id == organization_id,
-            Customer.external_id.in_(external_customer_id),
-        )
-        events_by_external_customer_id = select(Event.id).where(
-            Event.organization_id == organization_id,
-            Event.external_customer_id.in_(external_customer_id),
-        )
-        events_by_customer_id = select(Event.id).where(
-            Event.organization_id == organization_id,
-            Event.customer_id.in_(customer_ids),
-        )
-        matching_event_ids = events_by_external_customer_id.union_all(
-            events_by_customer_id
-        )
-        return Event.id.in_(matching_event_ids)
 
     def get_meter_clause(self, meter: Meter) -> ColumnExpressionArgument[bool]:
         return and_(

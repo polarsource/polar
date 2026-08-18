@@ -44,7 +44,7 @@ async def _create_event(
 
 @pytest.mark.asyncio
 class TestCustomerFilterClause:
-    async def test_customer_id_resolves_external_id_within_organization(
+    async def test_customer_id_matches_external_id_within_organization(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -76,14 +76,14 @@ class TestCustomerFilterClause:
         )
 
         repository = EventRepository.from_session(session)
-        clause = repository.get_customer_id_filter_clause(
-            organization.id, [customer.id]
+        clause = repository.get_customer_filter_clause(
+            organization.id, [customer.id], [external_id]
         )
         result = await session.scalars(select(Event).where(clause))
 
         assert list(result) == [matching_event]
 
-    async def test_external_customer_id_resolves_customer_within_organization(
+    async def test_external_customer_id_matches_customer_within_organization(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -115,8 +115,8 @@ class TestCustomerFilterClause:
         )
 
         repository = EventRepository.from_session(session)
-        clause = repository.get_external_customer_id_filter_clause(
-            organization.id, [external_id]
+        clause = repository.get_customer_filter_clause(
+            organization.id, [customer.id], [external_id]
         )
         result = await session.scalars(select(Event).where(clause))
 

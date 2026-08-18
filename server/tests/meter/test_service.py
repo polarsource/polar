@@ -1155,8 +1155,10 @@ class TestGetQuantities:
         assert result.quantities[0].quantity == 3
         assert result.total == 3
 
-    async def test_external_customer_id_filter_resolves_customer(
+    @pytest.mark.parametrize("use_external_customer_id", [False, True])
+    async def test_customer_filter_resolves_both_identifiers(
         self,
+        use_external_customer_id: bool,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer_external_id: Customer,
@@ -1197,7 +1199,10 @@ class TestGetQuantities:
         result = await meter_service.get_quantities(
             session,
             meter,
-            external_customer_id=[customer.external_id],
+            customer_id=None if use_external_customer_id else [customer.id],
+            external_customer_id=(
+                [customer.external_id] if use_external_customer_id else None
+            ),
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,

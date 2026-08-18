@@ -131,6 +131,36 @@ data "aws_iam_policy_document" "lambda" {
       values   = ["scheduler.amazonaws.com"]
     }
   }
+
+  statement {
+    sid = "SendSiblingQueues"
+    actions = [
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl",
+    ]
+    resources = [replace(aws_sqs_queue.task.arn, aws_sqs_queue.task.name, "polar-${var.environment}-tasks-*")]
+  }
+
+  dynamic "statement" {
+    for_each = var.secrets_arn != null ? [var.secrets_arn] : []
+    content {
+      sid       = "WorkerSecrets"
+      actions   = ["secretsmanager:GetSecretValue"]
+      resources = [statement.value]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.kms_key_arn != null ? [var.kms_key_arn] : []
+    content {
+      sid = "EnvelopeEncryption"
+      actions = [
+        "kms:GenerateDataKey",
+        "kms:Decrypt",
+      ]
+      resources = [statement.value]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "lambda" {
@@ -170,7 +200,8 @@ resource "aws_lambda_function" "task" {
   environment {
     variables = merge(
       var.environment_variables,
-      var.secret_environment_variables,
+      var.secrets_arn != null ? { POLAR_WORKER_SECRETS_ARN = var.secrets_arn } : {},
+      var.secrets_version_id != null ? { POLAR_WORKER_SECRETS_VERSION = var.secrets_version_id } : {},
       { POLAR_DATABASE_POOL_SIZE = "1" },
       { SERVICE_NAME = local.function_name },
       { POLAR_WORKER_SQS_SCHEDULER_ROLE_ARN = aws_iam_role.scheduler.arn },

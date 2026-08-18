@@ -182,9 +182,33 @@ RUN mkdir -p /var/run /var/cache /var/lib /var/task \
   && ln -s /tmp/tailscale /var/task/tailscale
 
 RUN <<'EOF'
+cat > /var/runtime/export-secrets.py <<'EXPORTSECRETS'
+import json
+import os
+import re
+import shlex
+
+import boto3
+
+params = {"SecretId": os.environ["POLAR_WORKER_SECRETS_ARN"]}
+version_id = os.environ.get("POLAR_WORKER_SECRETS_VERSION")
+if version_id:
+    params["VersionId"] = version_id
+secret = boto3.client("secretsmanager").get_secret_value(**params)
+for key, value in json.loads(secret["SecretString"]).items():
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+        raise ValueError(f"invalid env var name: {key!r}")
+    print(f"export {key}={shlex.quote(value)}")
+EXPORTSECRETS
+
 cat > /var/runtime/polar-bootstrap <<'BOOTSTRAP'
 #!/bin/sh
 set -eu
+
+if [ -n "${POLAR_WORKER_SECRETS_ARN:-}" ]; then
+  secret_exports="$(python /var/runtime/export-secrets.py)"
+  eval "$secret_exports"
+fi
 
 if [ -n "${POLAR_JWKS_CONTENT:-}" ] && [ -n "${POLAR_JWKS:-}" ]; then
   mkdir -p "$(dirname "$POLAR_JWKS")"

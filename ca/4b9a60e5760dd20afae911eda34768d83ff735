@@ -1,0 +1,34 @@
+clients/apps/web/src/components/Products/ProductForm/Pricing/utils.test.ts
+  s_1fa46e2a821bdd::t_b4d0744d8e1286 1-42
+clients/apps/web/src/components/Products/CreateProductPage.tsx
+  s_1fa46e2a821bdd::t_fb8c63dc499e89 65-69
+  s_1fa46e2a821bdd::t_1f8b42e2db1dd2 236
+clients/apps/web/src/components/Products/ProductForm/ProductPricingSection.tsx
+  s_1fa46e2a821bdd::t_b16df61a58ae68 41,50,58
+  s_1fa46e2a821bdd::t_40a4394e94a8ac 151-169
+  s_1fa46e2a821bdd::t_2912e6e77b8a5c 653-658
+clients/apps/web/src/components/Products/ProductForm/Pricing/utils.ts
+  s_1fa46e2a821bdd::t_2004a17b2638cb 12-29
+clients/apps/web/src/components/Products/ProductForm/ProductForm.tsx
+  s_1fa46e2a821bdd::t_c3fc956f5e04b3 49,54
+  s_1fa46e2a821bdd::t_abac98d5f9f9b6 60-64
+clients/apps/web/src/components/Products/EditProductPage.tsx
+  s_1fa46e2a821bdd::t_f19d450b55c464 62-66
+  s_1fa46e2a821bdd::t_fe3b77e5fc332c 252
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ca4b9a60e5760dd20afae911eda34768d83ff735",
+  "prompts": {},
+  "sessions": {
+    "s_1fa46e2a821bdd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c651a8d5-be94-4dc9-8aee-c2ecfd422654",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

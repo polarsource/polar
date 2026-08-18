@@ -1,0 +1,20 @@
+clients/apps/web/src/components/Products/ProductForm/Pricing/MeterCycleField.tsx
+  s_1fa46e2a821bdd::t_3611f2f32ba004 89-91
+  s_1fa46e2a821bdd::t_d0c247df70593a 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "d5982714726953bd7c4daf3e953cd09671a5d371",
+  "prompts": {},
+  "sessions": {
+    "s_1fa46e2a821bdd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c651a8d5-be94-4dc9-8aee-c2ecfd422654",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

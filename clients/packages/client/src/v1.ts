@@ -31558,8 +31558,71 @@ export interface components {
       custom_multiplier: number | null
     }
     /**
+     * ProductPriceMeteredTier
+     * @description A pricing tier for metered pricing: a per-unit rate up to and including
+     *     `bound`. A tier starts where the previous one ended; the first starts at
+     *     zero.
+     */
+    'ProductPriceMeteredTier-Input': {
+      /**
+       * Bound
+       * @description Upper bound of the tier in units (inclusive). `null` for the unbounded last tier.
+       */
+      bound: number | null
+      /**
+       * Unit Amount
+       * @description The price per unit in cents for this tier. Supports up to 12 decimal places.
+       */
+      unit_amount: number | string
+    }
+    /**
+     * ProductPriceMeteredTier
+     * @description A pricing tier for metered pricing: a per-unit rate up to and including
+     *     `bound`. A tier starts where the previous one ended; the first starts at
+     *     zero.
+     */
+    'ProductPriceMeteredTier-Output': {
+      /**
+       * Bound
+       * @description Upper bound of the tier in units (inclusive). `null` for the unbounded last tier.
+       */
+      bound: number | null
+      /**
+       * Unit Amount
+       * @description The price per unit in cents for this tier. Supports up to 12 decimal places.
+       */
+      unit_amount: string
+    }
+    /**
+     * ProductPriceMeteredTiers
+     * @description Tiered pricing configuration for a metered price.
+     */
+    'ProductPriceMeteredTiers-Input': {
+      /** @description How tiers convert usage into an amount: `volume` bills the whole quantity at the rate of the tier it falls in, `graduated` bills each tier's portion at that tier's rate. */
+      type: components['schemas']['TierType']
+      /**
+       * Tiers
+       * @description The pricing tiers.
+       */
+      tiers: components['schemas']['ProductPriceMeteredTier-Input'][]
+    }
+    /**
+     * ProductPriceMeteredTiers
+     * @description Tiered pricing configuration for a metered price.
+     */
+    'ProductPriceMeteredTiers-Output': {
+      /** @description How tiers convert usage into an amount: `volume` bills the whole quantity at the rate of the tier it falls in, `graduated` bills each tier's portion at that tier's rate. */
+      type: components['schemas']['TierType']
+      /**
+       * Tiers
+       * @description The pricing tiers.
+       */
+      tiers: components['schemas']['ProductPriceMeteredTier-Output'][]
+    }
+    /**
      * ProductPriceMeteredUnit
-     * @description A metered, usage-based, price for a product, with a fixed unit price.
+     * @description A metered, usage-based, price for a product, with either a fixed unit
+     *     price or pricing tiers.
      */
     ProductPriceMeteredUnit: {
       /**
@@ -31606,9 +31669,11 @@ export interface components {
       product_id: string
       /**
        * Unit Amount
-       * @description The price per unit in cents.
+       * @description The price per unit in cents. `null` for tiered prices: read the rates from `tiers` instead.
        */
-      unit_amount: string
+      unit_amount: string | null
+      /** @description The pricing tiers based on consumed units. `null` for prices with a fixed unit price. */
+      tiers: components['schemas']['ProductPriceMeteredTiers-Output'] | null
       /**
        * Cap Amount
        * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
@@ -31625,7 +31690,7 @@ export interface components {
     }
     /**
      * ProductPriceMeteredUnitCreate
-     * @description Schema to create a metered price with a fixed unit price.
+     * @description Schema to create a metered price, with either a fixed unit price or pricing tiers.
      */
     ProductPriceMeteredUnitCreate: {
       /**
@@ -31648,9 +31713,11 @@ export interface components {
       meter_id: string
       /**
        * Unit Amount
-       * @description The price per unit in cents. Supports up to 12 decimal places.
+       * @description The price per unit in cents. Supports up to 12 decimal places. Mutually exclusive with `tiers`.
        */
-      unit_amount: number | string
+      unit_amount?: number | string | null
+      /** @description Tiered pricing based on consumed units. Mutually exclusive with `unit_amount`. */
+      tiers?: components['schemas']['ProductPriceMeteredTiers-Input'] | null
       /**
        * Cap Amount
        * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
@@ -35663,6 +35730,11 @@ export interface components {
       /** Text */
       text: string
     }
+    /**
+     * TierType
+     * @enum {string}
+     */
+    TierType: 'volume' | 'graduated'
     /**
      * TimeInterval
      * @enum {string}
@@ -68217,6 +68289,9 @@ export const taxJurisdictionSortPropertyValues: ReadonlyArray<
 export const textBlockTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TextBlock']['type']
 > = ['text']
+export const tierTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TierType']
+> = ['volume', 'graduated']
 export const timeIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TimeInterval']
 > = ['year', 'month', 'week', 'day', 'hour']

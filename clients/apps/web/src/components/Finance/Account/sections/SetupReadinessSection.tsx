@@ -3,6 +3,7 @@
 import { CheckoutLinkManagementModal } from '@/components/CheckoutLinks/CheckoutLinkManagementModal'
 import { useModal } from '@/components/Modal/useModal'
 import { CreateAccessTokenModal } from '@/components/Settings/CreateAccessTokenModal'
+import { useResumeOrganizationAccessTokenCreation } from '@/components/Settings/useResumeOrganizationAccessTokenCreation'
 import NewWebhookModal from '@/components/Settings/Webhook/NewWebhookModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCheckoutLinks } from '@/hooks/queries/checkout_links'
@@ -105,6 +106,19 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
       queryKey: ['organizationReviewState', organization.id],
     })
   }
+
+  const onTokenCreated = (
+    token: schemas['OrganizationAccessTokenCreateResponse'],
+  ) => {
+    setCreatedToken(token)
+    tokenModal.hide()
+    invalidateReviewState()
+  }
+
+  useResumeOrganizationAccessTokenCreation({
+    organizationId: organization.id,
+    onSuccess: onTokenCreated,
+  })
 
   return (
     <Box flexDirection="column" rowGap="l">
@@ -211,11 +225,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
           <CreateAccessTokenModal
             organization={organization}
             title="Create API key"
-            onSuccess={(token) => {
-              setCreatedToken(token)
-              tokenModal.hide()
-              invalidateReviewState()
-            }}
+            onSuccess={onTokenCreated}
             onHide={tokenModal.hide}
           />
         }

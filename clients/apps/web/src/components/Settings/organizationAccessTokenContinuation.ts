@@ -84,5 +84,5 @@ export const takePendingOrganizationAccessTokenCreation = (
 export const getOrganizationAccessTokenResumePath = (actionId: string) => {
   const url = new URL(window.location.href)
   url.searchParams.set(ORGANIZATION_ACCESS_TOKEN_RESUME_PARAM, actionId)
-  return `${url.pathname}${url.search}${url.hash}`
+  return `${url.pathname}${url.search}`
 }

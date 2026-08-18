@@ -12,7 +12,9 @@ export const SessionRefreshModal = () => {
 
   useEffect(() => {
     setSessionRefreshListener((nextOptions = {}) => {
-      setOptions(nextOptions)
+      setOptions((currentOptions) =>
+        nextOptions.returnTo === undefined ? currentOptions : nextOptions,
+      )
       setShown(true)
     })
     return () => setSessionRefreshListener(null)
@@ -32,7 +34,7 @@ export const SessionRefreshModal = () => {
       onConfirm={() => {
         const returnTo =
           options.returnTo ??
-          `${window.location.pathname}${window.location.search}${window.location.hash}`
+          `${window.location.pathname}${window.location.search}`
         router.push(`/auth?return_to=${encodeURIComponent(returnTo)}`)
       }}
     />

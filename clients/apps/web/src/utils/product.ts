@@ -1,6 +1,7 @@
 import {
   FreeProductPriceCreate,
   ProductFullMediasMixin,
+  ProductMeterCycleMixin,
 } from '@/components/Products/ProductForm/ProductForm'
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
@@ -93,7 +94,8 @@ export type ProductEditOrCreateForm = Omit<
   schemas['ProductCreate'],
   'metadata' | 'prices'
 > &
-  ProductFullMediasMixin & {
+  ProductFullMediasMixin &
+  ProductMeterCycleMixin & {
     metadata: { key: string; value: string | number | boolean }[]
     prices: (
       | schemas['ProductCreate']['prices'][number]

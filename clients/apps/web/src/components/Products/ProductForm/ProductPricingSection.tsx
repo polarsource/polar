@@ -29,6 +29,7 @@ import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Section } from '../../Layout/Section'
 import { CurrencyTabs } from './Pricing/CurrencyTabs'
+import { MeterCycleField } from './Pricing/MeterCycleField'
 import { ProductPriceItem } from './Pricing/ProductPriceItem'
 import { useAutoSwitchToErroredPriceTab } from './Pricing/useAutoSwitchToErroredPriceTab'
 import {
@@ -99,6 +100,8 @@ export const ProductPricingSection = ({
     }
 
     setValue('recurring_interval_count', null)
+    setValue('meter_interval', null)
+    setValue('meter_interval_count', null)
     const currentPrices = getValues('prices')
     if (!currentPrices) return
     const filteredPrices = currentPrices.filter(
@@ -545,6 +548,7 @@ export const ProductPricingSection = ({
               />
             </div>
           )}
+          {productType === 'recurring' && <MeterCycleField disabled={update} />}
         </div>
 
         <CurrencyTabs

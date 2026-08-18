@@ -12,7 +12,7 @@ data is detected before `--execute`.
 import typer
 
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
-from polar.models.product_price import ProductPriceSeatUnit
+from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
 from polar.postgres import create_async_engine
 from polar.product.repository import ProductPriceRepository
 from polar.product.tiers import (
@@ -49,6 +49,10 @@ async def _run(session: AsyncSession, *, dry_run: bool) -> int:
     statement = repository.get_base_statement(include_deleted=True).where(
         ProductPriceSeatUnit.seat_tiers.isnot(None)
     )
+    if not dry_run:
+        # Lock each row so a concurrent seat_tiers write cannot commit new
+        # canonical values that this snapshot would then overwrite.
+        statement = statement.with_for_update(of=ProductPrice)
 
     total = 0
     async for price in repository.stream(statement):

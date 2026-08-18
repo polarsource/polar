@@ -21,8 +21,7 @@ import { useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
 
-const INVALID_MESSAGE =
-  'The meter cycle must evenly divide the billing cycle, so it re-aligns at every renewal'
+const INVALID_MESSAGE = 'The meter cycle must evenly divide the billing cycle'
 
 export interface MeterCycleFieldProps {
   disabled?: boolean
@@ -87,9 +86,9 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
             Separate meter cycle
           </Text>
           <Text as="span" variant="caption" color="muted">
-            Reset meters, grant meter credits and bill usage on their own
-            cadence instead of the billing cycle — like yearly billing with
-            monthly credits.
+            Reset meters, grant meter credits and bill usage at a different pace
+            than normal subscription renewal, like for instance yearly
+            subscription renewals with monthly meter cycling
           </Text>
         </Box>
         <Switch

@@ -687,10 +687,15 @@ class SubscriptionService:
         customer: Customer,
         current_period_start: datetime | None,
         current_period_end: datetime | None,
+        anchor_day: int | None = None,
         user_metadata: dict[str, Any],
     ) -> Subscription:
         """Create a subscription migrated from another provider. It starts paused
-        so nothing bills until the merchant cuts over, and grants no benefits."""
+        so nothing bills until the merchant cuts over, and grants no benefits.
+
+        Without an ``anchor_day`` we fall back to the period start, which reads
+        as 28 for a 31st anchor caught during a February period.
+        """
         assert product.recurring_interval is not None
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count or 1
@@ -710,7 +715,7 @@ class SubscriptionService:
             status=SubscriptionStatus.paused,
             paused_at=utc_now(),
             started_at=start,
-            anchor_day=start.day,
+            anchor_day=anchor_day or start.day,
             current_period_start=start,
             current_period_end=end,
             cancel_at_period_end=False,
@@ -739,17 +744,14 @@ class SubscriptionService:
         current_period_start: datetime,
         current_period_end: datetime,
         trial_end: datetime | None,
+        anchor_day: int | None = None,
         payment_method: PaymentMethod,
     ) -> Subscription:
         """Hand billing of an imported subscription over to Polar (the cutover).
 
-        Unlike ``resume``, this doesn't start a fresh period or charge anything:
-        the customer already paid the old provider through ``current_period_end``,
-        so Polar picks the cycle up exactly there and first bills at the renewal
-        the customer is already expecting.
-
-        No resumed email either — from the customer's side nothing paused, and
-        nothing about their subscription is changing today.
+        Unlike ``resume``, this starts no fresh period and charges nothing: the
+        customer already paid the old provider through ``current_period_end``. It
+        skips the resumed side effects too, since nothing paused for them.
         """
         assert subscription.status == SubscriptionStatus.paused
 
@@ -762,7 +764,10 @@ class SubscriptionService:
         subscription.trial_start = current_period_start if trial_end else None
         subscription.trial_end = trial_end
         subscription.current_period_start = current_period_start
-        subscription.anchor_day = current_period_start.day
+        # Re-read from the source, so a subscription imported before we asked for
+        # the anchor is corrected on the way through.
+        if anchor_day is not None:
+            subscription.anchor_day = anchor_day
         subscription.current_period_end = current_period_end
         subscription.payment_method = payment_method
         subscription.initialize_meter_period(
@@ -770,8 +775,8 @@ class SubscriptionService:
         )
 
         repository = SubscriptionRepository.from_session(session)
-        # Flushed: the cutover settles its ledger and counts what moved in the
-        # same transaction, off the columns this writes.
+        # Flushed so the returned subscription carries `payment_method_id`, which
+        # the cutover records, and not just the relationship.
         subscription = await repository.update(subscription, flush=True)
 
         await self.enqueue_benefits_grants(session, subscription)

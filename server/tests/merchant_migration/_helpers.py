@@ -1,4 +1,8 @@
+from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
+from typing import Any
+
+from pytest_mock import MockerFixture
 
 from polar.kit.encryption import EncryptedString
 from polar.kit.utils import utc_now
@@ -132,10 +136,10 @@ def canonical_subscription(
     cancel_at_period_end: bool = False,
     trial_end: datetime | None = None,
     stopped_for_migration: bool = False,
+    anchor_day: int | None = None,
     payment_method: CanonicalPaymentMethod | None = None,
 ) -> CanonicalSubscription:
-    """A source subscription that renews comfortably outside the safety window,
-    so a test only states the field it's actually about."""
+    """Renews outside the safety window, so a test only states its own field."""
     return CanonicalSubscription(
         source_id=source_id,
         customer_source_id=customer_source_id,
@@ -153,6 +157,7 @@ def canonical_subscription(
         cancel_at_period_end=cancel_at_period_end,
         trial_end=trial_end,
         stopped_for_migration=stopped_for_migration,
+        anchor_day=anchor_day,
     )
 
 
@@ -165,8 +170,7 @@ async def stage_subscription_record(
     source_id: str = "sub_1",
     price_source_id: str = "price_1",
 ) -> MerchantMigrationRecord:
-    """An imported subscription in the ledger, pointing at its Polar row: what
-    the cutover reads."""
+    """An imported subscription in the ledger: what the cutover reads."""
     record = MerchantMigrationRecord(
         merchant_migration=migration,
         organization=organization,
@@ -180,3 +184,16 @@ async def stage_subscription_record(
     )
     await save_fixture(record)
     return record
+
+
+def copied_cards(mocker: MockerFixture, *cards: Any) -> None:
+    """What `list_payment_methods` finds on Polar's Stripe account."""
+
+    async def listed(customer: str) -> AsyncIterator[Any]:
+        for card in cards:
+            yield card
+
+    mocker.patch(
+        "polar.merchant_migration.cards.stripe_service.list_payment_methods",
+        new=listed,
+    )

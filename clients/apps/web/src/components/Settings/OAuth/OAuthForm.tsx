@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
@@ -97,10 +98,7 @@ export const FieldClientID = ({ clientId }: { clientId: string }) => {
   return (
     <FormItem>
       <FormLabel>Client ID</FormLabel>
-      <FormControl>
-        <Input value={clientId} placeholder="Client ID" readOnly />
-      </FormControl>
-      <FormMessage />
+      <CopyToClipboardInput value={clientId} variant="mono" />
     </FormItem>
   )
 }
@@ -113,10 +111,7 @@ export const FieldClientSecret = ({
   return (
     <FormItem>
       <FormLabel>Client Secret</FormLabel>
-      <FormControl>
-        <Input value={clientSecret} placeholder="Client Secret" readOnly />
-      </FormControl>
-      <FormMessage />
+      <CopyToClipboardInput value={clientSecret} variant="mono" />
       <FormDescription>
         This is a sensitive value. Don&apos;t embed it in a public client like a
         SPA or mobile app.{' '}

@@ -8,7 +8,7 @@ from generator.emitter import Prerelease
 from generator.openapi import GENERATOR_DIR, ROOT, generate_openapi
 
 LANGUAGES = ["python", "typescript"]
-GENERATED_PATHS = ["docs/openapi.json", "sdk/python", "sdk/typescript"]
+GENERATED_PATHS = ["docs/openapi", "sdk/python", "sdk/typescript"]
 OPENAPI_DIRECTORY = GENERATOR_DIR / "openapi"
 
 
@@ -103,8 +103,8 @@ def release_sdk(
 
         generate_all_sdks(version, prerelease)
         generate_docs_openapi(
+            list(OPENAPI_DIRECTORY.glob("*.json")),
             sdk_version=release_label,
-            source_path=GENERATOR_DIR / "openapi.json",
         )
 
         if not skip_commit:

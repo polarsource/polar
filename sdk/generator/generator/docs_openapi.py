@@ -8,13 +8,12 @@ import openapi_pydantic as op
 
 from generator.code_samples import generate_code_samples_overlay
 from generator.ir import generate_ir
-from generator.openapi import ROOT, generate_openapi
-
+from generator.openapi import ROOT
 
 HTTP_METHODS = frozenset(
     {"delete", "get", "head", "options", "patch", "post", "put", "trace"}
 )
-DOCS_OPENAPI_PATH = ROOT / "docs" / "openapi.json"
+DOCS_OPENAPI_PATH = ROOT / "docs" / "openapi"
 
 
 def generate_private_operations_overlay(
@@ -82,46 +81,39 @@ def apply_overlay(
 
 
 def generate_docs_openapi(
+    openapi_files: list[pathlib.Path],
     output_path: pathlib.Path = DOCS_OPENAPI_PATH,
     sdk_version: str = "0.0.0",
-    source_path: pathlib.Path | None = None,
 ) -> None:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(
-        dir=output_path.parent, prefix="openapi-generation-"
-    ) as temporary_directory:
-        temporary_path = pathlib.Path(temporary_directory)
-        generated_source_path = temporary_path / "source.json"
-        samples_overlay_path = temporary_path / "samples.overlay.json"
-        samples_path = temporary_path / "samples.json"
-        private_overlay_path = temporary_path / "private.overlay.json"
-        final_path = temporary_path / "openapi.json"
+    output_path.mkdir(parents=True, exist_ok=True)
+    for openapi_file in openapi_files:
+        openapi_spec_dict = json.loads(openapi_file.read_text(encoding="utf-8"))
+        openapi_spec = op.OpenAPI.model_validate(openapi_spec_dict)
+        ir = generate_ir(openapi_spec)
 
-        if source_path is None:
-            generate_openapi(generated_source_path)
-            source_path = generated_source_path
-        schema = json.loads(source_path.read_text(encoding="utf-8"))
-        spec = op.OpenAPI.model_validate(schema)
-        ir = generate_ir(spec)
-        if len(ir.versions) != 1:
-            raise ValueError(
-                "The docs OpenAPI schema must contain exactly one API version"
+        with tempfile.TemporaryDirectory(
+            dir=output_path, prefix="openapi-generation-"
+        ) as temporary_directory:
+            temporary_path = pathlib.Path(temporary_directory)
+            samples_overlay_path = temporary_path / "samples.overlay.json"
+            samples_path = temporary_path / "samples.json"
+            private_overlay_path = temporary_path / "private.overlay.json"
+            final_path = temporary_path / "openapi.json"
+
+            samples_overlay = generate_code_samples_overlay(
+                ir.versions[0], sdk_version, ["python", "typescript"]
             )
+            samples_overlay_path.write_text(
+                json.dumps(samples_overlay, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            apply_overlay(openapi_file, samples_overlay_path, samples_path)
 
-        samples_overlay = generate_code_samples_overlay(
-            ir.versions[0], sdk_version, ["python", "typescript"]
-        )
-        samples_overlay_path.write_text(
-            json.dumps(samples_overlay, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
-        apply_overlay(source_path, samples_overlay_path, samples_path)
+            private_overlay = generate_private_operations_overlay(openapi_spec_dict)
+            private_overlay_path.write_text(
+                json.dumps(private_overlay, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            apply_overlay(samples_path, private_overlay_path, final_path)
 
-        private_overlay = generate_private_operations_overlay(schema)
-        private_overlay_path.write_text(
-            json.dumps(private_overlay, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
-        apply_overlay(samples_path, private_overlay_path, final_path)
-
-        final_path.replace(output_path)
+            final_path.replace(output_path / openapi_file.name)

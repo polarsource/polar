@@ -33,6 +33,9 @@ parser_docs_openapi = subparsers.add_parser(
     "docs-openapi", help="Generate the public OpenAPI spec for the documentation"
 )
 parser_docs_openapi.add_argument(
+    "spec_paths", nargs="+", type=pathlib.Path, help="Paths to OpenAPI spec files."
+)
+parser_docs_openapi.add_argument(
     "--output",
     type=pathlib.Path,
     default=DOCS_OPENAPI_PATH,
@@ -146,7 +149,14 @@ elif args.command == "generate":
     emitter.run_post_actions(args.output)
 
 elif args.command == "docs-openapi":
-    generate_docs_openapi(args.output, args.version)
+    for spec_path in args.spec_paths:
+        if not spec_path.exists():
+            print(f"Error: Spec file {spec_path} does not exist.", file=sys.stderr)
+            sys.exit(1)
+        if not spec_path.is_file():
+            print(f"Error: Spec path {spec_path} is not a file.", file=sys.stderr)
+            sys.exit(1)
+    generate_docs_openapi(args.spec_paths, args.output, args.version)
 
 elif args.command == "release":
     prerelease = None

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, and_, or_, select, update
@@ -15,11 +15,7 @@ from polar.kit.repository import (
 )
 from polar.models import Customer, PaymentMethod, Subscription
 from polar.models.email_log import EmailLog, EmailLogStatus
-
-
-def _expiration_datetime(year: int, month: int) -> datetime:
-    """Cards stay valid through the end of their expiration month."""
-    return datetime(year + month // 12, month % 12 + 1, 1, tzinfo=UTC)
+from polar.models.payment_method import card_expiration as _expiration_datetime
 
 
 def expiring_periods(now: datetime, window_end: datetime) -> list[tuple[int, int]]:

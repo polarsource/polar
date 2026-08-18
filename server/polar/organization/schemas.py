@@ -193,6 +193,13 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has access to reset proration behavior.",
     )
+    metered_billing_periods_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization bills metered usage from meter periods instead of "
+            "pending billing entries."
+        ),
+    )
     off_session_charges_enabled: bool = Field(
         False,
         description=(

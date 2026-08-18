@@ -510,6 +510,99 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         return statement
 
+    def _entries_in_window_clauses(
+        self,
+        subscription: UUID,
+        meter: UUID,
+        *,
+        starts_at: datetime,
+        ends_at: datetime,
+    ) -> tuple[ColumnExpressionArgument[bool], ...]:
+        return (
+            BillingEntry.subscription_id == subscription,
+            ProductPriceMeteredUnit.meter_id == meter,
+            BillingEntry.deleted_at.is_(None),
+            BillingEntry.start_timestamp >= starts_at,
+            BillingEntry.start_timestamp < ends_at,
+        )
+
+    def get_by_entries_in_window_statement(
+        self,
+        subscription: UUID,
+        meter: UUID,
+        *,
+        starts_at: datetime,
+        ends_at: datetime,
+    ) -> Select[tuple[Event]]:
+        return (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .join(
+                ProductPriceMeteredUnit,
+                BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
+            )
+            .where(
+                *self._entries_in_window_clauses(
+                    subscription, meter, starts_at=starts_at, ends_at=ends_at
+                )
+            )
+            .order_by(Event.ingested_at.asc())
+        )
+
+    async def count_entries_in_window(
+        self,
+        subscription: UUID,
+        meter: UUID,
+        *,
+        starts_at: datetime,
+        ends_at: datetime,
+    ) -> int:
+        """One entry per event, so for a `count` meter this is the quantity."""
+        statement = (
+            select(func.count())
+            .select_from(BillingEntry)
+            .join(
+                ProductPriceMeteredUnit,
+                BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
+            )
+            .where(
+                *self._entries_in_window_clauses(
+                    subscription, meter, starts_at=starts_at, ends_at=ends_at
+                )
+            )
+        )
+        return await self.session.scalar(statement) or 0
+
+    async def count_system_entries_in_window(
+        self,
+        subscription: UUID,
+        meter: UUID,
+        *,
+        organization_id: UUID,
+        customer_id: UUID,
+        starts_at: datetime,
+        ends_at: datetime,
+    ) -> int:
+        statement = (
+            select(func.count())
+            .select_from(BillingEntry)
+            .join(
+                ProductPriceMeteredUnit,
+                BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
+            )
+            .join(Event, Event.id == BillingEntry.event_id)
+            .where(
+                *self._entries_in_window_clauses(
+                    subscription, meter, starts_at=starts_at, ends_at=ends_at
+                ),
+                Event.organization_id == organization_id,
+                Event.customer_id == customer_id,
+                Event.source == EventSource.system,
+                Event.name.in_(tuple(SystemEvent)),
+            )
+        )
+        return await self.session.scalar(statement) or 0
+
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer), joinedload(Event.event_types))
 

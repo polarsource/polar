@@ -731,6 +731,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_merchant_migration_enabled(self) -> bool:
         return self.feature_settings.get("merchant_migration_enabled", False)
 
+    @property
+    def is_metered_billing_periods_enabled(self) -> bool:
+        """Bill metered usage from `meter_periods`. One-way per organization: a
+        settled window's entries were billed but never linked, so turning this off
+        hands them to the sweep, which bills them again."""
+        return self.feature_settings.get("metered_billing_periods_enabled", False)
+
     sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     #

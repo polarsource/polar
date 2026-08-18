@@ -69,6 +69,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
+from polar.meter_period.service import meter_period as meter_period_service
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -1134,6 +1135,24 @@ class SubscriptionService:
             await self.reset_meter(
                 session, subscription, subscription_meter, reset_at=reset_at
             )
+
+        if subscription.organization.is_metered_billing_periods_enabled:
+            await self._open_meter_periods(session, subscription)
+
+    async def _open_meter_periods(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        meter_period_start = subscription.current_meter_period_start
+        meter_period_end = subscription.current_meter_period_end
+        if meter_period_start is not None and meter_period_end is not None:
+            starts_at, ends_at = meter_period_start, meter_period_end
+        else:
+            starts_at = subscription.current_period_start
+            ends_at = subscription.current_period_end
+
+        await meter_period_service.open_for_subscription(
+            session, subscription, starts_at=starts_at, ends_at=ends_at
+        )
 
     async def reset_meter(
         self,

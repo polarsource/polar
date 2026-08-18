@@ -16,6 +16,9 @@ from polar.kit.math import non_negative_running_sum
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction
 from polar.meter.service import meter as meter_service
+from polar.meter_period.repository import MeterPeriodRepository
+from polar.meter_period.service import MeterPeriodSettlement
+from polar.meter_period.service import meter_period as meter_period_service
 from polar.models import BillingEntry, Event, OrderItem, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
@@ -64,7 +67,14 @@ class PendingByMeter:
     meter_id: uuid.UUID
 
 
-type BillingEntrySelector = Sequence[uuid.UUID] | PendingByPrice | PendingByMeter
+@dataclasses.dataclass(frozen=True)
+class PendingByMeterPeriod:
+    settlement: MeterPeriodSettlement
+
+
+type BillingEntrySelector = (
+    Sequence[uuid.UUID] | PendingByPrice | PendingByMeter | PendingByMeterPeriod
+)
 
 
 class BillingEntryService:
@@ -98,7 +108,11 @@ class BillingEntryService:
         yield list(item_entries_map.keys())
 
         for order_item, selector in item_entries_map.items():
-            if isinstance(selector, PendingByPrice):
+            if isinstance(selector, PendingByMeterPeriod):
+                await meter_period_service.apply_settlement(
+                    session, selector.settlement
+                )
+            elif isinstance(selector, PendingByPrice):
                 await repository.link_pending_by_subscription_and_price(
                     subscription.id,
                     selector.product_price_id,
@@ -199,6 +213,44 @@ class BillingEntryService:
         cutoff = cutoff or utc_now()
         repository = BillingEntryRepository.from_session(session)
 
+        # The period covering this window selects the path. An organization switched
+        # on mid-period has no period for the window it is in; that window is recorded
+        # as pending entries and bills from them until the next cycle opens one.
+        if subscription.organization.is_metered_billing_periods_enabled:
+            period_repository = MeterPeriodRepository.from_session(session)
+            periods = await period_repository.get_accruing_by_subscription(
+                subscription.id,
+                starts_before=cutoff,
+                options=period_repository.get_eager_options(),
+            )
+            corrections = await meter_period_service.compute_corrections(
+                session, subscription, cutoff=cutoff
+            )
+            if periods or corrections:
+                for period in periods:
+                    settlement = await meter_period_service.compute_settlement(
+                        session, period, cutoff=cutoff
+                    )
+                    yield (
+                        self._metered_line_item(settlement, cutoff=cutoff),
+                        PendingByMeterPeriod(settlement),
+                    )
+                for settlement in corrections:
+                    yield (
+                        self._metered_line_item(
+                            settlement, cutoff=cutoff, correction=True
+                        ),
+                        PendingByMeterPeriod(settlement),
+                    )
+                return
+
+            # No period covers this window. Falling through to the sweep is only
+            # right the first time: once a subscription has had a period, its
+            # entries are billed by window and deliberately left unlinked, so a
+            # sweep would bill every one of them again.
+            if await period_repository.exists_for_subscription(subscription.id):
+                return
+
         # 👋 Reading the code below, you might wonder:
         # "Why is this so complex?"
         # "Why are there so many queries?"
@@ -289,6 +341,27 @@ class BillingEntryService:
                 selector = PendingByPrice(product_price_id)
 
             yield metered_line_item, selector
+
+    def _metered_line_item(
+        self,
+        settlement: MeterPeriodSettlement,
+        *,
+        cutoff: datetime,
+        correction: bool = False,
+    ) -> MeteredLineItem:
+        period = settlement.period
+        return MeteredLineItem(
+            price=period.product_price,
+            start_timestamp=period.starts_at,
+            end_timestamp=min(period.ends_at, cutoff),
+            consumed_units=float(settlement.quantity),
+            credited_units=int(settlement.credited_units),
+            amount=settlement.charge,
+            currency=period.currency,
+            label=(
+                f"{settlement.label} — adjustment" if correction else settlement.label
+            ),
+        )
 
     async def _get_static_price_line_item(
         self,

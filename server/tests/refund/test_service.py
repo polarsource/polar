@@ -24,7 +24,11 @@ from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
-from polar.refund.service import MissingRelatedDispute, RefundedAlready
+from polar.refund.service import (
+    MissingRelatedDispute,
+    RefundedAlready,
+    RefundPaymentTransactionNotFound,
+)
 from polar.refund.service import refund as refund_service
 from polar.tax.calculation import TaxCalculationService
 from polar.tax.calculation.base import AlreadyRevertedError
@@ -199,6 +203,40 @@ class StripeRefund:
 
 @pytest.mark.asyncio
 class TestCreate(StripeRefund):
+    async def test_missing_payment_transaction(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order, payment, transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+        await session.delete(transaction)
+
+        with pytest.raises(RefundPaymentTransactionNotFound) as exc_info:
+            await refund_service.create(
+                session,
+                order,
+                RefundCreate(
+                    order_id=order.id,
+                    reason=RefundReason.service_disruption,
+                    amount=1000,
+                    comment=None,
+                    revoke_benefits=False,
+                ),
+            )
+
+        assert exc_info.value.payment_id == payment.id
+        assert exc_info.value.message == (
+            f"Payment transaction not found for payment: {payment.id}"
+        )
+
     async def test_create_repeatedly(
         self,
         session: AsyncSession,

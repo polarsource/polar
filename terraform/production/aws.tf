@@ -101,6 +101,15 @@ locals {
 
   lambda_worker_name                 = "default"
   lambda_worker_reserved_concurrency = null
+
+  lambda_worker_queues = {
+    "high-priority"         = { timeout_seconds = 120 }
+    "medium-priority"       = { timeout_seconds = 120 }
+    "low-priority"          = { timeout_seconds = 660 }
+    "webhooks"              = { timeout_seconds = 120 }
+    "tinybird"              = { timeout_seconds = 120 }
+    "invoices-and-receipts" = { timeout_seconds = 240 }
+  }
 }
 
 module "lambda_worker" {
@@ -120,6 +129,24 @@ module "lambda_worker" {
   secret_environment_variables = local.lambda_worker_secrets
 }
 
+module "lambda_worker_queue" {
+  for_each = local.lambda_worker_queues
+  source   = "../modules/aws_task_worker"
+
+  environment              = "production"
+  name                     = each.key
+  queue_name               = "polar-production-tasks-${each.key}"
+  image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
+  enabled                  = true
+  timeout_seconds          = each.value.timeout_seconds
+  subnet_ids               = local.lambda_subnet_ids
+  security_group_ids       = local.lambda_security_group_ids
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  environment_variables        = local.lambda_worker_environment
+  secret_environment_variables = local.lambda_worker_secrets
+}
+
 # =============================================================================
 # Task producer policy (SQS send-only, attached to the Render backend OIDC role)
 # =============================================================================
@@ -131,7 +158,10 @@ data "aws_iam_policy_document" "tasks_producer" {
       "sqs:SendMessage",
       "sqs:GetQueueUrl",
     ]
-    resources = [module.lambda_worker.queue_arn]
+    resources = concat(
+      [module.lambda_worker.queue_arn],
+      [for worker in module.lambda_worker_queue : worker.queue_arn],
+    )
   }
 }
 
@@ -169,9 +199,15 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
   }
 
   statement {
-    sid       = "UpdateFunctionCode"
-    actions   = ["lambda:UpdateFunctionCode"]
-    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.lambda_worker.function_name}"]
+    sid     = "UpdateFunctionCode"
+    actions = ["lambda:UpdateFunctionCode"]
+    resources = [
+      for function_name in concat(
+        [module.lambda_worker.function_name],
+        [for worker in module.lambda_worker_queue : worker.function_name],
+      ) :
+      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${function_name}"
+    ]
   }
 }
 

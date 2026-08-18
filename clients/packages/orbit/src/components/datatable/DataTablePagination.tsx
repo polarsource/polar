@@ -1,4 +1,4 @@
-import { Table } from '@tanstack/react-table'
+import { RowData } from '@tanstack/react-table'
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,17 +13,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../Select'
+import { DataTableInstance } from './features'
 
-interface DataTablePaginationProps<TData> {
-  table: Table<TData>
+interface DataTablePaginationProps<TData extends RowData> {
+  table: DataTableInstance<TData>
 }
 
 const SUPPORTED_PAGE_SIZES = [20, 50, 100]
 
-export function DataTablePagination<TData>({
+export function DataTablePagination<TData extends RowData>({
   table,
 }: DataTablePaginationProps<TData>) {
-  const { pageIndex, pageSize } = table.getState().pagination
+  const { pageIndex, pageSize } = table.state.pagination
   const startItem = pageIndex * pageSize + 1
   const endItem = Math.min(startItem + pageSize - 1, table.getRowCount())
 
@@ -46,13 +47,13 @@ export function DataTablePagination<TData>({
           Rows per page
         </p>
         <Select
-          value={`${table.getState().pagination.pageSize}`}
+          value={`${table.state.pagination.pageSize}`}
           onValueChange={(value) => {
             table.setPageSize(Number(value))
           }}
         >
           <SelectTrigger className="h-8 w-[75px]">
-            <SelectValue placeholder={table.getState().pagination.pageSize} />
+            <SelectValue placeholder={table.state.pagination.pageSize} />
           </SelectTrigger>
           <SelectContent side="top">
             {SUPPORTED_PAGE_SIZES.map((pageSize) => (

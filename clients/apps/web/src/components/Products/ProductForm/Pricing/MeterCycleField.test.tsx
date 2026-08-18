@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import { ReactNode } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -105,7 +111,7 @@ describe('MeterCycleField', () => {
     expect(screen.getByTestId('meter-interval').dataset.value).toBe('month')
   })
 
-  it('reports a meter cycle that does not divide the billing cycle', () => {
+  it('reports a meter cycle that does not divide the billing cycle', async () => {
     render(
       <Harness
         values={{ ...yearly, meter_interval: 'month', meter_interval_count: 5 }}
@@ -113,20 +119,22 @@ describe('MeterCycleField', () => {
     )
 
     expect(
-      screen.getByText(/must evenly divide the billing cycle/),
+      await screen.findByText(/must evenly divide the billing cycle/),
     ).toBeTruthy()
   })
 
-  it('accepts a meter cycle that divides the billing cycle', () => {
+  it('accepts a meter cycle that divides the billing cycle', async () => {
     render(
       <Harness
         values={{ ...yearly, meter_interval: 'month', meter_interval_count: 6 }}
       />,
     )
 
-    expect(
-      screen.queryByText(/must evenly divide the billing cycle/),
-    ).toBeNull()
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/must evenly divide the billing cycle/),
+      ).toBeNull(),
+    )
   })
 
   it('locks the inputs on an existing product', () => {

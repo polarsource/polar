@@ -13,16 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
   Switch,
-  Text,
 } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
 
@@ -33,7 +33,8 @@ export interface MeterCycleFieldProps {
 }
 
 export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
-  const { control, setValue, watch } = useFormContext<ProductFormType>()
+  const { control, setValue, trigger, watch } =
+    useFormContext<ProductFormType>()
 
   const billingInterval = watch('recurring_interval')
   const billingIntervalCount = watch('recurring_interval_count')
@@ -68,38 +69,41 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
       Number(billingIntervalCount ?? 1),
     )
 
+  // Both cycles feed the divisibility rule, so re-run it whenever either moves —
+  // otherwise a billing cycle edited after the meter cycle only surfaces on submit.
+  useEffect(() => {
+    if (enabled) {
+      trigger('meter_interval')
+    }
+  }, [
+    enabled,
+    meterInterval,
+    meterIntervalCount,
+    billingInterval,
+    billingIntervalCount,
+    trigger,
+  ])
+
   return (
-    <Box flexDirection="column" rowGap="l">
-      <Box alignItems="center" justifyContent="between" columnGap="l">
-        <Box
-          as="label"
-          htmlFor="meter-cycle-enable"
-          display="flex"
-          flexDirection="column"
-          rowGap="xs"
-        >
-          <Text as="span" variant="label">
-            Separate meter cycle
-          </Text>
-          <Text as="span" variant="caption" color="muted">
-            Reset meters, grant meter credits and bill usage at a different pace
-            than normal subscription renewal, like for instance yearly
-            subscription renewals with monthly meter cycling
-          </Text>
-        </Box>
-        <Switch
-          id="meter-cycle-enable"
-          checked={enabled}
-          onCheckedChange={onToggle}
-          disabled={disabled}
-        />
-      </Box>
-      {enabled && (
-        <Box flexDirection="column" rowGap="s">
-          <Box alignItems="start" columnGap="m">
-            <Box height={40} alignItems="center">
-              <Text variant="caption">Every</Text>
-            </Box>
+    <div>
+      <div className="flex flex-col gap-4">
+        <FormItem>
+          <div className="flex flex-row items-center justify-between space-y-0 space-x-2">
+            <FormLabel htmlFor="meter-cycle-enable">
+              Separate meter cycle
+            </FormLabel>
+            <FormControl>
+              <Switch
+                id="meter-cycle-enable"
+                checked={enabled}
+                onCheckedChange={onToggle}
+                disabled={disabled}
+              />
+            </FormControl>
+          </div>
+        </FormItem>
+        {enabled && (
+          <div className="flex w-full flex-col gap-2 lg:flex-row">
             <FormField
               control={control}
               name="meter_interval_count"
@@ -112,12 +116,13 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
                 },
               }}
               render={({ field }) => (
-                <FormItem className="flex-1">
+                <FormItem className="w-full space-y-0 lg:w-1/3">
                   <FormControl>
                     <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="\d*"
+                      type="number"
+                      min={1}
+                      max={999}
+                      step={1}
                       value={field.value ?? ''}
                       // Digits only, and keep every one the merchant typed: parsing a
                       // partial entry would store a cadence they didn't ask for.
@@ -129,7 +134,6 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
                         field.onChange(entered === '' ? null : Number(entered))
                       }}
                       disabled={disabled}
-                      className="min-w-12"
                     />
                   </FormControl>
                   <FormMessage />
@@ -141,35 +145,40 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
               name="meter_interval"
               rules={{ validate: () => dividesBillingCycle || INVALID_MESSAGE }}
               render={({ field }) => (
-                <Box>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value ?? ''}
-                    disabled={disabled}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a meter cycle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.recurringIntervalValues.map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {value}
-                          {meterIntervalCount !== 1 ? 's' : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Box>
+                <FormItem className="w-full space-y-0 lg:w-2/3">
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? ''}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a meter cycle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {enums.recurringIntervalValues.map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {value}
+                            {meterIntervalCount !== 1 ? 's' : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-          </Box>
-          {!dividesBillingCycle && (
-            <Text variant="caption" color="error">
-              {INVALID_MESSAGE}
-            </Text>
-          )}
-        </Box>
-      )}
-    </Box>
+          </div>
+        )}
+      </div>
+      <div className="mt-4">
+        <FormDescription>
+          Reset meters, grant meter credits and bill usage at a different pace
+          than normal subscription renewal, like for instance yearly
+          subscription renewals with monthly meter cycling
+        </FormDescription>
+      </div>
+    </div>
   )
 }

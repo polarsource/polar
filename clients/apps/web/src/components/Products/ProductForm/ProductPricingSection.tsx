@@ -38,6 +38,7 @@ import {
   hasPriceCurrency,
   ProductPrice,
   ProductPriceCreate,
+  shouldShowMeterCycle,
 } from './Pricing/utils'
 import { ProductFormType } from './ProductForm'
 
@@ -46,6 +47,7 @@ export interface ProductPricingSectionProps {
   className?: string
   update?: boolean
   compact?: boolean
+  hasMeterCreditBenefit?: boolean
 }
 
 export const ProductPricingSection = ({
@@ -53,6 +55,7 @@ export const ProductPricingSection = ({
   className,
   update,
   compact,
+  hasMeterCreditBenefit,
 }: ProductPricingSectionProps) => {
   const { control, setValue, watch, getValues } =
     useFormContext<ProductFormType>()
@@ -144,6 +147,25 @@ export const ProductPricingSection = ({
       }),
     [pricesByCurrency, validatedSelectedCurrency],
   )
+
+  const watchedPrices = watch('prices')
+  const meterInterval = watch('meter_interval')
+
+  const showMeterCycle = shouldShowMeterCycle({
+    isRecurring: productType === 'recurring',
+    hasMeteredPrice: (watchedPrices ?? []).some((price) =>
+      isMeteredPrice(price as ProductPrice),
+    ),
+    hasMeterCreditBenefit: !!hasMeterCreditBenefit,
+    hasSavedMeterCycle: !!update && !!meterInterval,
+  })
+
+  useEffect(() => {
+    if (!showMeterCycle && getValues('meter_interval')) {
+      setValue('meter_interval', null)
+      setValue('meter_interval_count', null)
+    }
+  }, [showMeterCycle, getValues, setValue])
 
   const handleAmountTypeChange = useCallback(
     (
@@ -548,7 +570,6 @@ export const ProductPricingSection = ({
               />
             </div>
           )}
-          {productType === 'recurring' && <MeterCycleField disabled={update} />}
         </div>
 
         <CurrencyTabs
@@ -628,6 +649,12 @@ export const ProductPricingSection = ({
             )
           })}
         </div>
+
+        {showMeterCycle && (
+          <div className="flex flex-col py-6">
+            <MeterCycleField disabled={update} />
+          </div>
+        )}
 
         {recurringInterval && (
           <div className="flex flex-col py-6">

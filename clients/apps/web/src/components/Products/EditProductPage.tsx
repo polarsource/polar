@@ -59,6 +59,11 @@ export const EditProductPage = ({
     [enabledBenefits],
   )
 
+  const hasMeterCreditBenefit = useMemo(
+    () => enabledBenefits.some((b) => b.type === 'meter_credit'),
+    [enabledBenefits],
+  )
+
   const form = useForm<ProductEditOrCreateForm>({
     defaultValues: {
       ...product,
@@ -244,6 +249,7 @@ export const EditProductPage = ({
             <ProductForm
               organization={organization}
               update={true}
+              hasMeterCreditBenefit={hasMeterCreditBenefit}
               benefitsSlot={
                 <Benefits
                   organization={organization}

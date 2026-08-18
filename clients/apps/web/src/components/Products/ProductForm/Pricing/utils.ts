@@ -9,6 +9,24 @@ export type ProductPriceCreate =
 export type AnyPrice = NonNullable<ProductFormType['prices']>[number]
 export type PriceEntry = { price: AnyPrice; index: number }
 
+// The meter cycle governs meter resets, meter-credit grants and overage settlement, so it
+// only earns its place once the product has something metered — a metered price or a
+// meter-credit benefit. An existing product shows its saved cycle regardless: the API
+// accepts `meter_interval` on create only, so there it's a read-only fact, not a choice.
+export const shouldShowMeterCycle = ({
+  isRecurring,
+  hasMeteredPrice,
+  hasMeterCreditBenefit,
+  hasSavedMeterCycle,
+}: {
+  isRecurring: boolean
+  hasMeteredPrice: boolean
+  hasMeterCreditBenefit: boolean
+  hasSavedMeterCycle: boolean
+}): boolean =>
+  isRecurring &&
+  (hasMeteredPrice || hasMeterCreditBenefit || hasSavedMeterCycle)
+
 export const hasPriceCurrency = (
   price: AnyPrice,
 ): price is AnyPrice & { price_currency: string } => {

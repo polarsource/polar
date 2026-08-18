@@ -27,9 +27,9 @@ class _EventLoopWatchdog(threading.Thread):
     If the callback hasn't executed within HEARTBEAT_TIMEOUT seconds,
     dumps all thread stacks to help diagnose what's blocking the event loop.
 
-    After WORKER_EVENT_LOOP_WATCHDOG_MAX_MISSES consecutive misses the process
-    exits. A wedged loop cannot shut down gracefully, and dramatiq brings the
-    whole worker down when a process dies, so the platform restarts it.
+    After WORKER_EVENT_LOOP_WATCHDOG_MAX_MISSES misses in a row the process
+    exits. A stuck loop cannot shut down cleanly, and dramatiq stops the whole
+    worker when a process dies, so the platform starts a new one.
     """
 
     def __init__(
@@ -96,8 +96,8 @@ class _EventLoopWatchdog(threading.Thread):
             max_misses=self.max_misses,
             message="Event loop never recovered, exiting so the worker restarts.",
         )
-        # os._exit skips interpreter cleanup, so flush by hand or this last
-        # message never leaves the buffer dramatiq hands the worker process.
+        # os._exit skips cleanup. Flush by hand or this last message stays
+        # in the buffer and is lost.
         logging.shutdown()
         sys.stdout.flush()
         sys.stderr.flush()
@@ -117,9 +117,9 @@ class _EventLoopWatchdog(threading.Thread):
     def _get_thread_stacks(self) -> str:
         """Format every thread's stack.
 
-        Deliberately pure Python. `faulthandler.dump_traceback(all_threads=True)`
-        can wedge the whole process when a thread is parked in a blocking C call,
-        which is exactly the situation this watchdog runs in.
+        Kept in pure Python on purpose. `faulthandler.dump_traceback(all_threads=True)`
+        can freeze the process when a thread sits in a blocking C call, which is
+        exactly when this watchdog runs.
         """
         names = {thread.ident: thread.name for thread in threading.enumerate()}
         sections = []
@@ -175,8 +175,8 @@ class _EventLoopWatchdog(threading.Thread):
             asyncio_tasks=asyncio_tasks,
             thread_stacks=thread_stacks,
         )
-        # Second copy straight to stderr: the structured field above gets
-        # scrubbed and truncated, and this dump is the whole point.
+        # Also write it raw. The log field above gets scrubbed and cut
+        # short, and this dump is the whole point.
         sys.stderr.write(f"{thread_stacks}\n")
         sys.stderr.flush()
 

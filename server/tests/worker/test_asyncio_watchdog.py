@@ -24,7 +24,7 @@ def event_loop_thread() -> Iterator[tuple[asyncio.AbstractEventLoop, threading.T
 def _block(
     loop: asyncio.AbstractEventLoop, seconds: float, name: str = "block"
 ) -> None:
-    """Wedge the loop from another thread and wait until it is really wedged."""
+    """Block the loop from another thread, and wait until it is really blocked."""
     started = threading.Event()
 
     def obviously_blocking_function() -> None:
@@ -131,7 +131,7 @@ class TestEventLoopWatchdog:
     def test_event_loop_stack_resolves_without_thread_name(
         self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
-        """dramatiq never names its loop thread, so the ident is the only handle."""
+        """dramatiq never names its loop thread, so the id is the only way in."""
         loop, thread = event_loop_thread
         assert thread.name != "dramatiq-asyncio"
         _block(loop, 2)
@@ -157,10 +157,10 @@ class TestEventLoopWatchdog:
     def test_dump_does_not_call_faulthandler(
         self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
-        """faulthandler.dump_traceback(all_threads=True) can wedge the process.
+        """faulthandler.dump_traceback(all_threads=True) can freeze the process.
 
-        The watchdog runs precisely when a thread is parked in a blocking C call,
-        which is the case that hangs, so it must stay pure Python.
+        It hangs when a thread sits in a blocking C call, which is exactly when
+        the watchdog runs, so this must stay pure Python.
         """
         loop, thread = event_loop_thread
         _block(loop, 2)

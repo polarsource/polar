@@ -1,0 +1,32 @@
+server/tests/billing_entry/test_service.py
+  s_7245646c656b56::t_8db7f159888cae 7,625-626
+  s_7245646c656b56::t_6f31d350e8cff5 629-639
+server/polar/observability/invariants/rules/subscriptions_locked_invariant.py
+  s_7245646c656b56::t_1b8b0b43bdaf0a 36-39
+server/migrations/versions/2026-08-17-1200_add_pending_link_billing_entry_index.py
+  s_7245646c656b56::t_12abf4b95b3208 25-31
+server/tests/observability/invariants/rules/test_subscriptions_locked_invariant.py
+  s_7245646c656b56::t_cd009ab94f929d 35,59
+server/polar/billing_entry/repository.py
+  s_7245646c656b56::t_fb349c3b3ba311 190,195,197-206,208,211
+  s_7245646c656b56::t_4e39d3fc69f213 207
+  s_7245646c656b56::t_4c3114f6f9504b 210
+server/polar/subscription/tasks.py
+  s_7245646c656b56::t_a0c67c927fcffc 46-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "418843da9ce4660dee8b058f9f7615e799d5bfb5",
+  "prompts": {},
+  "sessions": {
+    "s_7245646c656b56": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7cf9f0ba-d7de-4149-8d9c-a45d5c61101f",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

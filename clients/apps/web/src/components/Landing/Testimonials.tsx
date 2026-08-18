@@ -56,8 +56,10 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ]
 
-const TestimonialRow = ({ testimonial }: { testimonial: Testimonial }) => (
-  <Link href={testimonial.link} target="_blank" className="flex w-full">
+const isExternalLink = (link: string) => /^https?:\/\//.test(link)
+
+const TestimonialRow = ({ testimonial }: { testimonial: Testimonial }) => {
+  const content = (
     <Grid
       width="100%"
       templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
@@ -92,8 +94,27 @@ const TestimonialRow = ({ testimonial }: { testimonial: Testimonial }) => (
         ))}
       </Box>
     </Grid>
-  </Link>
-)
+  )
+
+  if (isExternalLink(testimonial.link)) {
+    return (
+      <a
+        href={testimonial.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex w-full"
+      >
+        {content}
+      </a>
+    )
+  }
+
+  return (
+    <Link href={testimonial.link} target="_blank" className="flex w-full">
+      {content}
+    </Link>
+  )
+}
 
 export const Testimonials = () => (
   <Chapter

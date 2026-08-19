@@ -28,6 +28,11 @@ variable "queue_name" {
   type        = string
 }
 
+variable "queue_prefix" {
+  description = "Shared prefix of all task queues in this environment. Grants the worker SendMessage on every sibling queue for cross-queue sub-enqueues; the pattern also matches sibling DLQs, which is accepted."
+  type        = string
+}
+
 variable "image_uri" {
   description = "Container image URI the worker Lambda runs."
   type        = string
@@ -88,11 +93,22 @@ variable "environment_variables" {
   default     = {}
 }
 
-variable "secret_environment_variables" {
-  description = "Secret environment variables for the task Lambda."
-  type        = map(string)
-  default     = {}
-  sensitive   = true
+variable "secrets_arn" {
+  description = "Secrets Manager secret holding a JSON map of secret env vars, exported by the image bootstrap at cold start."
+  type        = string
+  default     = null
+}
+
+variable "secrets_version_id" {
+  description = "Version ID of the secret. Exposed as an env var so rotations replace warm Lambda environments."
+  type        = string
+  default     = null
+}
+
+variable "kms_key_arn" {
+  description = "KMS key the app uses for envelope encryption of stored secrets."
+  type        = string
+  default     = null
 }
 
 variable "log_retention_days" {

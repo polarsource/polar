@@ -5,6 +5,8 @@ locals {
 
 data "aws_caller_identity" "current" {}
 
+data "aws_region" "current" {}
+
 resource "aws_sqs_queue" "dlq" {
   name                      = "${var.queue_name}-dlq"
   message_retention_seconds = 1209600
@@ -17,6 +19,13 @@ resource "aws_sqs_queue" "task" {
 
   # Visibility must exceed the function timeout so a slow task is not redelivered while still running.
   visibility_timeout_seconds = max(180, var.timeout_seconds + 60)
+
+  lifecycle {
+    precondition {
+      condition     = substr(var.queue_name, 0, length(var.queue_prefix) + 1) == "${var.queue_prefix}-"
+      error_message = "queue_name must start with queue_prefix, or the SendSiblingQueues grant will not cover this queue."
+    }
+  }
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dlq.arn
@@ -131,6 +140,36 @@ data "aws_iam_policy_document" "lambda" {
       values   = ["scheduler.amazonaws.com"]
     }
   }
+
+  statement {
+    sid = "SendSiblingQueues"
+    actions = [
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl",
+    ]
+    resources = ["arn:aws:sqs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${var.queue_prefix}-*"]
+  }
+
+  dynamic "statement" {
+    for_each = var.secrets_arn != null ? [var.secrets_arn] : []
+    content {
+      sid       = "WorkerSecrets"
+      actions   = ["secretsmanager:GetSecretValue"]
+      resources = [statement.value]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.kms_key_arn != null ? [var.kms_key_arn] : []
+    content {
+      sid = "EnvelopeEncryption"
+      actions = [
+        "kms:GenerateDataKey",
+        "kms:Decrypt",
+      ]
+      resources = [statement.value]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "lambda" {
@@ -170,7 +209,8 @@ resource "aws_lambda_function" "task" {
   environment {
     variables = merge(
       var.environment_variables,
-      var.secret_environment_variables,
+      var.secrets_arn != null ? { POLAR_WORKER_SECRETS_ARN = var.secrets_arn } : {},
+      var.secrets_version_id != null ? { POLAR_WORKER_SECRETS_VERSION = var.secrets_version_id } : {},
       { POLAR_DATABASE_POOL_SIZE = "1" },
       { SERVICE_NAME = local.function_name },
       { POLAR_WORKER_SQS_SCHEDULER_ROLE_ARN = aws_iam_role.scheduler.arn },

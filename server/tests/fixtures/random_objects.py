@@ -680,8 +680,7 @@ async def create_product_price_unit_based(
     tiers: Tiers | None = None,
     currency: str = "usd",
     tax_behavior: TaxBehavior | None = TaxBehavior.exclusive,
-    unit_label: str | None = None,
-    unit_label_plural: str | None = None,
+    unit_label: dict[str, dict[str, str]] | None = None,
 ) -> ProductPriceUnit:
     """Create a unit-based price.
 
@@ -702,7 +701,6 @@ async def create_product_price_unit_based(
         tiers=tiers,
         minimum_units=minimum_units,
         unit_label=unit_label,
-        unit_label_plural=unit_label_plural,
         product=product,
     )
     assert price.amount_type == ProductPriceAmountType.unit_based
@@ -722,8 +720,7 @@ async def create_product_unit_based(
         SubscriptionRecurringInterval.month
     ),
     name: str = "Product",
-    unit_label: str | None = None,
-    unit_label_plural: str | None = None,
+    unit_label: dict[str, dict[str, str]] | None = None,
 ) -> Product:
     """Create a product with a single unit-based price."""
     product = await create_product(
@@ -741,7 +738,6 @@ async def create_product_unit_based(
         tiers=tiers,
         currency=currency,
         unit_label=unit_label,
-        unit_label_plural=unit_label_plural,
     )
     product.prices.append(unit_price)
     product.all_prices.append(unit_price)

@@ -89,6 +89,7 @@ from polar.product.tiers import (
     seat_tiers_unit_bounds,
     validate_unit_bounds,
 )
+from polar.product.unit_label import UnitLabel
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 64
@@ -405,8 +406,6 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
         return ProductPriceMeteredUnitModel
 
 
-
-
 class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
     """
     Schema to create a unit-based price: the buyer picks a quantity of units,
@@ -424,20 +423,12 @@ class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
             "The minimum purchasable quantity (inclusive). Defaults to 1 when not set."
         ),
     )
-    unit_label: str | None = Field(
+    unit_label: UnitLabel | None = Field(
         default=None,
-        max_length=32,
         description=(
-            "Singular noun for a unit of this price, shown at checkout and "
-            'on invoices. Defaults to "unit" when unset.'
-        ),
-    )
-    unit_label_plural: str | None = Field(
-        default=None,
-        max_length=32,
-        description=(
-            "Plural noun for a unit of this price. Defaults to the singular "
-            'label plus "s" when unset (or "units" if no singular is set).'
+            "Per-locale unit nouns shown at checkout and on invoices. "
+            '`{"en": {"=1": "device", "other": "devices"}}`. '
+            'Defaults to "unit"/"units" when unset.'
         ),
     )
 
@@ -810,16 +801,10 @@ class ProductPriceUnitBasedBase(ProductPriceBase):
     minimum_units: int | None = Field(
         description="The minimum purchasable quantity (inclusive).",
     )
-    unit_label: str | None = Field(
+    unit_label: UnitLabel | None = Field(
         description=(
-            "Singular noun for a unit of this price, shown at checkout and "
-            'on invoices. `null` defaults to "unit".'
-        ),
-    )
-    unit_label_plural: str | None = Field(
-        description=(
-            "Plural noun for a unit of this price. `null` defaults to the "
-            'singular label plus "s", or "units".'
+            "Per-locale unit nouns shown at checkout and on invoices. "
+            '`null` defaults to "unit"/"units".'
         ),
     )
 

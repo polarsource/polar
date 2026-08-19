@@ -1196,8 +1196,7 @@ def _unit_price_create(
     minimum_units: int | None = None,
     currency: PresentmentCurrency = PresentmentCurrency.usd,
     tax_behavior: TaxBehaviorOption | None = None,
-    unit_label: str | None = None,
-    unit_label_plural: str | None = None,
+    unit_label: dict[str, dict[str, str]] | None = None,
 ) -> ProductPriceUnitBasedCreate:
     return ProductPriceUnitBasedCreate(
         amount_type=ProductPriceAmountType.unit_based,
@@ -1211,7 +1210,6 @@ def _unit_price_create(
             }
         ),
         unit_label=unit_label,
-        unit_label_plural=unit_label_plural,
     )
 
 
@@ -1262,8 +1260,7 @@ class TestCreateUnitBasedPrice:
                 prices=[
                     _unit_price_create(
                         minimum_units=5,
-                        unit_label="device",
-                        unit_label_plural="devices",
+                        unit_label={"en": {"=1": "device", "other": "devices"}},
                     )
                 ],
                 organization_id=organization.id,
@@ -1281,8 +1278,7 @@ class TestCreateUnitBasedPrice:
             }
         )
         assert price.minimum_units == 5
-        assert price.unit_label == "device"
-        assert price.unit_label_plural == "devices"
+        assert price.unit_label == {"en": {"=1": "device", "other": "devices"}}
         assert price.calculate_amount(3) == 8700
 
     @pytest.mark.auth

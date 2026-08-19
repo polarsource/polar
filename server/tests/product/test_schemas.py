@@ -731,14 +731,30 @@ class TestProductPriceUnitBasedCreate:
                     tier_type="graduated",
                     minimum_units=5,
                 ),
-                "unit_label": "device",
-                "unit_label_plural": "devices",
+                "unit_label": {"en": {"=1": "device", "other": "devices"}},
             }
         )
         assert schema.tiers.type == TierType.graduated
         assert schema.minimum_units == 5
-        assert schema.unit_label == "device"
-        assert schema.unit_label_plural == "devices"
+        assert schema.unit_label is not None
+        assert schema.unit_label.model_dump() == {
+            "en": {"=1": "device", "other": "devices"}
+        }
+
+    def test_unit_label_optional(self) -> None:
+        schema = ProductPriceUnitBasedCreate.model_validate(
+            _unit_based_payload([{"bound": None, "unit_amount": 1000}])
+        )
+        assert schema.unit_label is None
+
+    def test_unit_label_requires_other(self) -> None:
+        with pytest.raises(ValidationError):
+            ProductPriceUnitBasedCreate.model_validate(
+                {
+                    **_unit_based_payload([{"bound": None, "unit_amount": 1000}]),
+                    "unit_label": {"en": {"=1": "device"}},
+                }
+            )
 
     def test_fractional_rate_rejected(self) -> None:
         with pytest.raises(ValidationError, match="smallest currency unit"):

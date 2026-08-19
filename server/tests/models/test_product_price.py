@@ -467,13 +467,12 @@ class TestUnitBasedPrice:
 
     def test_unit_noun_custom_label(self) -> None:
         price = _make_unit_price(SHARED_MULTI_TIER)
-        price.unit_label = "device"
-        price.unit_label_plural = "devices"
+        price.unit_label = {"en": {"=1": "device", "other": "devices"}}
         assert price.get_unit_noun(1) == "device"
         assert price.get_unit_noun(3) == "devices"
 
-    def test_unit_noun_derives_plural_from_singular(self) -> None:
+    def test_unit_noun_falls_back_to_other(self) -> None:
         price = _make_unit_price(SHARED_MULTI_TIER)
-        price.unit_label = "license"
-        assert price.get_unit_noun(1) == "license"
-        assert price.get_unit_noun(2) == "licenses"
+        price.unit_label = {"en": {"other": "seats"}}
+        assert price.get_unit_noun(1) == "seats"
+        assert price.get_unit_noun(2) == "seats"

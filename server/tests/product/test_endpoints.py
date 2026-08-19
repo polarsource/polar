@@ -169,7 +169,6 @@ class TestGetProduct:
         assert price["minimum_units"] == 5
         assert price["maximum_units"] is None
         assert price["unit_label"] is None
-        assert price["unit_label_plural"] is None
         assert price["tiers"]["type"] == "volume"
         assert price["tiers"]["tiers"] == [{"bound": None, "unit_amount": "2900"}]
 

@@ -267,6 +267,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship("Checkout", lazy="raise")
 
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    units: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem",

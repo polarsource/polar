@@ -62,6 +62,7 @@ class ProductPriceAmountType(StrEnum):
     custom = "custom"
     metered_unit = "metered_unit"
     seat_based = "seat_based"
+    unit_based = "unit_based"
 
 
 class ProductPriceSource(StrEnum):
@@ -143,6 +144,7 @@ class ProductPrice(RecordModel):
             ProductPriceAmountType.fixed,
             ProductPriceAmountType.custom,
             ProductPriceAmountType.seat_based,
+            ProductPriceAmountType.unit_based,
         }
 
     @is_static.inplace.expression
@@ -153,6 +155,7 @@ class ProductPrice(RecordModel):
                 ProductPriceAmountType.fixed,
                 ProductPriceAmountType.custom,
                 ProductPriceAmountType.seat_based,
+                ProductPriceAmountType.unit_based,
             )
         )
 
@@ -435,6 +438,52 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,
+        "polymorphic_load": "inline",
+    }
+
+
+class ProductPriceUnitBased(TieredPrice, NewProductPrice, ProductPrice):
+    """A price for a quantity of units the buyer declares up-front.
+
+    Priced exactly like a seat price — the buyer pays for the declared
+    quantity immediately, and changes are prorated — but without seat
+    management: no invitations, no members, just a number on the
+    subscription. Reads tiers natively from the shared columns.
+    """
+
+    amount_type: Mapped[Literal[ProductPriceAmountType.unit_based]] = mapped_column(
+        use_existing_column=True, default=ProductPriceAmountType.unit_based
+    )
+    unit_label: Mapped[str | None] = mapped_column(
+        String(32), nullable=True, default=None
+    )
+    unit_label_plural: Mapped[str | None] = mapped_column(
+        String(32), nullable=True, default=None
+    )
+
+    def get_unit_noun(self, count: int) -> str:
+        """Merchant-defined noun for this quantity, or the default unit/units."""
+        singular = (self.unit_label or "").strip() or "unit"
+        plural = (self.unit_label_plural or "").strip() or f"{singular}s"
+        return singular if count == 1 else plural
+
+    def calculate_amount(self, units: int) -> int:
+        amount = self.get_tiered_amount(units)
+        # Unit rates are whole cents, so any fraction means corrupt data.
+        if amount != amount.to_integral_value():
+            raise ValueError(f"Unit price produced non-integral amount {amount}")
+        return int(amount)
+
+    def get_purchase_floor(self) -> int:
+        """The smallest purchasable quantity, never below one unit."""
+        return max(1, self.get_minimum_units())
+
+    @property
+    def is_free(self) -> bool:
+        return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
+
+    __mapper_args__ = {
+        "polymorphic_identity": ProductPriceAmountType.unit_based,
         "polymorphic_load": "inline",
     }
 

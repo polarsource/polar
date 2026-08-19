@@ -44,6 +44,9 @@ class CheckoutLink(TrialConfigurationMixin, MetadataMixin, RecordModel):
     # created from this link are locked to this number of seats (min == max == seats).
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
+    # created from this link are locked to this number of units (min == max == units).
+    units: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
     )

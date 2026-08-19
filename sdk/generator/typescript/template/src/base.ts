@@ -107,6 +107,13 @@ export interface ClientOptions {
   baseUrl: string;
   version: string;
   accessToken: string;
+  /** Default request timeout, in seconds. */
+  timeout?: number;
+}
+
+export interface RequestOptions {
+  /** Request timeout override, in seconds. */
+  timeout?: number;
 }
 
 export const resolveBaseUrl = (
@@ -160,10 +167,19 @@ export class ClientBase {
     ];
   }
 
-  public async sendRequest(request: [string, RequestInit]): Promise<Response> {
+  public async sendRequest(
+    request: [string, RequestInit],
+    requestOptions?: RequestOptions,
+  ): Promise<Response> {
     const [fullUrl, requestInit] = request;
+    const timeout = requestOptions?.timeout ?? this.options.timeout;
     try {
-      return await fetch(fullUrl, requestInit);
+      return await fetch(fullUrl, {
+        ...requestInit,
+        ...(timeout !== undefined
+          ? { signal: AbortSignal.timeout(Math.ceil(timeout * 1000)) }
+          : {}),
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

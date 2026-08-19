@@ -3,6 +3,9 @@ from __future__ import annotations
 import typing
 
 from polar.base import AsyncServiceBase, SyncServiceBase
+{% if service.methods %}
+from polar.base import RequestTimeout
+{% endif %}
 {% if service.methods | selectattr("response_type", "equalto", "json") | list %}
 from polar.base import parse_response_json
 {% endif %}
@@ -68,9 +71,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         {% for param in method.path_params %}
         {{ param.name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -80,6 +81,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         {{ param.name }}: {{ param.type | type_annotation }} = ...,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> {{ method.response | type_annotation }}: ...
 
@@ -95,9 +97,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         {% for param in method.path_params %}
         {{ param.name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -107,6 +107,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         {{ param.name }}: {{ param.type | type_annotation }} = ...,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> {{ method.response | type_annotation }}: ...
 
@@ -120,9 +121,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -132,6 +131,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = None,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
         **kwargs: typing.Any,
         {% elif method.body %}
@@ -158,6 +158,8 @@ Args:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}
+    request_timeout: Timeout override for this request, in seconds.
+
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
 
@@ -176,6 +178,7 @@ Raises:
             url="{{ method.path }}",
             path_params={ {% for param in method.path_params %}"{{ param.name }}": {{ param.parameter_name }}, {% endfor %} },
             query_params={ {% for param in method.query_params %}"{{ param.name }}": {{ param.parameter_name }}, {% endfor %} },
+            request_timeout=request_timeout,
             {% if method.body %}
             body=kwargs,
             {% endif %}
@@ -207,9 +210,7 @@ Raises:
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -219,6 +220,7 @@ Raises:
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = ...,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]: ...
 
@@ -234,9 +236,7 @@ Raises:
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -246,6 +246,7 @@ Raises:
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = ...,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]: ...
 
@@ -259,9 +260,7 @@ Raises:
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -271,6 +270,7 @@ Raises:
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = None,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
         **kwargs: typing.Any,
         {% elif method.body %}
@@ -291,6 +291,8 @@ Args:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}
+    request_timeout: Timeout override for each request, in seconds.
+
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
 
@@ -315,6 +317,7 @@ Raises:
                 {% for param in method.query_params %}
                 {{ param.parameter_name }}={{ param.parameter_name }},
                 {% endfor %}
+                request_timeout=request_timeout,
                 {% if method.body %}
                 **kwargs,
                 {% endif %}
@@ -349,9 +352,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         {% for param in method.path_params %}
         {{ param.name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -361,6 +362,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         {{ param.name }}: {{ param.type | type_annotation }} = ...,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> {{ method.response | type_annotation }}: ...
 
@@ -376,9 +378,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         {% for param in method.path_params %}
         {{ param.name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -388,6 +388,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         {{ param.name }}: {{ param.type | type_annotation }} = ...,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> {{ method.response | type_annotation }}: ...
 
@@ -401,9 +402,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -413,6 +412,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = None,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
         **kwargs: typing.Any,
         {% elif method.body %}
@@ -439,6 +439,8 @@ Args:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}
+    request_timeout: Timeout override for this request, in seconds.
+
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
 
@@ -457,6 +459,7 @@ Raises:
             url="{{ method.path }}",
             path_params={ {% for param in method.path_params %}"{{ param.name }}": {{ param.parameter_name }}, {% endfor %} },
             query_params={ {% for param in method.query_params %}"{{ param.name }}": {{ param.parameter_name }}, {% endfor %} },
+            request_timeout=request_timeout,
             {% if method.body %}
             body=kwargs,
             {% endif %}
@@ -488,9 +491,7 @@ Raises:
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -500,6 +501,7 @@ Raises:
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = ...,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}, None]: ...
 
@@ -515,9 +517,7 @@ Raises:
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -527,6 +527,7 @@ Raises:
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = ...,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}, None]: ...
 
@@ -540,9 +541,7 @@ Raises:
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
         {% endfor %}
-        {% if method.query_params %}
         *,
-        {% endif %}
         {% for param in method.query_params %}
         {% if param.default is not none %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
@@ -552,6 +551,7 @@ Raises:
         {{ param.parameter_name }}: {{ param.type | type_annotation }} = None,
         {% endif %}
         {% endfor %}
+        request_timeout: RequestTimeout | None = None,
         {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
         **kwargs: typing.Any,
         {% elif method.body %}
@@ -569,7 +569,9 @@ Raises:
 {% endfor %}{% for param in method.query_params %}
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
-{% endfor %}{% if method.body %}
+{% endfor %}    request_timeout: Timeout override for each request, in seconds.
+
+{% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
 
 {% endif %}
@@ -593,6 +595,7 @@ Raises:
                 {% for param in method.query_params %}
                 {{ param.parameter_name }}={{ param.parameter_name }},
                 {% endfor %}
+                request_timeout=request_timeout,
                 {% if method.body %}
                 **kwargs,
                 {% endif %}

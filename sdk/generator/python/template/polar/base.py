@@ -9,6 +9,7 @@ import typing_extensions
 
 _EnvironmentT = typing.TypeVar("_EnvironmentT", bound=str)
 _ModelT = typing.TypeVar("_ModelT")
+RequestTimeout: typing.TypeAlias = float | httpx.Timeout
 
 
 class PolarError(Exception):
@@ -72,6 +73,7 @@ class BuildRequestMixin:
         path_params: dict[str, typing.Any] | None = None,
         query_params: dict[str, typing.Any] | None = None,
         body: typing.Any | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> httpx.Request:
         url = url.format(**(path_params or {}))
 
@@ -85,13 +87,23 @@ class BuildRequestMixin:
             else:
                 params[k] = v
 
-        return self._client.build_request(method, url, params=params, json=body)
+        timeout = self._client.timeout if request_timeout is None else request_timeout
+        return self._client.build_request(
+            method, url, params=params, json=body, timeout=timeout
+        )
 
 
 class SyncClientBase(BuildRequestMixin):
-    def __init__(self, base_url: str, version: str, access_token: str) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        version: str,
+        access_token: str,
+        timeout: RequestTimeout | None = 5.0,
+    ) -> None:
         self._client = httpx.Client(
             base_url=base_url,
+            timeout=timeout,
             headers={
                 "Polar-Version": version,
                 "Authorization": f"Bearer {access_token}",
@@ -118,9 +130,16 @@ class SyncClientBase(BuildRequestMixin):
 
 
 class AsyncClientBase(BuildRequestMixin):
-    def __init__(self, base_url: str, version: str, access_token: str) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        version: str,
+        access_token: str,
+        timeout: RequestTimeout | None = 5.0,
+    ) -> None:
         self._client = httpx.AsyncClient(
             base_url=base_url,
+            timeout=timeout,
             headers={
                 "Polar-Version": version,
                 "Authorization": f"Bearer {access_token}",

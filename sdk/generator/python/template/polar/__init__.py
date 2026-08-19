@@ -3,6 +3,7 @@ from polar.base import (
     PolarError,
     PolarNetworkError,
     PolarServerError,
+    RequestTimeout,
     deserialize,
 )
 
@@ -12,5 +13,6 @@ __all__ = [
     "PolarNetworkError",
     "PolarServerError",
     "PolarClientError",
+    "RequestTimeout",
     "deserialize",
 ]

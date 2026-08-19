@@ -13986,6 +13986,7 @@ export interface components {
           | components['schemas']['ProductPriceFixedCreate']
           | components['schemas']['ProductPriceCustomCreate']
           | components['schemas']['ProductPriceSeatBasedCreate']
+          | components['schemas']['ProductPriceUnitBasedCreate']
           | components['schemas']['ProductPriceMeteredUnitCreate']
         )[]
       } | null
@@ -27620,6 +27621,12 @@ export interface components {
        */
       seat_based_pricing_enabled: boolean
       /**
+       * Unit Based Pricing Enabled
+       * @description If this organization has unit-based pricing enabled
+       * @default false
+       */
+      unit_based_pricing_enabled: boolean
+      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false
@@ -27717,6 +27724,12 @@ export interface components {
        * @default false
        */
       seat_based_pricing_enabled: boolean
+      /**
+       * Unit Based Pricing Enabled
+       * @description If this organization has unit-based pricing enabled
+       * @default false
+       */
+      unit_based_pricing_enabled: boolean
       /**
        * Member Model Enabled
        * @description If this organization has the Member model enabled
@@ -30759,6 +30772,7 @@ export interface components {
         | components['schemas']['ProductPriceFixedCreate']
         | components['schemas']['ProductPriceCustomCreate']
         | components['schemas']['ProductPriceSeatBasedCreate']
+        | components['schemas']['ProductPriceUnitBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
       )[]
       /**
@@ -30829,6 +30843,7 @@ export interface components {
         | components['schemas']['ProductPriceFixedCreate']
         | components['schemas']['ProductPriceCustomCreate']
         | components['schemas']['ProductPriceSeatBasedCreate']
+        | components['schemas']['ProductPriceUnitBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
       )[]
       /**
@@ -30956,6 +30971,7 @@ export interface components {
       | components['schemas']['ProductPriceFixed']
       | components['schemas']['ProductPriceCustom']
       | components['schemas']['ProductPriceSeatBased']
+      | components['schemas']['ProductPriceUnitBased']
       | components['schemas']['ProductPriceMeteredUnit']
     /**
      * ProductPriceCustom
@@ -31809,6 +31825,111 @@ export interface components {
      */
     ProductPriceType: 'one_time' | 'recurring'
     /**
+     * ProductPriceUnitBased
+     * @description A unit-based price for a product: the buyer picks a quantity of units,
+     *     pays for it up-front, and changes are prorated.
+     */
+    ProductPriceUnitBased: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /** @description Tiered pricing based on the purchased unit quantity. */
+      tiers: components['schemas']['Tiers-Output']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable quantity (inclusive).
+       */
+      minimum_units: number | null
+      /**
+       * Unit Label
+       * @description Per-locale unit nouns shown at checkout and on invoices. `null` defaults to "unit"/"units".
+       */
+      unit_label: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
+      /**
+       * Maximum Units
+       * @description The maximum purchasable quantity, from the last tier's bound. `null` for unlimited.
+       */
+      readonly maximum_units: number | null
+    }
+    /**
+     * ProductPriceUnitBasedCreate
+     * @description Schema to create a unit-based price: the buyer picks a quantity of units,
+     *     pays for it up-front, and changes are prorated.
+     */
+    ProductPriceUnitBasedCreate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased unit quantity. */
+      tiers: components['schemas']['Tiers-Input']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable quantity (inclusive). Defaults to 1 when not set.
+       */
+      minimum_units?: number | null
+      /**
+       * Unit Label
+       * @description Per-locale unit nouns shown at checkout and on invoices. `{"en": {"=1": "device", "other": "devices"}}`. Defaults to "unit"/"units" when unset.
+       */
+      unit_label?: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
+    }
+    /**
      * ProductSortProperty
      * @enum {string}
      */
@@ -31882,6 +32003,7 @@ export interface components {
                 | components['schemas']['ProductPriceFixedCreate']
                 | components['schemas']['ProductPriceCustomCreate']
                 | components['schemas']['ProductPriceSeatBasedCreate']
+                | components['schemas']['ProductPriceUnitBasedCreate']
                 | components['schemas']['ProductPriceMeteredUnitCreate']
               )
           )[]
@@ -35662,6 +35784,61 @@ export interface components {
       type: 'text'
       /** Text */
       text: string
+    }
+    /**
+     * Tier
+     * @description A per-unit rate up to and including `bound`.
+     *
+     *     Each tier starts where the previous one ended. The first starts at
+     *     zero. `bound` is None on the last tier if it's unbounded. Rates are
+     *     in cents and may be fractional.
+     */
+    'Tier-Input': {
+      /** Bound */
+      bound?: number | null
+      /** Unit Amount */
+      unit_amount: number | string
+    }
+    /**
+     * Tier
+     * @description A per-unit rate up to and including `bound`.
+     *
+     *     Each tier starts where the previous one ended. The first starts at
+     *     zero. `bound` is None on the last tier if it's unbounded. Rates are
+     *     in cents and may be fractional.
+     */
+    'Tier-Output': {
+      /** Bound */
+      bound?: number | null
+      /** Unit Amount */
+      unit_amount: string
+    }
+    /**
+     * TierType
+     * @enum {string}
+     */
+    TierType: 'volume' | 'graduated'
+    /**
+     * Tiers
+     * @description The structure of the shared tiers JSONB column, used by every tiered
+     *     price type. Purchasable quantity bounds live in the `minimum_units` and
+     *     `maximum_units` columns, not here.
+     */
+    'Tiers-Input': {
+      type: components['schemas']['TierType']
+      /** Tiers */
+      tiers: components['schemas']['Tier-Input'][]
+    }
+    /**
+     * Tiers
+     * @description The structure of the shared tiers JSONB column, used by every tiered
+     *     price type. Purchasable quantity bounds live in the `minimum_units` and
+     *     `maximum_units` columns, not here.
+     */
+    'Tiers-Output': {
+      type: components['schemas']['TierType']
+      /** Tiers */
+      tiers: components['schemas']['Tier-Output'][]
     }
     /**
      * TimeInterval
@@ -67707,6 +67884,12 @@ export const productPriceSourceValues: ReadonlyArray<
 export const productPriceTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceType']
 > = ['one_time', 'recurring']
+export const productPriceUnitBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductPriceUnitBased']['amount_type']
+> = ['unit_based']
+export const productPriceUnitBasedCreateAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductPriceUnitBasedCreate']['amount_type']
+> = ['unit_based']
 export const productSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductSortProperty']
 > = [
@@ -68217,6 +68400,9 @@ export const taxJurisdictionSortPropertyValues: ReadonlyArray<
 export const textBlockTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TextBlock']['type']
 > = ['text']
+export const tierTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TierType']
+> = ['volume', 'graduated']
 export const timeIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TimeInterval']
 > = ['year', 'month', 'week', 'day', 'hour']

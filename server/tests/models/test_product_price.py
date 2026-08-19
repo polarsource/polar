@@ -214,6 +214,13 @@ class TestSeatBillingReadsSharedTiers:
         )
         assert price.is_free is True
 
+    def test_is_free_without_tiers(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 250}],
+        )
+        price.tiers = None  # type: ignore[assignment]
+        assert price.is_free is True
+
 
 class TestGraduatedPricing:
     def test_single_tier(self) -> None:
@@ -446,6 +453,11 @@ class TestUnitBasedPrice:
 
     def test_is_free(self) -> None:
         price = _make_unit_price([{"bound": None, "unit_amount": "0"}])
+        assert price.is_free is True
+
+    def test_is_free_without_tiers(self) -> None:
+        price = _make_unit_price([{"bound": None, "unit_amount": "100"}])
+        price.tiers = None  # type: ignore[assignment]
         assert price.is_free is True
 
     def test_unit_noun_defaults(self) -> None:

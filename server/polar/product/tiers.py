@@ -184,7 +184,7 @@ class SeatTier(TypedDict):
 
 
 class SeatTiersData(TypedDict):
-    """The structure of the seat_tiers JSONB column."""
+    """The public seat-tier payload used by the HTTP API and dashboard."""
 
     seat_tier_type: SeatTierType
     tiers: list[SeatTier]
@@ -231,3 +231,41 @@ def seat_tiers_unit_bounds(seat_tiers: SeatTiersData) -> tuple[int | None, int |
     if not sorted_seat_tiers:
         return None, None
     return sorted_seat_tiers[0]["min_seats"], sorted_seat_tiers[-1].get("max_seats")
+
+
+def tiers_to_seat_tiers(
+    tiers: Tiers,
+    minimum_units: int | None = None,
+    maximum_units: int | None = None,
+) -> SeatTiersData:
+    """Translate the shared tiers format back to the seat API payload.
+
+    The first `min_seats` comes from `minimum_units` (at least 1). Each
+    later `min_seats` is the previous `max_seats` plus one. Intermediate
+    `max_seats` values are the tier bounds. The last `max_seats` is
+    `maximum_units` when set, otherwise the last bound.
+    """
+    first_min = 1 if minimum_units is None or minimum_units < 1 else minimum_units
+
+    seat_tiers: list[SeatTier] = []
+    previous_max: int | None = None
+    last_index = len(tiers.tiers) - 1
+    for index, tier in enumerate(tiers.tiers):
+        min_seats = first_min if previous_max is None else previous_max + 1
+        if index == last_index and maximum_units is not None:
+            max_seats = maximum_units
+        else:
+            max_seats = tier.bound
+        seat_tiers.append(
+            {
+                "min_seats": min_seats,
+                "max_seats": max_seats,
+                "price_per_seat": int(tier.unit_amount),
+            }
+        )
+        previous_max = max_seats
+
+    return {
+        "seat_tier_type": SeatTierType(tiers.type),
+        "tiers": seat_tiers,
+    }

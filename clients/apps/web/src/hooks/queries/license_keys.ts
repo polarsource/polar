@@ -29,6 +29,26 @@ export const useLicenseKeyUpdate = (organizationId: string) =>
     },
   })
 
+export const useLicenseKeyRotate = (organizationId: string) =>
+  useMutation({
+    mutationFn: (id: string) =>
+      api.POST('/v1/license-keys/{id}/rotate', {
+        params: { path: { id } },
+      }),
+    onSuccess: async (result, id) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['license_keys', 'organization', organizationId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['license_keys', id],
+      })
+    },
+  })
+
 export const useLicenseKey = (id?: string) =>
   useQuery({
     queryKey: ['license_keys', id],

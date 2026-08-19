@@ -428,7 +428,7 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
 
     @property
     def is_free(self) -> bool:
-        if self.tiers is None or not self.tiers.tiers:
+        if not self.tiers.tiers:
             return True
         return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
 

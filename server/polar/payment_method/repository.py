@@ -15,14 +15,14 @@ from polar.kit.repository import (
 )
 from polar.models import Customer, PaymentMethod, Subscription
 from polar.models.email_log import EmailLog, EmailLogStatus
-from polar.models.payment_method import card_expiration as _expiration_datetime
+from polar.models.payment_method import card_expiration
 
 
 def expiring_periods(now: datetime, window_end: datetime) -> list[tuple[int, int]]:
     """(year, month) pairs whose expiration falls within (now, window_end]."""
     periods: list[tuple[int, int]] = []
     year, month = now.year, now.month
-    while _expiration_datetime(year, month) <= window_end:
+    while card_expiration(year, month) <= window_end:
         periods.append((year, month))
         year, month = (year + 1, 1) if month == 12 else (year, month + 1)
     return periods

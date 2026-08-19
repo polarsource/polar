@@ -1,8 +1,8 @@
 import asyncio
 import hashlib
-import itertools
 import json
 from collections import defaultdict
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
@@ -25,8 +25,12 @@ log: Logger = structlog.get_logger()
 
 # SQS hard limits.
 SQS_BATCH_SIZE = 10
+SQS_MAX_BATCH_BYTES = 262_144
 MAX_DELAY_SECONDS = 900
 MAX_VISIBILITY_TIMEOUT_SECONDS = 43_200
+
+# Argument budget for a single job, leaving room for the envelope around it.
+MAX_JOB_PAYLOAD_BYTES = 200_000
 
 type Job = tuple[str, tuple[Any, ...], dict[str, Any], int | None, str | None]
 
@@ -216,6 +220,27 @@ def send_to_dlq(client: "SQSClient", queue_arn: str, body: str) -> None:
     client.send_message(QueueUrl=dlq_url, MessageBody=body)
 
 
+def pack_batches(
+    entries: list["SendMessageBatchRequestEntryTypeDef"],
+) -> Iterator[list["SendMessageBatchRequestEntryTypeDef"]]:
+    """Group entries into SQS batches within both the count and the size limit."""
+    batch: list[SendMessageBatchRequestEntryTypeDef] = []
+    batch_bytes = 0
+    for entry in entries:
+        entry_bytes = len(entry["MessageBody"].encode("utf-8"))
+        if batch and (
+            len(batch) >= SQS_BATCH_SIZE
+            or batch_bytes + entry_bytes > SQS_MAX_BATCH_BYTES
+        ):
+            yield batch
+            batch = []
+            batch_bytes = 0
+        batch.append(entry)
+        batch_bytes += entry_bytes
+    if batch:
+        yield batch
+
+
 async def send_jobs(jobs: list[Job]) -> None:
     if not jobs:
         return
@@ -240,10 +265,8 @@ def send_jobs_sync(jobs: list[Job]) -> None:
 
     for queue_name, entries in by_queue.items():
         queue_url = resolve_queue_url(client, queue_name)
-        for batch in itertools.batched(entries, SQS_BATCH_SIZE):
-            response = client.send_message_batch(
-                QueueUrl=queue_url, Entries=list(batch)
-            )
+        for batch in pack_batches(entries):
+            response = client.send_message_batch(QueueUrl=queue_url, Entries=batch)
             failed = response.get("Failed", [])
             if failed:
                 log.error(
@@ -254,6 +277,7 @@ def send_jobs_sync(jobs: list[Job]) -> None:
 
 
 __all__ = [
+    "MAX_JOB_PAYLOAD_BYTES",
     "MAX_VISIBILITY_TIMEOUT_SECONDS",
     "Job",
     "SQSSendError",
@@ -264,6 +288,7 @@ __all__ = [
     "get_consumer_sqs_client",
     "get_queue_url",
     "get_sqs_client",
+    "pack_batches",
     "parse_envelope",
     "resolve_queue_url",
     "schedule_delayed_message",

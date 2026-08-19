@@ -1,6 +1,6 @@
 import json
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from functools import partial
@@ -39,6 +39,7 @@ from polar.meter.aggregation import Aggregation, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event
 from polar.models.event import EventSource
+from polar.worker import MAX_JOB_PAYLOAD_BYTES
 
 from .client import client
 from .schemas import TinybirdEvent
@@ -326,6 +327,24 @@ def events_to_tinybird(
     ancestors_by_event: Mapping[UUID, Sequence[str]] | None = None,
 ) -> list[TinybirdEvent]:
     return [_event_to_tinybird(e, (ancestors_by_event or {}).get(e.id)) for e in events]
+
+
+def chunk_tinybird_events(
+    events: Sequence[TinybirdEvent],
+) -> Iterator[list[TinybirdEvent]]:
+    """Split events into groups that each fit in a single job payload."""
+    chunk: list[TinybirdEvent] = []
+    chunk_bytes = 0
+    for event in events:
+        event_bytes = len(json.dumps(event).encode("utf-8"))
+        if chunk and chunk_bytes + event_bytes > MAX_JOB_PAYLOAD_BYTES:
+            yield chunk
+            chunk = []
+            chunk_bytes = 0
+        chunk.append(event)
+        chunk_bytes += event_bytes
+    if chunk:
+        yield chunk
 
 
 async def ingest_events(

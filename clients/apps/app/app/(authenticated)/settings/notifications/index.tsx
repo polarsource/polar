@@ -41,23 +41,24 @@ export default function NotificationsPage() {
     useUpdateUserOrganizationNotificationSettings()
 
   const notificationSettings = userNotificationSettings?.notification_settings
+  const organizationId = organization?.id
 
   const createNotificationSettingHandler = useCallback(
     (key: keyof schemas['OrganizationNotificationSettings']) =>
       async (value: boolean) => {
-        if (!organization?.id || !notificationSettings) {
+        if (!organizationId || !notificationSettings) {
           return
         }
 
         await updateNotificationSettings({
-          organizationId: organization.id,
+          organizationId,
           notification_settings: {
             ...notificationSettings,
             [key]: value,
           },
         })
       },
-    [organization?.id, notificationSettings, updateNotificationSettings],
+    [organizationId, notificationSettings, updateNotificationSettings],
   )
 
   return (

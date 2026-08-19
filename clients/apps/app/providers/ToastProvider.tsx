@@ -129,7 +129,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
-      {toast && (
+      {toast ? (
         <Toast
           key={toast.id}
           message={toast.message}
@@ -139,7 +139,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
           onDismiss={dismiss}
           bottomOffset={BOTTOM_OFFSET}
         />
-      )}
+      ) : null}
     </ToastContext.Provider>
   )
 }

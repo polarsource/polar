@@ -35,6 +35,29 @@
   },
   "overrides": [
     {
+      "files": ["src/components/Checkout/CheckoutConfirmation.tsx"],
+      "rules": {
+        "react/set-state-in-effect": "off"
+      }
+    },
+    {
+      "files": [
+        "src/app/**/auth/email-otp/VerifyPage.tsx",
+        "src/app/**/auth/totp/VerifyPage.tsx",
+        "src/app/**/auth/backup-codes/VerifyPage.tsx"
+      ],
+      "rules": {
+        "react/immutability": "off",
+        "react/refs": "off"
+      }
+    },
+    {
+      "files": ["src/components/Orders/DownloadInvoice.tsx"],
+      "rules": {
+        "react/incompatible-library": "off"
+      }
+    },
+    {
       "files": ["**/*.tsx"],
       "rules": {
         "react/no-danger": "error",

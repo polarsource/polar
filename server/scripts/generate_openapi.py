@@ -19,13 +19,22 @@ from polar.webhook.webhooks import get_webhook_routes
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
+    commands = parser.add_subparsers(dest="command")
+    generate_parser = commands.add_parser("generate", help="Generate an OpenAPI schema")
+    generate_parser.add_argument(
         "version",
         nargs="?",
         type=APIVersion.parse,
         default=CURRENT_API_VERSION,
     )
+    commands.add_parser("versions", help="List available API versions")
+    parser.set_defaults(command="generate", version=CURRENT_API_VERSION)
+
     arguments = parser.parse_args()
+    if arguments.command == "versions":
+        print(*(str(version) for version in sorted(VERSIONS)), sep="\n")
+        sys.exit()
+
     if arguments.version not in VERSIONS:
         parser.error(f"Unsupported API version: {arguments.version}")
 

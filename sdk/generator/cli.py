@@ -8,23 +8,32 @@ import openapi_pydantic as op
 from generator.docs_openapi import DOCS_OPENAPI_PATH, generate_docs_openapi
 from generator.emitter import Prerelease
 from generator.ir import generate_ir
-from generator.release import release_sdk
+from generator.release import regenerate_openapi, release_sdk
 from python.emitter import PythonEmitter
 
 parser = argparse.ArgumentParser(description="SDK Generator")
 subparsers = parser.add_subparsers(dest="command")
 
+# OpenAPI subcommand
+parser_openapi = subparsers.add_parser(
+    "openapi", help="Regenerate all OpenAPI specs from the server"
+)
 # Generate subcommand
 parser_generate = subparsers.add_parser(
     "generate", help="Generate SDK from OpenAPI spec"
 )
-parser_generate.add_argument("spec_path", type=str, help="Path to OpenAPI spec file.")
+parser_generate.add_argument(
+    "spec_paths", nargs="+", type=pathlib.Path, help="Paths to OpenAPI spec files."
+)
 parser_generate.add_argument(
     "output", type=str, help="Directory to output the generated SDK"
 )
 
 parser_docs_openapi = subparsers.add_parser(
     "docs-openapi", help="Generate the public OpenAPI spec for the documentation"
+)
+parser_docs_openapi.add_argument(
+    "spec_paths", nargs="+", type=pathlib.Path, help="Paths to OpenAPI spec files."
 )
 parser_docs_openapi.add_argument(
     "--output",
@@ -90,20 +99,23 @@ if args.command is None:
     parser.print_help()
     sys.exit(1)
 
-if args.command == "generate":
-    spec_path = pathlib.Path(args.spec_path)
-    if not spec_path.exists():
-        print(f"Error: Spec file {spec_path} does not exist.", file=sys.stderr)
-        sys.exit(1)
-    if not spec_path.is_file():
-        print(f"Error: Spec path {spec_path} is not a file.", file=sys.stderr)
-        sys.exit(1)
+if args.command == "openapi":
+    regenerate_openapi()
 
-    with open(spec_path) as f:
-        raw_spec = f.read()
+elif args.command == "generate":
+    specs: list[op.OpenAPI] = []
+    for spec_path in args.spec_paths:
+        if not spec_path.exists():
+            print(f"Error: Spec file {spec_path} does not exist.", file=sys.stderr)
+            sys.exit(1)
+        if not spec_path.is_file():
+            print(f"Error: Spec path {spec_path} is not a file.", file=sys.stderr)
+            sys.exit(1)
+        specs.append(
+            op.OpenAPI.model_validate_json(spec_path.read_text(encoding="utf-8"))
+        )
 
-    spec = op.OpenAPI.model_validate_json(raw_spec)
-    ir = generate_ir(spec)
+    ir = generate_ir(*specs)
 
     output_path = pathlib.Path(args.output)
     if output_path.exists() and not output_path.is_dir():
@@ -137,7 +149,14 @@ if args.command == "generate":
     emitter.run_post_actions(args.output)
 
 elif args.command == "docs-openapi":
-    generate_docs_openapi(args.output, args.version)
+    for spec_path in args.spec_paths:
+        if not spec_path.exists():
+            print(f"Error: Spec file {spec_path} does not exist.", file=sys.stderr)
+            sys.exit(1)
+        if not spec_path.is_file():
+            print(f"Error: Spec path {spec_path} is not a file.", file=sys.stderr)
+            sys.exit(1)
+    generate_docs_openapi(args.spec_paths, args.output, args.version)
 
 elif args.command == "release":
     prerelease = None

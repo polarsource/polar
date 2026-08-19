@@ -20,18 +20,20 @@ const applyLicenseKeyToCaches = (
       return { ...old, ...data }
     },
   )
-  queryClient.setQueriesData<{
-    items: schemas['LicenseKeyRead'][]
-    pagination: schemas['Pagination']
-  }>({ queryKey: ['license_keys', 'organization', organizationId] }, (old) => {
-    if (!old) {
-      return old
-    }
-    return {
-      ...old,
-      items: old.items.map((item) => (item.id === id ? { ...item, ...data } : item)),
-    }
-  })
+  queryClient.setQueriesData<schemas['ListResource_LicenseKeyRead_']>(
+    { queryKey: ['license_keys', 'organization', organizationId] },
+    (old) => {
+      if (!old) {
+        return old
+      }
+      return {
+        ...old,
+        items: old.items.map((item) =>
+          item.id === id ? { ...item, ...data } : item,
+        ),
+      }
+    },
+  )
   queryClient.invalidateQueries({
     queryKey: ['license_keys', 'organization', organizationId],
   })

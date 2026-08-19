@@ -173,7 +173,7 @@ class TestVolumePricing:
 
 class TestCalculateAmountIntegralityGuard:
     def test_fractional_stored_rate_raises(self) -> None:
-        with pytest.raises(ValueError, match="whole cents"):
+        with pytest.raises(ValueError, match="smallest currency unit"):
             _make_seat_price(
                 [{"min_seats": 1, "max_seats": None, "price_per_seat": 500.5}],
                 SeatTierType.volume,

@@ -172,7 +172,9 @@ class InvalidQuantityError(PolarError):
 
 def integral_price_per_seat(unit_amount: Decimal) -> int:
     if unit_amount != unit_amount.to_integral_value():
-        raise ValueError(f"Seat tier rates must be whole cents, got {unit_amount}")
+        raise ValueError(
+            f"Seat tier rates must be in smallest currency unit, got {unit_amount}"
+        )
     return int(unit_amount)
 
 

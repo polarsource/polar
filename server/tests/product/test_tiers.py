@@ -250,7 +250,7 @@ class TestSeatTiersToTiers:
             )
 
     def test_fractional_price_per_seat_raises(self) -> None:
-        with pytest.raises(ValueError, match="whole cents"):
+        with pytest.raises(ValueError, match="smallest currency unit"):
             seat_tiers_to_tiers(
                 {
                     "seat_tier_type": SeatTierType.volume,
@@ -395,7 +395,7 @@ class TestTiersToSeatTiers:
             TierType.volume,
             [{"bound": None, "unit_amount": "500.5"}],
         )
-        with pytest.raises(ValueError, match="whole cents"):
+        with pytest.raises(ValueError, match="smallest currency unit"):
             tiers_to_seat_tiers(shared)
 
     @pytest.mark.parametrize(

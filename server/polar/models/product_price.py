@@ -415,7 +415,8 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
 
     def calculate_amount(self, seats: int) -> int:
         amount = self.get_tiered_amount(seats)
-        # Seat rates are whole cents, so any fraction means corrupt data.
+        # Seat rates are in the smallest currency unit, so any fraction
+        # means corrupt data.
         if amount != amount.to_integral_value():
             raise ValueError(f"Seat price produced non-integral amount {amount}")
         return int(amount)

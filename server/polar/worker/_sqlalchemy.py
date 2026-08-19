@@ -50,20 +50,26 @@ async def dispose_sqlalchemy_engine() -> None:
         _sqlalchemy_read_engine = None
 
 
-def setup_sqlalchemy(pool_name: str | None = None) -> None:
+def setup_sqlalchemy(
+    pool_name: str | None = None, *, pool_pre_ping: bool = False
+) -> None:
     global \
         _sqlalchemy_engine, \
         _sqlalchemy_read_engine, \
         _sqlalchemy_async_sessionmaker, \
         _sqlalchemy_async_read_sessionmaker
     pool_name = pool_name or _get_worker_pool_name()
-    _sqlalchemy_engine = create_async_engine("worker", pool_logging_name=pool_name)
+    _sqlalchemy_engine = create_async_engine(
+        "worker", pool_logging_name=pool_name, pool_pre_ping=pool_pre_ping
+    )
     _sqlalchemy_async_sessionmaker = create_async_sessionmaker(_sqlalchemy_engine)
 
     instrument_engines = [_sqlalchemy_engine.sync_engine]
 
     if settings.is_read_replica_configured():
-        _sqlalchemy_read_engine = create_async_read_engine("worker")
+        _sqlalchemy_read_engine = create_async_read_engine(
+            "worker", pool_pre_ping=pool_pre_ping
+        )
         _sqlalchemy_async_read_sessionmaker = create_async_sessionmaker(
             _sqlalchemy_read_engine
         )

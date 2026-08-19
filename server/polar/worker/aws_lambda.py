@@ -35,7 +35,7 @@ log: Logger = structlog.get_logger()
 # must run on the same loop (a fresh asyncio.run() per record would break it).
 _loop = asyncio.new_event_loop()
 asyncio.set_event_loop(_loop)
-bootstrap()
+bootstrap(pool_pre_ping=True)
 
 consumer_sqs_client = get_consumer_sqs_client()
 consumer_scheduler_client = get_consumer_scheduler_client()

@@ -7,11 +7,15 @@
 ## Summary
 
 Let merchants give a customer a benefit directly, without a subscription or an order behind it —
-optionally with an expiry date and a note about why. Today every benefit a customer has is a
-side effect of a purchase; there is no supported way to say "just give this person access".
+optionally with an expiry date and a note about why. Today every benefit a customer has is a side
+effect of a purchase; there is no supported way to say "just give this person access".
 
-This adds a `ManualGrant` record as a third owner of benefit grants, alongside subscriptions and
-orders, plus two API endpoints and a Benefits tab on the customer page in the dashboard.
+This adds a `ManualGrant` entity as a third **owner** of benefit grants, alongside subscriptions
+and orders, plus two API endpoints and a Benefits tab on the customer page in the dashboard.
+
+Most of this document is about *why the shape of the change is what it is* — the existing benefit
+system already has a well-defined notion of who owns a grant, and the design leans on it hard
+rather than inventing a parallel mechanism.
 
 ## Goals
 
@@ -19,15 +23,15 @@ orders, plus two API endpoints and a Benefits tab on the customer page in the da
 - Optionally set an expiry; when it passes, the grants are revoked automatically.
 - Optionally record a reason, visible to anyone looking at the customer later.
 - Revoke a manual grant at any time, per benefit.
-- Never disturb grants that came from a purchase — a manual grant and a subscription grant for
-  the same benefit must be able to coexist and be revoked independently.
+- Never disturb grants that came from a purchase — a manual grant and a subscription grant for the
+  same benefit must coexist and be revoked independently.
 
 ## Non-Goals
 
 - Granting *products*. This is benefit-level only. Handing someone a full product is a different
-  problem (pricing, orders, invoices) and belongs to a comp/complimentary-subscription feature.
-- Manual grants for every benefit type. Only the types whose grant/revoke work is safe to run
-  per grant are allowed — see [Which benefits can be granted](#which-benefits-can-be-granted).
+  problem (pricing, orders, invoices) and belongs to a complimentary-subscription feature.
+- Manual grants for every benefit type. Only the types whose grant/revoke work is safe to run per
+  grant are allowed — see [Which benefits can be granted](#which-benefits-can-be-granted).
 - Editing a manual grant after creation. Change of mind means revoke and re-grant.
 - Bulk grants across many customers, or grant templates.
 
@@ -36,25 +40,150 @@ orders, plus two API endpoints and a Benefits tab on the customer page in the da
 Support and sales ask for this constantly, and today the workarounds are all bad:
 
 - **Comping a customer** — a refund edge case, a goodwill gesture, an early-access user, a
-  conference giveaway. Right now this means creating a fake $0 product or a discount code and
+  conference giveaway. Right now this means creating a fake $0 product or a 100% discount code and
   pushing the customer through a checkout.
 - **Fixing a broken grant** — a benefit failed to apply and the merchant wants to re-apply it
   without touching the subscription.
-- **Time-boxed trials of a single benefit** — "give them the Discord role for 30 days" currently
-  requires a whole trial product.
+- **Time-boxed access to a single benefit** — "give them the Discord role for 30 days" currently
+  requires an entire trial product.
 
-All of these are the same shape: *this customer should have this benefit, because I said so,
-maybe until this date*. That shape has no home in the data model, so it gets faked with billing
-objects, which then pollute revenue metrics and confuse the customer.
+All of these are the same shape: *this customer should have this benefit, because I said so, maybe
+until this date*. That shape has no home in the data model, so it gets faked with billing objects,
+which then pollute revenue metrics and confuse the customer.
 
-## The model
+---
 
-A benefit grant today is owned by exactly one thing: a subscription or an order. That owner is
-what the code calls the grant's **scope**, and it decides three things: uniqueness (one grant per
-customer + benefit + member + scope), lifecycle (when the subscription ends, the grants go), and
-provenance (why does this customer have this).
+# How the codebase already models benefits
 
-`ManualGrant` becomes the third scope.
+This section is the background the rest of the document depends on. If you already know the
+benefit system well, skip to [The change](#the-change).
+
+## The entities
+
+**`Benefit`** — the *definition* of something a customer can get: a Discord role, a license key
+configuration, a downloadable file, a feature flag. It belongs to an organization and carries a
+`type` plus type-specific configuration. A benefit on its own does nothing; it is a template.
+
+**`BenefitGrant`** — the *fact* that a specific customer currently has (or had) a specific
+benefit. This is where the state lives:
+
+```python
+class BenefitGrant(RecordModel):
+    customer_id: UUID              # who
+    benefit_id: UUID               # what
+    member_id: UUID | None         # which seat, for seat-based products
+    subscription_id: UUID | None   # ─┐
+    order_id: UUID | None          # ─┴─ who owns this grant (the "scope")
+    granted_at: datetime | None
+    revoked_at: datetime | None
+    properties: JSONB              # per-grant state produced by the strategy
+    error: JSONB | None            # last failure, if any
+```
+
+`properties` is important and easy to overlook: it's where a grant stores whatever the external
+system handed back. For a license key benefit it holds the `license_key_id`; for Discord it holds
+the account id and role. It means a grant isn't just a boolean — it owns real state.
+
+**`Customer`** — the buyer, scoped to one organization. **`Member`** — a seat within a customer,
+used when a product has seat-based pricing. A grant targets a customer and, where seats are in
+play, a specific member.
+
+**Benefit strategies** — one class per benefit type (`polar/benefit/strategies/*/service.py`),
+each implementing `grant`, `revoke`, and `cycle`. This is where the actual side effect happens:
+calling Discord, minting a license key, flipping a feature flag. The grant service never knows
+what a benefit type does; it just calls the strategy and stores whatever `properties` come back.
+
+One strategy flag matters a lot later: **`should_revoke_individually`**. Most benefits are
+customer-level, so if a customer holds two grants for the same benefit from two different
+purchases, revoking one must *not* run the revoke side effect — the customer still has access via
+the other. License keys set this flag to `True` because each grant owns its own key.
+
+## Scope: the concept the whole feature hangs on
+
+A `BenefitGrant` doesn't exist on its own. It exists *because* of something, and that something is
+called the **scope**. Before this change there were exactly two:
+
+```
+Subscription ──┐
+               ├──> BenefitGrant
+Order ─────────┘
+```
+
+Scope is modelled as a SQLAlchemy composite over the nullable foreign keys:
+
+```python
+scope: Mapped[BenefitGrantScopeArgs] = composite(
+    "subscription_id", "order_id", comparator_factory=BenefitGrantScopeComparator
+)
+```
+
+with two paired types that show up everywhere in the benefit code:
+
+- **`BenefitGrantScopeArgs`** — the *wire* form: `{"subscription_id": UUID}`. This is what gets
+  passed through Dramatiq job payloads, because you can't put an ORM object in a message queue.
+- **`BenefitGrantScope`** — the *resolved* form: `{"subscription": Subscription}`. This is what
+  service code works with.
+
+`resolve_scope()` and `scope_to_args()` in `polar/benefit/grant/scope.py` convert between them.
+The custom comparator lets you write `BenefitGrant.scope == {"subscription": sub}` and get the
+right SQL.
+
+Scope carries three distinct responsibilities, and they're worth separating because the new
+feature has to satisfy all three:
+
+| Responsibility | How scope provides it |
+| --- | --- |
+| **Identity** | The unique index is `(customer_id, benefit_id, member_id, subscription_id, order_id)` with `NULLS NOT DISTINCT`. Two purchases of the same benefit are two rows *because* their scope differs. |
+| **Lifecycle** | Subscription ends → its grants are revoked. Subscription renews → its grants cycle. The owner drives the state changes. |
+| **Provenance** | "Why does this customer have this?" is answered by walking to the owner. |
+
+## How a grant actually happens
+
+Nothing grants a benefit synchronously. The flow is always:
+
+```
+something happens (checkout, renewal, cancellation)
+        │
+        ▼
+enqueue_job("benefit.grant", customer_id=…, benefit_id=…, **scope_args)
+        │
+        ▼
+benefit.grant actor  ──> resolve_scope() ──> benefit_grant_service.grant_benefit()
+        │
+        ▼
+strategy.grant()  ──>  grant.properties = …  ──>  grant.set_granted()
+        │
+        ▼
+webhook + system event + eventstream publish
+```
+
+The actors in `polar/benefit/tasks.py` are declared as:
+
+```python
+@actor(actor_name="benefit.grant")
+async def benefit_grant(
+    customer_id: uuid.UUID,
+    benefit_id: uuid.UUID,
+    member_id: uuid.UUID | None = None,
+    **scope: Unpack[BenefitGrantScopeArgs],
+) -> None: ...
+```
+
+Note the `**scope`. The task signature is *generic over the scope type*. This turns out to be the
+single most consequential fact for this design.
+
+## Repository / service split
+
+Per `server/AGENTS.md`: repositories hold queries, services hold business logic, endpoints return
+ORM models. `BenefitGrantRepository` owns the SQL (`get_by_benefit_and_scope`,
+`list_granted_by_scope`, …); `BenefitGrantService` owns grant/revoke/cycle orchestration. Grants
+use `lazy="raise"` relationships, so every read has to declare its eager loads explicitly.
+
+---
+
+# The change
+
+## `ManualGrant` becomes the third scope
 
 ```
 Subscription ──┐
@@ -70,115 +199,175 @@ class ManualGrant(RecordModel):
     scheduler_locked_at: datetime | None
 ```
 
-`BenefitGrant` gains a nullable `manual_grant_id`, and the `scope` composite grows from two
-columns to three.
+`BenefitGrant` gains a nullable `manual_grant_id`; the scope composite grows from two columns to
+three; `BenefitGrantScope` / `BenefitGrantScopeArgs` each gain one key.
 
-### Why a separate table instead of a flag on BenefitGrant
+### Why this is the right shape
 
-The obvious cheaper design is a boolean `is_manual` plus `expires_at` and `reason` columns on
-`benefit_grants` directly. We didn't do that for three reasons:
+**Because the three responsibilities of scope are exactly the three things a manual grant needs.**
+It needs its own identity (so a manual grant and a subscription grant for the same benefit are
+different rows), its own lifecycle (expiry, independent revocation), and it *is* provenance (the
+reason lives on it). Anything that owns benefit grants has to answer all three questions. That's
+what being a scope means, so a manual grant is a scope.
 
-1. **It matches what the code already understands.** Every path that touches grants —
-   `resolve_scope`, the unique index, the grant/revoke tasks, the webhook payloads — is already
-   written against "a grant has an owner". Adding a third owner is a small, uniform change.
-   A flag would be a genuinely new concept that every one of those paths has to special-case.
-2. **Granting three benefits at once is one act, not three.** A merchant picks a customer, ticks
-   three benefits, sets one expiry and writes one reason. Modelling that as one parent row means
-   the reason and the expiry are stored once, and expiry is one scheduled job instead of three.
-3. **It gives provenance somewhere to live.** `reason` is a property of the decision, not of any
-   individual benefit.
+**Because the plumbing already generalises.** Since the actors take `**scope`, enqueuing
+`benefit.grant(customer_id=…, benefit_id=…, manual_grant_id=…)` works with **no change to the task
+signatures at all**. `resolve_scope` learns one more branch; `grant_benefit` and `revoke_benefit`
+are untouched in their core logic. The webhook payloads, the system events, the eventstream
+notifications, the `properties` handling, the retry semantics, the strategy dispatch — all of it
+comes along for free. The diff is small not because the feature is small but because it lands on
+the seam the code was already built around.
 
-The cost is one extra table and one extra join. That's acceptable.
+**Because the alternative fights the model.** The cheap version is a boolean `is_manual` plus
+`expires_at` and `reason` columns directly on `benefit_grants`. That is genuinely less code to
+write, and it's what we rejected:
 
-### What a manual grant is, and isn't
+- *Identity* would need a new rule. Today "two grants differ if their scope differs" is one index.
+  With a flag you need "…or if one is manual", which is a special case in the index, in
+  `get_by_benefit_and_scope`, and in every dedupe.
+- *Lifecycle* would need a new dispatcher. Subscriptions and orders drive their grants' state
+  changes; a flag drives nothing, so expiry needs a mechanism invented from scratch rather than an
+  owner to hang off.
+- *Provenance* would be denormalised. Grant three benefits in one action and the reason is written
+  three times, the expiry is written three times, and three separate expiry jobs have to agree.
+- Every future reader of the code would have to learn that grants have *two* ways of being owned.
 
-**It is the unit of intent.** All grants created together share one `reason` and one `expires_at`.
-Wanting different expiries per benefit means creating separate manual grants — which is honest,
-because those are separate decisions.
+The cost of the table is one extra join and one extra migration. That's the cheaper trade.
 
-**Revocation is per child grant, not per manual grant.** If a merchant grants three benefits and
-later wants to pull one back, they revoke that one grant; the other two are untouched, and the
-parent `ManualGrant` stays as the record of what happened. Expiry, in contrast, applies to all
-remaining children at once.
+### The unit of intent
 
-This asymmetry is deliberate: granting is a decision made once about a set, revoking is almost
-always a correction about a single benefit.
+**A `ManualGrant` is one act of granting.** A merchant picks a customer, ticks three benefits, sets
+one expiry, writes one reason. That's one row and three children. Wanting different expiries per
+benefit means creating separate manual grants — which is honest, because those are separate
+decisions.
+
+**Revocation is per child grant, not per manual grant.** Revoke one benefit and the siblings are
+untouched; the parent `ManualGrant` remains as the record of what happened. Expiry, in contrast,
+applies to all remaining children at once.
+
+This asymmetry is deliberate and it mirrors the subscription model: a subscription is one act of
+purchase that fans out to many grants, and individual grants can fail or be re-driven without the
+subscription changing. Granting is a decision about a set; revoking is almost always a correction
+about a single benefit.
+
+### What `ManualGrant` deliberately does *not* have
+
+- **No `organization_id`.** It hangs off a customer, and customers belong to exactly one
+  organization. Authorization walks `ManualGrant → Customer → Organization`, same as everything
+  else in this area. Duplicating the org would create a second source of truth to keep consistent.
+- **No status column.** The state of a manual grant is the state of its children. A parent status
+  would immediately drift from reality when one child fails and two succeed.
+- **No `granted_by_user_id`.** Deliberate for now, and called out as an open question below.
+- **No `benefit_ids` array.** The children are rows, not a list, because they need their own
+  `properties`, `error`, and `granted_at`.
 
 ## Which benefits can be granted
 
-Only three types are allowed for now:
+Only three types are allowed:
 
 | Type | Why it's safe |
 | --- | --- |
 | `feature_flag` | No external side effect. |
 | `custom` | No external side effect. |
-| `license_keys` | Side effect (the key) is owned by the individual grant. |
+| `license_keys` | Side effect (the key) is owned by the individual grant — `should_revoke_individually = True`. |
 
-Everything else — Discord roles, GitHub repo invites, downloadables, Slack channels — is
-**rejected** with a validation error.
+Everything else — Discord roles, GitHub repo invites, downloadables, Slack channels — is rejected
+with a validation error, enforced by one constant (`MANUALLY_GRANTABLE_BENEFIT_TYPES`) mirrored in
+the frontend so the picker can't build a rejected request.
 
-The reason is coexistence. A manual grant and a subscription grant for the same benefit are two
-separate rows, and both can be active at once. That's fine when the side effect belongs to the
-row (a license key per grant) or when there is no side effect at all. It breaks when the side
-effect is keyed to the *customer*: there is only one Discord role per user, so revoking the
-manual grant would strip the role the subscription is still paying for — or the two grants would
-fight over the same external state.
+The reason is coexistence, and it follows directly from what scope means. A manual grant and a
+subscription grant for the same benefit are two rows by design, and both can be active at once.
+That's fine when the side effect belongs to the row (a license key each) or doesn't exist. It
+breaks when the side effect is keyed to the *customer*: there is one Discord role per user, so
+revoking the manual grant would either strip the role the subscription is still paying for, or the
+two grants would fight over the same external state.
 
-The revoke path already has a partial defence for this (`should_revoke_individually`, and a check
-for whether other grants remain), but relying on it for external integrations is a bet we don't
-need to take on day one. Starting with the safe three lets the feature ship; the allowlist is one
-constant (`MANUALLY_GRANTABLE_BENEFIT_TYPES`) and can grow per type once each one's coexistence
-behaviour is proven.
+The revoke path has a partial defence already — it only calls `strategy.revoke()` when
+`should_revoke_individually` is set or when fewer than two grants remain for that customer and
+benefit. But that check was written for the subscription/order world, where both owners are
+purchases with similar lifetimes. Betting external integrations on it for a brand-new owner type
+isn't a bet we need to take on day one. The allowlist can grow per type once each one's
+coexistence behaviour has been reasoned through and tested.
 
 ## Lifecycle
 
+The three scope responsibilities, in order.
+
+### Identity — two indexes
+
+**`ix_benefit_grants_scope_unique`** gains `manual_grant_id`, keeping the invariant "one grant per
+customer + benefit + member + owner". Every pre-existing row has `manual_grant_id IS NULL`, so
+under `NULLS NOT DISTINCT` the collision set for subscription and order grants is unchanged.
+
+**`ix_benefit_grants_active_manual_unique`** is new: a partial unique index on
+`(customer_id, benefit_id, member_id)` where `manual_grant_id IS NOT NULL AND revoked_at IS NULL`.
+It enforces *at most one active manual grant per customer per benefit*.
+
+Why a second index rather than relying on the service check: the service does check for duplicates
+before creating, but that check races with a concurrent request. This is the rule that makes it
+true. It's partial on `revoked_at IS NULL` so revoke-then-regrant still works — the common repair
+flow.
+
+Both index changes build `CONCURRENTLY` in an autocommit block; `benefit_grants` is a large hot
+table and cannot be locked. The scope index is rebuilt under a temporary name and then renamed, so
+a unique index is enforcing at every moment of the swap. See ADR-0006.
+
 ### Granting
 
-`POST /v1/benefit-grants/` takes a customer, a list of benefit IDs, and an optional `expires_at`
-and `reason`.
+`POST /v1/benefit-grants/` takes a customer, benefit IDs, and optional `expires_at` and `reason`.
 
 1. Check the customer is readable by the caller's organization.
-2. Resolve the owner member (manual grants are customer-level, like a non-seat purchase).
-3. Validate every benefit ID: exists, same organization as the customer, grantable type,
-   not duplicated in the request, not already manually granted and active.
+2. Resolve the owner member. Manual grants are customer-level, so they call `resolve_member` with
+   `member_id=None, is_seat_based=False` — the same path a non-seat purchase takes. Reusing this
+   rather than writing "manual grants have no member" keeps grants consistent for orgs that have
+   the member model enabled.
+3. Validate every benefit ID: exists, same organization as the customer, grantable type, not
+   duplicated in the request, not already manually granted and active.
 4. Create the `ManualGrant` and one pending `BenefitGrant` per benefit.
-5. Enqueue one `benefit.grant` job per grant.
-6. Return the created grants in a pending state, `201`.
+5. Enqueue one `benefit.grant` job per grant, passing `manual_grant_id` as the scope arg.
+6. Return the created grants, pending, `201`.
 
-**Validation is all-or-nothing.** If any benefit in the request is invalid, nothing is created and
-the caller gets a `422` listing every problem, indexed by position in `benefit_ids`. Partial
-success would leave the merchant guessing which of their three benefits actually landed.
+**Validation is all-or-nothing.** Any invalid benefit means nothing is created and the caller gets
+a `422` listing every problem, indexed by position in `benefit_ids`. Partial success would leave
+the merchant guessing which of their three benefits landed.
 
-**The grants are returned pending, not granted.** Applying a benefit can be slow and can fail, so
-it goes through the same worker path as every other grant rather than blocking the request. The
-dashboard polls until they settle.
+**Grants are returned pending, not granted.** Applying a benefit can be slow and can fail, so it
+goes through the normal worker path rather than blocking the request. This is not a compromise —
+it's the same contract every other grant in the system has, and it means manual grants get the
+same retries, the same `error` recording, and the same webhooks.
 
 ### Revoking
 
 `DELETE /v1/benefit-grants/{id}` targets a single grant. It refuses grants that came from a
-purchase (`404`, since from the caller's point of view there is no manually-granted resource at
-that ID) — a subscription's grants are the subscription's business.
-
-It takes a row lock, returns early if already revoked, and otherwise enqueues `benefit.revoke`.
-Returns `202`.
+purchase with a `404` — from the caller's point of view there is no manually-granted resource at
+that ID, and a subscription's grants are the subscription's business. It takes a row lock, returns
+early if already revoked, otherwise enqueues `benefit.revoke`. Returns `202`.
 
 **Revocation is terminal for manual grants.** Once a manual grant's child is revoked, a racing
-`benefit.grant` job must not resurrect it. `grant_benefit` therefore returns early when it finds
-an already-revoked manual-scoped grant, instead of re-applying. Without that, a slow grant job and
-a fast revoke could leave the customer with access the merchant explicitly removed.
+`benefit.grant` job must not resurrect it, so `grant_benefit` returns early when it finds an
+already-revoked manual-scoped grant instead of re-applying:
 
-For subscription and order grants the same early-return would be wrong — revoked grants there are
-legitimately re-granted on renewal — so the check is scoped to manual grants only.
+```python
+elif grant.is_revoked and scope.get("manual_grant") is not None:
+    return grant
+```
+
+For subscription and order grants the same early return would be wrong — revoked grants there are
+legitimately re-granted on renewal or reactivation — so the check is scoped to manual grants only.
+This is one of the few places the new owner genuinely behaves differently from the other two, and
+it's because manual grants have no renewal concept: there is nothing that would ever legitimately
+re-grant them.
+
+Grant and revoke jobs also take a `FOR UPDATE` row lock when the scope is a manual grant, so a
+concurrent grant and revoke of the same grant serialize instead of interleaving.
 
 ### Expiry
 
-When `expires_at` is set, the grants are revoked automatically at that time.
-
-**Decision: an APScheduler job store, not a periodic sweep.** Polar already schedules
-subscription state changes this way (`_SubscriptionScheduleJobStore`), so
-`ManualGrantExpiryJobStore` copies that shape: the scheduler asks the database "what's due?"
-directly instead of us maintaining a table of scheduled jobs. There's nothing to keep in sync,
-and a cron sweep would either poll constantly or expire grants late.
+**Decision: an APScheduler job store, not a periodic sweep.** Polar already schedules subscription
+state changes this way (`_SubscriptionScheduleJobStore`), so `ManualGrantExpiryJobStore` copies
+that shape: the scheduler asks the database "what's due?" directly instead of us maintaining a
+table of scheduled jobs. There is nothing to keep in sync — set `expires_at` and the row *is* the
+schedule — and a cron sweep would either poll constantly or expire grants late.
 
 When a grant comes due, the store dispatches it under an atomic claim:
 
@@ -188,61 +377,55 @@ UPDATE manual_grants
  WHERE id = :id AND scheduler_locked_at IS NULL
 ```
 
-If the update touches zero rows, another scheduler already claimed it and this one does nothing.
-Only the winner sends the Dramatiq message.
+Zero rows updated means another scheduler already claimed it; only the winner sends the Dramatiq
+message.
 
-**The claim is never cleared.** Expiry happens once, so a locked row is a dispatched row and it
-drops out of the scheduling query permanently. This is simpler than the subscription store, which
-has to re-arm. Retries after dispatch belong to the revoke jobs, which have their own retry
-semantics — re-dispatching the parent would just enqueue duplicate revokes.
+**The claim is never cleared.** Expiry is one-shot, so a locked row is a dispatched row and it
+permanently leaves the scheduling query. This is simpler than the subscription store, which has to
+re-arm for the next period. Retries after dispatch belong to the revoke jobs, which have their own
+retry semantics — re-dispatching the parent would just enqueue duplicate revokes.
 
 The scheduling query is backed by a partial index on `expires_at` covering exactly the rows the
-scheduler cares about (not yet dispatched, not deleted, has an expiry), so "what's due" stays
-cheap as the table grows.
+scheduler cares about (has an expiry, not yet dispatched, not deleted), so "what's due" stays cheap
+as the table grows. Job-store failures are reported to Sentry before re-raising, because
+APScheduler otherwise swallows them into a warning and retries — a broken store would look like
+nothing happening at all.
 
-Job-store failures are reported to Sentry before re-raising, because APScheduler otherwise
-swallows them into a warning and silently retries — a broken store would look like nothing
-happening at all.
+The expiry job itself does no revoking. It loads the manual grant, walks its children, and enqueues
+one `benefit.revoke` per still-active child. Expiry is a *dispatcher*, not a mutation, so failure
+of one benefit's revocation doesn't block the others.
 
-### Renewal cycles skip manual grants
+### Renewal cycles skip manual grants — for free
 
-Subscription renewals cycle their grants (`enqueue_benefit_grant_cycles`), which re-runs
-benefit-specific renewal logic. Manual grants aren't attached to any subscription, so they're
-simply not in that query's scope and never cycle. A manual grant lives until it's revoked or
-expires, full stop.
+Subscription renewals call `enqueue_benefit_grant_cycles(subscription=…)`, which lists grants *by
+scope*. Manual grants have a different scope, so they aren't in that query and never cycle. No
+exclusion logic was needed; the scope abstraction already partitions them. A manual grant lives
+until it is revoked or expires, full stop. There's a regression test pinning this.
 
-## Uniqueness and races
+## Read paths that come along for free
 
-Two database indexes back the model.
+Because manual grants are ordinary `BenefitGrant` rows, several things work without being asked to:
 
-**`ix_benefit_grants_scope_unique`** gains `manual_grant_id`, so two different manual grants for
-the same customer + benefit + member are distinct rows. Existing rows all have
-`manual_grant_id IS NULL`, so under `NULLS NOT DISTINCT` the set of collisions is unchanged for
-subscription and order grants.
+- **The dashboard grants list** already queries by customer, so manual grants appear alongside
+  purchase grants.
+- **The customer portal** joins subscription/order/product with *outer* joins, so a manual grant
+  shows up with no product attached rather than being filtered out. (Benefit visibility still
+  applies — a non-public benefit stays hidden in the portal.)
+- **Webhooks and system events** (`benefit_grant_created`, `benefit_grant_revoked`, …) fire from
+  `grant_benefit`/`revoke_benefit`, so integrations see manual grants with no changes.
 
-**`ix_benefit_grants_active_manual_unique`** is new: a partial unique index on
-`(customer_id, benefit_id, member_id)` where `manual_grant_id IS NOT NULL AND revoked_at IS NULL`.
-It enforces *at most one active manual grant per customer per benefit*.
+The one thing that had to be added is the API surface for provenance: `BenefitGrant` gains a
+nullable `manual_grant` object (`id`, `reason`, `expires_at`), nested rather than a flat
+`manual_grant_id`. A client reading a grant then sees *why* it exists and *when* it ends without a
+second request, and `manual_grant !== null` is also the "was this manual" flag.
 
-The service already checks for duplicates before creating, but that check races with a concurrent
-request. The index is the backstop that makes the rule actually true. It's partial on
-`revoked_at IS NULL` so that revoking and re-granting later works — which is the common repair
-flow.
-
-Both index changes are built `CONCURRENTLY` in an autocommit block. `benefit_grants` is a large,
-hot table and cannot be locked. The scope index is rebuilt under a temporary name and then
-renamed, so a unique index is enforcing at every moment of the swap. See ADR-0006 for the general
-rule.
-
-Grant and revoke jobs take a `FOR UPDATE` row lock when the scope is a manual grant, so a
-concurrent grant and revoke of the same manual grant serialize rather than interleaving.
-
-## API
+## API surface
 
 Both endpoints live on the existing `/v1/benefit-grants` resource rather than a new
-`/v1/manual-grants` one. The thing merchants care about, list, and revoke is the *grant*; the
+`/v1/manual-grants` one. The thing merchants care about, list, and revoke is the **grant**; the
 `ManualGrant` is internal bookkeeping that happens to hold the reason and the expiry. Exposing it
-as its own resource would mean merchants managing two objects to do one thing.
+as its own resource would mean managing two objects to do one thing, and would push the parent's
+existence — an implementation detail — into the public contract.
 
 **`POST /v1/benefit-grants/`** → `201`, the created grants (pending).
 
@@ -255,56 +438,55 @@ as its own resource would mean merchants managing two objects to do one thing.
 }
 ```
 
-`expires_at` is validated as a future datetime. `benefit_ids` is capped at 100. `reason` is capped
-at 500 characters.
+`expires_at` is validated as a future datetime, `benefit_ids` is capped at 100, `reason` at 500
+characters.
 
 **`DELETE /v1/benefit-grants/{id}`** → `202`, the grant.
 
-**`BenefitGrant`** gains a nullable `manual_grant` object (`id`, `reason`, `expires_at`) — nested
-rather than flat `manual_grant_id`, so a client reading a grant sees why it exists and when it
-ends without a second request. It's `null` for purchase-derived grants, which is also the flag
-for "was this manual".
-
-Both endpoints require the `benefits:write` scope; reads stay on `benefits:read`.
+Both require the `benefits:write` scope; reads stay on `benefits:read`.
 
 ## Dashboard
 
-The customer page's old "Benefit Grants" table was a read-only block buried at the bottom of the
-Overview tab. It becomes its own **Benefits** tab, with:
+The customer page's old "Benefit Grants" table was a read-only block at the bottom of the Overview
+tab. It becomes its own **Benefits** tab, with:
 
-- A **Source** column: `Manual` (with reason and expiry in a tooltip), or a link to the
-  subscription or order that produced the grant. Provenance is the whole point — a merchant
-  looking at a customer needs to see at a glance what's paid for and what was given away.
+- A **Source** column: `Manual` (reason and expiry in a tooltip), or a link to the subscription or
+  order that produced the grant. Provenance is the whole point — a merchant looking at a customer
+  needs to see at a glance what's paid for and what was given away.
 - A **Grant benefits** button opening a modal: pick benefits, optionally set an expiry, optionally
-  write a reason. The benefit picker only offers grantable types and hides benefits the customer
-  already has manually, so the merchant can't build a request the API will reject.
+  write a reason. The picker only offers grantable types and hides benefits the customer already
+  holds manually, so the merchant can't build a request the API will reject.
 - **Revoke** on manual grants only, behind an inline confirm. When the customer would keep access
   through an active purchase anyway, the confirm says so — otherwise revoking looks more
   destructive than it is.
-- **Polling** while any manual grant is still pending, so the row settles to granted or failed
-  without a manual refresh.
+- **Polling** while any manual grant is still pending, so rows settle to granted or failed without
+  a manual refresh. This is the UI consequence of the async contract above.
 
 ## Testing
 
-- Service tests for the create contract: valid single and multi-benefit grants, duplicate in
-  request, already granted, revoked-then-regranted, ineligible type, benefit from another
-  organization, inaccessible benefit.
-- Coexistence tests: a manual grant and a subscription grant for the same benefit, including the
+- **Create contract**: valid single and multi-benefit grants, duplicate in request, already
+  granted, revoked-then-regranted, ineligible type, benefit from another organization,
+  inaccessible benefit.
+- **Coexistence**: a manual grant and a subscription grant for the same benefit, including the
   license-key case where each grant owns its own key.
-- Race tests: a grant job must not override a revoked manual grant; manual grants must not cycle
-  on subscription renewal.
-- Scheduler tests: the eligibility query, and that job-store failures reach Sentry.
-- Endpoint tests: auth, the pending response shape, shared parent across multiple benefits, and
+- **Scope invariants**: a grant job must not override a revoked manual grant; manual grants must
+  not cycle on subscription renewal.
+- **Scheduler**: the eligibility query, and that job-store failures reach Sentry.
+- **Endpoints**: auth, the pending response shape, shared parent across multiple benefits, and
   that revoke refuses purchase-derived grants.
 
 ## Risks and open questions
 
-- **The allowlist will be asked about.** Merchants will want to manually grant Discord roles. That
-  needs per-type coexistence work (deciding what happens when two sources claim one external
-  role), not just adding to the constant.
-- **No audit of who granted.** `reason` is free text; we don't record which user clicked the
-  button. Worth adding if this gets used for anything contested.
-- **No notification to the customer.** A manually granted benefit appears silently in their
-  portal. Probably fine; worth revisiting for time-boxed grants where the expiry may surprise them.
+- **The allowlist will be challenged.** Merchants will want to manually grant Discord roles. That
+  needs per-type coexistence design — deciding what happens when two owners claim one external
+  role — not just an addition to the constant.
+- **No record of who granted.** `reason` is free text; we don't store the acting user. Worth adding
+  if this is ever used for anything contested. It's a column on `ManualGrant`, so the change is
+  cheap later.
+- **No notification to the customer.** A manually granted benefit appears silently in their portal.
+  Probably fine, but worth revisiting for time-boxed grants where the expiry may surprise them.
 - **Expiry has no warning.** Grants disappear at `expires_at` with no heads-up to merchant or
   customer.
+- **A fourth scope would strain the composite.** Scope is a composite over nullable FKs with
+  `NULLS NOT DISTINCT`; three is comfortable, but if a fifth owner ever appears it's worth
+  revisiting whether a polymorphic owner column would be cleaner than another nullable FK.

@@ -158,7 +158,7 @@ Args:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}
-    request_timeout: Timeout override for this request, in seconds.
+    request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
 
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
@@ -291,7 +291,7 @@ Args:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}
-    request_timeout: Timeout override for each request, in seconds.
+    request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
 
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
@@ -439,7 +439,7 @@ Args:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}
-    request_timeout: Timeout override for this request, in seconds.
+    request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
 
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
@@ -569,7 +569,7 @@ Raises:
 {% endfor %}{% for param in method.query_params %}
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
-{% endfor %}    request_timeout: Timeout override for each request, in seconds.
+{% endfor %}    request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
 
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}

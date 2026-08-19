@@ -74,6 +74,46 @@ describe("sendRequest", () => {
     expect(timeout).toHaveBeenCalledWith(30_000);
   });
 
+  test("combines a request signal with the timeout signal", async () => {
+    const requestSignal = new AbortController().signal;
+    const timeoutSignal = new AbortController().signal;
+    const combinedSignal = new AbortController().signal;
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(timeoutSignal);
+    const any = vi.spyOn(AbortSignal, "any").mockReturnValue(combinedSignal);
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
+    const client = new ClientBase({
+      baseUrl: "https://api.polar.sh",
+      version: "{{ ir.versions[0].version }}",
+      accessToken: "polar_at_u_xxx",
+      timeout: 10,
+    });
+
+    await client.sendRequest([
+      "https://api.polar.sh/v1/items/",
+      { signal: requestSignal },
+    ]);
+
+    expect(any).toHaveBeenCalledWith([requestSignal, timeoutSignal]);
+    expect(fetch).toHaveBeenCalledWith("https://api.polar.sh/v1/items/", {
+      signal: combinedSignal,
+    });
+  });
+
+  test.each([-1, Number.NaN, Number.POSITIVE_INFINITY, 2_147_483.648])(
+    "rejects an invalid timeout of %s seconds",
+    async (timeout) => {
+      const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
+
+      await expect(
+        client.sendRequest(
+          ["https://api.polar.sh/v1/items/", {}],
+          { timeout },
+        ),
+      ).rejects.toThrow(RangeError);
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+
   test("does not create a timeout signal when no timeout is configured", async () => {
     const timeout = vi.spyOn(AbortSignal, "timeout");
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());

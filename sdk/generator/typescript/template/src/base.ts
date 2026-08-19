@@ -116,6 +116,8 @@ export interface RequestOptions {
   timeout?: number;
 }
 
+const MAX_ABORT_SIGNAL_TIMEOUT_MS = 2_147_483_647;
+
 export const resolveBaseUrl = (
   servers: Record<string, string>,
   environment: string,
@@ -173,12 +175,27 @@ export class ClientBase {
   ): Promise<Response> {
     const [fullUrl, requestInit] = request;
     const timeout = requestOptions?.timeout ?? this.options.timeout;
+    let signal = requestInit.signal;
+    if (timeout !== undefined) {
+      const timeoutMilliseconds = Math.ceil(timeout * 1000);
+      if (
+        !Number.isFinite(timeout) ||
+        timeout < 0 ||
+        timeoutMilliseconds > MAX_ABORT_SIGNAL_TIMEOUT_MS
+      ) {
+        throw new RangeError(
+          `Timeout must be a finite, non-negative number no greater than ${MAX_ABORT_SIGNAL_TIMEOUT_MS / 1000} seconds`,
+        );
+      }
+      const timeoutSignal = AbortSignal.timeout(timeoutMilliseconds);
+      signal = signal
+        ? AbortSignal.any([signal, timeoutSignal])
+        : timeoutSignal;
+    }
     try {
       return await fetch(fullUrl, {
         ...requestInit,
-        ...(timeout !== undefined
-          ? { signal: AbortSignal.timeout(Math.ceil(timeout * 1000)) }
-          : {}),
+        ...(signal ? { signal } : {}),
       });
     } catch (error) {
       const errorMessage =

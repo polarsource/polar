@@ -256,4 +256,129 @@ describe('MeteredPriceLabel', () => {
       expect(container.querySelector('.line-through')).toBeNull()
     })
   })
+  describe('tiered prices', () => {
+    const tieredPrice = (
+      tierType: 'graduated' | 'volume',
+      tiers: { bound: number | null; unit_amount: string }[],
+      meter?: Partial<schemas['ProductPriceMeteredUnit']['meter']>,
+    ) =>
+      createMeteredPrice({
+        unit_amount: null,
+        tiers: { type: tierType, tiers },
+        ...(meter
+          ? {
+              meter: {
+                ...createMeteredPrice().meter,
+                ...meter,
+              },
+            }
+          : {}),
+      })
+
+    it('renders the first tier rate and the bound it applies up to', () => {
+      const price = tieredPrice('graduated', [
+        { bound: 1000, unit_amount: '5' },
+        { bound: null, unit_amount: '1' },
+      ])
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$0.05')
+      expect(container.textContent).toContain('/ unit')
+      expect(container.textContent).toContain('up to 1,000')
+    })
+
+    it('anchors volume prices to the first tier too, not the cheapest', () => {
+      const price = tieredPrice('volume', [
+        { bound: 1000, unit_amount: '5' },
+        { bound: null, unit_amount: '0.1' },
+      ])
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$0.05')
+      expect(container.textContent).not.toContain('$0.001')
+    })
+
+    it('never claims a floor the buyer might not get', () => {
+      const price = tieredPrice('volume', [
+        { bound: 1000, unit_amount: '5' },
+        { bound: null, unit_amount: '0.1' },
+      ])
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).not.toContain('From')
+    })
+
+    it('reads the tiers even when they arrive unsorted', () => {
+      const price = tieredPrice('graduated', [
+        { bound: null, unit_amount: '1' },
+        { bound: 1000, unit_amount: '5' },
+      ])
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$0.05')
+      expect(container.textContent).toContain('up to 1,000')
+    })
+
+    it('omits the bound when the only tier is unbounded', () => {
+      const price = tieredPrice('graduated', [
+        { bound: null, unit_amount: '5' },
+      ])
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$0.05')
+      expect(container.textContent).not.toContain('up to')
+    })
+
+    it('scales the rate to the meter unit but leaves the bound in base units', () => {
+      const price = tieredPrice(
+        'graduated',
+        [
+          { bound: 5_000_000, unit_amount: '0.001' },
+          { bound: null, unit_amount: '0.0005' },
+        ],
+        { unit: 'token' },
+      )
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$10.00')
+      expect(container.textContent).toContain('/ 1M tokens')
+      expect(container.textContent).toContain('up to 5,000,000')
+    })
+
+    it('discounts the first tier rate', () => {
+      const price = tieredPrice('graduated', [
+        { bound: 1000, unit_amount: '1000' },
+        { bound: null, unit_amount: '100' },
+      ])
+
+      render(
+        <MeteredPriceLabel
+          price={price}
+          locale="en"
+          discount={percentageDiscount(5000)}
+        />,
+      )
+
+      expect(screen.getByText('$10.00')).toHaveClass('line-through')
+      expect(screen.getByText('$5.00')).toBeInTheDocument()
+    })
+  })
 })

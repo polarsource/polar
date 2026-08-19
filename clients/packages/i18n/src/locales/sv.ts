@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'Moms (ingår)',
       basePrice: 'Grundavgift',
+      upTo: 'upp till {units}',
     },
     trial: {
       hero: {

@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'ÁFA (tartalmazza)',
       basePrice: 'Alapár',
+      upTo: 'legfeljebb {units}',
     },
     trial: {
       hero: {

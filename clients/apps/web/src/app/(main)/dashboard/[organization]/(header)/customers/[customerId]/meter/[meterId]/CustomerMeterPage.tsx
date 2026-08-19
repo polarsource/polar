@@ -14,6 +14,7 @@ import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { useMeterQuantities } from '@/hooks/queries/meters'
 import { Events } from '@/components/Events/Events'
+import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { getCustomerActivityStart } from '@/utils/customer'
@@ -160,10 +161,8 @@ const CustomerMeterPage = ({
 
   const overages = useMemo(() => {
     if (!unitPrice || !customerMeter || customerMeter.balance >= 0) return null
-    const cost =
-      Math.abs(customerMeter.balance) * parseFloat(unitPrice.unit_amount)
     return {
-      cost: unitPrice.cap_amount ? Math.min(cost, unitPrice.cap_amount) : cost,
+      cost: estimateMeteredCost(unitPrice, Math.abs(customerMeter.balance)),
       currency: unitPrice.price_currency,
     }
   }, [customerMeter, unitPrice])

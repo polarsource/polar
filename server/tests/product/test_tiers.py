@@ -79,6 +79,19 @@ class TestTiersCalculateVolume:
         )
         assert tiers.calculate(10) == Decimal(5)
 
+    def test_fractional_quantity(self) -> None:
+        # Bounds are whole units, the quantity need not be: an inclusive
+        # bound still places a fractional quantity unambiguously.
+        tiers = _tiers_data(TierType.volume, SHARED_MULTI_TIER)
+        assert tiers.calculate(Decimal("9.5")) == Decimal("9.5") * 1000
+        assert tiers.calculate(Decimal("10.5")) == Decimal("10.5") * 800
+
+    def test_fractional_quantity_on_and_below_a_bound(self) -> None:
+        tiers = _tiers_data(TierType.volume, SHARED_MULTI_TIER)
+        assert tiers.calculate(Decimal("10.0")) == Decimal("10.0") * 1000
+        assert tiers.calculate(Decimal("9.999")) == Decimal("9.999") * 1000
+        assert tiers.calculate(Decimal("10.001")) == Decimal("10.001") * 800
+
     def test_quantity_below_first_bound(self) -> None:
         # The engine prices from 0; purchase floors live on the price.
         tiers = _tiers_data(
@@ -106,6 +119,16 @@ class TestTiersCalculateGraduated:
             [{"bound": 10, "unit_amount": "500"}],
         )
         assert tiers.calculate(15) == 10 * 500
+
+    def test_fractional_quantity_straddles_a_bound(self) -> None:
+        # 9.8 splits into 9.8 inside the first tier; 15.5 into 10 + 5.5.
+        tiers = _tiers_data(TierType.graduated, SHARED_MULTI_TIER)
+        assert tiers.calculate(Decimal("9.8")) == Decimal("9.8") * 1000
+        assert tiers.calculate(Decimal("15.5")) == 10 * 1000 + Decimal("5.5") * 800
+        assert (
+            tiers.calculate(Decimal("50.25"))
+            == 10 * 1000 + 40 * 800 + Decimal("0.25") * 600
+        )
 
     def test_first_tier_bills_from_unit_one(self) -> None:
         # The first tier still bills from unit one.

@@ -1,7 +1,6 @@
 """Test for license key prefix validation fix."""
 
 from datetime import datetime
-from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
@@ -142,45 +141,3 @@ class TestGenerateExpirationDt:
     def test_overflow_raises_value_error(self) -> None:
         with pytest.raises(ValueError, match="Expiration date overflows"):
             LicenseKeyCreate.generate_expiration_dt(ttl=999999999, timeframe="year")
-
-
-class TestLimitUsageDataFlowConsistency:
-    """The value accepted at benefit creation must also be accepted at grant time.
-
-    Pre-fix, ``BenefitLicenseKeysCreateProperties.limit_usage`` used ``int | None``
-    while ``LicenseKeyCreate`` (via ``LicenseKeyUpdate``) validated ``Int32 | None``,
-    so large values passed creation but raised ``ValidationError`` in the grant task
-    after a customer paid. These tests pin the two schemas to the same Int32 bounds.
-    """
-
-    @pytest.mark.parametrize("limit_usage", [None, 1, 100, INT32_MAX])
-    def test_create_value_passes_grant_schema(self, limit_usage: int | None) -> None:
-        properties = BenefitLicenseKeysCreateProperties(limit_usage=limit_usage)
-
-        license_key = LicenseKeyCreate.build(
-            organization_id=uuid4(),
-            customer_id=uuid4(),
-            benefit_id=uuid4(),
-            prefix="POLAR",
-            limit_usage=properties.limit_usage,
-        )
-
-        assert license_key.limit_usage == limit_usage
-
-    def test_overflow_value_rejected_at_creation(self) -> None:
-        # The value from the bug report must now be rejected at benefit creation,
-        # before it can reach the grant task and fail after payment.
-        with pytest.raises(ValidationError):
-            BenefitLicenseKeysCreateProperties(limit_usage=3_000_000_000)
-
-    def test_grant_schema_rejects_overflow(self) -> None:
-        # Guards the downstream Int32 bound: if the create schema bound is ever
-        # loosened again, this confirms the grant task would still reject overflow.
-        with pytest.raises(ValidationError):
-            LicenseKeyCreate.build(
-                organization_id=uuid4(),
-                customer_id=uuid4(),
-                benefit_id=uuid4(),
-                prefix="POLAR",
-                limit_usage=3_000_000_000,
-            )

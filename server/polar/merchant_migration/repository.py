@@ -12,7 +12,12 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import MerchantMigration, MerchantMigrationRecord, Subscription
+from polar.models import (
+    MerchantMigration,
+    MerchantMigrationRecord,
+    PaymentMethod,
+    Subscription,
+)
 from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationSelection,
 )
@@ -340,20 +345,20 @@ class MerchantMigrationRecordRepository(
         return {status: count for status, count in result.all()}
 
     async def payment_method_coverage(self, migration_id: UUID) -> set[UUID]:
-        """The imported-subscription record ids whose Polar subscription already
-        has a payment method to charge.
-
-        Any linked method counts, not only cards: ACH and SEPA move with the copy
-        and Polar can charge them. Used to hint which rows are ready to switch
-        before the merchant picks them.
-        """
+        """Imported-subscription record ids whose Polar subscription already has
+        a card linked. Used to hint which rows are ready to switch."""
         statement = (
             self._imported_subscriptions_statement(migration_id)
             .join(
                 Subscription,
                 (Subscription.id == MerchantMigrationRecord.target_id)
-                & Subscription.deleted_at.is_(None)
-                & Subscription.payment_method_id.is_not(None),
+                & Subscription.deleted_at.is_(None),
+            )
+            .join(
+                PaymentMethod,
+                (PaymentMethod.id == Subscription.payment_method_id)
+                & PaymentMethod.deleted_at.is_(None)
+                & (PaymentMethod.type == "card"),
             )
             .with_only_columns(MerchantMigrationRecord.id)
             .order_by(None)

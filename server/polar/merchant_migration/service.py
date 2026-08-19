@@ -98,8 +98,8 @@ IMPORTABLE_STEPS = {
     MerchantMigrationStep.create_catalog,
 }
 
-# Entities whose records map 1:1 to a ledger row, so a listing item can carry its
-# record id for selection. Prices live inside a product record and are excluded.
+# Entities whose records map 1:1 to a ledger row. Prices live inside a product
+# record and are excluded.
 _ENTITY_RECORD_TYPE = {
     PrecheckEntity.products: MerchantMigrationRecordType.product,
     PrecheckEntity.customers: MerchantMigrationRecordType.customer,
@@ -111,17 +111,11 @@ SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "column": "source_credentials",
 }
 
-# The checklist steps Polar itself performs, and the job that performs each. A
-# `polar_app` step is never completed by a person: becoming current is what
-# schedules the work, and the work is what completes it.
 _STEP_TASKS = {
     STEP_VERIFY_CARDS: "merchant_migration.verify_cards",
     STEP_MOVE_SUBSCRIPTIONS: "merchant_migration.cutover",
 }
 
-# Where the checklist sits maps onto the migration's coarse step. Moving the
-# subscriptions is its own phase (`activate_subscriptions`); finishing it hands
-# the merchant back the last job, switching their own billing off (`cleanup`).
 _MIGRATION_STEP_BY_PAN_STEP = {
     STEP_MOVE_SUBSCRIPTIONS: MerchantMigrationStep.activate_subscriptions,
 }
@@ -731,11 +725,12 @@ class MerchantMigrationService:
 
     async def get_cutover_report(
         self,
-        session: AsyncReadSession,
+        session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
     ) -> MerchantMigrationCutoverReport:
         migration = await self._get_manageable(session, auth_subject, migration_id)
+        await self._fail_stalled_cutover(session, migration)
         return await self._cutover_report(session, migration)
 
     async def start_cutover(
@@ -749,10 +744,9 @@ class MerchantMigrationService:
     ) -> MerchantMigrationCutoverReport:
         """Switch the picked imported subscriptions over to Polar.
 
-        Serves both the first confirmation and every retry: it records the
-        selection, re-opens the ones a previous run left on the source, and kicks
-        the one-subscription-per-run worker. Only reachable once the card
-        checklist has advanced to the switch step.
+        Serves both the first confirmation and every retry: records the
+        selection, re-opens skipped/failed rows, and kicks the worker. Only
+        reachable once the card checklist has advanced to the switch step.
         """
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
@@ -762,7 +756,6 @@ class MerchantMigrationService:
 
         selection = self._build_selection(record_ids, exclude_record_ids)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        # Re-open the ones an earlier run left on the source; what moved stays moved.
         await record_repository.reset_cutover(migration.id, selection)
 
         repository = MerchantMigrationRepository.from_session(session)
@@ -779,8 +772,6 @@ class MerchantMigrationService:
 
         current = pan_transfer.current(migration.pan_transfer_steps)
         if current is not None and current.key == STEP_CUTOVER:
-            # Confirming the step advances the checklist to `move_subscriptions`,
-            # which schedules the switch job through `_advance_checklist`.
             await self._complete_pan_step(
                 session,
                 migration,
@@ -789,7 +780,6 @@ class MerchantMigrationService:
                 inputs={},
             )
         else:
-            # Already confirmed in an earlier batch: kick the worker again.
             enqueue_job(
                 "merchant_migration.cutover", merchant_migration_id=migration.id
             )
@@ -799,15 +789,13 @@ class MerchantMigrationService:
         """Switch one subscription over, then hand off to the next run.
 
         One subscription per run, each in its own transaction: the irreversible
-        half of a switch is a cancellation on the merchant's own provider, so a
-        batch that dies halfway would replay it for everything it had already
-        done.
+        half is a cancellation on the merchant's provider, so a batch that dies
+        halfway must not replay cancellations it already committed.
         """
         migration = await self._load(session, migration_id)
         if migration is None:
             return
         if not self._cutover_started(migration):
-            # The merchant hasn't confirmed. Nothing may touch their source.
             log.warning(
                 "merchant_migration.cutover.not_confirmed",
                 merchant_migration_id=migration.id,
@@ -815,12 +803,15 @@ class MerchantMigrationService:
             return
         organization = await self._get_organization(session, migration)
         if not organization.can_renew_subscriptions:
-            # Activating subscriptions the organization can't bill would leave
-            # them live and uncollected. Stopping keeps them on the source.
             log.warning(
                 "merchant_migration.cutover.renewals_disabled",
                 merchant_migration_id=migration.id,
                 organization_id=organization.id,
+            )
+            await self._fail_cutover(
+                session,
+                migration,
+                "Organization renewals are disabled; subscriptions stay on the source.",
             )
             return
 
@@ -861,8 +852,8 @@ class MerchantMigrationService:
             "step": MerchantMigrationStep.cleanup,
         }
         if completed_steps is not None:
-            # `annotate` refuses a completed step, so the receipt note goes on the
-            # step object directly before the completion is persisted.
+            # `annotate` refuses a completed step, so the receipt note goes on
+            # the step object directly before the completion is persisted.
             steps = list(completed_steps)
             note = self._cutover_note(counts)
             for step in steps:
@@ -871,6 +862,29 @@ class MerchantMigrationService:
             update_dict["pan_transfer_steps"] = steps
         await MerchantMigrationRepository.from_session(session).update(
             migration, update_dict=update_dict
+        )
+
+    async def _fail_cutover(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        error: str,
+    ) -> None:
+        await MerchantMigrationRepository.from_session(session).update(
+            migration,
+            update_dict={"operation": self._failed_operation(migration, error)},
+        )
+
+    async def _fail_stalled_cutover(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> None:
+        operation = migration.operation
+        if operation is None or not operation.is_stalled():
+            return
+        await self._fail_cutover(
+            session,
+            migration,
+            "Switch stalled with no progress; start it again to resume.",
         )
 
     def _complete_polar_app_step(
@@ -896,8 +910,8 @@ class MerchantMigrationService:
     async def _bump_operation(
         self, session: AsyncSession, migration: MerchantMigration
     ) -> None:
-        """Keep the operation's progress timestamp fresh so stall detection sees
-        the chain still moving."""
+        """Refresh ``last_progress_at`` so a hang past ``STALL_THRESHOLD`` is
+        detectable on the next report poll."""
         operation = migration.operation
         if operation is None:
             return
@@ -918,6 +932,24 @@ class MerchantMigrationService:
         return operation.model_copy(
             update={
                 "status": MerchantMigrationOperationStatus.done,
+                "last_progress_at": utc_now(),
+            }
+        )
+
+    def _failed_operation(
+        self, migration: MerchantMigration, error: str
+    ) -> MerchantMigrationOperation:
+        operation = migration.operation
+        if operation is None:
+            return MerchantMigrationOperation(
+                status=MerchantMigrationOperationStatus.failed,
+                error=error,
+                last_progress_at=utc_now(),
+            )
+        return operation.model_copy(
+            update={
+                "status": MerchantMigrationOperationStatus.failed,
+                "error": error,
                 "last_progress_at": utc_now(),
             }
         )

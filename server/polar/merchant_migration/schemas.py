@@ -149,8 +149,8 @@ class MerchantMigrationRecordItem(Schema):
     has_payment_method: bool | None = Field(
         default=None,
         description=(
-            "Whether the imported Polar subscription has a payment method to "
-            "charge yet. Null for non-subscription rows or rows not imported."
+            "Whether the imported Polar subscription has a card to charge yet. "
+            "Null for non-subscription rows or rows not imported."
         ),
     )
 
@@ -236,23 +236,14 @@ class MerchantMigrationCutoverRequest(Schema):
 class MerchantMigrationCutoverReport(Schema):
     """Where the switch has got to, for the imported subscriptions."""
 
-    started: bool = Field(
-        description="Whether the merchant has confirmed the switch at least once."
-    )
-    running: bool = Field(
-        description="Whether Polar is currently going through the subscriptions."
-    )
+    started: bool = Field(description="Whether the merchant has confirmed the switch.")
+    running: bool = Field(description="Whether a switch run is in progress.")
     completed: bool = Field(description="Whether the last switch run has finished.")
-    total: int = Field(description="Imported subscriptions the switch looks at.")
+    total: int = Field(description="Imported subscriptions in scope.")
     pending: int = Field(description="Not switched yet.")
-    moved: int = Field(description="Now billed by Polar, and stopped on the source.")
-    skipped: int = Field(
-        description=(
-            "Left on the source, each with a reason on its record. Retryable "
-            "once the merchant has dealt with the reason."
-        )
-    )
-    failed: int = Field(description="Hit an unexpected error. Safe to retry as-is.")
+    moved: int = Field(description="Now billed by Polar.")
+    skipped: int = Field(description="Left on the source.")
+    failed: int = Field(description="Hit an unexpected error.")
 
 
 class PanTransferStepComplete(Schema):

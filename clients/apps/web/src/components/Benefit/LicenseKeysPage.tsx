@@ -29,8 +29,7 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useRef, useState } from 'react'
-import { useModal } from '../Modal/useModal'
+import { useCallback, useState } from 'react'
 import { BenefitPage } from './BenefitPage'
 
 export const LicenseKeysPage = ({
@@ -49,6 +48,9 @@ export const LicenseKeysPage = ({
   const [selectedLicenseKeyId, setSelectedLicenseKeyId] = useState<
     string | null
   >(deepLinkedLicenseKeyId ?? null)
+  const [licenseKeyModalView, setLicenseKeyModalView] = useState<
+    'details' | 'rotate' | null
+  >(deepLinkedLicenseKeyId ? 'details' : null)
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organization_id: organization.id,
@@ -78,18 +80,7 @@ export const LicenseKeysPage = ({
     return params
   }
 
-  const {
-    isShown: isLicenseKeyModalShown,
-    show: showLicenseKeyModal,
-    hide: hideLicenseKeyModal,
-  } = useModal(!!deepLinkedLicenseKeyId)
-  const {
-    isShown: isRotateConfirmShown,
-    show: showRotateConfirm,
-    hide: hideRotateConfirm,
-  } = useModal()
   const rotateLicenseKey = useLicenseKeyRotate(organization.id)
-  const isRotatingRef = useRef(false)
 
   const router = useRouter()
 
@@ -160,29 +151,27 @@ export const LicenseKeysPage = ({
   }
 
   const closeLicenseKeyModal = useCallback(() => {
-    hideLicenseKeyModal()
+    setLicenseKeyModalView(null)
     setSelectedLicenseKeyId(null)
     setDeepLinkParam(null)
-  }, [hideLicenseKeyModal, setSelectedLicenseKeyId, setDeepLinkParam])
+  }, [setSelectedLicenseKeyId, setDeepLinkParam])
 
   const openRotateConfirm = useCallback(() => {
-    hideLicenseKeyModal()
-    showRotateConfirm()
-  }, [hideLicenseKeyModal, showRotateConfirm])
+    setLicenseKeyModalView('rotate')
+  }, [])
 
   const closeRotateConfirm = useCallback(() => {
-    hideRotateConfirm()
-    if (!isRotatingRef.current) {
-      window.setTimeout(showLicenseKeyModal, 0)
-    }
-  }, [hideRotateConfirm, showLicenseKeyModal])
+    setLicenseKeyModalView((currentView) =>
+      currentView === 'rotate' ? 'details' : currentView,
+    )
+  }, [])
 
   const handleRotate = useCallback(async () => {
     if (!selectedLicenseKeyId) {
       return
     }
 
-    isRotatingRef.current = true
+    setLicenseKeyModalView(null)
     try {
       const { error } = await rotateLicenseKey.mutateAsync(selectedLicenseKeyId)
       if (error) {
@@ -198,10 +187,9 @@ export const LicenseKeysPage = ({
         })
       }
     } finally {
-      isRotatingRef.current = false
-      showLicenseKeyModal()
+      setLicenseKeyModalView('details')
     }
-  }, [rotateLicenseKey, selectedLicenseKeyId, showLicenseKeyModal])
+  }, [rotateLicenseKey, selectedLicenseKeyId])
 
   return (
     <Tabs defaultValue="license-keys">
@@ -235,7 +223,7 @@ export const LicenseKeysPage = ({
             onSelectLicenseKey={(licenseKey) => {
               setSelectedLicenseKeyId(licenseKey.id)
               setDeepLinkParam(licenseKey.id)
-              showLicenseKeyModal()
+              setLicenseKeyModalView('details')
             }}
             selectedLicenseKeyId={selectedLicenseKeyId}
           />
@@ -250,11 +238,11 @@ export const LicenseKeysPage = ({
                 />
               ) : null
             }
-            isShown={isLicenseKeyModalShown}
+            isShown={licenseKeyModalView === 'details'}
             hide={closeLicenseKeyModal}
           />
           <ConfirmModal
-            isShown={isRotateConfirmShown}
+            isShown={licenseKeyModalView === 'rotate'}
             hide={closeRotateConfirm}
             title="Rotate this license key?"
             description="A new key will be generated for this customer. The previous key stops validating immediately. Share the new key with your customer, or have them copy it from the customer portal."

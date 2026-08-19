@@ -441,7 +441,7 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
     }
 
 
-class ProductPriceUnitBased(TieredPrice, NewProductPrice, ProductPrice):
+class ProductPriceUnit(TieredPrice, NewProductPrice, ProductPrice):
     """A price for a quantity of units the buyer declares up-front.
 
     Priced exactly like a seat price, the buyer pays for the declared

@@ -96,7 +96,7 @@ from .product_price import (
     ProductPriceFixed,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
-    ProductPriceUnitBased,
+    ProductPriceUnit,
 )
 from .refund import Refund
 from .slack_app import SlackApp
@@ -224,7 +224,7 @@ __all__ = [
     "ProductPriceFixed",
     "ProductPriceMeteredUnit",
     "ProductPriceSeatUnit",
-    "ProductPriceUnitBased",
+    "ProductPriceUnit",
     "ProductVisibility",
     "Refund",
     "ReviewAppealSupportCase",

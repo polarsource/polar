@@ -170,6 +170,12 @@ class InvalidQuantityError(PolarError):
         super().__init__(message, status_code=400)
 
 
+def integral_price_per_seat(unit_amount: Decimal) -> int:
+    if unit_amount != unit_amount.to_integral_value():
+        raise ValueError(f"Seat tier rates must be whole cents, got {unit_amount}")
+    return int(unit_amount)
+
+
 class SeatTierType(StrEnum):
     volume = "volume"
     graduated = "graduated"
@@ -214,7 +220,9 @@ def seat_tiers_to_tiers(seat_tiers: SeatTiersData) -> Tiers:
             tiers=[
                 Tier(
                     bound=tier.get("max_seats"),
-                    unit_amount=Decimal(tier["price_per_seat"]),
+                    unit_amount=Decimal(
+                        integral_price_per_seat(Decimal(tier["price_per_seat"]))
+                    ),
                 )
                 for tier in sorted_seat_tiers
             ],
@@ -240,31 +248,45 @@ def tiers_to_seat_tiers(
 ) -> SeatTiersData:
     """Translate the shared tiers format back to the seat API payload.
 
-    The first `min_seats` comes from `minimum_units` (at least 1). Each
-    later `min_seats` is the previous `max_seats` plus one. Intermediate
-    `max_seats` values are the tier bounds. The last `max_seats` is
-    `maximum_units` when set, otherwise the last bound.
+    Only tiers overlapping the purchasable interval are emitted. The first
+    `min_seats` is clipped to `minimum_units` (at least 1). The last
+    `max_seats` is clipped to `maximum_units` when set, otherwise the tier
+    bound.
     """
     first_min = 1 if minimum_units is None or minimum_units < 1 else minimum_units
+    last_max = maximum_units if maximum_units is not None else tiers.last_bound
 
     seat_tiers: list[SeatTier] = []
-    previous_max: int | None = None
-    last_index = len(tiers.tiers) - 1
-    for index, tier in enumerate(tiers.tiers):
-        min_seats = first_min if previous_max is None else previous_max + 1
-        max_seats: int | None
-        if index == last_index and maximum_units is not None:
-            max_seats = maximum_units
+    previous_bound = 0
+    for tier in tiers.tiers:
+        tier_start = previous_bound + 1
+        tier_end = tier.bound
+
+        if tier_end is not None and tier_end < first_min:
+            previous_bound = tier_end
+            continue
+
+        if last_max is not None and tier_start > last_max:
+            break
+
+        min_seats = max(first_min, tier_start)
+        if tier_end is None:
+            max_seats = last_max
+        elif last_max is None:
+            max_seats = tier_end
         else:
-            max_seats = tier.bound
+            max_seats = min(tier_end, last_max)
+
         seat_tiers.append(
             {
                 "min_seats": min_seats,
                 "max_seats": max_seats,
-                "price_per_seat": int(tier.unit_amount),
+                "price_per_seat": integral_price_per_seat(tier.unit_amount),
             }
         )
-        previous_max = max_seats
+
+        if tier_end is not None:
+            previous_bound = tier_end
 
     return {
         "seat_tier_type": SeatTierType(tiers.type),

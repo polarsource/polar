@@ -424,7 +424,7 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
         return self.minimum_units if self.minimum_units is not None else 1
 
     def get_maximum_seats(self) -> int | None:
-        return self.maximum_units
+        return self.get_maximum_units()
 
     @property
     def is_free(self) -> bool:

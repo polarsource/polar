@@ -9,10 +9,14 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from tagflow import classes, tag, text
 
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
+from polar.meter_period.repository import MeterPeriodRepository
+from polar.meter_period.service import meter_period as meter_period_service
 from polar.models import (
     Customer,
+    MeterPeriod,
     Order,
     Organization,
     Product,
@@ -23,6 +27,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
+from polar.product.guard import is_metered_price
 from polar.subscription import sorting
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
@@ -41,7 +46,12 @@ from ..layout import layout
 from ..orders.components import orders_datatable
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
-from .forms import CancelForm, UpdateBillingPeriodEndForm, build_update_status_form
+from .forms import (
+    CancelForm,
+    OpenMeterPeriodForm,
+    UpdateBillingPeriodEndForm,
+    build_update_status_form,
+)
 
 router = APIRouter()
 
@@ -79,6 +89,17 @@ class OrganizationColumn(
         self.href_getter = lambda r, i: str(
             r.url_for("organizations:detail", organization_id=i.product.organization_id)
         )
+
+
+class MeterPeriodBilledAmountColumn(
+    datatable.DatatableCurrencyColumn[MeterPeriod, SubscriptionSortProperty]
+):
+    def __init__(self, currency: str) -> None:
+        super().__init__("billed_amount", "Billed")
+        self.currency = currency
+
+    def get_currency(self, item: MeterPeriod) -> str:
+        return self.currency
 
 
 class SubscriptionMeterAmountColumn(
@@ -254,6 +275,11 @@ async def get(
     )
     orders = await order_repository.get_all(orders_statement)
 
+    meter_period_repository = MeterPeriodRepository.from_session(session)
+    meter_periods = await meter_period_repository.get_by_subscription(
+        subscription.id, options=meter_period_repository.get_eager_options()
+    )
+
     with layout(
         request,
         [
@@ -319,6 +345,16 @@ async def get(
                             hx_target="#modal",
                         ):
                             text("Update Status")
+                    with button(
+                        hx_get=str(
+                            request.url_for(
+                                "subscriptions:open_meter_period",
+                                id=subscription.id,
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Open Meter Period")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Subscription Details
@@ -438,6 +474,20 @@ async def get(
                     datatable.DatatableAttrColumn("credited_units", "Credited Units"),
                     SubscriptionMeterAmountColumn(subscription.currency),
                 ).render(request, subscription.meters):
+                    pass
+
+            with tag.div(classes="flex flex-col gap-4"):
+                with tag.h2(classes="text-2xl"):
+                    text("Meter Periods")
+                with datatable.Datatable[MeterPeriod, SubscriptionSortProperty](
+                    datatable.DatatableAttrColumn("meter.name", "Meter"),
+                    datatable.DatatableAttrColumn("status", "Status"),
+                    datatable.DatatableDateTimeColumn("starts_at", "Starts"),
+                    datatable.DatatableDateTimeColumn("ends_at", "Ends"),
+                    datatable.DatatableAttrColumn("quantity", "Quantity"),
+                    datatable.DatatableAttrColumn("credited_units", "Credited"),
+                    MeterPeriodBilledAmountColumn(subscription.currency),
+                ).render(request, meter_periods):
                     pass
 
             with tag.div(classes="flex flex-col gap-4"):
@@ -751,3 +801,88 @@ async def update_status(
                             text("Cancel")
                     with button(type="submit", variant="primary"):
                         text("Submit")
+
+
+@router.api_route(
+    "/{id}/open_meter_period",
+    name="subscriptions:open_meter_period",
+    methods=["GET", "POST"],
+)
+async def open_meter_period(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    subscription_repository = SubscriptionRepository.from_session(session)
+    subscription = await subscription_repository.get_by_id(
+        id, options=subscription_repository.get_eager_options()
+    )
+
+    if subscription is None:
+        raise HTTPException(status_code=404)
+
+    if not any(
+        is_metered_price(price.product_price)
+        for price in subscription.subscription_product_prices
+    ):
+        await add_toast(request, "This subscription has no metered price.", "error")
+        return
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = OpenMeterPeriodForm.model_validate_form(data)
+            periods = await meter_period_service.open_for_subscription(
+                session,
+                subscription,
+                starts_at=form.starts_at,
+                ends_at=form.ends_at,
+            )
+            await add_toast(
+                request, f"Opened {len(periods)} meter period(s).", "success"
+            )
+            return HXRedirectResponse(
+                request, str(request.url_for("subscriptions:get", id=id)), 303
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    # Default to the window a pending settlement would be billing: from the oldest
+    # unbilled entry up to the boundary the current period started at.
+    billing_entry_repository = BillingEntryRepository.from_session(session)
+    earliest = await billing_entry_repository.get_earliest_pending_metered_start(
+        subscription.id
+    )
+    starts_at = earliest or subscription.current_period_start
+    ends_at = (
+        subscription.current_period_start
+        if earliest is not None
+        else subscription.current_period_end
+    )
+    prefill_data = {
+        "starts_at": starts_at.strftime("%Y-%m-%dT%H:%M"),
+        "ends_at": ends_at.strftime("%Y-%m-%dT%H:%M"),
+    }
+
+    with modal("Open meter period", open=True):
+        with tag.p(classes="text-sm opacity-70"):
+            text(
+                "Opens one period per metered price. Billing reads them only when "
+                "`metered_billing_periods_enabled` is set on the organization, and "
+                "a price that already has an accruing period is left as it is."
+            )
+        with OpenMeterPeriodForm.render(
+            data=prefill_data,
+            hx_post=str(request.url_for("subscriptions:open_meter_period", id=id)),
+            hx_target="#modal",
+            classes="flex flex-col",
+            validation_error=validation_error,
+        ):
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
+                    text("Open")

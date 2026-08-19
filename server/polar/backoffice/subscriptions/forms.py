@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
-from pydantic import Field, create_model, field_validator
+from pydantic import Field, ValidationInfo, create_model, field_validator
 
 from polar.kit.schemas import EmptyStrToNone
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
@@ -70,4 +70,32 @@ class UpdateBillingPeriodEndForm(forms.BaseForm):
     def ensure_utc_timezone(cls, v: object) -> object:
         if isinstance(v, str):
             return datetime.fromisoformat(v).replace(tzinfo=UTC)
+        return v
+
+
+class OpenMeterPeriodForm(forms.BaseForm):
+    starts_at: Annotated[
+        datetime,
+        forms.InputField("datetime-local"),
+        Field(title="Window start"),
+    ]
+    ends_at: Annotated[
+        datetime,
+        forms.InputField("datetime-local"),
+        Field(title="Window end"),
+    ]
+
+    @field_validator("starts_at", "ends_at", mode="before")
+    @classmethod
+    def ensure_utc_timezone(cls, v: object) -> object:
+        if isinstance(v, str):
+            return datetime.fromisoformat(v).replace(tzinfo=UTC)
+        return v
+
+    @field_validator("ends_at")
+    @classmethod
+    def ensure_after_start(cls, v: datetime, info: ValidationInfo) -> datetime:
+        starts_at = info.data.get("starts_at")
+        if starts_at is not None and v <= starts_at:
+            raise ValueError("Window end must be after window start.")
         return v

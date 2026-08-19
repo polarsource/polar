@@ -46,6 +46,17 @@ class BillingEntryRepository(
             )
             await self.session.execute(statement)
 
+    async def get_earliest_pending_metered_start(
+        self, subscription_id: UUID
+    ) -> datetime | None:
+        statement = select(func.min(BillingEntry.start_timestamp)).where(
+            BillingEntry.subscription_id == subscription_id,
+            BillingEntry.deleted_at.is_(None),
+            BillingEntry.order_item_id.is_(None),
+            BillingEntry.type == BillingEntryType.metered,
+        )
+        return await self.session.scalar(statement)
+
     async def get_all_by_subscription(
         self, subscription_id: UUID
     ) -> Sequence[BillingEntry]:

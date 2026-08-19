@@ -1,5 +1,7 @@
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
+from decimal import Decimal
 
 import httpx
 import pytest
@@ -8,8 +10,13 @@ from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
-from polar.models import Customer, Product, User
+from polar.meter.aggregation import CountAggregation
+from polar.meter.filter import Filter, FilterConjunction
+from polar.meter_period.repository import MeterPeriodRepository
+from polar.models import Customer, Organization, Product, Subscription, User
+from polar.models.meter_period import MeterPeriodStatus
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_session import UserSession
@@ -17,9 +24,14 @@ from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_meter,
     create_order,
+    create_product,
     create_subscription,
 )
+
+PERIOD_START = datetime(2026, 7, 1, tzinfo=UTC)
+PERIOD_END = datetime(2026, 8, 1, tzinfo=UTC)
 
 
 @pytest_asyncio.fixture
@@ -40,6 +52,107 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_db_session, None)
         backoffice_app.dependency_overrides.pop(get_db_read_session, None)
         backoffice_app.dependency_overrides.pop(get_admin, None)
+
+
+@pytest_asyncio.fixture
+async def metered_subscription(
+    save_fixture: SaveFixture, customer: Customer, organization: Organization
+) -> Subscription:
+    meter = await create_meter(
+        save_fixture,
+        organization=organization,
+        name="Tool Calls",
+        filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+        aggregation=CountAggregation(),
+    )
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(meter, Decimal(100), None, "usd")],
+    )
+    return await create_active_subscription(
+        save_fixture,
+        customer=customer,
+        product=product,
+        current_period_start=PERIOD_START,
+        current_period_end=PERIOD_END,
+    )
+
+
+@pytest_asyncio.fixture
+async def static_subscription(
+    save_fixture: SaveFixture, customer: Customer, product: Product
+) -> Subscription:
+    return await create_active_subscription(
+        save_fixture, customer=customer, product=product
+    )
+
+
+@pytest.mark.asyncio
+class TestOpenMeterPeriod:
+    async def test_returns_404_for_unknown_subscription(
+        self, backoffice_client: httpx.AsyncClient
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/subscriptions/{uuid.uuid4()}/open_meter_period"
+        )
+
+        assert response.status_code == 404
+
+    async def test_opens_one_period_per_metered_price(
+        self,
+        session: AsyncSession,
+        backoffice_client: httpx.AsyncClient,
+        metered_subscription: Subscription,
+    ) -> None:
+        response = await backoffice_client.post(
+            f"/subscriptions/{metered_subscription.id}/open_meter_period",
+            data={
+                "starts_at": "2026-07-01T00:00",
+                "ends_at": "2026-08-01T00:00",
+            },
+        )
+
+        assert response.status_code == 303
+        repository = MeterPeriodRepository.from_session(session)
+        periods = await repository.get_by_subscription(metered_subscription.id)
+        assert len(periods) == 1
+        assert periods[0].starts_at == PERIOD_START
+        assert periods[0].ends_at == PERIOD_END
+        assert periods[0].status == MeterPeriodStatus.accruing
+
+    async def test_rejects_a_window_that_ends_before_it_starts(
+        self,
+        session: AsyncSession,
+        backoffice_client: httpx.AsyncClient,
+        metered_subscription: Subscription,
+    ) -> None:
+        response = await backoffice_client.post(
+            f"/subscriptions/{metered_subscription.id}/open_meter_period",
+            data={
+                "starts_at": "2026-08-01T00:00",
+                "ends_at": "2026-07-01T00:00",
+            },
+        )
+
+        assert response.status_code == 200
+        repository = MeterPeriodRepository.from_session(session)
+        assert await repository.get_by_subscription(metered_subscription.id) == []
+
+    async def test_declines_a_subscription_with_no_metered_price(
+        self,
+        session: AsyncSession,
+        backoffice_client: httpx.AsyncClient,
+        static_subscription: Subscription,
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/subscriptions/{static_subscription.id}/open_meter_period"
+        )
+
+        assert response.status_code == 200
+        repository = MeterPeriodRepository.from_session(session)
+        assert await repository.get_by_subscription(static_subscription.id) == []
 
 
 @pytest.mark.asyncio

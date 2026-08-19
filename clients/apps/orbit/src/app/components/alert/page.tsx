@@ -2,6 +2,7 @@
 
 import { Alert, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import Link from 'next/link'
 import { useState } from 'react'
 import type { PropRow } from '@/components/docs'
 import { Example, PageHeader, PropsTable, Section } from '@/components/docs'
@@ -183,7 +184,7 @@ export default function AlertPage() {
             description={
               <>
                 Add the TXT record, then <strong>retry</strong>. See the{' '}
-                <a href="/docs/domains">setup guide</a> for details.
+                <Link href="/docs/domains">setup guide</Link> for details.
               </>
             }
           />

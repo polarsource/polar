@@ -73,6 +73,7 @@ module.exports = {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
+        // eslint-disable-next-line @polar/no-hardcoded-colors
         backgroundColor: '#0D0E10',
       },
       package: 'com.polarsource.Polar',

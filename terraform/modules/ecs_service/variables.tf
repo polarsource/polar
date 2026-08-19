@@ -118,6 +118,17 @@ variable "permissions_boundary_arn" {
   type        = string
 }
 
+variable "logfire" {
+  description = "Ship container logs to Logfire via a FireLens fluent-bit sidecar instead of CloudWatch, if set."
+  type = object({
+    token        = string
+    host         = optional(string, "logfire-us.pydantic.dev")
+    router_image = optional(string, "public.ecr.aws/aws-observability/aws-for-fluent-bit:3.4.13")
+  })
+  default   = null
+  sensitive = true
+}
+
 variable "log_retention_days" {
   description = "CloudWatch log retention in days."
   type        = number

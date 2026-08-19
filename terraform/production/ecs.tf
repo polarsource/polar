@@ -39,6 +39,10 @@ module "pgbouncer_aws" {
   permissions_boundary_arn   = data.aws_iam_policy.permission_boundary.arn
   repository_credentials_arn = aws_secretsmanager_secret_version.ghcr_pull.arn
 
+  logfire = {
+    token = var.logfire_token
+  }
+
   database = {
     host     = local.db_external_host
     port     = local.db_port

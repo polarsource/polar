@@ -507,16 +507,24 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
 }
 
 resource "tfe_variable" "worker_sqs_actors_sandbox" {
-  key             = "worker_sqs_actors"
-  category        = "terraform"
-  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox"
-  sensitive       = false
-  value           = "[\"dummy\"]"
+  key         = "worker_sqs_actors"
+  category    = "terraform"
+  description = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox"
+  sensitive   = false
+  value = jsonencode([
+    "dummy",
+    "observability.invariants.enqueue",
+    "observability.invariants.check",
+    "checkout.expire_open_checkouts",
+    "customer.state_changed",
+    "email.send",
+    "external_event.prune",
+    "oauth2_token.delete_expired",
+    "webhook_event.publish",
+    "webhook_event.send",
+    "license_key.sync_benefit_grant",
+  ])
   variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
 }
 
 resource "tfe_variable" "stripe_app_client_id_sandbox" {

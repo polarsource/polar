@@ -135,16 +135,16 @@ export const STEP_COPY: Record<string, StepCopy> = {
     action: 'I handled these customers',
   },
   cutover: {
-    title: 'Cut over billing',
+    title: 'Switch billing to Polar',
     description:
-      'Polar takes over billing. Stop billing these subscriptions on your old provider first.',
+      'Pick the subscriptions to switch. Polar starts billing them and stops them on Stripe.',
     warning: 'You cannot undo this. Charges start on Polar from now on.',
-    action: 'Cut over billing',
+    action: 'Switch subscriptions',
   },
   move_subscriptions: {
-    title: 'Polar moves your subscriptions',
+    title: 'Polar switches your subscriptions',
     description:
-      'We activate the imported subscriptions. They are charged on their next renewal date.',
+      'We start billing the subscriptions you picked. They are charged on their next renewal date.',
   },
 }
 

@@ -5,8 +5,13 @@ import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { SwitchPanel } from '../switch/SwitchPanel'
 import { StepCopy } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
+
+// The confirm step for the switch is where the merchant picks which
+// subscriptions move; the picker submits the selection and confirms the step.
+const SWITCH_STEP_KEY = 'cutover'
 
 interface Props {
   step: schemas['PanTransferStep']
@@ -69,7 +74,10 @@ export function PanTransferStepBody({
 
       <OpsUpdate step={step} />
 
-      {submittable &&
+      {step.key === SWITCH_STEP_KEY ? (
+        <SwitchPanel migrationId={migrationId} />
+      ) : (
+        submittable &&
         (fieldsUnknown || !copy.action ? (
           <Text variant="caption" color="muted">
             This step needs a newer version of this page. Please refresh.
@@ -80,7 +88,8 @@ export function PanTransferStepBody({
             migrationId={migrationId}
             stepKey={step.key}
           />
-        ))}
+        ))
+      )}
     </Box>
   )
 }

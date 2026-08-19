@@ -64,6 +64,15 @@ class BillingEntry(RecordModel):
             "id",
             postgresql_where=text("deleted_at IS NULL AND order_item_id IS NULL"),
         ),
+        # Meter period settlement aggregates a `start_timestamp` range for one
+        # price, whether or not the entries are linked.
+        Index(
+            "ix_billing_entry_window",
+            "subscription_id",
+            "product_price_id",
+            "start_timestamp",
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
     )
 
     start_timestamp: Mapped[datetime] = mapped_column(

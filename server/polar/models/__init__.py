@@ -57,6 +57,7 @@ from .merchant_migration_record import (
 )
 from .meter import Meter
 from .meter_event import MeterEvent
+from .meter_period import MeterPeriod, MeterPeriodStatus
 from .metric_dashboard import MetricDashboard
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
@@ -185,6 +186,8 @@ __all__ = [
     "MerchantMigrationStep",
     "Meter",
     "MeterEvent",
+    "MeterPeriod",
+    "MeterPeriodStatus",
     "MetricDashboard",
     "Model",
     "Notification",

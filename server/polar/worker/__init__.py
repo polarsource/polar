@@ -26,6 +26,7 @@ from ._httpx import HTTPXMiddleware
 from ._queues import TaskPriority, TaskQueue
 from ._redis import RedisMiddleware
 from ._sqlalchemy import AsyncReadSessionMaker, AsyncSessionMaker
+from ._sqs import MAX_JOB_PAYLOAD_BYTES
 
 _ = _prometheus_metrics  # for mypy and ruff: ensure import is used
 
@@ -113,6 +114,7 @@ def actor[**P, R](
 
 
 __all__ = [
+    "MAX_JOB_PAYLOAD_BYTES",
     "AsyncReadSessionMaker",
     "AsyncSessionMaker",
     "BulkJobDelayCalculator",

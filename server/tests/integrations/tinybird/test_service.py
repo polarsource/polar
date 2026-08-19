@@ -15,12 +15,14 @@ from polar.integrations.tinybird.client import (
     TinybirdOperationalError,
     TinybirdRequestError,
 )
+from polar.integrations.tinybird.schemas import TinybirdEvent
 from polar.integrations.tinybird.service import (
     DATASOURCE_EVENTS,
     TinybirdEventsQuery,
     TinybirdEventTypesQuery,
     _compile,
     _event_to_tinybird,
+    chunk_tinybird_events,
     clickhouse_dialect,
     count_user_events_by_organization,
     events_table,
@@ -33,6 +35,7 @@ from polar.meter.filter import (
 )
 from polar.models import Event
 from polar.models.event import EventSource
+from polar.worker import MAX_JOB_PAYLOAD_BYTES
 from tests.fixtures.tinybird import tinybird_available
 
 pytestmark = pytest.mark.xdist_group(name="tinybird")
@@ -148,6 +151,53 @@ def compile_clause(clause: Any) -> tuple[str, dict[str, Any]]:
         dialect=clickhouse_dialect, compile_kwargs={"render_postcompile": True}
     )
     return str(compiled), dict(compiled.params)
+
+
+class TestChunkTinybirdEvents:
+    def make_events(self, count: int, metadata_bytes: int) -> list[TinybirdEvent]:
+        return [
+            _event_to_tinybird(
+                create_test_event(
+                    name="usage",
+                    source=EventSource.user,
+                    user_metadata={"blob": "x" * metadata_bytes},
+                )
+            )
+            for _ in range(count)
+        ]
+
+    def test_empty(self) -> None:
+        assert list(chunk_tinybird_events([])) == []
+
+    def test_small_batch_stays_in_one_chunk(self) -> None:
+        events = self.make_events(50, 100)
+
+        chunks = list(chunk_tinybird_events(events))
+
+        assert chunks == [events]
+
+    def test_large_batch_is_split_below_the_payload_budget(self) -> None:
+        events = self.make_events(20, 50_000)
+
+        chunks = list(chunk_tinybird_events(events))
+
+        assert len(chunks) > 1
+        for chunk in chunks:
+            assert len(json.dumps(chunk).encode("utf-8")) <= MAX_JOB_PAYLOAD_BYTES
+
+    def test_every_event_is_kept_exactly_once_and_in_order(self) -> None:
+        events = self.make_events(20, 50_000)
+
+        chunks = list(chunk_tinybird_events(events))
+
+        assert [event for chunk in chunks for event in chunk] == events
+
+    def test_event_larger_than_the_budget_is_not_dropped(self) -> None:
+        events = self.make_events(1, MAX_JOB_PAYLOAD_BYTES * 2)
+
+        chunks = list(chunk_tinybird_events(events))
+
+        assert chunks == [events]
 
 
 class TestQueryWildcardsAreLiteral:

@@ -24,6 +24,7 @@ from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.tinybird.service import (
     TinybirdTimeseriesStats,
+    chunk_tinybird_events,
     events_to_tinybird,
 )
 from polar.kit.metadata import MetadataQuery
@@ -1061,7 +1062,8 @@ class EventService:
             enqueue_job("customer_meter.update_customer", customer.id)
 
         tinybird_events = events_to_tinybird(events, ancestors_by_event)
-        enqueue_job("tinybird.ingest", tinybird_events)
+        for chunk in chunk_tinybird_events(tinybird_events):
+            enqueue_job("tinybird.ingest", chunk)
 
         for customer_id in customers_with_user_events:
             enqueue_job("customer.resolve_first_user_event_at", customer_id)

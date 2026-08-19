@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import dramatiq
@@ -8,8 +9,17 @@ import polar.tasks  # noqa: F401  (registers actors with the broker)
 from polar.config import settings
 from polar.logging import CorrelationID
 from polar.redis import Redis
-from polar.worker import JobQueueManager
-from polar.worker._sqs import actor_to_queue_name, get_sqs_client, resolve_queue_url
+from polar.worker import MAX_JOB_PAYLOAD_BYTES, JobQueueManager
+from polar.worker._sqs import (
+    SQS_MAX_BATCH_BYTES,
+    actor_to_queue_name,
+    get_sqs_client,
+    pack_batches,
+    resolve_queue_url,
+)
+
+if TYPE_CHECKING:
+    from mypy_boto3_sqs.type_defs import SendMessageBatchRequestEntryTypeDef
 
 
 def test_actor_to_queue_name_maps_dramatiq_queue(mocker: MockerFixture) -> None:
@@ -86,3 +96,47 @@ class TestFlushGate:
         # Non-allowlisted actor still went to Redis; the SQS one did not.
         assert await redis.llen("dramatiq:low_priority") == 1
         assert await redis.llen("dramatiq:high_priority") == 0
+
+
+class TestPackBatches:
+    def make_entries(
+        self, sizes: list[int]
+    ) -> list["SendMessageBatchRequestEntryTypeDef"]:
+        return [
+            {"Id": str(index), "MessageBody": "x" * size}
+            for index, size in enumerate(sizes)
+        ]
+
+    def test_empty(self) -> None:
+        assert list(pack_batches([])) == []
+
+    def test_caps_on_entry_count(self) -> None:
+        batches = list(pack_batches(self.make_entries([10] * 25)))
+
+        assert [len(batch) for batch in batches] == [10, 10, 5]
+
+    def test_caps_on_total_bytes(self) -> None:
+        batches = list(pack_batches(self.make_entries([MAX_JOB_PAYLOAD_BYTES] * 4)))
+
+        assert [len(batch) for batch in batches] == [1, 1, 1, 1]
+        for batch in batches:
+            total = sum(len(entry["MessageBody"]) for entry in batch)
+            assert total <= SQS_MAX_BATCH_BYTES
+
+    def test_entry_larger_than_the_batch_limit_stays_alone(self) -> None:
+        entries = self.make_entries([10, SQS_MAX_BATCH_BYTES + 1, 10])
+
+        batches = list(pack_batches(entries))
+
+        assert [[entry["Id"] for entry in batch] for batch in batches] == [
+            ["0"],
+            ["1"],
+            ["2"],
+        ]
+
+    def test_every_entry_is_sent_exactly_once(self) -> None:
+        entries = self.make_entries([100_000, 10, 100_000, 10, 100_000])
+
+        batches = list(pack_batches(entries))
+
+        assert [entry for batch in batches for entry in batch] == entries

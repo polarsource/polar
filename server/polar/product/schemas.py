@@ -75,7 +75,7 @@ from polar.models.product_price import (
     ProductPriceSeatUnit as ProductPriceSeatUnitModel,
 )
 from polar.models.product_price import (
-    ProductPriceUnitBased as ProductPriceUnitBasedModel,
+    ProductPriceUnit as ProductPriceUnitModel,
 )
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
@@ -454,8 +454,8 @@ class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
             raise ValueError(str(e)) from None
         return self
 
-    def get_model_class(self) -> builtins.type[ProductPriceUnitBasedModel]:
-        return ProductPriceUnitBasedModel
+    def get_model_class(self) -> builtins.type[ProductPriceUnitModel]:
+        return ProductPriceUnitModel
 
 
 def _coerce_legacy_free_price(value: Any) -> Any:

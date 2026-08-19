@@ -64,7 +64,7 @@ from polar.models import (
     ProductPriceFixed,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
-    ProductPriceUnitBased,
+    ProductPriceUnit,
     Refund,
     Subscription,
     SubscriptionProductPrice,
@@ -682,7 +682,7 @@ async def create_product_price_unit_based(
     tax_behavior: TaxBehavior | None = TaxBehavior.exclusive,
     unit_label: str | None = None,
     unit_label_plural: str | None = None,
-) -> ProductPriceUnitBased:
+) -> ProductPriceUnit:
     """Create a unit-based price.
 
     By default a flat price: one unbounded volume tier at ``price_per_unit``.
@@ -696,7 +696,7 @@ async def create_product_price_unit_based(
             }
         )
 
-    price = ProductPriceUnitBased(
+    price = ProductPriceUnit(
         price_currency=currency,
         tax_behavior=tax_behavior,
         tiers=tiers,
@@ -1713,7 +1713,7 @@ async def create_checkout(
                 composed += amount if amount is not None else 10_00
             elif isinstance(static_price, ProductPriceSeatUnit):
                 composed += static_price.calculate_amount(seat_count)
-            elif isinstance(static_price, ProductPriceUnitBased):
+            elif isinstance(static_price, ProductPriceUnit):
                 composed += static_price.calculate_amount(
                     units if units is not None else 1
                 )
@@ -1725,7 +1725,7 @@ async def create_checkout(
     elif isinstance(price, ProductPriceSeatUnit):
         seat_count = seats or 1
         amount = price.calculate_amount(seat_count)
-    elif isinstance(price, ProductPriceUnitBased):
+    elif isinstance(price, ProductPriceUnit):
         amount = price.calculate_amount(units or 1)
     else:
         amount = 0

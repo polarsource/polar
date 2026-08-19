@@ -10,7 +10,7 @@ from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
     ProductPriceSeatUnit,
-    ProductPriceUnitBased,
+    ProductPriceUnit,
     TieredPrice,
 )
 from polar.product.tiers import (
@@ -431,8 +431,8 @@ class TestMinimumMaximumUnits:
         assert price.get_maximum_units() is None
 
 
-def _make_unit_price(tiers: list[dict[str, Any]]) -> ProductPriceUnitBased:
-    return ProductPriceUnitBased(
+def _make_unit_price(tiers: list[dict[str, Any]]) -> ProductPriceUnit:
+    return ProductPriceUnit(
         tiers=_tiers_data(TierType.volume, tiers),
         price_currency="usd",
     )

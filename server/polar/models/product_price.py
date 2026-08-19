@@ -456,12 +456,22 @@ class ProductPriceUnit(TieredPrice, NewProductPrice, ProductPrice):
         postgresql.JSONB(none_as_null=True), nullable=True, default=None
     )
 
-    def get_unit_noun(self, count: int) -> str:
-        forms = (self.unit_label or {}).get("en") or {}
+    def get_unit_noun(self, count: int, locale: str | None = None) -> str:
+        forms = self._unit_label_forms(locale)
         noun = forms.get(f"={count}") or forms.get("other")
         if noun:
             return noun
         return "unit" if count == 1 else "units"
+
+    def _unit_label_forms(self, locale: str | None) -> dict[str, str]:
+        labels = self.unit_label or {}
+        if locale:
+            language = locale.replace("_", "-").split("-", 1)[0]
+            if forms := labels.get(locale) or labels.get(language):
+                return forms
+        if forms := labels.get("en"):
+            return forms
+        return next(iter(labels.values()), {})
 
     def calculate_amount(self, units: int) -> int:
         amount = self.get_tiered_amount(units)

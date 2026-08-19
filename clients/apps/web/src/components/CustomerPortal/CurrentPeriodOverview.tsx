@@ -1,5 +1,10 @@
 import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPortal'
-import { isFreePrice, isSeatBasedPrice } from '@/utils/product'
+import {
+  getUnitLabels,
+  isFreePrice,
+  isSeatBasedPrice,
+  isUnitBasedPrice,
+} from '@/utils/product'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
@@ -59,6 +64,17 @@ export const CurrentPeriodOverview = ({
     return subscription.seats
   }, [subscription])
 
+  // Same for unit-based subscriptions.
+  const units = useMemo(() => {
+    if (
+      subscription.pending_update &&
+      subscription.pending_update.units != null
+    ) {
+      return subscription.pending_update.units
+    }
+    return subscription.units
+  }, [subscription])
+
   if (!shouldShowPreview) {
     return null
   }
@@ -76,6 +92,13 @@ export const CurrentPeriodOverview = ({
     (price) =>
       price.price_currency === subscription.currency && isSeatBasedPrice(price),
   )
+
+  const unitPrice = product?.prices.find(
+    (price): price is schemas['ProductPriceUnitBased'] =>
+      price.price_currency === subscription.currency && isUnitBasedPrice(price),
+  )
+  const isUnitBasedProduct = unitPrice != null
+  const { unitLabel, unitLabelPlural } = getUnitLabels(unitPrice)
 
   // Use the subscription amount (except when a pending update is scheduled)
   // instead of the current product price, since we by default grandfather old subscriptions
@@ -134,7 +157,9 @@ export const CurrentPeriodOverview = ({
           <span className="dark:text-polar-400 text-gray-600">
             {isSeatBasedProduct && seats != null
               ? `${product.name} (${seats} ${seats === 1 ? 'seat' : 'seats'})`
-              : product.name}
+              : isUnitBasedProduct && units != null
+                ? `${product.name} (${units} ${units === 1 ? unitLabel : unitLabelPlural})`
+                : product.name}
           </span>
           <span
             className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}

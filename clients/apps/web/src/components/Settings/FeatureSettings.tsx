@@ -142,6 +142,30 @@ export default function FeatureSettings({
               }}
             />
           </SettingsGroupItem>
+          <SettingsGroupItem
+            layout="inline"
+            title="Unit-Based Billing"
+            description={
+              <>
+                Enable unit-based pricing for subscription products: customers
+                pick a quantity of units and pay for it up-front.
+              </>
+            }
+          >
+            <FormField
+              control={control}
+              name="unit_based_pricing_enabled"
+              render={({ field }) => {
+                return (
+                  <Switch
+                    checked={field.value}
+                    disabled={readOnly}
+                    onCheckedChange={(enabled) => field.onChange(enabled)}
+                  />
+                )
+              }}
+            />
+          </SettingsGroupItem>
         </SettingsGroup>
       </form>
 

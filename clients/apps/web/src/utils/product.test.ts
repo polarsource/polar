@@ -1,6 +1,11 @@
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import { formPriceToApiPrice, productPriceToFormPrice } from './product'
+import {
+  formPriceToApiPrice,
+  getUnitLabels,
+  isUnitBasedPrice,
+  productPriceToFormPrice,
+} from './product'
 
 type FormPrice = schemas['ProductCreate']['prices'][number]
 
@@ -64,5 +69,58 @@ describe('free price round-trips through the form as fixed-0', () => {
 
     const backToForm = productPriceToFormPrice(api as schemas['ProductPrice'])
     expect(backToForm.amount_type).toBe('free')
+  })
+})
+
+describe('unit-based prices', () => {
+  it('identifies unit-based prices', () => {
+    expect(isUnitBasedPrice(apiPrice({ amount_type: 'unit_based' }))).toBe(true)
+    expect(isUnitBasedPrice(apiPrice({ amount_type: 'fixed' }))).toBe(false)
+  })
+
+  it('uses default unit labels', () => {
+    expect(getUnitLabels()).toEqual({
+      unitLabel: 'unit',
+      unitLabelPlural: 'units',
+    })
+  })
+
+  it('uses merchant-defined unit labels', () => {
+    expect(
+      getUnitLabels({
+        unit_label: { en: { '=1': 'device', other: 'devices' } },
+      }),
+    ).toEqual({
+      unitLabel: 'device',
+      unitLabelPlural: 'devices',
+    })
+  })
+
+  it('resolves unit labels by locale with an English fallback', () => {
+    const unit_label = {
+      en: { '=1': 'device', other: 'devices' },
+      sv: { '=1': 'enhet', other: 'enheter' },
+    }
+    expect(getUnitLabels({ unit_label }, 'sv_SE')).toEqual({
+      unitLabel: 'enhet',
+      unitLabelPlural: 'enheter',
+    })
+    expect(getUnitLabels({ unit_label }, 'sv')).toEqual({
+      unitLabel: 'enhet',
+      unitLabelPlural: 'enheter',
+    })
+    expect(getUnitLabels({ unit_label }, 'fr')).toEqual({
+      unitLabel: 'device',
+      unitLabelPlural: 'devices',
+    })
+  })
+
+  it('falls back to the plural form for a missing singular', () => {
+    expect(getUnitLabels({ unit_label: { en: { other: 'devices' } } })).toEqual(
+      {
+        unitLabel: 'devices',
+        unitLabelPlural: 'devices',
+      },
+    )
   })
 })

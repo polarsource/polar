@@ -87,6 +87,7 @@ export const setProductValidationErrors = <TFieldValues extends FieldValues>(
         'custom',
         'free',
         'seat_based',
+        'unit_based',
         'metered_unit',
       ]
       if (priceDiscriminatorValues.includes(segmentStr)) {

@@ -1,7 +1,11 @@
 'use client'
 
 import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialConfigurationForm'
-import { isLegacyRecurringPrice, isMeteredPrice } from '@/utils/product'
+import {
+  isLegacyRecurringPrice,
+  isMeteredPrice,
+  isUnitBasedPrice,
+} from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
@@ -106,7 +110,9 @@ export const ProductPricingSection = ({
     const currentPrices = getValues('prices')
     if (!currentPrices) return
     const filteredPrices = currentPrices.filter(
-      (price) => !isMeteredPrice(price as ProductPrice),
+      (price) =>
+        !isMeteredPrice(price as ProductPrice) &&
+        !isUnitBasedPrice(price as ProductPrice),
     )
     if (filteredPrices.length !== currentPrices.length) {
       replace(filteredPrices)
@@ -204,6 +210,16 @@ export const ProductPricingSection = ({
               tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
             },
           }
+        } else if (newAmountType === 'unit_based') {
+          return {
+            ...base,
+            amount_type: 'unit_based',
+            tiers: {
+              type: 'volume',
+              tiers: [{ bound: null, unit_amount: 0 }],
+            },
+            unit_label: null,
+          }
         } else if (newAmountType === 'metered_unit') {
           return {
             ...base,
@@ -280,6 +296,30 @@ export const ProductPricingSection = ({
             amount_type: 'seat_based',
             seat_tiers: { seat_tier_type: 'volume', tiers: seatTiers },
           }
+        } else if (price.amount_type === 'unit_based') {
+          const sourceTiers =
+            'tiers' in price && price.tiers?.tiers ? price.tiers.tiers : []
+          const unitTiers = sourceTiers.map((t) => ({
+            bound: 'bound' in t ? (t.bound ?? null) : null,
+            unit_amount: 0,
+          }))
+          if (unitTiers.length === 0) {
+            unitTiers.push({ bound: null, unit_amount: 0 })
+          }
+          newPrice = {
+            ...baseCurrency,
+            amount_type: 'unit_based',
+            minimum_units:
+              'minimum_units' in price ? (price.minimum_units ?? null) : null,
+            tiers: {
+              type:
+                'tiers' in price && price.tiers && 'type' in price.tiers
+                  ? price.tiers.type
+                  : 'volume',
+              tiers: unitTiers,
+            },
+            unit_label: 'unit_label' in price ? price.unit_label : null,
+          }
         } else if (price.amount_type === 'metered_unit') {
           const meterId = 'meter_id' in price ? price.meter_id : ''
           newPrice = {
@@ -339,6 +379,21 @@ export const ProductPricingSection = ({
           seat_tier_type: 'volume',
           tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
         },
+      }),
+    )
+    append(newPrices)
+  }, [activeCurrencies, append])
+
+  const handleAddUnitPrice = useCallback(() => {
+    const newPrices: ProductPriceCreate[] = activeCurrencies.map(
+      (currency) => ({
+        price_currency: currency as schemas['PresentmentCurrency'],
+        amount_type: 'unit_based',
+        tiers: {
+          type: 'volume',
+          tiers: [{ bound: null, unit_amount: 0 }],
+        },
+        unit_label: null,
       }),
     )
     append(newPrices)
@@ -419,7 +474,14 @@ export const ProductPricingSection = ({
     onlyStaticAmountType === 'fixed' &&
     !!organization.feature_settings?.seat_based_pricing_enabled
 
-  const canAddBasePrice = onlyStaticAmountType === 'seat_based'
+  const canAddUnitPricing =
+    onlyStaticAmountType === 'fixed' &&
+    recurringInterval !== null &&
+    !!organization.feature_settings?.unit_based_pricing_enabled
+
+  const canAddBasePrice =
+    onlyStaticAmountType === 'seat_based' ||
+    onlyStaticAmountType === 'unit_based'
 
   if (isLegacyRecurringProduct) {
     return (
@@ -594,6 +656,16 @@ export const ProductPricingSection = ({
                   onClick={handleAddSeatPrice}
                 >
                   Add seat pricing
+                </Button>
+              )}
+              {canAddUnitPricing && (
+                <Button
+                  className="self-start"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleAddUnitPrice}
+                >
+                  Add unit pricing
                 </Button>
               )}
               {canAddBasePrice && (

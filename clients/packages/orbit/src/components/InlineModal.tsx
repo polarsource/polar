@@ -5,13 +5,13 @@ import React, {
   FunctionComponent,
   MouseEvent,
   useCallback,
-  useEffect,
   useRef,
   type JSX,
 } from 'react'
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
+import { useBodyScrollLock } from '../lib/useBodyScrollLock'
 
 export interface InlineModalProps {
   isShown: boolean
@@ -47,12 +47,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
     [hide, isShown],
   )
 
-  useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    isShown
-      ? (document.body.style.overflow = 'hidden')
-      : (document.body.style.overflow = 'unset')
-  }, [isShown])
+  useBodyScrollLock(isShown)
 
   const onInnerClick = (e: MouseEvent) => {
     e.stopPropagation()

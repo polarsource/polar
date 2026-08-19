@@ -1,4 +1,3 @@
-# Setup for module
 variable "environment" {
   description = "Environment that the service runs in"
   type        = string
@@ -83,208 +82,167 @@ variable "redis_config" {
   sensitive = true
 }
 
-
-# Variables for the different env groups
-variable "google_secrets" {
-  description = "Google secrets (sensitive)"
+variable "environment_groups" {
+  description = "Named environment-variable groups produced by the backend_environment module"
   type = object({
-    client_id            = string
-    client_secret        = string
-    service_account_json = string
+    google = object({
+      POLAR_GOOGLE_CLIENT_ID            = string
+      POLAR_GOOGLE_CLIENT_SECRET        = string
+      POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = string
+    })
+    openai = object({
+      POLAR_OPENAI_API_KEY = string
+    })
+    pydantic_ai_gateway = object({
+      POLAR_PYDANTIC_AI_GATEWAY_API_KEY = string
+    })
+    backend = object({
+      POLAR_USER_SESSION_COOKIE_DOMAIN           = string
+      POLAR_AUTHENTICATION_SESSION_COOKIE_DOMAIN = string
+      POLAR_OAUTH2_SESSION_STATE_COOKIE_DOMAIN   = string
+      POLAR_BASE_URL                             = string
+      POLAR_DEBUG                                = string
+      POLAR_EMAIL_SENDER                         = string
+      POLAR_EMAIL_FROM_NAME                      = string
+      POLAR_EMAIL_FROM_DOMAIN                    = string
+      POLAR_ENV                                  = string
+      POLAR_FRONTEND_BASE_URL                    = string
+      POLAR_CHECKOUT_BASE_URL                    = string
+      POLAR_JWKS                                 = string
+      POLAR_LOG_LEVEL                            = string
+      POLAR_TESTING                              = string
+      POLAR_AUTH_COOKIE_DOMAIN                   = string
+      POLAR_INVOICES_ADDITIONAL_INFO             = string
+      POLAR_INVOICES_VAT_NUMBERS                 = string
+      POLAR_STRIPE_PUBLISHABLE_KEY               = string
+      POLAR_CURRENT_JWK_KID                      = string
+      POLAR_DISCORD_BOT_TOKEN                    = string
+      POLAR_DISCORD_CLIENT_ID                    = string
+      POLAR_DISCORD_CLIENT_SECRET                = string
+      POLAR_DISCORD_PROXY_URL                    = string
+      POLAR_RESEND_API_KEY                       = string
+      POLAR_RESEND_WEBHOOK_SECRET                = string
+      POLAR_FIRECRAWL_API_KEY                    = string
+      POLAR_LOGO_DEV_PUBLISHABLE_KEY             = string
+      POLAR_SECRET                               = string
+      POLAR_SENTRY_DSN                           = string
+      POLAR_TAX_PROCESSORS                       = string
+      POLAR_TAX_RECORD_PROCESSOR                 = string
+      POLAR_NUMERAL_API_KEY                      = string
+      POLAR_TURNSTILE_SECRET                     = string
+      POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = string
+      POLAR_PLAIN_DEFAULT_TIER_EXTERNAL_ID       = optional(string)
+      POLAR_USER_SESSION_COOKIE_KEY              = optional(string)
+      POLAR_AUTH_COOKIE_KEY                      = optional(string)
+    })
+    backend_production = object({
+      POLAR_BACKOFFICE_HOST                = string
+      POLAR_CHECKOUT_LINK_HOST             = string
+      POLAR_DISCORD_WEBHOOK_URL            = string
+      POLAR_POSTHOG_PROJECT_API_KEY        = string
+      POLAR_PLAIN_REQUEST_SIGNING_SECRET   = string
+      POLAR_PLAIN_TOKEN                    = string
+      POLAR_PLAIN_CHAT_SECRET              = string
+      POLAR_APP_REVIEW_EMAIL               = string
+      POLAR_APP_REVIEW_OTP_CODE            = string
+      POLAR_CHARGEBACK_STOP_WEBHOOK_SECRET = string
+    })
+    aws_s3 = object({
+      POLAR_AWS_REGION                       = string
+      POLAR_AWS_SIGNATURE_VERSION            = string
+      POLAR_S3_FILES_BUCKET_NAME             = string
+      POLAR_S3_FILES_PRESIGN_TTL             = string
+      POLAR_S3_FILES_PUBLIC_BUCKET_NAME      = string
+      POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME = string
+      POLAR_S3_CUSTOMER_RECEIPTS_BUCKET_NAME = string
+      POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME   = string
+      POLAR_S3_LOGS_BUCKET_NAME              = string
+      POLAR_AWS_ACCESS_KEY_ID                = string
+      POLAR_AWS_SECRET_ACCESS_KEY            = string
+      POLAR_S3_FILES_DOWNLOAD_SALT           = string
+      POLAR_S3_FILES_DOWNLOAD_SECRET         = string
+    })
+    secrets_kms = object({
+      POLAR_AWS_KMS_KEY_ID = string
+      AWS_ROLE_ARN         = string
+    })
+    worker_sqs = object({
+      POLAR_WORKER_SQS_ENABLED               = string
+      POLAR_WORKER_SQS_ACTORS                = string
+      POLAR_WORKER_SQS_QUEUE_PREFIX          = string
+      POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = optional(string)
+      POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = optional(string)
+    })
+    github = object({
+      POLAR_GITHUB_CLIENT_ID                           = string
+      POLAR_GITHUB_CLIENT_SECRET                       = string
+      POLAR_GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER  = string
+      POLAR_GITHUB_REPOSITORY_BENEFITS_APP_NAMESPACE   = string
+      POLAR_GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY = string
+      POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_ID       = string
+      POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET   = string
+    })
+    stripe = object({
+      POLAR_STRIPE_CONNECT_WEBHOOK_SECRET      = string
+      POLAR_STRIPE_SECRET_KEY                  = string
+      POLAR_STRIPE_WEBHOOK_SECRET              = string
+      POLAR_STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET = string
+      POLAR_STRIPE_APP_CLIENT_ID               = string
+      POLAR_STRIPE_APP_CLIENT_LINK_ID          = string
+    })
+    logfire = object({
+      POLAR_LOGFIRE_PROJECT_NAME = string
+      POLAR_LOGFIRE_TOKEN        = string
+    })
+    apple = object({
+      POLAR_APPLE_CLIENT_ID = string
+      POLAR_APPLE_TEAM_ID   = string
+      POLAR_APPLE_KEY_ID    = string
+      POLAR_APPLE_KEY_VALUE = string
+    })
+    prometheus = object({
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_URL      = string
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_USERNAME = string
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_PASSWORD = string
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL = string
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_URL      = optional(string)
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_USER     = optional(string)
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_KEY      = optional(string)
+    })
+    slo_report = object({
+      POLAR_SLACK_BOT_TOKEN = string
+      POLAR_SLACK_CHANNEL   = string
+    })
+    tinybird = object({
+      POLAR_TINYBIRD_API_URL             = string
+      POLAR_TINYBIRD_CLICKHOUSE_URL      = string
+      POLAR_TINYBIRD_API_TOKEN           = string
+      POLAR_TINYBIRD_READ_TOKEN          = string
+      POLAR_TINYBIRD_CLICKHOUSE_USERNAME = string
+      POLAR_TINYBIRD_CLICKHOUSE_TOKEN    = string
+      POLAR_TINYBIRD_WORKSPACE           = string
+    })
+    polar_self = object({
+      POLAR_POLAR_ACCESS_TOKEN     = string
+      POLAR_POLAR_WEBHOOK_SECRET   = string
+      POLAR_POLAR_ORGANIZATION_ID  = string
+      POLAR_POLAR_FREE_PRODUCT_ID  = string
+      POLAR_POLAR_API_URL          = string
+      POLAR_POLAR_SCALE_PRODUCT_ID = string
+    })
   })
   sensitive = true
 }
 
-variable "openai_secrets" {
-  description = "OpenAI secrets (sensitive)"
-  type = object({
-    api_key = string
-  })
-  sensitive = true
+variable "backend_jwks" {
+  description = "Backend JWKS written to Render secret files and cron-job temporary files."
+  type        = string
+  sensitive   = true
 }
 
-variable "pydantic_ai_gateway_secrets" {
-  description = "Pydantic AI Gateway secrets (sensitive)"
-  type = object({
-    api_key = string
-  })
-  sensitive = true
-}
-
-variable "backend_config" {
-  description = "Backend environment configuration (non-sensitive)"
-  type = object({
-    environment                          = optional(string, null) # Default to the environment variable
-    base_url                             = string                 # "https://api.polar.sh"
-    backoffice_host                      = optional(string, null) # "backoffice.polar.sh"
-    checkout_link_host                   = optional(string, null) # "buy.polar.sh"
-    user_session_cookie_domain           = string                 # "polar.sh"
-    user_session_cookie_key              = optional(string, "")
-    authentication_session_cookie_domain = string               # "polar.sh"
-    oauth2_session_state_cookie_domain   = string               # "polar.sh"
-    debug                                = string               # "0"
-    email_sender                         = string               # "resend"
-    email_from_name                      = string               # "Polar"
-    email_from_domain                    = string               # "notifications.polar.sh"
-    frontend_base_url                    = string               # "https://polar.sh"
-    checkout_base_url                    = string               # "https://buy.polar.sh/{client_secret}"
-    jwks_path                            = string               # "/etc/secrets/jwks.json"
-    log_level                            = string               # "INFO"
-    testing                              = string               # "0"
-    auth_cookie_domain                   = string               # "polar.sh"
-    auth_cookie_key                      = optional(string, "") # "polar.sh"
-    invoices_additional_info             = optional(string, "")
-    invoices_vat_numbers                 = optional(string, "{}") # JSON dict of country code -> VAT number
-    tax_processors                       = optional(string, "[\"stripe\"]")
-    tax_record_processor                 = optional(string, "stripe")
-    customer_portal_url_overrides        = optional(string, "{}")
-    plain_default_tier_external_id       = optional(string, "")
-  })
-}
-
-variable "backend_secrets" {
-  description = "Backend secrets (sensitive)"
-  type = object({
-    stripe_publishable_key         = string
-    current_jwk_kid                = string
-    discord_bot_token              = string
-    discord_client_id              = string
-    discord_client_secret          = string
-    discord_proxy_url              = optional(string, "")
-    discord_webhook_url            = optional(string, "")
-    posthog_project_api_key        = optional(string, "")
-    resend_api_key                 = string
-    resend_webhook_secret          = optional(string, "")
-    logo_dev_publishable_key       = optional(string, "")
-    secret                         = string
-    sentry_dsn                     = string
-    plain_request_signing_secret   = optional(string, "")
-    plain_token                    = optional(string, "")
-    plain_chat_secret              = optional(string, "")
-    jwks                           = string
-    app_review_email               = optional(string, "")
-    app_review_otp_code            = optional(string, "")
-    chargeback_stop_webhook_secret = optional(string, "")
-    numeral_api_key                = optional(string, "")
-    firecrawl_api_key              = optional(string, "")
-    turnstile_secret               = string
-  })
-  sensitive = true
-}
-
-variable "aws_s3_config" {
-  description = "AWS S3 environment configuration (non-sensitive)"
-  type = object({
-    region                        = string # "us-east-2"
-    signature_version             = string # "v4"
-    files_presign_ttl             = string # "600"
-    files_public_bucket_name      = string # "polar-public-files"
-    customer_invoices_bucket_name = string # "polar-customer-invoices"
-    customer_receipts_bucket_name = string # "polar-customer-receipts"
-    payout_invoices_bucket_name   = string # "polar-payout-invoices"
-    logs_bucket_name              = string # "polar-logs"
-  })
-}
-
-variable "aws_s3_secrets" {
-  description = "AWS S3 secrets (sensitive)"
-  type = object({
-    access_key_id         = string
-    secret_access_key     = string
-    files_download_salt   = string
-    files_download_secret = string
-  })
-  sensitive = true
-}
-
-variable "aws_kms_config" {
-  description = "Secrets-encryption KMS key ARN and the OIDC role the backend assumes to use it (both in the workload account)."
-  type = object({
-    key_id   = string # full key ARN -> POLAR_AWS_KMS_KEY_ID
-    role_arn = string # OIDC role -> AWS_ROLE_ARN
-  })
-}
-
-variable "worker_sqs_config" {
-  description = "Worker SQS execution engine config (optional). null skips the env group. Omit the static credentials to send via the Render OIDC role instead."
-  type = object({
-    enabled               = string
-    actors                = string
-    queue_prefix          = string
-    aws_access_key_id     = optional(string)
-    aws_secret_access_key = optional(string)
-  })
-  default   = null
-  sensitive = true
-}
-
-variable "github_secrets" {
-  description = "GitHub secrets (sensitive)"
-  type = object({
-    client_id                           = string
-    client_secret                       = string
-    repository_benefits_app_identifier  = string
-    repository_benefits_app_namespace   = string
-    repository_benefits_app_private_key = string
-    repository_benefits_client_id       = string
-    repository_benefits_client_secret   = string
-  })
-  sensitive = true
-}
-
-variable "stripe_secrets" {
-  description = "Stripe secrets (sensitive)"
-  type = object({
-    connect_webhook_secret      = string
-    secret_key                  = string
-    webhook_secret              = string
-    account_risk_webhook_secret = optional(string, "")
-    app_client_id               = optional(string, "")
-    app_client_link_id          = optional(string, "")
-  })
-  sensitive = true
-}
-
-variable "logfire_config" {
-  description = "Logfire configuration (optional)"
-  type = object({
-    project_name = optional(string, "polar")
-    token        = string
-  })
-  default   = null
-  sensitive = true
-}
-variable "apple_secrets" {
-  description = "Apple secrets (sensitive)"
-  type = object({
-    client_id = string
-    team_id   = string
-    key_id    = string
-    key_value = string
-  })
-  sensitive = true
-}
-
-variable "prometheus_config" {
-  description = "Grafana Cloud Prometheus configuration (url is the base, e.g. https://prometheus-prod-XX.grafana.net)"
-  type = object({
-    url       = string
-    username  = string
-    password  = string
-    interval  = optional(number, 60)
-    query_key = optional(string)
-  })
-  sensitive = true
-}
-
-variable "slo_report_config" {
-  description = "SLO report Slack configuration (optional)"
-  type = object({
-    slack_bot_token = string
-    slack_channel   = string
-  })
-  default   = null
-  sensitive = true
+variable "email_from_domain" {
+  description = "Sender domain used for Resend DNS records."
+  type        = string
 }
 
 variable "memory_profile_config" {
@@ -294,20 +252,6 @@ variable "memory_profile_config" {
     interval       = optional(number, 300)
   })
   default = null
-}
-
-variable "polar_self_config" {
-  description = "Polar self-billing integration"
-  type = object({
-    access_token     = string
-    webhook_secret   = string
-    organization_id  = string
-    free_product_id  = string
-    scale_product_id = string
-    api_url          = string
-  })
-  default   = null
-  sensitive = true
 }
 
 variable "cron_jobs" {
@@ -323,25 +267,10 @@ variable "cron_jobs" {
 }
 
 variable "resend_domain" {
-  description = "Resend domain DNS records (DKIM + SPF). Record names are derived from backend_config.email_from_domain."
+  description = "Resend domain DNS records (DKIM + SPF)."
   type = object({
     zone_id         = string
     dkim_public_key = string
     spf_policy      = string
   })
-}
-
-variable "tinybird_config" {
-  description = "Tinybird configuration (optional)"
-  type = object({
-    api_url             = string
-    clickhouse_url      = string
-    api_token           = string
-    read_token          = string
-    clickhouse_username = string
-    clickhouse_token    = string
-    workspace           = string
-  })
-  default   = null
-  sensitive = true
 }

@@ -60,28 +60,25 @@ locals {
   files_bucket_name        = "polar-production-files"
   files_public_bucket_name = "polar-public-files"
 
-  lambda_worker_queue_prefix = "polar-production-tasks"
+  worker_sqs_queue_prefix = "polar-production-tasks"
 
   lambda_worker_environment = merge(
-    module.production.worker_env_vars,
+    module.backend_environment.environment_variables,
     {
-      POLAR_JWKS                    = "/tmp/jwks.json"
-      POLAR_POSTGRES_DATABASE       = "polar_cpit_p9lf"
-      POLAR_POSTGRES_HOST           = module.pgbouncer_aws.host
-      POLAR_POSTGRES_PORT           = module.pgbouncer_aws.port
-      POLAR_POSTGRES_USER           = local.db_user
-      POLAR_POSTGRES_SSL            = "false"
-      POLAR_REDIS_HOST              = module.redis.host
-      POLAR_REDIS_PORT              = tostring(module.redis.port)
-      POLAR_REDIS_DB                = "1"
-      POLAR_WORKER_SQS_ENABLED      = "true"
-      POLAR_WORKER_SQS_ACTORS       = var.worker_sqs_actors
-      POLAR_WORKER_SQS_QUEUE_PREFIX = local.lambda_worker_queue_prefix
+      POLAR_JWKS              = "/tmp/jwks.json"
+      POLAR_POSTGRES_DATABASE = "polar_cpit_p9lf"
+      POLAR_POSTGRES_HOST     = module.pgbouncer_aws.host
+      POLAR_POSTGRES_PORT     = module.pgbouncer_aws.port
+      POLAR_POSTGRES_USER     = local.db_user
+      POLAR_POSTGRES_SSL      = "false"
+      POLAR_REDIS_HOST        = module.redis.host
+      POLAR_REDIS_PORT        = tostring(module.redis.port)
+      POLAR_REDIS_DB          = "1"
     },
   )
 
   lambda_worker_secrets = merge(
-    module.production.worker_secret_env_vars,
+    module.backend_environment.secret_environment_variables,
     {
       POLAR_JWKS_CONTENT = var.backend_jwks_production
       POLAR_POSTGRES_PWD = local.db_password
@@ -122,8 +119,8 @@ module "lambda_worker" {
 
   environment              = "production"
   name                     = local.lambda_worker_name
-  queue_name               = "${local.lambda_worker_queue_prefix}-${local.lambda_worker_name}"
-  queue_prefix             = local.lambda_worker_queue_prefix
+  queue_name               = "${local.worker_sqs_queue_prefix}-${local.lambda_worker_name}"
+  queue_prefix             = local.worker_sqs_queue_prefix
   image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled                  = true
   reserved_concurrency     = local.lambda_worker_reserved_concurrency
@@ -144,8 +141,8 @@ module "lambda_worker_queue" {
 
   environment              = "production"
   name                     = each.key
-  queue_name               = "${local.lambda_worker_queue_prefix}-${each.key}"
-  queue_prefix             = local.lambda_worker_queue_prefix
+  queue_name               = "${local.worker_sqs_queue_prefix}-${each.key}"
+  queue_prefix             = local.worker_sqs_queue_prefix
   image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled                  = true
   timeout_seconds          = each.value.timeout_seconds

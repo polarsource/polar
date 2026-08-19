@@ -6,7 +6,6 @@ import {
   useOrganizationPaymentMethods,
   useSetDefaultOrganizationPaymentMethod,
   type OrganizationPaymentMethod,
-  type OrganizationPaymentMethodCard,
 } from '@/hooks/queries/billing'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Text } from '@polar-sh/orbit'
@@ -14,14 +13,12 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/orbit'
 import { X } from 'lucide-react'
-import { PaymentMethodDisplay } from '../../PaymentMethodDisplay'
+import {
+  PaymentMethodDisplay,
+  getPaymentMethodCardInfo,
+} from '../../PaymentMethodDisplay'
 import { LoadingBox } from '../../Shared/LoadingBox'
 import { SectionDescription } from '../Section'
-
-const isCardPaymentMethod = (
-  paymentMethod: OrganizationPaymentMethod,
-): paymentMethod is OrganizationPaymentMethodCard =>
-  paymentMethod.type === 'card'
 
 const PaymentMethodRow = ({
   organizationId,
@@ -80,11 +77,7 @@ const PaymentMethodRow = ({
     <Box alignItems="center" justifyContent="between" columnGap="m">
       <PaymentMethodDisplay
         type={paymentMethod.type}
-        card={
-          isCardPaymentMethod(paymentMethod)
-            ? paymentMethod.method_metadata
-            : null
-        }
+        card={getPaymentMethodCardInfo(paymentMethod)}
       />
       <Box alignItems="center" columnGap="m">
         {paymentMethod.default ? (

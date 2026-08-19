@@ -314,6 +314,59 @@ class TestCreateFeesReversalBalances:
         )
         assert reversal_incoming.incurred_by_transaction == outgoing
 
+    @pytest.mark.parametrize("payment_method_type", ["kr_card"])
+    async def test_international_card_payment_method(
+        self,
+        payment_method_type: str,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account_processor_fees: Account,
+        transaction_order_subscription: Order,
+    ) -> None:
+        stripe_service_mock = MagicMock(spec=StripeService)
+        mocker.patch(
+            "polar.transaction.service.platform_fee.stripe_service",
+            new=stripe_service_mock,
+        )
+        stripe_service_mock.get_charge.return_value = stripe_lib.Charge.construct_from(
+            {
+                "id": "STRIPE_CHARGE_ID",
+                "payment_method_details": {
+                    "type": payment_method_type,
+                    payment_method_type: {},
+                },
+            },
+            None,
+        )
+
+        balance_transactions = await create_balance_transactions(
+            save_fixture,
+            account=account_processor_fees,
+            order=transaction_order_subscription,
+            payment_charge_id="STRIPE_CHARGE_ID",
+        )
+
+        balance_transactions = await load_balance_transactions(
+            session, balance_transactions
+        )
+
+        fees_reversal_balances = (
+            await platform_fee_transaction_service.create_fees_reversal_balances(
+                session, balance_transactions=balance_transactions
+            )
+        )
+
+        assert len(fees_reversal_balances) == 2
+
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
+        assert (
+            reversal_outgoing.platform_fee_type == PlatformFeeType.international_payment
+        )
+        assert (
+            reversal_incoming.platform_fee_type == PlatformFeeType.international_payment
+        )
+
     async def test_link_payment(
         self,
         mocker: MockerFixture,

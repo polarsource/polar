@@ -49,6 +49,7 @@ interface Props {
   setAsDefault: boolean
   locale?: AcceptedLocale
   customerBillingDetails: CustomerBillingDetails
+  setupCurrency: string
   onProcessingStart?: () => void
   onProcessingError?: () => void
   onPaymentMethodAdded?: (
@@ -78,6 +79,7 @@ export const PaymentMethodForm = ({
   setAsDefault,
   locale = DEFAULT_LOCALE,
   customerBillingDetails,
+  setupCurrency,
   onProcessingStart,
   onProcessingError,
   onPaymentMethodAdded,
@@ -260,7 +262,7 @@ export const PaymentMethodForm = ({
         mode: 'setup',
         paymentMethodCreation: 'manual',
         setupFutureUsage: 'off_session',
-        currency: 'usd',
+        currency: setupCurrency,
         appearance: themePreset.stripe,
       }}
     >

@@ -53,6 +53,26 @@ class TestUpsertFromStripe:
         assert payment_method.method_metadata == {"brand": "visa", "last4": "4242"}
         assert payment_method.customer == customer
 
+    async def test_create_new_kr_card_payment_method(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        stripe_payment_method = build_stripe_payment_method(
+            type="kr_card",
+            details={"brand": "kookmin", "last4": "1234"},
+        )
+
+        payment_method = await payment_method_service.upsert_from_stripe(
+            session, customer, stripe_payment_method
+        )
+
+        assert payment_method.processor == PaymentProcessor.stripe
+        assert payment_method.processor_id == stripe_payment_method.id
+        assert payment_method.type == "kr_card"
+        assert payment_method.method_metadata == {"brand": "kookmin", "last4": "1234"}
+        assert payment_method.customer == customer
+
     async def test_update_existing_payment_method(
         self,
         session: AsyncSession,

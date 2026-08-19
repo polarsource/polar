@@ -23,6 +23,9 @@ from .base import BaseTransactionService, BaseTransactionServiceError
 log: Logger = structlog.get_logger()
 
 
+INTERNATIONAL_CARD_PAYMENT_METHOD_TYPES: frozenset[str] = frozenset({"kr_card"})
+
+
 class PlatformFeeTransactionError(BaseTransactionServiceError): ...
 
 
@@ -288,10 +291,13 @@ class PlatformFeeTransactionService(BaseTransactionService):
         self, payment_transaction: Transaction
     ) -> bool:
         """
-        Check if the payment transaction is an international payment.
+        Check if the payment transaction is an international payment, i.e.
+        paid with a card issued outside the US.
 
-        Currently, we only check if the payment was made using Stripe
-        and the card is not from the US.
+        For Stripe card and Link payments, we check the card's country. Card
+        methods that only exist outside the US, like South Korean cards, are
+        always international. Non-card methods are never international: the
+        fee only applies to cards.
         """
         if payment_transaction.processor != Processor.stripe:
             return False
@@ -316,7 +322,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
         ):
             return payment_method_details.link.country != "US"
 
-        return False
+        return payment_method_details.type in INTERNATIONAL_CARD_PAYMENT_METHOD_TYPES
 
     async def _get_last_payout(
         self, session: AsyncSession, account: Account

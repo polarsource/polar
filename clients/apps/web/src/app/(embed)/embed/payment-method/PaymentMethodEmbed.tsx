@@ -28,6 +28,7 @@ interface Props {
   locale?: AcceptedLocale
   serverURL: string
   customerBillingDetails: CustomerBillingDetails
+  setupCurrency: string
   redirectStatus?: string
   setupIntentId?: string
 }
@@ -42,6 +43,7 @@ export const PaymentMethodEmbed = ({
   locale = DEFAULT_LOCALE,
   serverURL,
   customerBillingDetails,
+  setupCurrency,
   redirectStatus,
   setupIntentId,
 }: Props) => {
@@ -128,6 +130,7 @@ export const PaymentMethodEmbed = ({
       setAsDefault={setAsDefault}
       locale={locale}
       customerBillingDetails={customerBillingDetails}
+      setupCurrency={setupCurrency}
       onProcessingStart={handleProcessingStart}
       onPaymentMethodAdded={handleSuccess}
       onProcessingError={handleProcessingError}

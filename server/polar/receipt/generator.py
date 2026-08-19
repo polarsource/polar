@@ -42,10 +42,10 @@ class ReceiptPayment(BaseModel):
         """Format the payment method as 'Visa — 4242' style."""
         brand = self.method_metadata.get("brand")
         last4 = self.method_metadata.get("last4")
-        if self.method == "card" and brand and last4:
+        if self.method in ("card", "kr_card") and brand and last4:
             return f"{brand.title()} — {last4}"
         if last4:
-            return f"{self.method.title()} — {last4}"
+            return f"{self.method.replace('_', ' ').title()} — {last4}"
         return self.method.replace("_", " ").title()
 
 

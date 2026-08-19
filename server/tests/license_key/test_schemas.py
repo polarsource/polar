@@ -11,6 +11,8 @@ from polar.benefit.strategies.license_keys.schemas import (
 )
 from polar.license_key.schemas import LicenseKeyCreate
 
+INT32_MAX = 2147483647
+
 
 class TestLicenseKeyPrefixValidation:
     """Test that empty string prefixes are correctly converted to None."""
@@ -44,6 +46,41 @@ class TestLicenseKeyPrefixValidation:
         """Test that prefix with leading/trailing whitespace is stripped but preserved."""
         properties = BenefitLicenseKeysCreateProperties(prefix="  MYAPP  ")
         assert properties.prefix == "MYAPP"
+
+
+class TestBenefitLicenseKeysLimitUsageValidation:
+    def test_valid_limit_usage(self) -> None:
+        properties = BenefitLicenseKeysCreateProperties(limit_usage=100)
+        assert properties.limit_usage == 100
+
+    def test_int32_max_limit_usage_valid(self) -> None:
+        properties = BenefitLicenseKeysCreateProperties(limit_usage=INT32_MAX)
+        assert properties.limit_usage == INT32_MAX
+
+    def test_int32_max_plus_one_limit_usage_invalid(self) -> None:
+        with pytest.raises(ValidationError):
+            BenefitLicenseKeysCreateProperties(limit_usage=INT32_MAX + 1)
+
+    def test_large_limit_usage_invalid(self) -> None:
+        # Value from the bug report: accepted pre-fix, broke grant post-purchase.
+        with pytest.raises(ValidationError):
+            BenefitLicenseKeysCreateProperties(limit_usage=3_000_000_000)
+
+    def test_zero_limit_usage_invalid(self) -> None:
+        with pytest.raises(ValidationError):
+            BenefitLicenseKeysCreateProperties(limit_usage=0)
+
+    def test_negative_limit_usage_invalid(self) -> None:
+        with pytest.raises(ValidationError):
+            BenefitLicenseKeysCreateProperties(limit_usage=-1)
+
+    def test_none_limit_usage_valid(self) -> None:
+        properties = BenefitLicenseKeysCreateProperties(limit_usage=None)
+        assert properties.limit_usage is None
+
+    def test_default_limit_usage_is_none(self) -> None:
+        properties = BenefitLicenseKeysCreateProperties()
+        assert properties.limit_usage is None
 
 
 class TestBenefitLicenseKeyExpirationPropertiesValidation:

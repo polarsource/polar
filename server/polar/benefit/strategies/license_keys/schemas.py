@@ -48,7 +48,7 @@ class BenefitLicenseKeysCreateProperties(Schema):
     prefix: EmptyStrToNone | None = None
     expires: BenefitLicenseKeyExpirationProperties | None = None
     activations: BenefitLicenseKeyActivationCreateProperties | None = None
-    limit_usage: int | None = Field(gt=0, default=None)
+    limit_usage: Int32 | None = Field(gt=0, default=None)
 
 
 class BenefitLicenseKeysProperties(Schema):

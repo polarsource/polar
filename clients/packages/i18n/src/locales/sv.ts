@@ -174,6 +174,14 @@ export default {
         activationDeleted: 'Licensnyckelaktivering borttagen',
         activationDeletedDescription: 'Aktivering borttagen',
         activationDeactivationFailed: 'Avaktivering misslyckades',
+        rotate: 'Rotera',
+        rotateConfirmTitle: 'Rotera den här licensnyckeln?',
+        rotateConfirmDescription:
+          'En ny nyckel kommer att genereras för den här kunden. Den tidigare nyckeln slutar att valideras direkt. Dela den nya nyckeln med din kund, eller låt dem kopiera den från kundportalen.',
+        rotateSuccessTitle: 'Licensnyckeln har roterats',
+        rotateSuccessDescription:
+          'Den tidigare nyckeln valideras inte längre. Kopiera den nya nyckeln nedan och dela den med din kund.',
+        rotateFailedTitle: 'Rotering av licensnyckel misslyckades',
       },
       slackSharedChannel: {
         connected: 'Ansluten till din Slack-arbetsyta.',

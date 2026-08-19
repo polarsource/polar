@@ -498,7 +498,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             unit_price = self._get_unit_price(product)
             if unit_price is None:
                 return False
-            minimum_units = unit_price.get_purchase_floor()
+            minimum_units = unit_price.get_minimum_purchasable_units()
             maximum_units = unit_price.get_maximum_units()
             if units < minimum_units or (
                 maximum_units is not None and units > maximum_units
@@ -526,7 +526,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                         }
                     ]
                 )
-            minimum_units = unit_price.get_purchase_floor()
+            minimum_units = unit_price.get_minimum_purchasable_units()
             maximum_units = unit_price.get_maximum_units()
             if units < minimum_units or (
                 maximum_units is not None and units > maximum_units

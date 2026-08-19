@@ -658,7 +658,7 @@ class SubscriptionService:
         units: int | None = None
         unit_price = currency_prices.get_unit_price()
         if unit_price is not None:
-            units = unit_price.get_purchase_floor()
+            units = unit_price.get_minimum_purchasable_units()
 
         subscription_product_prices: list[SubscriptionProductPrice] = []
         for price in currency_prices:
@@ -1709,7 +1709,7 @@ class SubscriptionService:
         if unit_price is None:
             raise NotAUnitBasedSubscription(subscription)
 
-        minimum_units = unit_price.get_purchase_floor()
+        minimum_units = unit_price.get_minimum_purchasable_units()
         if units < minimum_units:
             raise BelowMinimumUnits(subscription, minimum_units, units)
 

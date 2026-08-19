@@ -526,7 +526,7 @@ class CheckoutService:
                 checkout_create.units = (
                     min_units
                     if min_units is not None
-                    else unit_price.get_purchase_floor()
+                    else unit_price.get_minimum_purchasable_units()
                 )
             self._validate_unit_limits(
                 unit_price,
@@ -837,12 +837,12 @@ class CheckoutService:
         min_units: int | None = None
         max_units: int | None = None
         if unit_price is not None:
-            units = unit_price.get_purchase_floor()
+            units = unit_price.get_minimum_purchasable_units()
             # Honor a unit lock preconfigured on the checkout link, but only if it
             # still fits the product's current bounds. On drift, fall back to the
             # minimum so the customer is never blocked.
             if checkout_link.units is not None:
-                price_minimum = unit_price.get_purchase_floor()
+                price_minimum = unit_price.get_minimum_purchasable_units()
                 price_maximum = unit_price.get_maximum_units()
                 if checkout_link.units >= price_minimum and (
                     price_maximum is None or checkout_link.units <= price_maximum
@@ -2464,7 +2464,7 @@ class CheckoutService:
         unit_price = price_set.get_unit_price()
         units: int | None = None
         if unit_price is not None:
-            units = checkout_update.units or unit_price.get_purchase_floor()
+            units = checkout_update.units or unit_price.get_minimum_purchasable_units()
             self._validate_unit_limits(unit_price, units)
             checkout.units = units
         checkout.amount = calculate_upfront_amount(
@@ -2784,7 +2784,7 @@ class CheckoutService:
         if price is None:
             return
 
-        minimum_units = price.get_purchase_floor()
+        minimum_units = price.get_minimum_purchasable_units()
         maximum_units = price.get_maximum_units()
 
         # Narrow the effective range with checkout-level constraints
@@ -2854,7 +2854,7 @@ class CheckoutService:
                 )
             raise PolarRequestValidationError(fields)
 
-        price_minimum = price.get_purchase_floor()
+        price_minimum = price.get_minimum_purchasable_units()
         price_maximum = price.get_maximum_units()
 
         if min_units is not None and min_units < price_minimum:

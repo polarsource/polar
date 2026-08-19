@@ -53,111 +53,25 @@ which then pollute revenue metrics and confuse the customer.
 
 ---
 
-# How the codebase already models benefits
+# Framing: what "scope" means today
 
-This section is the background the rest of the document depends on. If you already know the
-benefit system well, skip to [The change](#the-change).
+One existing concept decides the shape of this whole feature, so it's worth naming precisely.
 
-## The entities
+A `BenefitGrant` never exists on its own — it exists *because* of something, and that something is
+its **scope**. Until now there were two: `Subscription` and `Order`. Scope is a SQLAlchemy
+composite over the nullable owner foreign keys, with a wire form (`BenefitGrantScopeArgs`,
+`{"subscription_id": UUID}`, what survives a Dramatiq payload) and a resolved form
+(`BenefitGrantScope`, `{"subscription": Subscription}`, what service code uses).
 
-**`Benefit`** — the *definition* of something a customer can get: a Discord role, a license key
-configuration, a downloadable file, a feature flag. It belongs to an organization and carries a
-`type` plus type-specific configuration. A benefit on its own does nothing; it is a template.
-
-**`BenefitGrant`** — the *fact* that a specific customer currently has (or had) a specific
-benefit. This is where the state lives:
-
-```python
-class BenefitGrant(RecordModel):
-    customer_id: UUID              # who
-    benefit_id: UUID               # what
-    member_id: UUID | None         # which seat, for seat-based products
-    subscription_id: UUID | None   # ─┐
-    order_id: UUID | None          # ─┴─ who owns this grant (the "scope")
-    granted_at: datetime | None
-    revoked_at: datetime | None
-    properties: JSONB              # per-grant state produced by the strategy
-    error: JSONB | None            # last failure, if any
-```
-
-`properties` is important and easy to overlook: it's where a grant stores whatever the external
-system handed back. For a license key benefit it holds the `license_key_id`; for Discord it holds
-the account id and role. It means a grant isn't just a boolean — it owns real state.
-
-**`Customer`** — the buyer, scoped to one organization. **`Member`** — a seat within a customer,
-used when a product has seat-based pricing. A grant targets a customer and, where seats are in
-play, a specific member.
-
-**Benefit strategies** — one class per benefit type (`polar/benefit/strategies/*/service.py`),
-each implementing `grant`, `revoke`, and `cycle`. This is where the actual side effect happens:
-calling Discord, minting a license key, flipping a feature flag. The grant service never knows
-what a benefit type does; it just calls the strategy and stores whatever `properties` come back.
-
-One strategy flag matters a lot later: **`should_revoke_individually`**. Most benefits are
-customer-level, so if a customer holds two grants for the same benefit from two different
-purchases, revoking one must *not* run the revoke side effect — the customer still has access via
-the other. License keys set this flag to `True` because each grant owns its own key.
-
-## Scope: the concept the whole feature hangs on
-
-A `BenefitGrant` doesn't exist on its own. It exists *because* of something, and that something is
-called the **scope**. Before this change there were exactly two:
-
-```
-Subscription ──┐
-               ├──> BenefitGrant
-Order ─────────┘
-```
-
-Scope is modelled as a SQLAlchemy composite over the nullable foreign keys:
-
-```python
-scope: Mapped[BenefitGrantScopeArgs] = composite(
-    "subscription_id", "order_id", comparator_factory=BenefitGrantScopeComparator
-)
-```
-
-with two paired types that show up everywhere in the benefit code:
-
-- **`BenefitGrantScopeArgs`** — the *wire* form: `{"subscription_id": UUID}`. This is what gets
-  passed through Dramatiq job payloads, because you can't put an ORM object in a message queue.
-- **`BenefitGrantScope`** — the *resolved* form: `{"subscription": Subscription}`. This is what
-  service code works with.
-
-`resolve_scope()` and `scope_to_args()` in `polar/benefit/grant/scope.py` convert between them.
-The custom comparator lets you write `BenefitGrant.scope == {"subscription": sub}` and get the
-right SQL.
-
-Scope carries three distinct responsibilities, and they're worth separating because the new
-feature has to satisfy all three:
+The useful thing is that scope carries three separable responsibilities:
 
 | Responsibility | How scope provides it |
 | --- | --- |
-| **Identity** | The unique index is `(customer_id, benefit_id, member_id, subscription_id, order_id)` with `NULLS NOT DISTINCT`. Two purchases of the same benefit are two rows *because* their scope differs. |
-| **Lifecycle** | Subscription ends → its grants are revoked. Subscription renews → its grants cycle. The owner drives the state changes. |
+| **Identity** | The unique index includes the owner columns under `NULLS NOT DISTINCT`. Two purchases of the same benefit are two rows *because* their scope differs. |
+| **Lifecycle** | Subscription ends → its grants revoke. Subscription renews → its grants cycle. The owner drives state changes. |
 | **Provenance** | "Why does this customer have this?" is answered by walking to the owner. |
 
-## How a grant actually happens
-
-Nothing grants a benefit synchronously. The flow is always:
-
-```
-something happens (checkout, renewal, cancellation)
-        │
-        ▼
-enqueue_job("benefit.grant", customer_id=…, benefit_id=…, **scope_args)
-        │
-        ▼
-benefit.grant actor  ──> resolve_scope() ──> benefit_grant_service.grant_benefit()
-        │
-        ▼
-strategy.grant()  ──>  grant.properties = …  ──>  grant.set_granted()
-        │
-        ▼
-webhook + system event + eventstream publish
-```
-
-The actors in `polar/benefit/tasks.py` are declared as:
+And one detail of the plumbing matters more than it looks:
 
 ```python
 @actor(actor_name="benefit.grant")
@@ -169,15 +83,8 @@ async def benefit_grant(
 ) -> None: ...
 ```
 
-Note the `**scope`. The task signature is *generic over the scope type*. This turns out to be the
-single most consequential fact for this design.
-
-## Repository / service split
-
-Per `server/AGENTS.md`: repositories hold queries, services hold business logic, endpoints return
-ORM models. `BenefitGrantRepository` owns the SQL (`get_by_benefit_and_scope`,
-`list_granted_by_scope`, …); `BenefitGrantService` owns grant/revoke/cycle orchestration. Grants
-use `lazy="raise"` relationships, so every read has to declare its eager loads explicitly.
+The task layer is already generic over the owner type. Everything below follows from these two
+facts.
 
 ---
 

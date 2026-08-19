@@ -51,45 +51,6 @@ All of these are the same shape: *this customer should have this benefit, becaus
 until this date*. That shape has no home in the data model, so it gets faked with billing objects,
 which then pollute revenue metrics and confuse the customer.
 
----
-
-# Framing: what "scope" means today
-
-One existing concept decides the shape of this whole feature, so it's worth naming precisely.
-
-A `BenefitGrant` never exists on its own — it exists *because* of something, and that something is
-its **scope**. Until now there were two: `Subscription` and `Order`. Scope is a SQLAlchemy
-composite over the nullable owner foreign keys, with a wire form (`BenefitGrantScopeArgs`,
-`{"subscription_id": UUID}`, what survives a Dramatiq payload) and a resolved form
-(`BenefitGrantScope`, `{"subscription": Subscription}`, what service code uses).
-
-The useful thing is that scope carries three separable responsibilities:
-
-| Responsibility | How scope provides it |
-| --- | --- |
-| **Identity** | The unique index includes the owner columns under `NULLS NOT DISTINCT`. Two purchases of the same benefit are two rows *because* their scope differs. |
-| **Lifecycle** | Subscription ends → its grants revoke. Subscription renews → its grants cycle. The owner drives state changes. |
-| **Provenance** | "Why does this customer have this?" is answered by walking to the owner. |
-
-And one detail of the plumbing matters more than it looks:
-
-```python
-@actor(actor_name="benefit.grant")
-async def benefit_grant(
-    customer_id: uuid.UUID,
-    benefit_id: uuid.UUID,
-    member_id: uuid.UUID | None = None,
-    **scope: Unpack[BenefitGrantScopeArgs],
-) -> None: ...
-```
-
-The task layer is already generic over the owner type. Everything below follows from these two
-facts.
-
----
-
-# The change
-
 ## `ManualGrant` becomes the third scope
 
 ```
@@ -111,13 +72,15 @@ three; `BenefitGrantScope` / `BenefitGrantScopeArgs` each gain one key.
 
 ### Why this is the right shape
 
-**Because the three responsibilities of scope are exactly the three things a manual grant needs.**
-It needs its own identity (so a manual grant and a subscription grant for the same benefit are
-different rows), its own lifecycle (expiry, independent revocation), and it *is* provenance (the
-reason lives on it). Anything that owns benefit grants has to answer all three questions. That's
-what being a scope means, so a manual grant is a scope.
+**Because a manual grant needs everything a scope provides.** Scope answers three questions —
+identity (the owner columns are in the unique index, so two purchases of the same benefit are two
+rows), lifecycle (the owner drives revoke and cycle), and provenance. A manual grant needs its own
+identity so it can coexist with a subscription grant for the same benefit, its own lifecycle for
+expiry and independent revocation, and it *is* provenance: the reason lives on it. Needing all
+three is what being a scope means.
 
-**Because the plumbing already generalises.** Since the actors take `**scope`, enqueuing
+**Because the plumbing already generalises.** The actors take
+`**scope: Unpack[BenefitGrantScopeArgs]`, so enqueuing
 `benefit.grant(customer_id=…, benefit_id=…, manual_grant_id=…)` works with **no change to the task
 signatures at all**. `resolve_scope` learns one more branch; `grant_benefit` and `revoke_benefit`
 are untouched in their core logic. The webhook payloads, the system events, the eventstream

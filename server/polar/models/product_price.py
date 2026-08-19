@@ -452,18 +452,16 @@ class ProductPriceUnit(TieredPrice, NewProductPrice, ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.unit_based]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.unit_based
     )
-    unit_label: Mapped[str | None] = mapped_column(
-        String(32), nullable=True, default=None
-    )
-    unit_label_plural: Mapped[str | None] = mapped_column(
-        String(32), nullable=True, default=None
+    unit_label: Mapped[dict[str, dict[str, str]] | None] = mapped_column(
+        postgresql.JSONB(none_as_null=True), nullable=True, default=None
     )
 
     def get_unit_noun(self, count: int) -> str:
-        """Merchant-defined noun for this quantity, or the default unit/units."""
-        singular = (self.unit_label or "").strip() or "unit"
-        plural = (self.unit_label_plural or "").strip() or f"{singular}s"
-        return singular if count == 1 else plural
+        forms = (self.unit_label or {}).get("en") or {}
+        noun = forms.get(f"={count}") or forms.get("other")
+        if noun:
+            return noun
+        return "unit" if count == 1 else "units"
 
     def calculate_amount(self, units: int) -> int:
         amount = self.get_tiered_amount(units)

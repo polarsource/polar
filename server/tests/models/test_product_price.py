@@ -12,7 +12,6 @@ from polar.models.product_price import (
     TieredPrice,
 )
 from polar.product.tiers import (
-    InvalidQuantityError,
     SeatTierType,
     Tiers,
     TierType,
@@ -238,7 +237,7 @@ class TestGraduatedPricing:
         assert price.calculate_amount(15) == 10 * 1000
 
     def test_first_tier_min_seats_above_one(self) -> None:
-        # Regression for T-28449: a merchant enforcing a 10-seat minimum sets the
+        # A merchant enforcing a 10-seat minimum sets the
         # first tier's min_seats to 10. The first 10 seats should all be priced at
         # the first tier's rate ($200/seat = $2000), then cheaper after.
         # Reproduces the exact sandbox config of product 231d03ca.
@@ -278,54 +277,9 @@ SHARED_MULTI_TIER: list[dict[str, Any]] = [
 ]
 
 
-class TestGetTieredAmountVolume:
-    def test_fractional_rate(self) -> None:
-        price = _make_tiered_price(
-            _tiers_data(
-                TierType.volume,
-                [{"bound": None, "unit_amount": "0.5"}],
-            )
-        )
-        assert price.get_tiered_amount(10) == Decimal("5")
-
-    def test_below_minimum_units_still_prices(self) -> None:
-        # The minimum is a purchase-layer constraint; the engine prices from 0.
-        price = _make_tiered_price(
-            _tiers_data(
-                TierType.volume,
-                [
-                    {"bound": 10, "unit_amount": "20000"},
-                    {"bound": None, "unit_amount": "6000"},
-                ],
-            ),
-            minimum_units=10,
-        )
-        assert price.get_tiered_amount(5) == 5 * 20000
-
-    def test_past_bounded_last_tier_raises(self) -> None:
-        price = _make_tiered_price(
-            _tiers_data(
-                TierType.volume,
-                [{"bound": 10, "unit_amount": "500"}],
-            )
-        )
-        with pytest.raises(InvalidQuantityError):
-            price.get_tiered_amount(11)
-
-
-class TestGetTieredAmountGraduated:
-    def test_past_bounded_last_tier_bills_covered_units(self) -> None:
-        price = _make_tiered_price(
-            _tiers_data(
-                TierType.graduated,
-                [{"bound": 10, "unit_amount": "500"}],
-            )
-        )
-        assert price.get_tiered_amount(15) == 10 * 500
-
-    def test_minimum_units_does_not_shift_billing(self) -> None:
-        # T-28449: the minimum is a purchase floor, not a billing start — the
-        # first tier still bills from unit one.
+class TestGetTieredAmount:
+    def test_ignores_minimum_units(self) -> None:
+        # Purchase floors live on the price; billing is a pass-through to the engine.
         price = _make_tiered_price(
             _tiers_data(
                 TierType.graduated,
@@ -336,23 +290,7 @@ class TestGetTieredAmountGraduated:
             ),
             minimum_units=10,
         )
-        assert price.get_tiered_amount(10) == 10 * 20000
-        assert price.get_tiered_amount(15) == 10 * 20000 + 5 * 6000
-        # Below the floor still bills at the first tier's rate.
-        assert price.get_tiered_amount(5) == 5 * 20000
-
-
-class TestGetTieredAmountContract:
-    @pytest.mark.parametrize("tier_type", [TierType.volume, TierType.graduated])
-    def test_zero_quantity_costs_zero(self, tier_type: TierType) -> None:
-        price = _make_tiered_price(_tiers_data(tier_type, SHARED_MULTI_TIER))
-        assert price.get_tiered_amount(0) == 0
-
-    @pytest.mark.parametrize("tier_type", [TierType.volume, TierType.graduated])
-    def test_negative_quantity_raises(self, tier_type: TierType) -> None:
-        price = _make_tiered_price(_tiers_data(tier_type, SHARED_MULTI_TIER))
-        with pytest.raises(InvalidQuantityError):
-            price.get_tiered_amount(-5)
+        assert price.get_tiered_amount(5) == price.tiers.calculate(5)
 
 
 class TestSeatTiersDualWrite:

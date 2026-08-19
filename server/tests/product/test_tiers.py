@@ -1,9 +1,11 @@
+from decimal import Decimal
 from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
 from polar.product.tiers import (
+    InvalidQuantityError,
     NonContiguousTiersError,
     SeatTierType,
     Tiers,
@@ -65,6 +67,69 @@ class TestTiersValidation:
         assert serialized["type"] == "volume"
         assert serialized["tiers"][0]["bound"] is None
         assert serialized["tiers"][0]["unit_amount"] == "1E-12"
+
+
+class TestTiersCalculateVolume:
+    def test_fractional_rate(self) -> None:
+        tiers = _tiers_data(
+            TierType.volume,
+            [{"bound": None, "unit_amount": "0.5"}],
+        )
+        assert tiers.calculate(10) == Decimal("5")
+
+    def test_quantity_below_first_bound(self) -> None:
+        # The engine prices from 0; purchase floors live on the price.
+        tiers = _tiers_data(
+            TierType.volume,
+            [
+                {"bound": 10, "unit_amount": "20000"},
+                {"bound": None, "unit_amount": "6000"},
+            ],
+        )
+        assert tiers.calculate(5) == 5 * 20000
+
+    def test_past_bounded_last_tier_raises(self) -> None:
+        tiers = _tiers_data(
+            TierType.volume,
+            [{"bound": 10, "unit_amount": "500"}],
+        )
+        with pytest.raises(InvalidQuantityError):
+            tiers.calculate(11)
+
+
+class TestTiersCalculateGraduated:
+    def test_past_bounded_last_tier_bills_covered_units(self) -> None:
+        tiers = _tiers_data(
+            TierType.graduated,
+            [{"bound": 10, "unit_amount": "500"}],
+        )
+        assert tiers.calculate(15) == 10 * 500
+
+    def test_first_tier_bills_from_unit_one(self) -> None:
+        # The first tier still bills from unit one.
+        tiers = _tiers_data(
+            TierType.graduated,
+            [
+                {"bound": 10, "unit_amount": "20000"},
+                {"bound": None, "unit_amount": "6000"},
+            ],
+        )
+        assert tiers.calculate(10) == 10 * 20000
+        assert tiers.calculate(15) == 10 * 20000 + 5 * 6000
+        assert tiers.calculate(5) == 5 * 20000
+
+
+class TestTiersCalculateContract:
+    @pytest.mark.parametrize("tier_type", [TierType.volume, TierType.graduated])
+    def test_zero_quantity_costs_zero(self, tier_type: TierType) -> None:
+        tiers = _tiers_data(tier_type, SHARED_MULTI_TIER)
+        assert tiers.calculate(0) == 0
+
+    @pytest.mark.parametrize("tier_type", [TierType.volume, TierType.graduated])
+    def test_negative_quantity_raises(self, tier_type: TierType) -> None:
+        tiers = _tiers_data(tier_type, SHARED_MULTI_TIER)
+        with pytest.raises(InvalidQuantityError):
+            tiers.calculate(-5)
 
 
 class TestValidateUnitBounds:

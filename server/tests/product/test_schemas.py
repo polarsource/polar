@@ -21,7 +21,7 @@ from polar.product.schemas import (
     ProductPriceSeatTiers,
     ProductPriceUnitBasedCreate,
 )
-from polar.product.tiers import Tiers, TierType
+from polar.product.tiers import TierType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import METER_ID, create_benefit
 
@@ -739,22 +739,6 @@ class TestProductPriceUnitBasedCreate:
         )
         assert schema.minimum_units is None
         assert schema.tiers.last_bound is None
-
-    def test_model_dump_matches_model_columns(self) -> None:
-        schema = ProductPriceUnitBasedCreate.model_validate(
-            _unit_based_payload(UNIT_TIERS, minimum_units=2)
-        )
-        dumped = schema.model_dump()
-        assert Tiers.model_validate(dumped["tiers"]) == Tiers.model_validate(
-            {
-                "type": TierType.volume,
-                "tiers": [
-                    {"bound": 10, "unit_amount": "1000"},
-                    {"bound": None, "unit_amount": "800"},
-                ],
-            }
-        )
-        assert dumped["minimum_units"] == 2
 
     def test_maximum_units_from_last_bounded_tier(self) -> None:
         schema = ProductPriceUnitBasedCreate.model_validate(

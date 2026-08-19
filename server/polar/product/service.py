@@ -601,8 +601,17 @@ class ProductService:
                 existing_prices.add(price)
             else:
                 model_class = price_schema.get_model_class()
-                price_kwargs = price_schema.model_dump()
-                price = model_class(product=product, source=source, **price_kwargs)
+                if isinstance(price_schema, ProductPriceUnitBasedCreate):
+                    price = model_class(
+                        product=product,
+                        source=source,
+                        **price_schema.model_dump(exclude={"tiers"}),
+                        tiers=price_schema.tiers,
+                    )
+                else:
+                    price = model_class(
+                        product=product, source=source, **price_schema.model_dump()
+                    )
                 if isinstance(
                     price_schema, ProductPriceSeatBasedCreate
                 ) and not organization.feature_settings.get(

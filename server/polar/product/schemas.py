@@ -405,28 +405,6 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
         return ProductPriceMeteredUnitModel
 
 
-UnitLabel = Annotated[
-    str | None,
-    Field(
-        max_length=32,
-        description=(
-            "Singular noun for a unit of this price, shown at checkout and "
-            'on invoices. Defaults to "unit" when unset.'
-        ),
-    ),
-    EmptyStrToNoneValidator,
-]
-UnitLabelPlural = Annotated[
-    str | None,
-    Field(
-        max_length=32,
-        description=(
-            "Plural noun for a unit of this price. Defaults to the singular "
-            'label plus "s" when unset (or "units" if no singular is set).'
-        ),
-    ),
-    EmptyStrToNoneValidator,
-]
 
 
 class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
@@ -446,24 +424,33 @@ class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
             "The minimum purchasable quantity (inclusive). Defaults to 1 when not set."
         ),
     )
-    unit_label: UnitLabel = None
-    unit_label_plural: UnitLabelPlural = None
+    unit_label: str | None = Field(
+        max_length=32,
+        description=(
+            "Singular noun for a unit of this price, shown at checkout and "
+            'on invoices. Defaults to "unit" when unset.'
+        ),
+    )
+    unit_label_plural: str | None = Field(
+        max_length=32,
+        description=(
+            "Plural noun for a unit of this price. Defaults to the singular "
+            'label plus "s" when unset (or "units" if no singular is set).'
+        ),
+    )
 
     @model_validator(mode="after")
-    def validate_whole_cents_and_bounds(self) -> Self:
+    def validate_rates_and_bounds(self) -> Self:
         for tier in self.tiers.tiers:
             if tier.unit_amount != tier.unit_amount.to_integral_value():
-                raise ValueError("Unit rates must be whole cents")
+                raise ValueError(
+                    f"Unit tier rates must be in smallest currency unit, got {tier.unit_amount}"
+                )
         try:
             validate_unit_bounds(self.tiers, minimum_units=self.minimum_units)
         except ValueError as e:
             raise ValueError(str(e)) from None
         return self
-
-    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
-        data = super().model_dump(**kwargs)
-        data["tiers"] = self.tiers
-        return data
 
     def get_model_class(self) -> builtins.type[ProductPriceUnitBasedModel]:
         return ProductPriceUnitBasedModel

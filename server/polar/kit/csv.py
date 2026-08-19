@@ -24,7 +24,7 @@ class IterableCSVWriter:
     It's useful to generate CSV with StreamingResponse, for example.
     """
 
-    writer: "_csv._writer"
+    writer: "_csv.Writer"
 
     def __init__(
         self,

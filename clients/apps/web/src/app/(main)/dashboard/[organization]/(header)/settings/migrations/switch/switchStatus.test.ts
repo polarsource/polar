@@ -26,10 +26,9 @@ function row(overrides: Partial<SwitchRow>): SwitchRow {
 }
 
 describe('switchStatus', () => {
-  it('shows "Switched" (green) when moved', () => {
+  it('shows "Switched" without an attention color when moved', () => {
     expect(switchStatus(row({ cutover_status: 'moved' }))).toEqual({
       label: 'Switched',
-      color: 'green',
     })
   })
 
@@ -65,6 +64,6 @@ describe('switchStatus', () => {
   it('prefers the settled outcome over the card hint', () => {
     expect(
       switchStatus(row({ cutover_status: 'moved', has_payment_method: false })),
-    ).toEqual({ label: 'Switched', color: 'green' })
+    ).toEqual({ label: 'Switched' })
   })
 })

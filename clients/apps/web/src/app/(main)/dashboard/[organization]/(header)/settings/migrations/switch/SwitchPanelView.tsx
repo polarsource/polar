@@ -94,9 +94,6 @@ export function SwitchPanelView({
     onPageChange(next.pageIndex + 1)
   }
 
-  const left = report.skipped + report.failed
-  const showResult = report.completed && !running
-
   return (
     <Box as="section" flexDirection="column" rowGap="xl">
       {switchError && (
@@ -104,18 +101,6 @@ export function SwitchPanelView({
           variant="danger"
           title="We couldn't switch these subscriptions"
           description={switchError}
-        />
-      )}
-
-      {showResult && report.moved > 0 && (
-        <Alert
-          variant="success"
-          title={`Polar now bills ${numberFormat.format(report.moved)} subscription(s)`}
-          description={
-            left > 0
-              ? `${numberFormat.format(left)} stayed on Stripe. Open them below to see why, then switch again once they're sorted.`
-              : 'They are stopped on Stripe and charged on Polar from their next renewal.'
-          }
         />
       )}
 

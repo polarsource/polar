@@ -3,9 +3,8 @@ import { SwitchRow } from './switchRows'
 
 export interface SwitchStatus {
   label: string
-  // Undefined renders a neutral chip. Colour marks the outcomes that need the
-  // merchant's eye — switched, or left behind — so a table mid-run reads at a
-  // glance.
+  // Undefined renders a neutral chip. Colour is reserved for outcomes that need
+  // the merchant's attention, so the normal path stays visually quiet.
   color?: StatusColor
 }
 
@@ -15,7 +14,7 @@ export interface SwitchStatus {
 export function switchStatus(row: SwitchRow): SwitchStatus {
   switch (row.cutover_status) {
     case 'moved':
-      return { label: 'Switched', color: 'green' }
+      return { label: 'Switched' }
     case 'failed':
       return { label: 'Failed', color: 'red' }
     case 'skipped':

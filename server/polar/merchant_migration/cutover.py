@@ -240,12 +240,11 @@ class SubscriptionCutover:
         except Exception:
             # The source is stopped and this rolls back, ledger row included, so
             # the log is the only trace of a customer nobody is billing.
-            log.error(
+            log.exception(
                 "merchant_migration.cutover.stopped_but_unfinished",
                 migration_id=self.migration.id,
                 record_id=record.id,
                 source_id=record.source_id,
-                exc_info=True,
             )
             raise
         log.info(
@@ -305,7 +304,7 @@ class SubscriptionCutover:
             return _SOURCE_NOT_LIVE.format(status=source.status.value)
         try:
             staged = deserialize(record.type, record.canonical)
-        except (KeyError, TypeError, ValueError):
+        except KeyError, TypeError, ValueError:
             # Raising would stall the chain, so it stops at this record instead.
             return _UNREADABLE
         if (

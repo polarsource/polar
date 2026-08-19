@@ -104,6 +104,7 @@ dev = [
   # * https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/
   # * https://pypi.org/project/litellm/
   # "litellm==1.82.3",
+  "botocore[crt]>=1.43.38",
 ]
 
 [tool.taskipy.tasks]

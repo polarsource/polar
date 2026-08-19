@@ -62,6 +62,18 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         locale={locale}
       />
     )
+  } else if (price.amount_type === 'unit_based') {
+    const basePricePerUnit = Number(price.tiers?.tiers?.[0]?.unit_amount ?? 0)
+    return (
+      <AmountLabel
+        amount={basePricePerUnit}
+        currency={price.price_currency}
+        interval={product.recurring_interval}
+        intervalCount={product.recurring_interval_count}
+        mode={mode}
+        locale={locale}
+      />
+    )
   } else if (price.amount_type === 'metered_unit') {
     return (
       <div className="flex flex-row gap-1 text-[min(1em,24px)]">

@@ -9,6 +9,7 @@ import CheckoutProductSwitcher, {
 } from './CheckoutProductSwitcher'
 import { CheckoutPWYWForm } from './CheckoutPWYWForm'
 import CheckoutSeatSelector from './CheckoutSeatSelector'
+import CheckoutUnitSelector from './CheckoutUnitSelector'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -21,6 +22,7 @@ export {
   CheckoutProductSwitcherItemPrice,
   CheckoutPWYWForm,
   CheckoutSeatSelector,
+  CheckoutUnitSelector,
   MeteredPricesDisplay,
   ProductPriceLabel,
 }

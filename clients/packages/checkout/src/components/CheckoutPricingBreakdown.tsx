@@ -13,17 +13,20 @@ import { useMemo } from 'react'
 import {
   getFixedPrice,
   getSeatPrice,
+  getUnitPrice,
   hasProductCheckout,
   isLegacyRecurringProductPrice,
 } from '../guards'
 import { getSeatRows } from '../utils/seats'
 import { getDiscountDisplay } from '../utils/discount'
 import { getMeteredPrices } from '../utils/product'
+import { getUnitRows } from '../utils/units'
 import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
 import DetailRow from './DetailRow'
 import MeteredPriceLabel from './MeteredPriceLabel'
 import SeatDetailRow from './SeatDetailRow'
+import UnitDetailRow from './UnitDetailRow'
 
 function formatShortDate(date: Date, locale: AcceptedLocale): string {
   const isCurrentYear = date.getFullYear() === new Date().getFullYear()
@@ -162,13 +165,16 @@ const CheckoutPricingBreakdown = ({
   }, [interval, intervalCount, t])
 
   const seatRows = useMemo(() => getSeatRows(checkout), [checkout])
+  const unitRows = useMemo(() => getUnitRows(checkout), [checkout])
 
-  // A product may combine a fixed base fee with per-seat pricing. When both
-  // exist, the fixed portion is baked into `checkout.amount` but has no row of
-  // its own — without it the seat rows visibly sum to less than the subtotal.
+  // A product may combine a fixed base fee with per-seat or per-unit pricing.
+  // When both exist, the fixed portion is baked into `checkout.amount` but has
+  // no row of its own — without it the seat/unit rows visibly sum to less than
+  // the subtotal.
   const fixedPrice = useMemo(() => getFixedPrice(checkout), [checkout])
   const seatPrice = useMemo(() => getSeatPrice(checkout), [checkout])
-  const showBasePrice = Boolean(fixedPrice && seatPrice)
+  const unitPrice = useMemo(() => getUnitPrice(checkout), [checkout])
+  const showBasePrice = Boolean(fixedPrice && (seatPrice || unitPrice))
 
   if (checkout.is_free_product_price) {
     return null
@@ -201,6 +207,17 @@ const CheckoutPricingBreakdown = ({
               interval={interval}
               intervalCount={intervalCount}
               locale={locale}
+            />
+          ))}
+          {unitRows?.map((row, i) => (
+            <UnitDetailRow
+              key={i}
+              row={row}
+              currency={checkout.currency!}
+              interval={interval}
+              intervalCount={intervalCount}
+              locale={locale}
+              unitPrice={unitPrice}
             />
           ))}
           <DetailRow

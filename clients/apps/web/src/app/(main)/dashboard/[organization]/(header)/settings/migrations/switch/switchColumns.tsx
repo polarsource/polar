@@ -126,7 +126,11 @@ function SelectCell({
   // column instead of a run of gaps.
   if (isSwitched(row)) {
     return (
-      <SelectCheckbox checked disabled ariaLabel={`${row.title} has switched`} />
+      <SelectCheckbox
+        checked
+        disabled
+        ariaLabel={`${row.title} has switched`}
+      />
     )
   }
   if (!isSwitchable(row) || !id) {

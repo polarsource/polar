@@ -76,14 +76,14 @@ describe('renewsLabel', () => {
   })
 
   it('reads in days when the renewal is more than a day out', () => {
-    expect(
-      renewsLabel(row({ renews_at: '2026-01-13T00:00:00Z' }), now),
-    ).toBe('in 12 days')
+    expect(renewsLabel(row({ renews_at: '2026-01-13T00:00:00Z' }), now)).toBe(
+      'in 12 days',
+    )
   })
 
   it('reads in hours near the safety window', () => {
-    expect(
-      renewsLabel(row({ renews_at: '2026-01-01T03:00:00Z' }), now),
-    ).toBe('in 3 hours')
+    expect(renewsLabel(row({ renews_at: '2026-01-01T03:00:00Z' }), now)).toBe(
+      'in 3 hours',
+    )
   })
 })

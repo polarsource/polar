@@ -29,7 +29,10 @@ const DAY = 24 * HOUR
 
 // When the source next renews, phrased relative to now. The switch keeps a 24h
 // safety window, so hours matter near the edge; days are enough further out.
-export function renewsLabel(row: SwitchRow, now: number = Date.now()): string | null {
+export function renewsLabel(
+  row: SwitchRow,
+  now: number = Date.now(),
+): string | null {
   if (!row.renews_at) return null
   const delta = new Date(row.renews_at).getTime() - now
   if (Number.isNaN(delta)) return null

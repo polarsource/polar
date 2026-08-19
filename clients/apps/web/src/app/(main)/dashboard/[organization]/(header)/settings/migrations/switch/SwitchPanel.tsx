@@ -111,9 +111,7 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
         const submitted = selection
         startSwitch.mutate(selectionPayload(submitted), {
           onSuccess: () =>
-            setSelection((current) =>
-              selectionAfterSubmit(submitted, current),
-            ),
+            setSelection((current) => selectionAfterSubmit(submitted, current)),
         })
       }}
       switching={startSwitch.isPending}

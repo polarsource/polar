@@ -18,7 +18,6 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
     __tablename__ = "oauth2_tokens"
 
     client_id: Mapped[str] = mapped_column(String(52), nullable=False)
-    nonce: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
 
     @declared_attr
     def client(cls) -> "Mapped[OAuth2Client]":

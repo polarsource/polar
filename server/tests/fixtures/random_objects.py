@@ -64,6 +64,7 @@ from polar.models import (
     ProductPriceFixed,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
+    ProductPriceUnitBased,
     Refund,
     Subscription,
     SubscriptionProductPrice,
@@ -136,7 +137,7 @@ from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
 from polar.product.price_set import PriceSet
-from polar.product.tiers import SeatTierType
+from polar.product.tiers import SeatTierType, Tiers, TierType
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID
 from tests.fixtures.database import SaveFixture
@@ -670,6 +671,83 @@ async def create_product_price_seat_unit(
     return price
 
 
+async def create_product_price_unit_based(
+    save_fixture: SaveFixture,
+    *,
+    product: Product | None = None,
+    price_per_unit: int = 1000,
+    minimum_units: int | None = None,
+    tiers: Tiers | None = None,
+    currency: str = "usd",
+    tax_behavior: TaxBehavior | None = TaxBehavior.exclusive,
+    unit_label: str | None = None,
+    unit_label_plural: str | None = None,
+) -> ProductPriceUnitBased:
+    """Create a unit-based price.
+
+    By default a flat price: one unbounded volume tier at ``price_per_unit``.
+    Pass ``tiers`` (shared format) to define a tiered schedule explicitly.
+    """
+    if tiers is None:
+        tiers = Tiers.model_validate(
+            {
+                "type": TierType.volume,
+                "tiers": [{"bound": None, "unit_amount": str(price_per_unit)}],
+            }
+        )
+
+    price = ProductPriceUnitBased(
+        price_currency=currency,
+        tax_behavior=tax_behavior,
+        tiers=tiers,
+        minimum_units=minimum_units,
+        unit_label=unit_label,
+        unit_label_plural=unit_label_plural,
+        product=product,
+    )
+    assert price.amount_type == ProductPriceAmountType.unit_based
+    await save_fixture(price)
+    return price
+
+
+async def create_product_unit_based(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    price_per_unit: int = 1000,
+    minimum_units: int | None = None,
+    tiers: Tiers | None = None,
+    currency: str = "usd",
+    recurring_interval: SubscriptionRecurringInterval | None = (
+        SubscriptionRecurringInterval.month
+    ),
+    name: str = "Product",
+    unit_label: str | None = None,
+    unit_label_plural: str | None = None,
+) -> Product:
+    """Create a product with a single unit-based price."""
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=recurring_interval,
+        name=name,
+        prices=[],
+    )
+    unit_price = await create_product_price_unit_based(
+        save_fixture,
+        product=product,
+        price_per_unit=price_per_unit,
+        minimum_units=minimum_units,
+        tiers=tiers,
+        currency=currency,
+        unit_label=unit_label,
+        unit_label_plural=unit_label_plural,
+    )
+    product.prices.append(unit_price)
+    product.all_prices.append(unit_price)
+    return product
+
+
 async def create_product_fixed_and_seat(
     save_fixture: SaveFixture,
     *,
@@ -1160,6 +1238,7 @@ async def create_subscription(
     user_metadata: dict[str, Any] | None = None,
     scheduler_locked_at: datetime | None = None,
     seats: int | None = None,
+    units: int | None = None,
     past_due_at: datetime | None = None,
     created_at: datetime | None = None,
     modified_at: datetime | None = None,
@@ -1222,13 +1301,15 @@ async def create_subscription(
         product=product,
         payment_method=payment_method,
         subscription_product_prices=[
-            SubscriptionProductPrice.from_price(price, seats=seats) for price in prices
+            SubscriptionProductPrice.from_price(price, seats=seats, units=units)
+            for price in prices
         ],
         currency=currency,
         discount=discount,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
         seats=seats,
+        units=units,
         past_due_at=past_due_at,
         pending_update=None,
     )
@@ -1598,6 +1679,7 @@ async def create_checkout(
     seats: int | None = None,
     min_seats: int | None = None,
     max_seats: int | None = None,
+    units: int | None = None,
     require_billing_address: bool = False,
     customer_billing_address: Address | None = None,
     created_at: datetime | None = None,
@@ -1631,6 +1713,10 @@ async def create_checkout(
                 composed += amount if amount is not None else 10_00
             elif isinstance(static_price, ProductPriceSeatUnit):
                 composed += static_price.calculate_amount(seat_count)
+            elif isinstance(static_price, ProductPriceUnitBased):
+                composed += static_price.calculate_amount(
+                    units if units is not None else 1
+                )
         amount = composed
     elif isinstance(price, ProductPriceFixed):
         amount = price.price_amount
@@ -1639,6 +1725,8 @@ async def create_checkout(
     elif isinstance(price, ProductPriceSeatUnit):
         seat_count = seats or 1
         amount = price.calculate_amount(seat_count)
+    elif isinstance(price, ProductPriceUnitBased):
+        amount = price.calculate_amount(units or 1)
     else:
         amount = 0
 
@@ -1679,6 +1767,7 @@ async def create_checkout(
         seats=seats,
         min_seats=min_seats,
         max_seats=max_seats,
+        units=units,
         require_billing_address=require_billing_address,
         customer_billing_address=customer_billing_address,
         tax_processor=TaxProcessor.stripe,
@@ -1707,6 +1796,7 @@ async def create_checkout_link(
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
     seats: int | None = None,
+    units: int | None = None,
     user_metadata: dict[str, Any] | None = None,
 ) -> CheckoutLink:
     if user_metadata is None:
@@ -1726,6 +1816,7 @@ async def create_checkout_link(
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
         seats=seats,
+        units=units,
         user_metadata=user_metadata,
     )
     await save_fixture(checkout_link)
@@ -2484,6 +2575,29 @@ async def create_subscription_with_seats(
         kwargs["started_at"] = utc_now()
     subscription = await create_subscription(
         save_fixture, product=product, customer=customer, seats=seats, **kwargs
+    )
+    return subscription
+
+
+async def create_subscription_with_units(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    customer: Customer,
+    units: int = 5,
+    **kwargs: Any,
+) -> Subscription:
+    is_unit_based = any(
+        price.amount_type == ProductPriceAmountType.unit_based
+        for price in product.all_prices
+    )
+    assert is_unit_based, "Product must be unit-based"
+    if "status" not in kwargs:
+        kwargs["status"] = SubscriptionStatus.active
+    if "started_at" not in kwargs:
+        kwargs["started_at"] = utc_now()
+    subscription = await create_subscription(
+        save_fixture, product=product, customer=customer, units=units, **kwargs
     )
     return subscription
 

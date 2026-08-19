@@ -17,6 +17,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_custom_field,
     create_product,
+    create_product_unit_based,
     set_product_benefits,
 )
 
@@ -143,6 +144,34 @@ class TestGetProduct:
         assert len(json["benefits"]) == len(benefits)
         for benefit in json["benefits"]:
             assert "properties" in benefit
+
+    @pytest.mark.auth
+    async def test_valid_unit_based(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=organization,
+            price_per_unit=2900,
+            minimum_units=5,
+        )
+
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        price = json["prices"][0]
+        assert price["amount_type"] == "unit_based"
+        assert price["minimum_units"] == 5
+        assert price["maximum_units"] is None
+        assert price["unit_label"] is None
+        assert price["unit_label_plural"] is None
+        assert price["tiers"]["type"] == "volume"
+        assert price["tiers"]["tiers"] == [{"bound": None, "unit_amount": "2900"}]
 
 
 @pytest.mark.asyncio

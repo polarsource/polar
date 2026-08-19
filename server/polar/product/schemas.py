@@ -74,12 +74,16 @@ from polar.models.product_price import (
 from polar.models.product_price import (
     ProductPriceSeatUnit as ProductPriceSeatUnitModel,
 )
+from polar.models.product_price import (
+    ProductPriceUnitBased as ProductPriceUnitBasedModel,
+)
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.tiers import (
     NonContiguousTiersError,
     SeatTiersData,
     SeatTierType,
+    Tiers,
     UnboundedTierNotLastError,
     seat_tiers_to_tiers,
     seat_tiers_unit_bounds,
@@ -401,6 +405,70 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
         return ProductPriceMeteredUnitModel
 
 
+UnitLabel = Annotated[
+    str | None,
+    Field(
+        max_length=32,
+        description=(
+            "Singular noun for a unit of this price, shown at checkout and "
+            'on invoices. Defaults to "unit" when unset.'
+        ),
+    ),
+    EmptyStrToNoneValidator,
+]
+UnitLabelPlural = Annotated[
+    str | None,
+    Field(
+        max_length=32,
+        description=(
+            "Plural noun for a unit of this price. Defaults to the singular "
+            'label plus "s" when unset (or "units" if no singular is set).'
+        ),
+    ),
+    EmptyStrToNoneValidator,
+]
+
+
+class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
+    """
+    Schema to create a unit-based price: the buyer picks a quantity of units,
+    pays for it up-front, and changes are prorated.
+    """
+
+    amount_type: Literal[ProductPriceAmountType.unit_based]
+    tiers: Tiers = Field(
+        description="Tiered pricing based on the purchased unit quantity."
+    )
+    minimum_units: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "The minimum purchasable quantity (inclusive). Defaults to 1 when not set."
+        ),
+    )
+    unit_label: UnitLabel = None
+    unit_label_plural: UnitLabelPlural = None
+
+    @model_validator(mode="after")
+    def validate_whole_cents_and_bounds(self) -> Self:
+        for tier in self.tiers.tiers:
+            if tier.unit_amount != tier.unit_amount.to_integral_value():
+                raise ValueError("Unit rates must be whole cents")
+        try:
+            validate_unit_bounds(self.tiers, minimum_units=self.minimum_units)
+        except ValueError as e:
+            raise ValueError(str(e)) from None
+        return self
+
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
+        data = super().model_dump(**kwargs)
+        data["tiers"] = self.tiers
+        return data
+
+    def get_model_class(self) -> builtins.type[ProductPriceUnitBasedModel]:
+        return ProductPriceUnitBasedModel
+
+
 def _coerce_legacy_free_price(value: Any) -> Any:
     """
     Backward compatibility for the removed `free` price type.
@@ -429,6 +497,7 @@ ProductPriceCreate = Annotated[
         ProductPriceFixedCreate
         | ProductPriceCustomCreate
         | ProductPriceSeatBasedCreate
+        | ProductPriceUnitBasedCreate
         | ProductPriceMeteredUnitCreate,
         Discriminator("amount_type"),
     ],
@@ -744,6 +813,37 @@ class ProductPriceSeatBasedBase(ProductPriceBase):
         return self.seat_tiers.tiers[0].price_per_seat
 
 
+class ProductPriceUnitBasedBase(ProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.unit_based]
+    tiers: Tiers = Field(
+        description="Tiered pricing based on the purchased unit quantity."
+    )
+    minimum_units: int | None = Field(
+        description="The minimum purchasable quantity (inclusive).",
+    )
+    unit_label: str | None = Field(
+        description=(
+            "Singular noun for a unit of this price, shown at checkout and "
+            'on invoices. `null` defaults to "unit".'
+        ),
+    )
+    unit_label_plural: str | None = Field(
+        description=(
+            "Plural noun for a unit of this price. `null` defaults to the "
+            'singular label plus "s", or "units".'
+        ),
+    )
+
+    @computed_field(
+        description=(
+            "The maximum purchasable quantity, from the last tier's bound. "
+            "`null` for unlimited."
+        )
+    )
+    def maximum_units(self) -> int | None:
+        return self.tiers.last_bound
+
+
 class LegacyRecurringProductPriceMixin:
     @computed_field
     def legacy(self) -> Literal[True]:
@@ -809,6 +909,13 @@ class ProductPriceSeatBased(ProductPriceSeatBasedBase):
     """
 
 
+class ProductPriceUnitBased(ProductPriceUnitBasedBase):
+    """
+    A unit-based price for a product: the buyer picks a quantity of units,
+    pays for it up-front, and changes are prorated.
+    """
+
+
 class ProductPriceMeter(IDSchema):
     """
     A meter associated to a metered price.
@@ -843,6 +950,7 @@ NewProductPrice = Annotated[
     ProductPriceFixed
     | ProductPriceCustom
     | ProductPriceSeatBased
+    | ProductPriceUnitBased
     | ProductPriceMeteredUnit,
     Discriminator("amount_type"),
     SetSchemaReference("ProductPrice"),

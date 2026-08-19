@@ -5,6 +5,7 @@ import typing
 
 from polar.base import (
     AsyncServiceBase,
+    RequestTimeout,
     SyncServiceBase,
     parse_response_json,
     parse_response_none,
@@ -60,6 +61,7 @@ class BenefitsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[BenefitSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceBenefit:
         """
         List benefits.
@@ -76,6 +78,8 @@ class BenefitsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -98,6 +102,7 @@ class BenefitsSync(SyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -117,6 +122,7 @@ class BenefitsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[BenefitSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[Benefit, None, None]:
         """
         List benefits.
@@ -133,6 +139,8 @@ class BenefitsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type Benefit.
@@ -154,6 +162,7 @@ class BenefitsSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -163,53 +172,71 @@ class BenefitsSync(SyncServiceBase):
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitCustomCreate],
     ) -> Benefit: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitDiscordCreate],
     ) -> Benefit: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitGitHubRepositoryCreate],
     ) -> Benefit: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitDownloadablesCreate],
     ) -> Benefit: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitLicenseKeysCreate],
     ) -> Benefit: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitMeterCreditCreate],
     ) -> Benefit: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitFeatureFlagCreate],
     ) -> Benefit: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitSlackSharedChannelCreate],
     ) -> Benefit: ...
 
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Benefit:
         """
@@ -218,6 +245,8 @@ class BenefitsSync(SyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -231,6 +260,7 @@ class BenefitsSync(SyncServiceBase):
             url="/v1/benefits/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -242,6 +272,8 @@ class BenefitsSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Benefit:
         """
         Get a benefit by ID.
@@ -250,6 +282,8 @@ class BenefitsSync(SyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -265,6 +299,7 @@ class BenefitsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -276,6 +311,8 @@ class BenefitsSync(SyncServiceBase):
     def delete(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a benefit.
@@ -288,6 +325,8 @@ class BenefitsSync(SyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             NotPermitted: This benefit is not deletable.
@@ -304,6 +343,7 @@ class BenefitsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -317,6 +357,8 @@ class BenefitsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitCustomUpdate],
     ) -> Benefit: ...
 
@@ -324,6 +366,8 @@ class BenefitsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitDiscordUpdate],
     ) -> Benefit: ...
 
@@ -331,6 +375,8 @@ class BenefitsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitGitHubRepositoryUpdate],
     ) -> Benefit: ...
 
@@ -338,6 +384,8 @@ class BenefitsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitDownloadablesUpdate],
     ) -> Benefit: ...
 
@@ -345,6 +393,8 @@ class BenefitsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitLicenseKeysUpdate],
     ) -> Benefit: ...
 
@@ -352,6 +402,8 @@ class BenefitsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitMeterCreditUpdate],
     ) -> Benefit: ...
 
@@ -359,6 +411,8 @@ class BenefitsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitFeatureFlagUpdate],
     ) -> Benefit: ...
 
@@ -366,12 +420,16 @@ class BenefitsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitSlackSharedChannelUpdate],
     ) -> Benefit: ...
 
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Benefit:
         """
@@ -381,6 +439,8 @@ class BenefitsSync(SyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -397,6 +457,7 @@ class BenefitsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -412,6 +473,7 @@ class BenefitsSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceBenefitDownloadableFile:
         """
         List the downloadable files for a benefit with their download statistics.
@@ -422,6 +484,8 @@ class BenefitsSync(SyncServiceBase):
             id:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -440,6 +504,7 @@ class BenefitsSync(SyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -456,6 +521,7 @@ class BenefitsSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[BenefitDownloadableFile, None, None]:
         """
         List the downloadable files for a benefit with their download statistics.
@@ -466,6 +532,8 @@ class BenefitsSync(SyncServiceBase):
             id:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type BenefitDownloadableFile.
@@ -482,6 +550,7 @@ class BenefitsSync(SyncServiceBase):
                 id=id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -497,6 +566,7 @@ class BenefitsSync(SyncServiceBase):
         member_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceBenefitGrant:
         """
         List the individual grants for a benefit.
@@ -512,6 +582,8 @@ class BenefitsSync(SyncServiceBase):
             member_id: Filter by member.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -533,6 +605,7 @@ class BenefitsSync(SyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -550,6 +623,7 @@ class BenefitsSync(SyncServiceBase):
         member_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[BenefitGrant, None, None]:
         """
         List the individual grants for a benefit.
@@ -565,6 +639,8 @@ class BenefitsSync(SyncServiceBase):
             member_id: Filter by member.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type BenefitGrant.
@@ -584,6 +660,7 @@ class BenefitsSync(SyncServiceBase):
                 member_id=member_id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -604,6 +681,7 @@ class BenefitsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[BenefitSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceBenefit:
         """
         List benefits.
@@ -620,6 +698,8 @@ class BenefitsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -642,6 +722,7 @@ class BenefitsAsync(AsyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -661,6 +742,7 @@ class BenefitsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[BenefitSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[Benefit, None]:
         """
         List benefits.
@@ -677,6 +759,8 @@ class BenefitsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type Benefit.
@@ -698,6 +782,7 @@ class BenefitsAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -708,53 +793,71 @@ class BenefitsAsync(AsyncServiceBase):
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitCustomCreate],
     ) -> Benefit: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitDiscordCreate],
     ) -> Benefit: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitGitHubRepositoryCreate],
     ) -> Benefit: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitDownloadablesCreate],
     ) -> Benefit: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitLicenseKeysCreate],
     ) -> Benefit: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitMeterCreditCreate],
     ) -> Benefit: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitFeatureFlagCreate],
     ) -> Benefit: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitSlackSharedChannelCreate],
     ) -> Benefit: ...
 
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Benefit:
         """
@@ -763,6 +866,8 @@ class BenefitsAsync(AsyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -776,6 +881,7 @@ class BenefitsAsync(AsyncServiceBase):
             url="/v1/benefits/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -787,6 +893,8 @@ class BenefitsAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Benefit:
         """
         Get a benefit by ID.
@@ -795,6 +903,8 @@ class BenefitsAsync(AsyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -810,6 +920,7 @@ class BenefitsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -821,6 +932,8 @@ class BenefitsAsync(AsyncServiceBase):
     async def delete(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a benefit.
@@ -833,6 +946,8 @@ class BenefitsAsync(AsyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             NotPermitted: This benefit is not deletable.
@@ -849,6 +964,7 @@ class BenefitsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -862,6 +978,8 @@ class BenefitsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitCustomUpdate],
     ) -> Benefit: ...
 
@@ -869,6 +987,8 @@ class BenefitsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitDiscordUpdate],
     ) -> Benefit: ...
 
@@ -876,6 +996,8 @@ class BenefitsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitGitHubRepositoryUpdate],
     ) -> Benefit: ...
 
@@ -883,6 +1005,8 @@ class BenefitsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitDownloadablesUpdate],
     ) -> Benefit: ...
 
@@ -890,6 +1014,8 @@ class BenefitsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitLicenseKeysUpdate],
     ) -> Benefit: ...
 
@@ -897,6 +1023,8 @@ class BenefitsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitMeterCreditUpdate],
     ) -> Benefit: ...
 
@@ -904,6 +1032,8 @@ class BenefitsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitFeatureFlagUpdate],
     ) -> Benefit: ...
 
@@ -911,12 +1041,16 @@ class BenefitsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[BenefitSlackSharedChannelUpdate],
     ) -> Benefit: ...
 
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Benefit:
         """
@@ -926,6 +1060,8 @@ class BenefitsAsync(AsyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -942,6 +1078,7 @@ class BenefitsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -957,6 +1094,7 @@ class BenefitsAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceBenefitDownloadableFile:
         """
         List the downloadable files for a benefit with their download statistics.
@@ -967,6 +1105,8 @@ class BenefitsAsync(AsyncServiceBase):
             id:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -985,6 +1125,7 @@ class BenefitsAsync(AsyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1001,6 +1142,7 @@ class BenefitsAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[BenefitDownloadableFile, None]:
         """
         List the downloadable files for a benefit with their download statistics.
@@ -1011,6 +1153,8 @@ class BenefitsAsync(AsyncServiceBase):
             id:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type BenefitDownloadableFile.
@@ -1027,6 +1171,7 @@ class BenefitsAsync(AsyncServiceBase):
                 id=id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -1043,6 +1188,7 @@ class BenefitsAsync(AsyncServiceBase):
         member_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceBenefitGrant:
         """
         List the individual grants for a benefit.
@@ -1058,6 +1204,8 @@ class BenefitsAsync(AsyncServiceBase):
             member_id: Filter by member.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -1079,6 +1227,7 @@ class BenefitsAsync(AsyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1096,6 +1245,7 @@ class BenefitsAsync(AsyncServiceBase):
         member_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[BenefitGrant, None]:
         """
         List the individual grants for a benefit.
@@ -1111,6 +1261,8 @@ class BenefitsAsync(AsyncServiceBase):
             member_id: Filter by member.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type BenefitGrant.
@@ -1130,6 +1282,7 @@ class BenefitsAsync(AsyncServiceBase):
                 member_id=member_id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item

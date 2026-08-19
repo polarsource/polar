@@ -1,7 +1,7 @@
 import types
 import typing
 
-from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
+from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
 from polar.v2026_04.services.benefit_grants import BenefitGrantsAsync, BenefitGrantsSync
 from polar.v2026_04.services.benefits import BenefitsAsync, BenefitsSync
 from polar.v2026_04.services.checkout_links import CheckoutLinksAsync, CheckoutLinksSync
@@ -55,9 +55,12 @@ class Polar:
         *,
         environment: Environment = "production",
         base_url: str | None = None,
+        timeout: RequestTimeout | None = 5.0,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
-        self._client = SyncClientBase(resolved_base_url, self.version, access_token)
+        self._client = SyncClientBase(
+            resolved_base_url, self.version, access_token, timeout
+        )
         self.organizations = OrganizationsSync(self._client)
         self.subscriptions = SubscriptionsSync(self._client)
         self.oauth2 = Oauth2Sync(self._client)
@@ -108,9 +111,12 @@ class PolarAsync:
         *,
         environment: Environment = "production",
         base_url: str | None = None,
+        timeout: RequestTimeout | None = 5.0,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
-        self._client = AsyncClientBase(resolved_base_url, self.version, access_token)
+        self._client = AsyncClientBase(
+            resolved_base_url, self.version, access_token, timeout
+        )
         self.organizations = OrganizationsAsync(self._client)
         self.subscriptions = SubscriptionsAsync(self._client)
         self.oauth2 = Oauth2Async(self._client)

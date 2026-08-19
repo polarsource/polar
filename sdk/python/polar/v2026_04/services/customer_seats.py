@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     CustomerSeatsAssignSeat400Error,
     CustomerSeatsAssignSeat401Error,
@@ -43,6 +48,7 @@ class CustomerSeatsSync(SyncServiceBase):
         *,
         subscription_id: str | None = None,
         order_id: str | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> SeatsList:
         """
         **Scopes**: `customer_seats:read`
@@ -50,6 +56,8 @@ class CustomerSeatsSync(SyncServiceBase):
         Args:
             subscription_id:
             order_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerSeatsListSeats401Error: Authentication required
@@ -68,6 +76,7 @@ class CustomerSeatsSync(SyncServiceBase):
                 "subscription_id": subscription_id,
                 "order_id": order_id,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -80,12 +89,16 @@ class CustomerSeatsSync(SyncServiceBase):
 
     def assign_seat(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SeatAssign],
     ) -> CustomerSeat:
         """
         **Scopes**: `customer_seats:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -103,6 +116,7 @@ class CustomerSeatsSync(SyncServiceBase):
             url="/v1/customer-seats",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -118,12 +132,16 @@ class CustomerSeatsSync(SyncServiceBase):
     def revoke_seat(
         self,
         seat_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSeat:
         """
         **Scopes**: `customer_seats:write`
 
         Args:
             seat_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerSeatsRevokeSeat401Error: Authentication required
@@ -141,6 +159,7 @@ class CustomerSeatsSync(SyncServiceBase):
                 "seat_id": seat_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -154,12 +173,16 @@ class CustomerSeatsSync(SyncServiceBase):
     def resend_invitation(
         self,
         seat_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSeat:
         """
         **Scopes**: `customer_seats:write`
 
         Args:
             seat_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerSeatsResendInvitation400Error: Seat is not pending or already claimed
@@ -178,6 +201,7 @@ class CustomerSeatsSync(SyncServiceBase):
                 "seat_id": seat_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -192,10 +216,14 @@ class CustomerSeatsSync(SyncServiceBase):
     def get_claim_info(
         self,
         invitation_token: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> SeatClaimInfo:
         """
         Args:
             invitation_token:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerSeatsGetClaimInfo400Error: Invalid or expired invitation token
@@ -213,6 +241,7 @@ class CustomerSeatsSync(SyncServiceBase):
                 "invitation_token": invitation_token,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -225,10 +254,14 @@ class CustomerSeatsSync(SyncServiceBase):
 
     def claim_seat(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SeatClaim],
     ) -> CustomerSeatClaimResponse:
         """
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -244,6 +277,7 @@ class CustomerSeatsSync(SyncServiceBase):
             url="/v1/customer-seats/claim",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -261,6 +295,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
         *,
         subscription_id: str | None = None,
         order_id: str | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> SeatsList:
         """
         **Scopes**: `customer_seats:read`
@@ -268,6 +303,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
         Args:
             subscription_id:
             order_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerSeatsListSeats401Error: Authentication required
@@ -286,6 +323,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
                 "subscription_id": subscription_id,
                 "order_id": order_id,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -298,12 +336,16 @@ class CustomerSeatsAsync(AsyncServiceBase):
 
     async def assign_seat(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SeatAssign],
     ) -> CustomerSeat:
         """
         **Scopes**: `customer_seats:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -321,6 +363,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             url="/v1/customer-seats",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -336,12 +379,16 @@ class CustomerSeatsAsync(AsyncServiceBase):
     async def revoke_seat(
         self,
         seat_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSeat:
         """
         **Scopes**: `customer_seats:write`
 
         Args:
             seat_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerSeatsRevokeSeat401Error: Authentication required
@@ -359,6 +406,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
                 "seat_id": seat_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -372,12 +420,16 @@ class CustomerSeatsAsync(AsyncServiceBase):
     async def resend_invitation(
         self,
         seat_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSeat:
         """
         **Scopes**: `customer_seats:write`
 
         Args:
             seat_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerSeatsResendInvitation400Error: Seat is not pending or already claimed
@@ -396,6 +448,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
                 "seat_id": seat_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -410,10 +463,14 @@ class CustomerSeatsAsync(AsyncServiceBase):
     async def get_claim_info(
         self,
         invitation_token: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> SeatClaimInfo:
         """
         Args:
             invitation_token:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerSeatsGetClaimInfo400Error: Invalid or expired invitation token
@@ -431,6 +488,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
                 "invitation_token": invitation_token,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -443,10 +501,14 @@ class CustomerSeatsAsync(AsyncServiceBase):
 
     async def claim_seat(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SeatClaim],
     ) -> CustomerSeatClaimResponse:
         """
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -462,6 +524,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             url="/v1/customer-seats/claim",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

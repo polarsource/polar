@@ -8224,6 +8224,9 @@ class OrganizationFeatureSettings:
     off_session_charges_enabled: bool = False
     """If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method)."""
 
+    meter_cycling_enabled: bool = False
+    """If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval)."""
+
     slack_benefit_enabled: bool = False
     """Enables the slack shared channel benefit"""
 

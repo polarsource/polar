@@ -4,6 +4,7 @@ import typing
 
 from polar.base import (
     AsyncServiceBase,
+    RequestTimeout,
     SyncServiceBase,
     parse_response_json,
     parse_response_none,
@@ -20,12 +21,16 @@ from polar.v2026_04.inputs import (
 class Oauth2Sync(SyncServiceBase):
     def create_client(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[OAuth2ClientConfiguration],
     ) -> typing.Any:
         """
         Create an OAuth2 client.
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -39,6 +44,7 @@ class Oauth2Sync(SyncServiceBase):
             url="/v1/oauth2/register",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -50,12 +56,16 @@ class Oauth2Sync(SyncServiceBase):
     def get_client(
         self,
         client_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Any:
         """
         Get an OAuth2 client by Client ID.
 
         Args:
             client_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -70,6 +80,7 @@ class Oauth2Sync(SyncServiceBase):
                 "client_id": client_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -80,6 +91,8 @@ class Oauth2Sync(SyncServiceBase):
     def update_client(
         self,
         client_id_path: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[OAuth2ClientConfigurationUpdate],
     ) -> typing.Any:
         """
@@ -87,6 +100,8 @@ class Oauth2Sync(SyncServiceBase):
 
         Args:
             client_id_path:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -102,6 +117,7 @@ class Oauth2Sync(SyncServiceBase):
                 "client_id": client_id_path,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -113,12 +129,16 @@ class Oauth2Sync(SyncServiceBase):
     def delete_client(
         self,
         client_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete an OAuth2 client.
 
         Args:
             client_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -133,6 +153,7 @@ class Oauth2Sync(SyncServiceBase):
                 "client_id": client_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -144,12 +165,16 @@ class Oauth2Sync(SyncServiceBase):
 class Oauth2Async(AsyncServiceBase):
     async def create_client(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[OAuth2ClientConfiguration],
     ) -> typing.Any:
         """
         Create an OAuth2 client.
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -163,6 +188,7 @@ class Oauth2Async(AsyncServiceBase):
             url="/v1/oauth2/register",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -174,12 +200,16 @@ class Oauth2Async(AsyncServiceBase):
     async def get_client(
         self,
         client_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Any:
         """
         Get an OAuth2 client by Client ID.
 
         Args:
             client_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -194,6 +224,7 @@ class Oauth2Async(AsyncServiceBase):
                 "client_id": client_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -204,6 +235,8 @@ class Oauth2Async(AsyncServiceBase):
     async def update_client(
         self,
         client_id_path: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[OAuth2ClientConfigurationUpdate],
     ) -> typing.Any:
         """
@@ -211,6 +244,8 @@ class Oauth2Async(AsyncServiceBase):
 
         Args:
             client_id_path:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -226,6 +261,7 @@ class Oauth2Async(AsyncServiceBase):
                 "client_id": client_id_path,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -237,12 +273,16 @@ class Oauth2Async(AsyncServiceBase):
     async def delete_client(
         self,
         client_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete an OAuth2 client.
 
         Args:
             client_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -257,6 +297,7 @@ class Oauth2Async(AsyncServiceBase):
                 "client_id": client_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {

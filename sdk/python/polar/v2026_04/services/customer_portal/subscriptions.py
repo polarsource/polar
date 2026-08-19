@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     AlreadyCanceledSubscription,
     CustomerPortalSubscriptionsUpdate403Error,
@@ -39,6 +44,7 @@ class SubscriptionsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomerSubscription:
         """
         List subscriptions of the authenticated customer.
@@ -52,6 +58,8 @@ class SubscriptionsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -71,6 +79,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -89,6 +98,7 @@ class SubscriptionsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[CustomerSubscription, None, None]:
         """
         List subscriptions of the authenticated customer.
@@ -102,6 +112,8 @@ class SubscriptionsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type CustomerSubscription.
@@ -120,6 +132,7 @@ class SubscriptionsSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -129,6 +142,8 @@ class SubscriptionsSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSubscription:
         """
         Get a subscription for the authenticated customer.
@@ -137,6 +152,8 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer subscription was not found.
@@ -152,6 +169,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -163,12 +181,16 @@ class SubscriptionsSync(SyncServiceBase):
     def cancel(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSubscription:
         """
         Cancel a subscription of the authenticated customer.
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             AlreadyCanceledSubscription: Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions.
@@ -185,6 +207,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -198,6 +221,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateProduct],
     ) -> CustomerSubscription: ...
 
@@ -205,6 +230,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateSeats],
     ) -> CustomerSubscription: ...
 
@@ -212,6 +239,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionCancel],
     ) -> CustomerSubscription: ...
 
@@ -219,6 +248,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionPause],
     ) -> CustomerSubscription: ...
 
@@ -226,6 +257,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionResume],
     ) -> CustomerSubscription: ...
 
@@ -233,12 +266,16 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateClear],
     ) -> CustomerSubscription: ...
 
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> CustomerSubscription:
         """
@@ -246,6 +283,8 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -265,6 +304,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -288,6 +328,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomerSubscription:
         """
         List subscriptions of the authenticated customer.
@@ -301,6 +342,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -320,6 +363,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -338,6 +382,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[CustomerSubscription, None]:
         """
         List subscriptions of the authenticated customer.
@@ -351,6 +396,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type CustomerSubscription.
@@ -369,6 +416,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -379,6 +427,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSubscription:
         """
         Get a subscription for the authenticated customer.
@@ -387,6 +437,8 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer subscription was not found.
@@ -402,6 +454,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -413,12 +466,16 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def cancel(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSubscription:
         """
         Cancel a subscription of the authenticated customer.
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             AlreadyCanceledSubscription: Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions.
@@ -435,6 +492,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -448,6 +506,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateProduct],
     ) -> CustomerSubscription: ...
 
@@ -455,6 +515,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateSeats],
     ) -> CustomerSubscription: ...
 
@@ -462,6 +524,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionCancel],
     ) -> CustomerSubscription: ...
 
@@ -469,6 +533,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionPause],
     ) -> CustomerSubscription: ...
 
@@ -476,6 +542,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionResume],
     ) -> CustomerSubscription: ...
 
@@ -483,12 +551,16 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateClear],
     ) -> CustomerSubscription: ...
 
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> CustomerSubscription:
         """
@@ -496,6 +568,8 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -515,6 +589,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

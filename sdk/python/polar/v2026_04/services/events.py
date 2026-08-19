@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -47,6 +52,7 @@ class EventsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[EventSortProperty] | None = ["-timestamp"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceEvent | ListResourceWithCursorPaginationEvent:
         """
         List events.
@@ -70,6 +76,8 @@ class EventsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -99,6 +107,7 @@ class EventsSync(SyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -121,6 +130,7 @@ class EventsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceEventName:
         """
         List event names.
@@ -136,6 +146,8 @@ class EventsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -157,6 +169,7 @@ class EventsSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -175,6 +188,7 @@ class EventsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[EventName, None, None]:
         """
         List event names.
@@ -190,6 +204,8 @@ class EventsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type EventName.
@@ -210,6 +226,7 @@ class EventsSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -219,6 +236,8 @@ class EventsSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Event:
         """
         Get an event by ID.
@@ -227,6 +246,8 @@ class EventsSync(SyncServiceBase):
 
         Args:
             id: The event ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Event not found.
@@ -242,6 +263,7 @@ class EventsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -252,6 +274,8 @@ class EventsSync(SyncServiceBase):
 
     def ingest(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[EventsIngest],
     ) -> EventsIngestResponse:
         """
@@ -260,6 +284,8 @@ class EventsSync(SyncServiceBase):
         **Scopes**: `events:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -273,6 +299,7 @@ class EventsSync(SyncServiceBase):
             url="/v1/events/ingest",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -302,6 +329,7 @@ class EventsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[EventSortProperty] | None = ["-timestamp"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceEvent | ListResourceWithCursorPaginationEvent:
         """
         List events.
@@ -325,6 +353,8 @@ class EventsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -354,6 +384,7 @@ class EventsAsync(AsyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -376,6 +407,7 @@ class EventsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceEventName:
         """
         List event names.
@@ -391,6 +423,8 @@ class EventsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -412,6 +446,7 @@ class EventsAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -430,6 +465,7 @@ class EventsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[EventName, None]:
         """
         List event names.
@@ -445,6 +481,8 @@ class EventsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type EventName.
@@ -465,6 +503,7 @@ class EventsAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -475,6 +514,8 @@ class EventsAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Event:
         """
         Get an event by ID.
@@ -483,6 +524,8 @@ class EventsAsync(AsyncServiceBase):
 
         Args:
             id: The event ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Event not found.
@@ -498,6 +541,7 @@ class EventsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -508,6 +552,8 @@ class EventsAsync(AsyncServiceBase):
 
     async def ingest(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[EventsIngest],
     ) -> EventsIngestResponse:
         """
@@ -516,6 +562,8 @@ class EventsAsync(AsyncServiceBase):
         **Scopes**: `events:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -529,6 +577,7 @@ class EventsAsync(AsyncServiceBase):
             url="/v1/events/ingest",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

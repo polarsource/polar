@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     EventTypesUpdate404Error,
     HTTPValidationError,
@@ -36,6 +41,7 @@ class EventTypesSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventTypesSortProperty] | None = ["-last_seen"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceEventTypeWithStats:
         """
         List event types with aggregated statistics.
@@ -53,6 +59,8 @@ class EventTypesSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -76,6 +84,7 @@ class EventTypesSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -98,6 +107,7 @@ class EventTypesSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventTypesSortProperty] | None = ["-last_seen"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[EventTypeWithStats, None, None]:
         """
         List event types with aggregated statistics.
@@ -115,6 +125,8 @@ class EventTypesSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type EventTypeWithStats.
@@ -137,6 +149,7 @@ class EventTypesSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -146,6 +159,8 @@ class EventTypesSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[EventTypeUpdate],
     ) -> EventType:
         """
@@ -155,6 +170,8 @@ class EventTypesSync(SyncServiceBase):
 
         Args:
             id: The event type ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -171,6 +188,7 @@ class EventTypesSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -195,6 +213,7 @@ class EventTypesAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventTypesSortProperty] | None = ["-last_seen"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceEventTypeWithStats:
         """
         List event types with aggregated statistics.
@@ -212,6 +231,8 @@ class EventTypesAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -235,6 +256,7 @@ class EventTypesAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -257,6 +279,7 @@ class EventTypesAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventTypesSortProperty] | None = ["-last_seen"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[EventTypeWithStats, None]:
         """
         List event types with aggregated statistics.
@@ -274,6 +297,8 @@ class EventTypesAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type EventTypeWithStats.
@@ -296,6 +321,7 @@ class EventTypesAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -306,6 +332,8 @@ class EventTypesAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[EventTypeUpdate],
     ) -> EventType:
         """
@@ -315,6 +343,8 @@ class EventTypesAsync(AsyncServiceBase):
 
         Args:
             id: The event type ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -331,6 +361,7 @@ class EventTypesAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

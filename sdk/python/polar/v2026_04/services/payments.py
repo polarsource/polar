@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -32,6 +37,7 @@ class PaymentsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[PaymentSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourcePayment:
         """
         List payments.
@@ -49,6 +55,8 @@ class PaymentsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -72,6 +80,7 @@ class PaymentsSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -92,6 +101,7 @@ class PaymentsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[PaymentSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[Payment, None, None]:
         """
         List payments.
@@ -109,6 +119,8 @@ class PaymentsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type Payment.
@@ -131,6 +143,7 @@ class PaymentsSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -140,6 +153,8 @@ class PaymentsSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Payment:
         """
         Get a payment by ID.
@@ -148,6 +163,8 @@ class PaymentsSync(SyncServiceBase):
 
         Args:
             id: The payment ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Payment not found.
@@ -163,6 +180,7 @@ class PaymentsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -186,6 +204,7 @@ class PaymentsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[PaymentSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourcePayment:
         """
         List payments.
@@ -203,6 +222,8 @@ class PaymentsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -226,6 +247,7 @@ class PaymentsAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -246,6 +268,7 @@ class PaymentsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[PaymentSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[Payment, None]:
         """
         List payments.
@@ -263,6 +286,8 @@ class PaymentsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type Payment.
@@ -285,6 +310,7 @@ class PaymentsAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -295,6 +321,8 @@ class PaymentsAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Payment:
         """
         Get a payment by ID.
@@ -303,6 +331,8 @@ class PaymentsAsync(AsyncServiceBase):
 
         Args:
             id: The payment ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Payment not found.
@@ -318,6 +348,7 @@ class PaymentsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {

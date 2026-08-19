@@ -4,6 +4,7 @@ import typing
 
 from polar.base import (
     AsyncServiceBase,
+    RequestTimeout,
     SyncServiceBase,
     parse_response_json,
     parse_response_none,
@@ -43,6 +44,7 @@ class MetricsSync(SyncServiceBase):
         | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> MetricsResponse:
         """
         Get metrics about your orders and subscriptions.
@@ -61,6 +63,8 @@ class MetricsSync(SyncServiceBase):
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -83,6 +87,7 @@ class MetricsSync(SyncServiceBase):
                 "customer_id": customer_id,
                 "metrics": metrics,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -104,6 +109,7 @@ class MetricsSync(SyncServiceBase):
         | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> str:
         """
         Export metrics as a CSV file.
@@ -120,6 +126,8 @@ class MetricsSync(SyncServiceBase):
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to include in the export. If not provided, all metrics are exported.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -142,6 +150,7 @@ class MetricsSync(SyncServiceBase):
                 "customer_id": customer_id,
                 "metrics": metrics,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -151,6 +160,8 @@ class MetricsSync(SyncServiceBase):
 
     def limits(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> MetricsLimits:
         """
         Get the interval limits for the metrics endpoint.
@@ -158,6 +169,8 @@ class MetricsSync(SyncServiceBase):
         **Scopes**: `metrics:read`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -169,6 +182,7 @@ class MetricsSync(SyncServiceBase):
             url="/v1/metrics/limits",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         return parse_response_json(response, MetricsLimits)
@@ -177,6 +191,7 @@ class MetricsSync(SyncServiceBase):
         self,
         *,
         organization_id: str | list[str] | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> list[MetricDashboardSchema]:
         """
         List user-defined metric dashboards.
@@ -185,6 +200,8 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -199,6 +216,7 @@ class MetricsSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -210,6 +228,8 @@ class MetricsSync(SyncServiceBase):
 
     def create_dashboard(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MetricDashboardCreate],
     ) -> MetricDashboardSchema:
         """
@@ -218,6 +238,8 @@ class MetricsSync(SyncServiceBase):
         **Scopes**: `metrics:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -231,6 +253,7 @@ class MetricsSync(SyncServiceBase):
             url="/v1/metrics/dashboards",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -242,6 +265,8 @@ class MetricsSync(SyncServiceBase):
     def get_dashboard(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> MetricDashboardSchema:
         """
         Get a user-defined metric dashboard by ID.
@@ -250,6 +275,8 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -264,6 +291,7 @@ class MetricsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -274,6 +302,8 @@ class MetricsSync(SyncServiceBase):
     def delete_dashboard(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a user-defined metric dashboard.
@@ -282,6 +312,8 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -296,6 +328,7 @@ class MetricsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -306,6 +339,8 @@ class MetricsSync(SyncServiceBase):
     def update_dashboard(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MetricDashboardUpdate],
     ) -> MetricDashboardSchema:
         """
@@ -315,6 +350,8 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -330,6 +367,7 @@ class MetricsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -354,6 +392,7 @@ class MetricsAsync(AsyncServiceBase):
         | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> MetricsResponse:
         """
         Get metrics about your orders and subscriptions.
@@ -372,6 +411,8 @@ class MetricsAsync(AsyncServiceBase):
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -394,6 +435,7 @@ class MetricsAsync(AsyncServiceBase):
                 "customer_id": customer_id,
                 "metrics": metrics,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -415,6 +457,7 @@ class MetricsAsync(AsyncServiceBase):
         | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> str:
         """
         Export metrics as a CSV file.
@@ -431,6 +474,8 @@ class MetricsAsync(AsyncServiceBase):
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to include in the export. If not provided, all metrics are exported.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -453,6 +498,7 @@ class MetricsAsync(AsyncServiceBase):
                 "customer_id": customer_id,
                 "metrics": metrics,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -462,6 +508,8 @@ class MetricsAsync(AsyncServiceBase):
 
     async def limits(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> MetricsLimits:
         """
         Get the interval limits for the metrics endpoint.
@@ -469,6 +517,8 @@ class MetricsAsync(AsyncServiceBase):
         **Scopes**: `metrics:read`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -480,6 +530,7 @@ class MetricsAsync(AsyncServiceBase):
             url="/v1/metrics/limits",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         return parse_response_json(response, MetricsLimits)
@@ -488,6 +539,7 @@ class MetricsAsync(AsyncServiceBase):
         self,
         *,
         organization_id: str | list[str] | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> list[MetricDashboardSchema]:
         """
         List user-defined metric dashboards.
@@ -496,6 +548,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -510,6 +564,7 @@ class MetricsAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -521,6 +576,8 @@ class MetricsAsync(AsyncServiceBase):
 
     async def create_dashboard(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MetricDashboardCreate],
     ) -> MetricDashboardSchema:
         """
@@ -529,6 +586,8 @@ class MetricsAsync(AsyncServiceBase):
         **Scopes**: `metrics:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -542,6 +601,7 @@ class MetricsAsync(AsyncServiceBase):
             url="/v1/metrics/dashboards",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -553,6 +613,8 @@ class MetricsAsync(AsyncServiceBase):
     async def get_dashboard(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> MetricDashboardSchema:
         """
         Get a user-defined metric dashboard by ID.
@@ -561,6 +623,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -575,6 +639,7 @@ class MetricsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -585,6 +650,8 @@ class MetricsAsync(AsyncServiceBase):
     async def delete_dashboard(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a user-defined metric dashboard.
@@ -593,6 +660,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -607,6 +676,7 @@ class MetricsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -617,6 +687,8 @@ class MetricsAsync(AsyncServiceBase):
     async def update_dashboard(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MetricDashboardUpdate],
     ) -> MetricDashboardSchema:
         """
@@ -626,6 +698,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -641,6 +715,7 @@ class MetricsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
     RefundedAlready,
@@ -34,6 +39,7 @@ class RefundsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[RefundSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceRefund:
         """
         List refunds.
@@ -51,6 +57,8 @@ class RefundsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -74,6 +82,7 @@ class RefundsSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -94,6 +103,7 @@ class RefundsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[RefundSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[Refund, None, None]:
         """
         List refunds.
@@ -111,6 +121,8 @@ class RefundsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type Refund.
@@ -133,6 +145,7 @@ class RefundsSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -141,6 +154,8 @@ class RefundsSync(SyncServiceBase):
 
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[RefundCreate],
     ) -> Refund:
         """
@@ -149,6 +164,8 @@ class RefundsSync(SyncServiceBase):
         **Scopes**: `refunds:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -163,6 +180,7 @@ class RefundsSync(SyncServiceBase):
             url="/v1/refunds/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -187,6 +205,7 @@ class RefundsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[RefundSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceRefund:
         """
         List refunds.
@@ -204,6 +223,8 @@ class RefundsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -227,6 +248,7 @@ class RefundsAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -247,6 +269,7 @@ class RefundsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[RefundSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[Refund, None]:
         """
         List refunds.
@@ -264,6 +287,8 @@ class RefundsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type Refund.
@@ -286,6 +311,7 @@ class RefundsAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -295,6 +321,8 @@ class RefundsAsync(AsyncServiceBase):
 
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[RefundCreate],
     ) -> Refund:
         """
@@ -303,6 +331,8 @@ class RefundsAsync(AsyncServiceBase):
         **Scopes**: `refunds:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -317,6 +347,7 @@ class RefundsAsync(AsyncServiceBase):
             url="/v1/refunds/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

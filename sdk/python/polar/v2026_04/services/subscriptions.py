@@ -5,6 +5,7 @@ import typing
 
 from polar.base import (
     AsyncServiceBase,
+    RequestTimeout,
     SyncServiceBase,
     parse_response_json,
     parse_response_text,
@@ -65,6 +66,7 @@ class SubscriptionsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceSubscription:
         """
         List subscriptions.
@@ -89,6 +91,8 @@ class SubscriptionsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -119,6 +123,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -148,6 +153,7 @@ class SubscriptionsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[Subscription, None, None]:
         """
         List subscriptions.
@@ -172,6 +178,8 @@ class SubscriptionsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type Subscription.
@@ -201,6 +209,7 @@ class SubscriptionsSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -210,17 +219,23 @@ class SubscriptionsSync(SyncServiceBase):
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionCreateCustomer],
     ) -> Subscription: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionCreateExternalCustomer],
     ) -> Subscription: ...
 
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Subscription:
         """
@@ -234,6 +249,8 @@ class SubscriptionsSync(SyncServiceBase):
         **Scopes**: `subscriptions:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -247,6 +264,7 @@ class SubscriptionsSync(SyncServiceBase):
             url="/v1/subscriptions/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -268,6 +286,7 @@ class SubscriptionsSync(SyncServiceBase):
         columns: SubscriptionExportColumn
         | builtins.list[SubscriptionExportColumn]
         | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> str:
         """
         Export subscriptions as a CSV file.
@@ -283,6 +302,8 @@ class SubscriptionsSync(SyncServiceBase):
             started_before: Only include subscriptions started before this date. Must include a UTC offset.
             timezone: Time zone used to render dates in the CSV.
             columns: Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -304,6 +325,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "timezone": timezone,
                 "columns": columns,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -314,6 +336,8 @@ class SubscriptionsSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Subscription:
         """
         Get a subscription by ID.
@@ -322,6 +346,8 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Subscription not found.
@@ -337,6 +363,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -348,6 +375,8 @@ class SubscriptionsSync(SyncServiceBase):
     def revoke(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Subscription:
         """
         Revoke a subscription, i.e cancel immediately.
@@ -356,6 +385,8 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             AlreadyCanceledSubscription: This subscription is already revoked.
@@ -373,6 +404,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -387,6 +419,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateBase],
     ) -> Subscription: ...
 
@@ -394,6 +428,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateSeats],
     ) -> Subscription: ...
 
@@ -401,6 +437,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateBillingPeriod],
     ) -> Subscription: ...
 
@@ -408,6 +446,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionCancel],
     ) -> Subscription: ...
 
@@ -415,6 +455,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionRevoke],
     ) -> Subscription: ...
 
@@ -422,6 +464,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionPause],
     ) -> Subscription: ...
 
@@ -429,6 +473,8 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionResume],
     ) -> Subscription: ...
 
@@ -436,12 +482,16 @@ class SubscriptionsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateClear],
     ) -> Subscription: ...
 
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Subscription:
         """
@@ -451,6 +501,8 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -470,6 +522,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -506,6 +559,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceSubscription:
         """
         List subscriptions.
@@ -530,6 +584,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -560,6 +616,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -589,6 +646,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[Subscription, None]:
         """
         List subscriptions.
@@ -613,6 +671,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type Subscription.
@@ -642,6 +702,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -652,17 +713,23 @@ class SubscriptionsAsync(AsyncServiceBase):
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionCreateCustomer],
     ) -> Subscription: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionCreateExternalCustomer],
     ) -> Subscription: ...
 
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Subscription:
         """
@@ -676,6 +743,8 @@ class SubscriptionsAsync(AsyncServiceBase):
         **Scopes**: `subscriptions:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -689,6 +758,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             url="/v1/subscriptions/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -710,6 +780,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         columns: SubscriptionExportColumn
         | builtins.list[SubscriptionExportColumn]
         | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> str:
         """
         Export subscriptions as a CSV file.
@@ -725,6 +796,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             started_before: Only include subscriptions started before this date. Must include a UTC offset.
             timezone: Time zone used to render dates in the CSV.
             columns: Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -746,6 +819,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "timezone": timezone,
                 "columns": columns,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -756,6 +830,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Subscription:
         """
         Get a subscription by ID.
@@ -764,6 +840,8 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Subscription not found.
@@ -779,6 +857,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -790,6 +869,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def revoke(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Subscription:
         """
         Revoke a subscription, i.e cancel immediately.
@@ -798,6 +879,8 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             AlreadyCanceledSubscription: This subscription is already revoked.
@@ -815,6 +898,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -829,6 +913,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateBase],
     ) -> Subscription: ...
 
@@ -836,6 +922,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateSeats],
     ) -> Subscription: ...
 
@@ -843,6 +931,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateBillingPeriod],
     ) -> Subscription: ...
 
@@ -850,6 +940,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionCancel],
     ) -> Subscription: ...
 
@@ -857,6 +949,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionRevoke],
     ) -> Subscription: ...
 
@@ -864,6 +958,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionPause],
     ) -> Subscription: ...
 
@@ -871,6 +967,8 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionResume],
     ) -> Subscription: ...
 
@@ -878,12 +976,16 @@ class SubscriptionsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateClear],
     ) -> Subscription: ...
 
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Subscription:
         """
@@ -893,6 +995,8 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -912,6 +1016,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

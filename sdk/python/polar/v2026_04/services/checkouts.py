@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     CheckoutsClientConfirm403Error,
     CheckoutsClientUpdate403Error,
@@ -44,6 +49,7 @@ class CheckoutsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCheckout:
         """
         List checkout sessions.
@@ -60,6 +66,8 @@ class CheckoutsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -82,6 +90,7 @@ class CheckoutsSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -101,6 +110,7 @@ class CheckoutsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[Checkout, None, None]:
         """
         List checkout sessions.
@@ -117,6 +127,8 @@ class CheckoutsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type Checkout.
@@ -138,6 +150,7 @@ class CheckoutsSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -146,6 +159,8 @@ class CheckoutsSync(SyncServiceBase):
 
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CheckoutCreate],
     ) -> Checkout:
         """
@@ -154,6 +169,8 @@ class CheckoutsSync(SyncServiceBase):
         **Scopes**: `checkouts:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -167,6 +184,7 @@ class CheckoutsSync(SyncServiceBase):
             url="/v1/checkouts/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -178,6 +196,8 @@ class CheckoutsSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Checkout:
         """
         Get a checkout session by ID.
@@ -186,6 +206,8 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             id: The checkout session ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Checkout session not found.
@@ -201,6 +223,7 @@ class CheckoutsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -212,6 +235,8 @@ class CheckoutsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CheckoutUpdate],
     ) -> Checkout:
         """
@@ -221,6 +246,8 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             id: The checkout session ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -238,6 +265,7 @@ class CheckoutsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -251,12 +279,16 @@ class CheckoutsSync(SyncServiceBase):
     def client_get(
         self,
         client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CheckoutPublic:
         """
         Get a checkout session by client secret.
 
         Args:
             client_secret: The checkout session client secret.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Checkout session not found.
@@ -273,6 +305,7 @@ class CheckoutsSync(SyncServiceBase):
                 "client_secret": client_secret,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -285,6 +318,8 @@ class CheckoutsSync(SyncServiceBase):
     def client_update(
         self,
         client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CheckoutUpdatePublic],
     ) -> CheckoutPublic:
         """
@@ -292,6 +327,8 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -310,6 +347,7 @@ class CheckoutsSync(SyncServiceBase):
                 "client_secret": client_secret,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -324,6 +362,8 @@ class CheckoutsSync(SyncServiceBase):
     def client_confirm(
         self,
         client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CheckoutConfirmStripe],
     ) -> CheckoutPublicConfirmed:
         """
@@ -333,6 +373,8 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -352,6 +394,7 @@ class CheckoutsSync(SyncServiceBase):
                 "client_secret": client_secret,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -378,6 +421,7 @@ class CheckoutsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCheckout:
         """
         List checkout sessions.
@@ -394,6 +438,8 @@ class CheckoutsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -416,6 +462,7 @@ class CheckoutsAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -435,6 +482,7 @@ class CheckoutsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[Checkout, None]:
         """
         List checkout sessions.
@@ -451,6 +499,8 @@ class CheckoutsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type Checkout.
@@ -472,6 +522,7 @@ class CheckoutsAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -481,6 +532,8 @@ class CheckoutsAsync(AsyncServiceBase):
 
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CheckoutCreate],
     ) -> Checkout:
         """
@@ -489,6 +542,8 @@ class CheckoutsAsync(AsyncServiceBase):
         **Scopes**: `checkouts:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -502,6 +557,7 @@ class CheckoutsAsync(AsyncServiceBase):
             url="/v1/checkouts/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -513,6 +569,8 @@ class CheckoutsAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Checkout:
         """
         Get a checkout session by ID.
@@ -521,6 +579,8 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             id: The checkout session ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Checkout session not found.
@@ -536,6 +596,7 @@ class CheckoutsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -547,6 +608,8 @@ class CheckoutsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CheckoutUpdate],
     ) -> Checkout:
         """
@@ -556,6 +619,8 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             id: The checkout session ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -573,6 +638,7 @@ class CheckoutsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -586,12 +652,16 @@ class CheckoutsAsync(AsyncServiceBase):
     async def client_get(
         self,
         client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CheckoutPublic:
         """
         Get a checkout session by client secret.
 
         Args:
             client_secret: The checkout session client secret.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Checkout session not found.
@@ -608,6 +678,7 @@ class CheckoutsAsync(AsyncServiceBase):
                 "client_secret": client_secret,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -620,6 +691,8 @@ class CheckoutsAsync(AsyncServiceBase):
     async def client_update(
         self,
         client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CheckoutUpdatePublic],
     ) -> CheckoutPublic:
         """
@@ -627,6 +700,8 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -645,6 +720,7 @@ class CheckoutsAsync(AsyncServiceBase):
                 "client_secret": client_secret,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -659,6 +735,8 @@ class CheckoutsAsync(AsyncServiceBase):
     async def client_confirm(
         self,
         client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CheckoutConfirmStripe],
     ) -> CheckoutPublicConfirmed:
         """
@@ -668,6 +746,8 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -687,6 +767,7 @@ class CheckoutsAsync(AsyncServiceBase):
                 "client_secret": client_secret,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

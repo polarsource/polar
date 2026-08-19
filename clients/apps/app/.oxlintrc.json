@@ -68,6 +68,18 @@
     "valid-typeof": "error",
     "import/first": "warn",
     "no-var": "error",
+    "react/error-boundaries": "error",
+    "react/globals": "error",
+    "react/immutability": "error",
+    "react/incompatible-library": "error",
+    "react/preserve-manual-memoization": "error",
+    "react/purity": "error",
+    "react/refs": "error",
+    "react/set-state-in-effect": "error",
+    "react/set-state-in-render": "error",
+    "react/static-components": "error",
+    "react/use-memo": "error",
+    "react/void-use-memo": "error",
     "react/display-name": "error",
     "react/jsx-key": "error",
     "react/jsx-no-comment-textnodes": "error",
@@ -102,6 +114,34 @@
     "react/exhaustive-deps": "warn"
   },
   "overrides": [
+    {
+      "files": [
+        "app/**/subscriptions/**/cancel/index.tsx",
+        "app/**/subscriptions/**/update/index.tsx",
+        "app/**/onboarding/index.tsx"
+      ],
+      "rules": {
+        "react/incompatible-library": "off"
+      }
+    },
+    {
+      "files": ["app/**/checkout-links/**/index.tsx"],
+      "rules": {
+        "react/set-state-in-effect": "off"
+      }
+    },
+    {
+      "files": [
+        "components/Animations/**/*.tsx",
+        "components/Home/RevenueTile.tsx",
+        "components/Shared/PlaceholderBox.tsx",
+        "components/Shared/SlideToAction.tsx",
+        "components/Shared/Toast.tsx"
+      ],
+      "rules": {
+        "react/immutability": "off"
+      }
+    },
     {
       "files": ["**/metro.config.js"],
       "globals": {

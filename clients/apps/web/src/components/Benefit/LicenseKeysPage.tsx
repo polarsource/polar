@@ -3,7 +3,14 @@
 import { LicenseKeyModal } from '@/components/Benefit/LicenseKeys/LicenseKeyModal'
 import LicenseKeyStatusSelect from '@/components/Benefit/LicenseKeys/LicenseKeyStatusSelect'
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
-import { useLicenseKey, useOrganizationLicenseKeys } from '@/hooks/queries'
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { toast } from '@/components/Toast/use-toast'
+import {
+  useLicenseKey,
+  useLicenseKeyRotate,
+  useOrganizationLicenseKeys,
+} from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -22,7 +29,7 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useModal } from '../Modal/useModal'
 import { BenefitPage } from './BenefitPage'
 
@@ -76,6 +83,13 @@ export const LicenseKeysPage = ({
     show: showLicenseKeyModal,
     hide: hideLicenseKeyModal,
   } = useModal(!!deepLinkedLicenseKeyId)
+  const {
+    isShown: isRotateConfirmShown,
+    show: showRotateConfirm,
+    hide: hideRotateConfirm,
+  } = useModal()
+  const rotateLicenseKey = useLicenseKeyRotate(organization.id)
+  const isRotatingRef = useRef(false)
 
   const router = useRouter()
 
@@ -151,6 +165,44 @@ export const LicenseKeysPage = ({
     setDeepLinkParam(null)
   }, [hideLicenseKeyModal, setSelectedLicenseKeyId, setDeepLinkParam])
 
+  const openRotateConfirm = useCallback(() => {
+    hideLicenseKeyModal()
+    showRotateConfirm()
+  }, [hideLicenseKeyModal, showRotateConfirm])
+
+  const closeRotateConfirm = useCallback(() => {
+    hideRotateConfirm()
+    if (!isRotatingRef.current) {
+      window.setTimeout(showLicenseKeyModal, 0)
+    }
+  }, [hideRotateConfirm, showLicenseKeyModal])
+
+  const handleRotate = useCallback(async () => {
+    if (!selectedLicenseKeyId) {
+      return
+    }
+
+    isRotatingRef.current = true
+    try {
+      const { error } = await rotateLicenseKey.mutateAsync(selectedLicenseKeyId)
+      if (error) {
+        toast({
+          title: 'License Key Rotation Failed',
+          description: extractApiErrorMessage(error),
+        })
+      } else {
+        toast({
+          title: 'License Key Rotated',
+          description:
+            'The previous key no longer validates. Copy the new key and share it with your customer.',
+        })
+      }
+    } finally {
+      isRotatingRef.current = false
+      showLicenseKeyModal()
+    }
+  }, [rotateLicenseKey, selectedLicenseKeyId, showLicenseKeyModal])
+
   return (
     <Tabs defaultValue="license-keys">
       <TabsList className="mb-8">
@@ -194,11 +246,21 @@ export const LicenseKeysPage = ({
                   organization={organization}
                   licenseKey={selectedLicenseKey}
                   onClose={closeLicenseKeyModal}
+                  onRotate={openRotateConfirm}
                 />
               ) : null
             }
             isShown={isLicenseKeyModalShown}
             hide={closeLicenseKeyModal}
+          />
+          <ConfirmModal
+            isShown={isRotateConfirmShown}
+            hide={closeRotateConfirm}
+            title="Rotate this license key?"
+            description="A new key will be generated for this customer. The previous key stops validating immediately. Share the new key with your customer, or have them copy it from the customer portal."
+            destructive
+            destructiveText="Rotate"
+            onConfirm={handleRotate}
           />
         </Box>
       </TabsContent>

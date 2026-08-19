@@ -1,9 +1,7 @@
 'use client'
 
-import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
-import { useLicenseKeyRotate, useLicenseKeyUpdate } from '@/hooks/queries'
+import { useLicenseKeyUpdate } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Button, InlineModalHeader, Text } from '@polar-sh/orbit'
@@ -16,20 +14,15 @@ export const LicenseKeyModal = ({
   organization,
   licenseKey,
   onClose,
+  onRotate,
 }: {
   organization: schemas['Organization']
   licenseKey: schemas['LicenseKeyWithActivations'] | schemas['LicenseKeyRead']
   onClose: () => void
+  onRotate: () => void
 }) => {
   const [statusLoading, setStatusLoading] = useState(false)
-  const [rotateLoading, setRotateLoading] = useState(false)
   const updateLicenseKey = useLicenseKeyUpdate(organization.id)
-  const rotateLicenseKey = useLicenseKeyRotate(organization.id)
-  const {
-    isShown: isRotateConfirmShown,
-    show: showRotateConfirm,
-    hide: hideRotateConfirm,
-  } = useModal()
 
   const handleToggleLicenseKeyStatus = useCallback(
     async (status: 'granted' | 'disabled' | 'revoked') => {
@@ -65,30 +58,6 @@ export const LicenseKeyModal = ({
     },
     [updateLicenseKey, licenseKey],
   )
-
-  const handleRotate = useCallback(async () => {
-    setRotateLoading(true)
-    await rotateLicenseKey
-      .mutateAsync(licenseKey.id, {
-        onSettled: () => {
-          setRotateLoading(false)
-        },
-      })
-      .then(({ error }) => {
-        if (error) {
-          toast({
-            title: 'License Key Rotation Failed',
-            description: extractApiErrorMessage(error),
-          })
-          return
-        }
-        toast({
-          title: 'License Key Rotated',
-          description:
-            'The previous key no longer validates. Copy the new key and share it with your customer.',
-        })
-      })
-  }, [rotateLicenseKey, licenseKey.id])
 
   return (
     <Box flexDirection="column" overflowY="auto">
@@ -145,11 +114,7 @@ export const LicenseKeyModal = ({
           )}
           {(licenseKey.status === 'granted' ||
             licenseKey.status === 'disabled') && (
-            <Button
-              onClick={showRotateConfirm}
-              variant="secondary"
-              loading={rotateLoading}
-            >
+            <Button onClick={onRotate} variant="secondary">
               Rotate
             </Button>
           )}
@@ -164,15 +129,6 @@ export const LicenseKeyModal = ({
           )}
         </Box>
       </Box>
-      <ConfirmModal
-        isShown={isRotateConfirmShown}
-        hide={hideRotateConfirm}
-        title="Rotate this license key?"
-        description="A new key will be generated for this customer. The previous key stops validating immediately. Share the new key with your customer, or have them copy it from the customer portal."
-        destructive
-        destructiveText="Rotate"
-        onConfirm={handleRotate}
-      />
     </Box>
   )
 }

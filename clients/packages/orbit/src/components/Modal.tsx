@@ -5,12 +5,12 @@ import React, {
   FunctionComponent,
   MouseEvent,
   useCallback,
+  useEffect,
   type JSX,
 } from 'react'
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
-import { useBodyScrollLock } from '../lib/useBodyScrollLock'
 import { Button } from './Button'
 import { X } from 'lucide-react'
 
@@ -50,7 +50,13 @@ export const Modal: FunctionComponent<ModalProps> = ({
     [hide, isShown],
   )
 
-  useBodyScrollLock(isShown)
+  useEffect(() => {
+    if (isShown) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isShown, hide])
 
   const onInnerClick = (e: MouseEvent) => {
     e.stopPropagation()

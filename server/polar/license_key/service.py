@@ -189,6 +189,9 @@ class LicenseKeyService:
         *,
         license_key: LicenseKey,
     ) -> LicenseKey:
+        await session.refresh(
+            license_key, attribute_names=["status"], with_for_update=True
+        )
         if license_key.status not in ROTATABLE_STATUSES:
             raise RotateNotPermitted(license_key.status)
 

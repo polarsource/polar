@@ -6,6 +6,7 @@ import pytest_asyncio
 from pytest_mock import MockerFixture
 from sqlalchemy import Select
 
+from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
@@ -16,6 +17,7 @@ from polar.meter.aggregation import (
     PropertyAggregation,
 )
 from polar.meter.filter import Filter, FilterConjunction
+from polar.meter_period.service import meter_period as meter_period_service
 from polar.models import (
     BillingEntry,
     Customer,
@@ -109,11 +111,13 @@ async def create_metered_event_billing_entry(
     pending: bool = True,
     order: Order | None = None,
     metadata_key: str = "tokens",
+    timestamp: datetime | None = None,
 ) -> BillingEntry:
     event = await create_event(
         save_fixture,
         organization=customer.organization,
         customer=customer,
+        timestamp=timestamp,
         metadata={metadata_key: tokens},
     )
     billing_entry = BillingEntry(
@@ -1282,3 +1286,202 @@ class TestCreateOrderItemsFromPending:
         for entry in old_entries:
             await session.refresh(entry)
             assert entry.order_item_id is None
+
+
+@pytest.mark.asyncio
+class TestMeterPeriodSwitch:
+    """`Organization.is_metered_billing_periods_enabled` selects where metered line
+    items come from: pending billing entries, or meter periods."""
+
+    async def test_metered_line_items_come_from_periods_when_enabled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+        metered_subscription: Subscription,
+    ) -> None:
+        organization.feature_settings = {"metered_billing_periods_enabled": True}
+        await save_fixture(organization)
+
+        period_start = metered_subscription.current_period_start
+        await meter_period_service.open_for_subscription(
+            session,
+            metered_subscription,
+            starts_at=period_start,
+            ends_at=metered_subscription.current_period_end,
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=metered_subscription.subscription_product_prices[0].product_price,
+            subscription=metered_subscription,
+            tokens=25,
+            timestamp=period_start + timedelta(hours=1),
+        )
+        await session.flush()
+
+        items = [
+            item
+            async for item, _ in (
+                billing_entry_service.compute_pending_subscription_line_items(
+                    session,
+                    metered_subscription,
+                    cutoff=metered_subscription.current_period_end,
+                )
+            )
+        ]
+
+        metered_items = [item for item in items if isinstance(item, MeteredLineItem)]
+        assert len(metered_items) == 1
+        assert metered_items[0].consumed_units == 25
+        assert metered_items[0].amount == 25 * 100
+
+    async def test_falls_back_to_entries_when_no_period_covers_the_window(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        """Switching an organization on mid-life must not drop the window it is
+        already in: that usage is still recorded as pending entries, and no period
+        covers it until the next cycle opens one."""
+        price = product_metered_unit.prices[0]
+        for _ in range(3):
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=metered_subscription,
+                tokens=100,
+            )
+        organization.feature_settings = {"metered_billing_periods_enabled": True}
+        await save_fixture(organization)
+        await session.flush()
+
+        items = [
+            item
+            async for item, _ in (
+                billing_entry_service.compute_pending_subscription_line_items(
+                    session,
+                    metered_subscription,
+                    cutoff=metered_subscription.current_period_end,
+                )
+            )
+        ]
+
+        metered_items = [item for item in items if isinstance(item, MeteredLineItem)]
+        assert len(metered_items) == 1
+        assert metered_items[0].consumed_units == 300
+
+    async def test_pending_entries_are_ignored_when_enabled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        """A switched-on organization bills the period's window.
+
+        These entries carry events outside the window, so they fall outside the
+        quantity even though they are still pending.
+        """
+        price = product_metered_unit.prices[0]
+        for _ in range(3):
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=metered_subscription,
+                tokens=100,
+            )
+
+        period_start = metered_subscription.current_period_start
+        organization.feature_settings = {"metered_billing_periods_enabled": True}
+        await save_fixture(organization)
+        await meter_period_service.open_for_subscription(
+            session,
+            metered_subscription,
+            starts_at=period_start - timedelta(days=60),
+            ends_at=period_start - timedelta(days=30),
+        )
+        await session.flush()
+
+        items = [
+            item
+            async for item, _ in (
+                billing_entry_service.compute_pending_subscription_line_items(
+                    session, metered_subscription, cutoff=period_start
+                )
+            )
+        ]
+
+        metered_items = [item for item in items if isinstance(item, MeteredLineItem)]
+        assert len(metered_items) == 1
+        assert metered_items[0].consumed_units == 0
+        assert metered_items[0].amount == 0
+
+    async def test_late_event_is_billed_as_an_adjustment(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        metered_subscription: Subscription,
+    ) -> None:
+        """Usage arriving after its window was settled appears on the next invoice,
+        carrying the dates of the period it happened in."""
+        organization.feature_settings = {"metered_billing_periods_enabled": True}
+        await save_fixture(organization)
+
+        first_start = metered_subscription.current_period_start
+        first_end = metered_subscription.current_period_end
+        periods = await meter_period_service.open_for_subscription(
+            session, metered_subscription, starts_at=first_start, ends_at=first_end
+        )
+        await session.flush()
+        settlement = await meter_period_service.compute_settlement(
+            session, periods[0], cutoff=first_end
+        )
+        await meter_period_service.apply_settlement(session, settlement)
+
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=metered_subscription.subscription_product_prices[0].product_price,
+            subscription=metered_subscription,
+            tokens=42,
+            timestamp=first_start + timedelta(days=2),
+        )
+        await meter_period_service.open_for_subscription(
+            session,
+            metered_subscription,
+            starts_at=first_end,
+            ends_at=first_end + timedelta(days=31),
+        )
+        await session.flush()
+
+        items = [
+            item
+            async for item, _ in (
+                billing_entry_service.compute_pending_subscription_line_items(
+                    session,
+                    metered_subscription,
+                    cutoff=first_end + timedelta(days=31),
+                )
+            )
+        ]
+
+        metered = [item for item in items if isinstance(item, MeteredLineItem)]
+        adjustments = [item for item in metered if "adjustment" in item.label]
+        assert len(adjustments) == 1
+        assert adjustments[0].amount == 42 * 100
+        assert adjustments[0].start_timestamp == first_start
+        assert adjustments[0].end_timestamp == first_end

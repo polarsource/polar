@@ -2,7 +2,7 @@ import uuid
 from datetime import timedelta
 
 import structlog
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
@@ -160,6 +160,7 @@ async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
             subscription_id,
             options=(
                 selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
+                joinedload(Subscription.organization),
             ),
         )
         if subscription is None:

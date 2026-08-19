@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import json
 from datetime import datetime
@@ -65,8 +66,8 @@ class InvoiceService:
         invoice_bytes = await render_invoice_pdf(invoice)
 
         s3 = S3Service(settings.S3_CUSTOMER_INVOICES_BUCKET_NAME)
-        return s3.upload(
-            bytes(invoice_bytes), order.invoice_filename, "application/pdf"
+        return await asyncio.to_thread(
+            s3.upload, bytes(invoice_bytes), order.invoice_filename, "application/pdf"
         )
 
     async def get_order_invoice_url(self, order: Order) -> tuple[str, datetime]:
@@ -188,7 +189,8 @@ class InvoiceService:
             invoice, heading_title="Reverse Invoice"
         )
         s3 = S3Service(settings.S3_PAYOUT_INVOICES_BUCKET_NAME)
-        return s3.upload(
+        return await asyncio.to_thread(
+            s3.upload,
             bytes(invoice_bytes),
             f"{account.id}/Payout-{payout.invoice_number}.pdf",
             "application/pdf",

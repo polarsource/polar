@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20
     WORKER_MIN_BACKOFF_MILLISECONDS: int = 2_000
+    # Misses in a row before the worker exits and gets restarted. Each miss
+    # takes about 20s. Set to 0 to only log.
+    WORKER_EVENT_LOOP_WATCHDOG_MAX_MISSES: int = 3
     WORKER_PROMETHEUS_DIR: Path = Path(tempfile.gettempdir()) / "prometheus_multiproc"
 
     # Grafana Cloud Prometheus
@@ -362,6 +365,11 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str = "polar123456789"
     AWS_REGION: str = "us-east-2"
     AWS_SIGNATURE_VERSION: str = "v4"
+    # botocore defaults allow about 5 minutes per call. That is longer than the
+    # job that started it, so a slow upload keeps a thread busy for nothing.
+    AWS_S3_CONNECT_TIMEOUT_SECONDS: float = 5.0
+    AWS_S3_READ_TIMEOUT_SECONDS: float = 20.0
+    AWS_S3_MAX_ATTEMPTS: int = 3
 
     # Secrets encryption. Production and sandbox wrap data keys with a KMS key
     # (AWS_KMS_KEY_ID); local and CI use a static key instead, so tests make no

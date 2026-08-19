@@ -255,7 +255,11 @@ class TestSeatTiersToTiers:
                 {
                     "seat_tier_type": SeatTierType.volume,
                     "tiers": [
-                        {"min_seats": 1, "max_seats": None, "price_per_seat": 500.5},
+                        {
+                            "min_seats": 1,
+                            "max_seats": None,
+                            "price_per_seat": 500.5,  # type: ignore[typeddict-item]
+                        },
                     ],
                 }
             )

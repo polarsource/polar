@@ -26,8 +26,8 @@ orders. It also adds two API endpoints and a Benefits tab on the customer page i
 
 - Granting products. This is benefit-level only. Handing someone a full product is a different
   problem (pricing, orders, invoices) and belongs to a complimentary-subscription feature.
-- Manual grants for every benefit type. Only the types whose grant and revoke work is safe to run
-  per grant are allowed. See [Which benefits can be granted](#which-benefits-can-be-granted).
+- Manual grants for every benefit type in the first version. See
+  [Which benefits can be granted](#which-benefits-can-be-granted).
 - Editing a manual grant after creation. Change of mind means revoke and re-grant.
 - Bulk grants across many customers, or grant templates.
 
@@ -96,30 +96,18 @@ correction about a single benefit.
 
 ## Which benefits can be granted
 
-Only three types are allowed:
+The first version allows `feature_flag`, `custom` and `license_keys`. Everything else is rejected
+with a validation error, enforced by one constant (`MANUALLY_GRANTABLE_BENEFIT_TYPES`) mirrored in
+the frontend so the picker can't build a rejected request.
 
-| Type | Why it's safe |
-| --- | --- |
-| `feature_flag` | No external side effect. |
-| `custom` | No external side effect. |
-| `license_keys` | Side effect (the key) is owned by the individual grant, via `should_revoke_individually = True`. |
+This is a scoping decision, not a permanent rule. Those three need no extra thought, since two
+have no external side effect and license keys already grant and revoke per grant, so starting
+there keeps the first version small. `meter_credit` is the obvious next one and probably the most
+useful. Adding a type is a one-line change to the constant plus tests.
 
-Everything else, including Discord roles, GitHub repo invites, downloadables and Slack channels,
-is rejected with a validation error. It is enforced by one constant
-(`MANUALLY_GRANTABLE_BENEFIT_TYPES`) mirrored in the frontend so the picker can't build a rejected
-request.
-
-The reason is coexistence. A manual grant and a subscription grant for the same benefit are two
-rows by design, and both can be active at once. That is fine when the side effect belongs to the
-row (a license key each) or doesn't exist. It breaks when the side effect is keyed to the
-customer. There is one Discord role per user, so revoking the manual grant would either strip the
-role the subscription is still paying for, or the two grants would fight over the same external
-state.
-
-The revoke path has a partial defence. It only calls `strategy.revoke()` when
-`should_revoke_individually` is set or fewer than two grants remain. But that was written for a
-world where both owners are purchases with similar lifetimes. The allowlist can grow per type once
-each one's coexistence behaviour has been reasoned through.
+The types with customer-keyed external state, Discord roles being the clearest, need a decision
+first about what happens when a manual grant and a subscription grant both claim the same role.
+That is work to do before adding them rather than a reason they can't be added.
 
 ## Lifecycle
 
@@ -285,9 +273,6 @@ manual grant. Manual grants not cycling on renewal. And the scheduler's eligibil
 
 ## Risks and open questions
 
-- **The allowlist will be challenged.** Merchants will want to manually grant Discord roles. That
-  needs per-type coexistence design, deciding what happens when two owners claim one external
-  role, rather than just an addition to the constant.
 - **No record of who granted.** `reason` is free text, and we don't store the acting user. Worth
   adding if this is ever used for anything contested. It is a column on `ManualGrant`, so it is
   cheap later.

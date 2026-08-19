@@ -42,7 +42,7 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
   return (
     <Box
       flexDirection="column"
-      rowGap="m"
+      rowGap="l"
       role="group"
       aria-labelledby={hasSingleTier ? undefined : titleId}
       {...(hasSingleTier
@@ -52,7 +52,7 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
             borderWidth: 1,
             borderStyle: 'solid' as const,
             borderColor: 'border-primary' as const,
-            backgroundColor: 'background-card' as const,
+            backgroundColor: 'background-primary' as const,
             padding: 'l' as const,
           })}
     >
@@ -65,6 +65,7 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
             type="button"
             size="icon"
             variant="ghost"
+            className="-my-1 h-7 w-7"
             onClick={onRemove}
             aria-label={`Remove ${title}`}
           >
@@ -77,60 +78,49 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
         <FormField
           control={control}
           name={`prices.${index}.tiers.tiers.${tierIndex}.bound` as const}
-          rules={
-            isLast
-              ? undefined
-              : {
-                  required: 'Required',
-                  validate: (value) => {
-                    const parsed = Number(value)
-                    if (!Number.isInteger(parsed)) {
-                      return 'Must be a whole number of units'
-                    }
-                    if (parsed <= previousBound) {
-                      return `Must be greater than ${previousBound.toLocaleString('en-US')}`
-                    }
-                    return true
-                  },
-                }
-          }
+          rules={{
+            required: isLast ? false : 'Required',
+            validate: (value) => {
+              if (isLast && value == null) {
+                return true
+              }
+              const parsed = Number(value)
+              if (!Number.isInteger(parsed)) {
+                return 'Must be a whole number of units'
+              }
+              if (parsed <= previousBound) {
+                return `Must be greater than ${previousBound.toLocaleString('en-US')}`
+              }
+              return true
+            },
+          }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Up to</FormLabel>
               <FormControl>
-                {isLast ? (
-                  <Input
-                    name={field.name}
-                    value="Unlimited"
-                    disabled
-                    readOnly
-                    ref={field.ref}
-                  />
-                ) : (
-                  <Input
-                    {...field}
-                    type="number"
-                    min={previousBound + 1}
-                    step={1}
-                    value={field.value ?? ''}
-                    onChange={(e) => {
-                      const parsed = Number.parseInt(e.target.value, 10)
-                      field.onChange(Number.isNaN(parsed) ? '' : parsed)
-                      setValue(`prices.${index}.id`, '')
-                    }}
-                    onBlur={(e) => {
-                      field.onBlur()
-                      const parsed = Number.parseInt(e.target.value, 10)
-                      const minAllowed = previousBound + 1
-                      field.onChange(
-                        Math.max(
-                          Number.isNaN(parsed) ? minAllowed : parsed,
-                          minAllowed,
-                        ),
-                      )
-                    }}
-                  />
-                )}
+                <Input
+                  {...field}
+                  type="number"
+                  min={previousBound + 1}
+                  step={1}
+                  value={field.value ?? ''}
+                  placeholder={isLast ? 'Unlimited' : undefined}
+                  onChange={(e) => {
+                    const parsed = Number.parseInt(e.target.value, 10)
+                    field.onChange(Number.isNaN(parsed) ? null : parsed)
+                    setValue(`prices.${index}.id`, '')
+                  }}
+                  onBlur={(e) => {
+                    field.onBlur()
+                    const parsed = Number.parseInt(e.target.value, 10)
+                    const minAllowed = previousBound + 1
+                    if (Number.isNaN(parsed)) {
+                      field.onChange(isLast ? null : minAllowed)
+                      return
+                    }
+                    field.onChange(Math.max(parsed, minAllowed))
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

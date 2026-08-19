@@ -46,7 +46,7 @@ export const UnitTierEditor: React.FC<UnitTierEditorProps> = ({
     )
     const newBound = previousBound > 0 ? previousBound * 2 : 1000
 
-    if (currentTiers && currentTiers.length > 0) {
+    if (currentTiers && currentTiers.length > 0 && lastTier?.bound == null) {
       setValue(
         `prices.${index}.tiers.tiers.${currentTiers.length - 1}.bound`,
         newBound,
@@ -58,9 +58,12 @@ export const UnitTierEditor: React.FC<UnitTierEditorProps> = ({
 
   const removeTier = useCallback(
     (tierIndex: number) => {
+      const wasLast =
+        tierIndex ===
+        (getValues(`prices.${index}.tiers.tiers`)?.length ?? 0) - 1
       remove(tierIndex)
       const remainingTiers = getValues(`prices.${index}.tiers.tiers`) ?? []
-      if (remainingTiers.length > 0) {
+      if (wasLast && remainingTiers.length > 0) {
         setValue(
           `prices.${index}.tiers.tiers.${remainingTiers.length - 1}.bound`,
           null,

@@ -1,7 +1,7 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { Grid, Input } from '@polar-sh/orbit'
+import { Grid, Input, Text } from '@polar-sh/orbit'
 import {
   FormControl,
   FormDescription,
@@ -82,35 +82,39 @@ export const UnitLabelFields = ({ index }: UnitLabelFieldsProps) => {
 
         return (
           <FormItem>
-            <FormLabel>Unit name</FormLabel>
-            <FormDescription>
-              What customers see instead of &ldquo;unit&rdquo; at checkout and
-              on invoices. Leave blank to use the default.
-            </FormDescription>
+            <FormLabel>Label</FormLabel>
             <Grid templateColumns="repeat(2, 1fr)" columnGap="m">
-              <FormItem>
-                <FormLabel>Singular</FormLabel>
-                <FormControl>
-                  <Input
-                    value={singular}
-                    placeholder="device"
-                    autoComplete="off"
-                    onChange={(e) => updateLabel(e.target.value, plural)}
-                  />
-                </FormControl>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Plural</FormLabel>
-                <FormControl>
-                  <Input
-                    value={plural}
-                    placeholder="devices"
-                    autoComplete="off"
-                    onChange={(e) => updateLabel(singular, e.target.value)}
-                  />
-                </FormControl>
-              </FormItem>
+              <FormControl>
+                <Input
+                  value={singular}
+                  placeholder="device"
+                  autoComplete="off"
+                  className="pr-20"
+                  postSlot={
+                    <Text variant="caption" color="muted">
+                      singular
+                    </Text>
+                  }
+                  onChange={(e) => updateLabel(e.target.value, plural)}
+                />
+              </FormControl>
+              <Input
+                value={plural}
+                placeholder="devices"
+                aria-label="Plural unit name"
+                autoComplete="off"
+                className="pr-16"
+                postSlot={
+                  <Text variant="caption" color="muted">
+                    plural
+                  </Text>
+                }
+                onChange={(e) => updateLabel(singular, e.target.value)}
+              />
             </Grid>
+            <FormDescription>
+              Shown instead of &ldquo;unit&rdquo; at checkout and on invoices.
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )

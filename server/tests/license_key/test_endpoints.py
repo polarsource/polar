@@ -810,6 +810,27 @@ class TestUpdateLicenseKey:
 
 
 @pytest.mark.asyncio
+class TestRotateLicenseKey:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(f"/v1/license-keys/{uuid.uuid4()}/rotate")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_license_key(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_organization_second: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            f"/v1/license-keys/{license_key_organization_second.id}/rotate"
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 class TestGetActivation:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(

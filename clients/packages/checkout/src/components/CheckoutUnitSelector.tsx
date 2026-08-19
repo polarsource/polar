@@ -7,7 +7,6 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getUnitPrice, type ProductCheckoutPublic } from '../guards'
 import { ErrorResponse } from '../providers/CheckoutProvider'
@@ -47,7 +46,6 @@ const CheckoutUnitSelector = ({
     [t],
   )
 
-  // Check if the product has unit-based pricing
   const unitPrice = getUnitPrice(checkout)
   const isUnitBased = unitPrice !== null
 
@@ -61,7 +59,6 @@ const CheckoutUnitSelector = ({
 
   // Display units clamped to at least the minimum
   const displayUnits = Math.max(checkout.units || minimumUnits, minimumUnits)
-  // Track whether the checkout needs to be corrected
   const needsUnitCorrection =
     checkout.units !== null &&
     checkout.units !== undefined &&
@@ -143,15 +140,15 @@ const CheckoutUnitSelector = ({
 
   if (compact) {
     return (
-      <Box flexDirection="column" rowGap="m">
-        <Box alignItems="center" justifyContent="between">
-          <Box flexDirection="column" rowGap="none">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-col gap-0.5">
             <span className="text-sm font-medium dark:text-white">
               {t('checkout.pricing.units.label', {
                 unitLabelPlural: capitalize(unitLabels.unitLabelPlural),
               })}
             </span>
-          </Box>
+          </div>
           {isFixedUnits ? (
             <span className="text-sm font-medium dark:text-white">
               {displayUnits}
@@ -166,7 +163,7 @@ const CheckoutUnitSelector = ({
               compact
             />
           )}
-        </Box>
+        </div>
         {!isFixedUnits && unitLimitText && (
           <p className="dark:text-polar-400 text-xs text-gray-500">
             {unitLimitText}
@@ -175,22 +172,22 @@ const CheckoutUnitSelector = ({
         {error && (
           <p className="text-destructive-foreground text-sm">{error}</p>
         )}
-      </Box>
+      </div>
     )
   }
 
   return (
-    <Box flexDirection="column" rowGap="2xl">
-      <Box flexDirection="column" rowGap="s">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
         <h1
           className="text-3xl font-[350] text-gray-900 dark:text-white"
           data-testid="headline-price"
         >
           {formatCurrency('compact', locale)(netAmount, currency)}
         </h1>
-      </Box>
+      </div>
 
-      <Box flexDirection="column" rowGap="s">
+      <div className="flex flex-col gap-2">
         <label className="text-lg">
           {t('checkout.pricing.units.numberOfUnits', {
             unitLabelPlural: unitLabels.unitLabelPlural,
@@ -217,10 +214,10 @@ const CheckoutUnitSelector = ({
         {error && (
           <p className="text-destructive-foreground text-sm">{error}</p>
         )}
-      </Box>
+      </div>
 
       <MeteredPricesDisplay checkout={checkout} locale={locale} />
-    </Box>
+    </div>
   )
 }
 

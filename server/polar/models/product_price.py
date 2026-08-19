@@ -464,10 +464,14 @@ class ProductPriceUnit(TieredPrice, NewProductPrice, ProductPrice):
         return "unit" if count == 1 else "units"
 
     def _unit_label_forms(self, locale: str | None) -> dict[str, str]:
-        labels = self.unit_label or {}
+        labels = {
+            key.replace("_", "-").lower(): forms
+            for key, forms in (self.unit_label or {}).items()
+        }
         if locale:
-            language = locale.replace("_", "-").split("-", 1)[0]
-            if forms := labels.get(locale) or labels.get(language):
+            requested = locale.replace("_", "-").lower()
+            language = requested.split("-", 1)[0]
+            if forms := labels.get(requested) or labels.get(language):
                 return forms
         if forms := labels.get("en"):
             return forms

@@ -24153,12 +24153,12 @@ export interface components {
     MerchantMigrationCutoverReport: {
       /**
        * Started
-       * @description Whether the merchant has confirmed the switch at least once.
+       * @description Whether the merchant has confirmed the switch.
        */
       started: boolean
       /**
        * Running
-       * @description Whether Polar is currently going through the subscriptions.
+       * @description Whether a switch run is in progress.
        */
       running: boolean
       /**
@@ -24168,7 +24168,7 @@ export interface components {
       completed: boolean
       /**
        * Total
-       * @description Imported subscriptions the switch looks at.
+       * @description Imported subscriptions in scope.
        */
       total: number
       /**
@@ -24178,17 +24178,17 @@ export interface components {
       pending: number
       /**
        * Moved
-       * @description Now billed by Polar, and stopped on the source.
+       * @description Now billed by Polar.
        */
       moved: number
       /**
        * Skipped
-       * @description Left on the source, each with a reason on its record. Retryable once the merchant has dealt with the reason.
+       * @description Left on the source.
        */
       skipped: number
       /**
        * Failed
-       * @description Hit an unexpected error. Safe to retry as-is.
+       * @description Hit an unexpected error.
        */
       failed: number
     }
@@ -24348,7 +24348,7 @@ export interface components {
       renews_at?: string | null
       /**
        * Has Payment Method
-       * @description Whether the imported Polar subscription has a payment method to charge yet. Null for non-subscription rows or rows not imported.
+       * @description Whether the imported Polar subscription has a card to charge yet. Null for non-subscription rows or rows not imported.
        */
       has_payment_method?: boolean | null
     }

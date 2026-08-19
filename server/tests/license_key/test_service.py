@@ -1,4 +1,5 @@
 import asyncio
+from typing import cast
 from uuid import UUID
 
 import pytest
@@ -6,6 +7,9 @@ from pytest_mock import MockerFixture
 from sqlalchemy import delete, func, select
 
 from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.strategies.license_keys.properties import (
+    BenefitGrantLicenseKeysProperties,
+)
 from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeysCreateProperties,
 )
@@ -375,7 +379,8 @@ class TestRotate:
         )
         old_key = license_key.key
         old_id = license_key.id
-        old_display_key = grant.properties["display_key"]
+        old_properties = cast(BenefitGrantLicenseKeysProperties, grant.properties)
+        old_display_key = old_properties["display_key"]
 
         rotated = await license_key_service.rotate(session, license_key=license_key)
 
@@ -397,8 +402,9 @@ class TestRotate:
         )
 
         await session.refresh(grant)
-        assert grant.properties["display_key"] == rotated.display_key
-        assert grant.properties["license_key_id"] == str(rotated.id)
+        properties = cast(BenefitGrantLicenseKeysProperties, grant.properties)
+        assert properties["display_key"] == rotated.display_key
+        assert properties["license_key_id"] == str(rotated.id)
 
     async def test_revoked_raises_bad_request(
         self,

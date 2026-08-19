@@ -68563,11 +68563,6 @@
             "title": "Embed Hosts",
             "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."
           },
-          "embed_hosts_enforced": {
-            "type": "boolean",
-            "title": "Embed Hosts Enforced",
-            "description": "Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone."
-          },
           "country": {
             "anyOf": [
               {
@@ -69138,7 +69133,6 @@
           "customer_portal_settings",
           "dispute_settings",
           "embed_hosts",
-          "embed_hosts_enforced",
           "account_id",
           "payout_account_id",
           "capabilities"
@@ -70900,11 +70894,6 @@
             "title": "Embed Hosts",
             "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."
           },
-          "embed_hosts_enforced": {
-            "type": "boolean",
-            "title": "Embed Hosts Enforced",
-            "description": "Whether an embedding page's origin must match `embed_hosts`."
-          },
           "shared_hosts": {
             "items": {
               "type": "string"
@@ -70926,7 +70915,6 @@
         "required": [
           "has_embedded",
           "embed_hosts",
-          "embed_hosts_enforced",
           "shared_hosts",
           "uncovered_hosts"
         ],
@@ -71259,11 +71247,6 @@
             "type": "array",
             "title": "Embed Hosts",
             "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."
-          },
-          "embed_hosts_enforced": {
-            "type": "boolean",
-            "title": "Embed Hosts Enforced",
-            "description": "Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone."
           },
           "country": {
             "anyOf": [
@@ -71846,7 +71829,6 @@
           "customer_portal_settings",
           "dispute_settings",
           "embed_hosts",
-          "embed_hosts_enforced",
           "account_id",
           "payout_account_id",
           "capabilities"
@@ -74337,11 +74319,6 @@
             "title": "Embed Hosts",
             "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."
           },
-          "embed_hosts_enforced": {
-            "type": "boolean",
-            "title": "Embed Hosts Enforced",
-            "description": "Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone."
-          },
           "country": {
             "anyOf": [
               {
@@ -74924,7 +74901,6 @@
           "customer_portal_settings",
           "dispute_settings",
           "embed_hosts",
-          "embed_hosts_enforced",
           "account_id",
           "payout_account_id",
           "capabilities",

@@ -544,13 +544,6 @@ class Organization(OrganizationBase):
         description="Settings related to disputes",
     )
     embed_hosts: list[str] = Field(description=_embed_hosts_description)
-    embed_hosts_enforced: bool = Field(
-        description=(
-            "Whether an embedding page's origin must match `embed_hosts`. "
-            "Organizations that have not configured a list yet embed unchecked "
-            "until the allowlist is enforced for everyone."
-        ),
-    )
     country: CountryAlpha2 | None = Field(
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
@@ -623,9 +616,6 @@ class OrganizationEmbedStatus(Schema):
         description="Whether this organization has ever opened an embedded checkout."
     )
     embed_hosts: list[str] = Field(description=_embed_hosts_description)
-    embed_hosts_enforced: bool = Field(
-        description="Whether an embedding page's origin must match `embed_hosts`."
-    )
     shared_hosts: list[str] = Field(
         description=(
             "Entries of `embed_hosts` admitting every tenant of a platform, "

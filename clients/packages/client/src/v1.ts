@@ -26533,11 +26533,6 @@ export interface components {
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
        */
       embed_hosts: string[]
-      /**
-       * Embed Hosts Enforced
-       * @description Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
-       */
-      embed_hosts_enforced: boolean
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -27590,11 +27585,6 @@ export interface components {
        */
       embed_hosts: string[]
       /**
-       * Embed Hosts Enforced
-       * @description Whether an embedding page's origin must match `embed_hosts`.
-       */
-      embed_hosts_enforced: boolean
-      /**
        * Shared Hosts
        * @description Entries of `embed_hosts` admitting every tenant of a platform, such as `*.vercel.app`.
        */
@@ -27843,11 +27833,6 @@ export interface components {
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
        */
       embed_hosts: string[]
-      /**
-       * Embed Hosts Enforced
-       * @description Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
-       */
-      embed_hosts_enforced: boolean
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -29296,11 +29281,6 @@ export interface components {
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
        */
       embed_hosts: string[]
-      /**
-       * Embed Hosts Enforced
-       * @description Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
-       */
-      embed_hosts_enforced: boolean
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (

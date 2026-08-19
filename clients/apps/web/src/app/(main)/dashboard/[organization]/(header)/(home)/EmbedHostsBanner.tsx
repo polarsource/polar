@@ -59,9 +59,8 @@ export const EmbedHostsBanner = ({ organization }: EmbedHostsBannerProps) => {
         title="Add your embed hosts"
         description={
           <>
-            {data.embed_hosts_enforced
-              ? 'Your checkout is embedded on at least one site, and no hosts are listed, so those checkouts are not opening.'
-              : 'Your checkout is embedded on at least one site. Nothing breaks today, but a host you leave out will stop opening your checkout once we enforce the list.'}{' '}
+            Your checkout is embedded on at least one site, and no hosts are
+            listed, so those checkouts are not opening.{' '}
             <a
               href="https://polar.sh/docs/features/checkout/embed#embed-hosts"
               target="_blank"
@@ -89,11 +88,7 @@ export const EmbedHostsBanner = ({ organization }: EmbedHostsBannerProps) => {
           ? '1 host is missing from your embed hosts'
           : `${uncovered.length} hosts are missing from your embed hosts`
       }
-      description={
-        data.embed_hosts_enforced
-          ? 'Your checkout has been embedded from hosts your list does not allow, so those checkouts are not opening.'
-          : 'Your checkout has been embedded from hosts your list does not allow. Those checkouts will stop opening once we enforce the list.'
-      }
+      description="Your checkout has been embedded from hosts your list does not allow, so those checkouts are not opening."
       onDismiss={dismiss}
       actions={[{ text: 'Review hosts', onClick: openSettings }]}
     />

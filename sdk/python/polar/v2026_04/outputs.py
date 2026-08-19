@@ -8075,9 +8075,6 @@ class Organization:
     embed_hosts: list[str]
     """Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."""
 
-    embed_hosts_enforced: bool
-    """Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone."""
-
     country: CountryAlpha2 | None = None
     """Two-letter country code (ISO 3166-1 alpha-2)."""
 

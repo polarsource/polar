@@ -1739,11 +1739,6 @@ export interface components {
        */
       embed_hosts: string[]
       /**
-       * Embed Hosts Enforced
-       * @description Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
-       */
-      embed_hosts_enforced: boolean
-      /**
        * @description Two-letter country code (ISO 3166-1 alpha-2).
        * @default null
        */

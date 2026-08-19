@@ -8,6 +8,7 @@ Create Date: 2026-08-18 19:43:52.198677
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # Polar Custom Imports
 
@@ -31,18 +32,18 @@ def upgrade() -> None:
     )
     op.add_column("orders", sa.Column("units", sa.Integer(), nullable=True))
     op.add_column(
-        "product_prices", sa.Column("unit_label", sa.String(length=32), nullable=True)
-    )
-    op.add_column(
         "product_prices",
-        sa.Column("unit_label_plural", sa.String(length=32), nullable=True),
+        sa.Column(
+            "unit_label",
+            postgresql.JSONB(none_as_null=True, astext_type=sa.Text()),
+            nullable=True,
+        ),
     )
 
 
 def downgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration
     op.execute("SET LOCAL lock_timeout = '5s'")
-    op.drop_column("product_prices", "unit_label_plural")
     op.drop_column("product_prices", "unit_label")
     op.drop_column("orders", "units")
     op.drop_column("subscription_updates", "units")

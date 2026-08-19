@@ -41,7 +41,6 @@ from polar.kit.metadata import MetadataMixin, get_nested_metadata_value
 from polar.kit.utils import generate_uuid, utc_now
 
 from .customer import Customer
-from .member import Member
 
 if TYPE_CHECKING:
     from .event_type import EventType
@@ -102,64 +101,6 @@ class CustomerComparator(Relationship.Comparator[Customer]):
                             select(1).where(
                                 Customer.external_id == Event.external_customer_id,
                                 Customer.organization_id == Event.organization_id,
-                            )
-                        ),
-                    ),
-                ),
-            )
-
-        raise NotImplementedError()
-
-
-class MemberComparator(Relationship.Comparator[Member]):
-    def __eq__(self, other: object) -> ColumnElement[bool]:  # type: ignore[override]
-        if isinstance(other, Member):
-            clause = Event.member_id == other.id
-            if other.external_id is not None:
-                clause = or_(
-                    clause,
-                    and_(
-                        Event.external_member_id.is_not(None),
-                        Event.external_member_id == other.external_id,
-                        Event.organization_id == other.organization_id,
-                    ),
-                )
-            return clause
-
-        raise NotImplementedError()
-
-    def is_(self, other: Any) -> BinaryExpression[bool]:
-        if other is None:
-            return cast(
-                BinaryExpression[bool],
-                and_(
-                    Event.member_id.is_(None),
-                    or_(
-                        Event.external_member_id.is_(None),
-                        ~exists(
-                            select(1).where(
-                                Member.external_id == Event.external_member_id,
-                                Member.organization_id == Event.organization_id,
-                            )
-                        ),
-                    ),
-                ),
-            )
-
-        raise NotImplementedError()
-
-    def is_not(self, other: Any) -> BinaryExpression[bool]:
-        if other is None:
-            return cast(
-                BinaryExpression[bool],
-                or_(
-                    Event.member_id.is_not(None),
-                    and_(
-                        Event.external_member_id.is_not(None),
-                        exists(
-                            select(1).where(
-                                Member.external_id == Event.external_member_id,
-                                Member.organization_id == Event.organization_id,
                             )
                         ),
                     ),
@@ -306,31 +247,6 @@ class Event(Model, MetadataMixin):
         case(
             (customer_id.is_not(None), sql_cast(customer_id, String)),
             else_=external_customer_id,
-        )
-    )
-
-    @declared_attr
-    def member(cls) -> Mapped[Member | None]:
-        return relationship(
-            Member,
-            primaryjoin=(
-                "or_("
-                "foreign(Event.member_id) == Member.id,"
-                "and_("
-                "foreign(Event.external_member_id) == Member.external_id,"
-                "Event.organization_id == Member.organization_id"
-                ")"
-                ")"
-            ),
-            comparator_factory=MemberComparator,
-            lazy="raise",
-            viewonly=True,
-        )
-
-    resolved_member_id: Mapped[UUID | str | None] = column_property(
-        case(
-            (member_id.is_not(None), sql_cast(member_id, String)),
-            else_=external_member_id,
         )
     )
 

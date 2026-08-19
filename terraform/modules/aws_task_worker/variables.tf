@@ -94,7 +94,7 @@ variable "environment_variables" {
 }
 
 variable "secrets_arn" {
-  description = "Secrets Manager secret holding a JSON map of secret env vars, exported by the image bootstrap at cold start."
+  description = "Secrets Manager secret holding a JSON map of env vars, exported by the image bootstrap at cold start."
   type        = string
   default     = null
 }

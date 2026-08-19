@@ -61,7 +61,6 @@ from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceSource,
     ProductPriceType,
-    SeatTierType,
 )
 from polar.models.product_price import (
     ProductPriceCustom as ProductPriceCustomModel,
@@ -77,6 +76,15 @@ from polar.models.product_price import (
 )
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
+from polar.product.tiers import (
+    NonContiguousTiersError,
+    SeatTiersData,
+    SeatTierType,
+    UnboundedTierNotLastError,
+    seat_tiers_to_tiers,
+    seat_tiers_unit_bounds,
+    validate_unit_bounds,
+)
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 64
@@ -279,32 +287,49 @@ class ProductPriceSeatTiers(Schema):
     def validate_tiers(
         cls, v: list[ProductPriceSeatTier]
     ) -> list[ProductPriceSeatTier]:
-        """Validate that tiers form continuous ranges without gaps or overlaps."""
-        if not v:
-            raise ValueError("At least one tier is required")
+        """
+        Validate that tiers are well-formed and form continuous ranges.
 
-        # Sort by min_seats
+        This will be slimmed down once we make the move to the shared tiers data.
+        """
         sorted_tiers = sorted(v, key=lambda t: t.min_seats)
-
-        # First tier must start at >= 1
         if sorted_tiers[0].min_seats < 1:
             raise ValueError("First tier must start at min_seats >= 1")
 
-        # Validate continuous ranges without gaps/overlaps
-        for i in range(len(sorted_tiers) - 1):
-            current = sorted_tiers[i]
-            next_tier = sorted_tiers[i + 1]
-
-            if current.max_seats is None:
-                raise ValueError(
-                    "Only the last tier can have unlimited max_seats (None)"
-                )
-
-            if next_tier.min_seats != current.max_seats + 1:
-                raise ValueError(
-                    "Gap or overlap between tiers: "
-                    + f"tier ending at {current.max_seats} and tier starting at {next_tier.min_seats}"
-                )
+        seat_tiers: SeatTiersData = {
+            "seat_tier_type": SeatTierType.volume,
+            "tiers": [
+                {
+                    "min_seats": tier.min_seats,
+                    "max_seats": tier.max_seats,
+                    "price_per_seat": tier.price_per_seat,
+                }
+                for tier in sorted_tiers
+            ],
+        }
+        try:
+            minimum_units, maximum_units = seat_tiers_unit_bounds(seat_tiers)
+            shared_tiers = seat_tiers_to_tiers(seat_tiers)
+            validate_unit_bounds(
+                shared_tiers,
+                minimum_units=minimum_units,
+                maximum_units=maximum_units,
+            )
+        except UnboundedTierNotLastError:
+            raise ValueError(
+                "Only the last tier can have unlimited max_seats (None)"
+            ) from None
+        except NonContiguousTiersError as e:
+            raise ValueError(str(e)) from None
+        except ValueError as e:
+            message = (
+                str(e)
+                .replace("minimum_units", "minimum_seats")
+                .replace("maximum_units", "maximum_seats")
+                .replace("bound values", "max_seats values")
+                .replace("last tier's bound", "last tier's max_seats")
+            )
+            raise ValueError(message) from None
 
         return sorted_tiers
 

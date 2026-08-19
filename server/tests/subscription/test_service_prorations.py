@@ -26,13 +26,13 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.models.product_price import SeatTierType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
     is_seat_price,
 )
+from polar.product.tiers import SeatTierType
 from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service

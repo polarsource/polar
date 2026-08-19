@@ -1,6 +1,6 @@
 from decimal import Decimal
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import UUID
 
 from babel.numbers import format_decimal
@@ -26,6 +26,7 @@ from sqlalchemy.orm import (
     object_mapper,
     relationship,
 )
+from sqlalchemy.orm.attributes import Event
 
 from polar.enums import (
     SubscriptionRecurringInterval,
@@ -35,6 +36,13 @@ from polar.kit.currency import format_currency
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.math import polar_round
+from polar.product.tiers import (
+    SeatTiersData,
+    Tiers,
+    TiersType,
+    seat_tiers_to_tiers,
+    seat_tiers_unit_bounds,
+)
 
 if TYPE_CHECKING:
     from polar.models import Meter, Product
@@ -58,26 +66,6 @@ class ProductPriceAmountType(StrEnum):
 class ProductPriceSource(StrEnum):
     catalog = "catalog"
     ad_hoc = "ad_hoc"
-
-
-class SeatTierType(StrEnum):
-    volume = "volume"
-    graduated = "graduated"
-
-
-class SeatTier(TypedDict):
-    """A single pricing tier for seat-based pricing."""
-
-    min_seats: int
-    max_seats: int | None
-    price_per_seat: int
-
-
-class SeatTiersData(TypedDict):
-    """The structure of the seat_tiers JSONB column."""
-
-    seat_tier_type: SeatTierType
-    tiers: list[SeatTier]
 
 
 LEGACY_IDENTITY_PREFIX = "legacy_"
@@ -346,7 +334,56 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
     }
 
 
-class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
+class TieredPrice:
+    """Mixin for prices billed from a shared list of tiers.
+
+    `get_tiered_amount` returns cents for a whole-unit quantity.
+    Subclasses interpret those units (seats, metered usage, …).
+    """
+
+    __abstract__ = True
+
+    tiers: Mapped[Tiers] = mapped_column(
+        TiersType(none_as_null=True),
+        use_existing_column=True,
+        nullable=True,
+        default=None,
+    )
+    minimum_units: Mapped[int | None] = mapped_column(
+        BigInteger,
+        use_existing_column=True,
+        nullable=True,
+        default=None,
+    )
+    maximum_units: Mapped[int | None] = mapped_column(
+        BigInteger,
+        use_existing_column=True,
+        nullable=True,
+        default=None,
+    )
+
+    def get_tiered_amount(self, quantity: int) -> Decimal:
+        return self.tiers.calculate(quantity)
+
+    def get_minimum_units(self) -> int:
+        """The smallest purchasable quantity (inclusive), 0 when unset.
+        Enforced by the purchase layer, not the pricing engine."""
+        return self.minimum_units or 0
+
+    def get_maximum_units(self) -> int | None:
+        """The largest purchasable quantity (inclusive), or None if
+        open-ended. Defaults to the last tier's bound when unset."""
+        if self.maximum_units is not None:
+            return self.maximum_units
+        return self.tiers.last_bound
+
+
+class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
+    """Seat-based price. Billing still reads `seat_tiers`. That column is
+    dual-written into the shared `tiers` columns so they can become the
+    billing source after backfill.
+    """
+
     amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.seat_based
     )
@@ -354,90 +391,24 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
         postgresql.JSONB,
         nullable=True,
     )
-    tiers: Mapped[dict[str, Any] | None] = mapped_column(
-        postgresql.JSONB(none_as_null=True),
-        nullable=True,
-        default=None,
-    )
-    minimum_units: Mapped[int | None] = mapped_column(
-        BigInteger,
-        nullable=True,
-        default=None,
-    )
-    maximum_units: Mapped[int | None] = mapped_column(
-        BigInteger,
-        nullable=True,
-        default=None,
-    )
-
-    def get_tier_for_seats(self, seats: int) -> SeatTier:
-        for tier in self.seat_tiers.get("tiers", []):
-            min_seats = tier["min_seats"]
-            max_seats = tier.get("max_seats")
-            if seats >= min_seats and (max_seats is None or seats <= max_seats):
-                return tier
-        raise ValueError(f"No tier found for {seats} seats")
 
     def calculate_amount(self, seats: int) -> int:
-        seat_tier_type = self.seat_tiers.get("seat_tier_type", SeatTierType.volume)
-        match seat_tier_type:
-            case SeatTierType.volume:
-                return self._calculate_volume(seats)
-            case SeatTierType.graduated:
-                return self._calculate_graduated(seats)
-
-    def _calculate_volume(self, seats: int) -> int:
-        tier = self.get_tier_for_seats(seats)
-        return tier["price_per_seat"] * seats
-
-    def _calculate_graduated(self, seats: int) -> int:
-        total = 0
-        remaining = seats
-        # Tier capacity is measured from the previous tier's upper bound, not the
-        # tier's own min_seats. The first tier's min_seats doubles as the minimum
-        # order quantity (see get_minimum_seats), so it may be > 1; the first tier
-        # must still bill from seat 1, otherwise seats below it spill into cheaper
-        # tiers (T-28449).
-        previous_max = 0
-        for tier in sorted(
-            self.seat_tiers.get("tiers", []), key=lambda t: t["min_seats"]
-        ):
-            if remaining <= 0:
-                break
-            max_seats = tier.get("max_seats")
-            tier_capacity = (
-                (max_seats - previous_max) if max_seats is not None else remaining
-            )
-            seats_in_tier = min(remaining, tier_capacity)
-            total += seats_in_tier * tier["price_per_seat"]
-            remaining -= seats_in_tier
-            if max_seats is not None:
-                previous_max = max_seats
-        return total
+        amount = seat_tiers_to_tiers(self.seat_tiers).calculate(seats)
+        # Seat rates are whole cents, so any fraction means corrupt data.
+        if amount != amount.to_integral_value():
+            raise ValueError(f"Seat price produced non-integral amount {amount}")
+        return int(amount)
 
     def get_minimum_seats(self) -> int:
-        """Get the minimum number of seats allowed, derived from first tier's min_seats."""
-        tiers = self.seat_tiers.get("tiers", [])
-        if not tiers:
-            return 1
-        sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
-        return sorted_tiers[0]["min_seats"]
+        minimum, _ = seat_tiers_unit_bounds(self.seat_tiers)
+        return minimum if minimum is not None else 1
 
     def get_maximum_seats(self) -> int | None:
-        """Get the maximum number of seats allowed, derived from last tier's max_seats."""
-        tiers = self.seat_tiers.get("tiers", [])
-        if not tiers:
-            return None
-        sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
-        return sorted_tiers[-1].get("max_seats")
+        _, maximum = seat_tiers_unit_bounds(self.seat_tiers)
+        return maximum
 
     @property
     def is_free(self) -> bool:
-        """Check if ALL tiers have price_per_seat == 0.
-
-        A seat-based price is only considered free if every single tier
-        has a zero price per seat. If any tier charges, it's not free.
-        """
         tiers = self.seat_tiers.get("tiers", [])
         if not tiers:
             return True
@@ -447,6 +418,24 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
         "polymorphic_identity": ProductPriceAmountType.seat_based,
         "polymorphic_load": "inline",
     }
+
+
+@event.listens_for(ProductPriceSeatUnit.seat_tiers, "set")
+def _write_tiers_from_seat_tiers(
+    target: ProductPriceSeatUnit,
+    value: SeatTiersData | None,
+    oldvalue: SeatTiersData | None,
+    initiator: Event,
+) -> None:
+    """Dual-write to the shared `tiers`, `minimum_units` and `maximum_units`
+    columns. Delete when `seat_tiers` is dropped."""
+    if value is None:
+        target.tiers = None  # type: ignore[assignment]
+        target.minimum_units = None
+        target.maximum_units = None
+    else:
+        target.tiers = seat_tiers_to_tiers(value)
+        target.minimum_units, target.maximum_units = seat_tiers_unit_bounds(value)
 
 
 @event.listens_for(ProductPrice, "init", propagate=True)

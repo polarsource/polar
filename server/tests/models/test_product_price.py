@@ -2,15 +2,26 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
+from sqlalchemy import select
 
+from polar.kit.db.postgres import AsyncSession
 from polar.models import Meter, Product
 from polar.models.product_price import (
     ProductPriceFixed,
     ProductPriceSeatUnit,
+    TieredPrice,
+)
+from polar.product.tiers import (
     SeatTierType,
+    Tiers,
+    TierType,
+    seat_tiers_to_tiers,
 )
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_product_price_metered_unit
+from tests.fixtures.random_objects import (
+    create_product_price_metered_unit,
+    create_product_price_seat_unit,
+)
 
 
 @pytest.mark.asyncio
@@ -160,6 +171,49 @@ class TestVolumePricing:
         assert price.calculate_amount(100) == 0
 
 
+class TestCalculateAmountIntegralityGuard:
+    def test_fractional_stored_rate_raises(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 500.5}],
+            SeatTierType.volume,
+        )
+        with pytest.raises(ValueError, match="non-integral amount"):
+            price.calculate_amount(3)
+
+
+def _clear_shared_tier_columns(price: ProductPriceSeatUnit) -> ProductPriceSeatUnit:
+    price.tiers = None  # type: ignore[assignment]
+    price.minimum_units = None
+    price.maximum_units = None
+    return price
+
+
+class TestSeatBillingReadsSeatTiers:
+    """Billing must not depend on the dual-written `tiers` columns yet."""
+
+    def test_amount_with_empty_shared_columns(self) -> None:
+        price = _clear_shared_tier_columns(_make_seat_price(MULTI_TIER))
+        assert price.calculate_amount(10) == 10_000
+        assert price.calculate_amount(11) == 11 * 800
+
+    def test_bounds_with_empty_shared_columns(self) -> None:
+        price = _clear_shared_tier_columns(
+            _make_seat_price(
+                [{"min_seats": 5, "max_seats": 20, "price_per_seat": 250}],
+            )
+        )
+        assert price.get_minimum_seats() == 5
+        assert price.get_maximum_seats() == 20
+
+    def test_is_free_with_empty_shared_columns(self) -> None:
+        price = _clear_shared_tier_columns(
+            _make_seat_price(
+                [{"min_seats": 1, "max_seats": None, "price_per_seat": 0}],
+            )
+        )
+        assert price.is_free is True
+
+
 class TestGraduatedPricing:
     def test_single_tier(self) -> None:
         price = _make_seat_price(
@@ -216,7 +270,7 @@ class TestGraduatedPricing:
         assert price.calculate_amount(15) == 10 * 1000
 
     def test_first_tier_min_seats_above_one(self) -> None:
-        # Regression for T-28449: a merchant enforcing a 10-seat minimum sets the
+        # A merchant enforcing a 10-seat minimum sets the
         # first tier's min_seats to 10. The first 10 seats should all be priced at
         # the first tier's rate ($200/seat = $2000), then cheaper after.
         # Reproduces the exact sandbox config of product 231d03ca.
@@ -231,3 +285,127 @@ class TestGraduatedPricing:
         assert price.calculate_amount(10) == 10 * 20000
         # 10 at first tier + 5 at second tier.
         assert price.calculate_amount(15) == 10 * 20000 + 5 * 6000
+
+
+def _tiers_data(tier_type: TierType, tiers: list[dict[str, Any]]) -> Tiers:
+    return Tiers.model_validate({"type": tier_type, "tiers": tiers})
+
+
+def _make_tiered_price(
+    tiers: Tiers,
+    minimum_units: int | None = None,
+    maximum_units: int | None = None,
+) -> TieredPrice:
+    price = object.__new__(TieredPrice)
+    price.tiers = tiers
+    price.minimum_units = minimum_units
+    price.maximum_units = maximum_units
+    return price
+
+
+SHARED_MULTI_TIER: list[dict[str, Any]] = [
+    {"bound": 10, "unit_amount": "1000"},
+    {"bound": 50, "unit_amount": "800"},
+    {"bound": None, "unit_amount": "600"},
+]
+
+
+class TestGetTieredAmount:
+    def test_ignores_minimum_units(self) -> None:
+        # Purchase floors live on the price; billing is a pass-through to the engine.
+        price = _make_tiered_price(
+            _tiers_data(
+                TierType.graduated,
+                [
+                    {"bound": 10, "unit_amount": "20000"},
+                    {"bound": None, "unit_amount": "6000"},
+                ],
+            ),
+            minimum_units=10,
+        )
+        assert price.get_tiered_amount(5) == price.tiers.calculate(5)
+
+
+class TestSeatTiersDualWrite:
+    def test_constructor_populates_tiers(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
+        assert price.tiers == seat_tiers_to_tiers(price.seat_tiers)
+        assert price.minimum_units == 1
+        assert price.maximum_units is None
+
+    def test_updating_seat_tiers_updates_tiers(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
+        price.seat_tiers = {
+            "seat_tier_type": SeatTierType.volume,
+            "tiers": [{"min_seats": 5, "max_seats": 20, "price_per_seat": 250}],
+        }
+        assert price.tiers == _tiers_data(
+            TierType.volume,
+            [{"bound": 20, "unit_amount": "250"}],
+        )
+        assert price.minimum_units == 5
+        assert price.maximum_units == 20
+
+    @pytest.mark.asyncio
+    async def test_database_round_trip_returns_tiers_model(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+    ) -> None:
+        price = await create_product_price_seat_unit(
+            save_fixture,
+            product=product,
+            tiers=MULTI_TIER,
+            seat_tier_type=SeatTierType.graduated,
+        )
+
+        tiers = (
+            await session.execute(
+                select(ProductPriceSeatUnit.tiers).where(
+                    ProductPriceSeatUnit.id == price.id
+                )
+            )
+        ).scalar_one()
+
+        assert isinstance(tiers, Tiers)
+        assert tiers.type == TierType.graduated
+        assert [tier.unit_amount for tier in tiers.tiers] == [
+            Decimal("1000"),
+            Decimal("800"),
+            Decimal("600"),
+        ]
+
+
+class TestMinimumMaximumUnits:
+    def test_minimum_units_from_column(self) -> None:
+        price = _make_tiered_price(
+            _tiers_data(TierType.volume, SHARED_MULTI_TIER), minimum_units=5
+        )
+        assert price.get_minimum_units() == 5
+
+    def test_minimum_units_defaults_to_zero(self) -> None:
+        price = _make_tiered_price(_tiers_data(TierType.volume, SHARED_MULTI_TIER))
+        assert price.get_minimum_units() == 0
+
+    def test_maximum_units_from_column(self) -> None:
+        price = _make_tiered_price(
+            _tiers_data(TierType.volume, SHARED_MULTI_TIER), maximum_units=100
+        )
+        assert price.get_maximum_units() == 100
+
+    def test_maximum_units_falls_back_to_last_tier(self) -> None:
+        price = _make_tiered_price(
+            _tiers_data(
+                TierType.volume,
+                [
+                    {"bound": 10, "unit_amount": "500"},
+                    {"bound": 20, "unit_amount": "300"},
+                ],
+            )
+        )
+        assert price.get_maximum_units() == 20
+
+    def test_maximum_units_unbounded(self) -> None:
+        price = _make_tiered_price(_tiers_data(TierType.volume, SHARED_MULTI_TIER))
+        assert price.get_maximum_units() is None

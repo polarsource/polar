@@ -120,7 +120,6 @@ from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceType,
-    SeatTierType,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.support_case import (
@@ -138,6 +137,7 @@ from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
 from polar.product.price_set import PriceSet
+from polar.product.tiers import SeatTierType
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID
 from tests.fixtures.database import SaveFixture

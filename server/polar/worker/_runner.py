@@ -19,6 +19,7 @@ from polar.config import settings
 from polar.logging import CorrelationID, Logger
 
 from . import _sqs
+from ._httpx import _close_client, setup_httpx
 from ._redis import _close_redis, setup_redis
 from ._sqlalchemy import dispose_sqlalchemy_engine, setup_sqlalchemy
 
@@ -197,15 +198,17 @@ async def run_task(
 
 
 def bootstrap() -> None:
-    """Initialize worker resources (DB engine + Redis) for the SQS runner."""
+    """Initialize worker resources (DB engine + Redis + HTTPX) for the SQS runner."""
     setup_sqlalchemy(pool_name="worker-sqs")
     setup_redis()
+    setup_httpx()
     validate_allowlist()
 
 
 async def shutdown() -> None:
     await dispose_sqlalchemy_engine()
     await _close_redis()
+    await _close_client()
 
 
 __all__ = [

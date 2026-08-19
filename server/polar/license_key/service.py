@@ -29,6 +29,7 @@ from polar.worker import enqueue_job
 
 from .repository import LicenseKeyRepository
 from .schemas import (
+    ROTATABLE_LICENSE_KEY_STATUSES,
     LicenseKeyActivate,
     LicenseKeyCreate,
     LicenseKeyDeactivate,
@@ -168,8 +169,15 @@ class LicenseKeyService:
         *,
         license_key: LicenseKey,
     ) -> LicenseKey:
-        if license_key.status == LicenseKeyStatus.revoked:
-            raise BadRequest("Revoked license keys cannot be rotated.")
+        if license_key.status not in ROTATABLE_LICENSE_KEY_STATUSES:
+            allowed = ", ".join(
+                sorted(status.value for status in ROTATABLE_LICENSE_KEY_STATUSES)
+            )
+            raise BadRequest(
+                "License key cannot be rotated in its current status. "
+                f"Current status: {license_key.status}. "
+                f"Allowed statuses: {allowed}."
+            )
 
         await session.refresh(license_key, attribute_names=["benefit"])
         prefix = cast(BenefitLicenseKeysProperties, license_key.benefit.properties).get(

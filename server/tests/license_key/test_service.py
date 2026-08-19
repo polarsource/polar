@@ -421,5 +421,12 @@ class TestRotate:
         license_key.status = LicenseKeyStatus.revoked
         await save_fixture(license_key)
 
-        with pytest.raises(BadRequest):
+        with pytest.raises(
+            BadRequest,
+            match=(
+                "License key cannot be rotated in its current status. "
+                "Current status: revoked. "
+                "Allowed statuses: disabled, granted."
+            ),
+        ):
             await license_key_service.rotate(session, license_key=license_key)

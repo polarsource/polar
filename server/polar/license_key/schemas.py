@@ -43,8 +43,18 @@ ActivationNotPermitted = {
     "model": NotPermitted.schema(),
 }
 
+ROTATABLE_LICENSE_KEY_STATUSES: frozenset[LicenseKeyStatus] = frozenset(
+    {
+        LicenseKeyStatus.granted,
+        LicenseKeyStatus.disabled,
+    }
+)
+
 RotateNotPermitted = {
-    "description": "License key cannot be rotated in its current status.",
+    "description": (
+        "License key cannot be rotated in its current status. "
+        f"Allowed statuses: {', '.join(sorted(s.value for s in ROTATABLE_LICENSE_KEY_STATUSES))}."
+    ),
     "model": BadRequest.schema(),
 }
 

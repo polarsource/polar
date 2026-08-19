@@ -94,6 +94,26 @@ separate.
 Keep organization access tokens on the server and never expose them in browser or client-side
 code.
 
+## Request Timeouts
+
+Set the default timeout for all requests when creating the client. Timeout values are expressed
+in seconds:
+
+```python
+polar = Polar("polar_oat_xxx", timeout=30)
+```
+
+Override the timeout for an individual request with `request_timeout`:
+
+```python
+customer_state = polar.customers.get_state_external(
+    "customer_external_id",
+    request_timeout=60,
+)
+```
+
+Pass an `httpx.Timeout` instance to configure connect, read, write, and pool timeouts separately.
+
 ## Deserializing Data
 
 Use `deserialize` to convert arbitrary data into a generated SDK model or union type:

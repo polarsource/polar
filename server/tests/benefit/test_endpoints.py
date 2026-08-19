@@ -514,6 +514,48 @@ class TestCreateBenefit:
 
 
 @pytest.mark.asyncio
+class TestCreateLicenseKeysBenefit:
+    @pytest.mark.auth
+    async def test_valid_limit_usage(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": "license_keys",
+                "description": "License keys benefit",
+                "properties": {"limit_usage": 2147483647},
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["properties"]["limit_usage"] == 2147483647
+
+    @pytest.mark.auth
+    async def test_limit_usage_overflow_rejected(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": "license_keys",
+                "description": "License keys benefit",
+                "properties": {"limit_usage": 3000000000},
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+
+@pytest.mark.asyncio
 class TestUpdateBenefit:
     async def test_anonymous(
         self,

@@ -20,7 +20,7 @@ TEMPLATE = ENVIRONMENT.get_template("code_sample.ts.jinja")
 
 
 def language_label() -> str:
-    return "TypeScript (New SDK)"
+    return "typescript"
 
 
 def render_code_sample(sample: OperationSample) -> str:

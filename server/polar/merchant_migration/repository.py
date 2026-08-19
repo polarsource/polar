@@ -12,8 +12,12 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import MerchantMigration, MerchantMigrationRecord
+from polar.models import MerchantMigration, MerchantMigrationRecord, Subscription
+from polar.models.merchant_migration_operation import (
+    MerchantMigrationOperationSelection,
+)
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
@@ -279,6 +283,110 @@ class MerchantMigrationRecordRepository(
             .limit(limit)
         )
         return await self.get_all(statement)
+
+    def _selection_filter(
+        self, selection: MerchantMigrationOperationSelection | None
+    ) -> list[ColumnElement[bool]]:
+        """Narrow the imported subscriptions to the ones the merchant picked.
+
+        Empty (or absent) selection means every imported subscription, matching
+        the opt-out shape the import already uses.
+        """
+        if selection is None:
+            return []
+        if selection.record_ids is not None:
+            return [MerchantMigrationRecord.id.in_(selection.record_ids)]
+        if selection.exclude_record_ids is not None:
+            return [MerchantMigrationRecord.id.not_in(selection.exclude_record_ids)]
+        return []
+
+    async def get_next_cutover_candidate(
+        self,
+        migration_id: UUID,
+        selection: MerchantMigrationOperationSelection | None = None,
+    ) -> MerchantMigrationRecord | None:
+        """Claim the next subscription the cutover hasn't settled yet.
+
+        Locked and skipping locked rows, so a second run started by an impatient
+        merchant works alongside the first instead of moving the same
+        subscription twice.
+        """
+        statement = (
+            self._imported_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.cutover_status.is_(None),
+                *self._selection_filter(selection),
+            )
+            .limit(1)
+            .with_for_update(of=MerchantMigrationRecord, skip_locked=True)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def count_cutover_statuses(
+        self, migration_id: UUID
+    ) -> dict[MerchantMigrationCutoverStatus | None, int]:
+        """How the cutover has settled the imported subscriptions so far, with
+        ``None`` counting the ones it hasn't reached."""
+        statement = (
+            self._imported_subscriptions_statement(migration_id)
+            .with_only_columns(
+                MerchantMigrationRecord.cutover_status,
+                func.count(MerchantMigrationRecord.id),
+            )
+            .order_by(None)
+            .group_by(MerchantMigrationRecord.cutover_status)
+        )
+        result = await self.session.execute(statement)
+        return {status: count for status, count in result.all()}
+
+    async def payment_method_coverage(
+        self, migration_id: UUID
+    ) -> set[UUID]:
+        """The imported-subscription record ids whose Polar subscription already
+        has a payment method to charge.
+
+        Any linked method counts, not only cards: ACH and SEPA move with the copy
+        and Polar can charge them. Used to hint which rows are ready to switch
+        before the merchant picks them.
+        """
+        statement = (
+            self._imported_subscriptions_statement(migration_id)
+            .join(
+                Subscription,
+                (Subscription.id == MerchantMigrationRecord.target_id)
+                & Subscription.deleted_at.is_(None)
+                & Subscription.payment_method_id.is_not(None),
+            )
+            .with_only_columns(MerchantMigrationRecord.id)
+            .order_by(None)
+        )
+        result = await self.session.execute(statement)
+        return {row[0] for row in result.all()}
+
+    async def reset_cutover(
+        self,
+        migration_id: UUID,
+        selection: MerchantMigrationOperationSelection | None = None,
+    ) -> None:
+        """Clear the settled-but-not-moved outcomes in the selection so a retry
+        looks at them again. What moved stays moved."""
+        statement = (
+            self._imported_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.cutover_status.in_(
+                    (
+                        MerchantMigrationCutoverStatus.skipped,
+                        MerchantMigrationCutoverStatus.failed,
+                    )
+                ),
+                *self._selection_filter(selection),
+            )
+            .order_by(None)
+        )
+        for record in await self.get_all(statement):
+            await self.update(
+                record, update_dict={"cutover_status": None, "cutover_error": None}
+            )
 
     async def upsert(
         self,

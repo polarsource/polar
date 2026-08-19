@@ -1,12 +1,12 @@
 """Backfill the shared `tiers`, `minimum_units` and `maximum_units` columns
 on seat-based product prices.
 
-Translates each row's legacy `seat_tiers` with the same functions the
-dual-write hook uses, so backfilled and newly written rows match.
-Re-running the script is safe: the translation is deterministic.
+Translates each row's unused `seat_tiers` column with the same functions
+product create uses. Rows that already have `tiers` are skipped so a
+post-cutover re-run cannot overwrite live data with a stale unused column.
 
-Dry-run still translates and validates every row, so corrupt legacy
-data is detected before `--execute`.
+Dry-run still translates and validates every remaining row, so corrupt
+legacy data is detected before `--execute`.
 """
 
 import typer
@@ -47,18 +47,20 @@ async def run_backfill(
 async def _run(session: AsyncSession, *, dry_run: bool) -> int:
     repository = ProductPriceRepository.from_session(session)
     statement = repository.get_base_statement(include_deleted=True).where(
-        ProductPriceSeatUnit.seat_tiers.isnot(None)
+        ProductPriceSeatUnit._seat_tiers.isnot(None),
+        ProductPriceSeatUnit.tiers.is_(None),
     )
     if not dry_run:
-        # Lock each row so a concurrent seat_tiers write cannot commit new
-        # canonical values that this snapshot would then overwrite.
+        # Lock each row so a concurrent write cannot commit new canonical
+        # values that this snapshot would then overwrite.
         statement = statement.with_for_update(of=ProductPrice)
 
     total = 0
     async for price in repository.stream(statement):
         assert isinstance(price, ProductPriceSeatUnit)
-        tiers = seat_tiers_to_tiers(price.seat_tiers)
-        minimum_units, maximum_units = seat_tiers_unit_bounds(price.seat_tiers)
+        assert price._seat_tiers is not None
+        tiers = seat_tiers_to_tiers(price._seat_tiers)
+        minimum_units, maximum_units = seat_tiers_unit_bounds(price._seat_tiers)
         # Crash on corrupt legacy rows rather than copying them into the
         # canonical columns.
         validate_unit_bounds(

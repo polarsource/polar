@@ -7,12 +7,14 @@ from pydantic import ValidationError
 from polar.product.tiers import (
     InvalidQuantityError,
     NonContiguousTiersError,
+    SeatTiersData,
     SeatTierType,
     Tiers,
     TierType,
     UnboundedTierNotLastError,
     seat_tiers_to_tiers,
     seat_tiers_unit_bounds,
+    tiers_to_seat_tiers,
     validate_unit_bounds,
 )
 
@@ -247,6 +249,17 @@ class TestSeatTiersToTiers:
                 }
             )
 
+    def test_fractional_price_per_seat_raises(self) -> None:
+        with pytest.raises(ValueError, match="whole cents"):
+            seat_tiers_to_tiers(
+                {
+                    "seat_tier_type": SeatTierType.volume,
+                    "tiers": [
+                        {"min_seats": 1, "max_seats": None, "price_per_seat": 500.5},
+                    ],
+                }
+            )
+
 
 class TestSeatTiersUnitBounds:
     def test_first_min_and_last_max(self) -> None:
@@ -272,3 +285,120 @@ class TestSeatTiersUnitBounds:
         assert seat_tiers_unit_bounds(
             {"seat_tier_type": SeatTierType.volume, "tiers": []}
         ) == (None, None)
+
+
+MULTI_SEAT_TIERS: SeatTiersData = {
+    "seat_tier_type": SeatTierType.graduated,
+    "tiers": [
+        {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
+        {"min_seats": 11, "max_seats": 50, "price_per_seat": 800},
+        {"min_seats": 51, "max_seats": None, "price_per_seat": 600},
+    ],
+}
+
+SINGLE_UNLIMITED_TIER: SeatTiersData = {
+    "seat_tier_type": SeatTierType.volume,
+    "tiers": [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}],
+}
+
+MINIMUM_ABOVE_ONE: SeatTiersData = {
+    "seat_tier_type": SeatTierType.graduated,
+    "tiers": [
+        {"min_seats": 10, "max_seats": 10, "price_per_seat": 20000},
+        {"min_seats": 11, "max_seats": None, "price_per_seat": 6000},
+    ],
+}
+
+
+class TestTiersToSeatTiers:
+    def test_reconstructs_unbounded_last_tier(self) -> None:
+        shared = seat_tiers_to_tiers(MULTI_SEAT_TIERS)
+        minimum_units, maximum_units = seat_tiers_unit_bounds(MULTI_SEAT_TIERS)
+        assert (
+            tiers_to_seat_tiers(shared, minimum_units, maximum_units)
+            == MULTI_SEAT_TIERS
+        )
+
+    def test_reconstructs_bounded_last_tier(self) -> None:
+        seat_tiers: SeatTiersData = {
+            "seat_tier_type": SeatTierType.volume,
+            "tiers": [
+                {"min_seats": 5, "max_seats": 10, "price_per_seat": 1000},
+                {"min_seats": 11, "max_seats": 20, "price_per_seat": 800},
+            ],
+        }
+        shared = seat_tiers_to_tiers(seat_tiers)
+        minimum_units, maximum_units = seat_tiers_unit_bounds(seat_tiers)
+        assert tiers_to_seat_tiers(shared, minimum_units, maximum_units) == seat_tiers
+
+    def test_last_max_seats_prefers_maximum_units(self) -> None:
+        shared = _tiers_data(
+            TierType.volume,
+            [
+                {"bound": 10, "unit_amount": "1000"},
+                {"bound": 50, "unit_amount": "800"},
+            ],
+        )
+        result = tiers_to_seat_tiers(shared, minimum_units=1, maximum_units=40)
+        assert result["tiers"][-1]["max_seats"] == 40
+        assert result["tiers"][0]["max_seats"] == 10
+
+    def test_omits_tiers_below_minimum_units(self) -> None:
+        shared = _tiers_data(
+            TierType.graduated,
+            [
+                {"bound": 10, "unit_amount": "1000"},
+                {"bound": 50, "unit_amount": "800"},
+                {"bound": None, "unit_amount": "600"},
+            ],
+        )
+        result = tiers_to_seat_tiers(shared, minimum_units=15, maximum_units=None)
+        assert result["tiers"] == [
+            {"min_seats": 15, "max_seats": 50, "price_per_seat": 800},
+            {"min_seats": 51, "max_seats": None, "price_per_seat": 600},
+        ]
+
+    def test_omits_tiers_above_maximum_units(self) -> None:
+        shared = _tiers_data(
+            TierType.graduated,
+            [
+                {"bound": 10, "unit_amount": "1000"},
+                {"bound": 50, "unit_amount": "800"},
+                {"bound": None, "unit_amount": "600"},
+            ],
+        )
+        result = tiers_to_seat_tiers(shared, minimum_units=1, maximum_units=40)
+        assert result["tiers"] == [
+            {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
+            {"min_seats": 11, "max_seats": 40, "price_per_seat": 800},
+        ]
+
+    def test_clips_single_tier_to_purchasable_bounds(self) -> None:
+        shared = _tiers_data(
+            TierType.volume,
+            [
+                {"bound": 10, "unit_amount": "1000"},
+                {"bound": 50, "unit_amount": "800"},
+            ],
+        )
+        result = tiers_to_seat_tiers(shared, minimum_units=15, maximum_units=40)
+        assert result["tiers"] == [
+            {"min_seats": 15, "max_seats": 40, "price_per_seat": 800},
+        ]
+
+    def test_fractional_unit_amount_raises(self) -> None:
+        shared = _tiers_data(
+            TierType.volume,
+            [{"bound": None, "unit_amount": "500.5"}],
+        )
+        with pytest.raises(ValueError, match="whole cents"):
+            tiers_to_seat_tiers(shared)
+
+    @pytest.mark.parametrize(
+        "seat_tiers",
+        [MULTI_SEAT_TIERS, SINGLE_UNLIMITED_TIER, MINIMUM_ABOVE_ONE],
+    )
+    def test_roundtrip_is_lossless(self, seat_tiers: SeatTiersData) -> None:
+        shared = seat_tiers_to_tiers(seat_tiers)
+        minimum_units, maximum_units = seat_tiers_unit_bounds(seat_tiers)
+        assert tiers_to_seat_tiers(shared, minimum_units, maximum_units) == seat_tiers

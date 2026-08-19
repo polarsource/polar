@@ -512,17 +512,31 @@ resource "tfe_variable" "worker_sqs_actors_sandbox" {
   description = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox"
   sensitive   = false
   value = jsonencode([
-    "dummy",
-    "observability.invariants.enqueue",
-    "observability.invariants.check",
+    "auth.delete_expired",
+    "authentication_session.delete_expired",
     "checkout.expire_open_checkouts",
     "customer.state_changed",
+    "customer_email_update.delete_expired",
+    "customer_session.delete_expired",
+    "dummy",
     "email.send",
+    "email_otp.delete_expired",
+    "email_update.delete_expired_record",
+    "eventstream.publish",
     "external_event.prune",
+    "license_key.sync_benefit_grant",
+    "member_session.delete_expired",
     "oauth2_token.delete_expired",
+    "observability.invariants.check",
+    "observability.invariants.enqueue",
+    "order.invoice",
+    "receipt.render",
+    "tinybird.ingest",
+    "webhook_event.archive",
+    "webhook_event.failed",
     "webhook_event.publish",
     "webhook_event.send",
-    "license_key.sync_benefit_grant",
+    "webhook_event.success",
   ])
   variable_set_id = tfe_variable_set.sandbox.id
 }

@@ -61,6 +61,7 @@ module "service" {
   subnet_ids               = var.subnet_ids
   security_group_ids       = [aws_security_group.this.id]
   permissions_boundary_arn = var.permissions_boundary_arn
+  logfire                  = var.logfire
 
   service_registry = {
     arn = aws_service_discovery_service.this.arn

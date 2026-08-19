@@ -339,9 +339,7 @@ class MerchantMigrationRecordRepository(
         result = await self.session.execute(statement)
         return {status: count for status, count in result.all()}
 
-    async def payment_method_coverage(
-        self, migration_id: UUID
-    ) -> set[UUID]:
+    async def payment_method_coverage(self, migration_id: UUID) -> set[UUID]:
         """The imported-subscription record ids whose Polar subscription already
         has a payment method to charge.
 

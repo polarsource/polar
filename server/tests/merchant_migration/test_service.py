@@ -2186,9 +2186,7 @@ class TestRunCutover:
     ) -> None:
         mocker.patch("polar.merchant_migration.service.enqueue_job")
         runner = _fake_cutover(mocker)
-        organization.capabilities = {
-            **STATUS_CAPABILITIES[OrganizationStatus.CREATED]
-        }
+        organization.capabilities = {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]}
         await save_fixture(organization)
         migration = await build_connected_migration(save_fixture, organization)
         migration.pan_transfer_steps = pan_steps_until(
@@ -2255,9 +2253,7 @@ class TestGetCutoverReport:
             flush=True,
         )
 
-        report = await service.get_cutover_report(
-            session, auth_subject, migration.id
-        )
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
 
         assert report.total == 2
         assert report.moved == 1

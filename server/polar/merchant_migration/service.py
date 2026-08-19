@@ -930,8 +930,7 @@ class MerchantMigrationService:
             MerchantMigrationCutoverStatus.failed, 0
         )
         note = (
-            f"Polar now bills {moved} subscription(s), and stopped them on your "
-            "source."
+            f"Polar now bills {moved} subscription(s), and stopped them on your source."
         )
         if left:
             note += (
@@ -1202,9 +1201,7 @@ class MerchantMigrationService:
                 item.cutover_error = record.cutover_error
                 item.renews_at = self._staged_renews_at(record)
 
-    def _staged_renews_at(
-        self, record: MerchantMigrationRecord
-    ) -> datetime | None:
+    def _staged_renews_at(self, record: MerchantMigrationRecord) -> datetime | None:
         """When the source subscription renews, as captured at import. Best-effort:
         an unreadable blob just leaves the column blank."""
         staged = _staged_subscription(record)

@@ -745,9 +745,7 @@ class TestCutover:
         self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
     ) -> None:
         migration = await _create_migration(save_fixture, organization)
-        response = await client.post(
-            f"/v1/merchant-migrations/{migration.id}/cutover"
-        )
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/cutover")
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
@@ -764,9 +762,7 @@ class TestCutover:
         )
         await save_fixture(migration)
 
-        response = await client.post(
-            f"/v1/merchant-migrations/{migration.id}/cutover"
-        )
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/cutover")
         assert response.status_code == 409
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
@@ -785,9 +781,7 @@ class TestCutover:
         )
         await save_fixture(migration)
 
-        response = await client.post(
-            f"/v1/merchant-migrations/{migration.id}/cutover"
-        )
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/cutover")
         assert response.status_code == 200
         assert response.json()["started"] is True
         assert response.json()["running"] is True

@@ -242,9 +242,7 @@ class MerchantMigrationCutoverReport(Schema):
     running: bool = Field(
         description="Whether Polar is currently going through the subscriptions."
     )
-    completed: bool = Field(
-        description="Whether the last switch run has finished."
-    )
+    completed: bool = Field(description="Whether the last switch run has finished.")
     total: int = Field(description="Imported subscriptions the switch looks at.")
     pending: int = Field(description="Not switched yet.")
     moved: int = Field(description="Now billed by Polar, and stopped on the source.")

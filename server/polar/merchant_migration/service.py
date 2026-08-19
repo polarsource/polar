@@ -588,9 +588,7 @@ class MerchantMigrationService:
         migration: MerchantMigration,
         steps: Sequence[PanTransferStep],
     ) -> None:
-        """Persist the checklist, advance the migration's own step when the new
-        current step implies one, and schedule the job for a step Polar performs
-        itself."""
+        """Persist progress and start work for the current Polar-managed step."""
         current = pan_transfer.current(steps)
         update_dict: dict[str, object] = {"pan_transfer_steps": list(steps)}
         if current is not None:

@@ -61,6 +61,7 @@ variable "max_retries" {
   description = "DLQ redrive maxReceiveCount is max_retries + 1. Backoffs past 12h are rescheduled via EventBridge Scheduler, which resets the SQS receive count, so this only bounds the in-queue retry climb before the handoff."
   type        = number
   default     = 20
+  nullable    = false
 }
 
 variable "enabled" {

@@ -366,6 +366,13 @@ class TieredPrice:
         default=None,
     )
 
+    @property
+    def is_free(self) -> bool:
+        """A price with no tiers yet has nothing to charge, so it reads as free."""
+        if self.tiers is None:
+            return True
+        return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
+
     def get_tiered_amount(self, quantity: int) -> Decimal:
         return self.tiers.calculate(quantity)
 
@@ -430,12 +437,6 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
     def get_maximum_seats(self) -> int | None:
         return self.get_maximum_units()
 
-    @property
-    def is_free(self) -> bool:
-        if not self.tiers.tiers:
-            return True
-        return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
-
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,
         "polymorphic_load": "inline",
@@ -473,13 +474,9 @@ class ProductPriceUnitBased(TieredPrice, NewProductPrice, ProductPrice):
             raise ValueError(f"Unit price produced non-integral amount {amount}")
         return int(amount)
 
-    def get_purchase_floor(self) -> int:
+    def get_minimum_purchasable_units(self) -> int:
         """The smallest purchasable quantity, never below one unit."""
         return max(1, self.get_minimum_units())
-
-    @property
-    def is_free(self) -> bool:
-        return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.unit_based,

@@ -425,6 +425,7 @@ class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
         ),
     )
     unit_label: str | None = Field(
+        default=None,
         max_length=32,
         description=(
             "Singular noun for a unit of this price, shown at checkout and "
@@ -432,6 +433,7 @@ class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
         ),
     )
     unit_label_plural: str | None = Field(
+        default=None,
         max_length=32,
         description=(
             "Plural noun for a unit of this price. Defaults to the singular "

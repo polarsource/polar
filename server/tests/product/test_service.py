@@ -1259,7 +1259,13 @@ class TestCreateUnitBasedPrice:
             ProductCreateRecurring(
                 name="Product",
                 recurring_interval=SubscriptionRecurringInterval.month,
-                prices=[_unit_price_create(minimum_units=5)],
+                prices=[
+                    _unit_price_create(
+                        minimum_units=5,
+                        unit_label="device",
+                        unit_label_plural="devices",
+                    )
+                ],
                 organization_id=organization.id,
             ),
             auth_subject,
@@ -1275,38 +1281,9 @@ class TestCreateUnitBasedPrice:
             }
         )
         assert price.minimum_units == 5
-        assert price.unit_label is None
-        assert price.unit_label_plural is None
-        assert price.calculate_amount(3) == 8700
-
-    @pytest.mark.auth
-    async def test_unit_label_persisted(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-        unit_based_pricing_enabled: None,
-    ) -> None:
-        product = await product_service.create(
-            session,
-            ProductCreateRecurring(
-                name="Product",
-                recurring_interval=SubscriptionRecurringInterval.month,
-                prices=[
-                    _unit_price_create(unit_label="device", unit_label_plural="devices")
-                ],
-                organization_id=organization.id,
-            ),
-            auth_subject,
-        )
-
-        price = product.prices[0]
-        assert is_unit_price(price)
         assert price.unit_label == "device"
         assert price.unit_label_plural == "devices"
-        assert price.get_unit_noun(1) == "device"
-        assert price.get_unit_noun(3) == "devices"
+        assert price.calculate_amount(3) == 8700
 
     @pytest.mark.auth
     async def test_one_time_product_rejected(

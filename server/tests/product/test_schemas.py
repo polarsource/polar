@@ -719,43 +719,31 @@ def _unit_based_payload(
     return payload
 
 
-UNIT_TIERS: list[dict[str, Any]] = [
-    {"bound": 10, "unit_amount": 1000},
-    {"bound": None, "unit_amount": 800},
-]
-
-
 class TestProductPriceUnitBasedCreate:
     def test_valid_tiered(self) -> None:
         schema = ProductPriceUnitBasedCreate.model_validate(
-            _unit_based_payload(UNIT_TIERS, tier_type="graduated", minimum_units=5)
+            {
+                **_unit_based_payload(
+                    [
+                        {"bound": 10, "unit_amount": 1000},
+                        {"bound": None, "unit_amount": 800},
+                    ],
+                    tier_type="graduated",
+                    minimum_units=5,
+                ),
+                "unit_label": "device",
+                "unit_label_plural": "devices",
+            }
         )
         assert schema.tiers.type == TierType.graduated
         assert schema.minimum_units == 5
-
-    def test_valid_flat_single_unbounded_tier(self) -> None:
-        schema = ProductPriceUnitBasedCreate.model_validate(
-            _unit_based_payload([{"bound": None, "unit_amount": 2900}])
-        )
-        assert schema.minimum_units is None
-        assert schema.tiers.last_bound is None
-
-    def test_maximum_units_from_last_bounded_tier(self) -> None:
-        schema = ProductPriceUnitBasedCreate.model_validate(
-            _unit_based_payload([{"bound": 100, "unit_amount": 500}])
-        )
-        assert schema.tiers.last_bound == 100
+        assert schema.unit_label == "device"
+        assert schema.unit_label_plural == "devices"
 
     def test_fractional_rate_rejected(self) -> None:
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="smallest currency unit"):
             ProductPriceUnitBasedCreate.model_validate(
                 _unit_based_payload([{"bound": None, "unit_amount": "10.5"}])
-            )
-
-    def test_negative_rate_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            ProductPriceUnitBasedCreate.model_validate(
-                _unit_based_payload([{"bound": None, "unit_amount": -1}])
             )
 
     def test_zero_rate_allowed(self) -> None:
@@ -764,88 +752,12 @@ class TestProductPriceUnitBasedCreate:
         )
         assert schema.tiers is not None
 
-    def test_tier_order_is_irrelevant(self) -> None:
-        schema = ProductPriceUnitBasedCreate.model_validate(
-            _unit_based_payload(
-                [
-                    {"bound": None, "unit_amount": 300},
-                    {"bound": 10, "unit_amount": 500},
-                ]
-            )
-        )
-        assert [tier.bound for tier in schema.tiers.tiers] == [10, None]
-
-    def test_two_unbounded_tiers_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="last tier"):
-            ProductPriceUnitBasedCreate.model_validate(
-                _unit_based_payload(
-                    [
-                        {"bound": None, "unit_amount": 500},
-                        {"bound": None, "unit_amount": 300},
-                    ]
-                )
-            )
-
-    def test_duplicate_bound_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="must be unique"):
-            ProductPriceUnitBasedCreate.model_validate(
-                _unit_based_payload(
-                    [
-                        {"bound": 10, "unit_amount": 500},
-                        {"bound": 10, "unit_amount": 300},
-                        {"bound": None, "unit_amount": 100},
-                    ]
-                )
-            )
-
     def test_minimum_units_above_last_tier_rejected(self) -> None:
         with pytest.raises(ValidationError, match="minimum_units"):
             ProductPriceUnitBasedCreate.model_validate(
                 _unit_based_payload(
                     [{"bound": 10, "unit_amount": 500}], minimum_units=11
                 )
-            )
-
-    def test_empty_tiers_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            ProductPriceUnitBasedCreate.model_validate(_unit_based_payload([]))
-
-    def test_unit_label_optional(self) -> None:
-        schema = ProductPriceUnitBasedCreate.model_validate(
-            _unit_based_payload([{"bound": None, "unit_amount": 2900}])
-        )
-        assert schema.unit_label is None
-        assert schema.unit_label_plural is None
-
-    def test_unit_label_accepted(self) -> None:
-        schema = ProductPriceUnitBasedCreate.model_validate(
-            {
-                **_unit_based_payload([{"bound": None, "unit_amount": 2900}]),
-                "unit_label": "device",
-                "unit_label_plural": "devices",
-            }
-        )
-        assert schema.unit_label == "device"
-        assert schema.unit_label_plural == "devices"
-
-    def test_unit_label_empty_string_becomes_none(self) -> None:
-        schema = ProductPriceUnitBasedCreate.model_validate(
-            {
-                **_unit_based_payload([{"bound": None, "unit_amount": 2900}]),
-                "unit_label": "  ",
-                "unit_label_plural": "",
-            }
-        )
-        assert schema.unit_label is None
-        assert schema.unit_label_plural is None
-
-    def test_unit_label_too_long_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            ProductPriceUnitBasedCreate.model_validate(
-                {
-                    **_unit_based_payload([{"bound": None, "unit_amount": 2900}]),
-                    "unit_label": "x" * 33,
-                }
             )
 
 

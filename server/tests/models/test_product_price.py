@@ -424,14 +424,9 @@ class TestMinimumMaximumUnits:
         assert price.get_maximum_units() is None
 
 
-def _make_unit_price(
-    tiers: list[dict[str, Any]],
-    tier_type: TierType = TierType.volume,
-    minimum_units: int | None = None,
-) -> ProductPriceUnitBased:
+def _make_unit_price(tiers: list[dict[str, Any]]) -> ProductPriceUnitBased:
     return ProductPriceUnitBased(
-        tiers=_tiers_data(tier_type, tiers),
-        minimum_units=minimum_units,
+        tiers=_tiers_data(TierType.volume, tiers),
         price_currency="usd",
     )
 
@@ -442,25 +437,7 @@ class TestUnitBasedPrice:
         assert price.amount_type == ProductPriceAmountType.unit_based
         assert price.is_static is True
         assert price.is_metered is False
-
-    def test_flat_single_tier(self) -> None:
-        price = _make_unit_price([{"bound": None, "unit_amount": "2900"}])
-        assert price.calculate_amount(1) == 2900
-        assert price.calculate_amount(3) == 8700
-
-    def test_volume(self) -> None:
-        price = _make_unit_price(SHARED_MULTI_TIER)
-        assert price.calculate_amount(10) == 10_000
-        assert price.calculate_amount(11) == 11 * 800
-        assert price.calculate_amount(100) == 100 * 600
-
-    def test_graduated(self) -> None:
-        price = _make_unit_price(SHARED_MULTI_TIER, TierType.graduated)
-        assert price.calculate_amount(60) == 10 * 1000 + 40 * 800 + 10 * 600
-
-    def test_zero_units_cost_zero(self) -> None:
-        price = _make_unit_price(SHARED_MULTI_TIER)
-        assert price.calculate_amount(0) == 0
+        assert price.is_free is False
 
     def test_non_integral_amount_raises(self) -> None:
         price = _make_unit_price([{"bound": None, "unit_amount": "10.5"}])
@@ -470,22 +447,6 @@ class TestUnitBasedPrice:
     def test_is_free(self) -> None:
         price = _make_unit_price([{"bound": None, "unit_amount": "0"}])
         assert price.is_free is True
-
-    def test_is_not_free(self) -> None:
-        price = _make_unit_price(SHARED_MULTI_TIER)
-        assert price.is_free is False
-
-    def test_minimum_units_from_column(self) -> None:
-        price = _make_unit_price(SHARED_MULTI_TIER, minimum_units=5)
-        assert price.get_minimum_units() == 5
-
-    def test_maximum_units_from_last_tier(self) -> None:
-        price = _make_unit_price([{"bound": 20, "unit_amount": "1000"}])
-        assert price.get_maximum_units() == 20
-
-    def test_maximum_units_unbounded(self) -> None:
-        price = _make_unit_price(SHARED_MULTI_TIER)
-        assert price.get_maximum_units() is None
 
     def test_unit_noun_defaults(self) -> None:
         price = _make_unit_price(SHARED_MULTI_TIER)

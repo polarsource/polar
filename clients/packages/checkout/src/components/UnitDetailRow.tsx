@@ -23,7 +23,7 @@ const UnitDetailRow = ({
   unitPrice,
 }: UnitDetailRowProps) => {
   const t = useTranslations(locale)
-  const { unitLabel, unitLabelPlural } = getUnitLabels(unitPrice)
+  const { unitLabel, unitLabelPlural } = getUnitLabels(unitPrice, locale)
 
   return (
     <DetailRow

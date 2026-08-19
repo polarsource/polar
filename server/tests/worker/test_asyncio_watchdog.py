@@ -232,6 +232,38 @@ class TestEventLoopWatchdog:
 
             mock_exit.assert_called_with(1)
 
+    def test_exits_even_when_the_dump_fails(
+        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+    ) -> None:
+        """A broken stderr must not stop the restart.
+
+        _dump_stacks used to run unguarded, so a write error killed the
+        watchdog thread and left the stuck worker alive.
+        """
+        loop, thread = event_loop_thread
+        _block(loop, 3)
+
+        watchdog = _EventLoopWatchdog(
+            loop,
+            thread.ident,
+            heartbeat_interval=0.05,
+            heartbeat_timeout=0.3,
+            max_misses=2,
+        )
+
+        with (
+            patch.object(
+                _EventLoopWatchdog, "_dump_stacks", side_effect=OSError("broken pipe")
+            ),
+            patch("polar.worker._asyncio.os._exit") as mock_exit,
+        ):
+            watchdog.start()
+            time.sleep(1.0)
+            watchdog.stop()
+            watchdog.join(timeout=5)
+
+            mock_exit.assert_called_with(1)
+
     def test_does_not_exit_when_disabled(
         self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:

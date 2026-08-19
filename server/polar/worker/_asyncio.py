@@ -1,6 +1,5 @@
 import asyncio
 import concurrent.futures
-import logging
 import os
 import sys
 import threading
@@ -18,6 +17,7 @@ log: Logger = structlog.get_logger()
 
 HEARTBEAT_INTERVAL = 5.0
 HEARTBEAT_TIMEOUT = 15.0
+EXIT_GRACE_SECONDS = 5.0
 
 
 class _EventLoopWatchdog(threading.Thread):
@@ -66,7 +66,12 @@ class _EventLoopWatchdog(threading.Thread):
 
             if not self._heartbeat_event.wait(timeout=self.heartbeat_timeout):
                 self._consecutive_misses += 1
-                self._dump_stacks()
+                try:
+                    self._dump_stacks()
+                except Exception:
+                    # Diagnostics are best effort. A failure here must never
+                    # skip the exit below, or a stuck worker stays stuck.
+                    pass
                 if self.max_misses > 0 and self._consecutive_misses >= self.max_misses:
                     self._exit_process()
             else:
@@ -90,17 +95,23 @@ class _EventLoopWatchdog(threading.Thread):
         if self._exiting:
             return
         self._exiting = True
+        # A stuck thread can hold the logging lock, which would hang the log
+        # call below. Arm the exit first so nothing can keep the worker alive.
+        timer = threading.Timer(EXIT_GRACE_SECONDS, os._exit, args=(1,))
+        timer.daemon = True
+        timer.start()
         log.error(
             "event_loop_unrecoverable",
             consecutive_misses=self._consecutive_misses,
             max_misses=self.max_misses,
             message="Event loop never recovered, exiting so the worker restarts.",
         )
-        # os._exit skips cleanup. Flush by hand or this last message stays
-        # in the buffer and is lost.
-        logging.shutdown()
-        sys.stdout.flush()
-        sys.stderr.flush()
+        # os._exit skips cleanup, so flush by hand or this last message is lost.
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.flush()
+            except (OSError, ValueError):
+                pass
         os._exit(1)
 
     def _get_event_loop_stack(self) -> str:
@@ -177,8 +188,11 @@ class _EventLoopWatchdog(threading.Thread):
         )
         # Also write it raw. The log field above gets scrubbed and cut
         # short, and this dump is the whole point.
-        sys.stderr.write(f"{thread_stacks}\n")
-        sys.stderr.flush()
+        try:
+            sys.stderr.write(f"{thread_stacks}\n")
+            sys.stderr.flush()
+        except (OSError, ValueError):
+            pass
 
 
 class MonitoredAsyncIO(AsyncIO):

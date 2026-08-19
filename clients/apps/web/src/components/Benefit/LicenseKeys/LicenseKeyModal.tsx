@@ -92,7 +92,9 @@ export const LicenseKeyModal = ({
         }
         toast({
           title: t('checkout.benefits.licenseKey.rotateSuccessTitle'),
-          description: t('checkout.benefits.licenseKey.rotateSuccessDescription'),
+          description: t(
+            'checkout.benefits.licenseKey.rotateSuccessDescription',
+          ),
         })
       })
   }, [rotateLicenseKey, licenseKey.id, t])
@@ -114,9 +116,7 @@ export const LicenseKeyModal = ({
           <Avatar
             className="h-10 w-10"
             avatar_url={licenseKey.customer.avatar_url}
-            name={
-              licenseKey.customer.email ?? licenseKey.customer.name ?? '—'
-            }
+            name={licenseKey.customer.email ?? licenseKey.customer.name ?? '—'}
           />
           <Box flexDirection="column">
             <Text>{licenseKey.customer.email ?? '—'}</Text>

@@ -30,6 +30,7 @@ from .schemas import (
     LicenseKeyValidate,
     LicenseKeyWithActivations,
     NotFoundResponse,
+    RotateNotPermitted,
     UnauthorizedResponse,
     ValidatedLicenseKey,
 )
@@ -127,6 +128,37 @@ async def update(
     )
     updated = await license_key_service.update(session, license_key=lk, updates=updates)
     return updated
+
+
+@router.post(
+    "/{id}/rotate",
+    summary="Rotate License Key",
+    response_model=LicenseKeyRead,
+    responses={
+        400: RotateNotPermitted,
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
+    },
+)
+async def rotate(
+    auth_subject: auth.LicenseKeysWrite,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> LicenseKey:
+    """Rotate a license key.
+
+    Generates a new key string for the same license key record. The previous
+    key string immediately stops validating. Status, usage, limits, expiry,
+    and activations are preserved.
+    """
+    lk = await license_key_service.get(session, auth_subject, id)
+    if not lk:
+        raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session, auth_subject, lk, OrganizationPermission.products_manage
+    )
+    return await license_key_service.rotate(session, license_key=lk)
 
 
 @router.get(

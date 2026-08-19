@@ -162,6 +162,49 @@ class LicenseKeyService:
         await session.flush()
         return license_key
 
+    async def rotate(
+        self,
+        session: AsyncSession,
+        *,
+        license_key: LicenseKey,
+    ) -> LicenseKey:
+        if license_key.status == LicenseKeyStatus.revoked:
+            raise BadRequest("Revoked license keys cannot be rotated.")
+
+        await session.refresh(license_key, attribute_names=["benefit"])
+        prefix = cast(BenefitLicenseKeysProperties, license_key.benefit.properties).get(
+            "prefix"
+        )
+        old_key = license_key.key
+        license_key.key = LicenseKeyCreate.generate_key(prefix=prefix)
+        session.add(license_key)
+        await session.flush()
+
+        grant_repository = BenefitGrantRepository.from_session(session)
+        grant = await grant_repository.get_by_property_and_organization(
+            license_key.organization_id,
+            "license_key_id",
+            str(license_key.id),
+            benefit_id=license_key.benefit_id,
+        )
+        if grant is not None:
+            grant.properties = {
+                **grant.properties,
+                "display_key": license_key.display_key,
+            }
+            session.add(grant)
+            await session.flush()
+
+        log.info(
+            "license_key.rotate",
+            license_key_id=license_key.id,
+            organization_id=license_key.organization_id,
+            customer_id=license_key.customer_id,
+            benefit_id=license_key.benefit_id,
+            previous_key_suffix=old_key[-6:],
+        )
+        return license_key
+
     async def _enqueue_grant_lifecycle(
         self,
         session: AsyncSession,

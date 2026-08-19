@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     UUID4,
+    AfterValidator,
     BeforeValidator,
     Discriminator,
     Field,
@@ -89,7 +90,6 @@ from polar.product.tiers import (
     seat_tiers_unit_bounds,
     validate_unit_bounds,
 )
-from polar.product.unit_label import UnitLabel
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 64
@@ -152,6 +152,47 @@ ProductDescription = Annotated[
     str | None,
     Field(description="The description of the product."),
     EmptyStrToNoneValidator,
+]
+
+UNIT_LABEL_MAX_LENGTH = 32
+
+
+def _clean_unit_label_forms(forms: dict[str, str]) -> dict[str, str]:
+    cleaned: dict[str, str] = {}
+    for key, value in forms.items():
+        stripped = value.strip()
+        if not stripped:
+            continue
+        if len(stripped) > UNIT_LABEL_MAX_LENGTH:
+            raise PydanticCustomError(
+                "unit_label_form_too_long",
+                "Unit label forms must be at most {max_length} characters",
+                {"max_length": UNIT_LABEL_MAX_LENGTH},
+            )
+        cleaned[key] = stripped
+    if "other" not in cleaned:
+        raise PydanticCustomError(
+            "missing_other_plural",
+            "Each locale must include a non-empty 'other' form",
+        )
+    return cleaned
+
+
+def _validate_unit_label(
+    value: dict[str, dict[str, str]],
+) -> dict[str, dict[str, str]]:
+    return {locale: _clean_unit_label_forms(forms) for locale, forms in value.items()}
+
+
+UnitLabel = Annotated[
+    dict[str, dict[str, str]],
+    AfterValidator(_validate_unit_label),
+    Field(
+        min_length=1,
+        json_schema_extra={
+            "examples": [{"en": {"=1": "seat", "other": "seats"}}],
+        },
+    ),
 ]
 
 

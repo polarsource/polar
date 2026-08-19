@@ -736,10 +736,7 @@ class TestProductPriceUnitBasedCreate:
         )
         assert schema.tiers.type == TierType.graduated
         assert schema.minimum_units == 5
-        assert schema.unit_label is not None
-        assert schema.unit_label.model_dump() == {
-            "en": {"=1": "device", "other": "devices"}
-        }
+        assert schema.unit_label == {"en": {"=1": "device", "other": "devices"}}
 
     def test_unit_label_optional(self) -> None:
         schema = ProductPriceUnitBasedCreate.model_validate(
@@ -753,6 +750,15 @@ class TestProductPriceUnitBasedCreate:
                 {
                     **_unit_based_payload([{"bound": None, "unit_amount": 1000}]),
                     "unit_label": {"en": {"=1": "device"}},
+                }
+            )
+
+    def test_unit_label_empty_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            ProductPriceUnitBasedCreate.model_validate(
+                {
+                    **_unit_based_payload([{"bound": None, "unit_amount": 1000}]),
+                    "unit_label": {},
                 }
             )
 

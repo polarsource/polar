@@ -1,7 +1,7 @@
 """drop dead columns from issue_rewards
 
 Revision ID: a1e9c3b8d027
-Revises: f3d81c25ab90
+Revises: c7f2a91e4d38
 Create Date: 2026-08-19 10:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a1e9c3b8d027"
-down_revision = "f3d81c25ab90"
+down_revision = "c7f2a91e4d38"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

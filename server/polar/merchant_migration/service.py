@@ -851,9 +851,7 @@ class MerchantMigrationService:
         selection = (
             migration.operation.selection if migration.operation is not None else None
         )
-        counts = await record_repository.count_cutover_statuses(
-            migration.id, selection
-        )
+        counts = await record_repository.count_cutover_statuses(migration.id, selection)
         completed_steps = self._complete_polar_app_step(
             migration, STEP_MOVE_SUBSCRIPTIONS
         )
@@ -987,9 +985,7 @@ class MerchantMigrationService:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         operation = migration.operation
         selection = operation.selection if operation is not None else None
-        counts = await record_repository.count_cutover_statuses(
-            migration.id, selection
-        )
+        counts = await record_repository.count_cutover_statuses(migration.id, selection)
         return MerchantMigrationCutoverReport(
             started=self._cutover_started(migration),
             running=operation.is_active if operation is not None else False,

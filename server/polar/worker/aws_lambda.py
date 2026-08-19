@@ -4,6 +4,7 @@ from typing import Any
 import logfire
 import sentry_sdk
 import structlog
+from dramatiq.errors import Retry
 
 from polar.config import settings
 from polar.logfire import configure_logfire
@@ -58,6 +59,9 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                         source_correlation_id=correlation_id,
                     )
                 )
+            except Retry as exc:
+                if _apply_retry_backoff(record, exc):
+                    batch_item_failures.append({"itemIdentifier": message_id})
             except Exception as exc:
                 sentry_sdk.capture_exception(exc)
                 log.error(

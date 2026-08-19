@@ -3,7 +3,7 @@ import typing
 
 import pytest
 
-from polar import deserialize
+from polar import deserialize, PolarDeserializationError
 from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
 
 SERVERS = {
@@ -32,6 +32,11 @@ def test_deserialize_model() -> None:
 
     typing.assert_type(cat, Cat)
     assert cat == Cat(type="cat", lives=9)
+
+
+def test_deserialize_model_invalid() -> None:
+    with pytest.raises(PolarDeserializationError):
+        deserialize({"type": "cat", "lives": "nine"}, Cat)
 
 
 def test_deserialize_union() -> None:

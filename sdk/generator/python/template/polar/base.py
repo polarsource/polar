@@ -4,6 +4,7 @@ import types
 import typing
 
 import adaptix
+import adaptix.load_error
 import httpx
 import typing_extensions
 
@@ -28,6 +29,12 @@ class PolarServerError(PolarError):
         super().__init__(
             f"Polar API returned a server error: {status_code} - {message}"
         )
+
+
+class PolarDeserializationError(PolarError):
+    def __init__(self, error: adaptix.load_error.LoadError):
+        self.error = error
+        super().__init__(f"Failed to deserialize Polar API response: {error}")
 
 
 class PolarClientError(PolarError):
@@ -170,7 +177,10 @@ _retort = adaptix.Retort()
 def deserialize(
     data: object, model: typing_extensions.TypeForm[_ModelT]
 ) -> _ModelT:
-    return typing.cast(_ModelT, _retort.load(data, model))
+    try:
+        return typing.cast(_ModelT, _retort.load(data, model))
+    except adaptix.load_error.LoadError as e:
+        raise PolarDeserializationError(e) from e
 
 E = typing.TypeVar("E", bound=PolarClientError)
 

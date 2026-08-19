@@ -612,9 +612,6 @@ class OrganizationUncoveredHost(Schema):
 
 
 class OrganizationEmbedStatus(Schema):
-    has_embedded: bool = Field(
-        description="Whether this organization has ever opened an embedded checkout."
-    )
     embed_hosts: list[str] = Field(description=_embed_hosts_description)
     shared_hosts: list[str] = Field(
         description=(

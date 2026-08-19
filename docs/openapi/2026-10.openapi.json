@@ -70881,11 +70881,6 @@
       },
       "OrganizationEmbedStatus": {
         "properties": {
-          "has_embedded": {
-            "type": "boolean",
-            "title": "Has Embedded",
-            "description": "Whether this organization has ever opened an embedded checkout."
-          },
           "embed_hosts": {
             "items": {
               "type": "string"
@@ -70913,7 +70908,6 @@
         },
         "type": "object",
         "required": [
-          "has_embedded",
           "embed_hosts",
           "shared_hosts",
           "uncovered_hosts"

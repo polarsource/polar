@@ -27575,11 +27575,6 @@ export interface components {
     /** OrganizationEmbedStatus */
     OrganizationEmbedStatus: {
       /**
-       * Has Embedded
-       * @description Whether this organization has ever opened an embedded checkout.
-       */
-      has_embedded: boolean
-      /**
        * Embed Hosts
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
        */

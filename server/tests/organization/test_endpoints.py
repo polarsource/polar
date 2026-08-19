@@ -1010,7 +1010,7 @@ class TestGetEmbedStatus:
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_never_embedded(
+    async def test_no_embed_activity(
         self,
         client: AsyncClient,
         organization: Organization,
@@ -1020,27 +1020,8 @@ class TestGetEmbedStatus:
 
         assert response.status_code == 200
         json = response.json()
-        assert json["has_embedded"] is False
         assert json["embed_hosts"] == []
-
-    @pytest.mark.auth
-    async def test_embedded_without_hosts(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        checkout = await create_checkout(save_fixture, products=[product])
-        checkout.embed_origin = "https://example.com"
-        await save_fixture(checkout)
-
-        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["has_embedded"] is True
+        assert json["uncovered_hosts"] == []
 
     @pytest.mark.auth
     async def test_uncovered_host_reported(

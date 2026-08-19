@@ -87,19 +87,6 @@ class CheckoutRepository(
         result = await self.session.execute(statement)
         return list(result.scalars().all())
 
-    async def has_embedded(self, organization_id: UUID) -> bool:
-        statement = select(
-            select(Checkout.id)
-            .where(
-                ~Checkout.is_deleted,
-                Checkout.organization_id == organization_id,
-                Checkout.embed_origin.is_not(None),
-            )
-            .exists()
-        )
-        result = await self.session.execute(statement)
-        return bool(result.scalar())
-
     async def list_embed_origins(
         self, organization_id: UUID, *, since: datetime
     ) -> Sequence[tuple[str, int, datetime]]:

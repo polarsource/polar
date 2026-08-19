@@ -27,11 +27,6 @@ import { UnitTierEditor } from './UnitTierEditor'
 
 type TieringModel = 'fixed' | 'graduated' | 'volume'
 
-const toAmount = (value: unknown): number => {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : 0
-}
-
 export interface ProductPriceUnitBasedItemProps {
   index: number
   currency: string
@@ -50,9 +45,13 @@ export const ProductPriceUnitBasedItem: React.FC<
     getUnitLabels({ unit_label: unitLabel ?? null })
 
   const deriveTieringModel = (): TieringModel => {
-    if (currentTierType === 'graduated') return 'graduated'
+    if (currentTierType === 'graduated') {
+      return 'graduated'
+    }
     const currentTiers = getValues(`prices.${index}.tiers.tiers`)
-    if (!currentTiers || currentTiers.length <= 1) return 'fixed'
+    if (!currentTiers || currentTiers.length <= 1) {
+      return 'fixed'
+    }
     return 'volume'
   }
 
@@ -70,7 +69,7 @@ export const ProductPriceUnitBasedItem: React.FC<
         setValue(`prices.${index}.tiers.tiers`, [
           {
             bound: null,
-            unit_amount: toAmount(currentTiers?.[0]?.unit_amount),
+            unit_amount: Number(currentTiers?.[0]?.unit_amount) || 0,
           },
         ])
       } else {
@@ -135,7 +134,7 @@ export const ProductPriceUnitBasedItem: React.FC<
                     value={
                       field.value == null || field.value === ''
                         ? null
-                        : toAmount(field.value)
+                        : Number(field.value)
                     }
                     onChange={(v) => {
                       field.onChange(v)

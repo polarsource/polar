@@ -38,15 +38,6 @@ export const UnitTierEditor: React.FC<UnitTierEditorProps> = ({
   const tiers = watch(`prices.${index}.tiers.tiers`)
   const hasSingleTier = fields.length === 1
 
-  const forceLastTierUnbounded = useCallback(() => {
-    const currentTiers = getValues(`prices.${index}.tiers.tiers`)
-    if (!currentTiers || currentTiers.length === 0) return
-    setValue(
-      `prices.${index}.tiers.tiers.${currentTiers.length - 1}.bound`,
-      null,
-    )
-  }, [getValues, setValue, index])
-
   const addTier = useCallback(() => {
     const currentTiers = getValues(`prices.${index}.tiers.tiers`)
     const lastTier = currentTiers?.[currentTiers.length - 1]
@@ -68,10 +59,16 @@ export const UnitTierEditor: React.FC<UnitTierEditorProps> = ({
   const removeTier = useCallback(
     (tierIndex: number) => {
       remove(tierIndex)
+      const remainingTiers = getValues(`prices.${index}.tiers.tiers`) ?? []
+      if (remainingTiers.length > 0) {
+        setValue(
+          `prices.${index}.tiers.tiers.${remainingTiers.length - 1}.bound`,
+          null,
+        )
+      }
       setValue(`prices.${index}.id`, '')
-      forceLastTierUnbounded()
     },
-    [remove, setValue, index, forceLastTierUnbounded],
+    [remove, getValues, setValue, index],
   )
 
   return (

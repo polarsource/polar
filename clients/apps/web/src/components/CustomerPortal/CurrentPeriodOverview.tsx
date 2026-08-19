@@ -64,7 +64,6 @@ export const CurrentPeriodOverview = ({
     return subscription.seats
   }, [subscription])
 
-  // Same for unit-based subscriptions.
   const units = useMemo(() => {
     if (
       subscription.pending_update &&
@@ -142,6 +141,19 @@ export const CurrentPeriodOverview = ({
     dateLabel = 'Resumes'
   }
 
+  const productLabel = () => {
+    if (!product) {
+      return ''
+    }
+    if (isSeatBasedProduct && seats != null) {
+      return `${product.name} (${seats} ${seats === 1 ? 'seat' : 'seats'})`
+    }
+    if (isUnitBasedProduct && units != null) {
+      return `${product.name} (${units} ${units === 1 ? unitLabel : unitLabelPlural})`
+    }
+    return product.name
+  }
+
   const chargeDateLabel = `${dateLabel} — ${
     chargeDate
       ? new Date(chargeDate).toLocaleDateString('en-US', {
@@ -155,11 +167,7 @@ export const CurrentPeriodOverview = ({
       {product && subscriptionPreview && (
         <div className="flex items-center justify-between">
           <span className="dark:text-polar-400 text-gray-600">
-            {isSeatBasedProduct && seats != null
-              ? `${product.name} (${seats} ${seats === 1 ? 'seat' : 'seats'})`
-              : isUnitBasedProduct && units != null
-                ? `${product.name} (${units} ${units === 1 ? unitLabel : unitLabelPlural})`
-                : product.name}
+            {productLabel()}
           </span>
           <span
             className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}

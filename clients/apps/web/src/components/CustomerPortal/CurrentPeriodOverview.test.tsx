@@ -35,18 +35,22 @@ const createCustomPrice = (): schemas['ProductPriceCustom'] =>
     preset_amount: 2000,
   }) as schemas['ProductPriceCustom']
 
+const deviceUnitLabel: schemas['ProductPriceUnitBased']['unit_label'] = {
+  en: { '=1': 'device', other: 'devices' },
+}
+
 const createUnitPrice = (): schemas['ProductPriceUnitBased'] =>
   ({
     amount_type: 'unit_based',
     price_currency: 'usd',
     tiers: {
       type: 'volume',
-      tiers: [{ bound: null, unit_amount: 2500 }],
+      tiers: [{ bound: null, unit_amount: '2500' }],
     },
     minimum_units: 1,
     maximum_units: null,
-    unit_label: { en: { '=1': 'device', other: 'devices' } },
-  }) as unknown as schemas['ProductPriceUnitBased']
+    unit_label: deviceUnitLabel,
+  }) as schemas['ProductPriceUnitBased']
 
 const createProduct = (
   id: string,

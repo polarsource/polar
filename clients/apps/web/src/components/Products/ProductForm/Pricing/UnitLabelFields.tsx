@@ -21,21 +21,28 @@ type UnitLabel = NonNullable<
 const UNIT_LABEL_MAX_LENGTH = 32
 
 const composeUnitLabel = (
-  existing: UnitLabel | null | undefined,
+  existing: UnitLabel | null,
   singular: string,
   plural: string,
 ): UnitLabel | null => {
-  const singularForm = singular.trim()
-  const pluralForm = plural.trim() || (singularForm ? `${singularForm}s` : '')
-  const composed: UnitLabel = { ...existing }
-  delete composed['en']
-  if (pluralForm) {
-    composed['en'] = {
-      ...(singularForm ? { '=1': singularForm } : {}),
-      other: pluralForm,
-    }
-  }
+  const otherLocales: UnitLabel = Object.fromEntries(
+    Object.entries(existing ?? {}).filter(([locale]) => locale !== 'en'),
+  )
+  const one = singular.trim()
+  const other = plural.trim() || (one ? `${one}s` : '')
+
+  const composed: UnitLabel = other
+    ? { ...otherLocales, en: { ...(one ? { '=1': one } : {}), other } }
+    : otherLocales
+
   return Object.keys(composed).length > 0 ? composed : null
+}
+
+const validateUnitLabel = (value: UnitLabel | null) => {
+  const withinLimit = Object.values(value ?? {}).every((forms) =>
+    Object.values(forms).every((form) => form.length <= UNIT_LABEL_MAX_LENGTH),
+  )
+  return withinLimit || `Must be ${UNIT_LABEL_MAX_LENGTH} characters or fewer`
 }
 
 interface UnitLabelFieldsProps {
@@ -45,12 +52,12 @@ interface UnitLabelFieldsProps {
 export const UnitLabelFields = ({ index }: UnitLabelFieldsProps) => {
   const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
-  const initialValue = getValues(`prices.${index}.unit_label`) as
+  const initialLabel = getValues(`prices.${index}.unit_label`) as
     | UnitLabel
     | null
     | undefined
   const initialForms =
-    initialValue?.['en'] ?? Object.values(initialValue ?? {})[0] ?? {}
+    initialLabel?.['en'] ?? Object.values(initialLabel ?? {})[0] ?? {}
   const [singular, setSingular] = useState(initialForms['=1'] ?? '')
   const [plural, setPlural] = useState(initialForms['other'] ?? '')
 
@@ -58,68 +65,56 @@ export const UnitLabelFields = ({ index }: UnitLabelFieldsProps) => {
     <FormField
       control={control}
       name={`prices.${index}.unit_label`}
-      rules={{
-        validate: (value) =>
-          Object.values((value as UnitLabel | null) ?? {}).every((forms) =>
-            Object.values(forms).every(
-              (form) => form.length <= UNIT_LABEL_MAX_LENGTH,
+      rules={{ validate: (value) => validateUnitLabel(value as UnitLabel) }}
+      render={({ field }) => {
+        const updateLabel = (nextSingular: string, nextPlural: string) => {
+          setSingular(nextSingular)
+          setPlural(nextPlural)
+          field.onChange(
+            composeUnitLabel(
+              field.value as UnitLabel | null,
+              nextSingular,
+              nextPlural,
             ),
-          ) || 'Must be 32 characters or fewer',
+          )
+          setValue(`prices.${index}.id`, '')
+        }
+
+        return (
+          <FormItem>
+            <FormLabel>Unit name</FormLabel>
+            <FormDescription>
+              What customers see instead of &ldquo;unit&rdquo; at checkout and
+              on invoices. Leave blank to use the default.
+            </FormDescription>
+            <Grid templateColumns="repeat(2, 1fr)" columnGap="m">
+              <FormItem>
+                <FormLabel>Singular</FormLabel>
+                <FormControl>
+                  <Input
+                    value={singular}
+                    placeholder="device"
+                    autoComplete="off"
+                    onChange={(e) => updateLabel(e.target.value, plural)}
+                  />
+                </FormControl>
+              </FormItem>
+              <FormItem>
+                <FormLabel>Plural</FormLabel>
+                <FormControl>
+                  <Input
+                    value={plural}
+                    placeholder="devices"
+                    autoComplete="off"
+                    onChange={(e) => updateLabel(singular, e.target.value)}
+                  />
+                </FormControl>
+              </FormItem>
+            </Grid>
+            <FormMessage />
+          </FormItem>
+        )
       }}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Unit name</FormLabel>
-          <FormDescription>
-            What customers see instead of &ldquo;unit&rdquo; at checkout and on
-            invoices. Leave blank to use the default.
-          </FormDescription>
-          <Grid templateColumns="repeat(2, 1fr)" columnGap="m">
-            <FormItem>
-              <FormLabel>Singular</FormLabel>
-              <FormControl>
-                <Input
-                  value={singular}
-                  placeholder="device"
-                  autoComplete="off"
-                  onChange={(e) => {
-                    setSingular(e.target.value)
-                    field.onChange(
-                      composeUnitLabel(
-                        field.value as UnitLabel | null,
-                        e.target.value,
-                        plural,
-                      ),
-                    )
-                    setValue(`prices.${index}.id`, '')
-                  }}
-                />
-              </FormControl>
-            </FormItem>
-            <FormItem>
-              <FormLabel>Plural</FormLabel>
-              <FormControl>
-                <Input
-                  value={plural}
-                  placeholder="devices"
-                  autoComplete="off"
-                  onChange={(e) => {
-                    setPlural(e.target.value)
-                    field.onChange(
-                      composeUnitLabel(
-                        field.value as UnitLabel | null,
-                        singular,
-                        e.target.value,
-                      ),
-                    )
-                    setValue(`prices.${index}.id`, '')
-                  }}
-                />
-              </FormControl>
-            </FormItem>
-          </Grid>
-          <FormMessage />
-        </FormItem>
-      )}
     />
   )
 }

@@ -25,16 +25,21 @@ This will start a development server at [http://localhost:3000](http://localhost
 ```python
 # server/polar/email/schemas.py
 
+
 class EmailTemplate(StrEnum):
     # ...
     customer_greetings = "customer_greetings"
+
 
 class CustomerGreetingsProps(EmailProps):
     organization: Organization
     url: str
 
+
 class CustomerGreetingsEmail(BaseModel):
-    template: Literal[EmailTemplate.customer_greetings] = EmailTemplate.customer_greetings
+    template: Literal[EmailTemplate.customer_greetings] = (
+        EmailTemplate.customer_greetings
+    )
     props: CustomerGreetingsProps
 ```
 
@@ -60,11 +65,13 @@ from polar.email.sender import enqueue_email_template
 
 enqueue_email_template(
     CustomerGreetingsEmail(
-        props=CustomerGreetingsProps.model_validate({
-            "email": "john@example.com",
-            "organization": organization,
-            "url": "https://example.com/welcome",
-        })
+        props=CustomerGreetingsProps.model_validate(
+            {
+                "email": "john@example.com",
+                "organization": organization,
+                "url": "https://example.com/welcome",
+            }
+        )
     ),
     to_email_addr="john@example.com",
     subject="Welcome!",

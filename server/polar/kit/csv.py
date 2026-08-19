@@ -75,7 +75,7 @@ class CSVStreamingResponse(StreamingResponse):
 
     def __init__(
         self,
-        content: collections.abc.AsyncGenerator[str, None],
+        content: collections.abc.AsyncGenerator[str],
         filename: str,
         status_code: int = 200,
     ):

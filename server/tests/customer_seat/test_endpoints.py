@@ -78,7 +78,7 @@ class TestListSeats:
         subscription: Subscription,
         user_organization: UserOrganization,
     ) -> None:
-        subscription.started_at = datetime.now()
+        subscription.started_at = datetime.now(UTC)
         await save_fixture(subscription)
         subscription.product.organization.feature_settings = {}
         await save_fixture(subscription.product.organization)

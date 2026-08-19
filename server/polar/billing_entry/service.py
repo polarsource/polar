@@ -1,14 +1,13 @@
 import contextlib
 import dataclasses
 import uuid
-from collections.abc import AsyncIterable, Sequence
+from collections.abc import AsyncGenerator, AsyncIterable, Sequence
 from datetime import datetime
 from typing import cast
 
 import structlog
 from babel.dates import format_date
 from sqlalchemy.util.typing import Literal
-from typing_extensions import AsyncGenerator
 
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
@@ -334,7 +333,6 @@ class BillingEntryService:
                 amount = -amount
             case BillingEntryDirection.debit:
                 label = f"{price_label} — From {start} to {end}"
-                amount = amount
 
         return StaticLineItem(
             price=price,

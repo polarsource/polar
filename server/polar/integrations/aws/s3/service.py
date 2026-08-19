@@ -226,12 +226,12 @@ class S3Service:
         presign_from = utc_now()
         signed_download_url = self._presign_client.generate_presigned_url(
             "get_object",
-            Params=dict(
-                Bucket=self.bucket,
-                Key=path,
-                ResponseContentDisposition=get_content_disposition(filename),
-                ResponseContentType=mime_type,
-            ),
+            Params={
+                "Bucket": self.bucket,
+                "Key": path,
+                "ResponseContentDisposition": get_content_disposition(filename),
+                "ResponseContentType": mime_type,
+            },
             ExpiresIn=expires_in,
         )
 
@@ -243,7 +243,7 @@ class S3Service:
         # apart from building a URL manually 🙄
         # Ref: https://stackoverflow.com/a/48197923
         return self._unsigned_presign_client.generate_presigned_url(
-            "get_object", ExpiresIn=0, Params=dict(Bucket=self.bucket, Key=path)
+            "get_object", ExpiresIn=0, Params={"Bucket": self.bucket, "Key": path}
         )
 
     def delete_file(self, path: str) -> bool:

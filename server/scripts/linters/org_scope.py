@@ -25,8 +25,6 @@ Rules:
 - `# lint-skip: org-scope` on the offending line is an explicit escape.
 """
 
-from __future__ import annotations
-
 import ast
 from typing import TypeGuard
 

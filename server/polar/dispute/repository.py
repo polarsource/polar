@@ -139,7 +139,7 @@ class DisputeRepository(
 
     async def stream_auto_accept_candidates(
         self, *, before: datetime
-    ) -> AsyncGenerator[Dispute, None]:
+    ) -> AsyncGenerator[Dispute]:
         """Disputes whose announced deadline has passed, on an opted-in
         organization."""
         feature_settings = Organization.feature_settings

@@ -20,13 +20,9 @@ log: Logger = structlog.get_logger()
 class GrafanaCloudConfigError(Exception):
     """Raised when Grafana Cloud credentials are not configured."""
 
-    pass
-
 
 class GrafanaCloudAPIError(Exception):
     """Raised when a Grafana Cloud API request fails."""
-
-    pass
 
 
 class GrafanaCloudPrometheusClient:

@@ -63,7 +63,7 @@ async def request(
                 ],
             ).model_dump(mode="json"),
         )
-    except (CustomerDoesNotExist, OrganizationDoesNotExist):
+    except CustomerDoesNotExist, OrganizationDoesNotExist:
         # We don't want to leak information about whether the customer or organization exists
         return None
 

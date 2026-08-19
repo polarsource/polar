@@ -185,12 +185,13 @@ async def stream_assistant_run(
                                 if event.part.content:
                                     for out in placed_events(event.part.content):
                                         yield out
-                            elif isinstance(event, PartDeltaEvent) and isinstance(
-                                event.delta, TextPartDelta
+                            elif (
+                                isinstance(event, PartDeltaEvent)
+                                and isinstance(event.delta, TextPartDelta)
+                                and event.delta.content_delta
                             ):
-                                if event.delta.content_delta:
-                                    for out in placed_events(event.delta.content_delta):
-                                        yield out
+                                for out in placed_events(event.delta.content_delta):
+                                    yield out
                     if tail := placer.flush():
                         yield text_event(tail)
 

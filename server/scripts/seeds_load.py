@@ -2533,27 +2533,26 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
 POLAR_ORG_SLUG = "polar"
 TOKEN_COMMENT = "Polar self-integration (dev seed)"
-TOKEN_SCOPES = " ".join(
-    [
-        Scope.customers_read,
-        Scope.customers_write,
-        Scope.customer_sessions_write,
-        Scope.subscriptions_write,
-        Scope.events_write,
-        Scope.members_read,
-        Scope.members_write,
-        Scope.products_read,
-        Scope.checkouts_write,
-        Scope.benefits_read,
-        # Startup Program: claim flow creates/reads the per-customer
-        # discount via SDK and reads/updates the resulting subscription's
-        # discount + matching orders.
-        Scope.discounts_read,
-        Scope.discounts_write,
-        Scope.orders_read,
-        Scope.orders_write,
-    ]
+TOKEN_SCOPE_VALUES = (
+    Scope.customers_read,
+    Scope.customers_write,
+    Scope.customer_sessions_write,
+    Scope.subscriptions_write,
+    Scope.events_write,
+    Scope.members_read,
+    Scope.members_write,
+    Scope.products_read,
+    Scope.checkouts_write,
+    Scope.benefits_read,
+    # Startup Program: claim flow creates/reads the per-customer
+    # discount via SDK and reads/updates the resulting subscription's
+    # discount + matching orders.
+    Scope.discounts_read,
+    Scope.discounts_write,
+    Scope.orders_read,
+    Scope.orders_write,
 )
+TOKEN_SCOPES = " ".join(TOKEN_SCOPE_VALUES)
 
 WEBHOOK_NAME = "Polar self-integration (dev seed)"
 WEBHOOK_URL = "http://127.0.0.1:8000/v1/integrations/polar/webhook"

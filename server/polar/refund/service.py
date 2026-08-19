@@ -133,9 +133,9 @@ class RefundService:
         external_customer_id: Sequence[str] | None = None,
         succeeded: bool | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[RefundSortProperty]] = [
-            (RefundSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[RefundSortProperty]] = (
+            (RefundSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Refund], int]:
         repository = RefundRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -256,15 +256,15 @@ class RefundService:
 
         if payment.processor == PaymentProcessor.stripe:
             refund_total = refund_amount + refund_tax_amount
-            stripe_metadata = dict(
-                refund_id=str(refund_id),
-                order_id=str(order.id),
-                charge_id=payment.processor_id,
-                amount=str(create_schema.amount),
-                refund_amount=str(refund_amount),
-                refund_tax_amount=str(refund_tax_amount),
-                revoke_benefits="1" if create_schema.revoke_benefits else "0",
-            )
+            stripe_metadata = {
+                "refund_id": str(refund_id),
+                "order_id": str(order.id),
+                "charge_id": payment.processor_id,
+                "amount": str(create_schema.amount),
+                "refund_amount": str(refund_amount),
+                "refund_tax_amount": str(refund_tax_amount),
+                "revoke_benefits": "1" if create_schema.revoke_benefits else "0",
+            }
             try:
                 stripe_refund = await stripe_service.create_refund(
                     charge_id=payment.processor_id,

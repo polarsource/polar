@@ -33,7 +33,7 @@ def _get_rss_bytes() -> int:
         with open("/proc/self/statm") as f:
             pages = int(f.read().split()[1])
             return pages * os.sysconf("SC_PAGE_SIZE")
-    except (FileNotFoundError, OSError):
+    except FileNotFoundError, OSError:
         rusage = resource.getrusage(resource.RUSAGE_SELF)
         if sys.platform == "darwin":
             return rusage.ru_maxrss
@@ -60,7 +60,7 @@ def _collect_snapshot() -> dict[str, object]:
         type_counts[t] += 1
         try:
             type_sizes[t] = type_sizes.get(t, 0) + sys.getsizeof(obj)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             pass
 
     named_counts = {_type_name(t): c for t, c in type_counts.items()}

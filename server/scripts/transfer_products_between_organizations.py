@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Script to transfer products and their associated data between organizations.
 
@@ -58,25 +60,17 @@ def typer_async(f):  # type: ignore
 class ProductTransferError(Exception):
     """Base exception for product transfer errors."""
 
-    pass
-
 
 class MixedOrganizationError(ProductTransferError):
     """Raised when products belong to different source organizations."""
-
-    pass
 
 
 class CustomerSplitError(ProductTransferError):
     """Raised when customer splitting fails."""
 
-    pass
-
 
 class TransferValidationError(ProductTransferError):
     """Raised when transfer validation fails."""
-
-    pass
 
 
 class ProductTransferService:
@@ -195,9 +189,10 @@ class ProductTransferService:
             customer_ids_with_subscriptions_result.scalars().all()
         )
 
-        all_customer_ids = set(
-            (*customer_ids_with_transferring_products, *customer_ids_with_subscriptions)
-        )
+        all_customer_ids = {
+            *customer_ids_with_transferring_products,
+            *customer_ids_with_subscriptions,
+        }
 
         # Find customers who also have orders/subscriptions for non-transferring products
         # (i.e., products that stay in the source organization)
@@ -319,9 +314,10 @@ class ProductTransferService:
             discount_redemptions_subs_result.scalars().all()
         )
 
-        all_discount_ids_used = set(
-            (*discount_ids_from_checkouts, *discount_ids_from_subscriptions)
-        )
+        all_discount_ids_used = {
+            *discount_ids_from_checkouts,
+            *discount_ids_from_subscriptions,
+        }
 
         if not all_discount_ids_used:
             return

@@ -72,9 +72,9 @@ class MeterService:
         query: str | None = None,
         is_archived: bool | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[MeterSortProperty]] = [
-            (MeterSortProperty.meter_name, False)
-        ],
+        sorting: Sequence[Sorting[MeterSortProperty]] = (
+            (MeterSortProperty.meter_name, False),
+        ),
     ) -> tuple[Sequence[Meter], int]:
         repository = MeterRepository.from_session(session)
         org_ids = await get_accessible_org_ids(

@@ -493,7 +493,7 @@ class SubscriptionResume(Schema):
 class SubscriptionUpdateClear(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    pending_update: Literal[None] = Field(
+    pending_update: None = Field(
         description="Clear the pending subscription update. Set to null to remove scheduled changes."
     )
 

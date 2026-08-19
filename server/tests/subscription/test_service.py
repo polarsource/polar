@@ -243,7 +243,7 @@ def webhook_service_send_mock(mocker: MockerFixture) -> AsyncMock:
 
 
 @pytest.fixture
-def frozen_time() -> Generator[datetime, None]:
+def frozen_time() -> Generator[datetime]:
     frozen_time = utc_now()
     with freezegun.freeze_time(frozen_time):
         yield frozen_time
@@ -4272,8 +4272,8 @@ class TestList:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         # then
@@ -4300,8 +4300,8 @@ class TestList:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         # then
@@ -4328,8 +4328,8 @@ class TestList:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         # then

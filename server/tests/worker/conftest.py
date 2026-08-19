@@ -36,7 +36,7 @@ def initialize_test_database(worker_id: str) -> None:
 
     The worker tests use FakeRedis and don't need database access.
     """
-    return None
+    return
 
 
 @pytest.fixture(autouse=True)
@@ -45,7 +45,6 @@ def patch_middlewares() -> None:
 
     The worker tests don't need worker middleware patching.
     """
-    pass
 
 
 @pytest.fixture(autouse=True)
@@ -54,7 +53,6 @@ def set_job_queue_manager_context() -> None:
 
     The worker tests don't need the job queue manager.
     """
-    pass
 
 
 @pytest.fixture(autouse=True)

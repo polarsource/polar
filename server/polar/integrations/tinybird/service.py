@@ -229,7 +229,7 @@ def _truncate_datetime_to_millis(dt_str: str | None) -> str | None:
     try:
         dt = datetime.fromisoformat(dt_str)
         return dt.isoformat(timespec="milliseconds")
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return dt_str
 
 
@@ -480,7 +480,7 @@ def _finite(value: Any, default: float = 0.0) -> float:
     """Convert a value to float, returning default for NaN/Infinity."""
     try:
         result = float(value or 0)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
     return result if math.isfinite(result) else default
 
@@ -499,7 +499,7 @@ def _parse_datetime(value: datetime | date | str) -> datetime:
         return value
     if isinstance(value, date):
         return datetime(value.year, value.month, value.day, tzinfo=UTC)
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return datetime.fromisoformat(value)
 
 
 def _parse_uuid(value: UUID | str) -> UUID:
@@ -731,9 +731,10 @@ class TinybirdEventsQuery:
             return self._ch_comparison(col, clause)
 
         parts = clause.property.split(".")
-        if clause.operator in (FilterOperator.like, FilterOperator.not_like):
-            attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
-        elif isinstance(clause.value, str):
+        if clause.operator in (
+            FilterOperator.like,
+            FilterOperator.not_like,
+        ) or isinstance(clause.value, str):
             attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
         else:
             attr = func.JSONExtractFloat(events_table.c.user_metadata, *parts)
@@ -1088,7 +1089,7 @@ class TinybirdEventsQuery:
                 TinybirdTimeseriesStats(
                     organization_id=row["organization_id"],
                     name=row["name"],
-                    bucket=datetime.min,
+                    bucket=datetime.min.replace(tzinfo=UTC),
                     occurrences=row["occurrences"],
                     customers=row["customers"],
                     totals=totals,
@@ -1146,7 +1147,7 @@ class TinybirdEventsQuery:
 
         base_filter = self._get_organization_filter()
 
-        ids_str = ", ".join(f"'{str(aid)}'" for aid in ancestor_ids)
+        ids_str = ", ".join(f"'{aid!s}'" for aid in ancestor_ids)
         ids_array: ColumnClause[str] = literal_column(f"[{ids_str}]")
 
         matched_ancestor = func.arrayJoin(

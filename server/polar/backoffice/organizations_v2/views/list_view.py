@@ -493,7 +493,7 @@ class OrganizationListView:
                         type="button",
                         id="filter-toggle-btn",
                         classes="btn btn-outline gap-2",
-                        **{"_": "on click toggle .hidden on #advanced-filters"},
+                        _="on click toggle .hidden on #advanced-filters",
                     ):
                         with tag.svg(
                             xmlns="http://www.w3.org/2000/svg",
@@ -518,9 +518,7 @@ class OrganizationListView:
                         type="button",
                         id="clear-filters-btn",
                         classes="btn btn-ghost",
-                        **{
-                            "_": "on click set value of <input.filter-input/> to '' then set value of <select.filter-select/> to '' then trigger submit on #filter-form"
-                        },
+                        _="on click set value of <input.filter-input/> to '' then set value of <select.filter-select/> to '' then trigger submit on #filter-form",
                     ):
                         text("Clear")
 

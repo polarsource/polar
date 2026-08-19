@@ -5,8 +5,6 @@ server-side. It backs the JS-render path of the organization-review website
 collector; the browser egress is Firecrawl's network rather than ours.
 """
 
-from __future__ import annotations
-
 import functools
 from dataclasses import dataclass
 from typing import TYPE_CHECKING

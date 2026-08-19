@@ -88,9 +88,8 @@ class NotificationsService:
         members = await user_organization_service.list_by_org(session, org_id)
 
         for member in members:
-            if key is not None:
-                if not member.notification_settings[key]:
-                    continue
+            if key is not None and not member.notification_settings[key]:
+                continue
 
             await self.send_to_user(
                 session=session,

@@ -265,7 +265,7 @@ async def customer_balance_migration(dry_run: bool = True) -> None:
                         "currency": "usd",
                         "customer_id": customer_id,
                     }
-                    for customer_id in customer_balances.keys()
+                    for customer_id in customer_balances
                 ],
             )
 

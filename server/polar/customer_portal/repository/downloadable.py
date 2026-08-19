@@ -61,8 +61,8 @@ class DownloadableRepository(RepositoryBase[Downloadable]):
                 Downloadable.status == DownloadableStatus.granted,
                 ~Downloadable.is_deleted,
                 ~File.is_deleted,
-                File.is_uploaded == True,  # noqa: E712
-                File.is_enabled == True,  # noqa: E712
+                File.is_uploaded == True,
+                File.is_enabled == True,
                 File.flagged_malicious_at.is_(None),
                 ~Benefit.is_deleted,
             )

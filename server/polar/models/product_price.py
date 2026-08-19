@@ -205,10 +205,10 @@ class LegacyRecurringProductPrice:
 class NewProductPrice:
     __abstract__ = True
 
-    type: Mapped[Literal[None]] = mapped_column(
+    type: Mapped[None] = mapped_column(
         use_existing_column=True, nullable=True, default=None
     )
-    recurring_interval: Mapped[Literal[None]] = mapped_column(
+    recurring_interval: Mapped[None] = mapped_column(
         use_existing_column=True, nullable=True, default=None
     )
 

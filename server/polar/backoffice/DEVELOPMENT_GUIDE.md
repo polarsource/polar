@@ -85,6 +85,7 @@ from ..toast import add_toast
 
 router = APIRouter()
 
+
 @router.get("/", name="my_entity:list")
 async def list(
     request: Request,
@@ -148,6 +149,7 @@ async def list(
             with datatable.pagination(request, pagination, count):
                 pass
 
+
 @router.api_route("/{id}", name="my_entity:get", methods=["GET", "POST"])
 async def get(
     request: Request,
@@ -190,7 +192,9 @@ async def get(
             with description_list.DescriptionList[MyEntity](
                 description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
                 description_list.DescriptionListAttrItem("name", "Name"),
-                description_list.DescriptionListDateTimeItem("created_at", "Created At"),
+                description_list.DescriptionListDateTimeItem(
+                    "created_at", "Created At"
+                ),
             ).render(request, entity):
                 pass
 
@@ -208,6 +212,7 @@ async def get(
                 with button(variant="primary", type="submit"):
                     text("Update")
 
+
 @router.get("/{id}/delete", name="my_entity:delete")
 async def delete_confirmation(
     request: Request,
@@ -222,7 +227,9 @@ async def delete_confirmation(
 
     with modal("Confirm Delete", open=True):
         with tag.p(classes="mb-4"):
-            text(f"Are you sure you want to delete '{entity.name}'? This action cannot be undone.")
+            text(
+                f"Are you sure you want to delete '{entity.name}'? This action cannot be undone."
+            )
 
         with tag.div(classes="modal-action"):
             with tag.form(method="dialog"):
@@ -233,10 +240,11 @@ async def delete_confirmation(
                 method="POST",
                 hx_delete=str(request.url_for("my_entity:delete_confirm", id=id)),
                 hx_target="body",
-                hx_swap="outerHTML"
+                hx_swap="outerHTML",
             ):
                 with button(variant="error", type="submit"):
                     text("Delete")
+
 
 @router.delete("/{id}/delete", name="my_entity:delete_confirm")
 async def delete_confirm(
@@ -261,6 +269,7 @@ Create `my_entity/forms.py`:
 
 ```python
 from .. import forms
+
 
 class UpdateMyEntityForm(forms.BaseForm):
     name: str
@@ -287,9 +296,7 @@ from .components import navigation
 NAVIGATION = [
     # ... existing items
     navigation.NavigationItem(
-        "My Entities",
-        "my_entity:list",
-        active_route_name_prefix="my_entity:"
+        "My Entities", "my_entity:list", active_route_name_prefix="my_entity:"
     ),
 ]
 ```
@@ -327,7 +334,9 @@ async def list(
         statement = repository.apply_sorting(statement, sorting)
 
     # 4. Paginate
-    items, count = await repository.paginate(statement, pagination.limit, pagination.page)
+    items, count = await repository.paginate(
+        statement, pagination.limit, pagination.page
+    )
 
     # 5. Render
     with layout(request, breadcrumbs, route_name):
@@ -393,6 +402,7 @@ async def action_confirmation(request: Request, id: UUID4) -> None:
                 with button(variant="error", type="submit"):
                     text("Confirm")
 
+
 @router.post("/{id}/action", name="entity:action_confirm")
 async def action_confirm(request: Request, id: UUID4) -> Any:
     # Perform action
@@ -411,9 +421,7 @@ Main page layout with sidebar navigation.
 
 ```python
 with layout(
-    request,
-    [("Current Page", current_url), ("Parent Page", parent_url)],
-    "route:name"
+    request, [("Current Page", current_url), ("Parent Page", parent_url)], "route:name"
 ):
     # Page content
     pass
@@ -457,6 +465,7 @@ class MyForm(BaseForm):
     name: str
     email: Annotated[str, Field(title="Email Address")]
     amount: Annotated[int, CurrencyField(), CurrencyValidator]
+
 
 # Usage
 with MyForm.render(data=data, validation_error=error, method="POST"):
@@ -504,13 +513,19 @@ with modal("Dialog Title", open=True):
 from typing import Annotated
 from .. import forms
 
+
 class MyForm(forms.BaseForm):
     name: str
-    status: Annotated[str, forms.SelectField([
-        ("active", "Active"),
-        ("inactive", "Inactive"),
-        ("pending", "Pending"),
-    ])]
+    status: Annotated[
+        str,
+        forms.SelectField(
+            [
+                ("active", "Active"),
+                ("inactive", "Inactive"),
+                ("pending", "Pending"),
+            ]
+        ),
+    ]
     amount: Annotated[int, forms.CurrencyField(), CurrencyValidator]
 ```
 
@@ -617,6 +632,7 @@ Use semantic color variants:
 description_list.DescriptionListAttrItem("customer.email", "Customer")
 description_list.DescriptionListAttrItem("billing_address.city", "City")
 
+
 # Avoid - unnecessary custom subclass
 class CustomerDescriptionListItem(description_list.DescriptionListAttrItem[Order]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
@@ -639,6 +655,7 @@ def order_status_badge(status: OrderStatus) -> Generator[None]:
         # ... etc
         text(status.value.replace("_", " ").title())
     yield
+
 
 # Avoid pure Tailwind classes
 # with tag.span(classes="bg-green-100 text-green-800 px-2 py-1 rounded"):

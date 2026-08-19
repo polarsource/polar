@@ -371,9 +371,9 @@ class TestSeatTiersDualWrite:
         assert isinstance(tiers, Tiers)
         assert tiers.type == TierType.graduated
         assert [tier.unit_amount for tier in tiers.tiers] == [
-            Decimal("1000"),
-            Decimal("800"),
-            Decimal("600"),
+            Decimal(1000),
+            Decimal(800),
+            Decimal(600),
         ]
 
 

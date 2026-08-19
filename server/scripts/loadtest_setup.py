@@ -12,10 +12,11 @@ Usage:
 
 import asyncio
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 import dramatiq
 import typer
+from anyio import Path as AsyncPath
 
 import polar.tasks  # noqa: F401 - Import tasks to register all dramatiq actors
 from polar.auth.models import AuthSubject
@@ -65,7 +66,7 @@ async def create_loadtest_data(
     )
 
     # Generate unique suffix for this run
-    run_id = datetime.now().strftime("%Y%m%d%H%M%S")
+    run_id = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
 
     # Create customers with external IDs
     external_customer_ids = []
@@ -173,8 +174,7 @@ LOAD_TEST_EVENT_EXTERNAL_CUSTOMER_IDS={",".join(external_customer_ids)}
 """
 
     if output_file:
-        with open(output_file, "w") as f:
-            f.write(env_output)
+        await AsyncPath(output_file).write_text(env_output)
         typer.echo(f"\nConfiguration written to {output_file}", err=True)
     else:
         typer.echo(env_output)

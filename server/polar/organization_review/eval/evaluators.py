@@ -1,7 +1,5 @@
 """Custom evaluators for organization review evals."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from pydantic_evals.evaluators import Evaluator, EvaluatorContext

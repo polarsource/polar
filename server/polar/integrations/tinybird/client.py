@@ -26,8 +26,6 @@ RETRY_BACKOFF_SECONDS = [0.1, 0.25, 0.5]
 class TinybirdError(Exception):
     """Base exception for Tinybird errors."""
 
-    pass
-
 
 class TinybirdPayloadTooLargeError(TinybirdError):
     def __init__(self, size: int, max_size: int) -> None:

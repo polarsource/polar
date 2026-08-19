@@ -386,7 +386,7 @@ class OrderRepository(
         result = cast(CursorResult[Order], await self.session.execute(statement))
         return result.rowcount > 0
 
-    async def stream_stale_payment_lock(self) -> AsyncGenerator[Order, None]:
+    async def stream_stale_payment_lock(self) -> AsyncGenerator[Order]:
         statement = (
             self.get_base_statement()
             # Bare, not `.is_(True)`: the `IS TRUE` wrapper defeats the partial index.

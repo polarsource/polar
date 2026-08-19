@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from types import TracebackType
-from typing import Any, Literal, Unpack, cast, overload
+from typing import Any, Literal, Self, Unpack, cast, overload
 from urllib.parse import urlencode
 
 import structlog
@@ -321,7 +321,7 @@ class SubscriptionUpdateContext:
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
         self._has_changes = True
 
-    async def __aenter__(self) -> "SubscriptionUpdateContext":
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(
@@ -402,9 +402,9 @@ class SubscriptionService:
         started_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SubscriptionSortProperty]] = [
-            (SubscriptionSortProperty.started_at, True)
-        ],
+        sorting: Sequence[Sorting[SubscriptionSortProperty]] = (
+            (SubscriptionSortProperty.started_at, True),
+        ),
     ) -> tuple[Sequence[Subscription], int]:
         repository = SubscriptionRepository.from_session(session)
         statement = (
@@ -1337,23 +1337,23 @@ class SubscriptionService:
         update: SubscriptionUpdate,
     ) -> Subscription:
         if (
-            isinstance(update, SubscriptionUpdateBase) and update.has_product
-        ) or isinstance(update, SubscriptionUpdateSeats):
-            if update.proration_behavior == SubscriptionProrationBehavior.reset:
-                organization = subscription.organization
-                if not organization.feature_settings.get(
-                    "reset_proration_behavior_enabled"
-                ):
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "proration_behavior"),
-                                "msg": "The 'reset' proration behavior is not enabled for this organization.",
-                                "input": update.proration_behavior,
-                            }
-                        ]
-                    )
+            (isinstance(update, SubscriptionUpdateBase) and update.has_product)
+            or isinstance(update, SubscriptionUpdateSeats)
+        ) and update.proration_behavior == SubscriptionProrationBehavior.reset:
+            organization = subscription.organization
+            if not organization.feature_settings.get(
+                "reset_proration_behavior_enabled"
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "proration_behavior"),
+                            "msg": "The 'reset' proration behavior is not enabled for this organization.",
+                            "input": update.proration_behavior,
+                        }
+                    ]
+                )
 
         if isinstance(update, SubscriptionUpdateBase):
             if update.has_product:
@@ -1823,7 +1823,7 @@ class SubscriptionService:
         *,
         discount: uuid.UUID | Literal["unset"] | None,
         product: Product,
-    ) -> AsyncGenerator[Discount | Literal["unset"] | None, None]:
+    ) -> AsyncGenerator[Discount | Literal["unset"] | None]:
         if discount is None:
             yield None
             return

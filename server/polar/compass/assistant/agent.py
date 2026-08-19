@@ -155,8 +155,10 @@ def build_assistant_agent(
     @agent.instructions
     async def _run_context(ctx: RunContext[AssistantDeps]) -> str:
         lines = [
-            f"Today's date is {ctx.deps.today.isoformat()} in the merchant's "
-            f"timezone ({ctx.deps.timezone})."
+            (
+                f"Today's date is {ctx.deps.today.isoformat()} in the merchant's "
+                f"timezone ({ctx.deps.timezone})."
+            )
         ]
         if ctx.deps.history_last_at is not None:
             last_turn_on = (

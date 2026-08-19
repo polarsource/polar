@@ -32,8 +32,10 @@ class AuthSubjectFixture:
             "member_billing_manager",
             "member",
         ] = "user",
-        scopes: set[Scope] = set(Scope),
+        scopes: set[Scope] | None = None,
     ):
+        if scopes is None:
+            scopes = set(Scope)
         self.subject = subject
         self.scopes = scopes
 

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -62,22 +62,22 @@ class TestList:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
         await create_active_subscription(
             save_fixture,
             product=product_second,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
         await create_active_subscription(
             save_fixture,
             product=product,
             customer=customer_second,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         results, count = await customer_subscription_service.list(
@@ -116,15 +116,15 @@ class TestList:
             save_fixture,
             product=product_match,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
         await create_active_subscription(
             save_fixture,
             product=product_no_match,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         results, count = await customer_subscription_service.list(
@@ -162,15 +162,15 @@ class TestList:
             save_fixture,
             product=product_with_percent,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
         await create_active_subscription(
             save_fixture,
             product=product_without_percent,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         results, count = await customer_subscription_service.list(
@@ -208,15 +208,15 @@ class TestList:
             save_fixture,
             product=product_with_underscore,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
         await create_active_subscription(
             save_fixture,
             product=product_without_underscore,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         results, count = await customer_subscription_service.list(

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Self
 from unittest.mock import AsyncMock, MagicMock, call, patch
 from uuid import uuid4
 
@@ -41,20 +41,20 @@ class _FakeSession:
     def __init__(self, events: list[str]) -> None:
         self.events = events
 
-    async def __aenter__(self) -> "_FakeSession":
+    async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(self, *args: Any) -> None: ...
+    async def __aexit__(self, *args: object) -> None: ...
 
     async def commit(self) -> None:
         self.events.append("commit")
 
 
 class _FakeRedis:
-    async def __aenter__(self) -> "_FakeRedis":
+    async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(self, *args: Any) -> None: ...
+    async def __aexit__(self, *args: object) -> None: ...
 
 
 def test_execute_flushes_enqueued_jobs_after_commit() -> None:

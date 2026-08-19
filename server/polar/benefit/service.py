@@ -45,9 +45,9 @@ class BenefitService:
         visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[BenefitSortProperty]] = [
-            (BenefitSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[BenefitSortProperty]] = (
+            (BenefitSortProperty.created_at, True),
+        ),
         query: str | None = None,
     ) -> tuple[Sequence[Benefit], int]:
         repository = BenefitRepository.from_session(session)

@@ -296,7 +296,7 @@ class Checkout(
             )
         try:
             return self._success_url.replace("{CHECKOUT_ID}", str(self.id))
-        except (KeyError, ValueError):
+        except KeyError, ValueError:
             return self._success_url
 
     @success_url.setter

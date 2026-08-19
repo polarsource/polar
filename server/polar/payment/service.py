@@ -57,9 +57,9 @@ class PaymentService:
         method: Sequence[str] | None = None,
         customer_email: Sequence[str] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[PaymentSortProperty]] = [
-            (PaymentSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[PaymentSortProperty]] = (
+            (PaymentSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Payment], int]:
         repository = PaymentRepository.from_session(session)
         org_ids = await get_accessible_org_ids(

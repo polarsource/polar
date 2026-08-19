@@ -228,15 +228,24 @@ class CheckoutCreateBase(
 
     @model_validator(mode="after")
     def _validate_seat_constraints(self) -> "CheckoutCreateBase":
-        if self.min_seats is not None and self.max_seats is not None:
-            if self.min_seats > self.max_seats:
-                raise ValueError("min_seats must be less than or equal to max_seats")
-        if self.seats is not None and self.min_seats is not None:
-            if self.seats < self.min_seats:
-                raise ValueError("seats must be greater than or equal to min_seats")
-        if self.seats is not None and self.max_seats is not None:
-            if self.seats > self.max_seats:
-                raise ValueError("seats must be less than or equal to max_seats")
+        if (
+            self.min_seats is not None
+            and self.max_seats is not None
+            and self.min_seats > self.max_seats
+        ):
+            raise ValueError("min_seats must be less than or equal to max_seats")
+        if (
+            self.seats is not None
+            and self.min_seats is not None
+            and self.seats < self.min_seats
+        ):
+            raise ValueError("seats must be greater than or equal to min_seats")
+        if (
+            self.seats is not None
+            and self.max_seats is not None
+            and self.seats > self.max_seats
+        ):
+            raise ValueError("seats must be less than or equal to max_seats")
         return self
 
     allow_trial: bool = Field(default=True, description=_allow_trial_description)

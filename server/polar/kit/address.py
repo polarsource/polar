@@ -163,9 +163,10 @@ class Address(BaseModel):
             return self
 
         # Normalize US and CA state with a prefix
-        if self.country in {"US", "CA"}:
-            if not self.state.startswith(f"{self.country}-"):
-                self.state = f"{self.country}-{self.state}"
+        if self.country in {"US", "CA"} and not self.state.startswith(
+            f"{self.country}-"
+        ):
+            self.state = f"{self.country}-{self.state}"
 
         # Validate US and CA state
         if self.country == "US" and self.state not in USState:

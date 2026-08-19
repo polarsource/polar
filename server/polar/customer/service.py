@@ -88,9 +88,9 @@ class CustomerService:
         query: str | None = None,
         active: bool | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerSortProperty]] = [
-            (CustomerSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[CustomerSortProperty]] = (
+            (CustomerSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Customer], int]:
         repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -259,18 +259,19 @@ class CustomerService:
                 }
             )
 
-        if customer_create.external_id is not None:
-            if await repository.get_by_external_id_and_organization(
+        if customer_create.external_id is not None and (
+            await repository.get_by_external_id_and_organization(
                 customer_create.external_id, organization.id
-            ):
-                errors.append(
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "external_id"),
-                        "msg": "A customer with this external ID already exists.",
-                        "input": customer_create.external_id,
-                    }
-                )
+            )
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "external_id"),
+                    "msg": "A customer with this external ID already exists.",
+                    "input": customer_create.external_id,
+                }
+            )
 
         if errors:
             raise PolarRequestValidationError(errors)
@@ -763,11 +764,10 @@ class CustomerService:
         if customer.user_metadata.get("__anonymized_at") is not None:
             return True
         # Backward compat: customers anonymized before __anonymized_at was added
-        if customer.email is not None and customer.email.endswith(
-            f"@{ANONYMIZED_EMAIL_DOMAIN}"
-        ):
-            return True
-        return False
+        return bool(
+            customer.email is not None
+            and customer.email.endswith(f"@{ANONYMIZED_EMAIL_DOMAIN}")
+        )
 
     async def get_email_recipients(
         self,

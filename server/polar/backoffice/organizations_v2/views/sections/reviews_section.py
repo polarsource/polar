@@ -4,6 +4,7 @@ import contextlib
 import json
 from collections.abc import Generator, Sequence
 
+import structlog
 from fastapi import Request
 from tagflow import tag, text
 
@@ -20,6 +21,8 @@ from ._shared import (
     render_review_context_badge,
 )
 from .risk_signals import render_risk_signals_card
+
+logger = structlog.get_logger()
 
 # Badge classes for decision types
 DECISION_BADGE: dict[str, str] = {
@@ -140,7 +143,10 @@ class ReviewsSection:
                                             ):
                                                 text(human_feedback.reviewer.email)
                                     except Exception:
-                                        pass
+                                        logger.exception(
+                                            "Failed to render review feedback reviewer",
+                                            review_id=review.id,
+                                        )
 
                                 with tag.span(classes="text-xs text-base-content/40"):
                                     text(

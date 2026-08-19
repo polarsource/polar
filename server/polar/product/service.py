@@ -83,9 +83,9 @@ class ProductService:
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[ProductSortProperty]] = [
-            (ProductSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[ProductSortProperty]] = (
+            (ProductSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Product], int]:
         repository = ProductRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -601,19 +601,20 @@ class ProductService:
                 model_class = price_schema.get_model_class()
                 price_kwargs = price_schema.model_dump()
                 price = model_class(product=product, source=source, **price_kwargs)
-                if isinstance(price_schema, ProductPriceSeatBasedCreate):
-                    if not organization.feature_settings.get(
-                        "seat_based_pricing_enabled", False
-                    ):
-                        errors.append(
-                            {
-                                "type": "value_error",
-                                "loc": (*error_prefix, index),
-                                "msg": "Seat-based pricing is not enabled for this organization.",
-                                "input": price_schema,
-                            }
-                        )
-                        continue
+                if isinstance(
+                    price_schema, ProductPriceSeatBasedCreate
+                ) and not organization.feature_settings.get(
+                    "seat_based_pricing_enabled", False
+                ):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": (*error_prefix, index),
+                            "msg": "Seat-based pricing is not enabled for this organization.",
+                            "input": price_schema,
+                        }
+                    )
+                    continue
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):

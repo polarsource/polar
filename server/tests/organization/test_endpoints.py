@@ -822,7 +822,7 @@ class TestInviteOrganization:
 
         new_members = set(members_after) - set(members_before)
         assert len(new_members) == 1
-        assert list(new_members)[0].user.email == email_to_invite
+        assert next(iter(new_members)).user.email == email_to_invite
 
     @pytest.mark.auth
     @pytest.mark.keep_session_state

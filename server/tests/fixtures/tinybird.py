@@ -33,7 +33,7 @@ def tinybird_available() -> bool:
 
 
 @pytest.fixture(scope="session")
-def tinybird_workspace() -> Generator[str, None, None]:
+def tinybird_workspace() -> Generator[str]:
     """Create an isolated Tinybird workspace, deploy schema, and yield token."""
     tokens = get_tinybird_tokens()
     if not tokens:
@@ -86,6 +86,7 @@ def tinybird_workspace() -> Generator[str, None, None]:
             capture_output=True,
             text=True,
             cwd=TINYBIRD_DIR,
+            check=False,
         )
         if result.returncode == 0:
             break

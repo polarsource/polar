@@ -153,7 +153,7 @@ async def get_optional_authentication_session(
         return None
     try:
         return await authentication_session_service.get_by_token(token)
-    except (InvalidSessionTokenException, ExpiredSessionException):
+    except InvalidSessionTokenException, ExpiredSessionException:
         return None
 
 

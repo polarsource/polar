@@ -52,9 +52,9 @@ class EventTypeService:
         parent_id: UUID | None = None,
         source: EventSource | None = None,
         pagination: PaginationParams,
-        sorting: Sequence[Sorting[EventTypesSortProperty]] = [
-            (EventTypesSortProperty.last_seen, True)
-        ],
+        sorting: Sequence[Sorting[EventTypesSortProperty]] = (
+            (EventTypesSortProperty.last_seen, True),
+        ),
     ) -> tuple[Sequence[EventTypeWithStats], int]:
         event_type_repository = EventTypeRepository.from_session(session)
         org_ids = await get_accessible_org_ids(

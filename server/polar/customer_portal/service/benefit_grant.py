@@ -55,10 +55,10 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         subscription_id: Sequence[uuid.UUID] | None = None,
         member_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerBenefitGrantSortProperty]] = [
+        sorting: Sequence[Sorting[CustomerBenefitGrantSortProperty]] = (
             (CustomerBenefitGrantSortProperty.product_benefit, False),
             (CustomerBenefitGrantSortProperty.granted_at, True),
-        ],
+        ),
     ) -> tuple[Sequence[BenefitGrant], int]:
         statement = self._get_readable_benefit_grant_statement(auth_subject).options(
             joinedload(BenefitGrant.customer)

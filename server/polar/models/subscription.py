@@ -539,9 +539,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         if immediately:
             return True
 
-        if self.cancel_at_period_end or self.ends_at:
-            return False
-        return True
+        return not (self.cancel_at_period_end or self.ends_at)
 
     def can_uncancel(self) -> bool:
         return (

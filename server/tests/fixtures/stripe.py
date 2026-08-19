@@ -48,9 +48,11 @@ def build_stripe_balance_transaction(
 def build_stripe_payment_method(
     *,
     type: str = "card",
-    details: dict[str, Any] = {},
+    details: dict[str, Any] | None = None,
     customer: str | None = None,
 ) -> stripe_lib.PaymentMethod:
+    if details is None:
+        details = {}
     obj: dict[str, Any] = {
         "id": "STRIPE_PAYMENT_METHOD_ID",
         "type": type,

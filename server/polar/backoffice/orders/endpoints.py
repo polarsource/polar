@@ -3,6 +3,7 @@ from collections.abc import Generator
 from typing import Annotated, Any
 
 import pycountry
+import structlog
 from babel.numbers import format_percent
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
@@ -36,6 +37,7 @@ from .components import order_status_badge, orders_datatable, payments_datatable
 from .forms import RefundForm
 
 router = APIRouter()
+logger = structlog.get_logger()
 
 
 # Description List Items
@@ -263,8 +265,7 @@ async def get(
         try:
             invoice_url, _ = await invoice_service.get_order_invoice_url(order)
         except Exception:
-            # If there's an error getting the URL, we'll show "Not generated"
-            pass
+            logger.exception("Failed to get order invoice URL", order_id=order.id)
 
     receipt_url: str | None = None
     if order.receipt_number is not None:
@@ -273,7 +274,7 @@ async def get(
             if receipt is not None:
                 receipt_url = receipt.url
         except Exception:
-            pass
+            logger.exception("Failed to get order receipt", order_id=order.id)
 
     # Get all payments for this order
     payment_repository = PaymentRepository.from_session(session)

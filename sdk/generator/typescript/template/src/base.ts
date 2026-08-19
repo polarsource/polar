@@ -139,7 +139,10 @@ export class ClientBase {
   protected readonly options: ClientOptions;
 
   constructor(options: ClientOptions) {
-    this.options = options;
+    this.options = {
+      timeout: 5.0,
+      ...options,
+    }
   }
 
   public buildRequest(

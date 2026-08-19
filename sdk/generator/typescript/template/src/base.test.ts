@@ -115,6 +115,13 @@ describe("sendRequest", () => {
   );
 
   test("does not create a timeout signal when no timeout is configured", async () => {
+    const client = new ClientBase({
+      baseUrl: "https://api.polar.sh",
+      version: "{{ ir.versions[0].version }}",
+      accessToken: "polar_at_u_xxx",
+      timeout: undefined,
+    });
+
     const timeout = vi.spyOn(AbortSignal, "timeout");
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
 

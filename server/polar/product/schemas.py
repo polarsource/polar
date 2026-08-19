@@ -545,10 +545,10 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
 
 
 class ProductCreateOneTime(ProductCreateBase):
-    recurring_interval: Literal[None] = Field(
+    recurring_interval: None = Field(
         default=None, description="States that the product is a one-time purchase."
     )
-    recurring_interval_count: Literal[None] = Field(
+    recurring_interval_count: None = Field(
         default=None,
         description="One-time products don't have a recurring interval count.",
     )

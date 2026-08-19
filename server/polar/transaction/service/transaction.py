@@ -51,9 +51,9 @@ class TransactionService(BaseTransactionService):
         payment_user_id: uuid.UUID | None = None,
         exclude_platform_fees: bool = False,
         pagination: PaginationParams,
-        sorting: list[Sorting[TransactionSortProperty]] = [
-            (TransactionSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[TransactionSortProperty]] = (
+            (TransactionSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Transaction], int]:
         statement = self._get_readable_transactions_statement(auth_subject)
 

@@ -202,7 +202,7 @@ class CustomerSessionService:
         assert organization is not None
 
         delta = customer_session_code.expires_at - utc_now()
-        code_lifetime_minutes = int(ceil(delta.seconds / 60))
+        code_lifetime_minutes = ceil(delta.seconds / 60)
 
         domain = settings.frontend_hostname
 

@@ -365,9 +365,7 @@ def detect_platform_from_url(url: str) -> str | None:
     try:
         parsed = urlparse(url.lower())
         hostname = parsed.hostname or ""
-        # Strip www. prefix
-        if hostname.startswith("www."):
-            hostname = hostname[4:]
+        hostname = hostname.removeprefix("www.")
         return DOMAIN_TO_PLATFORM.get(hostname)
     except Exception:
         return None

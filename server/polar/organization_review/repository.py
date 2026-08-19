@@ -307,7 +307,7 @@ class OrganizationReviewRepository(
             if review_context is None:
                 try:
                     derived_context = ReviewContext(parsed.review_type)
-                except (ValueError, KeyError):
+                except ValueError, KeyError:
                     derived_context = ReviewContext.MANUAL
 
         await self.deactivate_current_decisions(organization_id)

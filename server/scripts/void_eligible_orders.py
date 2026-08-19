@@ -103,7 +103,7 @@ async def get_eligible_orders_count(session: AsyncSession) -> int:
     return result.scalar_one()
 
 
-def stream_eligible_orders(session: AsyncSession) -> AsyncGenerator[Order, None]:
+def stream_eligible_orders(session: AsyncSession) -> AsyncGenerator[Order]:
     """
     Stream orders that are eligible for voiding (memory-efficient).
     """

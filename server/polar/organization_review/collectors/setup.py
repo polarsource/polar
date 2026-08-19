@@ -95,7 +95,7 @@ async def _resolve_redirect(
     try:
         _validate_url_scheme(url)
         await _validate_url_host(url)
-    except (ValueError, SSRFBlockedError):
+    except ValueError, SSRFBlockedError:
         return UrlRedirectInfo(original_url=url, error="blocked")
 
     async with semaphore:
@@ -114,7 +114,7 @@ async def _resolve_redirect(
                     try:
                         _validate_url_scheme(next_url)
                         await _validate_url_host(next_url)
-                    except (ValueError, SSRFBlockedError):
+                    except ValueError, SSRFBlockedError:
                         return UrlRedirectInfo(
                             original_url=url, error="redirect_blocked"
                         )
@@ -162,7 +162,7 @@ async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
     try:
         _validate_url_scheme(url)
         await _validate_url_host(url)
-    except (ValueError, SSRFBlockedError):
+    except ValueError, SSRFBlockedError:
         return UrlRedirectInfo(original_url=url, error="blocked")
 
     try:

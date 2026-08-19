@@ -385,9 +385,9 @@ class OrderService:
         created_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[OrderSortProperty]] = [
-            (OrderSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[OrderSortProperty]] = (
+            (OrderSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Order], int]:
         repository = OrderRepository.from_session(session)
         accessible_org_ids = await get_accessible_org_ids(
@@ -1714,7 +1714,7 @@ class OrderService:
             return None
 
         if order.payment_lock_acquired_at is not None:
-            log.warn("Payment already in progress", order_id=order.id)
+            log.warning("Payment already in progress", order_id=order.id)
             raise PaymentAlreadyInProgress(order)
 
         if (
@@ -2069,11 +2069,10 @@ class OrderService:
             )
 
         except Exception as exc:
-            log.error(
+            log.exception(
                 "Exception during retry payment",
                 order_id=order.id,
                 error=str(exc),
-                exc_info=True,  # Include full traceback
             )
 
             return CustomerOrderPaymentConfirmation(
@@ -2271,7 +2270,10 @@ class OrderService:
                     first_media.path
                 )
         except Exception:
-            pass
+            log.exception(
+                "Failed to get product image for admin notification",
+                order_id=order.id,
+            )
 
         billing_address = order.billing_address
         customer = order.customer

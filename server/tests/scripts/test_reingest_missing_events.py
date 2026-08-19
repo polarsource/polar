@@ -42,7 +42,7 @@ def tb_row(
 ) -> dict[str, Any]:
     return {
         "id": id or uuid.uuid4(),
-        "timestamp": timestamp or datetime(2026, 6, 1, 12, 0, 0),
+        "timestamp": timestamp or datetime(2026, 6, 1, 12, 0, 0, tzinfo=UTC),
         "name": name,
         "customer_id": customer_id,
         "external_customer_id": external_customer_id,
@@ -96,7 +96,7 @@ class TestReingest:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        original_timestamp = datetime(2026, 5, 20, 8, 30, 0)
+        original_timestamp = datetime(2026, 5, 20, 8, 30, 0, tzinfo=UTC)
         row = tb_row(timestamp=original_timestamp)
         before = utc_now()
 

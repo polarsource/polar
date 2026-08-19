@@ -16,6 +16,7 @@ from uuid import UUID
 import httpx
 import structlog
 import typer
+from anyio import open_file
 from rich.progress import Progress
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import contains_eager
@@ -60,9 +61,9 @@ async def resolve_file_path(file_input: str) -> AsyncIterator[pathlib.Path]:
         async with httpx.AsyncClient() as client:
             async with client.stream("GET", file_input) as response:
                 response.raise_for_status()
-                with open(temp_path, "wb") as f:
+                async with await open_file(temp_path, "wb") as f:
                     async for chunk in response.aiter_bytes():
-                        f.write(chunk)
+                        await f.write(chunk)
         yield temp_path
     finally:
         # Cleanup temp file and directory

@@ -74,9 +74,7 @@ def _healthz_matcher(name: str, attributes: "Attributes | None") -> bool:
 
 def _worker_health_matcher(name: str, attributes: "Attributes | None") -> bool:
     lower_name = name.lower()
-    return lower_name.startswith("recording health:") or lower_name.startswith(
-        "health check successful"
-    )
+    return lower_name.startswith(("recording health:", "health check successful"))
 
 
 class LevelSampler(Sampler):

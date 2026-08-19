@@ -261,9 +261,9 @@ class PayoutService:
         account_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[PayoutStatus] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[PayoutSortProperty]] = [
-            (PayoutSortProperty.created_at, False)
-        ],
+        sorting: Sequence[Sorting[PayoutSortProperty]] = (
+            (PayoutSortProperty.created_at, False),
+        ),
     ) -> tuple[Sequence[Payout], int]:
         repository = PayoutRepository.from_session(session)
         org_ids = await get_accessible_org_ids(

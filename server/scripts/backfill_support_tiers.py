@@ -63,8 +63,10 @@ def resolve_tiers(
             result.error_details.append(
                 (
                     external_id,
-                    f"holds {len(organization_grants)} active support grants, "
-                    f"expected at most 1: {benefit_ids}",
+                    (
+                        f"holds {len(organization_grants)} active support grants, "
+                        f"expected at most 1: {benefit_ids}"
+                    ),
                 )
             )
             continue

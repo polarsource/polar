@@ -117,7 +117,7 @@ class TeamSection:
                                             text("⋮")
                                         with tag.ul(
                                             classes="dropdown-content menu shadow bg-base-100 rounded-box w-52 z-10",
-                                            **{"tabindex": "0"},
+                                            tabindex="0",
                                         ):
                                             member_is_owner = (
                                                 member.role == OrganizationRole.owner

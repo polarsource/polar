@@ -45,9 +45,9 @@ class CustomerMeterService:
         external_customer_id: Sequence[str] | None = None,
         meter_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerMeterSortProperty]] = [
-            (CustomerMeterSortProperty.modified_at, True)
-        ],
+        sorting: Sequence[Sorting[CustomerMeterSortProperty]] = (
+            (CustomerMeterSortProperty.modified_at, True),
+        ),
     ) -> tuple[Sequence[CustomerMeter], int]:
         repository = CustomerMeterRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)

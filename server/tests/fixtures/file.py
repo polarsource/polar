@@ -49,10 +49,10 @@ class TestFile:
     def checksums(self) -> dict[str, str]:
         h = hashlib.sha256()
         h.update(self.data)
-        return dict(
-            hex=h.hexdigest(),
-            base64=base64.b64encode(h.digest()).decode("utf-8"),
-        )
+        return {
+            "hex": h.hexdigest(),
+            "base64": base64.b64encode(h.digest()).decode("utf-8"),
+        }
 
     @property
     def hex(self) -> str:
@@ -254,7 +254,9 @@ def empty_test_bucket(worker_id: str) -> Iterable[Any]:
 
     bucket_name = f"{settings.S3_FILES_BUCKET_NAME}-{worker_id}"
     client = Minio(
-        endpoint=settings.S3_ENDPOINT_URL.lstrip("http://"),
+        endpoint=settings.S3_ENDPOINT_URL.removeprefix("http://").removeprefix(
+            "https://"
+        ),
         access_key=settings.MINIO_USER,
         secret_key=settings.MINIO_PWD,
         secure=False,

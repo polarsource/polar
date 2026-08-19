@@ -45,7 +45,7 @@ async def get_token(
 
 def get_authorization_server(
     request: Request,
-) -> Generator[AuthorizationServer, None, None]:
+) -> Generator[AuthorizationServer]:
     sync_sessionmaker: SyncSessionMaker = request.state.sync_sessionmaker
     with sync_sessionmaker() as session:
         authorization_server = AuthorizationServer.build(session)

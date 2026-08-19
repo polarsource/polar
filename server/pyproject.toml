@@ -152,23 +152,30 @@ exclude_lines = [
 ] # See: https://github.com/nedbat/coveragepy/issues/831
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 extend-select = [
   "I",
   "UP",
   "T20",
-  "B039",
   "PT",
-  "RUF022",
-  "RUF023",
   "RUF10",
-  "RUF20",
 ]
 ignore = [
-  "F841", # remove unused variables
+  "F841",
   "PT012",
+  "B008",
+  "B009",
+  "B010",
+  "BLE001",
+  "PLC0105",
+  "PYI041",
+  "RUF012",
+  "RUF059",
+  "SIM117",
+  "TRY",
+  "UP037",
 ]
 
 [tool.ruff.lint.per-file-ignores]

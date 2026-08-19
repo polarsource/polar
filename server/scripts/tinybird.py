@@ -65,6 +65,7 @@ def run_command(
         env=get_tinybird_env(),
         capture_output=capture_output,
         text=True,
+        check=False,
     )
 
     if capture_output:

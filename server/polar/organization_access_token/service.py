@@ -51,9 +51,9 @@ class OrganizationAccessTokenService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[OrganizationAccessTokenSortProperty]] = [
-            (OrganizationAccessTokenSortProperty.created_at, False)
-        ],
+        sorting: Sequence[Sorting[OrganizationAccessTokenSortProperty]] = (
+            (OrganizationAccessTokenSortProperty.created_at, False),
+        ),
     ) -> tuple[Sequence[OrganizationAccessToken], int]:
         repository = OrganizationAccessTokenRepository.from_session(session)
         org_ids = await get_accessible_org_ids(

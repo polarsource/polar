@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 
 from sqlalchemy import (
@@ -43,7 +43,9 @@ def get_timestamp_series_cte(
     )
 
 
-MIN_DATETIME = datetime(2023, 1, 1)  # Before that, Polar didn't even exist! 🚀
+MIN_DATETIME = datetime(
+    2023, 1, 1, tzinfo=UTC
+)  # Before that, Polar didn't even exist! 🚀
 MIN_DATE = MIN_DATETIME.date()
 
 MAX_INTERVAL_DAYS: dict[TimeInterval, int] = {

@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -67,7 +67,7 @@ else:
 
 
 class BenefitGrantScopeComparator(CompositeProperty.Comparator[BenefitGrantScopeArgs]):
-    def __eq__(self, other: Any) -> ColumnElement[bool]:  # type: ignore[override]
+    def __eq__(self, other: object) -> ColumnElement[bool]:  # type: ignore[override]
         if not isinstance(other, dict) or other == {}:
             raise ValueError("A non-empty dictionary scope must be provided.")
         clauses = []

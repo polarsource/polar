@@ -6,8 +6,6 @@ with `# lint-skip: <code>` on the offending line (`# noqa` is ruff's directive
 and rejects our hyphenated codes). Exits 1 on any violation.
 """
 
-from __future__ import annotations
-
 import argparse
 import ast
 import sys

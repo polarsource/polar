@@ -76,7 +76,7 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
 
-    async def stream(self, statement: Select[tuple[M]]) -> AsyncGenerator[M, None]:
+    async def stream(self, statement: Select[tuple[M]]) -> AsyncGenerator[M]:
         """
         Stream results from the database using the given statement.
 
@@ -289,7 +289,7 @@ class RepositorySortingMixin[M, PE: StrEnum]:
     def apply_sorting(
         self,
         statement: Select[tuple[M]],
-        sorting: list[Sorting[PE]],
+        sorting: Sequence[Sorting[PE]],
     ) -> Select[tuple[M]]:
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

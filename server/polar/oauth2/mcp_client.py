@@ -19,6 +19,14 @@ from .constants import (
 )
 
 
+def append_credentials_to_env_file(
+    env_file_path: Path, client_id: str, client_secret: str | None
+) -> None:
+    with env_file_path.open("a") as env_file:
+        env_file.write(f"\nMCP_OAUTH2_CLIENT_ID={client_id}\n")
+        env_file.write(f"MCP_OAUTH2_CLIENT_SECRET={client_secret}\n")
+
+
 async def create_client(add_to_env_file: bool) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
@@ -56,9 +64,12 @@ async def create_client(add_to_env_file: bool) -> None:
             / "web"
             / ".env.local"
         )
-        with open(env_file_path, "a") as f:
-            f.write(f"\nMCP_OAUTH2_CLIENT_ID={oauth2_client.client_id}\n")
-            f.write(f"MCP_OAUTH2_CLIENT_SECRET={oauth2_client.client_secret}\n")
+        await asyncio.to_thread(
+            append_credentials_to_env_file,
+            env_file_path,
+            oauth2_client.client_id,
+            oauth2_client.client_secret,
+        )
         print(f"[bold blue]Credentials added to {env_file_path}[/bold blue]")
     else:
         print(f"Client ID: [bold]{oauth2_client.client_id}[/bold]")

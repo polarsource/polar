@@ -630,16 +630,14 @@ class TestCreate:
         user_organization: UserOrganization,
     ) -> None:
         file = ProductMediaFile(
-            **{
-                "organization": organization,
-                "name": "Product Cover",
-                "path": "/product-cover.jpg",
-                "mime_type": "image/jpeg",
-                "size": 1024,
-                "service": FileServiceTypes.product_media,
-                "is_enabled": True,
-                "is_uploaded": True,
-            }
+            organization=organization,
+            name="Product Cover",
+            path="/product-cover.jpg",
+            mime_type="image/jpeg",
+            size=1024,
+            service=FileServiceTypes.product_media,
+            is_enabled=True,
+            is_uploaded=True,
         )
         await save_fixture(file)
 
@@ -1875,16 +1873,14 @@ class TestUpdate:
         user_organization: UserOrganization,
     ) -> None:
         file = ProductMediaFile(
-            **{
-                "organization": organization,
-                "name": "Product Cover",
-                "path": "/product-cover.jpg",
-                "mime_type": "image/jpeg",
-                "size": 1024,
-                "service": FileServiceTypes.product_media,
-                "is_enabled": True,
-                "is_uploaded": True,
-            }
+            organization=organization,
+            name="Product Cover",
+            path="/product-cover.jpg",
+            mime_type="image/jpeg",
+            size=1024,
+            service=FileServiceTypes.product_media,
+            is_enabled=True,
+            is_uploaded=True,
         )
         await save_fixture(file)
 

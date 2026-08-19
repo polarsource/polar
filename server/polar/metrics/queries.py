@@ -60,7 +60,7 @@ def _get_metrics_columns(
     interval: TimeInterval,
     metrics: list["type[SQLMetric]"],
     now: datetime,
-) -> Generator[ColumnElement[int] | ColumnElement[float], None, None]:
+) -> Generator[ColumnElement[int] | ColumnElement[float]]:
     for metric in metrics:
         if metric.query != metric_cte:
             continue

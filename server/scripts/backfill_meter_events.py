@@ -194,9 +194,7 @@ async def run_backfill(
                     cursor_result = await session.execute(insert_stmt)
                     await session.commit()
                     assert isinstance(cursor_result, CursorResult)
-                    inserted_count = (
-                        cursor_result.rowcount if cursor_result.rowcount >= 0 else 0
-                    )
+                    inserted_count = max(cursor_result.rowcount, 0)
                     meter_inserted += inserted_count
                     total_inserted += inserted_count
 

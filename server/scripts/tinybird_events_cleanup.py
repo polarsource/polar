@@ -106,7 +106,7 @@ async def run(
                 rows_affected = 0
 
                 if delete:
-                    ids_str = ", ".join(f"'{str(eid)}'" for eid in batch_ids)
+                    ids_str = ", ".join(f"'{eid!s}'" for eid in batch_ids)
                     delete_condition = f"id IN ({ids_str})"
                     result = await tb_client.delete(datasource, delete_condition)
                     job_id = result.get("job_id")

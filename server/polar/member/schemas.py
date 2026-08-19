@@ -113,5 +113,3 @@ class MemberBase(TimestampedSchema, IDSchema):
 
 class Member(MemberBase):
     """A member of a customer."""
-
-    pass

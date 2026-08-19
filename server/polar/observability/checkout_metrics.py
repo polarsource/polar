@@ -19,7 +19,7 @@ prometheus_dir = settings.WORKER_PROMETHEUS_DIR
 prometheus_dir.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("PROMETHEUS_MULTIPROC_DIR", str(prometheus_dir))
 
-from prometheus_client import Counter  # noqa: E402
+from prometheus_client import Counter
 
 CHECKOUT_CREATED_TOTAL = Counter(
     "polar_checkout_created_total",

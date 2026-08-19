@@ -44,6 +44,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
 )
 
+
 class ResourceRepository(
     RepositorySortingMixin[Resource, ResourceSortProperty],
     RepositorySoftDeletionMixin[Resource],
@@ -58,9 +59,7 @@ class ResourceRepository(
         statement = self.get_base_statement()
         if is_user(auth_subject):
             statement = statement.where(
-                Resource.organization_id.in_(
-                    select_accessible_org_ids(auth_subject)
-                )
+                Resource.organization_id.in_(select_accessible_org_ids(auth_subject))
             )
         elif is_organization(auth_subject):
             statement = statement.where(
@@ -130,6 +129,7 @@ class ResourceService:
 
         return resource
 
+
 # Singleton instance at module level
 resource = ResourceService()
 ```
@@ -147,6 +147,7 @@ from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 
 router = APIRouter(prefix="/resources", tags=["resources"])
 
+
 @router.get("/", response_model=ListResource[ResourceSchema])
 async def list_resources(
     auth_subject: auth.ResourcesRead,  # From module's auth.py
@@ -158,9 +159,9 @@ async def list_resources(
         session, auth_subject, pagination=pagination, sorting=sorting
     )
     return ListResource(
-        items=results,
-        pagination=Pagination(page=pagination.page, total_count=count)
+        items=results, pagination=Pagination(page=pagination.page, total_count=count)
     )
+
 
 @router.post("/", response_model=ResourceSchema, status_code=201)
 async def create_resource(
@@ -222,21 +223,28 @@ dependencies from `polar/auth/dependencies.py` instead of defining your own: `We
 # polar/{module}/schemas.py
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
+
 class ResourceBase(Schema):
     name: str = Field(description="Resource name")
     slug: str = Field(description="URL-friendly identifier")
 
+
 class Resource(IDSchema, TimestampedSchema, ResourceBase):
     """Read schema - includes all fields."""
+
     # `id` comes from IDSchema — don't redeclare `id: UUID4`.
     # Type fields with their enum (e.g. `status: ResourceStatus`), not `str`.
 
+
 class ResourceCreate(ResourceBase):
     """Create schema - required fields only."""
+
     pass
+
 
 class ResourceUpdate(Schema):
     """Update schema - ALL fields optional with None default."""
+
     name: str | None = None
     slug: str | None = None
 ```
@@ -247,7 +255,9 @@ class ResourceUpdate(Schema):
 # polar/{module}/tasks.py
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
+
 class ResourceTaskError(PolarTaskError): ...
+
 
 @actor(actor_name="resource.created", priority=TaskPriority.LOW)
 async def resource_created(resource_id: UUID) -> None:
@@ -311,9 +321,7 @@ class TestListResources:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_valid(
-        self, client: AsyncClient, resource: Resource
-    ) -> None:
+    async def test_valid(self, client: AsyncClient, resource: Resource) -> None:
         response = await client.get("/v1/resources/")
         assert response.status_code == 200
         json = response.json()
@@ -341,15 +349,15 @@ from polar.organization_review.appeal_case import appeal_case as appeal_case_ser
 ### Creating ORM objects — pass objects, not ids
 Set the related ORM object, not its foreign-key id: it's type-safe and populates the relationship in-session.
 ```python
-SupportCaseMessage(case=case, author_user=user)   # ✅
-SupportCaseMessage(case_id=case.id, author_user_id=user.id)   # ❌
+SupportCaseMessage(case=case, author_user=user)  # ✅
+SupportCaseMessage(case_id=case.id, author_user_id=user.id)  # ❌
 ```
 Add the `relationship()` to the model if it doesn't exist yet.
 
 ### Relationships are `lazy="raise"`
 All relationships use `lazy="raise"`: accessing an unloaded one raises instead of silently emitting a query (no async lazy-load `MissingGreenlet`, no N+1). Eager-load what the request needs:
 ```python
-select(X).options(joinedload(X.rel))   # or selectinload / contains_eager
+select(X).options(joinedload(X.rel))  # or selectinload / contains_eager
 ```
 (Populating a backref into an unloaded collection — e.g. `case=case` — is passive and does **not** trigger the raise.)
 

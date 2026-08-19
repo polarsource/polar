@@ -70,7 +70,7 @@ ORDER_EXPORT_DEFAULT_COLUMNS: list[OrderExportColumn] = [
 def _validate_timezone(value: str) -> str:
     try:
         ZoneInfo(value)
-    except (ValueError, ZoneInfoNotFoundError):
+    except ValueError, ZoneInfoNotFoundError:
         raise ValueError(f"{value!r} is not a valid IANA time zone") from None
     return value
 
@@ -128,7 +128,7 @@ async def generate_csv(
     created_before: datetime | None,
     timezone: ZoneInfo,
     columns: Sequence[OrderExportColumn] | None,
-) -> AsyncGenerator[str, None]:
+) -> AsyncGenerator[str]:
     export_columns = columns or ORDER_EXPORT_DEFAULT_COLUMNS
 
     csv_writer = IterableCSVWriter(dialect="excel")

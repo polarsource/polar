@@ -54,7 +54,7 @@ class BenefitDownloadablesSubscriberProperties(Schema):
 
         schema = BenefitDownloadablesProperties(**data)
         actives = get_active_file_ids(schema)
-        return dict(active_files=actives)
+        return {"active_files": actives}
 
 
 class BenefitDownloadablesCreate(BenefitCreateBase):

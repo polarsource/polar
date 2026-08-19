@@ -1,5 +1,5 @@
 from collections.abc import Awaitable, Callable
-from datetime import date, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -459,7 +459,7 @@ class TestAggregateFieldsValidation:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        today = date.today()
+        today = datetime.now(UTC).date()
         response = await client.get(
             "/v1/events/statistics/timeseries",
             params={

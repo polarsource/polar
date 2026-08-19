@@ -32,7 +32,6 @@ class HTTPXMiddleware(dramatiq.Middleware):
 
     @classmethod
     def get(cls) -> httpx.AsyncClient:
-        global _httpx
         if _httpx is None:
             raise RuntimeError("HTTPX not initialized")
         return _httpx

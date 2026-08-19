@@ -230,7 +230,7 @@ async def _rdap(domain: str, client: httpx.AsyncClient) -> dict[str, Any] | None
         )
         response.raise_for_status()
         payload = response.json()
-    except (httpx.HTTPError, ValueError):
+    except httpx.HTTPError, ValueError:
         return None
 
     registrar = next(

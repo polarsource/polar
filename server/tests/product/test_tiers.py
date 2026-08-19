@@ -75,7 +75,7 @@ class TestTiersCalculateVolume:
             TierType.volume,
             [{"bound": None, "unit_amount": "0.5"}],
         )
-        assert tiers.calculate(10) == Decimal("5")
+        assert tiers.calculate(10) == Decimal(5)
 
     def test_quantity_below_first_bound(self) -> None:
         # The engine prices from 0; purchase floors live on the price.

@@ -204,7 +204,7 @@ class TestLicenseKeyEndpoints:
         assert count >= 2
 
         response = await client.get(
-            f"/v1/license-keys/?organization_id={str(organization.id)}",
+            f"/v1/license-keys/?organization_id={organization.id!s}",
         )
         assert response.status_code == 200
         data = response.json()
@@ -252,7 +252,7 @@ class TestLicenseKeyEndpoints:
         await session.flush()
 
         response = await client.get(
-            f"/v1/license-keys/?organization_id={str(organization.id)}"
+            f"/v1/license-keys/?organization_id={organization.id!s}"
             f"&status={LicenseKeyStatus.granted.value}",
         )
         assert response.status_code == 200
@@ -262,7 +262,7 @@ class TestLicenseKeyEndpoints:
         assert granted_b["license_key_id"] not in ids
 
         response = await client.get(
-            f"/v1/license-keys/?organization_id={str(organization.id)}"
+            f"/v1/license-keys/?organization_id={organization.id!s}"
             f"&status={LicenseKeyStatus.revoked.value}",
         )
         assert response.status_code == 200
@@ -272,7 +272,7 @@ class TestLicenseKeyEndpoints:
         assert granted_a["license_key_id"] not in ids
 
         response = await client.get(
-            f"/v1/license-keys/?organization_id={str(organization.id)}"
+            f"/v1/license-keys/?organization_id={organization.id!s}"
             f"&status={LicenseKeyStatus.granted.value}"
             f"&status={LicenseKeyStatus.revoked.value}",
         )

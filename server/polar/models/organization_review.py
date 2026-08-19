@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -59,7 +59,7 @@ class OrganizationReview(RecordModel):
     )
 
     validated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=lambda: datetime.now()
+        TIMESTAMP(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
 
     # Appeal fields

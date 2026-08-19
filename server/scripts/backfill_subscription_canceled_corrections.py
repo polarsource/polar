@@ -49,7 +49,7 @@ def _parse_datetime(value: Any) -> datetime | None:
         return None
 
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value)
     except ValueError:
         return None
 

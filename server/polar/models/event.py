@@ -54,7 +54,7 @@ class EventSource(StrEnum):
 
 
 class CustomerComparator(Relationship.Comparator[Customer]):
-    def __eq__(self, other: Any) -> ColumnElement[bool]:  # type: ignore[override]
+    def __eq__(self, other: object) -> ColumnElement[bool]:  # type: ignore[override]
         if isinstance(other, Customer):
             clause = Event.customer_id == other.id
             if other.external_id is not None:
@@ -112,7 +112,7 @@ class CustomerComparator(Relationship.Comparator[Customer]):
 
 
 class MemberComparator(Relationship.Comparator[Member]):
-    def __eq__(self, other: Any) -> ColumnElement[bool]:  # type: ignore[override]
+    def __eq__(self, other: object) -> ColumnElement[bool]:  # type: ignore[override]
         if isinstance(other, Member):
             clause = Event.member_id == other.id
             if other.external_id is not None:

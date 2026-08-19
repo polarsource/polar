@@ -84,7 +84,6 @@ class DiscordClient:
             discord_user_id=discord_user_id,
             role_id=role_id,
         )
-        return None
 
     async def remove_member_role(
         self,
@@ -103,7 +102,6 @@ class DiscordClient:
             discord_user_id=discord_user_id,
             role_id=role_id,
         )
-        return None
 
     async def remove_member(self, guild_id: str, discord_user_id: str) -> None:
         endpoint = f"/guilds/{guild_id}/members/{discord_user_id}"
@@ -116,7 +114,6 @@ class DiscordClient:
             guild_id=guild_id,
             discord_user_id=discord_user_id,
         )
-        return None
 
     def _handle_response(self, response: httpx.Response) -> httpx.Response:
         response.raise_for_status()

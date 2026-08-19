@@ -1,3 +1,5 @@
+import contextlib
+
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
 
 from ..schemas import (
@@ -18,7 +20,7 @@ def collect_feedback_data(
         dimensions: list[PriorDimensionAssessment] = []
 
         if fb.agent_review_id is not None:
-            try:
+            with contextlib.suppress(Exception):
                 parsed = fb.agent_review.parsed_report
                 report = parsed.report
                 agent_report_summary = report.summary
@@ -32,8 +34,6 @@ def collect_feedback_data(
                     )
                     for dim in report.dimensions
                 ]
-            except Exception:
-                pass
 
         entries.append(
             PriorFeedbackEntry(

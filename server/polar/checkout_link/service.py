@@ -55,9 +55,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CheckoutLinkSortProperty]] = [
-            (CheckoutLinkSortProperty.created_at, False)
-        ],
+        sorting: Sequence[Sorting[CheckoutLinkSortProperty]] = (
+            (CheckoutLinkSortProperty.created_at, False),
+        ),
     ) -> tuple[Sequence[CheckoutLink], int]:
         repository = CheckoutLinkRepository.from_session(session)
         org_ids = await get_accessible_org_ids(

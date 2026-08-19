@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 from polar.models.organization import OrganizationStatus
@@ -123,7 +123,7 @@ class TestCollectHistoryData:
         assert result.prior_organizations[0].is_blocked is True
 
     def test_user_blocked_at(self) -> None:
-        blocked = datetime(2024, 6, 15)
+        blocked = datetime(2024, 6, 15, tzinfo=UTC)
         user = _build_user(blocked_at=blocked)
 
         result = collect_history_data(user, [])

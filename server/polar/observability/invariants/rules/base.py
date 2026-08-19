@@ -41,4 +41,3 @@ class Invariant(abc.ABC):
         Raises:
             InvariantError: If the invariant is violated.
         """
-        pass

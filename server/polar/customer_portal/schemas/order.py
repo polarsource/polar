@@ -73,9 +73,7 @@ class CustomerOrderPaymentStatus(Schema):
     """Payment status for an order."""
 
     status: str = Field(..., description="Current payment status.")
-    error: str | None | None = Field(
-        None, description="Error message if payment failed."
-    )
+    error: str | None = Field(None, description="Error message if payment failed.")
 
 
 class CustomerOrderConfirmPayment(Schema):

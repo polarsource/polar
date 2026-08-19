@@ -28,7 +28,7 @@ def _get_worker_pool_name() -> str:
         idx = sys.argv.index("--queues")
         queues = sys.argv[idx + 1].split(",")
         return f"worker-{'-'.join(sorted(queues))}"
-    except (ValueError, IndexError):
+    except ValueError, IndexError:
         return "worker"
 
 
@@ -82,7 +82,6 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
 
     @classmethod
     def get_async_session(cls) -> contextlib.AbstractAsyncContextManager[AsyncSession]:
-        global _sqlalchemy_async_sessionmaker
         if _sqlalchemy_async_sessionmaker is None:
             raise RuntimeError("SQLAlchemy not initialized")
         return _sqlalchemy_async_sessionmaker()
@@ -91,7 +90,6 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     def get_async_read_session(
         cls,
     ) -> contextlib.AbstractAsyncContextManager[AsyncReadSession]:
-        global _sqlalchemy_async_read_sessionmaker
         if _sqlalchemy_async_read_sessionmaker is None:
             raise RuntimeError("SQLAlchemy not initialized")
         return _sqlalchemy_async_read_sessionmaker()

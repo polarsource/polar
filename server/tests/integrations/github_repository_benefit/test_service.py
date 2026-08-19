@@ -68,13 +68,12 @@ class TestGetBillingPlan:
         assert result.plan_name == ""
         assert result.is_free is False
 
-        # Verify log.error was called with the right context
-        assert mock_log.error.called
-        call_kwargs = mock_log.error.call_args[1]
+        # Verify log.exception was called with the right context
+        assert mock_log.exception.called
+        call_kwargs = mock_log.exception.call_args[1]
         assert call_kwargs["installation_id"] == 60276577
         assert call_kwargs["organization"] == "test-org"
         assert call_kwargs["error_type"] == "RequestFailed"
-        assert call_kwargs["exc_info"] is True
 
     async def test_unexpected_exception_logged_with_context(
         self, mocker: MockerFixture
@@ -128,11 +127,10 @@ class TestGetBillingPlan:
         assert result.plan_name == ""
         assert result.is_free is False
 
-        # Verify log.error was called with the right context
-        assert mock_log.error.called
-        call_kwargs = mock_log.error.call_args[1]
+        # Verify log.exception was called with the right context
+        assert mock_log.exception.called
+        call_kwargs = mock_log.exception.call_args[1]
         assert call_kwargs["installation_id"] == 60276577
         assert call_kwargs["organization"] == "test-org"
         assert call_kwargs["error_type"] == "ValueError"
         assert call_kwargs["error_message"] == "Unexpected error"
-        assert call_kwargs["exc_info"] is True

@@ -168,7 +168,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         for event_id, pending_ref in batch_pending_rows.all():
             try:
                 UUID(pending_ref)
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 continue
             uuid_pending_in_batch.append(event_id)
 

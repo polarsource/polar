@@ -76,9 +76,8 @@ Code = Annotated[
 def _starts_at_ends_at_validator(
     starts_at: datetime | None, ends_at: datetime | None
 ) -> None:
-    if starts_at is not None and ends_at is not None:
-        if starts_at >= ends_at:
-            raise ValueError("starts_at must be before ends_at")
+    if starts_at is not None and ends_at is not None and starts_at >= ends_at:
+        raise ValueError("starts_at must be before ends_at")
 
 
 StartsAt = Annotated[
@@ -321,8 +320,6 @@ class DiscountUpdate(MetadataInputMixin, Schema):
 
 class DiscountProduct(ProductBase, MetadataOutputMixin):
     """A product that a discount can be applied to."""
-
-    ...
 
 
 class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):

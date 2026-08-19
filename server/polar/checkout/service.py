@@ -289,9 +289,9 @@ class CheckoutService:
         created_after: datetime | None = None,
         created_before: datetime | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CheckoutSortProperty]] = [
-            (CheckoutSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[CheckoutSortProperty]] = (
+            (CheckoutSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Checkout], int]:
         repository = CheckoutRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -812,7 +812,7 @@ class CheckoutService:
                         custom_price, query_amount_int, currency
                     )
                     custom_amount = query_amount_int
-                except (ValueError, TypeError, PolarRequestValidationError):
+                except ValueError, TypeError, PolarRequestValidationError:
                     pass
 
         amount = calculate_upfront_amount(
@@ -1122,19 +1122,18 @@ class CheckoutService:
                     }
                 )
 
-        if checkout.is_billing_address_required:
-            if (
-                checkout.customer_billing_address is None
-                or not checkout.customer_billing_address.has_address()
-            ):
-                errors.append(
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "customer_billing_address"),
-                        "msg": "Full billing address is required.",
-                        "input": checkout.customer_billing_address,
-                    }
-                )
+        if checkout.is_billing_address_required and (
+            checkout.customer_billing_address is None
+            or not checkout.customer_billing_address.has_address()
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "customer_billing_address"),
+                    "msg": "Full billing address is required.",
+                    "input": checkout.customer_billing_address,
+                }
+            )
 
         if (
             checkout.is_payment_form_required
@@ -2466,9 +2465,11 @@ class CheckoutService:
 
         currencies: list[str] = []
 
-        if ip_country is not None:
-            if (country_currency := get_presentment_currency(ip_country)) is not None:
-                currencies.append(country_currency)
+        if (
+            ip_country is not None
+            and (country_currency := get_presentment_currency(ip_country)) is not None
+        ):
+            currencies.append(country_currency)
 
         currencies.append(organization.default_presentment_currency)
         return currencies
@@ -2660,19 +2661,22 @@ class CheckoutService:
                 ]
             )
 
-        if tier_maximum is not None:
-            if max_seats is not None and max_seats > tier_maximum:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "less_than_equal",
-                            "loc": ("body", "max_seats"),
-                            "msg": f"max_seats must be at most {tier_maximum}.",
-                            "input": max_seats,
-                            "ctx": {"le": tier_maximum},
-                        }
-                    ]
-                )
+        if (
+            tier_maximum is not None
+            and max_seats is not None
+            and max_seats > tier_maximum
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": ("body", "max_seats"),
+                        "msg": f"max_seats must be at most {tier_maximum}.",
+                        "input": max_seats,
+                        "ctx": {"le": tier_maximum},
+                    }
+                ]
+            )
 
     def _get_required_confirm_fields(self, checkout: Checkout) -> set[tuple[str, ...]]:
         fields: set[tuple[str, ...]] = set()

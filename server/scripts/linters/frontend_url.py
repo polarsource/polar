@@ -29,8 +29,6 @@ Rules (per function, intra-procedural):
   values already validated upstream.
 """
 
-from __future__ import annotations
-
 import ast
 
 from .base import Rule, Violation
@@ -162,9 +160,7 @@ def _propagate(func: FunctionNode, tainted: set[str]) -> set[str]:
             targets: list[ast.expr]
             if isinstance(node, ast.Assign):
                 value, targets = node.value, node.targets
-            elif isinstance(node, (ast.AnnAssign, ast.AugAssign)):
-                value, targets = node.value, [node.target]
-            elif isinstance(node, ast.NamedExpr):
+            elif isinstance(node, (ast.AnnAssign, ast.AugAssign, ast.NamedExpr)):
                 value, targets = node.value, [node.target]
             else:
                 continue

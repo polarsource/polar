@@ -48,9 +48,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         query: str | None = None,
         type: Sequence[CustomFieldType] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomFieldSortProperty]] = [
-            (CustomFieldSortProperty.slug, False)
-        ],
+        sorting: Sequence[Sorting[CustomFieldSortProperty]] = (
+            (CustomFieldSortProperty.slug, False),
+        ),
     ) -> tuple[Sequence[CustomField], int]:
         statement = self._get_readable_custom_field_statement(auth_subject)
 

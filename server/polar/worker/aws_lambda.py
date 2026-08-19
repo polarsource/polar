@@ -64,10 +64,9 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                     batch_item_failures.append({"itemIdentifier": message_id})
             except Exception as exc:
                 sentry_sdk.capture_exception(exc)
-                log.error(
+                log.exception(
                     "polar.worker.sqs_task_failed",
                     message_id=message_id,
-                    exc_info=True,
                 )
                 if _apply_retry_backoff(record, exc):
                     batch_item_failures.append({"itemIdentifier": message_id})
@@ -143,5 +142,5 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
         return True
     except Exception as exc:
         sentry_sdk.capture_exception(exc)
-        log.error("polar.worker.sqs_backoff_failed", exc_info=True)
+        log.exception("polar.worker.sqs_backoff_failed")
         return True

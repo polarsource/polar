@@ -6,10 +6,9 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any, Literal, Unpack
+from typing import Any, Literal, TypeIs, Unpack
 
 import pytest_asyncio
-from typing_extensions import TypeIs
 
 from polar.enums import (
     PaymentProcessor,
@@ -938,9 +937,11 @@ async def create_customer(
     stripe_customer_id: str | None = "STRIPE_CUSTOMER_ID",
     billing_address: Address | None = None,
     tax_id: TaxID | None = None,
-    user_metadata: dict[str, Any] = {},
+    user_metadata: dict[str, Any] | None = None,
     created_at: datetime | None = None,
 ) -> Customer:
+    if user_metadata is None:
+        user_metadata = {}
     customer = Customer(
         created_at=created_at or utc_now(),
         external_id=external_id,
@@ -1104,8 +1105,10 @@ async def create_benefit(
     description: str = "Benefit",
     selectable: bool = True,
     deletable: bool = True,
-    properties: dict[str, Any] = {"note": None},
+    properties: dict[str, Any] | None = None,
 ) -> Benefit:
+    if properties is None:
+        properties = {"note": None}
     benefit = Benefit(
         type=type,
         description=description,
@@ -1578,10 +1581,10 @@ async def create_checkout(
     status: CheckoutStatus = CheckoutStatus.open,
     expires_at: datetime | None = None,
     client_secret: str | None = None,
-    user_metadata: dict[str, Any] = {},
+    user_metadata: dict[str, Any] | None = None,
     external_customer_id: str | None = None,
-    customer_metadata: dict[str, Any] = {},
-    payment_processor_metadata: dict[str, Any] = {},
+    customer_metadata: dict[str, Any] | None = None,
+    payment_processor_metadata: dict[str, Any] | None = None,
     analytics_metadata: CheckoutAnalyticsMetadata | None = None,
     amount: int | None = None,
     tax_amount: int | None = None,
@@ -1601,6 +1604,12 @@ async def create_checkout(
     success_url: str | None = None,
     return_url: str | None = None,
 ) -> Checkout:
+    if payment_processor_metadata is None:
+        payment_processor_metadata = {}
+    if customer_metadata is None:
+        customer_metadata = {}
+    if user_metadata is None:
+        user_metadata = {}
     product = product or products[0]
     currency = currency or product.organization.default_presentment_currency
     currency_prices = PriceSet.from_product(product, currency)
@@ -1698,8 +1707,10 @@ async def create_checkout_link(
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
     seats: int | None = None,
-    user_metadata: dict[str, Any] = {},
+    user_metadata: dict[str, Any] | None = None,
 ) -> CheckoutLink:
+    if user_metadata is None:
+        user_metadata = {}
     checkout_link = CheckoutLink(
         payment_processor=payment_processor,
         client_secret=client_secret
@@ -2209,8 +2220,10 @@ async def create_payout(
     created_at: datetime | None = None,
     invoice_number: str | None = None,
     status: PayoutStatus = PayoutStatus.succeeded,
-    attempts: list[PayoutAttemptStatus] = [PayoutAttemptStatus.succeeded],
+    attempts: list[PayoutAttemptStatus] | None = None,
 ) -> Payout:
+    if attempts is None:
+        attempts = [PayoutAttemptStatus.succeeded]
     payout = Payout(
         created_at=created_at,
         account=account,
@@ -2295,7 +2308,7 @@ async def create_payment(
     amount: int = 1000,
     currency: str = "usd",
     method: str = "card",
-    method_metadata: dict[str, Any] = {},
+    method_metadata: dict[str, Any] | None = None,
     customer_email: str | None = "customer@example.com",
     processor_id: str | None = None,
     decline_reason: str | None = None,
@@ -2306,6 +2319,8 @@ async def create_payment(
     checkout: Checkout | None = None,
     order: Order | None = None,
 ) -> Payment:
+    if method_metadata is None:
+        method_metadata = {}
     payment = Payment(
         processor=processor,
         status=status,
@@ -2340,8 +2355,10 @@ async def create_payment_method(
     processor: PaymentProcessor = PaymentProcessor.stripe,
     processor_id: str | None = None,
     type: str = "card",
-    method_metadata: dict[str, Any] = {},
+    method_metadata: dict[str, Any] | None = None,
 ) -> PaymentMethod:
+    if method_metadata is None:
+        method_metadata = {}
     payment_method = PaymentMethod(
         processor=processor,
         processor_id=processor_id or rstr("PAYMENT_METHOD_PROCESSOR_ID"),

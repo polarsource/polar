@@ -206,7 +206,7 @@ class EventService:
                     )
                     try:
                         own_value = float(own_value)
-                    except (TypeError, ValueError):
+                    except TypeError, ValueError:
                         own_value = 0.0
                     total_value = descendant_value + own_value
                     target = event_metadata
@@ -350,23 +350,23 @@ class EventService:
                 )
             )
 
-        tb_query_kwargs: dict[str, Any] = dict(
-            organization_id=list(organization_ids),
-            start_timestamp=start_timestamp,
-            end_timestamp=end_timestamp,
-            aggregate_fields=tuple(aggregate_fields),
-            customer_id=all_customer_ids,
-            external_customer_id=all_external_ids,
-            name=name,
-            source=source,
-            event_type_id=event_type_id,
-            filters=query_filters,
-            metadata=metadata,
-            query=query,
-            matching_customer_ids=matching_cust_ids,
-            matching_external_customer_ids=matching_ext_ids,
-            numeric_metadata_property=numeric_metadata_property,
-        )
+        tb_query_kwargs: dict[str, Any] = {
+            "organization_id": list(organization_ids),
+            "start_timestamp": start_timestamp,
+            "end_timestamp": end_timestamp,
+            "aggregate_fields": tuple(aggregate_fields),
+            "customer_id": all_customer_ids,
+            "external_customer_id": all_external_ids,
+            "name": name,
+            "source": source,
+            "event_type_id": event_type_id,
+            "filters": query_filters,
+            "metadata": metadata,
+            "query": query,
+            "matching_customer_ids": matching_cust_ids,
+            "matching_external_customer_ids": matching_ext_ids,
+            "numeric_metadata_property": numeric_metadata_property,
+        }
 
         tinybird_repository = TinybirdEventRepository()
         tb_buckets = await tinybird_repository.get_filtered_timeseries(
@@ -727,9 +727,9 @@ class EventService:
         source: Sequence[EventSource] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: Sequence[Sorting[EventNamesSortProperty]] = [
-            (EventNamesSortProperty.last_seen, True)
-        ],
+        sorting: Sequence[Sorting[EventNamesSortProperty]] = (
+            (EventNamesSortProperty.last_seen, True),
+        ),
     ) -> tuple[Sequence[EventName], int]:
         organization_ids = await self._get_organization_ids_for_subject(
             session, auth_subject, organization_id

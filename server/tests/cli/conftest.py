@@ -22,4 +22,3 @@ async def session() -> AsyncIterator[AsyncSession]:
 @pytest.fixture(autouse=True)
 def patch_middlewares() -> None:
     """Override: CLI tests don't need worker middleware patching."""
-    pass

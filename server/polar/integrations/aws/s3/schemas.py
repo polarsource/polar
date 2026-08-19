@@ -19,13 +19,13 @@ class S3FileCreatePart(Schema):
 
     def get_boto3_arguments(self) -> dict[str, Any]:
         if not self.checksum_sha256_base64:
-            return dict(PartNumber=self.number)
+            return {"PartNumber": self.number}
 
-        return dict(
-            PartNumber=self.number,
-            ChecksumAlgorithm="SHA256",
-            ChecksumSHA256=self.checksum_sha256_base64,
-        )
+        return {
+            "PartNumber": self.number,
+            "ChecksumAlgorithm": "SHA256",
+            "ChecksumSHA256": self.checksum_sha256_base64,
+        }
 
 
 class S3FileCreateMultipart(Schema):
@@ -159,10 +159,10 @@ class S3FileUploadCompleted(Schema):
         parts = []
         checksum_digests = []
         for part in self.parts:
-            data = dict(
-                ETag=part.checksum_etag,
-                PartNumber=part.number,
-            )
+            data = {
+                "ETag": part.checksum_etag,
+                "PartNumber": part.number,
+            }
             if part.checksum_sha256_base64:
                 data["ChecksumSHA256"] = part.checksum_sha256_base64
                 digest = base64.b64decode(part.checksum_sha256_base64)
@@ -170,12 +170,10 @@ class S3FileUploadCompleted(Schema):
 
             parts.append(data)
 
-        ret = dict(
-            UploadId=self.id,
-            MultipartUpload=dict(
-                Parts=parts,
-            ),
-        )
+        ret = {
+            "UploadId": self.id,
+            "MultipartUpload": {"Parts": parts},
+        }
         if not checksum_digests:
             return ret
 

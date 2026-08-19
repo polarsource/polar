@@ -35,7 +35,7 @@ class _Mixed(TypedDict):
 def test_typeddict_total_false_yields_none_default() -> None:
     def task(**kwargs: Unpack[_AllOptional]) -> None: ...
 
-    args = dict(((k, default) for k, _, default in _get_function_arguments(task)))
+    args = {k: default for k, _, default in _get_function_arguments(task)}
 
     assert args == {"first_name": None, "last_name": None}
 

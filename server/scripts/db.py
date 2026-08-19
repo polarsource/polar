@@ -33,11 +33,10 @@ def _reparent(force: bool = False) -> None:
         ["uv", "run", "alembic", "heads"],
         capture_output=True,
         text=True,
+        check=False,
     )
     p_out.check_returncode()
-    heads = set(
-        [line.removesuffix(" (head)") for line in p_out.stdout.strip().split("\n")]
-    )
+    heads = {line.removesuffix(" (head)") for line in p_out.stdout.strip().split("\n")}
 
     if force:
         pass
@@ -58,6 +57,7 @@ def _reparent(force: bool = False) -> None:
             ["git", "grep", "-l", head, "main", "--", "migrations/versions/*"],
             capture_output=True,
             text=True,
+            check=False,
         )
         if p_out.returncode == 0:
             main_head = head
@@ -72,6 +72,7 @@ def _reparent(force: bool = False) -> None:
             ["git", "grep", "-l", head, "HEAD", "--", "migrations/versions/*"],
             capture_output=True,
             text=True,
+            check=False,
         )
         if p_out.returncode == 0:
             branch_head = head
@@ -96,7 +97,7 @@ branch head: {branch_head} ({branch_migration_file})
     with open(branch_migration_file, "r+") as f:
         f_contents = f.read()
 
-        previous_parent = list(re_down_revision.finditer(f_contents))[0].group(1)
+        previous_parent = next(iter(re_down_revision.finditer(f_contents))).group(1)
         f_new_contents = re_down_revision.sub(
             f'down_revision = "{main_head}"', f_contents
         )

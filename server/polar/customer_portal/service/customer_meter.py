@@ -23,9 +23,9 @@ class CustomerMeterService:
         meter_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerCustomerMeterSortProperty]] = [
-            (CustomerCustomerMeterSortProperty.modified_at, True)
-        ],
+        sorting: Sequence[Sorting[CustomerCustomerMeterSortProperty]] = (
+            (CustomerCustomerMeterSortProperty.modified_at, True),
+        ),
     ) -> tuple[Sequence[CustomerMeter], int]:
         repository = CustomerMeterRepository.from_session(session)
         statement = (

@@ -7,14 +7,12 @@ Human reviewer reasoning is fed as reflective feedback, giving GEPA
 actionable signal about *why* the current prompt fails.
 """
 
-from __future__ import annotations
-
 import asyncio
 import json
 import os
 import random
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -336,7 +334,7 @@ def run_optimization(
     eval_cost = adapter.total_cost
 
     # 4. Save results
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
     prompt_path = out_dir / f"system_prompt_{timestamp}.txt"
     prompt_path.write_text(best_prompt)

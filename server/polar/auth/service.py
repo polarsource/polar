@@ -156,7 +156,7 @@ class AuthService:
         self, request: Request, response: R, value: str, expires: int | datetime
     ) -> R:
         is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
-        secure = False if is_localhost else True
+        secure = not is_localhost
         response.set_cookie(
             settings.USER_SESSION_COOKIE_KEY,
             value=value,
@@ -173,7 +173,7 @@ class AuthService:
         self, request: Request, response: R, factor: LoginMethod
     ) -> R:
         is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
-        secure = False if is_localhost else True
+        secure = not is_localhost
         response.set_cookie(
             "polar_last_login_method",
             value=factor,

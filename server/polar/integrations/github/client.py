@@ -44,8 +44,10 @@ HTTP_EXCEPTIONS = {
 
 
 def ensure_expected_response(
-    response: Response[Any], accepted: set[int] = {200, 304}
+    response: Response[Any], accepted: set[int] | None = None
 ) -> bool:
+    if accepted is None:
+        accepted = {200, 304}
     status_code = response.status_code
     if status_code in accepted:
         return True

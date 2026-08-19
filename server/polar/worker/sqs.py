@@ -65,9 +65,7 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                             source_correlation_id=correlation_id,
                         )
                     except Exception:
-                        log.error(
-                            "polar.worker.sqs_poll_failed", actor=actor, exc_info=True
-                        )
+                        log.exception("polar.worker.sqs_poll_failed", actor=actor)
                         continue
                     await asyncio.to_thread(
                         client.delete_message,

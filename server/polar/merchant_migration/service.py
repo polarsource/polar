@@ -226,7 +226,7 @@ def _staged_payment_method(
     when a customer has more than one."""
     try:
         staged = deserialize(record.type, record.canonical)
-    except (KeyError, TypeError, ValueError):
+    except KeyError, TypeError, ValueError:
         return None
     if isinstance(staged, CanonicalSubscription):
         return staged.payment_method

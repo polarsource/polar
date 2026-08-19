@@ -1,6 +1,5 @@
 import typing
-
-from typing_extensions import TypeIs
+from typing import TypeIs
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.models.product import Product

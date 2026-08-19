@@ -551,13 +551,15 @@ class TestPreviewCLI:
             ),
             ("ALTER DATABASE preview_pr_123 WITH ALLOW_CONNECTIONS false", None),
             (
-                "SELECT pg_terminate_backend(activity.pid) "
-                "FROM pg_stat_activity AS activity "
-                "LEFT JOIN pg_roles AS roles ON roles.rolname = activity.usename "
-                "WHERE activity.datname = %s "
-                "AND activity.pid <> pg_backend_pid() "
-                "AND activity.backend_type = 'client backend' "
-                "AND COALESCE(roles.rolsuper, false) = false",
+                (
+                    "SELECT pg_terminate_backend(activity.pid) "
+                    "FROM pg_stat_activity AS activity "
+                    "LEFT JOIN pg_roles AS roles ON roles.rolname = activity.usename "
+                    "WHERE activity.datname = %s "
+                    "AND activity.pid <> pg_backend_pid() "
+                    "AND activity.backend_type = 'client backend' "
+                    "AND COALESCE(roles.rolsuper, false) = false"
+                ),
                 ("preview_pr_123",),
             ),
             ("DROP DATABASE preview_pr_123", None),

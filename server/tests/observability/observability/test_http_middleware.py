@@ -9,7 +9,7 @@ import os
 import tempfile
 from collections.abc import Generator
 from typing import Any, cast
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from starlette.types import Receive, Scope, Send
@@ -271,7 +271,7 @@ class TestRouteTemplateLogic:
 
 
 @pytest.fixture(scope="module")
-def prometheus_tmpdir() -> Generator[str, None, None]:
+def prometheus_tmpdir() -> Generator[str]:
     """Create a temporary prometheus directory for module tests."""
     with tempfile.TemporaryDirectory() as tmpdir:
         os.environ["PROMETHEUS_MULTIPROC_DIR"] = tmpdir
@@ -282,7 +282,7 @@ class TestMiddlewareASGIBehavior:
     """Test ASGI middleware behavior including async calls."""
 
     @pytest.fixture(scope="class")
-    def prometheus_tmpdir(self) -> Generator[str, None, None]:
+    def prometheus_tmpdir(self) -> Generator[str]:
         """Create a temporary prometheus directory for class tests."""
         with tempfile.TemporaryDirectory() as tmpdir:
             os.environ["PROMETHEUS_MULTIPROC_DIR"] = tmpdir
@@ -507,8 +507,7 @@ class TestMiddlewareASGIBehavior:
 
             captured: list[dict[str, Any]] = []
 
-            async def mock_send(message: dict[str, Any]) -> None:
-                captured.append(message)
+            mock_send = AsyncMock(side_effect=captured.append)
 
             asyncio.get_event_loop().run_until_complete(
                 middleware(scope, cast(Receive, None), cast(Send, mock_send))

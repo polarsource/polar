@@ -27,7 +27,9 @@ def minio_client() -> Minio:
         pytest.skip("S3_ENDPOINT_URL not set")
 
     return Minio(
-        endpoint=settings.S3_ENDPOINT_URL.lstrip("http://"),
+        endpoint=settings.S3_ENDPOINT_URL.removeprefix("http://").removeprefix(
+            "https://"
+        ),
         access_key=settings.MINIO_USER,
         secret_key=settings.MINIO_PWD,
         secure=False,

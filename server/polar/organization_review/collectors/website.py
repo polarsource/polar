@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import functools
 import re
@@ -409,8 +407,7 @@ async def _run_website_agent(
     agent, model_provider, model_name = _get_website_agent()
     allowed_domain = urlparse(base_url).hostname or ""
     # Strip www. so redirects between www and non-www are both allowed
-    if allowed_domain.startswith("www."):
-        allowed_domain = allowed_domain[4:]
+    allowed_domain = allowed_domain.removeprefix("www.")
 
     async with httpx.AsyncClient(
         follow_redirects=False,

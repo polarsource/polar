@@ -34,8 +34,6 @@ class NotificationRecipientRepository(
         if notification_recipient:
             await self.soft_delete(notification_recipient, flush=flush)
 
-        return None
-
     async def list_by_user(
         self,
         user_id: UUID,

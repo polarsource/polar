@@ -73,17 +73,14 @@ subscription grant for the same benefit. Its own lifecycle, for expiry and indep
 And it is provenance, because the reason lives on it. Needing all three is what being a scope
 means.
 
-The cheaper alternative is a boolean `is_manual` plus `expires_at` and `reason` on
-`benefit_grants`. It fails on all three. Uniqueness stops being "one grant per owner" and becomes
-a special case in the index and in every dedupe. A flag drives no lifecycle, so expiry needs a
-dispatcher invented from scratch. And the reason and expiry get written once per benefit instead
-of once per decision.
+A boolean `is_manual` with `expires_at` and `reason` on `benefit_grants` would be less code, but
+it gives up all three. Uniqueness becomes a special case, nothing owns the lifecycle so expiry
+needs its own dispatcher, and the reason and expiry get written once per benefit instead of once
+per decision.
 
-Being a scope also means the existing plumbing carries it. The actors take
-`**scope: Unpack[BenefitGrantScopeArgs]`, so enqueuing
-`benefit.grant(customer_id=..., benefit_id=..., manual_grant_id=...)` needs no change to the task
-signatures. `resolve_scope` learns one branch, and `grant_benefit` and `revoke_benefit` keep their
-core logic. The cost is one extra table and one extra join.
+Being a scope also means the existing plumbing carries it. The task actors already take
+`**scope: Unpack[BenefitGrantScopeArgs]`, so nothing in the grant and revoke path needs a new
+signature. The cost is one extra table and one join.
 
 ### The unit of intent
 

@@ -240,7 +240,7 @@ class TestLicenseKeyEndpoints:
         response = await client.post(f"/v1/license-keys/{lk.id}/rotate")
         assert response.status_code == 400
         assert response.json() == {
-            "error": "BadRequest",
+            "error": "RotateNotPermitted",
             "detail": (
                 "License key cannot be rotated in its current status. "
                 "Current status: revoked. "

@@ -13,7 +13,7 @@ from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
-from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
+from polar.exceptions import BadRequest, NotPermitted, PolarError, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -29,7 +29,6 @@ from polar.worker import enqueue_job
 
 from .repository import LicenseKeyRepository
 from .schemas import (
-    ROTATABLE_LICENSE_KEY_STATUSES,
     LicenseKeyActivate,
     LicenseKeyCreate,
     LicenseKeyDeactivate,
@@ -38,6 +37,27 @@ from .schemas import (
 )
 
 log = structlog.get_logger()
+
+ROTATABLE_STATUSES: frozenset[LicenseKeyStatus] = frozenset(
+    {
+        LicenseKeyStatus.granted,
+        LicenseKeyStatus.disabled,
+    }
+)
+
+
+class LicenseKeyError(PolarError): ...
+
+
+class RotateNotPermitted(LicenseKeyError):
+    def __init__(self, status: LicenseKeyStatus) -> None:
+        self.status = status
+        allowed = ", ".join(sorted(s.value for s in ROTATABLE_STATUSES))
+        super().__init__(
+            "License key cannot be rotated in its current status. "
+            f"Current status: {status}. Allowed statuses: {allowed}.",
+            400,
+        )
 
 
 class LicenseKeyService:
@@ -169,15 +189,8 @@ class LicenseKeyService:
         *,
         license_key: LicenseKey,
     ) -> LicenseKey:
-        if license_key.status not in ROTATABLE_LICENSE_KEY_STATUSES:
-            allowed = ", ".join(
-                sorted(status.value for status in ROTATABLE_LICENSE_KEY_STATUSES)
-            )
-            raise BadRequest(
-                "License key cannot be rotated in its current status. "
-                f"Current status: {license_key.status}. "
-                f"Allowed statuses: {allowed}."
-            )
+        if license_key.status not in ROTATABLE_STATUSES:
+            raise RotateNotPermitted(license_key.status)
 
         await session.refresh(license_key, attribute_names=["benefit"])
         prefix = cast(BenefitLicenseKeysProperties, license_key.benefit.properties).get(

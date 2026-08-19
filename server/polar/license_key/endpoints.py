@@ -30,13 +30,21 @@ from .schemas import (
     LicenseKeyValidate,
     LicenseKeyWithActivations,
     NotFoundResponse,
-    RotateNotPermitted,
     UnauthorizedResponse,
     ValidatedLicenseKey,
 )
+from .service import ROTATABLE_STATUSES, RotateNotPermitted
 from .service import license_key as license_key_service
 
 router = APIRouter(prefix="/license-keys", tags=["license_keys", APITag.public])
+
+RotateNotPermittedResponse = {
+    "description": (
+        "License key cannot be rotated in its current status. "
+        f"Allowed statuses: {', '.join(sorted(s.value for s in ROTATABLE_STATUSES))}."
+    ),
+    "model": RotateNotPermitted.schema(),
+}
 
 
 @router.get(
@@ -135,7 +143,7 @@ async def update(
     summary="Rotate License Key",
     response_model=LicenseKeyRead,
     responses={
-        400: RotateNotPermitted,
+        400: RotateNotPermittedResponse,
         401: UnauthorizedResponse,
         404: NotFoundResponse,
     },

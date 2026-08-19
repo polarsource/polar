@@ -12,7 +12,7 @@ from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeyExpirationProperties,
 )
 from polar.customer.schemas.customer import CustomerBase
-from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound, Unauthorized
+from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.metadata import (
     MAXIMUM_KEYS,
     METADATA_DESCRIPTION,
@@ -41,21 +41,6 @@ UnauthorizedResponse = {
 ActivationNotPermitted = {
     "description": "License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.",
     "model": NotPermitted.schema(),
-}
-
-ROTATABLE_LICENSE_KEY_STATUSES: frozenset[LicenseKeyStatus] = frozenset(
-    {
-        LicenseKeyStatus.granted,
-        LicenseKeyStatus.disabled,
-    }
-)
-
-RotateNotPermitted = {
-    "description": (
-        "License key cannot be rotated in its current status. "
-        f"Allowed statuses: {', '.join(sorted(s.value for s in ROTATABLE_LICENSE_KEY_STATUSES))}."
-    ),
-    "model": BadRequest.schema(),
 }
 
 

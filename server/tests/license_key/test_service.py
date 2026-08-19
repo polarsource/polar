@@ -26,6 +26,7 @@ from polar.license_key.schemas import (
     LicenseKeyUpdate,
     LicenseKeyValidate,
 )
+from polar.license_key.service import RotateNotPermitted
 from polar.license_key.service import license_key as license_key_service
 from polar.models import (
     Account,
@@ -422,7 +423,7 @@ class TestRotate:
         await save_fixture(license_key)
 
         with pytest.raises(
-            BadRequest,
+            RotateNotPermitted,
             match=(
                 "License key cannot be rotated in its current status. "
                 "Current status: revoked. "

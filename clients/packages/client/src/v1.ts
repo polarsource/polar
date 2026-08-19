@@ -8339,17 +8339,6 @@ export interface components {
       /** Code */
       code: string
     }
-    /** BadRequest */
-    BadRequest: {
-      /**
-       * Error
-       * @example BadRequest
-       * @constant
-       */
-      error: 'BadRequest'
-      /** Detail */
-      detail: string
-    }
     /**
      * BalanceCreditOrderEvent
      * @description An event created by Polar when an order is paid via customer balance.
@@ -32276,6 +32265,17 @@ export interface components {
     }
     /** RevokeTokenResponse */
     RevokeTokenResponse: Record<string, never>
+    /** RotateNotPermitted */
+    RotateNotPermitted: {
+      /**
+       * Error
+       * @example RotateNotPermitted
+       * @constant
+       */
+      error: 'RotateNotPermitted'
+      /** Detail */
+      detail: string
+    }
     /** S3DownloadURL */
     S3DownloadURL: {
       /** Url */
@@ -47692,13 +47692,13 @@ export interface operations {
           'application/json': components['schemas']['LicenseKeyRead']
         }
       }
-      /** @description License key cannot be rotated in its current status. */
+      /** @description License key cannot be rotated in its current status. Allowed statuses: disabled, granted. */
       400: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['BadRequest']
+          'application/json': components['schemas']['RotateNotPermitted']
         }
       }
       /** @description Not authorized to manage license key. */

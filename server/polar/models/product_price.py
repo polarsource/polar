@@ -144,7 +144,6 @@ class ProductPrice(RecordModel):
             ProductPriceAmountType.fixed,
             ProductPriceAmountType.custom,
             ProductPriceAmountType.seat_based,
-            ProductPriceAmountType.unit_based,
         }
 
     @is_static.inplace.expression
@@ -155,7 +154,6 @@ class ProductPrice(RecordModel):
                 ProductPriceAmountType.fixed,
                 ProductPriceAmountType.custom,
                 ProductPriceAmountType.seat_based,
-                ProductPriceAmountType.unit_based,
             )
         )
 

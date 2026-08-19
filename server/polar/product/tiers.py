@@ -252,6 +252,7 @@ def tiers_to_seat_tiers(
     last_index = len(tiers.tiers) - 1
     for index, tier in enumerate(tiers.tiers):
         min_seats = first_min if previous_max is None else previous_max + 1
+        max_seats: int | None
         if index == last_index and maximum_units is not None:
             max_seats = maximum_units
         else:

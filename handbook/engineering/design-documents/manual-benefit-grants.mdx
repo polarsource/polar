@@ -94,11 +94,6 @@ untouched. The parent remains as the record of what happened. Expiry, in contras
 remaining children at once. Granting is a decision about a set. Revoking is almost always a
 correction about a single benefit.
 
-`ManualGrant` has no status column. The state of a manual grant is the state of its children, and
-a parent status would drift the moment one child fails and two succeed. It has no
-`organization_id` either. Authorization walks `ManualGrant` to `Customer` to `Organization`, so
-denormalising the org would just create a second source of truth.
-
 ## Which benefits can be granted
 
 Only three types are allowed:

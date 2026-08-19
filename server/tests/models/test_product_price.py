@@ -181,6 +181,39 @@ class TestCalculateAmountIntegralityGuard:
             price.calculate_amount(3)
 
 
+def _clear_shared_tier_columns(price: ProductPriceSeatUnit) -> ProductPriceSeatUnit:
+    price.tiers = None  # type: ignore[assignment]
+    price.minimum_units = None
+    price.maximum_units = None
+    return price
+
+
+class TestSeatBillingReadsSeatTiers:
+    """Billing must not depend on the dual-written `tiers` columns yet."""
+
+    def test_amount_with_empty_shared_columns(self) -> None:
+        price = _clear_shared_tier_columns(_make_seat_price(MULTI_TIER))
+        assert price.calculate_amount(10) == 10_000
+        assert price.calculate_amount(11) == 11 * 800
+
+    def test_bounds_with_empty_shared_columns(self) -> None:
+        price = _clear_shared_tier_columns(
+            _make_seat_price(
+                [{"min_seats": 5, "max_seats": 20, "price_per_seat": 250}],
+            )
+        )
+        assert price.get_minimum_seats() == 5
+        assert price.get_maximum_seats() == 20
+
+    def test_is_free_with_empty_shared_columns(self) -> None:
+        price = _clear_shared_tier_columns(
+            _make_seat_price(
+                [{"min_seats": 1, "max_seats": None, "price_per_seat": 0}],
+            )
+        )
+        assert price.is_free is True
+
+
 class TestGraduatedPricing:
     def test_single_tier(self) -> None:
         price = _make_seat_price(

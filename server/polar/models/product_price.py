@@ -379,9 +379,9 @@ class TieredPrice:
 
 
 class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
-    """Seat-based price. The public API still reads and writes
-    `seat_tiers`; that column is translated into the shared `tiers`,
-    `minimum_units` and `maximum_units` columns, which billing uses.
+    """Seat-based price. Billing still reads `seat_tiers`. That column is
+    dual-written into the shared `tiers` columns so they can become the
+    billing source after backfill.
     """
 
     amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
@@ -393,21 +393,26 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
     )
 
     def calculate_amount(self, seats: int) -> int:
-        amount = self.get_tiered_amount(seats)
+        amount = seat_tiers_to_tiers(self.seat_tiers).calculate(seats)
         # Seat rates are whole cents, so any fraction means corrupt data.
         if amount != amount.to_integral_value():
             raise ValueError(f"Seat price produced non-integral amount {amount}")
         return int(amount)
 
     def get_minimum_seats(self) -> int:
-        return max(1, self.get_minimum_units())
+        minimum, _ = seat_tiers_unit_bounds(self.seat_tiers)
+        return minimum if minimum is not None else 1
 
     def get_maximum_seats(self) -> int | None:
-        return self.get_maximum_units()
+        _, maximum = seat_tiers_unit_bounds(self.seat_tiers)
+        return maximum
 
     @property
     def is_free(self) -> bool:
-        return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
+        tiers = self.seat_tiers.get("tiers", [])
+        if not tiers:
+            return True
+        return all(tier["price_per_seat"] == 0 for tier in tiers)
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,

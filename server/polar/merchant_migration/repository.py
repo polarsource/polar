@@ -327,13 +327,35 @@ class MerchantMigrationRecordRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def has_pending_cutover_candidates(
+        self,
+        migration_id: UUID,
+        selection: MerchantMigrationOperationSelection | None = None,
+    ) -> bool:
+        """Whether any subscription in the selection still awaits cutover.
+
+        Unlike ``get_next_cutover_candidate``, this does not skip locked rows —
+        used to tell an empty claim from work another worker is holding."""
+        statement = (
+            self._imported_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.cutover_status.is_(None),
+                *self._selection_filter(selection),
+            )
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement) is not None
+
     async def count_cutover_statuses(
-        self, migration_id: UUID
+        self,
+        migration_id: UUID,
+        selection: MerchantMigrationOperationSelection | None = None,
     ) -> dict[MerchantMigrationCutoverStatus | None, int]:
         """How the cutover has settled the imported subscriptions so far, with
         ``None`` counting the ones it hasn't reached."""
         statement = (
             self._imported_subscriptions_statement(migration_id)
+            .where(*self._selection_filter(selection))
             .with_only_columns(
                 MerchantMigrationRecord.cutover_status,
                 func.count(MerchantMigrationRecord.id),

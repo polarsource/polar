@@ -793,6 +793,9 @@ class MerchantMigrationService:
         migration = await self._load(session, migration_id)
         if migration is None:
             return
+        operation = migration.operation
+        if operation is not None and not operation.is_active:
+            return
         if not self._cutover_started(migration):
             log.warning(
                 "merchant_migration.cutover.not_confirmed",
@@ -821,6 +824,10 @@ class MerchantMigrationService:
             migration.id, selection
         )
         if record is None:
+            if await record_repository.has_pending_cutover_candidates(
+                migration.id, selection
+            ):
+                return
             await self._finish_cutover(session, migration)
             return
 
@@ -841,7 +848,12 @@ class MerchantMigrationService:
         self, session: AsyncSession, migration: MerchantMigration
     ) -> None:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        counts = await record_repository.count_cutover_statuses(migration.id)
+        selection = (
+            migration.operation.selection if migration.operation is not None else None
+        )
+        counts = await record_repository.count_cutover_statuses(
+            migration.id, selection
+        )
         completed_steps = self._complete_polar_app_step(
             migration, STEP_MOVE_SUBSCRIPTIONS
         )
@@ -973,8 +985,11 @@ class MerchantMigrationService:
         self, session: AsyncReadSession, migration: MerchantMigration
     ) -> MerchantMigrationCutoverReport:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        counts = await record_repository.count_cutover_statuses(migration.id)
         operation = migration.operation
+        selection = operation.selection if operation is not None else None
+        counts = await record_repository.count_cutover_statuses(
+            migration.id, selection
+        )
         return MerchantMigrationCutoverReport(
             started=self._cutover_started(migration),
             running=operation.is_active if operation is not None else False,

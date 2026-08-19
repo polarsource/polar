@@ -82,7 +82,7 @@ def _preferred(
     customer: Customer,
     source_method: CanonicalPaymentMethod | None,
 ) -> PaymentMethod:
-    """Prefer the source method's copy, else the customer's default, else a card."""
+    """Prefer the source method's copy, else the customer's default, else the first stored method."""
     if source_method is not None:
         copies = [
             payment_method

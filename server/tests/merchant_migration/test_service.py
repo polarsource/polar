@@ -2217,6 +2217,89 @@ class TestRunCutover:
         assert migration.operation.status == MerchantMigrationOperationStatus.failed
         assert migration.operation.error is not None
 
+    async def test_does_not_finish_while_another_worker_holds_the_lock(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running
+        )
+        await save_fixture(migration)
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="1@example.com",
+        )
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        mocker.patch.object(
+            record_repository,
+            "get_next_cutover_candidate",
+            return_value=None,
+        )
+        mocker.patch.object(
+            record_repository,
+            "has_pending_cutover_candidates",
+            return_value=True,
+        )
+        mocker.patch.object(
+            MerchantMigrationRecordRepository,
+            "from_session",
+            return_value=record_repository,
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        await session.refresh(migration)
+        assert runner.run.await_count == 0
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
+        assert migration.step != MerchantMigrationStep.cleanup
+
+    async def test_skips_when_operation_is_terminal(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.failed,
+            error="Switch stalled with no progress; start it again to resume.",
+        )
+        await save_fixture(migration)
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="1@example.com",
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        assert runner.run.await_count == 0
+
 
 @pytest.mark.asyncio
 class TestGetCutoverReport:
@@ -2264,6 +2347,47 @@ class TestGetCutoverReport:
         assert report.moved == 1
         assert report.pending == 1
         assert report.started is False
+
+    @pytest.mark.auth
+    async def test_counts_respect_the_selection(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_CUTOVER
+        )
+        picked = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_picked",
+            email="picked@example.com",
+        )
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_outside",
+            email="outside@example.com",
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            selection=MerchantMigrationOperationSelection(record_ids=[picked.id]),
+        )
+        await save_fixture(migration)
+
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+
+        assert report.total == 1
+        assert report.pending == 1
 
     @pytest.mark.auth
     async def test_marks_a_stalled_switch_failed(

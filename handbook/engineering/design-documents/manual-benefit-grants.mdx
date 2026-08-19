@@ -111,22 +111,16 @@ That is work to do before adding them rather than a reason they can't be added.
 
 ## Lifecycle
 
-### Identity, and two indexes
+### Identity
 
-**`ix_benefit_grants_scope_unique`** gains `manual_grant_id`, keeping the invariant "one grant per
-customer + benefit + member + owner". Every pre-existing row has `manual_grant_id IS NULL`, so
-under `NULLS NOT DISTINCT` the collision set for subscription and order grants is unchanged.
+Two rules, both enforced by the database rather than the service, because a create-time check
+races with a concurrent request. The existing scope unique index gains `manual_grant_id`, so a
+manual grant and a purchase grant for the same benefit are separate rows. A new partial unique
+index allows at most one active manual grant per customer and benefit, limited to unrevoked rows
+so revoke-then-regrant still works.
 
-**`ix_benefit_grants_active_manual_unique`** is new. It is a partial unique index on
-`(customer_id, benefit_id, member_id)` where `manual_grant_id IS NOT NULL AND revoked_at IS NULL`,
-enforcing at most one active manual grant per customer per benefit. The service checks for
-duplicates before creating, but that check races with a concurrent request, and the index is what
-makes the rule true. It is partial on `revoked_at IS NULL` so revoke-then-regrant still works,
-which is the common repair flow.
-
-Both index changes build `CONCURRENTLY` in an autocommit block, because `benefit_grants` is a
-large hot table and cannot be locked. The scope index is rebuilt under a temporary name and then
-renamed, so a unique index is enforcing at every moment of the swap. See ADR-0006.
+Both are built concurrently, since `benefit_grants` is too large and too hot to lock. See
+ADR-0006.
 
 ### Granting
 

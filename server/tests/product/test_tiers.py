@@ -249,6 +249,17 @@ class TestSeatTiersToTiers:
                 }
             )
 
+    def test_fractional_price_per_seat_raises(self) -> None:
+        with pytest.raises(ValueError, match="whole cents"):
+            seat_tiers_to_tiers(
+                {
+                    "seat_tier_type": SeatTierType.volume,
+                    "tiers": [
+                        {"min_seats": 1, "max_seats": None, "price_per_seat": 500.5},
+                    ],
+                }
+            )
+
 
 class TestSeatTiersUnitBounds:
     def test_first_min_and_last_max(self) -> None:
@@ -331,6 +342,57 @@ class TestTiersToSeatTiers:
         result = tiers_to_seat_tiers(shared, minimum_units=1, maximum_units=40)
         assert result["tiers"][-1]["max_seats"] == 40
         assert result["tiers"][0]["max_seats"] == 10
+
+    def test_omits_tiers_below_minimum_units(self) -> None:
+        shared = _tiers_data(
+            TierType.graduated,
+            [
+                {"bound": 10, "unit_amount": "1000"},
+                {"bound": 50, "unit_amount": "800"},
+                {"bound": None, "unit_amount": "600"},
+            ],
+        )
+        result = tiers_to_seat_tiers(shared, minimum_units=15, maximum_units=None)
+        assert result["tiers"] == [
+            {"min_seats": 15, "max_seats": 50, "price_per_seat": 800},
+            {"min_seats": 51, "max_seats": None, "price_per_seat": 600},
+        ]
+
+    def test_omits_tiers_above_maximum_units(self) -> None:
+        shared = _tiers_data(
+            TierType.graduated,
+            [
+                {"bound": 10, "unit_amount": "1000"},
+                {"bound": 50, "unit_amount": "800"},
+                {"bound": None, "unit_amount": "600"},
+            ],
+        )
+        result = tiers_to_seat_tiers(shared, minimum_units=1, maximum_units=40)
+        assert result["tiers"] == [
+            {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
+            {"min_seats": 11, "max_seats": 40, "price_per_seat": 800},
+        ]
+
+    def test_clips_single_tier_to_purchasable_bounds(self) -> None:
+        shared = _tiers_data(
+            TierType.volume,
+            [
+                {"bound": 10, "unit_amount": "1000"},
+                {"bound": 50, "unit_amount": "800"},
+            ],
+        )
+        result = tiers_to_seat_tiers(shared, minimum_units=15, maximum_units=40)
+        assert result["tiers"] == [
+            {"min_seats": 15, "max_seats": 40, "price_per_seat": 800},
+        ]
+
+    def test_fractional_unit_amount_raises(self) -> None:
+        shared = _tiers_data(
+            TierType.volume,
+            [{"bound": None, "unit_amount": "500.5"}],
+        )
+        with pytest.raises(ValueError, match="whole cents"):
+            tiers_to_seat_tiers(shared)
 
     @pytest.mark.parametrize(
         "seat_tiers",

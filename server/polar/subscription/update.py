@@ -17,7 +17,7 @@ from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.product_price import (
     ProductPriceFixed,
     ProductPriceSeatUnit,
-    ProductPriceUnitBased,
+    ProductPriceUnit,
 )
 from polar.product.guard import (
     is_fixed_price,
@@ -232,7 +232,7 @@ def _generate_product_subscription_update(
 def _generate_quantity_subscription_update(
     subscription_update: SubscriptionUpdate,
     *,
-    price: ProductPriceSeatUnit | ProductPriceUnitBased,
+    price: ProductPriceSeatUnit | ProductPriceUnit,
     old_quantity: int,
     new_quantity: int,
     increase_type: BillingEntryType,
@@ -374,7 +374,7 @@ def _generate_units_subscription_update(
     new_units = subscription_update.units
     assert new_units is not None
 
-    unit_price = subscription.get_price_by_type(ProductPriceUnitBased)
+    unit_price = subscription.get_price_by_type(ProductPriceUnit)
     assert unit_price is not None
 
     return _generate_quantity_subscription_update(

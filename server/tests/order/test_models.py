@@ -2,7 +2,7 @@ from polar.models import OrderItem, Product
 from polar.models.product_price import (
     ProductPriceFixed,
     ProductPriceSeatUnit,
-    ProductPriceUnitBased,
+    ProductPriceUnit,
 )
 
 
@@ -39,7 +39,7 @@ class TestFormatPriceLabel:
         product = Product(name="Acme Pro")
         assert (
             OrderItem.format_price_label(
-                product, ProductPriceUnitBased(), seats=None, units=3
+                product, ProductPriceUnit(), seats=None, units=3
             )
             == "Acme Pro (3 units)"
         )
@@ -48,14 +48,14 @@ class TestFormatPriceLabel:
         product = Product(name="Acme Pro")
         assert (
             OrderItem.format_price_label(
-                product, ProductPriceUnitBased(), seats=None, units=1
+                product, ProductPriceUnit(), seats=None, units=1
             )
             == "Acme Pro (1 unit)"
         )
 
     def test_unit_custom_label(self) -> None:
         product = Product(name="Acme Pro")
-        price = ProductPriceUnitBased(unit_label="device", unit_label_plural="devices")
+        price = ProductPriceUnit(unit_label="device", unit_label_plural="devices")
         assert (
             OrderItem.format_price_label(product, price, seats=None, units=3)
             == "Acme Pro (3 devices)"

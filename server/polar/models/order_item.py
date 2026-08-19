@@ -15,7 +15,7 @@ from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceSeatUnit,
-    ProductPriceUnitBased,
+    ProductPriceUnit,
 )
 
 if TYPE_CHECKING:
@@ -76,7 +76,7 @@ class OrderItem(RecordModel):
         """
         if isinstance(price, ProductPriceSeatUnit) and seats is not None:
             return f"{product.name} ({seats} seat{'' if seats == 1 else 's'})"
-        if isinstance(price, ProductPriceUnitBased) and units is not None:
+        if isinstance(price, ProductPriceUnit) and units is not None:
             return f"{product.name} ({units} {price.get_unit_noun(units)})"
         return product.name
 
@@ -97,7 +97,7 @@ class OrderItem(RecordModel):
         elif isinstance(price, ProductPriceSeatUnit):
             assert seats is not None, "seats must be provided for seat-based prices"
             amount = price.calculate_amount(seats)
-        elif isinstance(price, ProductPriceUnitBased):
+        elif isinstance(price, ProductPriceUnit):
             assert units is not None, "units must be provided for unit-based prices"
             amount = price.calculate_amount(units)
         return cls(

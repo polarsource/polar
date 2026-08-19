@@ -93,7 +93,7 @@ from polar.models.product_price import (
     ProductPrice,
     ProductPriceFixed,
     ProductPriceSeatUnit,
-    ProductPriceUnitBased,
+    ProductPriceUnit,
 )
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -1705,7 +1705,7 @@ class SubscriptionService:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
-        unit_price = subscription.get_price_by_type(ProductPriceUnitBased)
+        unit_price = subscription.get_price_by_type(ProductPriceUnit)
         if unit_price is None:
             raise NotAUnitBasedSubscription(subscription)
 

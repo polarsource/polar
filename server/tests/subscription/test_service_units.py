@@ -11,7 +11,7 @@ from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, Product
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.product_price import ProductPriceUnitBased
+from polar.models.product_price import ProductPriceUnit
 from polar.postgres import AsyncSession
 from polar.product.tiers import Tiers, TierType
 from polar.subscription.service import (
@@ -60,7 +60,7 @@ class TestUpdateUnits:
             save_fixture, organization=organization, price_per_unit=2900
         )
         unit_price = product.prices[0]
-        assert isinstance(unit_price, ProductPriceUnitBased)
+        assert isinstance(unit_price, ProductPriceUnit)
 
         with freezegun.freeze_time(datetime(2024, 1, 1, tzinfo=UTC)) as frozen_time:
             subscription = await create_subscription_with_units(

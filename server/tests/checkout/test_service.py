@@ -85,7 +85,7 @@ from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceSeatUnit,
-    ProductPriceUnitBased,
+    ProductPriceUnit,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
@@ -7467,7 +7467,7 @@ class TestCreateUnitBasedCheckout:
         product_unit_based: Product,
     ) -> None:
         price = product_unit_based.prices[0]
-        assert isinstance(price, ProductPriceUnitBased)
+        assert isinstance(price, ProductPriceUnit)
 
         checkout = await checkout_service.create(
             session,
@@ -7609,7 +7609,7 @@ class TestCreateUnitBasedCheckout:
         product_unit_based: Product,
     ) -> None:
         price = product_unit_based.prices[0]
-        assert isinstance(price, ProductPriceUnitBased)
+        assert isinstance(price, ProductPriceUnit)
 
         checkout = await checkout_service.create(
             session,

@@ -56,10 +56,13 @@ from polar.models.organization import (
     STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
+    OrganizationCustomerPortalSettings,
     OrganizationDetails,
     OrganizationDisputeSettings,
     OrganizationStatus,
+    OrganizationSubscriptionSettings,
     SnoozeType,
+    resolve_default_customer_email_settings,
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
@@ -550,7 +553,7 @@ class OrganizationService:
 
         if update_schema.subscription_settings is not None:
             if (
-                update_schema.subscription_settings.get("proration_behavior")
+                update_schema.subscription_settings.proration_behavior
                 == SubscriptionProrationBehavior.reset
                 and not organization.feature_settings.get(
                     "reset_proration_behavior_enabled"
@@ -566,13 +569,48 @@ class OrganizationService:
                                 "proration_behavior",
                             ),
                             "msg": "The 'reset' proration behavior is not enabled for this organization.",
-                            "input": update_schema.subscription_settings[
-                                "proration_behavior"
-                            ],
+                            "input": update_schema.subscription_settings.proration_behavior,
                         }
                     ]
                 )
-            organization.subscription_settings = update_schema.subscription_settings
+            organization.subscription_settings = cast(
+                OrganizationSubscriptionSettings,
+                {
+                    **organization.subscription_settings,
+                    **update_schema.subscription_settings.model_dump(
+                        mode="json", exclude_unset=True, exclude_none=True
+                    ),
+                },
+            )
+
+        if update_schema.customer_email_settings is not None:
+            merged_email_settings = {
+                **organization.customer_email_settings,
+                **update_schema.customer_email_settings.model_dump(
+                    mode="json", exclude_unset=True, exclude_none=True
+                ),
+            }
+            # Resolve defaults after merging so a legacy organization that lacks
+            # `payment_method_expiration_reminder` derives its fallback from the
+            # `subscription_cycled` value set in this same request, not the old one.
+            organization.customer_email_settings = (
+                resolve_default_customer_email_settings(merged_email_settings)
+            )
+
+        if update_schema.customer_portal_settings is not None:
+            portal_update = update_schema.customer_portal_settings.model_dump(
+                mode="json", exclude_unset=True, exclude_none=True
+            )
+            merged_portal_settings = {**organization.customer_portal_settings}
+            for key, value in portal_update.items():
+                existing = merged_portal_settings.get(key)
+                if isinstance(value, dict) and isinstance(existing, dict):
+                    merged_portal_settings[key] = {**existing, **value}
+                else:
+                    merged_portal_settings[key] = value
+            organization.customer_portal_settings = cast(
+                OrganizationCustomerPortalSettings, merged_portal_settings
+            )
 
         if update_schema.dispute_settings is not None:
             if (
@@ -606,6 +644,8 @@ class OrganizationService:
                 "profile_settings",
                 "feature_settings",
                 "subscription_settings",
+                "customer_email_settings",
+                "customer_portal_settings",
                 "dispute_settings",
                 "details",
             },

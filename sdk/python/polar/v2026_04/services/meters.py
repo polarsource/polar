@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -37,6 +42,7 @@ class MetersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceMeter:
         """
         List meters.
@@ -51,6 +57,8 @@ class MetersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -71,6 +79,7 @@ class MetersSync(SyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -88,6 +97,7 @@ class MetersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[Meter, None, None]:
         """
         List meters.
@@ -102,6 +112,8 @@ class MetersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type Meter.
@@ -121,6 +133,7 @@ class MetersSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -129,6 +142,8 @@ class MetersSync(SyncServiceBase):
 
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MeterCreate],
     ) -> Meter:
         """
@@ -137,6 +152,8 @@ class MetersSync(SyncServiceBase):
         **Scopes**: `meters:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -150,6 +167,7 @@ class MetersSync(SyncServiceBase):
             url="/v1/meters/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -161,6 +179,8 @@ class MetersSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Meter:
         """
         Get a meter by ID.
@@ -169,6 +189,8 @@ class MetersSync(SyncServiceBase):
 
         Args:
             id: The meter ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Meter not found.
@@ -184,6 +206,7 @@ class MetersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -195,6 +218,8 @@ class MetersSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MeterUpdate],
     ) -> Meter:
         """
@@ -204,6 +229,8 @@ class MetersSync(SyncServiceBase):
 
         Args:
             id: The meter ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -220,6 +247,7 @@ class MetersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -241,6 +269,7 @@ class MetersSync(SyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         customer_aggregation_function: AggregationFunction | None = None,
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> MeterQuantities:
         """
         Get quantities of a meter over a time period.
@@ -257,6 +286,8 @@ class MetersSync(SyncServiceBase):
             external_customer_id: Filter by external customer ID.
             customer_aggregation_function: If set, will first compute the quantities per customer before aggregating them using the given function. If not set, the quantities will be aggregated across all events.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Meter not found.
@@ -281,6 +312,7 @@ class MetersSync(SyncServiceBase):
                 "customer_aggregation_function": customer_aggregation_function,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -301,6 +333,7 @@ class MetersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceMeter:
         """
         List meters.
@@ -315,6 +348,8 @@ class MetersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -335,6 +370,7 @@ class MetersAsync(AsyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -352,6 +388,7 @@ class MetersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[Meter, None]:
         """
         List meters.
@@ -366,6 +403,8 @@ class MetersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type Meter.
@@ -385,6 +424,7 @@ class MetersAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -394,6 +434,8 @@ class MetersAsync(AsyncServiceBase):
 
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MeterCreate],
     ) -> Meter:
         """
@@ -402,6 +444,8 @@ class MetersAsync(AsyncServiceBase):
         **Scopes**: `meters:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -415,6 +459,7 @@ class MetersAsync(AsyncServiceBase):
             url="/v1/meters/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -426,6 +471,8 @@ class MetersAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Meter:
         """
         Get a meter by ID.
@@ -434,6 +481,8 @@ class MetersAsync(AsyncServiceBase):
 
         Args:
             id: The meter ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Meter not found.
@@ -449,6 +498,7 @@ class MetersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -460,6 +510,8 @@ class MetersAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MeterUpdate],
     ) -> Meter:
         """
@@ -469,6 +521,8 @@ class MetersAsync(AsyncServiceBase):
 
         Args:
             id: The meter ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -485,6 +539,7 @@ class MetersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -506,6 +561,7 @@ class MetersAsync(AsyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         customer_aggregation_function: AggregationFunction | None = None,
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> MeterQuantities:
         """
         Get quantities of a meter over a time period.
@@ -522,6 +578,8 @@ class MetersAsync(AsyncServiceBase):
             external_customer_id: Filter by external customer ID.
             customer_aggregation_function: If set, will first compute the quantities per customer before aggregating them using the given function. If not set, the quantities will be aggregated across all events.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Meter not found.
@@ -546,6 +604,7 @@ class MetersAsync(AsyncServiceBase):
                 "customer_aggregation_function": customer_aggregation_function,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {

@@ -4,6 +4,7 @@ import typing
 
 from polar.base import (
     AsyncServiceBase,
+    RequestTimeout,
     SyncServiceBase,
     parse_response_json,
     parse_response_none,
@@ -27,6 +28,8 @@ class MembersSync(SyncServiceBase):
     def create(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MemberCreateFromCustomer],
     ) -> Member:
         """
@@ -39,6 +42,8 @@ class MembersSync(SyncServiceBase):
 
         Args:
             id: The customer ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -56,6 +61,7 @@ class MembersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -69,6 +75,8 @@ class MembersSync(SyncServiceBase):
     def create_external(
         self,
         external_id_path: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MemberCreateFromCustomer],
     ) -> Member:
         """
@@ -78,6 +86,8 @@ class MembersSync(SyncServiceBase):
 
         Args:
             external_id_path: The customer external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -96,6 +106,7 @@ class MembersSync(SyncServiceBase):
                 "external_id": external_id_path,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -111,6 +122,8 @@ class MembersSync(SyncServiceBase):
         self,
         id: str,
         member_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Member:
         """
         Get a member of a customer by its ID.
@@ -120,6 +133,8 @@ class MembersSync(SyncServiceBase):
         Args:
             id: The customer ID.
             member_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Member not found.
@@ -136,6 +151,7 @@ class MembersSync(SyncServiceBase):
                 "member_id": member_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -148,6 +164,8 @@ class MembersSync(SyncServiceBase):
         self,
         id: str,
         member_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a member of a customer.
@@ -157,6 +175,8 @@ class MembersSync(SyncServiceBase):
         Args:
             id: The customer ID.
             member_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Member not found.
@@ -173,6 +193,7 @@ class MembersSync(SyncServiceBase):
                 "member_id": member_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -185,6 +206,8 @@ class MembersSync(SyncServiceBase):
         self,
         id: str,
         member_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MemberUpdate],
     ) -> Member:
         """
@@ -197,6 +220,8 @@ class MembersSync(SyncServiceBase):
         Args:
             id: The customer ID.
             member_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -214,6 +239,7 @@ class MembersSync(SyncServiceBase):
                 "member_id": member_id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -227,6 +253,8 @@ class MembersSync(SyncServiceBase):
         self,
         external_id: str,
         member_external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Member:
         """
         Get a member by external ID for a customer identified by its external ID.
@@ -236,6 +264,8 @@ class MembersSync(SyncServiceBase):
         Args:
             external_id: The customer external ID.
             member_external_id: The member external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Member not found.
@@ -253,6 +283,7 @@ class MembersSync(SyncServiceBase):
                 "member_external_id": member_external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -266,6 +297,8 @@ class MembersSync(SyncServiceBase):
         self,
         external_id: str,
         member_external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a member by external ID for a customer identified by its external ID.
@@ -275,6 +308,8 @@ class MembersSync(SyncServiceBase):
         Args:
             external_id: The customer external ID.
             member_external_id: The member external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Member not found.
@@ -292,6 +327,7 @@ class MembersSync(SyncServiceBase):
                 "member_external_id": member_external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -305,6 +341,8 @@ class MembersSync(SyncServiceBase):
         self,
         external_id: str,
         member_external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MemberUpdate],
     ) -> Member:
         """
@@ -315,6 +353,8 @@ class MembersSync(SyncServiceBase):
         Args:
             external_id: The customer external ID.
             member_external_id: The member external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -333,6 +373,7 @@ class MembersSync(SyncServiceBase):
                 "member_external_id": member_external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -348,6 +389,8 @@ class MembersAsync(AsyncServiceBase):
     async def create(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MemberCreateFromCustomer],
     ) -> Member:
         """
@@ -360,6 +403,8 @@ class MembersAsync(AsyncServiceBase):
 
         Args:
             id: The customer ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -377,6 +422,7 @@ class MembersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -390,6 +436,8 @@ class MembersAsync(AsyncServiceBase):
     async def create_external(
         self,
         external_id_path: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MemberCreateFromCustomer],
     ) -> Member:
         """
@@ -399,6 +447,8 @@ class MembersAsync(AsyncServiceBase):
 
         Args:
             external_id_path: The customer external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -417,6 +467,7 @@ class MembersAsync(AsyncServiceBase):
                 "external_id": external_id_path,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -432,6 +483,8 @@ class MembersAsync(AsyncServiceBase):
         self,
         id: str,
         member_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Member:
         """
         Get a member of a customer by its ID.
@@ -441,6 +494,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             id: The customer ID.
             member_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Member not found.
@@ -457,6 +512,7 @@ class MembersAsync(AsyncServiceBase):
                 "member_id": member_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -469,6 +525,8 @@ class MembersAsync(AsyncServiceBase):
         self,
         id: str,
         member_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a member of a customer.
@@ -478,6 +536,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             id: The customer ID.
             member_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Member not found.
@@ -494,6 +554,7 @@ class MembersAsync(AsyncServiceBase):
                 "member_id": member_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -506,6 +567,8 @@ class MembersAsync(AsyncServiceBase):
         self,
         id: str,
         member_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MemberUpdate],
     ) -> Member:
         """
@@ -518,6 +581,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             id: The customer ID.
             member_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -535,6 +600,7 @@ class MembersAsync(AsyncServiceBase):
                 "member_id": member_id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -548,6 +614,8 @@ class MembersAsync(AsyncServiceBase):
         self,
         external_id: str,
         member_external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Member:
         """
         Get a member by external ID for a customer identified by its external ID.
@@ -557,6 +625,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             external_id: The customer external ID.
             member_external_id: The member external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Member not found.
@@ -574,6 +644,7 @@ class MembersAsync(AsyncServiceBase):
                 "member_external_id": member_external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -587,6 +658,8 @@ class MembersAsync(AsyncServiceBase):
         self,
         external_id: str,
         member_external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a member by external ID for a customer identified by its external ID.
@@ -596,6 +669,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             external_id: The customer external ID.
             member_external_id: The member external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Member not found.
@@ -613,6 +688,7 @@ class MembersAsync(AsyncServiceBase):
                 "member_external_id": member_external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -626,6 +702,8 @@ class MembersAsync(AsyncServiceBase):
         self,
         external_id: str,
         member_external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[MemberUpdate],
     ) -> Member:
         """
@@ -636,6 +714,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             external_id: The customer external ID.
             member_external_id: The member external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -654,6 +734,7 @@ class MembersAsync(AsyncServiceBase):
                 "member_external_id": member_external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

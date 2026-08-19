@@ -5,6 +5,7 @@ import typing
 
 from polar.base import (
     AsyncServiceBase,
+    RequestTimeout,
     SyncServiceBase,
     parse_response_json,
     parse_response_none,
@@ -45,6 +46,7 @@ class CustomFieldsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomField:
         """
         List custom fields.
@@ -58,6 +60,8 @@ class CustomFieldsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -77,6 +81,7 @@ class CustomFieldsSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -93,6 +98,7 @@ class CustomFieldsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[CustomField, None, None]:
         """
         List custom fields.
@@ -106,6 +112,8 @@ class CustomFieldsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type CustomField.
@@ -124,6 +132,7 @@ class CustomFieldsSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -133,35 +142,47 @@ class CustomFieldsSync(SyncServiceBase):
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateText],
     ) -> CustomField: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateNumber],
     ) -> CustomField: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateDate],
     ) -> CustomField: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateCheckbox],
     ) -> CustomField: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateSelect],
     ) -> CustomField: ...
 
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> CustomField:
         """
@@ -170,6 +191,8 @@ class CustomFieldsSync(SyncServiceBase):
         **Scopes**: `custom_fields:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -183,6 +206,7 @@ class CustomFieldsSync(SyncServiceBase):
             url="/v1/custom-fields/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -194,6 +218,8 @@ class CustomFieldsSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomField:
         """
         Get a custom field by ID.
@@ -202,6 +228,8 @@ class CustomFieldsSync(SyncServiceBase):
 
         Args:
             id: The custom field ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Custom field not found.
@@ -217,6 +245,7 @@ class CustomFieldsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -228,6 +257,8 @@ class CustomFieldsSync(SyncServiceBase):
     def delete(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a custom field.
@@ -236,6 +267,8 @@ class CustomFieldsSync(SyncServiceBase):
 
         Args:
             id: The custom field ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Custom field not found.
@@ -251,6 +284,7 @@ class CustomFieldsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -263,6 +297,8 @@ class CustomFieldsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateText],
     ) -> CustomField: ...
 
@@ -270,6 +306,8 @@ class CustomFieldsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateNumber],
     ) -> CustomField: ...
 
@@ -277,6 +315,8 @@ class CustomFieldsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateDate],
     ) -> CustomField: ...
 
@@ -284,6 +324,8 @@ class CustomFieldsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateCheckbox],
     ) -> CustomField: ...
 
@@ -291,12 +333,16 @@ class CustomFieldsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateSelect],
     ) -> CustomField: ...
 
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> CustomField:
         """
@@ -306,6 +352,8 @@ class CustomFieldsSync(SyncServiceBase):
 
         Args:
             id: The custom field ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -322,6 +370,7 @@ class CustomFieldsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -342,6 +391,7 @@ class CustomFieldsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomField:
         """
         List custom fields.
@@ -355,6 +405,8 @@ class CustomFieldsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -374,6 +426,7 @@ class CustomFieldsAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -390,6 +443,7 @@ class CustomFieldsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[CustomField, None]:
         """
         List custom fields.
@@ -403,6 +457,8 @@ class CustomFieldsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type CustomField.
@@ -421,6 +477,7 @@ class CustomFieldsAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -431,35 +488,47 @@ class CustomFieldsAsync(AsyncServiceBase):
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateText],
     ) -> CustomField: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateNumber],
     ) -> CustomField: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateDate],
     ) -> CustomField: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateCheckbox],
     ) -> CustomField: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldCreateSelect],
     ) -> CustomField: ...
 
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> CustomField:
         """
@@ -468,6 +537,8 @@ class CustomFieldsAsync(AsyncServiceBase):
         **Scopes**: `custom_fields:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -481,6 +552,7 @@ class CustomFieldsAsync(AsyncServiceBase):
             url="/v1/custom-fields/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -492,6 +564,8 @@ class CustomFieldsAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomField:
         """
         Get a custom field by ID.
@@ -500,6 +574,8 @@ class CustomFieldsAsync(AsyncServiceBase):
 
         Args:
             id: The custom field ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Custom field not found.
@@ -515,6 +591,7 @@ class CustomFieldsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -526,6 +603,8 @@ class CustomFieldsAsync(AsyncServiceBase):
     async def delete(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a custom field.
@@ -534,6 +613,8 @@ class CustomFieldsAsync(AsyncServiceBase):
 
         Args:
             id: The custom field ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Custom field not found.
@@ -549,6 +630,7 @@ class CustomFieldsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -561,6 +643,8 @@ class CustomFieldsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateText],
     ) -> CustomField: ...
 
@@ -568,6 +652,8 @@ class CustomFieldsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateNumber],
     ) -> CustomField: ...
 
@@ -575,6 +661,8 @@ class CustomFieldsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateDate],
     ) -> CustomField: ...
 
@@ -582,6 +670,8 @@ class CustomFieldsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateCheckbox],
     ) -> CustomField: ...
 
@@ -589,12 +679,16 @@ class CustomFieldsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomFieldUpdateSelect],
     ) -> CustomField: ...
 
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> CustomField:
         """
@@ -604,6 +698,8 @@ class CustomFieldsAsync(AsyncServiceBase):
 
         Args:
             id: The custom field ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -620,6 +716,7 @@ class CustomFieldsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

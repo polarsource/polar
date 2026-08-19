@@ -1,13 +1,14 @@
 'use client'
 
-import { ColumnDef } from '@tanstack/react-table'
+import { RowData } from '@tanstack/react-table'
 import { twMerge } from 'tailwind-merge'
 import { Checkbox } from '../Checkbox'
+import { DataTableColumnDef } from './features'
 
 export const SELECTION_COLUMN_ID = 'select'
 export const SELECTION_COLUMN_WIDTH = 36
 
-export interface DataTableSelection<TData> {
+export interface DataTableSelection<TData extends RowData> {
   count: number
   pageSelectedCount: number
   pageSize: number
@@ -22,9 +23,9 @@ const selectionRevealClassName = (alwaysVisible: boolean) =>
     alwaysVisible && 'opacity-100',
   )
 
-export const createSelectionColumn = <TData,>(
+export const createSelectionColumn = <TData extends RowData>(
   selection: DataTableSelection<TData>,
-): ColumnDef<TData, unknown> => ({
+): DataTableColumnDef<TData, unknown> => ({
   id: SELECTION_COLUMN_ID,
   size: SELECTION_COLUMN_WIDTH,
   enableSorting: false,

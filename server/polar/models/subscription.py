@@ -572,17 +572,22 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         ):
             return False
 
-        now = utc_now()
-        if self.current_period_end <= now:
-            new_period_end = self.recurring_interval.get_next_period(
-                self.current_period_end,
-                self.anchor_day,
-                self.recurring_interval_count,
-            )
-            if new_period_end <= now:
-                return False
+        return not self.is_period_lapsed()
 
-        return True
+    def is_period_lapsed(self, period_end: datetime | None = None) -> bool:
+        """More than one renewal has gone by unbilled.
+
+        The scheduler catches a subscription up one period at a time, so past
+        this point it would issue an order per period nobody billed.
+        """
+        end = period_end if period_end is not None else self.current_period_end
+        now = utc_now()
+        if end > now:
+            return False
+        next_end = self.recurring_interval.get_next_period(
+            end, self.anchor_day, self.recurring_interval_count
+        )
+        return next_end <= now
 
     def update_amount_and_currency(
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"

@@ -208,6 +208,7 @@ def _stripe_subscription(
     status: str = "active",
     cancel_at_period_end: bool = False,
     trial_end: int | None = None,
+    billing_cycle_anchor: int | None = 1_700_000_000,
     cancellation_comment: str | None = None,
     items: list[dict[str, Any]] | None = None,
     payment_method: dict[str, Any] | None = None,
@@ -221,6 +222,7 @@ def _stripe_subscription(
             "cancel_at_period_end": cancel_at_period_end,
             "pause_collection": None,
             "trial_end": trial_end,
+            "billing_cycle_anchor": billing_cycle_anchor,
             "default_payment_method": payment_method,
             "discounts": [],
             "cancellation_details": (

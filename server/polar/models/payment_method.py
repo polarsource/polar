@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -11,6 +12,11 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from .customer import Customer
+
+
+def card_expiration(year: int, month: int) -> datetime:
+    """Cards stay valid through the end of their expiration month."""
+    return datetime(year + month // 12, month % 12 + 1, 1, tzinfo=UTC)
 
 
 class PaymentMethod(RecordModel):
@@ -45,3 +51,14 @@ class PaymentMethod(RecordModel):
     @property
     def fingerprint(self) -> str | None:
         return self.method_metadata.get("fingerprint")
+
+    @property
+    def expires_at(self) -> datetime | None:
+        """None for a method that carries no expiry, such as a bank debit."""
+        year, month = (
+            self.method_metadata.get("exp_year"),
+            self.method_metadata.get("exp_month"),
+        )
+        if year is None or month is None:
+            return None
+        return card_expiration(year, month)

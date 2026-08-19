@@ -687,16 +687,22 @@ class SubscriptionService:
         customer: Customer,
         current_period_start: datetime | None,
         current_period_end: datetime | None,
+        anchor_day: int | None = None,
         user_metadata: dict[str, Any],
     ) -> Subscription:
         """Create a subscription migrated from another provider. It starts paused
-        so nothing bills until the merchant cuts over, and grants no benefits."""
+        so nothing bills until the merchant cuts over, and grants no benefits.
+
+        Without an ``anchor_day`` we fall back to the period start, which reads
+        as 28 for a 31st anchor caught during a February period.
+        """
         assert product.recurring_interval is not None
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count or 1
         start = current_period_start or utc_now()
+        anchor = anchor_day or start.day
         next_period = recurring_interval.get_next_period(
-            start, start.day, recurring_interval_count
+            start, anchor, recurring_interval_count
         )
         # A source end that predates the start would invert the period, which
         # would then feed the renewal maths at cutover.
@@ -710,7 +716,7 @@ class SubscriptionService:
             status=SubscriptionStatus.paused,
             paused_at=utc_now(),
             started_at=start,
-            anchor_day=start.day,
+            anchor_day=anchor,
             current_period_start=start,
             current_period_end=end,
             cancel_at_period_end=False,
@@ -730,6 +736,62 @@ class SubscriptionService:
 
         repository = SubscriptionRepository.from_session(session)
         return await repository.create(subscription, flush=True)
+
+    async def activate_imported(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        current_period_start: datetime,
+        current_period_end: datetime,
+        trial_end: datetime | None,
+        anchor_day: int | None = None,
+        payment_method: PaymentMethod,
+    ) -> Subscription:
+        """Hand billing of an imported subscription over to Polar (the cutover).
+
+        Unlike ``resume``, this starts no fresh period and charges nothing: the
+        customer already paid the old provider through ``current_period_end``. It
+        skips the resumed side effects too, since nothing paused for them.
+        """
+        assert subscription.status == SubscriptionStatus.paused
+
+        subscription.status = (
+            SubscriptionStatus.trialing if trial_end else SubscriptionStatus.active
+        )
+        subscription.paused_at = None
+        subscription.resumes_at = None
+        subscription.scheduler_locked_at = None
+        subscription.trial_start = current_period_start if trial_end else None
+        subscription.trial_end = trial_end
+        subscription.current_period_start = current_period_start
+        # Re-read from the source, so a subscription imported before we asked for
+        # the anchor is corrected on the way through.
+        if anchor_day is not None:
+            subscription.anchor_day = anchor_day
+        # The scheduler converts a trial at `current_period_end`, so while
+        # trialing the two have to agree or the customer is billed late.
+        subscription.current_period_end = trial_end or current_period_end
+        subscription.payment_method = payment_method
+        subscription.initialize_meter_period(
+            None if trial_end else current_period_start
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        # Flushed so the returned subscription carries `payment_method_id`, which
+        # the cutover records, and not just the relationship.
+        subscription = await repository.update(subscription, flush=True)
+
+        await self.enqueue_benefits_grants(session, subscription)
+        await self._on_subscription_updated(session, subscription)
+        enqueue_job("customer.state_changed", subscription.customer_id)
+
+        log.info(
+            "subscription.imported_activated",
+            id=subscription.id,
+            current_period_end=subscription.current_period_end,
+        )
+        return subscription
 
     async def create_or_update_from_checkout(
         self,

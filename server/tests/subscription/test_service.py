@@ -3821,6 +3821,116 @@ class TestResume:
         assert cycle_entries[0].discount is None
 
 
+@pytest.mark.asyncio
+class TestActivateImported:
+    async def test_takes_over_the_cycle_without_charging(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """The customer already paid the old provider for this period."""
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = frozen_time - timedelta(days=10)
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+        period_start = frozen_time - timedelta(days=10)
+        period_end = frozen_time + timedelta(days=20)
+
+        updated = await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=period_start,
+            current_period_end=period_end,
+            trial_end=None,
+            payment_method=payment_method,
+        )
+
+        assert updated.status == SubscriptionStatus.active
+        assert updated.paused_at is None
+        assert updated.current_period_start == period_start
+        assert updated.current_period_end == period_end
+        assert updated.payment_method_id == payment_method.id
+        enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
+        # No order: they already paid for this period.
+        enqueued = [call.args[0] for call in enqueue_job_mock.call_args_list]
+        assert "order.create_subscription_order" not in enqueued
+
+    async def test_does_not_tell_the_customer_anything_resumed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """Nothing paused for them, so a resumed email is the first they'd hear
+        of a migration they shouldn't notice."""
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        reset_hooks(subscription_hooks)
+
+        await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=utc_now(),
+            current_period_end=utc_now() + timedelta(days=30),
+            trial_end=None,
+            payment_method=payment_method,
+        )
+
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
+    async def test_keeps_the_billing_anchor_the_import_captured(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """A month-end schedule reports a clamped period start."""
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.anchor_day = 31
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+
+        updated = await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=datetime(2026, 2, 28, tzinfo=UTC),
+            current_period_end=datetime(2026, 3, 31, tzinfo=UTC),
+            trial_end=None,
+            payment_method=payment_method,
+        )
+
+        assert updated.anchor_day == 31
+
+
 async def create_event_billing_entry(
     save_fixture: SaveFixture,
     *,

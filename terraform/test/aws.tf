@@ -115,7 +115,7 @@ locals {
     "high-priority"         = { timeout_seconds = 120 }
     "medium-priority"       = { timeout_seconds = 120 }
     "low-priority"          = { timeout_seconds = 660 }
-    "webhooks"              = { timeout_seconds = 120 }
+    "webhooks"              = { timeout_seconds = 120, max_retries = 250 } # Must stay above webhook_event.send's max_retries.
     "tinybird"              = { timeout_seconds = 120 }
     "invoices-and-receipts" = { timeout_seconds = 240 }
   }
@@ -150,6 +150,7 @@ module "lambda_worker_queue" {
   image_uri                = "${module.lambda_worker_ecr[0].repository_url}:latest"
   enabled                  = true
   timeout_seconds          = each.value.timeout_seconds
+  max_retries              = try(each.value.max_retries, null)
   tags                     = local.lambda_worker_tags
   subnet_ids               = local.lambda_subnet_ids
   security_group_ids       = local.lambda_security_group_ids

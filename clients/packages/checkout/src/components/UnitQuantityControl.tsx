@@ -1,7 +1,6 @@
 'use client'
 
 import { Button, Input } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
 import { type ChangeEvent, type KeyboardEvent, useState } from 'react'
 
 interface UnitQuantityControlProps {
@@ -100,13 +99,11 @@ export const UnitQuantityControl = ({
     : 'h-10 w-10 rounded-full disabled:opacity-40'
 
   return (
-    <Box
-      alignItems="center"
-      columnGap={compact ? 'none' : 'm'}
+    <div
       className={
         compact
-          ? 'dark:border-polar-700 rounded-lg border border-gray-200'
-          : undefined
+          ? 'dark:border-polar-700 flex items-center gap-0 rounded-lg border border-gray-200'
+          : 'flex items-center gap-3'
       }
     >
       <Button
@@ -168,6 +165,6 @@ export const UnitQuantityControl = ({
       >
         <QuantityIcon increment compact={compact} />
       </Button>
-    </Box>
+    </div>
   )
 }

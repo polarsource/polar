@@ -476,3 +476,37 @@ class TestUnitBasedPrice:
         price.unit_label = {"en": {"other": "seats"}}
         assert price.get_unit_noun(1) == "seats"
         assert price.get_unit_noun(2) == "seats"
+
+    def test_unit_noun_requested_locale(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {
+            "en": {"=1": "device", "other": "devices"},
+            "fr": {"=1": "appareil", "other": "appareils"},
+        }
+        assert price.get_unit_noun(1, "fr") == "appareil"
+        assert price.get_unit_noun(12, "fr") == "appareils"
+
+    def test_unit_noun_regional_locale_falls_back_to_language(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"fr": {"=1": "appareil", "other": "appareils"}}
+        assert price.get_unit_noun(2, "fr-CA") == "appareils"
+
+    def test_unit_noun_exact_locale_wins_over_language(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {
+            "en": {"=1": "seat", "other": "seats"},
+            "en-GB": {"=1": "place", "other": "places"},
+        }
+        assert price.get_unit_noun(1, "en-GB") == "place"
+        assert price.get_unit_noun(1, "en-US") == "seat"
+
+    def test_unit_noun_missing_locale_falls_back_to_english(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"en": {"=1": "device", "other": "devices"}}
+        assert price.get_unit_noun(1, "fr") == "device"
+
+    def test_unit_noun_non_english_only_label(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"fr": {"=1": "siège", "other": "sièges"}}
+        assert price.get_unit_noun(1) == "siège"
+        assert price.get_unit_noun(2, "de") == "sièges"

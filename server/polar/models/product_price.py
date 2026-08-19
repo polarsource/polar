@@ -445,10 +445,9 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
 class ProductPriceUnitBased(TieredPrice, NewProductPrice, ProductPrice):
     """A price for a quantity of units the buyer declares up-front.
 
-    Priced exactly like a seat price — the buyer pays for the declared
-    quantity immediately, and changes are prorated — but without seat
-    management: no invitations, no members, just a number on the
-    subscription. Reads tiers natively from the shared columns.
+    Priced exactly like a seat price, the buyer pays for the declared
+    quantity immediately, and changes are prorated but without seat
+    management. Reads tiers natively from the shared columns.
     """
 
     amount_type: Mapped[Literal[ProductPriceAmountType.unit_based]] = mapped_column(
@@ -469,7 +468,7 @@ class ProductPriceUnitBased(TieredPrice, NewProductPrice, ProductPrice):
 
     def calculate_amount(self, units: int) -> int:
         amount = self.get_tiered_amount(units)
-        # Unit rates are whole cents, so any fraction means corrupt data.
+        # Unit rates are the smallest currency unit, so any fraction means corrupt data.
         if amount != amount.to_integral_value():
             raise ValueError(f"Unit price produced non-integral amount {amount}")
         return int(amount)

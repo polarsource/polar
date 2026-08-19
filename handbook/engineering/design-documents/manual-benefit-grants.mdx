@@ -124,92 +124,47 @@ ADR-0006.
 
 ### Granting
 
-`POST /v1/benefit-grants/` takes a customer, benefit IDs, and optional `expires_at` and `reason`.
+Granting takes a customer, a set of benefits, and the optional expiry and reason. Validation is
+all-or-nothing. If any benefit in the request is invalid, nothing is created and the response
+lists every problem by position, because partial success would leave the merchant guessing which
+of their three benefits landed.
 
-1. Check the customer is readable by the caller's organization.
-2. Resolve the owner member. Manual grants are customer-level, so they call `resolve_member` with
-   `member_id=None, is_seat_based=False`, the same path a non-seat purchase takes. That keeps
-   grants consistent for orgs that have the member model enabled.
-3. Validate every benefit ID: exists, same organization as the customer, grantable type, not
-   duplicated in the request, not already manually granted and active.
-4. Create the `ManualGrant` and one pending `BenefitGrant` per benefit.
-5. Enqueue one `benefit.grant` job per grant, passing `manual_grant_id` as the scope arg.
-6. Return the created grants, pending, `201`.
-
-**Validation is all-or-nothing.** Any invalid benefit means nothing is created and the caller gets
-a `422` listing every problem, indexed by position in `benefit_ids`. Partial success would leave
-the merchant guessing which of their three benefits landed.
-
-**Grants are returned pending, not granted.** This is the same contract every other grant has, so
-manual grants get the same retries, `error` recording, and webhooks.
+The grants come back pending rather than granted. Applying a benefit can be slow and can fail, so
+it runs through the same worker path as every other grant, which means manual grants inherit the
+same retries, error recording and webhooks.
 
 ### Revoking
 
-`DELETE /v1/benefit-grants/{id}` targets a single grant. It refuses grants that came from a
-purchase with a `404`, because from the caller's point of view there is no manually-granted
-resource at that ID. It takes a row lock, returns early if already revoked, and otherwise enqueues
-`benefit.revoke`. Returns `202`.
+Revoking targets a single grant, and only a manual one. A grant that came from a purchase is not
+revocable this way, since a subscription's grants belong to the subscription.
 
-**Revocation is terminal for manual grants.** Once a manual grant's child is revoked, a racing
-`benefit.grant` job must not resurrect it. `grant_benefit` returns early when it finds an
-already-revoked manual-scoped grant instead of re-applying:
-
-```python
-elif grant.is_revoked and scope.get("manual_grant") is not None:
-    return grant
-```
-
-The same early return would be wrong for subscription and order grants, which are legitimately
-re-granted on renewal or reactivation. Manual grants have no renewal concept, so nothing would
-ever legitimately re-grant them.
-
-Grant and revoke jobs also take a `FOR UPDATE` row lock when the scope is a manual grant, so a
-concurrent grant and revoke serialize instead of interleaving.
+Revocation is terminal. Once a manual grant is revoked it stays revoked, even if a grant job for
+it is still in flight. Purchase grants behave the opposite way, because renewal and reactivation
+legitimately re-grant them, but a manual grant has no renewal, so anything that re-granted it
+would be a bug.
 
 ### Expiry
 
-**Decision: an APScheduler job store, not a periodic sweep.** Polar already schedules subscription
-state changes this way (`_SubscriptionScheduleJobStore`), so `ManualGrantExpiryJobStore` copies
-that shape. The scheduler asks the database what is due directly, instead of us maintaining a
-table of scheduled jobs. Nothing has to be kept in sync, because setting `expires_at` makes the
-row itself the schedule. A cron sweep would either poll constantly or expire grants late.
+An expiry is not a scheduled job, it is a column. The scheduler reads `expires_at` off the row to
+work out what is due, so there is no job table to keep in sync with the grants themselves and
+nothing to clean up when a grant is revoked early. Subscription state changes are already
+scheduled this way.
 
-When a grant comes due, the store dispatches it under an atomic claim:
-
-```sql
-UPDATE manual_grants
-   SET scheduler_locked_at = now()
- WHERE id = :id AND scheduler_locked_at IS NULL
-```
-
-Zero rows updated means another scheduler already claimed it, so only the winner sends the
-Dramatiq message.
-
-**The claim is never cleared.** Expiry is one-shot, so a locked row is a dispatched row and it
-permanently leaves the scheduling query. This is simpler than the subscription store, which has to
-re-arm. Retries after dispatch belong to the revoke jobs, which have their own retry semantics.
-Re-dispatching the parent would just enqueue duplicate revokes.
-
-The scheduling query is backed by a partial index on `expires_at` covering exactly the rows the
-scheduler cares about. Job-store failures are reported to Sentry before re-raising, because
-APScheduler otherwise swallows them into a warning and retries. A broken store would look like
-nothing happening at all.
-
-The expiry job does no revoking itself. It loads the manual grant and enqueues one
-`benefit.revoke` per still-active child, so one benefit failing to revoke doesn't block the others.
+Dispatch happens once per manual grant, claimed atomically so two schedulers can't both fire it.
+The expiry job then only enqueues revocations, one per benefit still active, rather than revoking
+anything itself. One benefit failing to revoke does not hold up the rest, and retries stay the
+revoke jobs' own business.
 
 ## What comes for free
 
 Because manual grants are ordinary `BenefitGrant` rows with a different owner:
 
-- **Renewal cycles skip them.** `enqueue_benefit_grant_cycles(subscription=...)` lists grants by
-  scope, so manual grants simply aren't in the query. No exclusion logic was needed, and a
-  regression test pins it.
-- **The customer portal shows them.** Its subscription, order and product joins are outer joins,
-  so a manual grant appears with no product attached rather than being filtered out. Benefit
-  visibility still applies, so a non-public benefit stays hidden.
-- **Webhooks and system events fire** from `grant_benefit` and `revoke_benefit`, so integrations
-  see manual grants with no changes.
+- **Renewal cycles skip them.** Cycling is driven by the subscription, so manual grants are not
+  in scope for it. No exclusion logic was needed, and a regression test pins it.
+- **The customer portal shows them**, with no product attached rather than being filtered out.
+  Benefit visibility still applies, so a non-public benefit stays hidden.
+- **Webhooks and system events fire** as they do for any other grant, so integrations see manual
+  grants with no changes.
 
 One thing had to be added: provenance on the read model. `BenefitGrant` gains a nullable
 `manual_grant` object (`id`, `reason`, `expires_at`), nested rather than a flat `manual_grant_id`,

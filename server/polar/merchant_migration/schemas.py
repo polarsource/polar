@@ -127,7 +127,6 @@ class MerchantMigrationRecordItem(Schema):
         )
     )
     cutover_status: MerchantMigrationCutoverStatus | None = Field(
-        default=None,
         description=(
             "What the switch did with this subscription: `moved` (Polar bills it "
             "now), `skipped` (left on the source, see `cutover_error`) or `failed` "
@@ -136,18 +135,15 @@ class MerchantMigrationRecordItem(Schema):
         ),
     )
     cutover_error: str | None = Field(
-        default=None,
         description="Why the switch skipped or failed this subscription.",
     )
     renews_at: datetime | None = Field(
-        default=None,
         description=(
             "When the subscription next renews on the source, as staged at import. "
             "Null for non-subscription rows or when the source reported none."
         ),
     )
     has_payment_method: bool | None = Field(
-        default=None,
         description=(
             "Whether the imported Polar subscription has a card to charge yet. "
             "Null for non-subscription rows or rows not imported."

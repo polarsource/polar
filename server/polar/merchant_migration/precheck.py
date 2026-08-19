@@ -670,6 +670,10 @@ def _item(
         reason=reason.message if reason else None,
         reason_code=reason.code if reason else None,
         reason_level=reason.level if reason else None,
+        cutover_status=None,
+        cutover_error=None,
+        renews_at=None,
+        has_payment_method=None,
     )
 
 

@@ -24333,24 +24333,24 @@ export interface components {
       /** @description How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason. */
       reason_level: components['schemas']['PrecheckReasonLevel'] | null
       /** @description What the switch did with this subscription: `moved` (Polar bills it now), `skipped` (left on the source, see `cutover_error`) or `failed` (retryable). Null when the switch hasn't reached it, and for every entity other than subscriptions. */
-      cutover_status?:
+      cutover_status:
         | components['schemas']['MerchantMigrationCutoverStatus']
         | null
       /**
        * Cutover Error
        * @description Why the switch skipped or failed this subscription.
        */
-      cutover_error?: string | null
+      cutover_error: string | null
       /**
        * Renews At
        * @description When the subscription next renews on the source, as staged at import. Null for non-subscription rows or when the source reported none.
        */
-      renews_at?: string | null
+      renews_at: string | null
       /**
        * Has Payment Method
        * @description Whether the imported Polar subscription has a card to charge yet. Null for non-subscription rows or rows not imported.
        */
-      has_payment_method?: boolean | null
+      has_payment_method: boolean | null
     }
     /**
      * MerchantMigrationRecordStatus

@@ -15,6 +15,7 @@ from polar.models.user import User
 class OrganizationRole(StrEnum):
     owner = "owner"
     admin = "admin"
+    finance = "finance"
     member = "member"
 
 

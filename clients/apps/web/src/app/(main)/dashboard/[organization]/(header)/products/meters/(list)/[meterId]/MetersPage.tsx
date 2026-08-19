@@ -4,8 +4,10 @@ import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayou
 import { MeterPage } from '@/components/Meter/MeterPage'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
+import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateMeter } from '@/hooks/queries/meters'
 import { apiErrorToast } from '@/utils/api/errors'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -38,8 +40,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
 
   const { toast } = useToast()
   const updateMeter = useUpdateMeter(meter.id)
+  const canManageProducts = useHasPermission(organization.id, 'products:manage')
 
   const handleArchiveMeter = useCallback(async () => {
+    if (!canManageProducts) {
+      toast({
+        title: 'Restricted access',
+        description: permissionDeniedMessage('products:manage'),
+      })
+      return
+    }
+
     const isArchiving = !meter.archived_at
     const { error } = await updateMeter.mutateAsync({
       is_archived: isArchiving,
@@ -80,6 +91,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
       // When unarchiving with "all" or "active" filter, stay on meter
     }
   }, [
+    canManageProducts,
     updateMeter,
     toast,
     organization,

@@ -1,9 +1,12 @@
 'use client'
 
+import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { InlineModalHeader } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useDraggable } from '@/hooks/draggable'
+import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateOrganization } from '@/hooks/queries/org'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { ALL_METRICS, METRIC_GROUPS } from '@/utils/metrics'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import {
@@ -17,6 +20,7 @@ import DragHandleOutlined from '@mui/icons-material/DragHandleOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
@@ -345,6 +349,10 @@ export const MetricSelectorModalContent = ({
   activeMetrics,
   onSave,
 }: MetricSelectorModalContentProps) => {
+  const canManageOrganization = useHasPermission(
+    organization.id,
+    'organization:manage',
+  )
   const updateOrganization = useUpdateOrganization()
 
   const handleSave = async (metrics: string[]) => {
@@ -360,6 +368,16 @@ export const MetricSelectorModalContent = ({
     if (!result.error) {
       onSave(metrics as (keyof schemas['Metrics'])[])
     }
+  }
+
+  if (!canManageOrganization) {
+    return (
+      <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+        <AccessRestricted
+          message={permissionDeniedMessage('organization:manage')}
+        />
+      </Box>
+    )
   }
 
   return (

@@ -233,6 +233,7 @@ export const MembersSection = ({
               member={selectedMember}
               customerId={customer.id}
               seats={seatsByMemberId.get(selectedMember.id) ?? []}
+              organizationId={organization.id}
               organizationSlug={organization.slug}
               customerType={customer.type}
               onClose={hideEditMemberModal}

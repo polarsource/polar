@@ -1,4 +1,7 @@
+import AccessRestricted from '@/components/Finance/AccessRestricted'
+import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateMember } from '@/hooks/queries/members'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Input, Text } from '@polar-sh/orbit'
@@ -22,6 +25,7 @@ export const EditMemberModal = ({
   member,
   customerId,
   seats,
+  organizationId,
   organizationSlug,
   customerType,
   onClose,
@@ -29,10 +33,15 @@ export const EditMemberModal = ({
   member: schemas['Member']
   customerId: string
   seats: schemas['CustomerSeat'][]
+  organizationId: string
   organizationSlug: string
   customerType?: 'individual' | 'team'
   onClose: () => void
 }) => {
+  const canManageCustomers = useHasPermission(
+    organizationId,
+    'customers:manage',
+  )
   // Defensive block for individual customer type
   const isEmailLocked = member.role === 'owner' && customerType === 'individual'
 
@@ -75,6 +84,23 @@ export const EditMemberModal = ({
           description: `Error updating member ${member.email}. Please try again.`,
         })
       })
+  }
+
+  if (!canManageCustomers) {
+    return (
+      <Box flexDirection="column" height="100%">
+        <InlineModalHeader hide={onClose}>
+          <Text as="h2" variant="heading-xs">
+            Edit Member
+          </Text>
+        </InlineModalHeader>
+        <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+          <AccessRestricted
+            message={permissionDeniedMessage('customers:manage')}
+          />
+        </Box>
+      </Box>
+    )
   }
 
   return (

@@ -1,7 +1,11 @@
+import AccessRestricted from '@/components/Finance/AccessRestricted'
+import { useHasPermission } from '@/hooks/permissions'
 import { setValidationErrors } from '@/utils/api/errors'
 import { api } from '@/utils/client'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { enums, isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import {
   Form,
@@ -34,6 +38,10 @@ const AccountCreateModal = ({
   returnPath: string
   defaultCountry?: string | null
 }) => {
+  const canManageOrganization = useHasPermission(
+    forOrganizationId,
+    'organization:manage',
+  )
   const form = useForm<schemas['PayoutAccountCreate']>({
     defaultValues: {
       country: asPayoutCountry(defaultCountry),
@@ -102,6 +110,16 @@ const AccountCreateModal = ({
     },
     [setLoading, forOrganizationId, goToOnboarding, setError],
   )
+
+  if (!canManageOrganization) {
+    return (
+      <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+        <AccessRestricted
+          message={permissionDeniedMessage('organization:manage')}
+        />
+      </Box>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-y-6 overflow-auto p-8">

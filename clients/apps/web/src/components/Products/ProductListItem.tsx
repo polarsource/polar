@@ -193,7 +193,6 @@ export const ProductListItem = ({
                         Edit Product
                       </DropdownMenuItem>
                     )}
-
                     <DropdownMenuItem
                       onClick={handleContextMenuCallback(() => {
                         router.push(

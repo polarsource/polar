@@ -1,7 +1,11 @@
+import AccessRestricted from '@/components/Finance/AccessRestricted'
+import { useHasPermission } from '@/hooks/permissions'
 import { useMeter, useUpdateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
@@ -23,6 +27,7 @@ export const MeterUpdateModal = ({
   hasProcessedEvents,
   organizationId,
 }: MeterUpdateModalProps) => {
+  const canManageProducts = useHasPermission(organizationId, 'products:manage')
   const { data: meter } = useMeter(_meter.id, { initialData: _meter })
   const form = useForm<schemas['MeterUpdate']>({
     defaultValues: {
@@ -64,6 +69,23 @@ export const MeterUpdateModal = ({
     },
     [router, hasProcessedEvents, updateMeter, hide, toast, setError],
   )
+
+  if (!canManageProducts) {
+    return (
+      <Box flexDirection="column" height="100%">
+        <InlineModalHeader hide={hide}>
+          <Text variant="heading-xxs" as="h2">
+            Edit Meter
+          </Text>
+        </InlineModalHeader>
+        <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+          <AccessRestricted
+            message={permissionDeniedMessage('products:manage')}
+          />
+        </Box>
+      </Box>
+    )
+  }
 
   if (!meter) return null
 

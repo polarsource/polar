@@ -1,11 +1,14 @@
+import AccessRestricted from '@/components/Finance/AccessRestricted'
+import { payoutOnboardingReturnPath } from '@/components/Finance/payoutOnboardingReturn'
+import { toast } from '@/components/Toast/use-toast'
+import { useHasPermission } from '@/hooks/permissions'
 import {
   useDeletePayoutAccount,
   usePayoutAccounts,
   useSetOrganizationPayoutAccount,
 } from '@/hooks/queries/payout_accounts'
-import { payoutOnboardingReturnPath } from '@/components/Finance/payoutOnboardingReturn'
-import { toast } from '@/components/Toast/use-toast'
 import { api } from '@/utils/client'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { schemas, unwrap } from '@polar-sh/client'
 import {
   Button,
@@ -13,6 +16,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +39,10 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
   organization: _organization,
   onCreateNew,
 }) => {
+  const canManageOrganization = useHasPermission(
+    _organization.id,
+    'organization:manage',
+  )
   const { data: organization, refetch: refetchOrganization } = useOrganization(
     _organization.id,
     true,
@@ -142,6 +150,16 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
       organization && b.id === organization.payout_account_id ? 1 : 0
     return bActive - aActive
   })
+
+  if (!canManageOrganization) {
+    return (
+      <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+        <AccessRestricted
+          message={permissionDeniedMessage('organization:manage')}
+        />
+      </Box>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-y-6 p-6 sm:p-8">

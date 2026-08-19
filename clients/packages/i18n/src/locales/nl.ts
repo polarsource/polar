@@ -175,14 +175,6 @@ export default {
         activationDeleted: 'Licentiesleutelactivatie verwijderd',
         activationDeletedDescription: 'Activatie succesvol verwijderd',
         activationDeactivationFailed: 'Deactiveren mislukt',
-        rotate: 'Roteren',
-        rotateConfirmTitle: 'Deze licentiesleutel roteren?',
-        rotateConfirmDescription:
-          'Er wordt een nieuwe sleutel gegenereerd voor deze klant. De vorige sleutel kan direct niet meer worden gevalideerd. Deel de nieuwe sleutel met uw klant, of laat hem deze kopiëren uit het klantportaal.',
-        rotateSuccessTitle: 'Licentiesleutel geroteerd',
-        rotateSuccessDescription:
-          'De vorige sleutel kan niet meer worden gevalideerd. Kopieer de nieuwe sleutel hieronder en deel deze met uw klant.',
-        rotateFailedTitle: 'Rotatie van licentiesleutel mislukt',
       },
       slackSharedChannel: {
         connected: 'Verbonden met je Slack-werkruimte.',

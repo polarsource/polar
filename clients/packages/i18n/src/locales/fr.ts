@@ -176,14 +176,6 @@ export default {
         activationDeletedDescription: 'Activation supprimée avec succès',
         activationDeactivationFailed:
           "Échec de la désactivation de l'activation",
-        rotate: 'Régénérer',
-        rotateConfirmTitle: 'Régénérer cette clé de licence ?',
-        rotateConfirmDescription:
-          "Une nouvelle clé sera générée pour ce client. L'ancienne clé ne sera plus validée immédiatement. Partagez la nouvelle clé avec votre client, ou demandez-lui de la copier depuis le portail client.",
-        rotateSuccessTitle: 'Clé de licence régénérée',
-        rotateSuccessDescription:
-          "L'ancienne clé n'est plus valide. Copiez la nouvelle clé ci-dessous et partagez-la avec votre client.",
-        rotateFailedTitle: 'Échec de la régénération de la clé de licence',
       },
       slackSharedChannel: {
         connected: 'Connecté à votre espace de travail Slack.',

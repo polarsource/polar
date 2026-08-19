@@ -175,14 +175,6 @@ export default {
         activationDeleted: 'Activación de clave de licencia eliminada',
         activationDeletedDescription: 'Activación eliminada correctamente',
         activationDeactivationFailed: 'Error al desactivar la activación',
-        rotate: 'Rotar',
-        rotateConfirmTitle: '¿Rotar esta clave de licencia?',
-        rotateConfirmDescription:
-          'Se generará una nueva clave para este cliente. La clave anterior dejará de validarse inmediatamente. Comparte la nueva clave con tu cliente o pídele que la copie desde el portal del cliente.',
-        rotateSuccessTitle: 'Clave de licencia rotada',
-        rotateSuccessDescription:
-          'La clave anterior ya no se valida. Copia la nueva clave a continuación y compártela con tu cliente.',
-        rotateFailedTitle: 'Error al rotar la clave de licencia',
       },
       slackSharedChannel: {
         connected: 'Conectado a tu espacio de trabajo de Slack.',

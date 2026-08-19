@@ -6,11 +6,6 @@ import { toast } from '@/components/Toast/use-toast'
 import { useLicenseKeyRotate, useLicenseKeyUpdate } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
-import {
-  DEFAULT_LOCALE,
-  useTranslations,
-  type AcceptedLocale,
-} from '@polar-sh/i18n'
 import { Avatar, Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -21,14 +16,11 @@ export const LicenseKeyModal = ({
   organization,
   licenseKey,
   onClose,
-  locale = DEFAULT_LOCALE,
 }: {
   organization: schemas['Organization']
   licenseKey: schemas['LicenseKeyWithActivations'] | schemas['LicenseKeyRead']
   onClose: () => void
-  locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale)
   const [statusLoading, setStatusLoading] = useState(false)
   const [rotateLoading, setRotateLoading] = useState(false)
   const updateLicenseKey = useLicenseKeyUpdate(organization.id)
@@ -85,19 +77,18 @@ export const LicenseKeyModal = ({
       .then(({ error }) => {
         if (error) {
           toast({
-            title: t('checkout.benefits.licenseKey.rotateFailedTitle'),
+            title: 'License Key Rotation Failed',
             description: extractApiErrorMessage(error),
           })
           return
         }
         toast({
-          title: t('checkout.benefits.licenseKey.rotateSuccessTitle'),
-          description: t(
-            'checkout.benefits.licenseKey.rotateSuccessDescription',
-          ),
+          title: 'License Key Rotated',
+          description:
+            'The previous key no longer validates. Copy the new key and share it with your customer.',
         })
       })
-  }, [rotateLicenseKey, licenseKey.id, t])
+  }, [rotateLicenseKey, licenseKey.id])
 
   return (
     <Box flexDirection="column" overflowY="auto">
@@ -127,14 +118,12 @@ export const LicenseKeyModal = ({
             value={licenseKey.key}
             onCopy={() => {
               toast({
-                title: t('checkout.benefits.licenseKey.copiedToClipboard'),
-                description: t(
-                  'checkout.benefits.licenseKey.copiedToClipboardDescription',
-                ),
+                title: 'Copied To Clipboard',
+                description: `License Key was copied to clipboard`,
               })
             }}
           />
-          <LicenseKeyDetails licenseKey={licenseKey} locale={locale} />
+          <LicenseKeyDetails licenseKey={licenseKey} />
         </Box>
         <Box columnGap="l" flexWrap="wrap" rowGap="l">
           {['disabled', 'revoked'].includes(licenseKey.status) && (
@@ -161,7 +150,7 @@ export const LicenseKeyModal = ({
               variant="secondary"
               loading={rotateLoading}
             >
-              {t('checkout.benefits.licenseKey.rotate')}
+              Rotate
             </Button>
           )}
           {licenseKey.status === 'granted' && (
@@ -178,10 +167,10 @@ export const LicenseKeyModal = ({
       <ConfirmModal
         isShown={isRotateConfirmShown}
         hide={hideRotateConfirm}
-        title={t('checkout.benefits.licenseKey.rotateConfirmTitle')}
-        description={t('checkout.benefits.licenseKey.rotateConfirmDescription')}
+        title="Rotate this license key?"
+        description="A new key will be generated for this customer. The previous key stops validating immediately. Share the new key with your customer, or have them copy it from the customer portal."
         destructive
-        destructiveText={t('checkout.benefits.licenseKey.rotate')}
+        destructiveText="Rotate"
         onConfirm={handleRotate}
       />
     </Box>

@@ -174,14 +174,6 @@ export default {
         activationDeleted: '라이선스 키 비활성화됨',
         activationDeletedDescription: '라이선스 키가 비활성화되었습니다',
         activationDeactivationFailed: '라이선스 키 비활성화 실패',
-        rotate: '재발급',
-        rotateConfirmTitle: '이 라이선스 키를 재발급하시겠습니까?',
-        rotateConfirmDescription:
-          '이 고객에게 새 키가 생성됩니다. 이전 키는 즉시 인증되지 않습니다. 새 키를 고객에게 공유하거나 고객 포털에서 복사하도록 안내하세요.',
-        rotateSuccessTitle: '라이선스 키가 재발급되었습니다',
-        rotateSuccessDescription:
-          '이전 키는 더 이상 인증되지 않습니다. 아래의 새 키를 복사해 고객에게 공유하세요.',
-        rotateFailedTitle: '라이선스 키 재발급 실패',
       },
       slackSharedChannel: {
         connected: 'Slack 워크스페이스에 연결되었습니다.',

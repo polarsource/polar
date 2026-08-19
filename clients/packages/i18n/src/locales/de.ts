@@ -176,14 +176,6 @@ export default {
         activationDeleted: 'Lizenzschlüssel-Aktivierung gelöscht',
         activationDeletedDescription: 'Aktivierung erfolgreich gelöscht',
         activationDeactivationFailed: 'Deaktivierung fehlgeschlagen',
-        rotate: 'Aktualisieren',
-        rotateConfirmTitle: 'Diesen Lizenzschlüssel aktualisieren?',
-        rotateConfirmDescription:
-          'Für diesen Kunden wird ein neuer Schlüssel generiert. Der vorherige Schlüssel ist sofort nicht mehr gültig. Teilen Sie den neuen Schlüssel mit Ihrem Kunden oder lassen Sie ihn ihn im Kundenportal kopieren.',
-        rotateSuccessTitle: 'Lizenzschlüssel aktualisiert',
-        rotateSuccessDescription:
-          'Der vorherige Schlüssel ist nicht mehr gültig. Kopieren Sie den neuen Schlüssel unten und teilen Sie ihn mit Ihrem Kunden.',
-        rotateFailedTitle: 'Aktualisierung des Lizenzschlüssels fehlgeschlagen',
       },
       slackSharedChannel: {
         connected: 'Mit deinem Slack-Arbeitsbereich verbunden.',

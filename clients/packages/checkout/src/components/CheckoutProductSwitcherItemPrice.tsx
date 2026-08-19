@@ -78,9 +78,31 @@ export const CheckoutProductSwitcherItemPrice = ({
       )
     }
 
-    const minimumAmount =
-      Number(price.tiers.tiers[0]?.unit_amount ?? 0) *
-      (price.minimum_units ?? 1)
+    const minimumUnits = price.minimum_units ?? 1
+    const tiers = price.tiers.tiers.toSorted((a, b) => {
+      if (a.bound == null) return 1
+      if (b.bound == null) return -1
+      return a.bound - b.bound
+    })
+    let minimumAmount: number
+    if (price.tiers.type === 'graduated') {
+      minimumAmount = 0
+      let allocated = 0
+      for (const tier of tiers) {
+        if (allocated >= minimumUnits) break
+        const tierEnd = tier.bound ?? minimumUnits
+        const unitsInTier = Math.min(minimumUnits, tierEnd) - allocated
+        if (unitsInTier > 0) {
+          minimumAmount += unitsInTier * Number(tier.unit_amount)
+        }
+        allocated += unitsInTier
+      }
+    } else {
+      const matchingTier = tiers.find(
+        (t) => t.bound == null || minimumUnits <= t.bound,
+      )
+      minimumAmount = minimumUnits * Number(matchingTier?.unit_amount ?? 0)
+    }
 
     return (
       <FromPrice
@@ -182,8 +204,20 @@ const FixedUnitPrice = ({
   locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale ?? DEFAULT_LOCALE)
-  const basePricePerUnit = Number(unitPrice.tiers.tiers[0]?.unit_amount ?? 0)
-  const { unitLabel } = getUnitLabels(unitPrice)
+  const minimumUnits = unitPrice.minimum_units ?? 1
+  const tiers = unitPrice.tiers.tiers.toSorted((a, b) => {
+    if (a.bound == null) return 1
+    if (b.bound == null) return -1
+    return a.bound - b.bound
+  })
+  const matchingTier = tiers.find(
+    (tier) => tier.bound == null || minimumUnits <= tier.bound,
+  )
+  const basePricePerUnit = Number(
+    (unitPrice.tiers.type === 'graduated' ? tiers[0] : matchingTier)
+      ?.unit_amount ?? 0,
+  )
+  const { unitLabel } = getUnitLabels(unitPrice, locale)
   return (
     <span className="flex flex-wrap items-baseline justify-end gap-x-1">
       <AmountLabel

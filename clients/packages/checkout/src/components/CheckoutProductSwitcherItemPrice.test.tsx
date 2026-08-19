@@ -5,6 +5,7 @@ import {
   createFixedPrice,
   createFreePrice,
   createSeatBasedPrice,
+  createUnitBasedPrice,
 } from '../test-utils/makeCheckout'
 import { CheckoutProductSwitcherItemPrice } from './CheckoutProductSwitcher'
 
@@ -282,6 +283,78 @@ describe('CheckoutProductSwitcherItemPrice', () => {
       )
 
       expect(getRenderedText(container)).toBe('Free')
+    })
+  })
+
+  describe('unit-based price, not selected', () => {
+    it('shows the volume-tier minimum total when minimum_units exceeds the first tier', () => {
+      const unitPrice = createUnitBasedPrice({
+        id: 'price_unit',
+        tiers: {
+          type: 'volume',
+          tiers: [
+            { bound: 10, unit_amount: '2900' },
+            { bound: null, unit_amount: '2500' },
+          ],
+        },
+        minimum_units: 15,
+      })
+      const checkout = createCheckout({
+        product_price: unitPrice,
+        prices: { prod_1: [unitPrice] },
+      })
+
+      const { container } = render(
+        <CheckoutProductSwitcherItemPrice
+          isSelected={false}
+          product={checkout.product}
+          price={unitPrice}
+          checkout={checkout}
+          locale="en"
+        />,
+      )
+
+      expect(getRenderedText(container)).toBe('From\u00a0$375')
+    })
+  })
+
+  describe('fixed + unit price', () => {
+    const fixedPrice = createFixedPrice({
+      id: 'price_fixed',
+      price_amount: 9900,
+    })
+    const unitPrice = createUnitBasedPrice({
+      id: 'price_unit',
+      tiers: {
+        type: 'volume',
+        tiers: [
+          { bound: 10, unit_amount: '2900' },
+          { bound: null, unit_amount: '2500' },
+        ],
+      },
+      minimum_units: 15,
+    })
+
+    it('shows the per-unit rate from the matching volume tier', () => {
+      const checkout = createCheckout({
+        product_price: unitPrice,
+        prices: { prod_1: [fixedPrice, unitPrice] },
+      })
+
+      const { container } = render(
+        <CheckoutProductSwitcherItemPrice
+          isSelected={true}
+          product={checkout.product}
+          price={unitPrice}
+          checkout={checkout}
+          locale="en"
+        />,
+      )
+
+      const text = getRenderedText(container)
+      expect(text).toContain('$99')
+      expect(text).toContain('$25')
+      expect(text).toContain('per unit')
     })
   })
 })

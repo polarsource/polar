@@ -49,7 +49,7 @@ const CheckoutUnitSelector = ({
   const unitPrice = getUnitPrice(checkout)
   const isUnitBased = unitPrice !== null
 
-  const unitLabels = getUnitLabels(unitPrice)
+  const unitLabels = getUnitLabels(unitPrice, locale)
   const tierMinimumUnits = unitPrice?.minimum_units ?? 1
   const tierMaximumUnits = unitPrice?.maximum_units ?? null
   const minimumUnits = checkout.min_units ?? tierMinimumUnits

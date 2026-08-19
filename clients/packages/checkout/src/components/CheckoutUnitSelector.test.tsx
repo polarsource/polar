@@ -97,7 +97,10 @@ describe('CheckoutUnitSelector', () => {
 
     it('uses the merchant-defined unit label', () => {
       const price = createUnitBasedPrice({
-        unit_label: { en: { '=1': 'device', other: 'devices' } },
+        unit_label: {
+          en: { '=1': 'device', other: 'devices' },
+          sv: { '=1': 'enhet', other: 'enheter' },
+        },
       })
       const checkout = createUnitCheckout({
         product_price: price,
@@ -108,11 +111,11 @@ describe('CheckoutUnitSelector', () => {
         <CheckoutUnitSelector
           checkout={checkout}
           update={noopUpdate}
-          locale="en"
+          locale="sv"
         />,
       )
 
-      expect(screen.getByText('Number of devices')).toBeInTheDocument()
+      expect(screen.getByText('Number of enheter')).toBeInTheDocument()
     })
 
     it('increments the unit quantity', async () => {

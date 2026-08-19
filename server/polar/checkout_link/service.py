@@ -30,7 +30,7 @@ from polar.models import (
     User,
 )
 from polar.postgres import AsyncSession
-from polar.product.guard import SeatPrice, is_seat_price
+from polar.product.guard import SeatPrice, UnitPrice, is_seat_price, is_unit_price
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
 
@@ -159,6 +159,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         if checkout_link_create.seats is not None:
             self._validate_seats_for_products(checkout_link_create.seats, products)
 
+        if checkout_link_create.units is not None:
+            self._validate_units_for_products(checkout_link_create.units, products)
+
         checkout_link = CheckoutLink(
             client_secret=generate_token(prefix=CHECKOUT_LINK_CLIENT_SECRET_PREFIX),
             organization=organization,
@@ -250,12 +253,28 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         ):
             checkout_link.seats = None
 
+        # Same rules for a `units` lock, mirroring the seat lock above.
+        if "units" in checkout_link_update.model_fields_set:
+            if checkout_link_update.units is not None:
+                self._validate_units_for_products(
+                    checkout_link_update.units, checkout_link.products
+                )
+            checkout_link.units = checkout_link_update.units
+        elif (
+            checkout_link_update.products is not None
+            and checkout_link.units is not None
+            and not self._units_valid_for_products(
+                checkout_link.units, checkout_link.products
+            )
+        ):
+            checkout_link.units = None
+
         repository = CheckoutLinkRepository.from_session(session)
         return await repository.update(
             checkout_link,
             update_dict=checkout_link_update.model_dump(
                 exclude_unset=True,
-                exclude={"products", "discount_id", "seats"},
+                exclude={"products", "discount_id", "seats", "units"},
                 by_alias=True,
             ),
         )
@@ -461,6 +480,73 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             ):
                 return False
         return True
+
+    def _get_unit_price(self, product: Product) -> UnitPrice | None:
+        for price in product.prices:
+            if is_unit_price(price):
+                return price
+        return None
+
+    def _units_valid_for_products(
+        self, units: int, products: Sequence[Product]
+    ) -> bool:
+        """Whether `units` fits the bounds of *every* product on the link.
+
+        Unit-count bounds are currency-independent, so no currency is needed.
+        """
+        for product in products:
+            unit_price = self._get_unit_price(product)
+            if unit_price is None:
+                return False
+            minimum_units = unit_price.get_purchase_floor()
+            maximum_units = unit_price.get_maximum_units()
+            if units < minimum_units or (
+                maximum_units is not None and units > maximum_units
+            ):
+                return False
+        return True
+
+    def _validate_units_for_products(
+        self, units: int, products: Sequence[Product]
+    ) -> None:
+        """Strict-validate a unit lock against every product, raising on mismatch."""
+        for product in products:
+            unit_price = self._get_unit_price(product)
+            if unit_price is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "units"),
+                            "msg": (
+                                "Units can only be preconfigured when all products "
+                                "use unit-based pricing."
+                            ),
+                            "input": units,
+                        }
+                    ]
+                )
+            minimum_units = unit_price.get_purchase_floor()
+            maximum_units = unit_price.get_maximum_units()
+            if units < minimum_units or (
+                maximum_units is not None and units > maximum_units
+            ):
+                maximum_label = (
+                    str(maximum_units) if maximum_units is not None else "unlimited"
+                )
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "units"),
+                            "msg": (
+                                f"Product '{product.name}' allows between "
+                                f"{minimum_units} and {maximum_label} units."
+                            ),
+                            "input": units,
+                        }
+                    ]
+                )
 
     def _validate_seats_for_products(
         self, seats: int, products: Sequence[Product]

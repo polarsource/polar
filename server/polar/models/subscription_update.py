@@ -128,7 +128,9 @@ class SubscriptionUpdate(RecordModel):
             # avoid inconsistent states if PriceSet.from_product raises, e.g.
             # NoPricesForCurrencies.
             subscription_product_prices = [
-                SubscriptionProductPrice.from_price(price, seats=subscription.seats)
+                SubscriptionProductPrice.from_price(
+                    price, seats=subscription.seats, units=subscription.units
+                )
                 for price in PriceSet.from_product(self.product, subscription.currency)
             ]
             subscription.product = self.product
@@ -151,6 +153,13 @@ class SubscriptionUpdate(RecordModel):
             subscription.seats = self.seats
             subscription.subscription_product_prices = [
                 SubscriptionProductPrice.from_price(spp.product_price, seats=self.seats)
+                for spp in subscription.subscription_product_prices
+            ]
+
+        if self.units is not None:
+            subscription.units = self.units
+            subscription.subscription_product_prices = [
+                SubscriptionProductPrice.from_price(spp.product_price, units=self.units)
                 for spp in subscription.subscription_product_prices
             ]
 

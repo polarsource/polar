@@ -117,6 +117,7 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_product,
     create_product_fixed_and_seat,
+    create_product_unit_based,
     create_subscription,
     create_subscription_with_seats,
     create_trialing_subscription,
@@ -662,6 +663,42 @@ class TestCreateOrUpdateFromCheckout:
             await subscription_service.create_or_update_from_checkout(
                 session, checkout, None
             )
+
+    async def test_new_unit_based(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=2900
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            units=10,
+        )
+
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert created is True
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.units == 10
+        assert subscription.seats is None
+        assert subscription.amount == 10 * 2900
+
+        enqueue_benefits_grants_mock.assert_called_once()
 
     async def test_new_fixed(
         self,

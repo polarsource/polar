@@ -226,6 +226,25 @@ class CheckoutCreateBase(
         description=("Maximum number of seats (works with seat-based pricing only)"),
     )
 
+    units: Int32 | None = Field(
+        default=None,
+        ge=1,
+        le=1000000,
+        description="Predefined number of units (works with unit-based pricing only)",
+    )
+    min_units: Int32 | None = Field(
+        default=None,
+        ge=1,
+        le=1000000,
+        description=("Minimum number of units (works with unit-based pricing only)"),
+    )
+    max_units: Int32 | None = Field(
+        default=None,
+        ge=1,
+        le=1000000,
+        description=("Maximum number of units (works with unit-based pricing only)"),
+    )
+
     @model_validator(mode="after")
     def _validate_seat_constraints(self) -> "CheckoutCreateBase":
         if (
@@ -246,6 +265,28 @@ class CheckoutCreateBase(
             and self.seats > self.max_seats
         ):
             raise ValueError("seats must be less than or equal to max_seats")
+        return self
+
+    @model_validator(mode="after")
+    def _validate_unit_constraints(self) -> "CheckoutCreateBase":
+        if (
+            self.min_units is not None
+            and self.max_units is not None
+            and self.min_units > self.max_units
+        ):
+            raise ValueError("min_units must be less than or equal to max_units")
+        if (
+            self.units is not None
+            and self.min_units is not None
+            and self.units < self.min_units
+        ):
+            raise ValueError("units must be greater than or equal to min_units")
+        if (
+            self.units is not None
+            and self.max_units is not None
+            and self.units > self.max_units
+        ):
+            raise ValueError("units must be less than or equal to max_units")
         return self
 
     allow_trial: bool = Field(default=True, description=_allow_trial_description)
@@ -387,6 +428,12 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
         le=10000,
         description="Number of seats for seat-based pricing.",
     )
+    units: Int32 | None = Field(
+        default=None,
+        ge=1,
+        le=1000000,
+        description="Number of units for unit-based pricing.",
+    )
     is_business_customer: bool | None = None
     customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
@@ -521,6 +568,15 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     max_seats: int | None = Field(
         default=None,
         description=("Maximum number of seats (works with seat-based pricing only)"),
+    )
+    units: int | None = Field(
+        description="Predefined number of units (works with unit-based pricing only)",
+    )
+    min_units: int | None = Field(
+        description=("Minimum number of units (works with unit-based pricing only)"),
+    )
+    max_units: int | None = Field(
+        description=("Maximum number of units (works with unit-based pricing only)"),
     )
     discount_amount: int = Field(description="Discount amount in cents.")
     net_amount: int = Field(

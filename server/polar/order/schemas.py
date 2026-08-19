@@ -118,6 +118,9 @@ class OrderBase(TimestampedSchema, IDSchema):
     seats: int | None = Field(
         None, description="Number of seats purchased (for seat-based one-time orders)."
     )
+    units: int | None = Field(
+        description="Number of units purchased (for unit-based pricing)."
+    )
 
     customer_id: UUID4
     product_id: UUID4 | None

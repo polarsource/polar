@@ -93,6 +93,7 @@ from polar.models.product_price import (
     ProductPrice,
     ProductPriceFixed,
     ProductPriceSeatUnit,
+    ProductPriceUnitBased,
 )
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -112,6 +113,7 @@ from polar.product.guard import (
     is_recurring_product,
     is_seat_price,
     is_static_price,
+    is_unit_price,
 )
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
@@ -135,6 +137,7 @@ from .schemas import (
     SubscriptionUpdateBillingPeriod,
     SubscriptionUpdateClear,
     SubscriptionUpdateSeats,
+    SubscriptionUpdateUnits,
 )
 from .sorting import SubscriptionSortProperty
 from .update import generate_subscription_update
@@ -260,6 +263,35 @@ class AboveMaximumSeats(SubscriptionError):
         self.maximum_seats = maximum_seats
         self.requested_seats = requested_seats
         message = f"Maximum {maximum_seats} seats allowed."
+        super().__init__(message, 400)
+
+
+class NotAUnitBasedSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription does not support unit-based pricing."
+        super().__init__(message, 400)
+
+
+class BelowMinimumUnits(SubscriptionError):
+    def __init__(
+        self, subscription: Subscription, minimum_units: int, requested_units: int
+    ) -> None:
+        self.subscription = subscription
+        self.minimum_units = minimum_units
+        self.requested_units = requested_units
+        message = f"Minimum {minimum_units} units required."
+        super().__init__(message, 400)
+
+
+class AboveMaximumUnits(SubscriptionError):
+    def __init__(
+        self, subscription: Subscription, maximum_units: int, requested_units: int
+    ) -> None:
+        self.subscription = subscription
+        self.maximum_units = maximum_units
+        self.requested_units = requested_units
+        message = f"Maximum {maximum_units} units allowed."
         super().__init__(message, 400)
 
 
@@ -622,10 +654,16 @@ class SubscriptionService:
                     seats = p.get_minimum_seats()
                     break
 
+        # For unit-based products, determine initial units from the price floor
+        units: int | None = None
+        unit_price = currency_prices.get_unit_price()
+        if unit_price is not None:
+            units = unit_price.get_purchase_floor()
+
         subscription_product_prices: list[SubscriptionProductPrice] = []
         for price in currency_prices:
             subscription_product_prices.append(
-                SubscriptionProductPrice.from_price(price, seats=seats)
+                SubscriptionProductPrice.from_price(price, seats=seats, units=units)
             )
 
         current_period_start = utc_now()
@@ -651,6 +689,7 @@ class SubscriptionService:
             subscription_product_prices=subscription_product_prices,
             currency=currency,
             seats=seats,
+            units=units,
             user_metadata=subscription_create.metadata,
             pending_update=None,
         )
@@ -829,7 +868,7 @@ class SubscriptionService:
         for price in subscription_prices:
             subscription_product_prices.append(
                 SubscriptionProductPrice.from_price(
-                    price, checkout.amount, checkout.seats
+                    price, checkout.amount, checkout.seats, checkout.units
                 )
             )
 
@@ -896,6 +935,7 @@ class SubscriptionService:
         }
         subscription.custom_field_data = checkout.custom_field_data
         subscription.seats = checkout.seats
+        subscription.units = checkout.units
 
         repository = SubscriptionRepository.from_session(session)
         if created:
@@ -1400,7 +1440,7 @@ class SubscriptionService:
     ) -> Subscription:
         if (
             (isinstance(update, SubscriptionUpdateBase) and update.has_product)
-            or isinstance(update, SubscriptionUpdateSeats)
+            or isinstance(update, SubscriptionUpdateSeats | SubscriptionUpdateUnits)
         ) and update.proration_behavior == SubscriptionProrationBehavior.reset:
             organization = subscription.organization
             if not organization.feature_settings.get(
@@ -1456,6 +1496,15 @@ class SubscriptionService:
                 ctx,
                 subscription,
                 seats=update.seats,
+                proration_behavior=update.proration_behavior,
+            )
+
+        if isinstance(update, SubscriptionUpdateUnits):
+            subscription = await self.update_units(
+                session,
+                ctx,
+                subscription,
+                units=update.units,
                 proration_behavior=update.proration_behavior,
             )
 
@@ -1630,7 +1679,43 @@ class SubscriptionService:
                 ]
             )
 
+        # Product changes involving unit-based prices are not yet supported.
+        old_has_unit_prices = any(is_unit_price(p) for p in subscription.prices)
+        new_has_unit_prices = any(is_unit_price(p) for p in currency_prices)
+        if old_has_unit_prices or new_has_unit_prices:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Can't change the product of a unit-based subscription, or switch to a unit-based product.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
         return product, currency_prices
+
+    async def validate_units_change(
+        self,
+        subscription: Subscription,
+        *,
+        units: int,
+    ) -> None:
+        if subscription.revoked or subscription.cancel_at_period_end:
+            raise AlreadyCanceledSubscription(subscription)
+
+        unit_price = subscription.get_price_by_type(ProductPriceUnitBased)
+        if unit_price is None:
+            raise NotAUnitBasedSubscription(subscription)
+
+        minimum_units = unit_price.get_purchase_floor()
+        if units < minimum_units:
+            raise BelowMinimumUnits(subscription, minimum_units, units)
+
+        maximum_units = unit_price.get_maximum_units()
+        if maximum_units is not None and units > maximum_units:
+            raise AboveMaximumUnits(subscription, maximum_units, units)
 
     async def validate_seats_change(
         self,
@@ -2162,6 +2247,116 @@ class SubscriptionService:
 
         ctx.add_event_metadata(
             seats=seats,
+            proration_behavior=proration_behavior,
+        )
+
+        return subscription
+
+    async def update_units(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+        *,
+        units: int,
+        proration_behavior: SubscriptionProrationBehavior | None = None,
+    ) -> Subscription:
+        await self.validate_units_change(subscription, units=units)
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            subscription.product.organization_id
+        )
+        assert organization is not None
+
+        if proration_behavior is None:
+            proration_behavior = organization.proration_behavior
+
+        old_units = subscription.units or 1
+        old_amount = subscription.amount
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+
+        if old_units == units:
+            # Re-asserting the current unit count cancels a pending unit
+            # change. Drop the row if nothing else is scheduled on it.
+            pending = subscription.pending_update
+            if pending is not None and pending.units is not None:
+                if pending.product_id is None:
+                    await subscription_update_repository.soft_delete(pending)
+                    subscription.pending_update = None
+                else:
+                    pending.units = None
+                    await subscription_update_repository.update(pending)
+            else:
+                # Nothing changed: re-asserting the current unit count with no
+                # pending unit change to cancel is a true no-op, so don't emit
+                # a `subscription.updated` webhook.
+                ctx.mark_unchanged()
+            return subscription
+
+        event = await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_units_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_units": old_units,
+                    "new_units": units,
+                    "proration_behavior": proration_behavior.value,
+                },
+            ),
+        )
+
+        subscription_update, billing_entries = generate_subscription_update(
+            subscription, proration_behavior, units=units
+        )
+
+        if proration_behavior == SubscriptionProrationBehavior.next_period:
+            subscription.pending_update = await subscription_update_repository.upsert(
+                subscription_update
+            )
+        else:
+            await (
+                subscription_update_repository.soft_delete_unapplied_by_subscription_id(
+                    subscription.id
+                )
+            )
+            subscription.pending_update = None
+
+            # Skip proration for trialing subscriptions - no billing during trial
+            if not subscription.trialing:
+                for entry in billing_entries:
+                    entry.event = event
+                    session.add(entry)
+
+            subscription = subscription_update.apply_update()
+            session.add(subscription)
+            await session.flush()
+
+            log.info(
+                "subscription.units_updated",
+                subscription_id=subscription.id,
+                old_units=old_units,
+                new_units=units,
+                old_amount=old_amount,
+                new_amount=subscription.amount,
+            )
+
+            if (
+                proration_behavior.is_immediate()
+                and not subscription.trialing
+                and billing_entries
+            ):
+                # Invoice and attempt to pay immediately
+                ctx.set_billing_effect("invoice")
+
+        ctx.add_event_metadata(
+            units=units,
             proration_behavior=proration_behavior,
         )
 

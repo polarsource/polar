@@ -170,7 +170,11 @@ class BillingEntryService:
         ):
             static_price = cast(StaticPrice, entry.product_price)
             static_line_item = await self._get_static_price_line_item(
-                session, static_price, entry, seats=subscription.seats
+                session,
+                static_price,
+                entry,
+                seats=subscription.seats,
+                units=subscription.units,
             )
             yield static_line_item, [entry.id]
 
@@ -296,6 +300,7 @@ class BillingEntryService:
         entry: BillingEntry,
         *,
         seats: int | None,
+        units: int | None = None,
     ) -> StaticLineItem:
         assert entry.amount is not None
         assert entry.currency is not None
@@ -312,6 +317,10 @@ class BillingEntryService:
             BillingEntryType.subscription_seats_increase,
             BillingEntryType.subscription_seats_decrease,
         )
+        is_unit_change = entry.type in (
+            BillingEntryType.subscription_units_increase,
+            BillingEntryType.subscription_units_decrease,
+        )
 
         if is_seat_change:
             old_seats = entry.event.user_metadata.get("old_seats")
@@ -324,8 +333,21 @@ class BillingEntryService:
                 # This shouldn't happen, but if it does, don't include the full
                 # seat count if we can't show a delta to avoid confusion
                 price_label = OrderItem.format_price_label(product, price, seats=None)
+        elif is_unit_change:
+            old_units = entry.event.user_metadata.get("old_units")
+            new_units = entry.event.user_metadata.get("new_units")
+
+            if old_units is not None and new_units is not None:
+                unit_transition = f"{old_units} → {new_units} units"
+                price_label = f"{product.name} ({unit_transition})"
+            else:
+                price_label = OrderItem.format_price_label(
+                    product, price, seats=None, units=None
+                )
         else:
-            price_label = OrderItem.format_price_label(product, price, seats=seats)
+            price_label = OrderItem.format_price_label(
+                product, price, seats=seats, units=units
+            )
 
         match entry.direction:
             case BillingEntryDirection.credit:
@@ -344,6 +366,8 @@ class BillingEntryService:
                 BillingEntryType.proration,
                 BillingEntryType.subscription_seats_increase,
                 BillingEntryType.subscription_seats_decrease,
+                BillingEntryType.subscription_units_increase,
+                BillingEntryType.subscription_units_decrease,
             ),
         )
 

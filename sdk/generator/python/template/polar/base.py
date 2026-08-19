@@ -34,7 +34,7 @@ class PolarServerError(PolarError):
 class PolarDeserializationError(PolarError):
     def __init__(self, error: adaptix.load_error.LoadError):
         self.error = error
-        super().__init__(f"Failed to deserialize Polar API response: {error}")
+        super().__init__(f"Failed to deserialize data: {error}")
 
 
 class PolarClientError(PolarError):

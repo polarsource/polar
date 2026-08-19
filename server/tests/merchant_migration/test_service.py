@@ -2011,7 +2011,9 @@ class TestStartCutover:
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         await record_repository.update(
-            moved, update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved}
+            moved,
+            update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved},
+            flush=True,
         )
         await record_repository.update(
             skipped,
@@ -2019,6 +2021,7 @@ class TestStartCutover:
                 "cutover_status": MerchantMigrationCutoverStatus.skipped,
                 "cutover_error": "Renews too soon.",
             },
+            flush=True,
         )
 
         await service.start_cutover(session, auth_subject, migration.id)
@@ -2112,10 +2115,12 @@ class TestRunCutover:
         await record_repository.update(
             settled,
             update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved},
+            flush=True,
         )
 
         await service.run_cutover(session, migration.id)
 
+        await session.flush()
         await session.refresh(migration)
         assert service._step_completed(migration, STEP_MOVE_SUBSCRIPTIONS)
         assert migration.step == MerchantMigrationStep.cleanup
@@ -2245,7 +2250,9 @@ class TestGetCutoverReport:
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         await record_repository.update(
-            moved, update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved}
+            moved,
+            update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved},
+            flush=True,
         )
 
         report = await service.get_cutover_report(
@@ -2290,7 +2297,9 @@ class TestListRecordsCutover:
             save_fixture, subscription.customer, processor_id="pm_1"
         )
         await subscription_repository.update(
-            subscription, update_dict={"payment_method_id": payment_method.id}
+            subscription,
+            update_dict={"payment_method_id": payment_method.id},
+            flush=True,
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         await record_repository.update(
@@ -2299,6 +2308,7 @@ class TestListRecordsCutover:
                 "cutover_status": MerchantMigrationCutoverStatus.skipped,
                 "cutover_error": "Renews too soon.",
             },
+            flush=True,
         )
 
         items, _ = await service.list_records(
@@ -2349,6 +2359,7 @@ class TestListRecordsCutover:
         await record_repository.update(
             skipped,
             update_dict={"cutover_status": MerchantMigrationCutoverStatus.skipped},
+            flush=True,
         )
 
         items, count = await service.list_records(

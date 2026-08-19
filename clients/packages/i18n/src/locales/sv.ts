@@ -94,6 +94,20 @@ export default {
       },
       inclTax: 'Moms (ingår)',
       basePrice: 'Grundavgift',
+      perUnit: 'per {unitLabel}',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: 'Antal {unitLabelPlural}',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'Minst {min} {unitLabelPlural}',
+        maximum: 'Högst {max} {unitLabelPlural}',
+        updateFailed: 'Det gick inte att uppdatera enheter',
+      },
     },
     trial: {
       hero: {

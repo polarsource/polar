@@ -94,6 +94,20 @@ export default {
         until: '{date}まで',
       },
       basePrice: '基本料金',
+      perUnit: '{unitLabel}あたり',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: '{unitLabelPlural}の数',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: '最小 {min} {unitLabelPlural}',
+        maximum: '最大 {max} {unitLabelPlural}',
+        updateFailed: '数量を更新できませんでした',
+      },
     },
     trial: {
       hero: {

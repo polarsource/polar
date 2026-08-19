@@ -341,19 +341,6 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def _due_amount_expression(cls) -> ColumnElement[int]:
         return func.greatest(0, cls.total_amount + cls.applied_balance_amount)
 
-    @hybrid_property
-    def payout_amount(self) -> int:
-        return self.net_amount - self.platform_fee_amount - self.refunded_amount
-
-    @payout_amount.inplace.expression
-    @classmethod
-    def _payout_amount_expression(cls) -> ColumnElement[int]:
-        return (
-            func.coalesce(cls.net_amount, cls.subtotal_amount - cls.discount_amount)
-            - cls.platform_fee_amount
-            - cls.refunded_amount
-        )
-
     @property
     def taxed(self) -> int:
         return self.tax_amount > 0

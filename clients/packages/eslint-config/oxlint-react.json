@@ -20,6 +20,7 @@
     "react/set-state-in-render": "error",
     "react/static-components": "error",
     "react/use-memo": "error",
+    "react/unsupported-syntax": "error",
     "react/void-use-memo": "error",
     "react/display-name": "error",
     "react/jsx-key": "error",

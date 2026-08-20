@@ -525,7 +525,7 @@ def validate_tax_id(number: str, country: str) -> TaxID:
             try:
                 validator = _get_validator(tax_id_type)
                 return validator.validate(number, country), tax_id_type
-            except (UnsupportedTaxIDFormat, InvalidTaxID):
+            except UnsupportedTaxIDFormat, InvalidTaxID:
                 continue
     raise InvalidTaxID(number, country)
 

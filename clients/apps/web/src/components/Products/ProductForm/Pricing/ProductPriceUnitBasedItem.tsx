@@ -131,6 +131,7 @@ export const ProductPriceUnitBasedItem: React.FC<
                   <MoneyInput
                     name={field.name}
                     currency={currency}
+                    aria-label={`Price per ${singularNoun}`}
                     value={
                       field.value == null || field.value === ''
                         ? null

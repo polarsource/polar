@@ -1,23 +1,22 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import Annotated
+from typing import cast
 from uuid import UUID
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo
 
-from pydantic import AfterValidator
+from sqlalchemy import Select
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject, User
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncReadSession
-from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
-from polar.models import Account, Transaction
+from polar.models import Account, Order, Transaction
 from polar.models.transaction import TransactionType
 
+from .repository import TransactionRepository
 from .service.transaction import transaction as transaction_service
-
-TRANSACTION_EXPORT_BATCH_SIZE = 1000
 
 
 class TransactionExportColumn(StrEnum):
@@ -62,19 +61,6 @@ TRANSACTION_EXPORT_DEFAULT_COLUMNS: list[TransactionExportColumn] = [
     TransactionExportColumn.status,
     TransactionExportColumn.paid_out_at,
 ]
-
-
-def _validate_timezone(value: str) -> str:
-    try:
-        ZoneInfo(value)
-    except ValueError, ZoneInfoNotFoundError:
-        raise ValueError(f"{value!r} is not a valid IANA time zone") from None
-    return value
-
-
-# Kept as a plain string rather than an enum of every IANA zone: the generated
-# TypeScript client inlines such an enum at every use site, adding ~1200 lines.
-TransactionExportTimezone = Annotated[str, AfterValidator(_validate_timezone)]
 
 
 def _description_type(transaction: Transaction) -> str:
@@ -191,28 +177,30 @@ async def generate_csv(
             delay = account.payout_transaction_delay
 
     now = utc_now()
-    page = 1
-    while True:
-        results, _ = await transaction_service.search(
-            session,
-            auth_subject,
-            type=type,
-            account_id=account_id,
-            exclude_platform_fees=exclude_platform_fees,
-            created_after=created_after,
-            created_before=created_before,
-            include_payout_transactions=True,
-            pagination=PaginationParams(limit=TRANSACTION_EXPORT_BATCH_SIZE, page=page),
-        )
-        if not results:
-            break
+    statement = cast(
+        Select[tuple[Transaction]],
+        transaction_service._get_readable_transactions_statement(auth_subject),
+    ).options(
+        selectinload(Transaction.account_incurred_transactions),
+        selectinload(Transaction.pledge),
+        selectinload(Transaction.issue_reward),
+        selectinload(Transaction.order).selectinload(Order.product),
+        selectinload(Transaction.payment_transaction),
+        selectinload(Transaction.payout_transaction),
+    )
+    if type is not None:
+        statement = statement.where(Transaction.type == type)
+    if account_id is not None:
+        statement = statement.where(Transaction.account_id == account_id)
+    if exclude_platform_fees:
+        statement = statement.where(Transaction.platform_fee_type.is_(None))
+    if created_after is not None:
+        statement = statement.where(Transaction.created_at >= created_after)
+    if created_before is not None:
+        statement = statement.where(Transaction.created_at <= created_before)
+    statement = statement.order_by(Transaction.created_at.desc())
 
-        for transaction in results:
-            row = _row(transaction, timezone, now, delay)
-            yield csv_writer.getrow(tuple(row[column] for column in export_columns))
-
-        if len(results) < TRANSACTION_EXPORT_BATCH_SIZE:
-            break
-
-        session.expire_all()
-        page += 1
+    repository = TransactionRepository.from_session(session)
+    async for transaction in repository.stream(statement):
+        row = _row(transaction, timezone, now, delay)
+        yield csv_writer.getrow(tuple(row[column] for column in export_columns))

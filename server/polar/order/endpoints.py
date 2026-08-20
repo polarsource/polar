@@ -1,10 +1,10 @@
 from datetime import datetime
 from textwrap import dedent
-from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query, Response
 from pydantic import UUID4, AwareDatetime
+from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
@@ -36,7 +36,6 @@ from polar.subscription.schemas import SubscriptionID
 from . import auth, sorting
 from .export import (
     OrderExportColumn,
-    OrderExportTimezone,
     generate_csv,
     get_filename,
 )
@@ -198,10 +197,10 @@ async def export(
             "Only include orders created before this date. Must include a UTC offset."
         ),
     ),
-    timezone: Annotated[
-        OrderExportTimezone,
-        Query(description="Time zone used to render dates in the CSV."),
-    ] = "UTC",
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Time zone used to render dates in the CSV.",
+    ),
     columns: MultipleQueryFilter[OrderExportColumn] | None = Query(
         None,
         description=(

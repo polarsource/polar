@@ -1,10 +1,7 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-
-from pydantic import AfterValidator
+from zoneinfo import ZoneInfo
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.kit.csv import IterableCSVWriter
@@ -77,17 +74,6 @@ SUBSCRIPTION_EXPORT_DEFAULT_COLUMNS: list[SubscriptionExportColumn] = [
     SubscriptionExportColumn.status,
     SubscriptionExportColumn.recurring_interval,
 ]
-
-
-def _validate_timezone(value: str) -> str:
-    try:
-        ZoneInfo(value)
-    except ValueError, ZoneInfoNotFoundError:
-        raise ValueError(f"{value!r} is not a valid IANA time zone") from None
-    return value
-
-
-SubscriptionExportTimezone = Annotated[str, AfterValidator(_validate_timezone)]
 
 
 def _datetime(value: datetime | None, tz: ZoneInfo) -> str | None:

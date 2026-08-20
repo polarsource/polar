@@ -3,6 +3,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query
 from pydantic import UUID4, AwareDatetime
+from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.account.service import account as account_service
 from polar.auth.permission import OrganizationPermission
@@ -21,7 +22,6 @@ from polar.transaction import (
 
 from .export import (
     TransactionExportColumn,
-    TransactionExportTimezone,
     generate_csv,
     get_filename,
 )
@@ -96,10 +96,10 @@ async def export(
             "Must include a UTC offset."
         ),
     ),
-    timezone: Annotated[
-        TransactionExportTimezone,
-        Query(description="Time zone used to render dates in the CSV."),
-    ] = "UTC",
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Time zone used to render dates in the CSV.",
+    ),
     columns: MultipleQueryFilter[TransactionExportColumn] | None = Query(
         None,
         description=(

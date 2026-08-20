@@ -199,7 +199,7 @@ async def generate_csv(
         statement = statement.where(Transaction.created_at >= created_after)
     if created_before is not None:
         statement = statement.where(Transaction.created_at <= created_before)
-    statement = statement.order_by(Transaction.created_at.desc())
+    statement = statement.distinct().order_by(Transaction.created_at.desc())
 
     repository = TransactionRepository.from_session(session)
     async for transaction in repository.stream(statement):

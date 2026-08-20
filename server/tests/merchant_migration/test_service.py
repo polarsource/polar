@@ -32,6 +32,7 @@ from polar.merchant_migration.canonical import (
     serialize,
 )
 from polar.merchant_migration.cards import AmbiguousCopiedCard
+from polar.merchant_migration.cards import PaymentMethodMappingCSVError
 from polar.merchant_migration.cutover import CutoverOutcome
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
@@ -65,6 +66,7 @@ from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
     Customer,
     MerchantMigration,
+    MerchantMigrationPaymentMethodMapping,
     MerchantMigrationRecord,
     Organization,
     PaymentMethod,
@@ -1565,6 +1567,80 @@ async def _imported_subscription(
 
 
 @pytest.mark.asyncio
+class TestImportPaymentMethodMappings:
+    async def test_persists_mapping_and_updates_destination_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="mapped@example.com",
+            stripe_customer_id="cus_old",
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_old",
+                target_id=customer.id,
+                canonical=serialize(
+                    CanonicalCustomer(
+                        source_id="cus_old",
+                        email=customer.email,
+                        name=None,
+                        country=None,
+                    )
+                ),
+            )
+        )
+
+        count = await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_old,pm_old,cus_new,pm_new\n"
+            ),
+        )
+
+        assert count == 1
+        assert customer.stripe_customer_id == "cus_new"
+        stored = await session.scalar(
+            select(MerchantMigrationPaymentMethodMapping).where(
+                MerchantMigrationPaymentMethodMapping.merchant_migration_id
+                == migration.id
+            )
+        )
+        assert stored is not None
+        assert stored.source_payment_method_id == "pm_old"
+        assert stored.destination_payment_method_id == "pm_new"
+
+    async def test_rejects_a_mapping_for_another_migration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+
+        with pytest.raises(PaymentMethodMappingCSVError):
+            await service.import_payment_method_mappings(
+                session,
+                migration,
+                (
+                    b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                    b"cus_unknown,pm_old,cus_new,pm_new\n"
+                ),
+            )
+
+
+@pytest.mark.asyncio
 class TestRunCardVerification:
     async def test_links_landed_cards_and_reports_the_shortfall(
         self,
@@ -1758,6 +1834,61 @@ class TestRunCardVerification:
         # Without this the wrong copy can be attached, and the switch keeps it.
         assert link.await_args is not None
         assert link.await_args.kwargs["source_method"] == charged
+
+    async def test_uses_stripes_exact_mapping(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+        charged = CanonicalPaymentMethod(
+            source_id="pm_source",
+            type=CanonicalPaymentMethodType.card,
+        )
+        record = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="mapped-card@example.com",
+            payment_method=charged,
+        )
+        assert record.target_id is not None
+        subscription = await SubscriptionRepository.from_session(session).get_by_id(
+            record.target_id, options=(joinedload(Subscription.customer),)
+        )
+        assert subscription is not None
+        mapping = MerchantMigrationPaymentMethodMapping(
+            merchant_migration=migration,
+            source_customer_id="cus_sub_1",
+            source_payment_method_id="pm_source",
+            destination_customer_id="cus_destination",
+            destination_payment_method_id="pm_destination",
+        )
+        await save_fixture(mapping)
+        linked = await create_payment_method(
+            save_fixture, subscription.customer, processor_id="pm_destination"
+        )
+        link = mocker.patch(
+            "polar.merchant_migration.service.link_payment_method",
+            new=mocker.AsyncMock(return_value=linked),
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        assert link.await_args is not None
+        assert link.await_args.kwargs["mapping"].destination_payment_method_id == (
+            "pm_destination"
+        )
 
     async def test_an_ambiguous_card_skips_that_customer_only(
         self,

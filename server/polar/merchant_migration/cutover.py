@@ -31,13 +31,17 @@ from polar.subscription.service import subscription as subscription_service
 
 from .adapters import SourceAdapter
 from .canonical import (
-    CanonicalPaymentMethod,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
 )
-from .cards import AmbiguousCopiedCard, link_payment_method
+from .cards import (
+    CopiedCardResolutionError,
+    PaymentMethodMapping,
+    link_payment_method,
+)
 from .precheck import subscription_import_reason
+from .repository import MerchantMigrationPaymentMethodMappingRepository
 
 log: Logger = structlog.get_logger()
 
@@ -142,13 +146,13 @@ class SubscriptionCutover:
     async def run(self, record: MerchantMigrationRecord) -> CutoverOutcome:
         try:
             return await self._run(record)
-        except AmbiguousCopiedCard as e:
+        except CopiedCardResolutionError as e:
             # Recorded rather than raised: one customer must not stop the run.
             log.warning(
                 "merchant_migration.cutover.ambiguous_card",
                 migration_id=self.migration.id,
                 record_id=record.id,
-                customer_id=e.customer_id,
+                customer_id=record.target_id,
             )
             return _fail(str(e))
         except stripe_lib.StripeError as e:
@@ -197,7 +201,7 @@ class SubscriptionCutover:
         # Behind the gate above because resolving writes: it upserts the copied
         # methods and may set the customer's default.
         payment_method = await self._resolve_payment_method(
-            subscription, customer, source.payment_method
+            subscription, customer, source
         )
         if already_stopped:
             # An unproven card beats no biller at all: a failed first renewal
@@ -334,10 +338,39 @@ class SubscriptionCutover:
         self,
         subscription: Subscription,
         customer: Customer,
-        source_method: CanonicalPaymentMethod | None,
+        source: CanonicalSubscription,
     ) -> PaymentMethod | None:
         """The card the first Polar renewal will charge. A card the `verify_cards`
         step linked wins; otherwise look again, because cards keep landing."""
+        source_method = source.payment_method
+        mapping: PaymentMethodMapping | None = None
+        if source_method is not None:
+            stored_mapping = await (
+                MerchantMigrationPaymentMethodMappingRepository.from_session(
+                    self.session
+                ).get_by_source_payment_method_id(
+                    self.migration.id, source_method.source_id
+                )
+            )
+            if (
+                stored_mapping is not None
+                and stored_mapping.source_customer_id == source.customer_source_id
+            ):
+                mapping = PaymentMethodMapping(
+                    source_customer_id=stored_mapping.source_customer_id,
+                    source_payment_method_id=stored_mapping.source_payment_method_id,
+                    destination_customer_id=stored_mapping.destination_customer_id,
+                    destination_payment_method_id=(
+                        stored_mapping.destination_payment_method_id
+                    ),
+                )
+        if mapping is not None:
+            return await link_payment_method(
+                self.session,
+                customer,
+                source_method=source_method,
+                mapping=mapping,
+            )
         if subscription.payment_method_id is not None:
             payment_method = await PaymentMethodRepository.from_session(
                 self.session

@@ -258,9 +258,6 @@ class OrganizationFeatureSettingsUpdate(Schema):
     seat_based_pricing_enabled: bool = Field(
         False, description="If this organization has seat-based pricing enabled"
     )
-    unit_based_pricing_enabled: bool = Field(
-        False, description="If this organization has unit-based pricing enabled"
-    )
     member_model_enabled: bool = Field(
         False, description="If this organization has the Member model enabled"
     )

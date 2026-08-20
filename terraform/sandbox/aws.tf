@@ -22,7 +22,7 @@ module "redis" {
 
   name       = "polar-sandbox-worker"
   vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnet_ids
+  subnet_ids = module.vpc.secondary_private_subnet_ids
   node_type  = "cache.t4g.small"
   node_count = 2
 }

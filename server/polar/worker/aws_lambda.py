@@ -49,9 +49,16 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         for record in event.get("Records", []):
             message_id = record["messageId"]
             try:
-                actor, args, kwargs, correlation_id, attempt, message_timestamp = (
-                    parse_envelope(record["body"])
-                )
+                (
+                    actor,
+                    args,
+                    kwargs,
+                    correlation_id,
+                    attempt,
+                    message_timestamp,
+                    task_message_id,
+                    debounce_key,
+                ) = parse_envelope(record["body"])
                 _loop.run_until_complete(
                     run_task(
                         actor,
@@ -64,6 +71,8 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                             - _REMAINING_TIME_MARGIN_SECONDS
                         ),
                         message_timestamp=message_timestamp,
+                        message_id=task_message_id,
+                        debounce_key=debounce_key,
                     )
                 )
             except Retry as exc:
@@ -93,9 +102,16 @@ def _effective_receive_count(record: dict[str, Any], attempt: int) -> int:
 def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bool:
     """Schedule the failed message's next retry. Returns True if SQS should redeliver it."""
     try:
-        actor, args, kwargs, correlation_id, attempt, message_timestamp = (
-            parse_envelope(record["body"])
-        )
+        (
+            actor,
+            args,
+            kwargs,
+            correlation_id,
+            attempt,
+            message_timestamp,
+            task_message_id,
+            debounce_key,
+        ) = parse_envelope(record["body"])
         queue_arn = record["eventSourceARN"]
         receive_count = _effective_receive_count(record, attempt)
         scheduler_role_arn = settings.WORKER_SQS_SCHEDULER_ROLE_ARN
@@ -129,6 +145,8 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
                     correlation_id,
                     receive_count + 1,
                     message_timestamp,
+                    message_id=task_message_id,
+                    debounce_key=debounce_key,
                 ),
                 delay_seconds,
                 build_retry_schedule_name(queue_arn, record["messageId"], attempt),

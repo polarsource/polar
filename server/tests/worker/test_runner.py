@@ -1,16 +1,19 @@
 import asyncio
 import datetime
 import time
+from unittest.mock import AsyncMock
 
 import dramatiq
 import pytest
 from dramatiq.errors import Retry
+from fakeredis import FakeAsyncRedis
 from logfire.testing import CaptureLogfire
 from opentelemetry.sdk.trace import ReadableSpan
 from pytest_mock import MockerFixture
 
 import polar.tasks  # noqa: F401  (registers actors with the broker)
 from polar.worker import get_message_timestamp
+from polar.worker._debounce import now_timestamp
 from polar.worker._runner import TaskTimeoutError, run_task
 
 
@@ -186,3 +189,93 @@ class TestRunTaskAgeLimit:
         await run_task("dummy", message_timestamp=1234567890000)
 
         task.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestRunTaskDebounce:
+    DEBOUNCE_KEY = "debounce:dummy:key"
+
+    @pytest.fixture
+    def fake_redis(self, mocker: MockerFixture) -> FakeAsyncRedis:
+        fake_redis = FakeAsyncRedis(decode_responses=True)
+        mocker.patch(
+            "polar.worker._runner.RedisMiddleware.get", return_value=fake_redis
+        )
+        return fake_redis
+
+    @pytest.fixture
+    def task_fn(self, mocker: MockerFixture) -> AsyncMock:
+        task_fn = AsyncMock()
+        mocker.patch(
+            "polar.worker._runner.build_registry", return_value={"dummy": task_fn}
+        )
+        return task_fn
+
+    async def test_executed_key_skips_task(
+        self, fake_redis: FakeAsyncRedis, task_fn: AsyncMock
+    ) -> None:
+        await fake_redis.hset(
+            self.DEBOUNCE_KEY,
+            mapping={
+                "enqueue_timestamp": now_timestamp(),
+                "message_id": "owner",
+                "executed": 1,
+            },
+        )
+
+        await run_task("dummy", message_id="owner", debounce_key=self.DEBOUNCE_KEY)
+
+        task_fn.assert_not_awaited()
+
+    async def test_owner_runs_and_marks_executed(
+        self, fake_redis: FakeAsyncRedis, task_fn: AsyncMock
+    ) -> None:
+        await fake_redis.hset(
+            self.DEBOUNCE_KEY,
+            mapping={
+                "enqueue_timestamp": now_timestamp(),
+                "message_id": "owner",
+                "executed": 0,
+            },
+        )
+
+        await run_task("dummy", message_id="owner", debounce_key=self.DEBOUNCE_KEY)
+
+        task_fn.assert_awaited_once()
+        assert await fake_redis.hget(self.DEBOUNCE_KEY, "executed") == "1"
+
+    async def test_retry_does_not_mark_executed(
+        self, fake_redis: FakeAsyncRedis, task_fn: AsyncMock
+    ) -> None:
+        task_fn.side_effect = Retry(delay=1000)
+        await fake_redis.hset(
+            self.DEBOUNCE_KEY,
+            mapping={
+                "enqueue_timestamp": now_timestamp(),
+                "message_id": "owner",
+                "executed": 0,
+            },
+        )
+
+        with pytest.raises(Retry):
+            await run_task("dummy", message_id="owner", debounce_key=self.DEBOUNCE_KEY)
+
+        assert await fake_redis.hget(self.DEBOUNCE_KEY, "executed") == "0"
+
+    async def test_exception_does_not_mark_executed(
+        self, fake_redis: FakeAsyncRedis, task_fn: AsyncMock
+    ) -> None:
+        task_fn.side_effect = ValueError("boom")
+        await fake_redis.hset(
+            self.DEBOUNCE_KEY,
+            mapping={
+                "enqueue_timestamp": now_timestamp(),
+                "message_id": "owner",
+                "executed": 0,
+            },
+        )
+
+        with pytest.raises(ValueError, match="boom"):
+            await run_task("dummy", message_id="owner", debounce_key=self.DEBOUNCE_KEY)
+
+        assert await fake_redis.hget(self.DEBOUNCE_KEY, "executed") == "0"

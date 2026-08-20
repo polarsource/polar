@@ -9,8 +9,6 @@ import { SwitchPanel } from '../switch/SwitchPanel'
 import { StepCopy } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
 
-// The confirm step for the switch is where the merchant picks which
-// subscriptions move; the picker submits the selection and confirms the step.
 const SWITCH_STEP_KEY = 'cutover'
 
 interface Props {

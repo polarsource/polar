@@ -5,8 +5,6 @@ import { SWITCH_INTRO } from './switchCopy'
 
 const numberFormat = new Intl.NumberFormat('en-US')
 
-// The one-line tally above the table: how many subscriptions were imported, how
-// many Polar bills now, and how many are still waiting to be switched.
 export function SwitchSummary({
   report,
 }: {

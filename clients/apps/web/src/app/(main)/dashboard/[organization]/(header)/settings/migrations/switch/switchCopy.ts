@@ -1,7 +1,5 @@
 import { SwitchCutoverStatus } from './switchRows'
 
-// The status tabs map one-to-one onto what the records endpoint can filter, so
-// every tab is a real server-side query rather than a client-side slice.
 export type SwitchFilter = 'all' | SwitchCutoverStatus
 
 export const SWITCH_FILTERS: { value: SwitchFilter; label: string }[] = [

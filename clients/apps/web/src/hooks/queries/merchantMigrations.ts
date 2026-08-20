@@ -196,8 +196,6 @@ export const useMigrationRecords = (
     page: number
     limit: number
   },
-  // The switch table polls while Polar works through the subscriptions, so the
-  // rows flip to their outcome without a manual refresh.
   refetchInterval?: number | false,
 ) =>
   useQuery({
@@ -232,7 +230,6 @@ export const useMigrationRecords = (
 
 const switchKey = (id: string) => ['merchantMigrationSwitch', { id }]
 
-// Polls only while a switch run is in flight; a settled report just sits.
 export const useMigrationSwitch = (id: string) =>
   useQuery({
     queryKey: switchKey(id),
@@ -268,8 +265,6 @@ export const useStartMigrationSwitch = (id: string) =>
     },
   })
 
-// One read for every count the UI shows: asking per number made the server
-// re-read and re-classify the whole staged catalog once per count.
 export const useMerchantMigrationRecordSummary = (id: string) =>
   useQuery({
     queryKey: ['merchantMigrationRecordSummary', { id }],

@@ -122,8 +122,6 @@ function SelectCell({
   onToggle: (id: string) => void
 }) {
   const id = row.record_id
-  // Already billed by Polar: shown ticked and locked, so the column stays a
-  // column instead of a run of gaps.
   if (isSwitched(row)) {
     return (
       <SelectCheckbox

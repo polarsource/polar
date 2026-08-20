@@ -19,12 +19,13 @@ import {
 import { SwitchPanelView } from './SwitchPanelView'
 import { SwitchFilter } from './switchCopy'
 
-// Opt in, not out: switching bills customers and can't be undone, so nothing is
-// picked until the merchant picks it.
 const initialSwitchSelection: SelectionState = {
   mode: 'none',
   toggled: new Set(),
 }
+
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback
 
 export function SwitchPanel({ migrationId }: { migrationId: string }) {
   const [filter, setFilter] = useState<SwitchFilter>('all')
@@ -45,7 +46,6 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
       page,
       limit: pageSize,
     },
-    // Follow the run: rows flip to their outcome as the worker chain lands.
     running ? 3000 : false,
   )
   const startSwitch = useStartMigrationSwitch(migrationId)
@@ -80,13 +80,15 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
       <Alert
         variant="danger"
         title="We couldn't load your subscriptions"
-        description="Something went wrong. Please refresh and try again."
+        description={errorMessage(
+          switchReport.error ?? records.error,
+          'Something went wrong. Please refresh and try again.',
+        )}
       />
     )
   }
 
   const report = switchReport.data
-  // Everything imported that Polar doesn't bill yet: what a switch could move.
   const switchableTotal = Math.max(0, report.total - report.moved)
   const switchCount = selectedCount(selection, switchableTotal)
 

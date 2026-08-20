@@ -39,6 +39,9 @@ _job_queue_manager: contextvars.ContextVar["JobQueueManager | None"] = (
 
 FLUSH_BATCH_SIZE = 50
 
+UUID_JSON_BYTES = 40
+EVENT_INGESTED_CHUNK_SIZE = _sqs.MAX_JOB_PAYLOAD_BYTES // UUID_JSON_BYTES
+
 
 def should_route_to_sqs(actor_name: str) -> bool:
     return settings.WORKER_SQS_ENABLED and actor_name in settings.WORKER_SQS_ACTORS
@@ -72,8 +75,10 @@ class JobQueueManager:
         self._ingested_events.extend(event_ids)
 
     async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
-        if len(self._ingested_events) > 0:
-            self.enqueue_job("event.ingested", self._ingested_events)
+        for chunk in itertools.batched(
+            self._ingested_events, EVENT_INGESTED_CHUNK_SIZE
+        ):
+            self.enqueue_job("event.ingested", list(chunk))
 
         if not self._enqueued_jobs:
             self.reset()

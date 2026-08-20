@@ -201,6 +201,15 @@ async def run_task(
         else int(time.time() * 1000),
     )
 
+    max_age = actor_obj.options.get("max_age")
+    if max_age and int(time.time() * 1000) - message.message_timestamp >= max_age:
+        log.warning(
+            "polar.worker.task_age_limit_exceeded",
+            actor_name=actor_name,
+            max_age=max_age,
+        )
+        return
+
     correlation_id = CorrelationID.set()
     structlog.contextvars.bind_contextvars(
         actor_name=actor_name,

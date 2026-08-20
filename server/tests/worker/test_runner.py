@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import time
 
 import dramatiq
 import pytest
@@ -133,3 +134,55 @@ class TestRunTask:
         await run_task("dummy", message_timestamp=1234567890000)
 
         assert seen == [datetime.datetime.fromtimestamp(1234567890, tz=datetime.UTC)]
+
+
+@pytest.mark.asyncio
+class TestRunTaskAgeLimit:
+    async def test_stale_message_skipped(self, mocker: MockerFixture) -> None:
+        task = mocker.AsyncMock()
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"meter.enqueue_billing": task},
+        )
+
+        await run_task(
+            "meter.enqueue_billing",
+            message_timestamp=int(time.time() * 1000) - 6 * 60 * 1000,
+        )
+
+        task.assert_not_called()
+
+    async def test_fresh_message_runs(self, mocker: MockerFixture) -> None:
+        task = mocker.AsyncMock()
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"meter.enqueue_billing": task},
+        )
+
+        await run_task(
+            "meter.enqueue_billing", message_timestamp=int(time.time() * 1000)
+        )
+
+        task.assert_called_once()
+
+    async def test_missing_timestamp_runs(self, mocker: MockerFixture) -> None:
+        task = mocker.AsyncMock()
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"meter.enqueue_billing": task},
+        )
+
+        await run_task("meter.enqueue_billing")
+
+        task.assert_called_once()
+
+    async def test_actor_without_max_age_runs(self, mocker: MockerFixture) -> None:
+        task = mocker.AsyncMock()
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"dummy": task},
+        )
+
+        await run_task("dummy", message_timestamp=1234567890000)
+
+        task.assert_called_once()

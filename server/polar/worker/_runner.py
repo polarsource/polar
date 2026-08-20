@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import enum
 import functools
@@ -19,6 +20,7 @@ from polar.config import settings
 from polar.logging import CorrelationID, Logger
 
 from . import _sqs
+from ._broker import TASK_TIME_LIMIT_DEFAULT_MS
 from ._httpx import _close_client, setup_httpx
 from ._redis import _close_redis, setup_redis
 from ._sqlalchemy import dispose_sqlalchemy_engine, setup_sqlalchemy
@@ -38,6 +40,15 @@ class UnknownActor(Exception):
     def __init__(self, actor_name: str) -> None:
         self.actor_name = actor_name
         super().__init__(f"No registered actor named {actor_name!r}")
+
+
+class TaskTimeoutError(Exception):
+    def __init__(self, actor_name: str, timeout_seconds: float) -> None:
+        self.actor_name = actor_name
+        self.timeout_seconds = timeout_seconds
+        super().__init__(
+            f"Task {actor_name!r} timed out after {timeout_seconds:g} seconds"
+        )
 
 
 def _unwrap_to_coroutine(fn: Any, actor_name: str) -> Any:
@@ -159,6 +170,7 @@ async def run_task(
     *,
     receive_count: int = 1,
     source_correlation_id: str | None = None,
+    remaining_time_seconds: float | None = None,
 ) -> None:
     registry = build_registry()
     fn = registry.get(actor_name)
@@ -167,6 +179,10 @@ async def run_task(
 
     kwargs = kwargs or {}
     actor_obj = dramatiq.get_broker().get_actor(actor_name)
+    time_limit_ms = actor_obj.options.get("time_limit", TASK_TIME_LIMIT_DEFAULT_MS)
+    timeout_seconds = time_limit_ms / 1000
+    if remaining_time_seconds is not None:
+        timeout_seconds = min(timeout_seconds, remaining_time_seconds)
     message: dramatiq.Message[Any] = dramatiq.Message(
         queue_name=actor_obj.queue_name,
         actor_name=actor_name,
@@ -192,7 +208,13 @@ async def run_task(
         retry: Retry | None = None
         with _task_span(actor_name, message, correlation_id, source_correlation_id):
             try:
-                await fn(*args, **kwargs)
+                timeout_cm = asyncio.timeout(timeout_seconds)
+                async with timeout_cm:
+                    await fn(*args, **kwargs)
+            except TimeoutError:
+                if timeout_cm.expired():
+                    raise TaskTimeoutError(actor_name, timeout_seconds) from None
+                raise
             except Retry as e:
                 retry = e
         if retry is not None:
@@ -220,6 +242,7 @@ async def shutdown() -> None:
 
 __all__ = [
     "RetryAction",
+    "TaskTimeoutError",
     "UnknownActor",
     "bootstrap",
     "build_registry",

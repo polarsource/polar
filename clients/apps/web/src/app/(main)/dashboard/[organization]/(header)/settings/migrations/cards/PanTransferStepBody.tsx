@@ -3,7 +3,6 @@
 import { schemas } from '@polar-sh/client'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { SwitchPanel } from '../switch/SwitchPanel'
 import { OpsUpdate } from './OpsUpdate'
 import { StepCopy } from './panTransferCopy'
@@ -18,7 +17,6 @@ interface Props {
   copy: StepCopy
   destinationAccountId: string | null
   migrationId: string
-  organizationId: string
 }
 
 export function PanTransferStepBody({
@@ -26,7 +24,6 @@ export function PanTransferStepBody({
   copy,
   destinationAccountId,
   migrationId,
-  organizationId,
 }: Props) {
   if (step.key === START_COPY_STEP_KEY) {
     return (
@@ -35,7 +32,6 @@ export function PanTransferStepBody({
         copy={copy}
         destinationAccountId={destinationAccountId}
         migrationId={migrationId}
-        organizationId={organizationId}
       />
     )
   }
@@ -50,23 +46,6 @@ export function PanTransferStepBody({
       <Text variant="caption" color="muted">
         {copy.description}
       </Text>
-
-      {copy.showsDestinationAccount &&
-        (destinationAccountId ? (
-          <Box flexDirection="column" rowGap="xs" maxWidth={380}>
-            <Text variant="caption" color="muted">
-              Polar account ID
-            </Text>
-            <CopyToClipboardInput value={destinationAccountId} variant="mono" />
-          </Box>
-        ) : (
-          // The guidance below says to paste an ID we would not be showing.
-          <Alert
-            variant="danger"
-            title="We can't show the Polar account ID right now"
-            description="Please contact support before you start the copy in Stripe."
-          />
-        ))}
 
       {copy.guidance && (
         <Box as="ol" flexDirection="column" rowGap="xs">

@@ -18,7 +18,6 @@ export interface StepCopy {
   warning?: string
   inputs?: StepInputField[]
   action?: string
-  showsDestinationAccount?: boolean
 }
 
 export const STRIPE_MIGRATION_ID_FIELD = 'stripe_migration_request_id'
@@ -68,7 +67,6 @@ export const STEP_COPY: Record<string, StepCopy> = {
       'Only the account owner can start a copy. Wallet cards, Bacs and old SEPA mandates do not copy.',
     inputs: [STRIPE_MIGRATION_ID_INPUT],
     action: 'I started the copy',
-    showsDestinationAccount: true,
   },
   authorize_copy: {
     title: 'Polar accepts the copy',

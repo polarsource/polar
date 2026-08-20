@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
@@ -131,6 +131,30 @@ class MerchantMigrationRecordRepository(
             )
         )
         return await self.get_all(statement)
+
+    async def stream_imported_customer_source_ids(
+        self, migration_id: UUID
+    ) -> AsyncGenerator[str]:
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(MerchantMigrationRecord.source_id)
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
+                MerchantMigrationRecord.status
+                == MerchantMigrationRecordStatus.imported,
+            )
+            .order_by(
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
+        )
+        results = await self.session.stream_scalars(statement)
+        try:
+            async for source_id in results:
+                yield source_id
+        finally:
+            await results.close()
 
     async def count_by_type_and_status(
         self, migration_ids: Sequence[UUID]

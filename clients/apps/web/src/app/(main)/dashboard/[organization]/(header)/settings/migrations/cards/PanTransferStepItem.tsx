@@ -19,7 +19,6 @@ interface Props {
   current: boolean
   destinationAccountId: string | null
   migrationId: string
-  organizationId: string
 }
 
 export function PanTransferStepItem({
@@ -27,7 +26,6 @@ export function PanTransferStepItem({
   current,
   destinationAccountId,
   migrationId,
-  organizationId,
 }: Props) {
   const copy = STEP_COPY[step.key]
   // Keep the row on an unknown key so the count and order still line up.
@@ -93,7 +91,6 @@ export function PanTransferStepItem({
                 copy={copy}
                 destinationAccountId={destinationAccountId}
                 migrationId={migrationId}
-                organizationId={organizationId}
               />
             </Box>
           ) : (

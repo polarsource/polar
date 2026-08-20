@@ -16,10 +16,19 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
 )
 from polar.merchant_migration.repository import MerchantMigrationRepository
-from polar.models import MerchantMigration, Organization, UserOrganization
+from polar.models import (
+    MerchantMigration,
+    MerchantMigrationRecord,
+    Organization,
+    UserOrganization,
+)
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
+)
+from polar.models.merchant_migration_record import (
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -809,6 +818,73 @@ class TestCutover:
         assert body["started"] is False
         assert body["running"] is False
         assert body["total"] == 0
+
+
+@pytest.mark.asyncio
+class TestExportCustomerIds:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/customer-ids.csv"
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_exports_imported_customer_ids_only(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        records = (
+            (
+                MerchantMigrationRecordType.customer,
+                MerchantMigrationRecordStatus.imported,
+                "cus_second",
+            ),
+            (
+                MerchantMigrationRecordType.customer,
+                MerchantMigrationRecordStatus.imported,
+                "cus_first",
+            ),
+            (
+                MerchantMigrationRecordType.customer,
+                MerchantMigrationRecordStatus.pending,
+                "cus_pending",
+            ),
+            (
+                MerchantMigrationRecordType.subscription,
+                MerchantMigrationRecordStatus.imported,
+                "sub_imported",
+            ),
+        )
+        for type, status, source_id in records:
+            await save_fixture(
+                MerchantMigrationRecord(
+                    merchant_migration=migration,
+                    organization=organization,
+                    type=type,
+                    status=status,
+                    source_id=source_id,
+                    canonical={},
+                )
+            )
+
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/customer-ids.csv"
+        )
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert (
+            response.headers["content-disposition"]
+            == 'attachment; filename="stripe-customer-ids.csv"'
+        )
+        assert response.text == "cus_second\r\ncus_first\r\n"
 
 
 async def _create_migration(

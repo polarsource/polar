@@ -15,7 +15,6 @@ interface Props {
   copy: StepCopy
   destinationAccountId: string | null
   migrationId: string
-  organizationId: string
 }
 
 export function StartCopyStep({
@@ -23,15 +22,8 @@ export function StartCopyStep({
   copy,
   destinationAccountId,
   migrationId,
-  organizationId,
 }: Props) {
-  const downloadCsv = () => {
-    const url = new URL(
-      `${getServerURL()}/v1/customers/export?organization_id=${organizationId}`,
-      window.location.origin,
-    )
-    window.open(url, '_blank')
-  }
+  const customerIdsUrl = `${getServerURL()}/v1/merchant-migrations/${migrationId}/customer-ids.csv`
 
   return (
     <Box flexDirection="column" rowGap="xl">
@@ -45,9 +37,11 @@ export function StartCopyStep({
           Upload this file in Stripe when you start the copy.
         </Text>
         <Box>
-          <Button variant="secondary" size="sm" onClick={downloadCsv}>
-            <Download size={14} />
-            Download customer CSV
+          <Button variant="secondary" size="sm" asChild>
+            <a href={customerIdsUrl} target="_blank" rel="noopener noreferrer">
+              <Download size={14} />
+              Download customer CSV
+            </a>
           </Button>
         </Box>
       </Box>

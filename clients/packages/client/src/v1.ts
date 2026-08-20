@@ -5320,6 +5320,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/customer-ids.csv': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Export Merchant Migration Customer IDs
+     * @description One imported Stripe customer ID per row, no header — for Stripe Copy upload.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:export_customer_ids']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/pan-transfer': {
     parameters: {
       query?: never
@@ -53738,6 +53760,55 @@ export interface operations {
           'application/json':
             | components['schemas']['CatalogImportNotReady']
             | components['schemas']['CatalogImportBlocked']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:export_customer_ids': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': string
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': components['schemas']['MerchantMigrationNotFound']
         }
       }
       /** @description Validation Error */

@@ -65,10 +65,7 @@ export default function MigrationDetailPage({
           <Box as="section" flexDirection="column" rowGap="xl">
             <SourceHeader migration={migration} />
             <MigrationStepper migration={migration} />
-            <StepContent
-              migration={migration}
-              organizationId={organization.id}
-            />
+            <StepContent migration={migration} />
           </Box>
         )}
       </Box>
@@ -108,10 +105,8 @@ function SourceHeader({
 
 function StepContent({
   migration,
-  organizationId,
 }: {
   migration: schemas['MerchantMigration']
-  organizationId: string
 }) {
   if (!migration.source_connected) {
     return (
@@ -140,10 +135,7 @@ function StepContent({
       return (
         <Box flexDirection="column" rowGap="l">
           <StepHeading def={def} />
-          <PanTransferPanel
-            migrationId={migration.id}
-            organizationId={organizationId}
-          />
+          <PanTransferPanel migrationId={migration.id} />
         </Box>
       )
     // The switch runs here, and stays reachable at cleanup so the merchant can

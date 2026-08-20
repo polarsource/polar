@@ -1612,7 +1612,7 @@ def get_webhook_routes() -> Sequence[WebhookAPIRoute]:
                 event_type,
                 endpoint,
                 methods=["POST"],
-                summary=event_type,
+                summary=event_type.name,
                 description=inspect.getdoc(webhook_schema),
                 openapi_extra={
                     "x-mint": {"metadata": {"sidebarTitle": event_type.value}}

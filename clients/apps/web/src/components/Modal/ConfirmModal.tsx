@@ -7,7 +7,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { MouseEvent, useCallback, useState } from 'react'
+import { MouseEvent, useCallback, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Modal, type ModalProps } from '@polar-sh/orbit'
 
@@ -43,6 +43,7 @@ export const ConfirmModal = ({
   ...props
 }: ConfirmModalProps) => {
   const [isConfirming, setIsConfirming] = useState(false)
+  const isConfirmingRef = useRef(false)
   const form = useForm<{ prompt?: string }>({
     defaultValues: {
       prompt: '',
@@ -55,38 +56,40 @@ export const ConfirmModal = ({
     confirmPrompt !== undefined ? normalizeWhitespace(confirmPrompt) : undefined
 
   const hide = useCallback(() => {
-    if (isConfirming) {
+    if (isConfirmingRef.current) {
       return
     }
     props.hide()
-  }, [isConfirming, props])
+  }, [props])
 
   const handleConfirm = useCallback(async () => {
-    if (isConfirming) {
+    if (isConfirmingRef.current) {
       return
     }
 
+    isConfirmingRef.current = true
     setIsConfirming(true)
     try {
       await onConfirm()
       reset()
       props.hide()
     } finally {
+      isConfirmingRef.current = false
       setIsConfirming(false)
     }
-  }, [isConfirming, onConfirm, props, reset])
+  }, [onConfirm, props, reset])
 
   const handleCancel = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
-      if (isConfirming) {
+      if (isConfirmingRef.current) {
         return
       }
       reset()
       onCancel?.()
       props.hide()
     },
-    [isConfirming, onCancel, props, reset],
+    [onCancel, props, reset],
   )
 
   const promptMismatch = normalizedConfirmPrompt

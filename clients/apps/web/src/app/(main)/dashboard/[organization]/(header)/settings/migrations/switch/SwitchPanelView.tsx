@@ -34,6 +34,7 @@ interface Props {
   selection: SelectionState
   switchCount: number
   switchableTotal: number
+  canSelectAll: boolean
   onToggle: (id: string) => void
   onToggleAll: () => void
   onSwitch: () => void
@@ -55,6 +56,7 @@ export function SwitchPanelView({
   selection,
   switchCount,
   switchableTotal,
+  canSelectAll,
   onToggle,
   onToggleAll,
   onSwitch,
@@ -75,13 +77,14 @@ export function SwitchPanelView({
     () =>
       buildSwitchColumns({
         isSelected: (id) => isRowSelected(selection, id),
-        headerState:
-          switchableTotal > 0 ? headerCheckState(selection) : 'unchecked',
-        canSelectAll: switchableTotal > 0,
+        headerState: canSelectAll
+          ? headerCheckState(selection)
+          : 'unchecked',
+        canSelectAll,
         onToggle,
         onToggleAll,
       }),
-    [switchableTotal, selection, onToggle, onToggleAll],
+    [canSelectAll, selection, onToggle, onToggleAll],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }

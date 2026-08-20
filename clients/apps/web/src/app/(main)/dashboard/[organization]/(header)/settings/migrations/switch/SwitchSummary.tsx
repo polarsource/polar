@@ -10,10 +10,11 @@ export function SwitchSummary({
 }: {
   report: schemas['MerchantMigrationCutoverReport']
 }) {
+  const toSwitch = Math.max(0, report.total - report.moved)
   const parts = [
     `${numberFormat.format(report.total)} imported`,
     `${numberFormat.format(report.moved)} switched`,
-    `${numberFormat.format(report.pending)} to switch`,
+    `${numberFormat.format(toSwitch)} to switch`,
   ]
   const left = report.skipped + report.failed
   if (left > 0) {

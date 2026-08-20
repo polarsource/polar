@@ -5,9 +5,10 @@ import {
   useMigrationSwitch,
   useStartMigrationSwitch,
 } from '@/hooks/queries/merchantMigrations'
+import { getQueryClient } from '@/utils/api/query'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   SelectionState,
   selectedCount,
@@ -50,9 +51,20 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
   )
   const startSwitch = useStartMigrationSwitch(migrationId)
 
+  const wasRunning = useRef(false)
+  useEffect(() => {
+    if (wasRunning.current && !running) {
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigrationRecords', { id: migrationId }],
+      })
+    }
+    wasRunning.current = running
+  }, [running, migrationId])
+
   const onFilterChange = (next: SwitchFilter) => {
     setFilter(next)
     setPage(1)
+    setSelection(initialSwitchSelection)
   }
   const onPageSizeChange = (size: number) => {
     setPageSize(size)
@@ -90,6 +102,9 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
 
   const report = switchReport.data
   const switchableTotal = Math.max(0, report.total - report.moved)
+  // Select-all sends `{}` (every imported subscription). Only safe on the All
+  // tab — on a status tab it would bill rows the merchant isn't looking at.
+  const canSelectAll = filter === 'all' && switchableTotal > 0
   const switchCount = selectedCount(selection, switchableTotal)
 
   return (
@@ -107,6 +122,7 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
       selection={selection}
       switchCount={switchCount}
       switchableTotal={switchableTotal}
+      canSelectAll={canSelectAll}
       onToggle={onToggle}
       onToggleAll={onToggleAll}
       onSwitch={() => {

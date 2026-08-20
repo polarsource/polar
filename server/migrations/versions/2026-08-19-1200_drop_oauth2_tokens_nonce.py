@@ -1,7 +1,7 @@
 """drop oauth2_tokens.nonce column
 
-Revision ID: a1b2c3d4e5f6
-Revises: c7f2a91e4d38
+Revision ID: 259333744d69
+Revises: f3d81c25ab90
 Create Date: 2026-08-19 12:00:00.000000
 
 """
@@ -12,8 +12,8 @@ from alembic import op
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "a1b2c3d4e5f6"
-down_revision = "c7f2a91e4d38"
+revision = "259333744d69"
+down_revision = "f3d81c25ab90"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

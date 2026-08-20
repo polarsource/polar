@@ -229,19 +229,16 @@ class CheckoutCreateBase(
     units: Int32 | None = Field(
         default=None,
         ge=1,
-        le=1000000,
         description="Predefined number of units (works with unit-based pricing only)",
     )
     min_units: Int32 | None = Field(
         default=None,
         ge=1,
-        le=1000000,
         description=("Minimum number of units (works with unit-based pricing only)"),
     )
     max_units: Int32 | None = Field(
         default=None,
         ge=1,
-        le=1000000,
         description=("Maximum number of units (works with unit-based pricing only)"),
     )
 
@@ -431,7 +428,6 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     units: Int32 | None = Field(
         default=None,
         ge=1,
-        le=1000000,
         description="Number of units for unit-based pricing.",
     )
     is_business_customer: bool | None = None

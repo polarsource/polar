@@ -104,9 +104,7 @@ class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, S
     seats: Int32 | None = Field(
         default=None, ge=1, le=10000, description=_seats_description
     )
-    units: Int32 | None = Field(
-        default=None, ge=1, le=1000000, description=_units_description
-    )
+    units: Int32 | None = Field(default=None, ge=1, description=_units_description)
     success_url: SuccessURL = None
     return_url: ReturnURL = None
 
@@ -169,9 +167,7 @@ class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
     seats: Int32 | None = Field(
         default=None, ge=1, le=10000, description=_seats_description
     )
-    units: Int32 | None = Field(
-        default=None, ge=1, le=1000000, description=_units_description
-    )
+    units: Int32 | None = Field(default=None, ge=1, description=_units_description)
     success_url: SuccessURL = None
     return_url: ReturnURL = None
 

@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from typing import Any, cast
@@ -481,7 +482,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 return False
         return True
 
-    def _get_unit_prices(self, product: Product) -> list[UnitPrice]:
+    def _get_unit_prices(self, product: Product) -> builtins.list[UnitPrice]:
         return [price for price in product.prices if is_unit_price(price)]
 
     def _units_valid_for_products(
@@ -537,7 +538,8 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                                 "loc": ("body", "units"),
                                 "msg": (
                                     f"Product '{product.name}' allows between "
-                                    f"{minimum_units} and {maximum_label} units."
+                                    f"{minimum_units} and {maximum_label} units "
+                                    f"for {unit_price.price_currency.upper()}."
                                 ),
                                 "input": units,
                             }

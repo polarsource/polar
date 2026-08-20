@@ -17,6 +17,8 @@ from polar.models.transaction import TransactionType
 
 from .service.transaction import transaction as transaction_service
 
+TRANSACTION_EXPORT_BATCH_SIZE = 1000
+
 
 class TransactionExportColumn(StrEnum):
     created_at = "created_at"
@@ -188,19 +190,29 @@ async def generate_csv(
         if account is not None:
             delay = account.payout_transaction_delay
 
-    (results, _) = await transaction_service.search(
-        session,
-        auth_subject,
-        type=type,
-        account_id=account_id,
-        exclude_platform_fees=exclude_platform_fees,
-        created_after=created_after,
-        created_before=created_before,
-        include_payout_transactions=True,
-        pagination=PaginationParams(limit=1000000, page=1),
-    )
-
     now = utc_now()
-    for transaction in results:
-        row = _row(transaction, timezone, now, delay)
-        yield csv_writer.getrow(tuple(row[column] for column in export_columns))
+    page = 1
+    while True:
+        results, _ = await transaction_service.search(
+            session,
+            auth_subject,
+            type=type,
+            account_id=account_id,
+            exclude_platform_fees=exclude_platform_fees,
+            created_after=created_after,
+            created_before=created_before,
+            include_payout_transactions=True,
+            pagination=PaginationParams(limit=TRANSACTION_EXPORT_BATCH_SIZE, page=page),
+        )
+        if not results:
+            break
+
+        for transaction in results:
+            row = _row(transaction, timezone, now, delay)
+            yield csv_writer.getrow(tuple(row[column] for column in export_columns))
+
+        if len(results) < TRANSACTION_EXPORT_BATCH_SIZE:
+            break
+
+        session.expire_all()
+        page += 1

@@ -89,6 +89,9 @@ class SubscriptionUpdate(RecordModel):
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True)
     """Number of seats to apply to the subscription."""
 
+    units: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    """Number of units to apply to the subscription."""
+
     discount_unset: Mapped[bool] = mapped_column(nullable=False, default=False)
     """
     Whether to unset the subscription's discount when applying the update.

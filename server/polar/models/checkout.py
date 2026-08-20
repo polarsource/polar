@@ -148,6 +148,10 @@ class Checkout(
     min_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     max_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
+    units: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    min_units: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    max_units: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+
     net_amount: Mapped[int] = mapped_column("net_amount_v2", BigInteger, nullable=False)
     tax_amount: Mapped[int | None] = mapped_column(
         "tax_amount_v2", BigInteger, nullable=True, default=None

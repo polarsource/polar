@@ -62,6 +62,7 @@ class ProductPriceAmountType(StrEnum):
     custom = "custom"
     metered_unit = "metered_unit"
     seat_based = "seat_based"
+    unit_based = "unit_based"
 
 
 class ProductPriceSource(StrEnum):
@@ -363,6 +364,13 @@ class TieredPrice:
         default=None,
     )
 
+    @property
+    def is_free(self) -> bool:
+        """A price with no tiers yet has nothing to charge, so it reads as free."""
+        if self.tiers is None:
+            return True
+        return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
+
     def get_tiered_amount(self, quantity: int) -> Decimal:
         return self.tiers.calculate(quantity)
 
@@ -427,14 +435,61 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
     def get_maximum_seats(self) -> int | None:
         return self.get_maximum_units()
 
-    @property
-    def is_free(self) -> bool:
-        if not self.tiers.tiers:
-            return True
-        return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
-
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,
+        "polymorphic_load": "inline",
+    }
+
+
+class ProductPriceUnit(TieredPrice, NewProductPrice, ProductPrice):
+    """A price for a quantity of units the buyer declares up-front.
+
+    Priced exactly like a seat price, the buyer pays for the declared
+    quantity immediately, and changes are prorated but without seat
+    management. Reads tiers natively from the shared columns.
+    """
+
+    amount_type: Mapped[Literal[ProductPriceAmountType.unit_based]] = mapped_column(
+        use_existing_column=True, default=ProductPriceAmountType.unit_based
+    )
+    unit_label: Mapped[dict[str, dict[str, str]] | None] = mapped_column(
+        postgresql.JSONB(none_as_null=True), nullable=True, default=None
+    )
+
+    def get_unit_noun(self, count: int, locale: str | None = None) -> str:
+        forms = self._unit_label_forms(locale)
+        noun = forms.get(f"={count}") or forms.get("other")
+        if noun:
+            return noun
+        return "unit" if count == 1 else "units"
+
+    def _unit_label_forms(self, locale: str | None) -> dict[str, str]:
+        labels = {
+            key.replace("_", "-").lower(): forms
+            for key, forms in (self.unit_label or {}).items()
+        }
+        if locale:
+            requested = locale.replace("_", "-").lower()
+            language = requested.split("-", 1)[0]
+            if forms := labels.get(requested) or labels.get(language):
+                return forms
+        if forms := labels.get("en"):
+            return forms
+        return next(iter(labels.values()), {})
+
+    def calculate_amount(self, units: int) -> int:
+        amount = self.get_tiered_amount(units)
+        # Unit rates are the smallest currency unit, so any fraction means corrupt data.
+        if amount != amount.to_integral_value():
+            raise ValueError(f"Unit price produced non-integral amount {amount}")
+        return int(amount)
+
+    def get_minimum_purchasable_units(self) -> int:
+        """The smallest purchasable quantity, never below one unit."""
+        return max(1, self.get_minimum_units())
+
+    __mapper_args__ = {
+        "polymorphic_identity": ProductPriceAmountType.unit_based,
         "polymorphic_load": "inline",
     }
 

@@ -340,6 +340,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    units: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     @declared_attr
     def checkout(cls) -> Mapped["Checkout | None"]:

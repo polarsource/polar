@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import freezegun
 import pytest
@@ -21,7 +21,12 @@ from polar.models import (
     Subscription,
 )
 from polar.postgres import AsyncSession
-from polar.subscription.service import subscription as subscription_service
+from polar.subscription.service import (
+    SubscriptionUpdateContext,
+)
+from polar.subscription.service import (
+    subscription as subscription_service,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -157,6 +162,54 @@ class TestCalculateChangePreview:
             product_id=new_product.id,
             proration_behavior=SubscriptionProrationBehavior.prorate,
         )
+
+        assert preview.prorations == []
+        assert preview.total_amount == 0
+
+    async def test_trial_added_via_update_trial_then_preview_product_with_trial(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Regression: previewing a product change after a trial was added to an
+        # active subscription via update_trial must not crash in
+        # _resolve_trial_end (trial_start was previously left None).
+        trial_added_at = datetime(2025, 6, 1, 12, 0, 0, tzinfo=UTC)
+        with freezegun.freeze_time(trial_added_at):
+            subscription = await create_active_subscription(
+                save_fixture, product=product, customer=customer
+            )
+
+            assert subscription.current_period_end is not None
+            trial_end = subscription.current_period_end + timedelta(days=14)
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end=trial_end
+                )
+
+            assert subscription.trial_start == trial_added_at
+
+            new_product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(5000, "usd")],
+                trial_interval=TrialInterval.month,
+                trial_interval_count=3,
+            )
+
+            preview = await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
 
         assert preview.prorations == []
         assert preview.total_amount == 0

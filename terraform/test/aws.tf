@@ -68,8 +68,9 @@ locals {
 
   worker_sqs_queue_prefix = "polar-test-tasks"
 
-  lambda_worker_environment = local.test_enabled ? merge(
+  lambda_worker_secrets = local.test_enabled ? merge(
     module.backend_environment[0].environment_variables,
+    module.backend_environment[0].secret_environment_variables,
     {
       POLAR_JWKS              = "/tmp/jwks.json"
       POLAR_POSTGRES_DATABASE = local.db_name
@@ -80,15 +81,9 @@ locals {
       POLAR_REDIS_HOST        = module.redis[0].host
       POLAR_REDIS_PORT        = tostring(module.redis[0].port)
       POLAR_REDIS_DB          = "1"
-    },
-  ) : {}
-
-  lambda_worker_secrets = local.test_enabled ? merge(
-    module.backend_environment[0].secret_environment_variables,
-    {
-      POLAR_JWKS_CONTENT = var.backend_jwks
-      POLAR_POSTGRES_PWD = local.db_password
-      TAILSCALE_AUTHKEY  = var.lambda_worker_tailscale_token
+      POLAR_JWKS_CONTENT      = var.backend_jwks
+      POLAR_POSTGRES_PWD      = local.db_password
+      TAILSCALE_AUTHKEY       = var.lambda_worker_tailscale_token
     },
   ) : {}
 
@@ -139,10 +134,9 @@ module "lambda_worker" {
   security_group_ids       = local.lambda_security_group_ids
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 
-  environment_variables = local.lambda_worker_environment
-  secrets_arn           = aws_secretsmanager_secret.lambda_worker[0].arn
-  secrets_version_id    = aws_secretsmanager_secret_version.lambda_worker[0].version_id
-  kms_key_arn           = module.secrets_kms[0].key_arn
+  secrets_arn        = aws_secretsmanager_secret.lambda_worker[0].arn
+  secrets_version_id = aws_secretsmanager_secret_version.lambda_worker[0].version_id
+  kms_key_arn        = module.secrets_kms[0].key_arn
 }
 
 module "lambda_worker_queue" {
@@ -162,10 +156,9 @@ module "lambda_worker_queue" {
   security_group_ids       = local.lambda_security_group_ids
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 
-  environment_variables = local.lambda_worker_environment
-  secrets_arn           = aws_secretsmanager_secret.lambda_worker[0].arn
-  secrets_version_id    = aws_secretsmanager_secret_version.lambda_worker[0].version_id
-  kms_key_arn           = module.secrets_kms[0].key_arn
+  secrets_arn        = aws_secretsmanager_secret.lambda_worker[0].arn
+  secrets_version_id = aws_secretsmanager_secret_version.lambda_worker[0].version_id
+  kms_key_arn        = module.secrets_kms[0].key_arn
 }
 
 # =============================================================================

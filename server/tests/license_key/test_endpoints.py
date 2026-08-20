@@ -26,7 +26,7 @@ from polar.models import (
 from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
-from tests.fixtures.auth import AuthSubjectFixture, CUSTOMER_AUTH_SUBJECT
+from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
 

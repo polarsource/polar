@@ -251,6 +251,52 @@ class TestUpdateUnits:
             assert cycled.units == 10
             assert cycled.pending_update is None
 
+    async def test_rejects_units_outside_pending_product_bounds(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product_a = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=1000
+        )
+        product_b = await create_product_unit_based(
+            save_fixture,
+            organization=organization,
+            price_per_unit=2000,
+            minimum_units=10,
+        )
+        subscription = await create_subscription_with_units(
+            save_fixture, product=product_a, customer=customer, units=12
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_b.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+
+        with pytest.raises(BelowMinimumUnits) as exc_info:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_units(
+                    session,
+                    ctx,
+                    subscription,
+                    units=5,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+
+        assert exc_info.value.minimum_units == 10
+        assert exc_info.value.requested_units == 5
+
     async def test_same_units_is_noop(
         self,
         session: AsyncSession,

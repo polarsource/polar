@@ -1697,6 +1697,7 @@ class SubscriptionService:
 
     async def validate_units_change(
         self,
+        session: AsyncSession,
         subscription: Subscription,
         *,
         units: int,
@@ -1708,6 +1709,37 @@ class SubscriptionService:
         if unit_price is None:
             raise NotAUnitBasedSubscription(subscription)
 
+        self._validate_units_against_price(subscription, unit_price, units)
+
+        # Immediate unit changes keep the live count through cycle, when a
+        # scheduled product change is applied.
+        pending = subscription.pending_update
+        if pending is not None and pending.product_id is not None:
+            product_repository = ProductRepository.from_session(session)
+            pending_product = await product_repository.get_by_id(
+                pending.product_id,
+                options=product_repository.get_eager_options(),
+            )
+            if pending_product is None:
+                return
+            try:
+                pending_prices = PriceSet.from_product(
+                    pending_product, subscription.currency
+                )
+            except NoPricesForCurrencies:
+                return
+            pending_unit_price = pending_prices.get_unit_price()
+            if pending_unit_price is not None:
+                self._validate_units_against_price(
+                    subscription, pending_unit_price, units
+                )
+
+    def _validate_units_against_price(
+        self,
+        subscription: Subscription,
+        unit_price: ProductPriceUnit,
+        units: int,
+    ) -> None:
         minimum_units = unit_price.get_minimum_purchasable_units()
         if units < minimum_units:
             raise BelowMinimumUnits(subscription, minimum_units, units)
@@ -2263,7 +2295,7 @@ class SubscriptionService:
         units: int,
         proration_behavior: SubscriptionProrationBehavior | None = None,
     ) -> Subscription:
-        await self.validate_units_change(subscription, units=units)
+        await self.validate_units_change(session, subscription, units=units)
 
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
@@ -3051,7 +3083,7 @@ class SubscriptionService:
             )
         else:
             assert units is not None
-            await self.validate_units_change(subscription, units=units)
+            await self.validate_units_change(session, subscription, units=units)
             event = build_system_event(
                 SystemEvent.subscription_units_updated,
                 customer=subscription.customer,

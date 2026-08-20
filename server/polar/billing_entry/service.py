@@ -23,6 +23,7 @@ from polar.product.guard import (
     MeteredPrice,
     StaticPrice,
     is_metered_price,
+    is_unit_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 
@@ -338,7 +339,11 @@ class BillingEntryService:
             new_units = entry.event.user_metadata.get("new_units")
 
             if old_units is not None and new_units is not None:
-                unit_transition = f"{old_units} → {new_units} units"
+                assert is_unit_price(price)
+                unit_transition = (
+                    f"{old_units} {price.get_unit_noun(old_units)} → "
+                    f"{new_units} {price.get_unit_noun(new_units)}"
+                )
                 price_label = f"{product.name} ({unit_transition})"
             else:
                 price_label = OrderItem.format_price_label(

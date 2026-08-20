@@ -34063,6 +34063,8 @@ export interface components {
        * @description Tax amount in cents
        */
       tax_amount: number
+      /** @description Tax behavior of the charge. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax could not be calculated. */
+      tax_behavior: components['schemas']['TaxBehavior'] | null
       /**
        * Total Amount
        * @description Total amount in cents (net + tax, before applying wallet balance)

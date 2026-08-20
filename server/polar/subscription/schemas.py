@@ -16,7 +16,11 @@ from pydantic.json_schema import SkipJsonSchema
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import (
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+    TaxBehavior,
+)
 from polar.kit.currency import format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
@@ -567,6 +571,14 @@ class SubscriptionChargePreview(Schema):
     discount_amount: int = Field(description="Discount amount in cents")
     net_amount: int = Field(description="Net amount in cents before taxes")
     tax_amount: int = Field(description="Tax amount in cents")
+    tax_behavior: TaxBehavior | None = Field(
+        description=(
+            "Tax behavior of the charge. "
+            "`inclusive` means the price includes tax, "
+            "`exclusive` means tax is added on top. "
+            "If `null`, tax could not be calculated."
+        )
+    )
     total_amount: int = Field(
         description="Total amount in cents (net + tax, before applying wallet balance)"
     )

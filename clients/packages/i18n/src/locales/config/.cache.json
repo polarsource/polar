@@ -178,13 +178,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -365,13 +359,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -552,13 +540,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -739,13 +721,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -926,13 +902,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1105,13 +1075,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1284,13 +1248,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1463,13 +1421,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1642,13 +1594,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1821,13 +1767,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2000,13 +1940,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2179,13 +2113,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2358,12 +2286,6 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.benefits.licenseKey.rotate": "Rotate",
-    "checkout.benefits.licenseKey.rotateConfirmTitle": "Rotate this license key?",
-    "checkout.benefits.licenseKey.rotateConfirmDescription": "A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.",
-    "checkout.benefits.licenseKey.rotated": "License Key Rotated",
-    "checkout.benefits.licenseKey.rotatedDescription": "The previous key no longer validates. Copy your new key below.",
-    "checkout.benefits.licenseKey.rotateFailed": "License Key Rotation Failed"
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
   }
 }

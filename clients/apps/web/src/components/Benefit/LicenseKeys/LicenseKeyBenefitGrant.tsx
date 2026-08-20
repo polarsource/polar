@@ -14,7 +14,6 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { Button } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { useCallback, useState } from 'react'
 import { LicenseKeyActivations } from './LicenseKeyActivations'
@@ -43,17 +42,18 @@ const LicenseKey = ({
     const { error } = await rotateLicenseKey.mutateAsync()
     if (error) {
       toast({
-        title: t('checkout.benefits.licenseKey.rotateFailed'),
+        title: 'License Key Rotation Failed',
         description: extractApiErrorMessage(error),
       })
       return
     }
 
     toast({
-      title: t('checkout.benefits.licenseKey.rotated'),
-      description: t('checkout.benefits.licenseKey.rotatedDescription'),
+      title: 'License Key Rotated',
+      description:
+        'The previous key no longer validates. Copy your new key below.',
     })
-  }, [rotateLicenseKey, t])
+  }, [rotateLicenseKey])
 
   if (!licenseKey) {
     return null
@@ -75,19 +75,13 @@ const LicenseKey = ({
       />
       <LicenseKeyDetails licenseKey={licenseKey} locale={locale} />
       {canRotate ? (
-        <Box>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              if (!rotateLicenseKey.isPending) {
-                setShowRotateConfirm(true)
-              }
-            }}
-            disabled={rotateLicenseKey.isPending}
-          >
-            {t('checkout.benefits.licenseKey.rotate')}
-          </Button>
-        </Box>
+        <Button
+          variant="secondary"
+          onClick={() => setShowRotateConfirm(true)}
+          disabled={rotateLicenseKey.isPending}
+        >
+          Rotate
+        </Button>
       ) : null}
       <LicenseKeyActivations
         api={api}
@@ -97,10 +91,10 @@ const LicenseKey = ({
       <ConfirmModal
         isShown={showRotateConfirm}
         hide={() => setShowRotateConfirm(false)}
-        title={t('checkout.benefits.licenseKey.rotateConfirmTitle')}
-        description={t('checkout.benefits.licenseKey.rotateConfirmDescription')}
+        title="Rotate this license key?"
+        description="A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating."
         destructive
-        destructiveText={t('checkout.benefits.licenseKey.rotate')}
+        destructiveText="Rotate"
         onConfirm={handleRotate}
       />
     </>

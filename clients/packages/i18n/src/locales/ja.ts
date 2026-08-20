@@ -179,14 +179,6 @@ export default {
         activationDeletedDescription: 'アクティベーションを正常に削除しました',
         activationDeactivationFailed:
           'アクティベーションの無効化に失敗しました',
-        rotate: '更新',
-        rotateConfirmTitle: 'このライセンスキーを更新しますか？',
-        rotateConfirmDescription:
-          '新しいキーが生成されます。以前のキーはすぐに認証されなくなります。更新後に新しいキーをコピーしてください。',
-        rotated: 'ライセンスキーを更新しました',
-        rotatedDescription:
-          '以前のキーはもう認証されません。下の新しいキーをコピーしてください。',
-        rotateFailed: 'ライセンスキーの更新に失敗しました',
       },
       slackSharedChannel: {
         connected: 'Slackワークスペースに接続済みです。',

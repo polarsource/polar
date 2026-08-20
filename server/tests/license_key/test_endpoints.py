@@ -1033,9 +1033,7 @@ class TestCustomerPortalRotateLicenseKey:
         assert lk is not None
         old_key = lk.key
 
-        response = await client.post(
-            f"/v1/customer-portal/license-keys/{lk.id}/rotate"
-        )
+        response = await client.post(f"/v1/customer-portal/license-keys/{lk.id}/rotate")
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == str(lk.id)
@@ -1080,9 +1078,7 @@ class TestCustomerPortalRotateLicenseKey:
         lk.status = LicenseKeyStatus.revoked
         await save_fixture(lk)
 
-        response = await client.post(
-            f"/v1/customer-portal/license-keys/{lk.id}/rotate"
-        )
+        response = await client.post(f"/v1/customer-portal/license-keys/{lk.id}/rotate")
         assert response.status_code == 400
         assert response.json() == {
             "error": "RotateNotPermitted",

@@ -174,14 +174,6 @@ export default {
         activationDeleted: 'Licenckulcs aktiválás törölve',
         activationDeletedDescription: 'Aktiválás sikeresen törölve',
         activationDeactivationFailed: 'Aktiválás deaktiválása sikertelen',
-        rotate: 'Forgatás',
-        rotateConfirmTitle: 'Forgatja ezt a licenckulcsot?',
-        rotateConfirmDescription:
-          'Új kulcs jön létre. Az előző kulcs azonnal érvénytelenné válik. A forgatás után másolja ki az új kulcsot.',
-        rotated: 'Licenckulcs elforgatva',
-        rotatedDescription:
-          'Az előző kulcs már nem érvényes. Másolja ki lent az új kulcsot.',
-        rotateFailed: 'Licenckulcs forgatása sikertelen',
       },
       slackSharedChannel: {
         connected: 'Csatlakoztatva a Slack munkaterületedhez.',

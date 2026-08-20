@@ -248,14 +248,6 @@ export default {
         activationDeleted: 'License Key Activation Deleted',
         activationDeletedDescription: 'Activation deleted successfully',
         activationDeactivationFailed: 'Activation Deactivation Failed',
-        rotate: 'Rotate',
-        rotateConfirmTitle: 'Rotate this license key?',
-        rotateConfirmDescription:
-          'A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating.',
-        rotated: 'License Key Rotated',
-        rotatedDescription:
-          'The previous key no longer validates. Copy your new key below.',
-        rotateFailed: 'License Key Rotation Failed',
       },
     },
     confirmation: {

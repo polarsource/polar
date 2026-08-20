@@ -175,14 +175,6 @@ export default {
         activationDeleted: 'Ativação da chave de licença excluída',
         activationDeletedDescription: 'Ativação excluída com sucesso',
         activationDeactivationFailed: 'Falha na desativação',
-        rotate: 'Rotacionar',
-        rotateConfirmTitle: 'Rotacionar esta chave de licença?',
-        rotateConfirmDescription:
-          'Uma nova chave será gerada. A chave anterior deixa de ser validada imediatamente. Copie a nova chave após a rotação.',
-        rotated: 'Chave de licença rotacionada',
-        rotatedDescription:
-          'A chave anterior não é mais validada. Copie sua nova chave abaixo.',
-        rotateFailed: 'Falha ao rotacionar a chave de licença',
       },
       slackSharedChannel: {
         connected: 'Conectado ao seu workspace do Slack.',

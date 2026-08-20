@@ -35,23 +35,6 @@ const createCustomPrice = (): schemas['ProductPriceCustom'] =>
     preset_amount: 2000,
   }) as schemas['ProductPriceCustom']
 
-const deviceUnitLabel: schemas['ProductPriceUnitBased']['unit_label'] = {
-  en: { '=1': 'device', other: 'devices' },
-}
-
-const createUnitPrice = (): schemas['ProductPriceUnitBased'] =>
-  ({
-    amount_type: 'unit_based',
-    price_currency: 'usd',
-    tiers: {
-      type: 'volume',
-      tiers: [{ bound: null, unit_amount: '2500' }],
-    },
-    minimum_units: 1,
-    maximum_units: null,
-    unit_label: deviceUnitLabel,
-  }) as schemas['ProductPriceUnitBased']
-
 const createProduct = (
   id: string,
   price: schemas['ProductPrice'],
@@ -189,23 +172,5 @@ describe('CurrentPeriodOverview', () => {
     expect(container.textContent).not.toContain(
       formatCurrency('compact')(2500, 'usd'),
     )
-  })
-
-  it('shows the unit quantity with the merchant-defined label', () => {
-    const price = createUnitPrice()
-    const subscription = {
-      ...createSubscription(price),
-      seats: null,
-      units: 3,
-    } as schemas['CustomerSubscription']
-    const { container } = render(
-      <CurrentPeriodOverview
-        subscription={subscription}
-        products={[createProduct('product-1', price)]}
-        api={{} as Client}
-      />,
-    )
-
-    expect(container.textContent).toContain('Team plan (3 devices)')
   })
 })

@@ -69,7 +69,6 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   } else if (isUnitBasedPrice(staticPrice)) {
     const tiers = staticPrice.tiers.tiers
 
-    // Show the starting tier price with "from" indicator if multiple tiers
     if (tiers.length > 0) {
       const firstTier = tiers[0]
       const hasMultipleTiers = tiers.length > 1

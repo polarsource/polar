@@ -114,11 +114,9 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
                   currency={currency}
                   aria-label={`Price per ${unitLabel}, ${title}`}
                   value={
-                    typeof field.value === 'number'
-                      ? field.value
-                      : field.value != null
-                        ? Number(field.value)
-                        : null
+                    field.value == null || field.value === ''
+                      ? null
+                      : Number(field.value)
                   }
                   onChange={(v) => {
                     field.onChange(v)

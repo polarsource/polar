@@ -22,6 +22,7 @@ from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.models import (
     Customer,
     MerchantMigration,
+    MerchantMigrationPaymentMethodMapping,
     MerchantMigrationRecord,
     Organization,
     PaymentMethod,
@@ -199,6 +200,31 @@ class TestRun:
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         assert paused_subscription.payment_method_id is not None
+
+    async def test_does_not_guess_when_a_mapping_was_uploaded(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        paused_subscription: Subscription,
+    ) -> None:
+        await save_fixture(
+            MerchantMigrationPaymentMethodMapping(
+                merchant_migration=migration,
+                source_customer_id="cus_other",
+                source_payment_method_id="pm_other",
+                destination_customer_id="cus_other",
+                destination_payment_method_id="pm_other_copy",
+            )
+        )
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        _assert_left_alone(adapter, paused_subscription)
 
     async def test_keeps_a_running_trial_running(
         self,

@@ -67,6 +67,12 @@ class TestParsePaymentMethodMappingCSV:
         with pytest.raises(PaymentMethodMappingCSVError):
             parse_payment_method_mapping_csv(b"source_id_old,source_id_new\npm_1,pm_2")
 
+    def test_rejects_extra_values(self) -> None:
+        with pytest.raises(PaymentMethodMappingCSVError):
+            parse_payment_method_mapping_csv(
+                _mapping_csv("cus_old,pm_old,cus_new,pm_new,unexpected")
+            )
+
     def test_rejects_conflicting_source_mapping(self) -> None:
         with pytest.raises(PaymentMethodMappingCSVError):
             parse_payment_method_mapping_csv(

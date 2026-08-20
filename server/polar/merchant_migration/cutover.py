@@ -344,18 +344,16 @@ class SubscriptionCutover:
         step linked wins; otherwise look again, because cards keep landing."""
         source_method = source.payment_method
         mapping: PaymentMethodMapping | None = None
+        mapping_repository = (
+            MerchantMigrationPaymentMethodMappingRepository.from_session(self.session)
+        )
         if source_method is not None:
-            stored_mapping = await (
-                MerchantMigrationPaymentMethodMappingRepository.from_session(
-                    self.session
-                ).get_by_source_payment_method_id(
-                    self.migration.id, source_method.source_id
-                )
+            stored_mapping = await mapping_repository.get_by_source_payment_method_id(
+                self.migration.id, source_method.source_id
             )
-            if (
-                stored_mapping is not None
-                and stored_mapping.source_customer_id == source.customer_source_id
-            ):
+            if stored_mapping is not None:
+                if stored_mapping.source_customer_id != source.customer_source_id:
+                    return None
                 mapping = PaymentMethodMapping(
                     source_customer_id=stored_mapping.source_customer_id,
                     source_payment_method_id=stored_mapping.source_payment_method_id,
@@ -377,6 +375,8 @@ class SubscriptionCutover:
             ).get_by_id(subscription.payment_method_id)
             if payment_method is not None:
                 return payment_method
+        if await mapping_repository.has_any(self.migration.id):
+            return None
         return await link_payment_method(
             self.session, customer, source_method=source_method
         )

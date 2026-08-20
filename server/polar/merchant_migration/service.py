@@ -683,6 +683,8 @@ class MerchantMigrationService:
                     f"Imported customer {source_customer_id} is already linked to a "
                     "different Stripe customer."
                 )
+        for source_customer_id, customer in customers.items():
+            destination_customer_id = destination_customer_ids[source_customer_id]
             if customer.stripe_customer_id != destination_customer_id:
                 await customer_repository.update(
                     customer,

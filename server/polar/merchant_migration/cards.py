@@ -88,6 +88,10 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
     by_destination: dict[str, PaymentMethodMapping] = {}
     customer_destinations: dict[str, str] = {}
     for line_number, row in enumerate(reader, start=2):
+        if None in row:
+            raise PaymentMethodMappingCSVError(
+                f"Line {line_number} has more than four values."
+            )
         values = {
             header: (row.get(header) or "").strip()
             for header in PAYMENT_METHOD_MAPPING_HEADERS

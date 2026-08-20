@@ -2732,7 +2732,7 @@ requires-dist = [
     { name = "ipinfo-db", specifier = ">=0.0.4" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
     { name = "langcodes", specifier = ">=3.5.1" },
-    { name = "logfire", extras = ["fastapi", "httpx", "sqlalchemy", "redis"], specifier = ">=4.37.0" },
+    { name = "logfire", extras = ["fastapi", "httpx", "sqlalchemy", "redis"], specifier = ">=4.38.0" },
     { name = "makefun", specifier = ">=1.15.6" },
     { name = "markdown-it-py", specifier = ">=4.2.0" },
     { name = "plain-client", specifier = ">=0.0.3" },

@@ -7,7 +7,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { MouseEvent, useCallback } from 'react'
+import { MouseEvent, useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Modal, type ModalProps } from '@polar-sh/orbit'
 
@@ -27,7 +27,7 @@ export interface ConfirmModalProps extends Omit<
   destructive?: boolean
   destructiveText?: string
   confirmPrompt?: string
-  onConfirm: () => void
+  onConfirm: () => void | Promise<void>
   onCancel?: () => void
 }
 
@@ -42,6 +42,7 @@ export const ConfirmModal = ({
   onCancel,
   ...props
 }: ConfirmModalProps) => {
+  const [isConfirming, setIsConfirming] = useState(false)
   const form = useForm<{ prompt?: string }>({
     defaultValues: {
       prompt: '',
@@ -53,31 +54,51 @@ export const ConfirmModal = ({
   const normalizedConfirmPrompt =
     confirmPrompt !== undefined ? normalizeWhitespace(confirmPrompt) : undefined
 
-  const handleConfirm = useCallback(() => {
-    onConfirm()
-    reset()
+  const hide = useCallback(() => {
+    if (isConfirming) {
+      return
+    }
     props.hide()
-  }, [onConfirm, props, reset])
+  }, [isConfirming, props])
+
+  const handleConfirm = useCallback(async () => {
+    if (isConfirming) {
+      return
+    }
+
+    setIsConfirming(true)
+    try {
+      await onConfirm()
+      reset()
+      props.hide()
+    } finally {
+      setIsConfirming(false)
+    }
+  }, [isConfirming, onConfirm, props, reset])
 
   const handleCancel = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
+      if (isConfirming) {
+        return
+      }
       reset()
       onCancel?.()
       props.hide()
     },
-    [onCancel, props, reset],
+    [isConfirming, onCancel, props, reset],
   )
 
-  const onSubmit = async () => {
-    handleConfirm()
-  }
+  const promptMismatch = normalizedConfirmPrompt
+    ? normalizeWhitespace(prompt ?? '') !== normalizedConfirmPrompt
+    : false
 
   return (
     <Modal
       title={title}
       className="md:min-w-[300px] lg:max-w-[600px]"
       {...props}
+      hide={hide}
       modalContent={
         <div className="flex flex-col gap-y-4 p-8">
           <h3 className="text-xl font-medium">{title}</h3>
@@ -92,7 +113,7 @@ export const ConfirmModal = ({
               className="flex w-full flex-col gap-y-2"
               onSubmit={(e) => {
                 e.stopPropagation()
-                handleSubmit(onSubmit)(e)
+                void handleSubmit(handleConfirm)(e)
               }}
             >
               {confirmPrompt && (
@@ -120,6 +141,7 @@ export const ConfirmModal = ({
                                 required
                                 placeholder={normalizedConfirmPrompt}
                                 autoComplete="off"
+                                disabled={isConfirming}
                                 {...field}
                               />
                             </div>
@@ -135,16 +157,16 @@ export const ConfirmModal = ({
                 <Button
                   type="submit"
                   variant={destructive ? 'destructive' : 'default'}
-                  disabled={
-                    normalizedConfirmPrompt
-                      ? normalizeWhitespace(prompt ?? '') !==
-                        normalizedConfirmPrompt
-                      : false
-                  }
+                  loading={isConfirming}
+                  disabled={promptMismatch || isConfirming}
                 >
                   {destructive ? destructiveText : 'Confirm'}
                 </Button>
-                <Button variant="ghost" onClick={handleCancel}>
+                <Button
+                  variant="ghost"
+                  onClick={handleCancel}
+                  disabled={isConfirming}
+                >
                   Cancel
                 </Button>
               </div>

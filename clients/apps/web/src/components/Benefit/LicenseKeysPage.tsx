@@ -157,8 +157,11 @@ export const LicenseKeysPage = ({
   }, [setSelectedLicenseKeyId, setDeepLinkParam])
 
   const openRotateConfirm = useCallback(() => {
+    if (rotateLicenseKey.isPending) {
+      return
+    }
     setLicenseKeyModalView('rotate')
-  }, [])
+  }, [rotateLicenseKey.isPending])
 
   const closeRotateConfirm = useCallback(() => {
     setLicenseKeyModalView((currentView) =>
@@ -167,28 +170,24 @@ export const LicenseKeysPage = ({
   }, [])
 
   const handleRotate = useCallback(async () => {
-    if (!selectedLicenseKeyId) {
+    if (!selectedLicenseKeyId || rotateLicenseKey.isPending) {
       return
     }
 
-    setLicenseKeyModalView(null)
-    try {
-      const { error } = await rotateLicenseKey.mutateAsync(selectedLicenseKeyId)
-      if (error) {
-        toast({
-          title: 'License Key Rotation Failed',
-          description: extractApiErrorMessage(error),
-        })
-      } else {
-        toast({
-          title: 'License Key Rotated',
-          description:
-            'The previous key no longer validates. Copy the new key and share it with your customer.',
-        })
-      }
-    } finally {
-      setLicenseKeyModalView('details')
+    const { error } = await rotateLicenseKey.mutateAsync(selectedLicenseKeyId)
+    if (error) {
+      toast({
+        title: 'License Key Rotation Failed',
+        description: extractApiErrorMessage(error),
+      })
+      return
     }
+
+    toast({
+      title: 'License Key Rotated',
+      description:
+        'The previous key no longer validates. Copy the new key and share it with your customer.',
+    })
   }, [rotateLicenseKey, selectedLicenseKeyId])
 
   return (
@@ -221,6 +220,12 @@ export const LicenseKeysPage = ({
             setPagination={setPagination}
             setSorting={setSorting}
             onSelectLicenseKey={(licenseKey) => {
+              if (
+                rotateLicenseKey.isPending ||
+                licenseKeyModalView === 'rotate'
+              ) {
+                return
+              }
               setSelectedLicenseKeyId(licenseKey.id)
               setDeepLinkParam(licenseKey.id)
               setLicenseKeyModalView('details')

@@ -2349,7 +2349,7 @@ class TestGetCutoverReport:
         assert report.started is False
 
     @pytest.mark.auth
-    async def test_counts_respect_the_selection(
+    async def test_counts_all_imports_even_with_a_selection(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2386,8 +2386,9 @@ class TestGetCutoverReport:
 
         report = await service.get_cutover_report(session, auth_subject, migration.id)
 
-        assert report.total == 1
-        assert report.pending == 1
+        # The picker lists every imported subscription; tab counts must match.
+        assert report.total == 2
+        assert report.pending == 2
 
     @pytest.mark.auth
     async def test_marks_a_stalled_switch_failed(

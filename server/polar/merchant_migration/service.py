@@ -982,10 +982,12 @@ class MerchantMigrationService:
     async def _cutover_report(
         self, session: AsyncReadSession, migration: MerchantMigration
     ) -> MerchantMigrationCutoverReport:
+        # Catalog-wide counts so the switch table tabs match every imported row,
+        # even when the active run only covers a selection. The finish note still
+        # scopes to the selection via `_finish_cutover`.
         record_repository = MerchantMigrationRecordRepository.from_session(session)
+        counts = await record_repository.count_cutover_statuses(migration.id)
         operation = migration.operation
-        selection = operation.selection if operation is not None else None
-        counts = await record_repository.count_cutover_statuses(migration.id, selection)
         return MerchantMigrationCutoverReport(
             started=self._cutover_started(migration),
             running=operation.is_active if operation is not None else False,

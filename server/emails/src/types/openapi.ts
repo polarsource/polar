@@ -2127,6 +2127,12 @@ export interface components {
        */
       seat_based_pricing_enabled: boolean
       /**
+       * Unit Based Pricing Enabled
+       * @description If this organization has unit-based pricing enabled
+       * @default false
+       */
+      unit_based_pricing_enabled: boolean
+      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false

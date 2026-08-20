@@ -19,7 +19,9 @@ from polar.product.schemas import (
     ProductPriceFixedCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatTiers,
+    ProductPriceUnitBasedCreate,
 )
+from polar.product.tiers import TierType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import METER_ID, create_benefit
 
@@ -699,6 +701,85 @@ class TestProductCreateMeterInterval:
             _recurring_product(
                 recurring_interval=SubscriptionRecurringInterval.month,
                 meter_interval=SubscriptionRecurringInterval.year,
+            )
+
+
+def _unit_based_payload(
+    tiers: list[dict[str, Any]],
+    tier_type: str = "volume",
+    minimum_units: int | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "amount_type": ProductPriceAmountType.unit_based,
+        "price_currency": PresentmentCurrency.usd,
+        "tiers": {"type": tier_type, "tiers": tiers},
+    }
+    if minimum_units is not None:
+        payload["minimum_units"] = minimum_units
+    return payload
+
+
+class TestProductPriceUnitBasedCreate:
+    def test_valid_tiered(self) -> None:
+        schema = ProductPriceUnitBasedCreate.model_validate(
+            {
+                **_unit_based_payload(
+                    [
+                        {"bound": 10, "unit_amount": 1000},
+                        {"bound": None, "unit_amount": 800},
+                    ],
+                    tier_type="graduated",
+                    minimum_units=5,
+                ),
+                "unit_label": {"en": {"=1": "device", "other": "devices"}},
+            }
+        )
+        assert schema.tiers.type == TierType.graduated
+        assert schema.minimum_units == 5
+        assert schema.unit_label == {"en": {"=1": "device", "other": "devices"}}
+
+    def test_unit_label_optional(self) -> None:
+        schema = ProductPriceUnitBasedCreate.model_validate(
+            _unit_based_payload([{"bound": None, "unit_amount": 1000}])
+        )
+        assert schema.unit_label is None
+
+    def test_unit_label_requires_other(self) -> None:
+        with pytest.raises(ValidationError):
+            ProductPriceUnitBasedCreate.model_validate(
+                {
+                    **_unit_based_payload([{"bound": None, "unit_amount": 1000}]),
+                    "unit_label": {"en": {"=1": "device"}},
+                }
+            )
+
+    def test_unit_label_empty_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            ProductPriceUnitBasedCreate.model_validate(
+                {
+                    **_unit_based_payload([{"bound": None, "unit_amount": 1000}]),
+                    "unit_label": {},
+                }
+            )
+
+    def test_fractional_rate_rejected(self) -> None:
+        with pytest.raises(ValidationError, match="smallest currency unit"):
+            ProductPriceUnitBasedCreate.model_validate(
+                _unit_based_payload([{"bound": None, "unit_amount": "10.5"}])
+            )
+
+    def test_zero_rate_allowed(self) -> None:
+        schema = ProductPriceUnitBasedCreate.model_validate(
+            _unit_based_payload([{"bound": None, "unit_amount": 0}])
+        )
+        assert schema.tiers is not None
+
+    def test_minimum_units_above_last_tier_rejected(self) -> None:
+        with pytest.raises(ValidationError, match="minimum_units"):
+            ProductPriceUnitBasedCreate.model_validate(
+                _unit_based_payload(
+                    [{"bound": 10, "unit_amount": 500}], minimum_units=11
+                )
             )
 
 

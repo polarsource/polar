@@ -7,8 +7,10 @@ from sqlalchemy import select
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Meter, Product
 from polar.models.product_price import (
+    ProductPriceAmountType,
     ProductPriceFixed,
     ProductPriceSeatUnit,
+    ProductPriceUnit,
     TieredPrice,
 )
 from polar.product.tiers import (
@@ -210,6 +212,13 @@ class TestSeatBillingReadsSharedTiers:
         price = _make_seat_price(
             [{"min_seats": 1, "max_seats": None, "price_per_seat": 0}],
         )
+        assert price.is_free is True
+
+    def test_is_free_without_tiers(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 250}],
+        )
+        price.tiers = None  # type: ignore[assignment]
         assert price.is_free is True
 
 
@@ -420,3 +429,84 @@ class TestMinimumMaximumUnits:
     def test_maximum_units_unbounded(self) -> None:
         price = _make_tiered_price(_tiers_data(TierType.volume, SHARED_MULTI_TIER))
         assert price.get_maximum_units() is None
+
+
+def _make_unit_price(tiers: list[dict[str, Any]]) -> ProductPriceUnit:
+    return ProductPriceUnit(
+        tiers=_tiers_data(TierType.volume, tiers),
+        price_currency="usd",
+    )
+
+
+class TestUnitBasedPrice:
+    def test_identity(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        assert price.amount_type == ProductPriceAmountType.unit_based
+        assert price.is_static is True
+        assert price.is_metered is False
+        assert price.is_free is False
+
+    def test_non_integral_amount_raises(self) -> None:
+        price = _make_unit_price([{"bound": None, "unit_amount": "10.5"}])
+        with pytest.raises(ValueError, match="non-integral"):
+            price.calculate_amount(3)
+
+    def test_is_free(self) -> None:
+        price = _make_unit_price([{"bound": None, "unit_amount": "0"}])
+        assert price.is_free is True
+
+    def test_is_free_without_tiers(self) -> None:
+        price = _make_unit_price([{"bound": None, "unit_amount": "100"}])
+        price.tiers = None  # type: ignore[assignment]
+        assert price.is_free is True
+
+    def test_unit_noun_defaults(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        assert price.get_unit_noun(1) == "unit"
+        assert price.get_unit_noun(3) == "units"
+
+    def test_unit_noun_custom_label(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"en": {"=1": "device", "other": "devices"}}
+        assert price.get_unit_noun(1) == "device"
+        assert price.get_unit_noun(3) == "devices"
+
+    def test_unit_noun_falls_back_to_other(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"en": {"other": "seats"}}
+        assert price.get_unit_noun(1) == "seats"
+        assert price.get_unit_noun(2) == "seats"
+
+    def test_unit_noun_requested_locale(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {
+            "en": {"=1": "device", "other": "devices"},
+            "fr": {"=1": "appareil", "other": "appareils"},
+        }
+        assert price.get_unit_noun(1, "fr") == "appareil"
+        assert price.get_unit_noun(12, "fr") == "appareils"
+
+    def test_unit_noun_regional_locale_falls_back_to_language(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"fr": {"=1": "appareil", "other": "appareils"}}
+        assert price.get_unit_noun(2, "fr-CA") == "appareils"
+
+    def test_unit_noun_exact_locale_wins_over_language(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {
+            "en": {"=1": "seat", "other": "seats"},
+            "en-GB": {"=1": "place", "other": "places"},
+        }
+        assert price.get_unit_noun(1, "en-GB") == "place"
+        assert price.get_unit_noun(1, "en-US") == "seat"
+
+    def test_unit_noun_missing_locale_falls_back_to_english(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"en": {"=1": "device", "other": "devices"}}
+        assert price.get_unit_noun(1, "fr") == "device"
+
+    def test_unit_noun_non_english_only_label(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"fr": {"=1": "siège", "other": "sièges"}}
+        assert price.get_unit_noun(1) == "siège"
+        assert price.get_unit_noun(2, "de") == "sièges"

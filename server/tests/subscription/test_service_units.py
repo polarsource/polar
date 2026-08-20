@@ -458,6 +458,41 @@ class TestUnitProductChange:
         assert updated.product == new_unit_product
         assert updated.units == 3
 
+    async def test_unit_to_unit_rejects_below_target_minimum(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        old_unit_product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=1000
+        )
+        new_unit_product = await create_product_unit_based(
+            save_fixture,
+            organization=organization,
+            price_per_unit=2000,
+            minimum_units=5,
+        )
+        subscription = await create_subscription_with_units(
+            save_fixture, product=old_unit_product, customer=customer, units=3
+        )
+
+        with pytest.raises(BelowMinimumUnits) as exc_info:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_unit_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.invoice,
+                )
+
+        assert exc_info.value.minimum_units == 5
+        assert exc_info.value.requested_units == 3
+
     async def test_non_unit_to_unit_upgrade_rejects_next_period(
         self,
         session: AsyncSession,

@@ -3176,18 +3176,28 @@ class SubscriptionService:
         currency_prices: PriceSet,
         proration_behavior: SubscriptionProrationBehavior,
     ) -> None:
-        """Promote `subscription.units` to the new product's unit-price floor so
-        the proration debit and `apply_update`'s product-branch rebuild both see
-        a valid unit count. `next_period` is blocked because a pending apply
-        reads the live `subscription.units`, which must already be set.
+        """Ensure `subscription.units` is valid for the target unit price before
+        proration and `apply_update` run. Non-unit → unit promotes to the floor
+        (and blocks `next_period`, since a pending apply reads the live count).
+        Unit → unit keeps the current count but rejects when it falls outside
+        the new product's bounds.
         """
-        if any(is_unit_price(price) for price in subscription.prices):
-            return
-
         unit_price = next(
             (price for price in currency_prices if is_unit_price(price)), None
         )
         if unit_price is None:
+            return
+
+        if any(is_unit_price(price) for price in subscription.prices):
+            units = subscription.units
+            if units is None:
+                return
+            minimum_units = unit_price.get_minimum_purchasable_units()
+            if units < minimum_units:
+                raise BelowMinimumUnits(subscription, minimum_units, units)
+            maximum_units = unit_price.get_maximum_units()
+            if maximum_units is not None and units > maximum_units:
+                raise AboveMaximumUnits(subscription, maximum_units, units)
             return
 
         if proration_behavior == SubscriptionProrationBehavior.next_period:

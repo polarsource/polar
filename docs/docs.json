@@ -1099,6 +1099,14 @@
       "destination": "/api-reference"
     },
     {
+      "source": "/api-reference/current/:path*",
+      "destination": "/api-reference/2026-04/:path*"
+    },
+    {
+      "source": "/api-reference/next/:path*",
+      "destination": "/api-reference/2026-10/:path*"
+    },
+    {
       "source": "/developers/sandbox",
       "destination": "/integrate/sandbox"
     },

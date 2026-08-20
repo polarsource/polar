@@ -1,6 +1,8 @@
 'use client'
 
 import TransactionsList from '@/components/Transactions/TransactionsList'
+import ExportIncomeModal from '@/components/Transactions/ExportIncomeModal'
+import { useModal } from '@/components/Modal/useModal'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
 import {
   DataTablePaginationState,
@@ -10,6 +12,9 @@ import {
 } from '@/utils/datatable'
 import { ISODuration } from '@/utils/duration'
 import { schemas } from '@polar-sh/client'
+import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { usePathname, useRouter } from 'next/navigation'
 
 export default function ClientPage({
@@ -23,6 +28,11 @@ export default function ClientPage({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const {
+    isShown: isExportModalShown,
+    show: showExportModal,
+    hide: hideExportModal,
+  } = useModal()
 
   const setPagination = (
     updaterOrValue:
@@ -72,7 +82,18 @@ export default function ClientPage({
   const pageCount = balancesHook.data?.pagination.max_page ?? 1
 
   return (
-    <div className="flex flex-col gap-y-8">
+    <Box flexDirection="column" rowGap="xl">
+      <Box justifyContent="end">
+        <Button
+          variant="secondary"
+          wrapperClassNames="gap-x-2"
+          disabled={!account}
+          onClick={showExportModal}
+        >
+          <FileDownloadOutlined fontSize="inherit" />
+          <Text>Export</Text>
+        </Button>
+      </Box>
       <TransactionsList
         transactions={balances}
         rowCount={rowCount}
@@ -84,6 +105,14 @@ export default function ClientPage({
         isLoading={accountIsLoading || balancesHook.isLoading}
         payoutTransactionDelay={payoutTransactionDelay}
       />
-    </div>
+      {account && (
+        <ExportIncomeModal
+          organization={organization}
+          accountId={account.id}
+          isShown={isExportModalShown}
+          hide={hideExportModal}
+        />
+      )}
+    </Box>
   )
 }

@@ -1667,6 +1667,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/transactions/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Export Income
+     * @description Export income transactions as a CSV file.
+     *
+     *     **Scopes**: `transactions:read`
+     */
+    get: operations['transactions:export']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/transactions/summary': {
     parameters: {
       query?: never
@@ -36521,6 +36543,23 @@ export interface components {
       /** Incurred By Transaction Id */
       incurred_by_transaction_id: string | null
     }
+    /**
+     * TransactionExportColumn
+     * @enum {string}
+     */
+    TransactionExportColumn:
+      | 'created_at'
+      | 'description'
+      | 'gross_amount'
+      | 'fees_amount'
+      | 'tax_amount'
+      | 'net_amount'
+      | 'status'
+      | 'payout_date'
+      | 'currency'
+      | 'product'
+      | 'customer_email'
+      | 'type'
     /** TransactionIssueReward */
     TransactionIssueReward: {
       /**
@@ -42438,6 +42477,50 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Transaction_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'transactions:export': {
+    parameters: {
+      query?: {
+        type?: components['schemas']['TransactionType'] | null
+        account_id?: string | null
+        exclude_platform_fees?: boolean
+        /** @description Only include transactions created after this date. Must include a UTC offset. */
+        created_after?: string | null
+        /** @description Only include transactions created before this date. Must include a UTC offset. */
+        created_before?: string | null
+        /** @description Time zone used to render dates in the CSV. */
+        timezone?: string
+        /** @description Columns to include in the CSV, in order. Defaults to date, description, gross, fees, tax, net, status and payout date. */
+        columns?:
+          | components['schemas']['TransactionExportColumn']
+          | components['schemas']['TransactionExportColumn'][]
+          | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': string
         }
       }
       /** @description Validation Error */
@@ -68974,6 +69057,22 @@ export const tierTypeValues: ReadonlyArray<
 export const timeIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TimeInterval']
 > = ['year', 'month', 'week', 'day', 'hour']
+export const transactionExportColumnValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TransactionExportColumn']
+> = [
+  'created_at',
+  'description',
+  'gross_amount',
+  'fees_amount',
+  'tax_amount',
+  'net_amount',
+  'status',
+  'payout_date',
+  'currency',
+  'product',
+  'customer_email',
+  'type',
+]
 export const transactionSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TransactionSortProperty']
 > = ['created_at', '-created_at', 'amount', '-amount']

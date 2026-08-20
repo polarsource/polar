@@ -208,12 +208,7 @@ const CheckoutPricingBreakdown = ({
             className="text-gray-600"
           >
             <AmountLabel
-              amount={
-                checkout.tax_behavior === 'inclusive' &&
-                checkout.tax_amount !== null
-                  ? checkout.total_amount - checkout.tax_amount
-                  : checkout.amount
-              }
+              amount={checkout.amount}
               currency={checkout.currency}
               interval={interval}
               intervalCount={intervalCount}

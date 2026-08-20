@@ -39,8 +39,10 @@ export function StartCopyStep({
         <Box>
           <Button variant="secondary" size="sm" asChild>
             <a href={customerIdsUrl} target="_blank" rel="noopener noreferrer">
-              <Download size={14} />
-              Download customer CSV
+              <Box alignItems="center" columnGap="xs">
+                <Download size={14} aria-hidden />
+                Download customer CSV
+              </Box>
             </a>
           </Button>
         </Box>
@@ -92,8 +94,10 @@ export function StartCopyStep({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Open Stripe copy status
-              <ArrowUpRight size={14} />
+              <Box alignItems="center" columnGap="xs">
+                Open Stripe copy status
+                <ArrowUpRight size={14} aria-hidden />
+              </Box>
             </a>
           </Button>
         </Box>

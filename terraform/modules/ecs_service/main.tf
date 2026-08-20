@@ -138,7 +138,7 @@ resource "aws_ecs_task_definition" "this" {
               logDriver = var.logfire == null ? "awslogs" : "awsfirelens"
               options = var.logfire == null ? {
                 "awslogs-group"         = aws_cloudwatch_log_group.this.name
-                "awslogs-region"        = data.aws_region.current.name
+                "awslogs-region"        = data.aws_region.current.region
                 "awslogs-stream-prefix" = local.full_name
                 } : {
                 Name                     = "opentelemetry"
@@ -154,7 +154,7 @@ resource "aws_ecs_task_definition" "this" {
             },
             var.logfire == null ? {} : {
               secretOptions = [
-                { name = "header", valueFrom = aws_secretsmanager_secret_version.logfire_header[0].arn }
+                { name = "header", valueFrom = aws_secretsmanager_secret.logfire_header[0].arn }
               ]
             },
           )
@@ -173,6 +173,7 @@ resource "aws_ecs_task_definition" "this" {
         image             = var.logfire.router_image
         essential         = true
         memoryReservation = 51
+        user              = "0"
         firelensConfiguration = {
           type    = "fluentbit"
           options = { "enable-ecs-log-metadata" = "true" }
@@ -181,7 +182,7 @@ resource "aws_ecs_task_definition" "this" {
           logDriver = "awslogs"
           options = {
             "awslogs-group"         = aws_cloudwatch_log_group.this.name
-            "awslogs-region"        = data.aws_region.current.name
+            "awslogs-region"        = data.aws_region.current.region
             "awslogs-stream-prefix" = "firelens"
           }
         }

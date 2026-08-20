@@ -1018,7 +1018,7 @@ class TestImportCatalog:
         assert [item.source_id for item in items] == ["prod_1"]
 
     @pytest.mark.auth
-    async def test_imports_subscription_as_paused(
+    async def test_imports_subscription_dependencies_without_creating_subscription(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1039,26 +1039,45 @@ class TestImportCatalog:
         report = await service.import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
-        assert results[PrecheckEntity.subscriptions].imported == 1
+        assert results[PrecheckEntity.products].imported == 1
+        assert results[PrecheckEntity.customers].imported == 1
+        assert results[PrecheckEntity.subscriptions].imported == 0
+        assert results[PrecheckEntity.subscriptions].skipped == 0
 
         result = await session.execute(
-            select(Subscription)
-            .where(Subscription.organization_id == organization.id)
-            .options(selectinload(Subscription.customer))
+            select(Subscription).where(Subscription.organization_id == organization.id)
         )
-        subscription = result.scalars().unique().one()
-        # held from billing: paused is neither active nor billable, so the
-        # renewal scheduler skips it until cutover
-        assert subscription.status == SubscriptionStatus.paused
-        assert subscription.active is False
-        assert subscription.paused_at is not None
-        assert subscription.amount == 1000
-        assert subscription.currency == "usd"
-        assert subscription.customer.email == "alice@example.com"
-        assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
+        assert result.scalars().all() == []
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        subscription_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        assert subscription_record is not None
+        assert subscription_record.status == MerchantMigrationRecordStatus.pending
+        assert subscription_record.target_id is None
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert len(items) == 1
+        assert items[0].dependencies_imported is True
+        summary = await service.summarize_records(session, auth_subject, migration.id)
+        subscriptions = next(
+            entry
+            for entry in summary.entities
+            if entry.entity == PrecheckEntity.subscriptions
+        )
+        assert subscriptions.selectable == 0
 
     @pytest.mark.auth
-    async def test_subscription_skipped_when_its_product_is_excluded(
+    async def test_excluded_subscription_leaves_its_dependencies_pending(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1076,37 +1095,44 @@ class TestImportCatalog:
             records=_catalog_with_subscription(),
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        product_record = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.product,
-            source_id="prod_1:month:1",
-        )
-        assert product_record is not None
-
-        report = await service.import_catalog(
-            session,
-            auth_subject,
-            migration.id,
-            exclude_record_ids=[product_record.id],
-        )
-
-        results = {result.entity: result for result in report.results}
-        assert results[PrecheckEntity.subscriptions].imported == 0
-        assert results[PrecheckEntity.subscriptions].skipped == 1
-
-        # The subscription is skipped with a reason, not silently left pending.
         subscription_record = await record_repository.get_by_source(
             organization_id=organization.id,
             type=MerchantMigrationRecordType.subscription,
             source_id="sub_1",
         )
         assert subscription_record is not None
-        assert subscription_record.status == MerchantMigrationRecordStatus.skipped
-        assert subscription_record.error is not None
+
+        report = await service.import_catalog(
+            session,
+            auth_subject,
+            migration.id,
+            exclude_record_ids=[subscription_record.id],
+        )
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 0
+        assert results[PrecheckEntity.customers].imported == 0
+        assert results[PrecheckEntity.subscriptions].imported == 0
+        assert results[PrecheckEntity.subscriptions].skipped == 0
+        product_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id="prod_1:month:1",
+        )
+        customer_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.customer,
+            source_id="cus_1",
+        )
+        assert product_record is not None
+        assert customer_record is not None
+        assert product_record.status == MerchantMigrationRecordStatus.pending
+        assert customer_record.status == MerchantMigrationRecordStatus.pending
+        assert subscription_record.status == MerchantMigrationRecordStatus.pending
         assert subscription_record.target_id is None
 
     @pytest.mark.auth
-    async def test_second_subscription_to_same_product_is_skipped(
+    async def test_multiple_subscriptions_prepare_shared_dependencies_once(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1115,8 +1141,6 @@ class TestImportCatalog:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # Two source subscriptions for the same customer on the same product must
-        # not become two Polar subscriptions, or cutover would double-bill.
         catalog = _catalog_with_subscription()
         catalog.append(
             CanonicalSubscription(
@@ -1141,12 +1165,27 @@ class TestImportCatalog:
         report = await service.import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
-        assert results[PrecheckEntity.subscriptions].imported == 1
-        assert results[PrecheckEntity.subscriptions].skipped == 1
+        assert results[PrecheckEntity.products].imported == 1
+        assert results[PrecheckEntity.customers].imported == 1
+        assert results[PrecheckEntity.subscriptions].imported == 0
+        assert results[PrecheckEntity.subscriptions].skipped == 0
         result = await session.execute(
             select(Subscription).where(Subscription.organization_id == organization.id)
         )
-        assert len(result.scalars().unique().all()) == 1
+        assert result.scalars().all() == []
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.list_by_migration(migration.id)
+        subscription_records = [
+            record
+            for record in records
+            if record.type == MerchantMigrationRecordType.subscription
+        ]
+        assert len(subscription_records) == 2
+        assert all(
+            record.status == MerchantMigrationRecordStatus.pending
+            and record.target_id is None
+            for record in subscription_records
+        )
 
     @pytest.mark.auth
     async def test_customer_skipped_on_stripe_id_conflict(
@@ -1349,6 +1388,85 @@ class TestImportCatalog:
         )
         assert customer_record is not None
         assert customer_record.status == MerchantMigrationRecordStatus.pending
+
+    @pytest.mark.auth
+    async def test_selected_subscription_imports_its_dependencies(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_subscription(),
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        subscription_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        assert subscription_record is not None
+
+        report = await service.import_catalog(
+            session,
+            auth_subject,
+            migration.id,
+            record_ids=[subscription_record.id],
+        )
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 1
+        assert results[PrecheckEntity.customers].imported == 1
+        assert results[PrecheckEntity.subscriptions].imported == 0
+        assert subscription_record.status == MerchantMigrationRecordStatus.pending
+        assert subscription_record.target_id is None
+
+    @pytest.mark.auth
+    async def test_excluded_product_id_is_ignored_when_subscriptions_exist(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_subscription(),
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        product_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id="prod_1:month:1",
+        )
+        assert product_record is not None
+
+        report = await service.import_catalog(
+            session,
+            auth_subject,
+            migration.id,
+            exclude_record_ids=[product_record.id],
+        )
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 1
+        assert results[PrecheckEntity.customers].imported == 1
+        assert results[PrecheckEntity.subscriptions].imported == 0
+        assert product_record.status == MerchantMigrationRecordStatus.imported
 
     @pytest.mark.auth
     async def test_imports_everything_except_excluded(
@@ -1640,6 +1758,24 @@ async def _imported_subscription(
     customer = await create_customer(
         save_fixture, organization=organization, email=email
     )
+    await save_fixture(
+        MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.customer,
+            status=MerchantMigrationRecordStatus.imported,
+            source_id=f"cus_{source_id}",
+            target_id=customer.id,
+            canonical=serialize(
+                CanonicalCustomer(
+                    source_id=f"cus_{source_id}",
+                    email=email,
+                    name=None,
+                    country=None,
+                )
+            ),
+        )
+    )
     subscription = await create_subscription(
         save_fixture,
         product=product,
@@ -1663,6 +1799,50 @@ async def _imported_subscription(
 
 @pytest.mark.asyncio
 class TestRunCardVerification:
+    @pytest.mark.auth
+    async def test_links_card_to_pending_subscription_customer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_subscription(),
+        )
+        await service.import_catalog(session, auth_subject, migration.id)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+        customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("alice@example.com", organization.id)
+        assert customer is not None
+        payment_method = await create_payment_method(
+            save_fixture, customer, processor_id="pm_pending"
+        )
+        link = mocker.patch(
+            "polar.merchant_migration.service.link_payment_method",
+            new=mocker.AsyncMock(return_value=payment_method),
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        link.assert_awaited_once()
+        result = await session.execute(
+            select(Subscription).where(Subscription.organization_id == organization.id)
+        )
+        assert result.scalars().all() == []
+
     async def test_links_landed_cards_and_reports_the_shortfall(
         self,
         mocker: MockerFixture,

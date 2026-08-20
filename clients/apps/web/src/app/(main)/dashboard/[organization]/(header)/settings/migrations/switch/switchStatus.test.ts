@@ -19,6 +19,7 @@ const baseRow = {
   cutover_error: null,
   renews_at: null,
   has_payment_method: true,
+  dependencies_imported: null,
 }
 
 function row(overrides: Partial<SwitchRow>): SwitchRow {

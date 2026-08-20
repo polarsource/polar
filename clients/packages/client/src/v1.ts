@@ -24216,7 +24216,7 @@ export interface components {
       completed: boolean
       /**
        * Total
-       * @description Imported subscriptions in scope.
+       * @description Subscriptions whose customer and product are in Polar.
        */
       total: number
       /**
@@ -24244,7 +24244,7 @@ export interface components {
     MerchantMigrationCutoverRequest: {
       /**
        * Record Ids
-       * @description The imported-subscription record ids to switch (from the records listing). When omitted, every imported subscription is switched (subject to `exclude_record_ids`).
+       * @description Subscription ledger record ids to switch (from the records listing). When omitted, every subscription whose customer and product are in Polar is switched (subject to `exclude_record_ids`).
        */
       record_ids?: string[] | null
       /**
@@ -24277,12 +24277,12 @@ export interface components {
     MerchantMigrationImportRequest: {
       /**
        * Record Ids
-       * @description The ledger record ids to import (from the records listing). When omitted, every importable record is imported (subject to `exclude_record_ids`). Records not selected stay pending.
+       * @description Subscription ledger record ids to prepare (from the records listing). Their customers and products are imported automatically. When omitted, every importable subscription is prepared (subject to `exclude_record_ids`). Polar subscriptions are created at cutover.
        */
       record_ids?: string[] | null
       /**
        * Exclude Record Ids
-       * @description Import every importable record except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
+       * @description Prepare every importable subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
     }
@@ -24327,7 +24327,7 @@ export interface components {
     MerchantMigrationRecordItem: {
       /**
        * Record Id
-       * @description The ledger record id, used to select this row for import. Null for price rows, which are imported together with their product.
+       * @description The ledger record id. For subscriptions this is what the merchant selects for import. Null for price rows, which import with their product.
        */
       record_id: string | null
       /** @description The source entity type. */
@@ -24396,9 +24396,14 @@ export interface components {
       renews_at: string | null
       /**
        * Has Payment Method
-       * @description Whether the imported Polar subscription has a card to charge yet. Null for non-subscription rows or rows not imported.
+       * @description Whether Polar already has a card to charge for this subscription's customer. Null for non-subscription rows.
        */
       has_payment_method: boolean | null
+      /**
+       * Dependencies Imported
+       * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
+       */
+      dependencies_imported: boolean | null
     }
     /**
      * MerchantMigrationRecordStatus
@@ -24450,7 +24455,7 @@ export interface components {
       imported: number
       /**
        * Selectable
-       * @description How many an import would actually move: importable by the pre-check and still pending in the ledger.
+       * @description How many an import would still prepare: importable by the pre-check and still pending in the ledger. For subscriptions, rows whose customer and product are already in Polar are excluded.
        */
       selectable: number
     }

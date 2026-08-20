@@ -678,6 +678,7 @@ def _item(
         cutover_error=None,
         renews_at=None,
         has_payment_method=None,
+        dependencies_imported=None,
     )
 
 

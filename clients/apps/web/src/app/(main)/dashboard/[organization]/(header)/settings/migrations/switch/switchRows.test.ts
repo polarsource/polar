@@ -24,6 +24,7 @@ const baseRow = {
   cutover_error: null,
   renews_at: null,
   has_payment_method: true,
+  dependencies_imported: null,
 }
 
 function row(overrides: Partial<SwitchRow>): SwitchRow {
@@ -43,6 +44,17 @@ describe('isSwitchable', () => {
     expect(isSwitchable(row({ cutover_status: null }))).toBe(true)
   })
 
+  it('is true for a pending row whose dependencies are imported', () => {
+    expect(
+      isSwitchable(
+        row({
+          import_status: 'pending',
+          dependencies_imported: true,
+        }),
+      ),
+    ).toBe(true)
+  })
+
   // Retrying re-opens skipped and failed rows, so they stay selectable.
   it('stays true for skipped and failed rows', () => {
     expect(isSwitchable(row({ cutover_status: 'skipped' }))).toBe(true)
@@ -53,8 +65,16 @@ describe('isSwitchable', () => {
     expect(isSwitchable(row({ cutover_status: 'moved' }))).toBe(false)
   })
 
-  it('is false when not imported or without a record id', () => {
+  it('is false when dependencies are not imported or without a record id', () => {
     expect(isSwitchable(row({ import_status: 'pending' }))).toBe(false)
+    expect(
+      isSwitchable(
+        row({
+          import_status: 'pending',
+          dependencies_imported: false,
+        }),
+      ),
+    ).toBe(false)
     expect(isSwitchable(row({ record_id: null }))).toBe(false)
   })
 })

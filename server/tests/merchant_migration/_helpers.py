@@ -104,10 +104,11 @@ _STEP_ACTORS = {
 
 
 def pan_steps_until(
-    method: PanTransferMethod, target_key: str
+    method: PanTransferMethod, target_key: str | None
 ) -> list[PanTransferStep]:
     """A checklist walked forward to ``target_key``, with everything before it
     completed by whoever owns it: what the merchant would have clicked through.
+    ``None`` completes every step.
     """
     steps = pan_transfer.build(method)
     while True:

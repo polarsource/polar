@@ -27,6 +27,7 @@ from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    pan_steps_until,
 )
 
 VALID_BODY = {
@@ -736,6 +737,78 @@ class TestCompletePanTransferStep:
             f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete"
         )
         assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+class TestCutover:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/cutover")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_not_reachable_returns_409(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        await save_fixture(migration)
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/cutover")
+        assert response.status_code == 409
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_confirms_and_reports(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "cutover"
+        )
+        await save_fixture(migration)
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/cutover")
+        assert response.status_code == 200
+        assert response.json()["started"] is True
+        assert response.json()["running"] is True
+        enqueue.assert_called_once_with(
+            "merchant_migration.cutover", merchant_migration_id=migration.id
+        )
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_get_report_before_confirmation(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "cutover"
+        )
+        await save_fixture(migration)
+
+        response = await client.get(f"/v1/merchant-migrations/{migration.id}/cutover")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["started"] is False
+        assert body["running"] is False
+        assert body["total"] == 0
 
 
 async def _create_migration(

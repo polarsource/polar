@@ -97,7 +97,7 @@ export default {
       perUnit: '{unitLabel}enként',
       units: {
         label: '{unitLabelPlural}',
-        numberOfUnits: 'A {unitLabelPlural} száma',
+        numberOfUnits: '{unitLabelPlural} száma',
         count: {
           '=1': '# {unitLabel}',
           other: '# {unitLabelPlural}',
@@ -106,7 +106,7 @@ export default {
         range: '{min} - {max} {unitLabelPlural}',
         minimum: 'Minimum {min} {unitLabelPlural}',
         maximum: 'Maximum {max} {unitLabelPlural}',
-        updateFailed: 'Nem sikerült frissíteni a mennyiséget',
+        updateFailed: 'Nem sikerült frissíteni az egységeket',
       },
     },
     trial: {

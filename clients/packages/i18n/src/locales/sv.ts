@@ -105,8 +105,8 @@ export default {
         },
         range: '{min} - {max} {unitLabelPlural}',
         minimum: 'Minst {min} {unitLabelPlural}',
-        maximum: 'Max {max} {unitLabelPlural}',
-        updateFailed: 'Kunde inte uppdatera antal enheter',
+        maximum: 'Högst {max} {unitLabelPlural}',
+        updateFailed: 'Det gick inte att uppdatera antalet',
       },
     },
     trial: {

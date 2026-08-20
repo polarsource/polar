@@ -106,7 +106,7 @@ export default {
         range: '{min} - {max} {unitLabelPlural}',
         minimum: '최소 {min} {unitLabelPlural}',
         maximum: '최대 {max} {unitLabelPlural}',
-        updateFailed: '수량을 업데이트하지 못했습니다',
+        updateFailed: '유닛을 업데이트하지 못했습니다',
       },
     },
     trial: {

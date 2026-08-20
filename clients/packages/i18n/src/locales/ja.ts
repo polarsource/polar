@@ -94,7 +94,7 @@ export default {
         until: '{date}まで',
       },
       basePrice: '基本料金',
-      perUnit: '{unitLabel}あたり',
+      perUnit: '{unitLabel}ごと',
       units: {
         label: '{unitLabelPlural}',
         numberOfUnits: '{unitLabelPlural}数',

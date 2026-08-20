@@ -149,7 +149,12 @@ export const ProductPriceUnitBasedItem: React.FC<
           )}
         />
       ) : (
-        <UnitTierEditor index={index} currency={currency} />
+        <UnitTierEditor
+          index={index}
+          currency={currency}
+          unitLabel={singularNoun}
+          unitLabelPlural={pluralNoun}
+        />
       )}
 
       <FormField

@@ -17,6 +17,7 @@ interface Props {
   preSlot?: React.ReactNode
   postSlot?: React.ReactNode
   step?: number
+  'aria-label'?: string
 }
 
 const MoneyInput = (props: Props) => {
@@ -290,6 +291,7 @@ const MoneyInput = (props: Props) => {
       onBlur={onBlur}
       onFocus={onFocus}
       disabled={disabled}
+      aria-label={props['aria-label']}
     />
   )
 }

@@ -1,13 +1,16 @@
 'use client'
 
+import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
 import React, { useCallback } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
-import { UnitTierCard } from './UnitTierCard'
+import { UnitTierRow } from './UnitTierRow'
 
 const formatUnits = (value: number) => value.toLocaleString('en-US')
+
+const capitalize = (value: string) =>
+  value.charAt(0).toUpperCase() + value.slice(1)
 
 const getUnitTierTitle = (
   bound: number | null | undefined,
@@ -22,11 +25,15 @@ const getUnitTierTitle = (
 export interface UnitTierEditorProps {
   index: number
   currency: string
+  unitLabel: string
+  unitLabelPlural: string
 }
 
 export const UnitTierEditor: React.FC<UnitTierEditorProps> = ({
   index,
   currency,
+  unitLabel,
+  unitLabelPlural,
 }) => {
   const { control, setValue, watch, getValues } =
     useFormContext<ProductFormType>()
@@ -36,7 +43,6 @@ export const UnitTierEditor: React.FC<UnitTierEditorProps> = ({
   })
 
   const tiers = watch(`prices.${index}.tiers.tiers`)
-  const hasSingleTier = fields.length === 1
 
   const addTier = useCallback(() => {
     const currentTiers = getValues(`prices.${index}.tiers.tiers`)
@@ -75,23 +81,35 @@ export const UnitTierEditor: React.FC<UnitTierEditorProps> = ({
   )
 
   return (
-    <Box flexDirection="column" rowGap="l">
-      {fields.map((field, tierIndex) => {
-        const previousBound = Number(tiers?.[tierIndex - 1]?.bound ?? 0)
-        return (
-          <UnitTierCard
-            key={field.id}
-            index={index}
-            tierIndex={tierIndex}
-            currency={currency}
-            hasSingleTier={hasSingleTier}
-            title={getUnitTierTitle(tiers?.[tierIndex]?.bound, previousBound)}
-            previousBound={previousBound}
-            isLast={tierIndex === fields.length - 1}
-            onRemove={() => removeTier(tierIndex)}
-          />
-        )
-      })}
+    <Box flexDirection="column" rowGap="m">
+      <Grid templateColumns="1fr 2fr 28px" columnGap="m">
+        <Text variant="label" color="muted">
+          {capitalize(unitLabelPlural)}
+        </Text>
+        <Text variant="label" color="muted">
+          Price per {unitLabel}
+        </Text>
+      </Grid>
+
+      <Box flexDirection="column" rowGap="s">
+        {fields.map((field, tierIndex) => {
+          const previousBound = Number(tiers?.[tierIndex - 1]?.bound ?? 0)
+          return (
+            <UnitTierRow
+              key={field.id}
+              index={index}
+              tierIndex={tierIndex}
+              currency={currency}
+              unitLabel={unitLabel}
+              title={getUnitTierTitle(tiers?.[tierIndex]?.bound, previousBound)}
+              previousBound={previousBound}
+              isLast={tierIndex === fields.length - 1}
+              canRemove={fields.length > 1}
+              onRemove={() => removeTier(tierIndex)}
+            />
+          )
+        })}
+      </Box>
 
       <Button
         type="button"

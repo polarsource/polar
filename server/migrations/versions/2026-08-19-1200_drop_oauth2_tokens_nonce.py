@@ -1,7 +1,7 @@
 """drop oauth2_tokens.nonce column
 
 Revision ID: 259333744d69
-Revises: f3d81c25ab90
+Revises: c7f2a91e4d38
 Create Date: 2026-08-19 12:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "259333744d69"
-down_revision = "f3d81c25ab90"
+down_revision = "c7f2a91e4d38"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

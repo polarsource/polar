@@ -436,6 +436,21 @@ class GEVATValidator(ValidatorProtocol):
         return number
 
 
+class HKBRValidator(ValidatorProtocol):
+    # Business Registration Number: 8 digits whose last digit is a mod-11 check
+    # digit (weights 9..2, weighted sum divisible by 11).
+    _WEIGHTS = (9, 8, 7, 6, 5, 4, 3, 2)
+
+    def validate(self, number: str, country: str) -> str:
+        number = re.sub(r"[\s.()-]", "", number)
+        if len(number) != 8 or not number.isdigit():
+            raise InvalidTaxID(number, country)
+        checksum = sum(int(d) * w for d, w in zip(number, self._WEIGHTS))
+        if checksum % 11 != 0:
+            raise InvalidTaxID(number, country)
+        return number
+
+
 class MUTANValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         # Remove spaces, dashes, and other common separators
@@ -465,6 +480,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return ECRUCValidator()
         case TaxIDFormat.ge_vat:
             return GEVATValidator()
+        case TaxIDFormat.hk_br:
+            return HKBRValidator()
         case TaxIDFormat.il_vat:
             return ILVATValidator()
         case TaxIDFormat.mk_vat:
@@ -508,7 +525,7 @@ def validate_tax_id(number: str, country: str) -> TaxID:
             try:
                 validator = _get_validator(tax_id_type)
                 return validator.validate(number, country), tax_id_type
-            except UnsupportedTaxIDFormat, InvalidTaxID:
+            except (UnsupportedTaxIDFormat, InvalidTaxID):
                 continue
     raise InvalidTaxID(number, country)
 

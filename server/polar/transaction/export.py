@@ -102,10 +102,6 @@ def _paid_out_at(transaction: Transaction, tz: ZoneInfo) -> str | None:
     return _datetime(payout.created_at, tz)
 
 
-def _major_units(value: int, currency: str) -> float:
-    return value / get_currency_decimal_factor(currency)
-
-
 def _row(
     transaction: Transaction,
     tz: ZoneInfo,
@@ -114,6 +110,14 @@ def _row(
 ) -> dict[TransactionExportColumn, str | float | None]:
     order = transaction.order
     payment = transaction.payment_transaction
+    factor = get_currency_decimal_factor(transaction.currency)
+    if payment is not None:
+        payment_factor = get_currency_decimal_factor(payment.currency)
+        gross_amount = (payment.amount + payment.tax_amount) / payment_factor
+        tax_amount = -payment.tax_amount / payment_factor
+    else:
+        gross_amount = None
+        tax_amount = None
     return {
         TransactionExportColumn.created_at: _datetime(transaction.created_at, tz),
         TransactionExportColumn.type: _description_type(transaction),
@@ -122,22 +126,10 @@ def _row(
             if order is not None and order.product is not None
             else None
         ),
-        TransactionExportColumn.gross_amount: (
-            _major_units(payment.amount + payment.tax_amount, payment.currency)
-            if payment is not None
-            else None
-        ),
-        TransactionExportColumn.tax_amount: (
-            _major_units(-payment.tax_amount, payment.currency)
-            if payment is not None
-            else None
-        ),
-        TransactionExportColumn.fees: _major_units(
-            transaction.incurred_amount, transaction.currency
-        ),
-        TransactionExportColumn.net_amount: _major_units(
-            transaction.net_amount, transaction.currency
-        ),
+        TransactionExportColumn.gross_amount: gross_amount,
+        TransactionExportColumn.tax_amount: tax_amount,
+        TransactionExportColumn.fees: transaction.incurred_amount / factor,
+        TransactionExportColumn.net_amount: transaction.net_amount / factor,
         TransactionExportColumn.currency: transaction.currency,
         TransactionExportColumn.status: _status(transaction, now, delay),
         TransactionExportColumn.paid_out_at: _paid_out_at(transaction, tz),

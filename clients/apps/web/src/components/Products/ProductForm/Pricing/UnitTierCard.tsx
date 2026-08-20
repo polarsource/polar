@@ -8,6 +8,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import React from 'react'
@@ -16,12 +17,7 @@ import { ProductFormType } from '../ProductForm'
 
 const formatUnits = (value: number) => value.toLocaleString('en-US')
 
-// The remove button stays out of the way until the row is hovered or focused,
-// but only where hovering exists — on touch it must always be reachable.
-const REMOVE_BUTTON_REVEAL =
-  'h-7 w-7 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100'
-
-export interface UnitTierRowProps {
+export interface UnitTierCardProps {
   index: number
   tierIndex: number
   currency: string
@@ -29,11 +25,11 @@ export interface UnitTierRowProps {
   title: string
   previousBound: number
   isLast: boolean
-  canRemove: boolean
+  isOnlyTier: boolean
   onRemove: () => void
 }
 
-export const UnitTierRow: React.FC<UnitTierRowProps> = ({
+export const UnitTierCard: React.FC<UnitTierCardProps> = ({
   index,
   tierIndex,
   currency,
@@ -41,20 +37,14 @@ export const UnitTierRow: React.FC<UnitTierRowProps> = ({
   title,
   previousBound,
   isLast,
-  canRemove,
+  isOnlyTier,
   onRemove,
 }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
+  const titleId = `unit-tier-title-${index}-${tierIndex}`
 
-  return (
-    <Grid
-      templateColumns="1fr 2fr 28px"
-      columnGap="m"
-      alignItems="center"
-      role="group"
-      aria-label={title}
-      className="group"
-    >
+  const fields = (
+    <Grid templateColumns="1fr 1fr" columnGap="m" alignItems="start">
       <FormField
         control={control}
         name={`prices.${index}.tiers.tiers.${tierIndex}.bound` as const}
@@ -76,42 +66,32 @@ export const UnitTierRow: React.FC<UnitTierRowProps> = ({
         }}
         render={({ field }) => (
           <FormItem>
-            <Box alignItems="center" columnGap="s">
-              <Box minWidth={56} justifyContent="end" flexShrink={0}>
-                <Text variant="body" color="muted" tabularNums>
-                  {formatUnits(previousBound + 1)}
-                </Text>
-              </Box>
-              <Text variant="body" color="disabled">
-                –
-              </Text>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="number"
-                  min={previousBound + 1}
-                  step={1}
-                  value={field.value ?? ''}
-                  aria-label={`Upper limit, ${title}`}
-                  placeholder={isLast ? 'Unlimited' : undefined}
-                  onChange={(e) => {
-                    const parsed = Number.parseInt(e.target.value, 10)
-                    field.onChange(Number.isNaN(parsed) ? null : parsed)
-                    setValue(`prices.${index}.id`, '')
-                  }}
-                  onBlur={(e) => {
-                    field.onBlur()
-                    const parsed = Number.parseInt(e.target.value, 10)
-                    const minAllowed = previousBound + 1
-                    if (Number.isNaN(parsed)) {
-                      field.onChange(isLast ? null : minAllowed)
-                      return
-                    }
-                    field.onChange(Math.max(parsed, minAllowed))
-                  }}
-                />
-              </FormControl>
-            </Box>
+            <FormLabel>Up to</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                type="number"
+                min={previousBound + 1}
+                step={1}
+                value={field.value ?? ''}
+                placeholder={isLast ? 'Unlimited' : undefined}
+                onChange={(e) => {
+                  const parsed = Number.parseInt(e.target.value, 10)
+                  field.onChange(Number.isNaN(parsed) ? null : parsed)
+                  setValue(`prices.${index}.id`, '')
+                }}
+                onBlur={(e) => {
+                  field.onBlur()
+                  const parsed = Number.parseInt(e.target.value, 10)
+                  const minAllowed = previousBound + 1
+                  if (Number.isNaN(parsed)) {
+                    field.onChange(isLast ? null : minAllowed)
+                    return
+                  }
+                  field.onChange(Math.max(parsed, minAllowed))
+                }}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
@@ -126,6 +106,7 @@ export const UnitTierRow: React.FC<UnitTierRowProps> = ({
         }}
         render={({ field }) => (
           <FormItem>
+            <FormLabel>Price per {unitLabel}</FormLabel>
             <FormControl>
               <Box ref={field.ref} tabIndex={-1} display="block">
                 <MoneyInput
@@ -151,19 +132,42 @@ export const UnitTierRow: React.FC<UnitTierRowProps> = ({
           </FormItem>
         )}
       />
+    </Grid>
+  )
 
-      {canRemove && (
+  if (isOnlyTier) {
+    return fields
+  }
+
+  return (
+    <Box
+      flexDirection="column"
+      rowGap="m"
+      borderRadius="l"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      backgroundColor="background-primary"
+      padding="l"
+      role="group"
+      aria-labelledby={titleId}
+    >
+      <Box alignItems="start" justifyContent="between" columnGap="m">
+        <Text id={titleId} as="span" variant="label" color="muted">
+          {title}
+        </Text>
         <Button
           type="button"
           size="icon"
           variant="ghost"
-          className={REMOVE_BUTTON_REVEAL}
+          className="-my-1 h-7 w-7"
           onClick={onRemove}
           aria-label={`Remove ${title}`}
         >
           <CloseOutlined className="h-3.5 w-3.5" />
         </Button>
-      )}
-    </Grid>
+      </Box>
+      {fields}
+    </Box>
   )
 }

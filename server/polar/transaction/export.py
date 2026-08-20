@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject, User
 from polar.kit.csv import IterableCSVWriter
+from polar.kit.currency import get_currency_decimal_factor
 from polar.kit.db.postgres import AsyncReadSession
 from polar.kit.utils import utc_now
 from polar.models import Account, Order, Transaction
@@ -101,8 +102,8 @@ def _paid_out_at(transaction: Transaction, tz: ZoneInfo) -> str | None:
     return _datetime(payout.created_at, tz)
 
 
-def _cents(value: int) -> float:
-    return value / 100
+def _major_units(value: int, currency: str) -> float:
+    return value / get_currency_decimal_factor(currency)
 
 
 def _row(
@@ -122,13 +123,21 @@ def _row(
             else None
         ),
         TransactionExportColumn.gross_amount: (
-            _cents(payment.amount + payment.tax_amount) if payment is not None else None
+            _major_units(payment.amount + payment.tax_amount, payment.currency)
+            if payment is not None
+            else None
         ),
         TransactionExportColumn.tax_amount: (
-            _cents(-payment.tax_amount) if payment is not None else None
+            _major_units(-payment.tax_amount, payment.currency)
+            if payment is not None
+            else None
         ),
-        TransactionExportColumn.fees: _cents(transaction.incurred_amount),
-        TransactionExportColumn.net_amount: _cents(transaction.net_amount),
+        TransactionExportColumn.fees: _major_units(
+            transaction.incurred_amount, transaction.currency
+        ),
+        TransactionExportColumn.net_amount: _major_units(
+            transaction.net_amount, transaction.currency
+        ),
         TransactionExportColumn.currency: transaction.currency,
         TransactionExportColumn.status: _status(transaction, now, delay),
         TransactionExportColumn.paid_out_at: _paid_out_at(transaction, tz),

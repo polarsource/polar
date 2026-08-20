@@ -1,7 +1,10 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from enum import StrEnum
-from zoneinfo import ZoneInfo
+from typing import Annotated
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from pydantic import AfterValidator
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.kit.csv import IterableCSVWriter
@@ -62,6 +65,19 @@ ORDER_EXPORT_DEFAULT_COLUMNS: list[OrderExportColumn] = [
     OrderExportColumn.status,
     OrderExportColumn.invoice_number,
 ]
+
+
+def _validate_timezone(value: str) -> str:
+    try:
+        ZoneInfo(value)
+    except ValueError, ZoneInfoNotFoundError:
+        raise ValueError(f"{value!r} is not a valid IANA time zone") from None
+    return value
+
+
+# Kept as a plain string rather than an enum of every IANA zone: the generated
+# TypeScript client inlines such an enum at every use site, adding ~1200 lines.
+OrderExportTimezone = Annotated[str, AfterValidator(_validate_timezone)]
 
 
 def _row(order: Order, tz: ZoneInfo) -> dict[OrderExportColumn, str | float | None]:

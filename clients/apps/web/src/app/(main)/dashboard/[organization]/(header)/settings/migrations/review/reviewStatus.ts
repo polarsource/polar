@@ -27,6 +27,9 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (row.status === 'skipped' || row.import_status === 'skipped') {
     return { label: "Won't import", color: 'red' }
   }
+  if (row.import_status === 'pending' && row.dependencies_imported) {
+    return { label: 'Ready to switch' }
+  }
   if (needsAttention(row)) {
     return { label: 'Needs info', color: 'yellow' }
   }

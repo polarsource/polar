@@ -14,9 +14,13 @@ from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
+    CanonicalPrice,
+    CanonicalPricingScheme,
+    CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    serialize,
 )
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.models import (
@@ -28,10 +32,15 @@ from polar.models import (
     Product,
     Subscription,
 )
-from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
+from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+)
 from polar.models.organization import OrganizationStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
@@ -154,6 +163,65 @@ async def copied_card(
     return payment_method
 
 
+@pytest_asyncio.fixture
+async def pending_record(
+    save_fixture: SaveFixture,
+    migration: MerchantMigration,
+    organization: Organization,
+    imported_customer: Customer,
+    product: Product,
+) -> MerchantMigrationRecord:
+    await save_fixture(
+        MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.customer,
+            status=MerchantMigrationRecordStatus.imported,
+            source_id="cus_1",
+            target_id=imported_customer.id,
+            canonical={},
+        )
+    )
+    await save_fixture(
+        MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.product,
+            status=MerchantMigrationRecordStatus.imported,
+            source_id="prod_1:month:1",
+            target_id=product.id,
+            canonical=serialize(
+                CanonicalProduct(
+                    source_id="prod_1:month:1",
+                    product_source_id="prod_1",
+                    name="Product",
+                    recurring_interval="month",
+                    recurring_interval_count=1,
+                    prices=[
+                        CanonicalPrice(
+                            source_id="price_1",
+                            currency="usd",
+                            amount=1000,
+                            pricing_scheme=CanonicalPricingScheme.fixed,
+                        )
+                    ],
+                )
+            ),
+        )
+    )
+    pending = MerchantMigrationRecord(
+        merchant_migration=migration,
+        organization=organization,
+        type=MerchantMigrationRecordType.subscription,
+        status=MerchantMigrationRecordStatus.pending,
+        source_id="sub_1",
+        target_id=None,
+        canonical=serialize(canonical_subscription()),
+    )
+    await save_fixture(pending)
+    return pending
+
+
 @pytest.fixture
 def cutover(
     session: AsyncSession,
@@ -168,6 +236,61 @@ def cutover(
 
 @pytest.mark.asyncio
 class TestRun:
+    async def test_creates_activates_and_stops_pending_subscription(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(
+            pending_record
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        assert pending_record.status == MerchantMigrationRecordStatus.imported
+        assert pending_record.target_id is not None
+        subscription = await SubscriptionRepository.from_session(session).get_by_id(
+            pending_record.target_id
+        )
+        assert subscription is not None
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.customer_id == imported_customer.id
+        assert subscription.payment_method_id is not None
+        assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
+
+    async def test_duplicate_pending_subscription_stays_on_source(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.active,
+        )
+        adapter = _source()
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(
+            pending_record
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "already has a live subscription" in (outcome.message or "")
+        assert adapter.stopped == []
+        assert pending_record.status == MerchantMigrationRecordStatus.pending
+        assert pending_record.target_id is None
+
     async def test_moves_and_stops_the_source(
         self,
         cutover: RunCutover,
@@ -617,10 +740,20 @@ class TestFailures:
         _assert_left_alone(adapter, paused_subscription)
 
     @pytest.mark.parametrize(
-        ("target_id", "expected_reason"),
+        ("target_id", "expected_status", "expected_reason"),
         [
-            pytest.param(None, "never imported into Polar", id="never-imported"),
-            pytest.param(uuid4(), "no longer exists", id="row-deleted"),
+            pytest.param(
+                None,
+                MerchantMigrationCutoverStatus.skipped,
+                "never imported into Polar",
+                id="never-imported",
+            ),
+            pytest.param(
+                uuid4(),
+                MerchantMigrationCutoverStatus.failed,
+                "no longer exists",
+                id="row-deleted",
+            ),
         ],
     )
     async def test_no_polar_subscription_to_switch_on(
@@ -628,6 +761,7 @@ class TestFailures:
         cutover: RunCutover,
         record: MerchantMigrationRecord,
         target_id: Any,
+        expected_status: MerchantMigrationCutoverStatus,
         expected_reason: str,
     ) -> None:
         record.target_id = target_id
@@ -635,6 +769,6 @@ class TestFailures:
 
         outcome = await cutover(adapter)
 
-        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert outcome.status == expected_status
         assert expected_reason in (outcome.message or "")
         assert adapter.stopped == []

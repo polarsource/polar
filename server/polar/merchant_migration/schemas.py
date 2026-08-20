@@ -85,8 +85,8 @@ class PrecheckReport(Schema):
 class MerchantMigrationRecordItem(Schema):
     record_id: UUID4 | None = Field(
         description=(
-            "The ledger record id, used to select this row for import. Null for "
-            "price rows, which are imported together with their product."
+            "The ledger record id. For subscriptions this is what the merchant "
+            "selects for import. Null for price rows, which import with their product."
         ),
     )
     entity: PrecheckEntity = Field(description="The source entity type.")
@@ -145,8 +145,14 @@ class MerchantMigrationRecordItem(Schema):
     )
     has_payment_method: bool | None = Field(
         description=(
-            "Whether the imported Polar subscription has a card to charge yet. "
-            "Null for non-subscription rows or rows not imported."
+            "Whether Polar already has a card to charge for this subscription's "
+            "customer. Null for non-subscription rows."
+        ),
+    )
+    dependencies_imported: bool | None = Field(
+        description=(
+            "Whether this subscription's customer and product are already in Polar, "
+            "so it can be created at cutover. Null for non-subscription rows."
         ),
     )
 
@@ -156,8 +162,9 @@ class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
 
     imported: int = Field(description="How many are already in Polar.")
     selectable: int = Field(
-        description="How many an import would actually move: importable by the "
-        "pre-check and still pending in the ledger."
+        description="How many an import would still prepare: importable by the "
+        "pre-check and still pending in the ledger. For subscriptions, rows whose "
+        "customer and product are already in Polar are excluded."
     )
 
 
@@ -180,16 +187,17 @@ class MerchantMigrationImportRequest(Schema):
     record_ids: list[UUID4] | None = Field(
         default=None,
         description=(
-            "The ledger record ids to import (from the records listing). When "
-            "omitted, every importable record is imported (subject to "
-            "`exclude_record_ids`). Records not selected stay pending."
+            "Subscription ledger record ids to prepare (from the records listing). "
+            "Their customers and products are imported automatically. When omitted, "
+            "every importable subscription is prepared (subject to "
+            "`exclude_record_ids`). Polar subscriptions are created at cutover."
         ),
     )
     exclude_record_ids: list[UUID4] | None = Field(
         default=None,
         description=(
-            "Import every importable record except these — the opt-out selection "
-            "for large catalogs. Ignored when `record_ids` is set."
+            "Prepare every importable subscription except these — the opt-out "
+            "selection for large catalogs. Ignored when `record_ids` is set."
         ),
     )
 
@@ -215,9 +223,9 @@ class MerchantMigrationCutoverRequest(Schema):
     record_ids: list[UUID4] | None = Field(
         default=None,
         description=(
-            "The imported-subscription record ids to switch (from the records "
-            "listing). When omitted, every imported subscription is switched "
-            "(subject to `exclude_record_ids`)."
+            "Subscription ledger record ids to switch (from the records listing). "
+            "When omitted, every subscription whose customer and product are in "
+            "Polar is switched (subject to `exclude_record_ids`)."
         ),
     )
     exclude_record_ids: list[UUID4] | None = Field(
@@ -235,7 +243,9 @@ class MerchantMigrationCutoverReport(Schema):
     started: bool = Field(description="Whether the merchant has confirmed the switch.")
     running: bool = Field(description="Whether a switch run is in progress.")
     completed: bool = Field(description="Whether the last switch run has finished.")
-    total: int = Field(description="Imported subscriptions in scope.")
+    total: int = Field(
+        description="Subscriptions whose customer and product are in Polar."
+    )
     pending: int = Field(description="Not switched yet.")
     moved: int = Field(description="Now billed by Polar.")
     skipped: int = Field(description="Left on the source.")

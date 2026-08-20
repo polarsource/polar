@@ -75,6 +75,6 @@ function summary(outcome: ReturnType<typeof useRecordSummary>): string {
   }
   const imported = `${importedTotal(outcome.imported)} imported`
   return outcome.selectableTotal > 0
-    ? `${imported} · ${outcome.selectableTotal} not imported`
+    ? `${imported} · ${outcome.selectableTotal} not prepared`
     : imported
 }

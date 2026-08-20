@@ -13,7 +13,7 @@ const OPTIONS: { value: ReviewFilter; label: string }[] = [
 ]
 
 export const EMPTY_MESSAGES: Record<ReviewFilter, string> = {
-  attention: 'Nothing needs attention. Everything here is ready to import.',
+  attention: 'Nothing needs attention.',
   skipped: 'Nothing is staying on Stripe.',
   all: 'No records to show.',
 }

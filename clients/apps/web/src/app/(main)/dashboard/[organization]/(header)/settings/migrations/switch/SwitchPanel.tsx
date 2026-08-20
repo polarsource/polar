@@ -42,7 +42,6 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
     migrationId,
     {
       entity: 'subscriptions',
-      importStatus: 'imported',
       ...(filter !== 'all' ? { cutoverStatus: filter } : {}),
       page,
       limit: pageSize,

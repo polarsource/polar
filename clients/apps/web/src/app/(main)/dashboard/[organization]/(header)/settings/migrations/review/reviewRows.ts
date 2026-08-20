@@ -30,6 +30,7 @@ export function isSelectable(row: ReviewRow): boolean {
   return (
     row.record_id != null &&
     row.status === 'importable' &&
+    !row.dependencies_imported &&
     row.import_status !== 'imported' &&
     row.import_status !== 'skipped' &&
     row.import_status !== 'failed'

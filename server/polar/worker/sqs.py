@@ -47,9 +47,14 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                     MessageSystemAttributeNames=["ApproximateReceiveCount"],
                 )
                 for message in response.get("Messages", []):
-                    actor, args, kwargs, correlation_id, attempt = parse_envelope(
-                        message["Body"]
-                    )
+                    (
+                        actor,
+                        args,
+                        kwargs,
+                        correlation_id,
+                        attempt,
+                        message_timestamp,
+                    ) = parse_envelope(message["Body"])
                     sqs_receive_count = int(
                         message.get("Attributes", {}).get(
                             "ApproximateReceiveCount", "1"
@@ -63,6 +68,7 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                             kwargs,
                             receive_count=receive_count,
                             source_correlation_id=correlation_id,
+                            message_timestamp=message_timestamp,
                         )
                     except Exception:
                         log.exception("polar.worker.sqs_poll_failed", actor=actor)

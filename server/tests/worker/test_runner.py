@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 
 import dramatiq
 import pytest
@@ -8,6 +9,7 @@ from opentelemetry.sdk.trace import ReadableSpan
 from pytest_mock import MockerFixture
 
 import polar.tasks  # noqa: F401  (registers actors with the broker)
+from polar.worker import get_message_timestamp
 from polar.worker._runner import TaskTimeoutError, run_task
 
 
@@ -114,3 +116,20 @@ class TestRunTask:
 
         with pytest.raises(TimeoutError, match="upstream timed out"):
             await run_task("dummy")
+
+    async def test_message_timestamp_reflects_enqueue_time(
+        self, mocker: MockerFixture
+    ) -> None:
+        seen: list[datetime.datetime] = []
+
+        async def recording_task() -> None:
+            seen.append(get_message_timestamp())
+
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"dummy": recording_task},
+        )
+
+        await run_task("dummy", message_timestamp=1234567890000)
+
+        assert seen == [datetime.datetime.fromtimestamp(1234567890, tz=datetime.UTC)]

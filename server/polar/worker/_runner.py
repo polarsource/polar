@@ -4,6 +4,7 @@ import enum
 import functools
 import inspect
 import math
+import time
 from collections.abc import Iterator, Sequence
 from typing import Any
 
@@ -171,6 +172,7 @@ async def run_task(
     receive_count: int = 1,
     source_correlation_id: str | None = None,
     remaining_time_seconds: float | None = None,
+    message_timestamp: int | None = None,
 ) -> None:
     registry = build_registry()
     fn = registry.get(actor_name)
@@ -194,6 +196,9 @@ async def run_task(
                 "max_retries", settings.WORKER_MAX_RETRIES
             ),
         },
+        message_timestamp=message_timestamp
+        if message_timestamp is not None
+        else int(time.time() * 1000),
     )
 
     correlation_id = CorrelationID.set()

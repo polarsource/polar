@@ -1,5 +1,6 @@
 import json
 import math
+import time
 
 import pytest
 from botocore.exceptions import ClientError
@@ -91,25 +92,39 @@ class TestSetMessageVisibility:
 
 class TestEnvelopeAttempt:
     def test_round_trips(self) -> None:
-        body = _sqs.build_envelope("dummy", (1, "x"), {"k": 2}, "corr", 7)
-        actor, args, kwargs, correlation_id, attempt = _sqs.parse_envelope(body)
+        body = _sqs.build_envelope(
+            "dummy", (1, "x"), {"k": 2}, "corr", 7, 1234567890000
+        )
+        actor, args, kwargs, correlation_id, attempt, message_timestamp = (
+            _sqs.parse_envelope(body)
+        )
         assert actor == "dummy"
         assert args == [1, "x"]
         assert kwargs == {"k": 2}
         assert correlation_id == "corr"
         assert attempt == 7
+        assert message_timestamp == 1234567890000
 
     def test_defaults_to_one(self) -> None:
         body = _sqs.build_envelope("dummy", (), {}, None)
-        *_, attempt = _sqs.parse_envelope(body)
+        *_, attempt, _ = _sqs.parse_envelope(body)
         assert attempt == 1
+
+    def test_stamps_current_timestamp_by_default(self) -> None:
+        before = int(time.time() * 1000)
+        body = _sqs.build_envelope("dummy", (), {}, None)
+        after = int(time.time() * 1000)
+        *_, message_timestamp = _sqs.parse_envelope(body)
+        assert message_timestamp is not None
+        assert before <= message_timestamp <= after
 
     def test_legacy_body_without_attempt(self) -> None:
         body = json.dumps(
             {"actor": "dummy", "args": [], "kwargs": {}, "correlation_id": None}
         )
-        *_, attempt = _sqs.parse_envelope(body)
+        *_, attempt, message_timestamp = _sqs.parse_envelope(body)
         assert attempt == 1
+        assert message_timestamp is None
 
 
 class TestPlanRetry:

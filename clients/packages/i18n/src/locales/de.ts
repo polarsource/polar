@@ -94,20 +94,6 @@ export default {
       },
       inclTax: 'MwSt. (inklusive)',
       basePrice: 'Grundpreis',
-      perUnit: 'pro {unitLabel}',
-      units: {
-        label: '{unitLabelPlural}',
-        numberOfUnits: 'Anzahl {unitLabelPlural}',
-        count: {
-          '=1': '# {unitLabel}',
-          other: '# {unitLabelPlural}',
-          _mode: 'plural',
-        },
-        range: '{min} - {max} {unitLabelPlural}',
-        minimum: 'Mindestens {min} {unitLabelPlural}',
-        maximum: 'Maximal {max} {unitLabelPlural}',
-        updateFailed: 'Einheiten konnten nicht aktualisiert werden',
-      },
     },
     trial: {
       hero: {

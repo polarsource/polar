@@ -94,20 +94,6 @@ export default {
       },
       inclTax: 'Btw (inbegrepen)',
       basePrice: 'Basisprijs',
-      perUnit: 'per {unitLabel}',
-      units: {
-        label: '{unitLabelPlural}',
-        numberOfUnits: 'Aantal {unitLabelPlural}',
-        count: {
-          '=1': '# {unitLabel}',
-          other: '# {unitLabelPlural}',
-          _mode: 'plural',
-        },
-        range: '{min} - {max} {unitLabelPlural}',
-        minimum: 'Minimaal {min} {unitLabelPlural}',
-        maximum: 'Maximaal {max} {unitLabelPlural}',
-        updateFailed: 'Aantal units kon niet worden bijgewerkt',
-      },
     },
     trial: {
       hero: {

@@ -50977,7 +50977,7 @@ export interface operations {
         }
       }
       /** @description Customer is not ready to confirm a payment method. */
-      400: {
+      403: {
         headers: {
           [name: string]: unknown
         }

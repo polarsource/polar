@@ -244,7 +244,7 @@ class CustomersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            400: CustomerNotReady,
+            403: CustomerNotReady,
             422: HTTPValidationError,
         }
         return parse_response_json(
@@ -610,7 +610,7 @@ class CustomersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            400: CustomerNotReady,
+            403: CustomerNotReady,
             422: HTTPValidationError,
         }
         return parse_response_json(

@@ -217,7 +217,7 @@ export const confirmPaymentMethodCustomers = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<CustomerPaymentMethodCreateResponse>(response, "json", {
-      400: CustomerNotReady,
+      403: CustomerNotReady,
       422: HTTPValidationError,
     });
   };

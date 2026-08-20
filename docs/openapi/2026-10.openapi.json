@@ -16757,7 +16757,7 @@
               }
             }
           },
-          "400": {
+          "403": {
             "description": "Customer is not ready to confirm a payment method.",
             "content": {
               "application/json": {

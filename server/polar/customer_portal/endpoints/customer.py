@@ -175,7 +175,7 @@ async def add_payment_method(
     status_code=201,
     responses={
         201: {"description": "Payment method created or setup initiated."},
-        400: {
+        403: {
             "description": "Customer is not ready to confirm a payment method.",
             "model": CustomerNotReady.schema(),
         },

@@ -106,7 +106,7 @@ export default {
         range: '{min} - {max} {unitLabelPlural}',
         minimum: 'Minimum {min} {unitLabelPlural}',
         maximum: 'Maximum {max} {unitLabelPlural}',
-        updateFailed: 'Échec de la mise à jour des unités',
+        updateFailed: 'Impossible de mettre à jour les unités',
       },
     },
     trial: {

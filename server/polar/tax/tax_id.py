@@ -437,16 +437,11 @@ class GEVATValidator(ValidatorProtocol):
 
 
 class HKBRValidator(ValidatorProtocol):
-    # Business Registration Number: 8 digits whose last digit is a mod-11 check
-    # digit (weights 9..2, weighted sum divisible by 11).
-    _WEIGHTS = (9, 8, 7, 6, 5, 4, 3, 2)
-
     def validate(self, number: str, country: str) -> str:
+        # Business Registration Number: 8 digits (the trailing check digit is
+        # sometimes written in parentheses, e.g. 1234567(8)).
         number = re.sub(r"[\s.()-]", "", number)
         if len(number) != 8 or not number.isdigit():
-            raise InvalidTaxID(number, country)
-        checksum = sum(int(d) * w for d, w in zip(number, self._WEIGHTS))
-        if checksum % 11 != 0:
             raise InvalidTaxID(number, country)
         return number
 

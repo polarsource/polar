@@ -2129,11 +2129,7 @@ class OrderService:
         order = await repository.update(order, update_dict=update_dict, flush=True)
 
         # If this was a subscription retry success, reactivate the subscription
-        if (
-            previous_status == OrderStatus.pending
-            and order.subscription is not None
-            and order.subscription.status == SubscriptionStatus.past_due
-        ):
+        if previous_status == OrderStatus.pending and order.subscription is not None:
             subscription_repository = SubscriptionRepository.from_session(session)
             locked_subscription = await subscription_repository.get_by_id(
                 order.subscription.id, for_update=True
@@ -2141,7 +2137,10 @@ class OrderService:
             assert locked_subscription is not None
             # Make sure there are no other dunning orders for this subscription, otherwise we might reactivate it too early
             if (
-                await repository.count_dunning_by_subscription(locked_subscription.id)
+                locked_subscription.status == SubscriptionStatus.past_due
+                and await repository.count_dunning_by_subscription(
+                    locked_subscription.id
+                )
                 == 0
             ):
                 order.subscription = await subscription_service.mark_active(

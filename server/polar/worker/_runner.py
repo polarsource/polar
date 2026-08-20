@@ -182,7 +182,7 @@ async def run_task(
     time_limit_ms = actor_obj.options.get("time_limit", TASK_TIME_LIMIT_DEFAULT_MS)
     timeout_seconds = time_limit_ms / 1000
     if remaining_time_seconds is not None:
-        timeout_seconds = min(timeout_seconds, remaining_time_seconds)
+        timeout_seconds = max(0.0, min(timeout_seconds, remaining_time_seconds))
     message: dramatiq.Message[Any] = dramatiq.Message(
         queue_name=actor_obj.queue_name,
         actor_name=actor_name,

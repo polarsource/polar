@@ -5,6 +5,40 @@ import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { defaultRetry } from './retry'
 
+const applyLicenseKeyToCaches = (
+  organizationId: string,
+  id: string,
+  data: schemas['LicenseKeyRead'],
+) => {
+  const queryClient = getQueryClient()
+  queryClient.setQueryData(
+    ['license_keys', id],
+    (old: schemas['LicenseKeyWithActivations'] | undefined) => {
+      if (!old) {
+        return { ...data, activations: [] }
+      }
+      return { ...old, ...data }
+    },
+  )
+  queryClient.setQueriesData<schemas['ListResource_LicenseKeyRead_']>(
+    { queryKey: ['license_keys', 'organization', organizationId] },
+    (old) => {
+      if (!old) {
+        return old
+      }
+      return {
+        ...old,
+        items: old.items.map((item) =>
+          item.id === id ? { ...item, ...data } : item,
+        ),
+      }
+    },
+  )
+  queryClient.invalidateQueries({
+    queryKey: ['license_keys', 'organization', organizationId],
+  })
+}
+
 export const useLicenseKeyUpdate = (organizationId: string) =>
   useMutation({
     mutationFn: (variables: {
@@ -15,17 +49,25 @@ export const useLicenseKeyUpdate = (organizationId: string) =>
         params: { path: { id: variables.id } },
         body: variables.body,
       }),
-    onSuccess: async (result, _variables) => {
+    onSuccess: async (result, variables) => {
       if (result.error) {
         return
       }
-      const queryClient = getQueryClient()
-      queryClient.invalidateQueries({
-        queryKey: ['license_keys', 'organization', organizationId],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['license_keys', _variables.id],
-      })
+      applyLicenseKeyToCaches(organizationId, variables.id, result.data)
+    },
+  })
+
+export const useLicenseKeyRotate = (organizationId: string) =>
+  useMutation({
+    mutationFn: (id: string) =>
+      api.POST('/v1/license-keys/{id}/rotate', {
+        params: { path: { id } },
+      }),
+    onSuccess: async (result, id) => {
+      if (result.error) {
+        return
+      }
+      applyLicenseKeyToCaches(organizationId, id, result.data)
     },
   })
 

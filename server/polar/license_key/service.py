@@ -13,7 +13,7 @@ from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
-from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
+from polar.exceptions import BadRequest, NotPermitted, PolarError, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -37,6 +37,27 @@ from .schemas import (
 )
 
 log = structlog.get_logger()
+
+ROTATABLE_STATUSES: frozenset[LicenseKeyStatus] = frozenset(
+    {
+        LicenseKeyStatus.granted,
+        LicenseKeyStatus.disabled,
+    }
+)
+
+
+class LicenseKeyError(PolarError): ...
+
+
+class RotateNotPermitted(LicenseKeyError):
+    def __init__(self, status: LicenseKeyStatus) -> None:
+        self.status = status
+        allowed = ", ".join(sorted(s.value for s in ROTATABLE_STATUSES))
+        super().__init__(
+            "License key cannot be rotated in its current status. "
+            f"Current status: {status}. Allowed statuses: {allowed}.",
+            400,
+        )
 
 
 class LicenseKeyService:
@@ -160,6 +181,51 @@ class LicenseKeyService:
 
         session.add(license_key)
         await session.flush()
+        return license_key
+
+    async def rotate(
+        self,
+        session: AsyncSession,
+        *,
+        license_key: LicenseKey,
+    ) -> LicenseKey:
+        await session.refresh(
+            license_key, attribute_names=["status"], with_for_update=True
+        )
+        if license_key.status not in ROTATABLE_STATUSES:
+            raise RotateNotPermitted(license_key.status)
+
+        await session.refresh(license_key, attribute_names=["benefit"])
+        prefix = cast(BenefitLicenseKeysProperties, license_key.benefit.properties).get(
+            "prefix"
+        )
+        grant_repository = BenefitGrantRepository.from_session(session)
+        grant = await grant_repository.get_by_property_and_organization(
+            license_key.organization_id,
+            "license_key_id",
+            str(license_key.id),
+            benefit_id=license_key.benefit_id,
+        )
+
+        old_key = license_key.key
+        license_key.key = LicenseKeyCreate.generate_key(prefix=prefix)
+        session.add(license_key)
+        if grant is not None:
+            grant.properties = {
+                **grant.properties,
+                "display_key": license_key.display_key,
+            }
+            session.add(grant)
+        await session.flush()
+
+        log.info(
+            "license_key.rotate",
+            license_key_id=license_key.id,
+            organization_id=license_key.organization_id,
+            customer_id=license_key.customer_id,
+            benefit_id=license_key.benefit_id,
+            previous_key_suffix=old_key[-6:],
+        )
         return license_key
 
     async def _enqueue_grant_lifecycle(

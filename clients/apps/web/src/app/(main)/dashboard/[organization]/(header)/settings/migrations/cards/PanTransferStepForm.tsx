@@ -46,9 +46,7 @@ export function PanTransferStepForm({ copy, migrationId, stepKey }: Props) {
     >
       {fields.map((field) => {
         const fieldError =
-          field.name === STRIPE_MIGRATION_ID_FIELD
-            ? migrationIdError
-            : null
+          field.name === STRIPE_MIGRATION_ID_FIELD ? migrationIdError : null
         return (
           <Box
             key={field.name}
@@ -95,11 +93,7 @@ export function PanTransferStepForm({ copy, migrationId, stepKey }: Props) {
               </Text>
             ) : (
               field.hint && (
-                <Text
-                  id={`${field.name}-hint`}
-                  variant="caption"
-                  color="muted"
-                >
+                <Text id={`${field.name}-hint`} variant="caption" color="muted">
                   {field.hint}
                 </Text>
               )

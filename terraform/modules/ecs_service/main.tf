@@ -173,6 +173,7 @@ resource "aws_ecs_task_definition" "this" {
         image             = var.logfire.router_image
         essential         = true
         memoryReservation = 51
+        user              = "0"
         firelensConfiguration = {
           type    = "fluentbit"
           options = { "enable-ecs-log-metadata" = "true" }

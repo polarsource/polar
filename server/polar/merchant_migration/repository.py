@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.authz.repository import select_accessible_org_ids
+from polar.config import settings
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -149,7 +150,10 @@ class MerchantMigrationRecordRepository(
                 MerchantMigrationRecord.id,
             )
         )
-        results = await self.session.stream_scalars(statement)
+        results = await self.session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         try:
             async for source_id in results:
                 yield source_id

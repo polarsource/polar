@@ -24452,6 +24452,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "checkout.created",
             "sidebarTitle": "checkout.created"
           }
         }
@@ -24494,6 +24495,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "checkout.updated",
             "sidebarTitle": "checkout.updated"
           }
         }
@@ -24536,6 +24538,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "checkout.expired",
             "sidebarTitle": "checkout.expired"
           }
         }
@@ -24578,6 +24581,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer.created",
             "sidebarTitle": "customer.created"
           }
         }
@@ -24620,6 +24624,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer.updated",
             "sidebarTitle": "customer.updated"
           }
         }
@@ -24662,6 +24667,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer.deleted",
             "sidebarTitle": "customer.deleted"
           }
         }
@@ -24704,6 +24710,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer.state_changed",
             "sidebarTitle": "customer.state_changed"
           }
         }
@@ -24746,6 +24753,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer_seat.assigned",
             "sidebarTitle": "customer_seat.assigned"
           }
         }
@@ -24788,6 +24796,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer_seat.claimed",
             "sidebarTitle": "customer_seat.claimed"
           }
         }
@@ -24830,6 +24839,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer_seat.revoked",
             "sidebarTitle": "customer_seat.revoked"
           }
         }
@@ -24872,6 +24882,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "member.created",
             "sidebarTitle": "member.created"
           }
         }
@@ -24914,6 +24925,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "member.updated",
             "sidebarTitle": "member.updated"
           }
         }
@@ -24956,6 +24968,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "member.deleted",
             "sidebarTitle": "member.deleted"
           }
         }
@@ -24998,6 +25011,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "order.created",
             "sidebarTitle": "order.created"
           }
         }
@@ -25040,6 +25054,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "order.updated",
             "sidebarTitle": "order.updated"
           }
         }
@@ -25082,6 +25097,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "order.paid",
             "sidebarTitle": "order.paid"
           }
         }
@@ -25124,6 +25140,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "order.refunded",
             "sidebarTitle": "order.refunded"
           }
         }
@@ -25166,6 +25183,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.created",
             "sidebarTitle": "subscription.created"
           }
         }
@@ -25208,6 +25226,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.updated",
             "sidebarTitle": "subscription.updated"
           }
         }
@@ -25250,6 +25269,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.active",
             "sidebarTitle": "subscription.active"
           }
         }
@@ -25292,6 +25312,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.canceled",
             "sidebarTitle": "subscription.canceled"
           }
         }
@@ -25334,6 +25355,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.uncanceled",
             "sidebarTitle": "subscription.uncanceled"
           }
         }
@@ -25376,6 +25398,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.cycled",
             "sidebarTitle": "subscription.cycled"
           }
         }
@@ -25418,6 +25441,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.revoked",
             "sidebarTitle": "subscription.revoked"
           }
         }
@@ -25460,6 +25484,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.past_due",
             "sidebarTitle": "subscription.past_due"
           }
         }
@@ -25502,6 +25527,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.paused",
             "sidebarTitle": "subscription.paused"
           }
         }
@@ -25544,6 +25570,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.resumed",
             "sidebarTitle": "subscription.resumed"
           }
         }
@@ -25586,6 +25613,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "refund.created",
             "sidebarTitle": "refund.created"
           }
         }
@@ -25628,6 +25656,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "refund.updated",
             "sidebarTitle": "refund.updated"
           }
         }
@@ -25670,6 +25699,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "product.created",
             "sidebarTitle": "product.created"
           }
         }
@@ -25712,6 +25742,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "product.updated",
             "sidebarTitle": "product.updated"
           }
         }
@@ -25754,6 +25785,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "discount.created",
             "sidebarTitle": "discount.created"
           }
         }
@@ -25796,6 +25828,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "discount.updated",
             "sidebarTitle": "discount.updated"
           }
         }
@@ -25838,6 +25871,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "discount.deleted",
             "sidebarTitle": "discount.deleted"
           }
         }
@@ -25880,6 +25914,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "organization.updated",
             "sidebarTitle": "organization.updated"
           }
         }
@@ -25922,6 +25957,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit.created",
             "sidebarTitle": "benefit.created"
           }
         }
@@ -25964,6 +26000,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit.updated",
             "sidebarTitle": "benefit.updated"
           }
         }
@@ -26006,6 +26043,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit_grant.created",
             "sidebarTitle": "benefit_grant.created"
           }
         }
@@ -26048,6 +26086,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit_grant.updated",
             "sidebarTitle": "benefit_grant.updated"
           }
         }
@@ -26090,6 +26129,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit_grant.cycled",
             "sidebarTitle": "benefit_grant.cycled"
           }
         }
@@ -26132,6 +26172,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit_grant.revoked",
             "sidebarTitle": "benefit_grant.revoked"
           }
         }
@@ -71928,6 +71969,7 @@
             "type": "string",
             "enum": [
               "admin",
+              "finance",
               "member"
             ],
             "title": "Role",
@@ -72680,6 +72722,7 @@
         "enum": [
           "owner",
           "admin",
+          "finance",
           "member"
         ],
         "title": "OrganizationRole"

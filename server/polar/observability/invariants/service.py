@@ -6,7 +6,6 @@ import structlog
 from polar.config import settings
 from polar.integrations.slack.client import SlackClient
 from polar.integrations.slack.payload import SlackPayload, get_branded_slack_payload
-from polar.kit.json import json_obj_serializer
 from polar.logging import Logger
 from polar.postgres import AsyncReadSession
 
@@ -52,7 +51,7 @@ def _format_invariant_failure_payload(error: InvariantError) -> SlackPayload:
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*Context*\n\n```{json.dumps(error.context, indent=2, default=json_obj_serializer)}```",
+                "text": f"*Context*\n\n```{json.dumps(error.context, indent=2, default=str)}```",
             },
         },
     ]

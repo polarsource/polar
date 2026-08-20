@@ -95,14 +95,6 @@ resource "tfe_variable" "grafana_cloud_prometheus_password" {
   variable_set_id = tfe_variable_set.global.id
 }
 
-resource "tfe_variable" "cloudflare_api_token" {
-  key             = "CLOUDFLARE_API_TOKEN"
-  category        = "env"
-  description     = "Cloudflare API token for handling domain configuration"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.global.id
-}
-
 resource "tfe_variable" "vercel_api_token" {
   key             = "VERCEL_API_TOKEN"
   category        = "env"

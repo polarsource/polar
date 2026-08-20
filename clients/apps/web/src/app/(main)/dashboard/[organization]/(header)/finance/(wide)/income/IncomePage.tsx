@@ -1,7 +1,5 @@
 'use client'
 
-import { useModal } from '@/components/Modal/useModal'
-import ExportTransactionsModal from '@/components/Transactions/ExportTransactionsModal'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
 import {
@@ -11,10 +9,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { ISODuration } from '@/utils/duration'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
 import { usePathname, useRouter } from 'next/navigation'
 
 export default function ClientPage({
@@ -76,43 +71,17 @@ export default function ClientPage({
   const rowCount = balancesHook.data?.pagination.total_count ?? 0
   const pageCount = balancesHook.data?.pagination.max_page ?? 1
 
-  const {
-    isShown: isExportModalShown,
-    show: showExportModal,
-    hide: hideExportModal,
-  } = useModal()
-
   return (
-    <Box flexDirection="column" rowGap="2xl">
-      <Box justifyContent="end">
-        <Button
-          onClick={showExportModal}
-          className="flex w-full flex-row items-center md:w-auto"
-          variant="secondary"
-          wrapperClassNames="gap-x-2"
-          disabled={!account}
-        >
-          <FileDownloadOutlined fontSize="inherit" />
-          <Text>Export</Text>
-        </Button>
-      </Box>
-      <TransactionsList
-        transactions={balances}
-        rowCount={rowCount}
-        pageCount={pageCount}
-        pagination={pagination}
-        onPaginationChange={setPagination}
-        sorting={sorting}
-        onSortingChange={setSorting}
-        isLoading={accountIsLoading || balancesHook.isLoading}
-        payoutTransactionDelay={payoutTransactionDelay}
-      />
-      <ExportTransactionsModal
-        organization={organization}
-        accountId={account?.id}
-        isShown={isExportModalShown}
-        hide={hideExportModal}
-      />
-    </Box>
+    <TransactionsList
+      transactions={balances}
+      rowCount={rowCount}
+      pageCount={pageCount}
+      pagination={pagination}
+      onPaginationChange={setPagination}
+      sorting={sorting}
+      onSortingChange={setSorting}
+      isLoading={accountIsLoading || balancesHook.isLoading}
+      payoutTransactionDelay={payoutTransactionDelay}
+    />
   )
 }

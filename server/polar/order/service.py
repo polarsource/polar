@@ -954,8 +954,6 @@ class OrderService:
                     }
                 ]
             )
-        # Unit products are recurring-only today, so the check above already
-        # excludes them — this keeps the rejection explicit if that changes.
         if product.has_unit_based_price:
             raise PolarRequestValidationError(
                 [

@@ -17,7 +17,11 @@ import type { ProductCheckoutPublic } from '../guards'
 import { isLegacyRecurringProductPrice } from '../guards'
 import { hasLegacyRecurringPrices } from '../utils/product'
 import { capitalize, decapitalize } from '../utils/string'
-import { getBasePricePerUnit, getMinimumUnitAmount, getUnitLabels } from '../utils/units'
+import {
+  getBasePricePerUnit,
+  getMinimumUnitAmount,
+  getUnitLabels,
+} from '../utils/units'
 import AmountLabel from './AmountLabel'
 import ProductPriceLabel from './ProductPriceLabel'
 

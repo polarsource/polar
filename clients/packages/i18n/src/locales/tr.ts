@@ -94,6 +94,20 @@ export default {
         updateFailed: 'Koltuklar güncellenemedi',
       },
       basePrice: 'Temel fiyat',
+      perUnit: '{unitLabel} başına',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: '{unitLabelPlural} sayısı',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'En az {min} {unitLabelPlural}',
+        maximum: 'En fazla {max} {unitLabelPlural}',
+        updateFailed: 'Birimler güncellenemedi',
+      },
     },
     trial: {
       hero: {

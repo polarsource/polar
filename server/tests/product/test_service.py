@@ -8,6 +8,7 @@ import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.custom_field.schemas import AttachedCustomFieldCreate
 from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.currency import PresentmentCurrency
@@ -568,6 +569,62 @@ class TestCreate:
                 )
             ],
             medias=[uuid.uuid4()],
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(session, create_schema, auth_subject)
+
+    @pytest.mark.auth
+    async def test_multiple_not_existing_medias(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        create_schema = ProductCreateRecurring(
+            name="Product",
+            organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=1000,
+                    price_currency=PresentmentCurrency.usd,
+                )
+            ],
+            medias=[uuid.uuid4(), uuid.uuid4()],
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(session, create_schema, auth_subject)
+
+    @pytest.mark.auth
+    async def test_invalid_media_and_attached_custom_field(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        create_schema = ProductCreateRecurring(
+            name="Product",
+            organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=1000,
+                    price_currency=PresentmentCurrency.usd,
+                )
+            ],
+            medias=[uuid.uuid4()],
+            attached_custom_fields=[
+                AttachedCustomFieldCreate(
+                    custom_field_id=uuid.uuid4(),
+                    required=False,
+                )
+            ],
         )
 
         with pytest.raises(PolarRequestValidationError):

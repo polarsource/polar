@@ -249,6 +249,7 @@ class ProductService:
                             "input": file_id,
                         }
                     )
+                    continue
                 product.product_medias.append(ProductMedia(file=file, order=order))
 
         for order, attached_custom_field in enumerate(
@@ -268,6 +269,7 @@ class ProductService:
                         "input": attached_custom_field.custom_field_id,
                     }
                 )
+                continue
             product.attached_custom_fields.append(
                 ProductCustomField(
                     custom_field=custom_field,

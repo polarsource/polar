@@ -40,6 +40,8 @@ bootstrap(pool_pre_ping=True)
 consumer_sqs_client = get_consumer_sqs_client()
 consumer_scheduler_client = get_consumer_scheduler_client()
 
+_REMAINING_TIME_MARGIN_SECONDS = 5
+
 
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     batch_item_failures: list[dict[str, str]] = []
@@ -57,6 +59,10 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                         kwargs,
                         receive_count=_effective_receive_count(record, attempt),
                         source_correlation_id=correlation_id,
+                        remaining_time_seconds=(
+                            context.get_remaining_time_in_millis() / 1000
+                            - _REMAINING_TIME_MARGIN_SECONDS
+                        ),
                     )
                 )
             except Retry as exc:

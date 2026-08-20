@@ -2132,11 +2132,13 @@ class OrderService:
             previous_status == OrderStatus.pending
             and order.subscription is not None
             and order.subscription.status == SubscriptionStatus.past_due
-            # Make sure there are no other dunning orders for this subscription, otherwise we might reactivate it too early
-            and await repository.count_dunning_by_subscription(order.subscription.id)
-            == 0
         ):
-            await subscription_service.mark_active(session, order.subscription)
+            # Make sure there are no other dunning orders for this subscription, otherwise we might reactivate it too early
+            dunning_orders = await repository.get_all_dunning_by_subscription(
+                order.subscription.id, for_update=True
+            )
+            if len(dunning_orders) == 0:
+                await subscription_service.mark_active(session, order.subscription)
 
         if update_dict:
             await self._on_order_updated(session, order, previous_status)

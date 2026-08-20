@@ -199,13 +199,17 @@ class OrderRepository(
             statement = statement.where(Order.status == status)
         return await self.get_all(statement)
 
-    async def count_dunning_by_subscription(self, subscription_id: UUID) -> int:
+    async def get_all_dunning_by_subscription(
+        self, subscription_id: UUID, *, for_update: bool = False
+    ) -> Sequence[Order]:
         statement = self.get_base_statement().where(
             Order.subscription_id == subscription_id,
             Order.status == OrderStatus.pending,
             Order.next_payment_attempt_at.is_not(None),
         )
-        return await self.count(statement)
+        if for_update:
+            statement = statement.with_for_update(of=self.model)
+        return await self.get_all(statement)
 
     async def get_by_stripe_invoice_id(
         self, stripe_invoice_id: str, *, options: Options = ()

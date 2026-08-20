@@ -24417,7 +24417,7 @@
   "webhooks": {
     "checkout.created": {
       "post": {
-        "summary": "checkout.created",
+        "summary": "checkout_created",
         "description": "Sent when a new checkout is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcheckout_created_post",
         "requestBody": {
@@ -24460,7 +24460,7 @@
     },
     "checkout.updated": {
       "post": {
-        "summary": "checkout.updated",
+        "summary": "checkout_updated",
         "description": "Sent when a checkout is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcheckout_updated_post",
         "requestBody": {
@@ -24503,7 +24503,7 @@
     },
     "checkout.expired": {
       "post": {
-        "summary": "checkout.expired",
+        "summary": "checkout_expired",
         "description": "Sent when a checkout expires.\n\nThis event fires when a checkout reaches its expiration time without being completed.\nDevelopers can use this to send reminder emails or track checkout abandonment.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcheckout_expired_post",
         "requestBody": {
@@ -24546,7 +24546,7 @@
     },
     "customer.created": {
       "post": {
-        "summary": "customer.created",
+        "summary": "customer_created",
         "description": "Sent when a new customer is created.\n\nA customer can be created:\n\n* After a successful checkout.\n* Programmatically via the API.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcustomer_created_post",
         "requestBody": {
@@ -24589,7 +24589,7 @@
     },
     "customer.updated": {
       "post": {
-        "summary": "customer.updated",
+        "summary": "customer_updated",
         "description": "Sent when a customer is updated.\n\nThis event is fired when the customer details are updated.\n\nIf you want to be notified when a customer subscription or benefit state changes, you should listen to the `customer_state_changed` event.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcustomer_updated_post",
         "requestBody": {
@@ -24632,7 +24632,7 @@
     },
     "customer.deleted": {
       "post": {
-        "summary": "customer.deleted",
+        "summary": "customer_deleted",
         "description": "Sent when a customer is deleted.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcustomer_deleted_post",
         "requestBody": {
@@ -24675,7 +24675,7 @@
     },
     "customer.state_changed": {
       "post": {
-        "summary": "customer.state_changed",
+        "summary": "customer_state_changed",
         "description": "Sent when a customer state has changed.\n\nIt's triggered when:\n\n* Customer is created, updated or deleted.\n* A subscription is created or updated.\n* A benefit is granted or revoked.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcustomer_state_changed_post",
         "requestBody": {
@@ -24718,7 +24718,7 @@
     },
     "customer_seat.assigned": {
       "post": {
-        "summary": "customer_seat.assigned",
+        "summary": "customer_seat_assigned",
         "description": "Sent when a new customer seat is assigned.\n\nThis event is triggered when a seat is assigned to a customer by the organization.\nThe customer will receive an invitation email to claim the seat.",
         "operationId": "_endpointcustomer_seat_assigned_post",
         "requestBody": {
@@ -24761,7 +24761,7 @@
     },
     "customer_seat.claimed": {
       "post": {
-        "summary": "customer_seat.claimed",
+        "summary": "customer_seat_claimed",
         "description": "Sent when a customer seat is claimed.\n\nThis event is triggered when a customer accepts the seat invitation and claims their access.",
         "operationId": "_endpointcustomer_seat_claimed_post",
         "requestBody": {
@@ -24804,7 +24804,7 @@
     },
     "customer_seat.revoked": {
       "post": {
-        "summary": "customer_seat.revoked",
+        "summary": "customer_seat_revoked",
         "description": "Sent when a customer seat is revoked.\n\nThis event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.",
         "operationId": "_endpointcustomer_seat_revoked_post",
         "requestBody": {
@@ -24847,7 +24847,7 @@
     },
     "member.created": {
       "post": {
-        "summary": "member.created",
+        "summary": "member_created",
         "description": "Sent when a new member is created.\n\nA member represents an individual within a customer (team).\nThis event is triggered when a member is added to a customer,\neither programmatically via the API or when an owner is automatically\ncreated for a new customer.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointmember_created_post",
         "requestBody": {
@@ -24890,7 +24890,7 @@
     },
     "member.updated": {
       "post": {
-        "summary": "member.updated",
+        "summary": "member_updated",
         "description": "Sent when a member is updated.\n\nThis event is triggered when member details are updated,\nsuch as their name or role within the customer.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointmember_updated_post",
         "requestBody": {
@@ -24933,7 +24933,7 @@
     },
     "member.deleted": {
       "post": {
-        "summary": "member.deleted",
+        "summary": "member_deleted",
         "description": "Sent when a member is deleted.\n\nThis event is triggered when a member is removed from a customer.\nAny active seats assigned to the member will be automatically revoked.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointmember_deleted_post",
         "requestBody": {
@@ -24976,7 +24976,7 @@
     },
     "order.created": {
       "post": {
-        "summary": "order.created",
+        "summary": "order_created",
         "description": "Sent when a new order is created.\n\nA new order is created when:\n\n* A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.\n* A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.\n* A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.\n* A subscription is upgraded or downgraded with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.\n\n> [!WARNING]\n> The order might not be paid yet, so the `status` field might be `pending`.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointorder_created_post",
         "requestBody": {
@@ -25019,7 +25019,7 @@
     },
     "order.updated": {
       "post": {
-        "summary": "order.updated",
+        "summary": "order_updated",
         "description": "Sent when an order is updated.\n\nAn order is updated when:\n\n* Its status changes, e.g. from `pending` to `paid`.\n* It's refunded, partially or fully.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointorder_updated_post",
         "requestBody": {
@@ -25062,7 +25062,7 @@
     },
     "order.paid": {
       "post": {
-        "summary": "order.paid",
+        "summary": "order_paid",
         "description": "Sent when an order is paid.\n\nWhen you receive this event, the order is fully processed and payment has been received.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointorder_paid_post",
         "requestBody": {
@@ -25105,7 +25105,7 @@
     },
     "order.refunded": {
       "post": {
-        "summary": "order.refunded",
+        "summary": "order_refunded",
         "description": "Sent when an order is fully or partially refunded.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointorder_refunded_post",
         "requestBody": {
@@ -25148,7 +25148,7 @@
     },
     "subscription.created": {
       "post": {
-        "summary": "subscription.created",
+        "summary": "subscription_created",
         "description": "Sent when a new subscription is created.\n\nWhen this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_created_post",
         "requestBody": {
@@ -25191,7 +25191,7 @@
     },
     "subscription.updated": {
       "post": {
-        "summary": "subscription.updated",
+        "summary": "subscription_updated",
         "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, listen to `subscription.cycled`.\n\n**Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.",
         "operationId": "_endpointsubscription_updated_post",
         "requestBody": {
@@ -25234,7 +25234,7 @@
     },
     "subscription.active": {
       "post": {
-        "summary": "subscription.active",
+        "summary": "subscription_active",
         "description": "Sent when a subscription becomes active,\nwhether because it's a new paid subscription or because payment was recovered.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_active_post",
         "requestBody": {
@@ -25277,7 +25277,7 @@
     },
     "subscription.canceled": {
       "post": {
-        "summary": "subscription.canceled",
+        "summary": "subscription_canceled",
         "description": "Sent when a subscription is canceled.\nCustomers might still have access until the end of the current period.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_canceled_post",
         "requestBody": {
@@ -25320,7 +25320,7 @@
     },
     "subscription.uncanceled": {
       "post": {
-        "summary": "subscription.uncanceled",
+        "summary": "subscription_uncanceled",
         "description": "Sent when a customer revokes a pending cancellation.\n\nWhen a customer cancels with \"at period end\", they retain access until the\nsubscription would renew. During this time, they can change their mind and\nundo the cancellation. This event is triggered when they do so.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_uncanceled_post",
         "requestBody": {
@@ -25363,7 +25363,7 @@
     },
     "subscription.cycled": {
       "post": {
-        "summary": "subscription.cycled",
+        "summary": "subscription_cycled",
         "description": "Sent when a subscription enters a new billing period.\n\nThe payload carries the new `current_period_start` and `current_period_end`.\nIt fires when the period rolls over, before the renewal order exists and\nregardless of whether the renewal payment succeeds \u2014 listen to `order.paid`\nif you need the payment.\n\nA trial converting to a paid subscription starts a new period, so it fires\nthere too. Read `status` to tell the two apart.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointsubscription_cycled_post",
         "requestBody": {
@@ -25406,7 +25406,7 @@
     },
     "subscription.revoked": {
       "post": {
-        "summary": "subscription.revoked",
+        "summary": "subscription_revoked",
         "description": "Sent when a subscription is revoked and the user loses access immediately.\nHappens when the subscription is canceled or payment retries are exhausted (status becomes `unpaid`).\n\nFor payment failures that can still be recovered, see `subscription.past_due`.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_revoked_post",
         "requestBody": {
@@ -25449,7 +25449,7 @@
     },
     "subscription.past_due": {
       "post": {
-        "summary": "subscription.past_due",
+        "summary": "subscription_past_due",
         "description": "Sent when a subscription payment fails and the subscription enters `past_due` status.\n\nThis is a recoverable state - the customer can update their payment method to restore the subscription.\nBenefits may be revoked depending on the organization's grace period settings.\n\nIf payment retries are exhausted, a `subscription.revoked` event will be sent.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_past_due_post",
         "requestBody": {
@@ -25492,7 +25492,7 @@
     },
     "subscription.paused": {
       "post": {
-        "summary": "subscription.paused",
+        "summary": "subscription_paused",
         "description": "Sent when a subscription is paused and the customer temporarily loses access.\n\nNo order is created while paused. The subscription resumes either on its\nscheduled resume date or when resumed manually, starting a new billing period.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_paused_post",
         "requestBody": {
@@ -25535,7 +25535,7 @@
     },
     "subscription.resumed": {
       "post": {
-        "summary": "subscription.resumed",
+        "summary": "subscription_resumed",
         "description": "Sent when a paused subscription resumes, restoring the customer's access.\n\nResuming starts a new billing period and charges the customer immediately.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_resumed_post",
         "requestBody": {
@@ -25578,7 +25578,7 @@
     },
     "refund.created": {
       "post": {
-        "summary": "refund.created",
+        "summary": "refund_created",
         "description": "Sent when a refund is created regardless of status.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointrefund_created_post",
         "requestBody": {
@@ -25621,7 +25621,7 @@
     },
     "refund.updated": {
       "post": {
-        "summary": "refund.updated",
+        "summary": "refund_updated",
         "description": "Sent when a refund is updated.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointrefund_updated_post",
         "requestBody": {
@@ -25664,7 +25664,7 @@
     },
     "product.created": {
       "post": {
-        "summary": "product.created",
+        "summary": "product_created",
         "description": "Sent when a new product is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointproduct_created_post",
         "requestBody": {
@@ -25707,7 +25707,7 @@
     },
     "product.updated": {
       "post": {
-        "summary": "product.updated",
+        "summary": "product_updated",
         "description": "Sent when a product is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointproduct_updated_post",
         "requestBody": {
@@ -25750,7 +25750,7 @@
     },
     "discount.created": {
       "post": {
-        "summary": "discount.created",
+        "summary": "discount_created",
         "description": "Sent when a new discount is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointdiscount_created_post",
         "requestBody": {
@@ -25793,7 +25793,7 @@
     },
     "discount.updated": {
       "post": {
-        "summary": "discount.updated",
+        "summary": "discount_updated",
         "description": "Sent when a discount is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointdiscount_updated_post",
         "requestBody": {
@@ -25836,7 +25836,7 @@
     },
     "discount.deleted": {
       "post": {
-        "summary": "discount.deleted",
+        "summary": "discount_deleted",
         "description": "Sent when a discount is deleted.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointdiscount_deleted_post",
         "requestBody": {
@@ -25879,7 +25879,7 @@
     },
     "organization.updated": {
       "post": {
-        "summary": "organization.updated",
+        "summary": "organization_updated",
         "description": "Sent when a organization is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointorganization_updated_post",
         "requestBody": {
@@ -25922,7 +25922,7 @@
     },
     "benefit.created": {
       "post": {
-        "summary": "benefit.created",
+        "summary": "benefit_created",
         "description": "Sent when a new benefit is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_created_post",
         "requestBody": {
@@ -25965,7 +25965,7 @@
     },
     "benefit.updated": {
       "post": {
-        "summary": "benefit.updated",
+        "summary": "benefit_updated",
         "description": "Sent when a benefit is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_updated_post",
         "requestBody": {
@@ -26008,7 +26008,7 @@
     },
     "benefit_grant.created": {
       "post": {
-        "summary": "benefit_grant.created",
+        "summary": "benefit_grant_created",
         "description": "Sent when a new benefit grant is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_created_post",
         "requestBody": {
@@ -26051,7 +26051,7 @@
     },
     "benefit_grant.updated": {
       "post": {
-        "summary": "benefit_grant.updated",
+        "summary": "benefit_grant_updated",
         "description": "Sent when a benefit grant is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_updated_post",
         "requestBody": {
@@ -26094,7 +26094,7 @@
     },
     "benefit_grant.cycled": {
       "post": {
-        "summary": "benefit_grant.cycled",
+        "summary": "benefit_grant_cycled",
         "description": "Sent when a benefit grant is cycled,\nmeaning the related subscription has been renewed for another period.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_cycled_post",
         "requestBody": {
@@ -26137,7 +26137,7 @@
     },
     "benefit_grant.revoked": {
       "post": {
-        "summary": "benefit_grant.revoked",
+        "summary": "benefit_grant_revoked",
         "description": "Sent when a benefit grant is revoked.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_revoked_post",
         "requestBody": {

@@ -6192,7 +6192,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * checkout.created
+     * checkout_created
      * @description Sent when a new checkout is created.
      *
      *     **Discord & Slack support:** Basic
@@ -6214,7 +6214,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * checkout.updated
+     * checkout_updated
      * @description Sent when a checkout is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -6236,7 +6236,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * checkout.expired
+     * checkout_expired
      * @description Sent when a checkout expires.
      *
      *     This event fires when a checkout reaches its expiration time without being completed.
@@ -6261,7 +6261,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer.created
+     * customer_created
      * @description Sent when a new customer is created.
      *
      *     A customer can be created:
@@ -6288,7 +6288,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer.updated
+     * customer_updated
      * @description Sent when a customer is updated.
      *
      *     This event is fired when the customer details are updated.
@@ -6314,7 +6314,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer.deleted
+     * customer_deleted
      * @description Sent when a customer is deleted.
      *
      *     **Discord & Slack support:** Basic
@@ -6336,7 +6336,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer.state_changed
+     * customer_state_changed
      * @description Sent when a customer state has changed.
      *
      *     It's triggered when:
@@ -6364,7 +6364,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer_seat.assigned
+     * customer_seat_assigned
      * @description Sent when a new customer seat is assigned.
      *
      *     This event is triggered when a seat is assigned to a customer by the organization.
@@ -6387,7 +6387,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer_seat.claimed
+     * customer_seat_claimed
      * @description Sent when a customer seat is claimed.
      *
      *     This event is triggered when a customer accepts the seat invitation and claims their access.
@@ -6409,7 +6409,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer_seat.revoked
+     * customer_seat_revoked
      * @description Sent when a customer seat is revoked.
      *
      *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
@@ -6431,7 +6431,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * member.created
+     * member_created
      * @description Sent when a new member is created.
      *
      *     A member represents an individual within a customer (team).
@@ -6458,7 +6458,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * member.updated
+     * member_updated
      * @description Sent when a member is updated.
      *
      *     This event is triggered when member details are updated,
@@ -6483,7 +6483,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * member.deleted
+     * member_deleted
      * @description Sent when a member is deleted.
      *
      *     This event is triggered when a member is removed from a customer.
@@ -6508,7 +6508,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * order.created
+     * order_created
      * @description Sent when a new order is created.
      *
      *     A new order is created when:
@@ -6540,7 +6540,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * order.updated
+     * order_updated
      * @description Sent when an order is updated.
      *
      *     An order is updated when:
@@ -6567,7 +6567,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * order.paid
+     * order_paid
      * @description Sent when an order is paid.
      *
      *     When you receive this event, the order is fully processed and payment has been received.
@@ -6591,7 +6591,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * order.refunded
+     * order_refunded
      * @description Sent when an order is fully or partially refunded.
      *
      *     **Discord & Slack support:** Full
@@ -6613,7 +6613,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.created
+     * subscription_created
      * @description Sent when a new subscription is created.
      *
      *     When this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.
@@ -6637,7 +6637,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.updated
+     * subscription_updated
      * @description Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.
      *
      *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
@@ -6663,7 +6663,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.active
+     * subscription_active
      * @description Sent when a subscription becomes active,
      *     whether because it's a new paid subscription or because payment was recovered.
      *
@@ -6686,7 +6686,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.canceled
+     * subscription_canceled
      * @description Sent when a subscription is canceled.
      *     Customers might still have access until the end of the current period.
      *
@@ -6709,7 +6709,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.uncanceled
+     * subscription_uncanceled
      * @description Sent when a customer revokes a pending cancellation.
      *
      *     When a customer cancels with "at period end", they retain access until the
@@ -6735,7 +6735,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.cycled
+     * subscription_cycled
      * @description Sent when a subscription enters a new billing period.
      *
      *     The payload carries the new `current_period_start` and `current_period_end`.
@@ -6765,7 +6765,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.revoked
+     * subscription_revoked
      * @description Sent when a subscription is revoked and the user loses access immediately.
      *     Happens when the subscription is canceled or payment retries are exhausted (status becomes `unpaid`).
      *
@@ -6790,7 +6790,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.past_due
+     * subscription_past_due
      * @description Sent when a subscription payment fails and the subscription enters `past_due` status.
      *
      *     This is a recoverable state - the customer can update their payment method to restore the subscription.
@@ -6817,7 +6817,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.paused
+     * subscription_paused
      * @description Sent when a subscription is paused and the customer temporarily loses access.
      *
      *     No order is created while paused. The subscription resumes either on its
@@ -6842,7 +6842,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.resumed
+     * subscription_resumed
      * @description Sent when a paused subscription resumes, restoring the customer's access.
      *
      *     Resuming starts a new billing period and charges the customer immediately.
@@ -6866,7 +6866,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * refund.created
+     * refund_created
      * @description Sent when a refund is created regardless of status.
      *
      *     **Discord & Slack support:** Full
@@ -6888,7 +6888,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * refund.updated
+     * refund_updated
      * @description Sent when a refund is updated.
      *
      *     **Discord & Slack support:** Full
@@ -6910,7 +6910,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * product.created
+     * product_created
      * @description Sent when a new product is created.
      *
      *     **Discord & Slack support:** Basic
@@ -6932,7 +6932,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * product.updated
+     * product_updated
      * @description Sent when a product is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -6954,7 +6954,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * discount.created
+     * discount_created
      * @description Sent when a new discount is created.
      *
      *     **Discord & Slack support:** Basic
@@ -6976,7 +6976,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * discount.updated
+     * discount_updated
      * @description Sent when a discount is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -6998,7 +6998,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * discount.deleted
+     * discount_deleted
      * @description Sent when a discount is deleted.
      *
      *     **Discord & Slack support:** Basic
@@ -7020,7 +7020,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * organization.updated
+     * organization_updated
      * @description Sent when a organization is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -7042,7 +7042,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit.created
+     * benefit_created
      * @description Sent when a new benefit is created.
      *
      *     **Discord & Slack support:** Basic
@@ -7064,7 +7064,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit.updated
+     * benefit_updated
      * @description Sent when a benefit is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -7086,7 +7086,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit_grant.created
+     * benefit_grant_created
      * @description Sent when a new benefit grant is created.
      *
      *     **Discord & Slack support:** Basic
@@ -7108,7 +7108,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit_grant.updated
+     * benefit_grant_updated
      * @description Sent when a benefit grant is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -7130,7 +7130,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit_grant.cycled
+     * benefit_grant_cycled
      * @description Sent when a benefit grant is cycled,
      *     meaning the related subscription has been renewed for another period.
      *
@@ -7153,7 +7153,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit_grant.revoked
+     * benefit_grant_revoked
      * @description Sent when a benefit grant is revoked.
      *
      *     **Discord & Slack support:** Basic

@@ -1513,6 +1513,334 @@
     {
       "source": "/features/integrations/refgrow",
       "destination": "https://refgrow.com/polar-affiliate-software"
+    },
+    {
+      "source": "/api-reference/2026-04/checkoutcreated",
+      "destination": "/api-reference/2026-04/checkout_created"
+    },
+    {
+      "source": "/api-reference/2026-04/checkoutupdated",
+      "destination": "/api-reference/2026-04/checkout_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/checkoutexpired",
+      "destination": "/api-reference/2026-04/checkout_expired"
+    },
+    {
+      "source": "/api-reference/2026-04/customercreated",
+      "destination": "/api-reference/2026-04/customer_created"
+    },
+    {
+      "source": "/api-reference/2026-04/customerupdated",
+      "destination": "/api-reference/2026-04/customer_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/customerdeleted",
+      "destination": "/api-reference/2026-04/customer_deleted"
+    },
+    {
+      "source": "/api-reference/2026-04/customerstate_changed",
+      "destination": "/api-reference/2026-04/customer_state_changed"
+    },
+    {
+      "source": "/api-reference/2026-04/customer_seatassigned",
+      "destination": "/api-reference/2026-04/customer_seat_assigned"
+    },
+    {
+      "source": "/api-reference/2026-04/customer_seatclaimed",
+      "destination": "/api-reference/2026-04/customer_seat_claimed"
+    },
+    {
+      "source": "/api-reference/2026-04/customer_seatrevoked",
+      "destination": "/api-reference/2026-04/customer_seat_revoked"
+    },
+    {
+      "source": "/api-reference/2026-04/membercreated",
+      "destination": "/api-reference/2026-04/member_created"
+    },
+    {
+      "source": "/api-reference/2026-04/memberupdated",
+      "destination": "/api-reference/2026-04/member_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/memberdeleted",
+      "destination": "/api-reference/2026-04/member_deleted"
+    },
+    {
+      "source": "/api-reference/2026-04/ordercreated",
+      "destination": "/api-reference/2026-04/order_created"
+    },
+    {
+      "source": "/api-reference/2026-04/orderupdated",
+      "destination": "/api-reference/2026-04/order_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/orderpaid",
+      "destination": "/api-reference/2026-04/order_paid"
+    },
+    {
+      "source": "/api-reference/2026-04/orderrefunded",
+      "destination": "/api-reference/2026-04/order_refunded"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptioncreated",
+      "destination": "/api-reference/2026-04/subscription_created"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptionupdated",
+      "destination": "/api-reference/2026-04/subscription_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptionactive",
+      "destination": "/api-reference/2026-04/subscription_active"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptioncanceled",
+      "destination": "/api-reference/2026-04/subscription_canceled"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptionuncanceled",
+      "destination": "/api-reference/2026-04/subscription_uncanceled"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptioncycled",
+      "destination": "/api-reference/2026-04/subscription_cycled"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptionrevoked",
+      "destination": "/api-reference/2026-04/subscription_revoked"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptionpast_due",
+      "destination": "/api-reference/2026-04/subscription_past_due"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptionpaused",
+      "destination": "/api-reference/2026-04/subscription_paused"
+    },
+    {
+      "source": "/api-reference/2026-04/subscriptionresumed",
+      "destination": "/api-reference/2026-04/subscription_resumed"
+    },
+    {
+      "source": "/api-reference/2026-04/refundcreated",
+      "destination": "/api-reference/2026-04/refund_created"
+    },
+    {
+      "source": "/api-reference/2026-04/refundupdated",
+      "destination": "/api-reference/2026-04/refund_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/productcreated",
+      "destination": "/api-reference/2026-04/product_created"
+    },
+    {
+      "source": "/api-reference/2026-04/productupdated",
+      "destination": "/api-reference/2026-04/product_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/discountcreated",
+      "destination": "/api-reference/2026-04/discount_created"
+    },
+    {
+      "source": "/api-reference/2026-04/discountupdated",
+      "destination": "/api-reference/2026-04/discount_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/discountdeleted",
+      "destination": "/api-reference/2026-04/discount_deleted"
+    },
+    {
+      "source": "/api-reference/2026-04/benefitcreated",
+      "destination": "/api-reference/2026-04/benefit_created"
+    },
+    {
+      "source": "/api-reference/2026-04/benefitupdated",
+      "destination": "/api-reference/2026-04/benefit_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/benefit_grantcreated",
+      "destination": "/api-reference/2026-04/benefit_grant_created"
+    },
+    {
+      "source": "/api-reference/2026-04/benefit_grantcycled",
+      "destination": "/api-reference/2026-04/benefit_grant_cycled"
+    },
+    {
+      "source": "/api-reference/2026-04/benefit_grantupdated",
+      "destination": "/api-reference/2026-04/benefit_grant_updated"
+    },
+    {
+      "source": "/api-reference/2026-04/benefit_grantrevoked",
+      "destination": "/api-reference/2026-04/benefit_grant_revoked"
+    },
+    {
+      "source": "/api-reference/2026-04/organizationupdated",
+      "destination": "/api-reference/2026-04/organization_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/checkoutcreated",
+      "destination": "/api-reference/2026-10/checkout_created"
+    },
+    {
+      "source": "/api-reference/2026-10/checkoutupdated",
+      "destination": "/api-reference/2026-10/checkout_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/checkoutexpired",
+      "destination": "/api-reference/2026-10/checkout_expired"
+    },
+    {
+      "source": "/api-reference/2026-10/customercreated",
+      "destination": "/api-reference/2026-10/customer_created"
+    },
+    {
+      "source": "/api-reference/2026-10/customerupdated",
+      "destination": "/api-reference/2026-10/customer_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/customerdeleted",
+      "destination": "/api-reference/2026-10/customer_deleted"
+    },
+    {
+      "source": "/api-reference/2026-10/customerstate_changed",
+      "destination": "/api-reference/2026-10/customer_state_changed"
+    },
+    {
+      "source": "/api-reference/2026-10/customer_seatassigned",
+      "destination": "/api-reference/2026-10/customer_seat_assigned"
+    },
+    {
+      "source": "/api-reference/2026-10/customer_seatclaimed",
+      "destination": "/api-reference/2026-10/customer_seat_claimed"
+    },
+    {
+      "source": "/api-reference/2026-10/customer_seatrevoked",
+      "destination": "/api-reference/2026-10/customer_seat_revoked"
+    },
+    {
+      "source": "/api-reference/2026-10/membercreated",
+      "destination": "/api-reference/2026-10/member_created"
+    },
+    {
+      "source": "/api-reference/2026-10/memberupdated",
+      "destination": "/api-reference/2026-10/member_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/memberdeleted",
+      "destination": "/api-reference/2026-10/member_deleted"
+    },
+    {
+      "source": "/api-reference/2026-10/ordercreated",
+      "destination": "/api-reference/2026-10/order_created"
+    },
+    {
+      "source": "/api-reference/2026-10/orderupdated",
+      "destination": "/api-reference/2026-10/order_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/orderpaid",
+      "destination": "/api-reference/2026-10/order_paid"
+    },
+    {
+      "source": "/api-reference/2026-10/orderrefunded",
+      "destination": "/api-reference/2026-10/order_refunded"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptioncreated",
+      "destination": "/api-reference/2026-10/subscription_created"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptionupdated",
+      "destination": "/api-reference/2026-10/subscription_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptionactive",
+      "destination": "/api-reference/2026-10/subscription_active"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptioncanceled",
+      "destination": "/api-reference/2026-10/subscription_canceled"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptionuncanceled",
+      "destination": "/api-reference/2026-10/subscription_uncanceled"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptioncycled",
+      "destination": "/api-reference/2026-10/subscription_cycled"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptionrevoked",
+      "destination": "/api-reference/2026-10/subscription_revoked"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptionpast_due",
+      "destination": "/api-reference/2026-10/subscription_past_due"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptionpaused",
+      "destination": "/api-reference/2026-10/subscription_paused"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptionresumed",
+      "destination": "/api-reference/2026-10/subscription_resumed"
+    },
+    {
+      "source": "/api-reference/2026-10/refundcreated",
+      "destination": "/api-reference/2026-10/refund_created"
+    },
+    {
+      "source": "/api-reference/2026-10/refundupdated",
+      "destination": "/api-reference/2026-10/refund_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/productcreated",
+      "destination": "/api-reference/2026-10/product_created"
+    },
+    {
+      "source": "/api-reference/2026-10/productupdated",
+      "destination": "/api-reference/2026-10/product_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/discountcreated",
+      "destination": "/api-reference/2026-10/discount_created"
+    },
+    {
+      "source": "/api-reference/2026-10/discountupdated",
+      "destination": "/api-reference/2026-10/discount_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/discountdeleted",
+      "destination": "/api-reference/2026-10/discount_deleted"
+    },
+    {
+      "source": "/api-reference/2026-10/benefitcreated",
+      "destination": "/api-reference/2026-10/benefit_created"
+    },
+    {
+      "source": "/api-reference/2026-10/benefitupdated",
+      "destination": "/api-reference/2026-10/benefit_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/benefit_grantcreated",
+      "destination": "/api-reference/2026-10/benefit_grant_created"
+    },
+    {
+      "source": "/api-reference/2026-10/benefit_grantcycled",
+      "destination": "/api-reference/2026-10/benefit_grant_cycled"
+    },
+    {
+      "source": "/api-reference/2026-10/benefit_grantupdated",
+      "destination": "/api-reference/2026-10/benefit_grant_updated"
+    },
+    {
+      "source": "/api-reference/2026-10/benefit_grantrevoked",
+      "destination": "/api-reference/2026-10/benefit_grant_revoked"
+    },
+    {
+      "source": "/api-reference/2026-10/organizationupdated",
+      "destination": "/api-reference/2026-10/organization_updated"
     }
   ]
 }

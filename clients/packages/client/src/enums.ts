@@ -17,6 +17,7 @@ export {
   subscriptionExportColumnValues,
   taxBehaviorOptionValues,
   timeIntervalValues,
+  transactionExportColumnValues,
   trialIntervalValues,
   uniqueAggregationFuncValues,
   webhookEventTypeValues,

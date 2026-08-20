@@ -50,6 +50,8 @@ class TransactionService(BaseTransactionService):
         payment_organization_id: uuid.UUID | None = None,
         payment_user_id: uuid.UUID | None = None,
         exclude_platform_fees: bool = False,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[TransactionSortProperty]] = (
             (TransactionSortProperty.created_at, True),
@@ -88,6 +90,10 @@ class TransactionService(BaseTransactionService):
             statement = statement.where(Transaction.payment_user_id == payment_user_id)
         if exclude_platform_fees:
             statement = statement.where(Transaction.platform_fee_type.is_(None))
+        if created_after is not None:
+            statement = statement.where(Transaction.created_at >= created_after)
+        if created_before is not None:
+            statement = statement.where(Transaction.created_at <= created_before)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

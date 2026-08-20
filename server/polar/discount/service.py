@@ -31,6 +31,7 @@ from polar.models import (
     DiscountProduct,
     Organization,
     Product,
+    Subscription,
     User,
 )
 from polar.models.checkout import Checkout
@@ -537,6 +538,14 @@ class DiscountService(ResourceServiceReader[Discount]):
     ) -> None:
         statement = delete(DiscountRedemption).where(
             DiscountRedemption.checkout_id == checkout.id
+        )
+        await session.execute(statement)
+
+    async def remove_subscription_redemption(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        statement = delete(DiscountRedemption).where(
+            DiscountRedemption.subscription_id == subscription.id
         )
         await session.execute(statement)
 

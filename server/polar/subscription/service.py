@@ -2010,6 +2010,10 @@ class SubscriptionService:
             return
 
         if discount == "unset":
+            if subscription.discount is not None:
+                await discount_service.remove_subscription_redemption(
+                    session, subscription
+                )
             yield "unset"
             return
 
@@ -2046,6 +2050,9 @@ class SubscriptionService:
                     }
                 ]
             )
+
+        if subscription.discount is not None:
+            await discount_service.remove_subscription_redemption(session, subscription)
 
         async with discount_service.redeem_discount(
             session, resolved_discount

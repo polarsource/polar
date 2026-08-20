@@ -11,6 +11,7 @@ import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
+from sqlalchemy import func, select
 from sqlalchemy.util.typing import TypeAlias
 
 from polar.auth.models import AuthSubject
@@ -43,6 +44,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    DiscountRedemption,
     Meter,
     Organization,
     PaymentMethod,
@@ -152,6 +154,20 @@ async def assert_order_exists(
     assert len(orders) > 0, (
         "Expected at least one order to be created for the subscription"
     )
+
+
+async def count_discount_redemptions(
+    session: AsyncSession,
+    discount_id: uuid.UUID,
+    subscription_id: uuid.UUID,
+) -> int:
+    result = await session.execute(
+        select(func.count(DiscountRedemption.id)).where(
+            DiscountRedemption.discount_id == discount_id,
+            DiscountRedemption.subscription_id == subscription_id,
+        )
+    )
+    return result.scalar_one()
 
 
 def assert_webhook_sent_once(
@@ -6640,6 +6656,120 @@ class TestUpdateDiscount:
                 await subscription_service.update_discount(
                     session, ctx, subscription, discount=discount.id
                 )
+
+    async def test_change_discount_removes_old_redemption(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        discount_percentage_50: Discount,
+        discount_percentage_100: Discount,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_discount(
+                session, ctx, subscription, discount=discount_percentage_50.id
+            )
+
+        assert (
+            await count_discount_redemptions(
+                session, discount_percentage_50.id, subscription.id
+            )
+            == 1
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_discount(
+                session, ctx, subscription, discount=discount_percentage_100.id
+            )
+
+        assert subscription.discount == discount_percentage_100
+
+        assert (
+            await count_discount_redemptions(
+                session, discount_percentage_50.id, subscription.id
+            )
+            == 0
+        )
+        await session.refresh(discount_percentage_50, {"redemptions_count"})
+        assert discount_percentage_50.redemptions_count == 0
+
+        assert (
+            await count_discount_redemptions(
+                session, discount_percentage_100.id, subscription.id
+            )
+            == 1
+        )
+        await session.refresh(discount_percentage_100, {"redemptions_count"})
+        assert discount_percentage_100.redemptions_count == 1
+
+    async def test_unset_and_reapply_does_not_inflate_redemptions(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+            max_redemptions=1,
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_discount(
+                session, ctx, subscription, discount=discount.id
+            )
+
+        assert (
+            await count_discount_redemptions(session, discount.id, subscription.id) == 1
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_discount(
+                session, ctx, subscription, discount="unset"
+            )
+
+        assert subscription.discount is None
+        assert (
+            await count_discount_redemptions(session, discount.id, subscription.id) == 0
+        )
+        await session.refresh(discount, {"redemptions_count"})
+        assert discount.redemptions_count == 0
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_discount(
+                session, ctx, subscription, discount=discount.id
+            )
+
+        assert subscription.discount == discount
+        assert (
+            await count_discount_redemptions(session, discount.id, subscription.id) == 1
+        )
+        await session.refresh(discount, {"redemptions_count"})
+        assert discount.redemptions_count == 1
 
 
 @pytest.mark.asyncio

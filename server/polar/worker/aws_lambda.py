@@ -49,8 +49,8 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         for record in event.get("Records", []):
             message_id = record["messageId"]
             try:
-                actor, args, kwargs, correlation_id, attempt = parse_envelope(
-                    record["body"]
+                actor, args, kwargs, correlation_id, attempt, message_timestamp = (
+                    parse_envelope(record["body"])
                 )
                 _loop.run_until_complete(
                     run_task(
@@ -63,6 +63,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                             context.get_remaining_time_in_millis() / 1000
                             - _REMAINING_TIME_MARGIN_SECONDS
                         ),
+                        message_timestamp=message_timestamp,
                     )
                 )
             except Retry as exc:
@@ -92,7 +93,9 @@ def _effective_receive_count(record: dict[str, Any], attempt: int) -> int:
 def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bool:
     """Schedule the failed message's next retry. Returns True if SQS should redeliver it."""
     try:
-        actor, args, kwargs, correlation_id, attempt = parse_envelope(record["body"])
+        actor, args, kwargs, correlation_id, attempt, message_timestamp = (
+            parse_envelope(record["body"])
+        )
         queue_arn = record["eventSourceARN"]
         receive_count = _effective_receive_count(record, attempt)
         scheduler_role_arn = settings.WORKER_SQS_SCHEDULER_ROLE_ARN
@@ -120,7 +123,12 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
                 queue_arn,
                 scheduler_role_arn,
                 build_envelope(
-                    actor, tuple(args), kwargs, correlation_id, receive_count + 1
+                    actor,
+                    tuple(args),
+                    kwargs,
+                    correlation_id,
+                    receive_count + 1,
+                    message_timestamp,
                 ),
                 delay_seconds,
                 build_retry_schedule_name(queue_arn, record["messageId"], attempt),

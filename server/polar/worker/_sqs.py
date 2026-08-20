@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+import time
 from collections import defaultdict
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -139,7 +140,10 @@ def build_envelope(
     kwargs: dict[str, Any],
     correlation_id: str | None,
     attempt: int = 1,
+    message_timestamp: int | None = None,
 ) -> str:
+    if message_timestamp is None:
+        message_timestamp = int(time.time() * 1000)
     return json.dumps(
         {
             "actor": actor,
@@ -147,6 +151,7 @@ def build_envelope(
             "kwargs": kwargs,
             "correlation_id": correlation_id,
             "attempt": attempt,
+            "message_timestamp": message_timestamp,
         },
         separators=(",", ":"),
         default=json_obj_serializer,
@@ -155,7 +160,7 @@ def build_envelope(
 
 def parse_envelope(
     body: str,
-) -> tuple[str, list[Any], dict[str, Any], str | None, int]:
+) -> tuple[str, list[Any], dict[str, Any], str | None, int, int | None]:
     data = json.loads(body)
     return (
         data["actor"],
@@ -163,6 +168,7 @@ def parse_envelope(
         data.get("kwargs", {}),
         data.get("correlation_id"),
         data.get("attempt", 1),
+        data.get("message_timestamp"),
     )
 
 

@@ -176,6 +176,14 @@ export default {
         activationDeletedDescription: 'Activation supprimée avec succès',
         activationDeactivationFailed:
           "Échec de la désactivation de l'activation",
+        rotate: 'Faire pivoter',
+        rotateConfirmTitle: 'Faire pivoter cette clé de licence ?',
+        rotateConfirmDescription:
+          "Une nouvelle clé sera générée. L'ancienne clé ne sera plus validée immédiatement. Copiez la nouvelle clé après la rotation.",
+        rotated: 'Clé de licence pivotée',
+        rotatedDescription:
+          "L'ancienne clé ne sera plus validée. Copiez votre nouvelle clé ci-dessous.",
+        rotateFailed: 'Échec de la rotation de la clé de licence',
       },
       slackSharedChannel: {
         connected: 'Connecté à votre espace de travail Slack.',

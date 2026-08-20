@@ -175,6 +175,14 @@ export default {
         activationDeleted: 'Usunięto aktywację klucza',
         activationDeletedDescription: 'Aktywacja została pomyślnie usunięta',
         activationDeactivationFailed: 'Dezaktywacja nie powiodła się',
+        rotate: 'Obróć',
+        rotateConfirmTitle: 'Obrócić ten klucz licencyjny?',
+        rotateConfirmDescription:
+          'Zostanie wygenerowany nowy klucz. Poprzedni klucz przestanie od razu działać podczas weryfikacji. Skopiuj nowy klucz po obróceniu.',
+        rotated: 'Klucz licencyjny obrócony',
+        rotatedDescription:
+          'Poprzedni klucz nie jest już prawidłowo weryfikowany. Skopiuj nowy klucz poniżej.',
+        rotateFailed: 'Nie udało się obrócić klucza licencyjnego',
       },
       slackSharedChannel: {
         connected: 'Połączono z Twoim obszarem roboczym Slack.',

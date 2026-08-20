@@ -177,6 +177,14 @@ export default {
         activationDeleted: 'Lisans anahtarı aktivasyonu silindi',
         activationDeletedDescription: 'Aktivasyon başarıyla silindi',
         activationDeactivationFailed: 'Aktivasyon devre dışı bırakılamadı',
+        rotate: 'Döndür',
+        rotateConfirmTitle: 'Bu lisans anahtarı döndürülsün mü?',
+        rotateConfirmDescription:
+          'Yeni bir anahtar oluşturulacak. Önceki anahtar hemen doğrulanmayı durdurur. Döndürdükten sonra yeni anahtarı kopyalayın.',
+        rotated: 'Lisans Anahtarı Döndürüldü',
+        rotatedDescription:
+          'Önceki anahtar artık doğrulanmıyor. Yeni anahtarınızı aşağıdan kopyalayın.',
+        rotateFailed: 'Lisans Anahtarı Döndürme Başarısız',
       },
       slackSharedChannel: {
         connected: 'Slack çalışma alanınıza bağlandı.',

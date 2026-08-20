@@ -23,6 +23,7 @@ from tests.fixtures.random_objects import (
     create_checkout_link,
     create_product,
     create_product_price_seat_unit,
+    create_product_price_unit_based,
     create_product_unit_based,
 )
 
@@ -413,6 +414,45 @@ class TestCreateUnits:
                     payment_processor=PaymentProcessor.stripe,
                     products=[product_unit_based_minimum_2.id],
                     units=1,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_rejects_units_outside_any_currency_bounds(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # USD first (loose floor), then EUR (stricter). Validation used to check
+        # only the first unit price, so a lock of 5 would be accepted even though
+        # EUR checkout would ignore it.
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=organization,
+            minimum_units=1,
+            currency="usd",
+        )
+        eur_price = await create_product_price_unit_based(
+            save_fixture,
+            product=product,
+            price_per_unit=900,
+            minimum_units=10,
+            currency="eur",
+        )
+        product.prices.append(eur_price)
+        product.all_prices.append(eur_price)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.create(
+                session,
+                CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product.id],
+                    units=5,
                 ),
                 auth_subject,
             )

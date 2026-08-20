@@ -481,29 +481,24 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 return False
         return True
 
-    def _get_unit_price(self, product: Product) -> UnitPrice | None:
-        for price in product.prices:
-            if is_unit_price(price):
-                return price
-        return None
+    def _get_unit_prices(self, product: Product) -> list[UnitPrice]:
+        return [price for price in product.prices if is_unit_price(price)]
 
     def _units_valid_for_products(
         self, units: int, products: Sequence[Product]
     ) -> bool:
-        """Whether `units` fits the bounds of *every* product on the link.
-
-        Unit-count bounds are currency-independent, so no currency is needed.
-        """
+        """Whether `units` fits every unit price on every product on the link."""
         for product in products:
-            unit_price = self._get_unit_price(product)
-            if unit_price is None:
+            unit_prices = self._get_unit_prices(product)
+            if not unit_prices:
                 return False
-            minimum_units = unit_price.get_minimum_purchasable_units()
-            maximum_units = unit_price.get_maximum_units()
-            if units < minimum_units or (
-                maximum_units is not None and units > maximum_units
-            ):
-                return False
+            for unit_price in unit_prices:
+                minimum_units = unit_price.get_minimum_purchasable_units()
+                maximum_units = unit_price.get_maximum_units()
+                if units < minimum_units or (
+                    maximum_units is not None and units > maximum_units
+                ):
+                    return False
         return True
 
     def _validate_units_for_products(
@@ -511,8 +506,8 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     ) -> None:
         """Strict-validate a unit lock against every product, raising on mismatch."""
         for product in products:
-            unit_price = self._get_unit_price(product)
-            if unit_price is None:
+            unit_prices = self._get_unit_prices(product)
+            if not unit_prices:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -526,27 +521,28 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                         }
                     ]
                 )
-            minimum_units = unit_price.get_minimum_purchasable_units()
-            maximum_units = unit_price.get_maximum_units()
-            if units < minimum_units or (
-                maximum_units is not None and units > maximum_units
-            ):
-                maximum_label = (
-                    str(maximum_units) if maximum_units is not None else "unlimited"
-                )
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "units"),
-                            "msg": (
-                                f"Product '{product.name}' allows between "
-                                f"{minimum_units} and {maximum_label} units."
-                            ),
-                            "input": units,
-                        }
-                    ]
-                )
+            for unit_price in unit_prices:
+                minimum_units = unit_price.get_minimum_purchasable_units()
+                maximum_units = unit_price.get_maximum_units()
+                if units < minimum_units or (
+                    maximum_units is not None and units > maximum_units
+                ):
+                    maximum_label = (
+                        str(maximum_units) if maximum_units is not None else "unlimited"
+                    )
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "units"),
+                                "msg": (
+                                    f"Product '{product.name}' allows between "
+                                    f"{minimum_units} and {maximum_label} units."
+                                ),
+                                "input": units,
+                            }
+                        ]
+                    )
 
     def _validate_seats_for_products(
         self, seats: int, products: Sequence[Product]

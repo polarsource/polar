@@ -1436,10 +1436,16 @@ class TestImportCatalog:
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         assert adapter.stopped == ["sub_1"]
-        assert record.status == MerchantMigrationRecordStatus.imported
-        assert record.target_id is not None
+        switched = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        assert switched is not None
+        assert switched.status == MerchantMigrationRecordStatus.imported
+        assert switched.target_id is not None
         subscription = await SubscriptionRepository.from_session(session).get_by_id(
-            record.target_id
+            switched.target_id
         )
         assert subscription is not None
         assert subscription.status == SubscriptionStatus.active

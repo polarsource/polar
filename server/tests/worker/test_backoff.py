@@ -93,28 +93,46 @@ class TestSetMessageVisibility:
 class TestEnvelopeAttempt:
     def test_round_trips(self) -> None:
         body = _sqs.build_envelope(
-            "dummy", (1, "x"), {"k": 2}, "corr", 7, 1234567890000
+            "dummy",
+            (1, "x"),
+            {"k": 2},
+            "corr",
+            7,
+            1234567890000,
+            message_id="msg-1",
+            debounce_key="debounce:test",
         )
-        actor, args, kwargs, correlation_id, attempt, message_timestamp = (
-            _sqs.parse_envelope(body)
-        )
+        (
+            actor,
+            args,
+            kwargs,
+            correlation_id,
+            attempt,
+            message_timestamp,
+            message_id,
+            debounce_key,
+        ) = _sqs.parse_envelope(body)
         assert actor == "dummy"
         assert args == [1, "x"]
         assert kwargs == {"k": 2}
         assert correlation_id == "corr"
         assert attempt == 7
         assert message_timestamp == 1234567890000
+        assert message_id == "msg-1"
+        assert debounce_key == "debounce:test"
 
     def test_defaults_to_one(self) -> None:
         body = _sqs.build_envelope("dummy", (), {}, None)
-        *_, attempt, _ = _sqs.parse_envelope(body)
+        _, _, _, _, attempt, _, message_id, debounce_key = _sqs.parse_envelope(body)
         assert attempt == 1
+        assert message_id is None
+        assert debounce_key is None
 
     def test_stamps_current_timestamp_by_default(self) -> None:
         before = int(time.time() * 1000)
         body = _sqs.build_envelope("dummy", (), {}, None)
         after = int(time.time() * 1000)
-        *_, message_timestamp = _sqs.parse_envelope(body)
+        _, _, _, _, _, message_timestamp, _, _ = _sqs.parse_envelope(body)
         assert message_timestamp is not None
         assert before <= message_timestamp <= after
 
@@ -122,9 +140,20 @@ class TestEnvelopeAttempt:
         body = json.dumps(
             {"actor": "dummy", "args": [], "kwargs": {}, "correlation_id": None}
         )
-        *_, attempt, message_timestamp = _sqs.parse_envelope(body)
+        (
+            _,
+            _,
+            _,
+            _,
+            attempt,
+            message_timestamp,
+            message_id,
+            debounce_key,
+        ) = _sqs.parse_envelope(body)
         assert attempt == 1
         assert message_timestamp is None
+        assert message_id is None
+        assert debounce_key is None
 
 
 class TestPlanRetry:

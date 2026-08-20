@@ -22,8 +22,9 @@ from polar.logging import CorrelationID, Logger
 
 from . import _sqs
 from ._broker import TASK_TIME_LIMIT_DEFAULT_MS
+from ._debounce import DebounceContext, check_debounce, finalize_debounce
 from ._httpx import _close_client, setup_httpx
-from ._redis import _close_redis, setup_redis
+from ._redis import RedisMiddleware, _close_redis, setup_redis
 from ._sqlalchemy import dispose_sqlalchemy_engine, setup_sqlalchemy
 
 log: Logger = structlog.get_logger()
@@ -84,15 +85,23 @@ def build_registry() -> dict[str, Any]:
 def validate_allowlist() -> None:
     """Reject allowlisted actors that can't behave correctly over SQS."""
     broker = dramatiq.get_broker()
+    default_min_threshold = int(
+        settings.WORKER_DEFAULT_DEBOUNCE_MIN_THRESHOLD.total_seconds()
+    )
     for actor_name in settings.WORKER_SQS_ACTORS:
         actor_obj = broker.get_actor(actor_name)
         queue_name = _sqs.actor_to_queue_name(actor_name)
         if len(queue_name) > 80:
             raise ValueError(f"SQS queue name {queue_name!r} exceeds 80 characters")
         if actor_obj.options.get("debounce_key") is not None:
-            raise ValueError(
-                f"Actor {actor_name!r} uses debounce, unsupported over SQS"
+            min_threshold = actor_obj.options.get(
+                "debounce_min_threshold", default_min_threshold
             )
+            if min_threshold > _sqs.MAX_DELAY_SECONDS:
+                raise ValueError(
+                    f"Actor {actor_name!r} debounce_min_threshold exceeds the "
+                    f"{_sqs.MAX_DELAY_SECONDS}s SQS delay cap"
+                )
 
 
 def get_actor_max_retries(actor_name: str) -> int:
@@ -173,6 +182,8 @@ async def run_task(
     source_correlation_id: str | None = None,
     remaining_time_seconds: float | None = None,
     message_timestamp: int | None = None,
+    message_id: str | None = None,
+    debounce_key: str | None = None,
 ) -> None:
     registry = build_registry()
     fn = registry.get(actor_name)
@@ -218,19 +229,37 @@ async def run_task(
     )
     token = CurrentMessage._MESSAGE.set(message)
     try:
+        debounce_context: DebounceContext | None = None
+        if message_id is not None and debounce_key is not None:
+            debounce_context = await check_debounce(
+                RedisMiddleware.get(), actor_obj, message_id, debounce_key
+            )
+            if debounce_context is None:
+                return
+
         # Retries are expected: re-raise outside the span so Logfire doesn't record an error
         retry: Retry | None = None
-        with _task_span(actor_name, message, correlation_id, source_correlation_id):
-            try:
-                timeout_cm = asyncio.timeout(timeout_seconds)
-                async with timeout_cm:
-                    await fn(*args, **kwargs)
-            except TimeoutError:
-                if timeout_cm.expired():
-                    raise TaskTimeoutError(actor_name, timeout_seconds) from None
-                raise
-            except Retry as e:
-                retry = e
+        failure: BaseException | None = None
+        try:
+            with _task_span(actor_name, message, correlation_id, source_correlation_id):
+                try:
+                    timeout_cm = asyncio.timeout(timeout_seconds)
+                    async with timeout_cm:
+                        await fn(*args, **kwargs)
+                except TimeoutError:
+                    if timeout_cm.expired():
+                        raise TaskTimeoutError(actor_name, timeout_seconds) from None
+                    raise
+                except Retry as e:
+                    retry = e
+        except BaseException as e:
+            failure = e
+            raise
+        finally:
+            if debounce_context is not None:
+                await finalize_debounce(
+                    RedisMiddleware.get(), actor_obj, debounce_context, failure or retry
+                )
         if retry is not None:
             raise retry
     finally:

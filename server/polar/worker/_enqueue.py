@@ -144,12 +144,29 @@ class JobQueueManager:
         # Send SQS last so an SQS failure can't drop the Redis jobs above.
         if sqs_jobs:
             correlation_id = CorrelationID.get()
-            await _sqs.send_jobs(
-                [
-                    (actor_name, args, kwargs, delay, correlation_id)
-                    for actor_name, args, kwargs, delay in sqs_jobs
-                ]
-            )
+            prepared_sqs_jobs: list[_sqs.Job] = []
+            for actor_name, args, kwargs, delay in sqs_jobs:
+                fn = broker.get_actor(actor_name)
+                message_id = str(uuid.uuid4())
+                debounce_key: str | None = None
+
+                debounce = await set_debounce_key(redis, fn, message_id, args, kwargs)
+                if debounce is not None:
+                    debounce_key, debounce_delay = debounce
+                    delay = max(delay or 0, debounce_delay)
+
+                prepared_sqs_jobs.append(
+                    _sqs.Job(
+                        actor_name,
+                        args,
+                        kwargs,
+                        delay,
+                        correlation_id,
+                        message_id,
+                        debounce_key,
+                    )
+                )
+            await _sqs.send_jobs(prepared_sqs_jobs)
 
         self.reset()
 

@@ -197,12 +197,14 @@ class RoutingRedisBroker(RedisBroker):
         if should_route_to_sqs(message.actor_name):
             _sqs.send_jobs_sync(
                 [
-                    (
+                    _sqs.Job(
                         message.actor_name,
                         message.args,
                         message.kwargs,
                         delay,
                         CorrelationID.get(),
+                        message.message_id,
+                        message.options.get("debounce_key"),
                     )
                 ]
             )

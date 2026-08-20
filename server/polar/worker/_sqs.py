@@ -5,7 +5,7 @@ import time
 from collections import defaultdict
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import boto3
 import dramatiq
@@ -33,7 +33,15 @@ MAX_VISIBILITY_TIMEOUT_SECONDS = 43_200
 # Argument budget for a single job, leaving room for the envelope around it.
 MAX_JOB_PAYLOAD_BYTES = 200_000
 
-type Job = tuple[str, tuple[Any, ...], dict[str, Any], int | None, str | None]
+
+class Job(NamedTuple):
+    actor: str
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
+    delay: int | None = None
+    correlation_id: str | None = None
+    message_id: str | None = None
+    debounce_key: str | None = None
 
 
 class SQSSendError(Exception):
@@ -141,6 +149,8 @@ def build_envelope(
     correlation_id: str | None,
     attempt: int = 1,
     message_timestamp: int | None = None,
+    message_id: str | None = None,
+    debounce_key: str | None = None,
 ) -> str:
     if message_timestamp is None:
         message_timestamp = int(time.time() * 1000)
@@ -152,6 +162,8 @@ def build_envelope(
             "correlation_id": correlation_id,
             "attempt": attempt,
             "message_timestamp": message_timestamp,
+            "message_id": message_id,
+            "debounce_key": debounce_key,
         },
         separators=(",", ":"),
         default=json_obj_serializer,
@@ -160,7 +172,9 @@ def build_envelope(
 
 def parse_envelope(
     body: str,
-) -> tuple[str, list[Any], dict[str, Any], str | None, int, int | None]:
+) -> tuple[
+    str, list[Any], dict[str, Any], str | None, int, int | None, str | None, str | None
+]:
     data = json.loads(body)
     return (
         data["actor"],
@@ -169,6 +183,8 @@ def parse_envelope(
         data.get("correlation_id"),
         data.get("attempt", 1),
         data.get("message_timestamp"),
+        data.get("message_id"),
+        data.get("debounce_key"),
     )
 
 
@@ -259,14 +275,21 @@ def send_jobs_sync(jobs: list[Job]) -> None:
     client = get_sqs_client()
 
     by_queue: dict[str, list[SendMessageBatchRequestEntryTypeDef]] = defaultdict(list)
-    for actor, args, kwargs, delay, correlation_id in jobs:
-        entries = by_queue[actor_to_queue_name(actor)]
+    for job in jobs:
+        entries = by_queue[actor_to_queue_name(job.actor)]
         entry: SendMessageBatchRequestEntryTypeDef = {
             "Id": str(len(entries)),
-            "MessageBody": build_envelope(actor, args, kwargs, correlation_id),
+            "MessageBody": build_envelope(
+                job.actor,
+                job.args,
+                job.kwargs,
+                job.correlation_id,
+                message_id=job.message_id,
+                debounce_key=job.debounce_key,
+            ),
         }
-        if delay:
-            entry["DelaySeconds"] = min(round(delay / 1000), MAX_DELAY_SECONDS)
+        if job.delay:
+            entry["DelaySeconds"] = min(round(job.delay / 1000), MAX_DELAY_SECONDS)
         entries.append(entry)
 
     for queue_name, entries in by_queue.items():

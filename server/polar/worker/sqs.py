@@ -54,6 +54,8 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                         correlation_id,
                         attempt,
                         message_timestamp,
+                        message_id,
+                        debounce_key,
                     ) = parse_envelope(message["Body"])
                     sqs_receive_count = int(
                         message.get("Attributes", {}).get(
@@ -69,6 +71,8 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                             receive_count=receive_count,
                             source_correlation_id=correlation_id,
                             message_timestamp=message_timestamp,
+                            message_id=message_id,
+                            debounce_key=debounce_key,
                         )
                     except Exception:
                         log.exception("polar.worker.sqs_poll_failed", actor=actor)

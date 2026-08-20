@@ -1,6 +1,10 @@
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import { formPriceToApiPrice, productPriceToFormPrice } from './product'
+import {
+  formPriceToApiPrice,
+  getUnitLabels,
+  productPriceToFormPrice,
+} from './product'
 
 type FormPrice = schemas['ProductCreate']['prices'][number]
 
@@ -64,5 +68,42 @@ describe('free price round-trips through the form as fixed-0', () => {
 
     const backToForm = productPriceToFormPrice(api as schemas['ProductPrice'])
     expect(backToForm.amount_type).toBe('free')
+  })
+})
+
+describe('getUnitLabels', () => {
+  it('resolves region-scoped labels for a language-only locale', () => {
+    const unit_label = {
+      'sv-SE': { '=1': 'enhet', other: 'enheter' },
+      'de-DE': { '=1': 'Gerät', other: 'Geräte' },
+    }
+    expect(getUnitLabels({ unit_label }, 'sv')).toEqual({
+      unitLabel: 'enhet',
+      unitLabelPlural: 'enheter',
+    })
+  })
+
+  it('normalizes locale and falls back to English', () => {
+    const unit_label = {
+      en: { '=1': 'device', other: 'devices' },
+      sv: { '=1': 'enhet', other: 'enheter' },
+    }
+    expect(getUnitLabels({ unit_label }, 'sv_SE')).toEqual({
+      unitLabel: 'enhet',
+      unitLabelPlural: 'enheter',
+    })
+    expect(getUnitLabels({ unit_label }, 'fr')).toEqual({
+      unitLabel: 'device',
+      unitLabelPlural: 'devices',
+    })
+  })
+
+  it('falls back to the plural form for a missing singular', () => {
+    expect(getUnitLabels({ unit_label: { en: { other: 'devices' } } })).toEqual(
+      {
+        unitLabel: 'devices',
+        unitLabelPlural: 'devices',
+      },
+    )
   })
 })

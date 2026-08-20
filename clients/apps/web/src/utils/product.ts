@@ -22,8 +22,9 @@ export const isStaticPrice = (
 ): price is
   | schemas['ProductPriceFixed']
   | schemas['ProductPriceCustom']
-  | schemas['ProductPriceSeatBased'] =>
-  ['fixed', 'custom', 'seat_based'].includes(price.amount_type)
+  | schemas['ProductPriceSeatBased']
+  | schemas['ProductPriceUnitBased'] =>
+  ['fixed', 'custom', 'seat_based', 'unit_based'].includes(price.amount_type)
 
 // A price is "free" when it's a fixed price of 0.
 export const isFreePrice = (
@@ -67,6 +68,47 @@ export const isSeatBasedPrice = (
   price: schemas['ProductPrice'],
 ): price is schemas['ProductPriceSeatBased'] =>
   price.amount_type === 'seat_based'
+
+export const isUnitBasedPrice = (
+  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
+): price is schemas['ProductPriceUnitBased'] =>
+  price.amount_type === 'unit_based'
+
+const resolveUnitLabelForms = (
+  unitLabel: schemas['ProductPriceUnitBased']['unit_label'] | undefined,
+  locale?: string,
+): Record<string, string> => {
+  const labels = Object.fromEntries(
+    Object.entries(unitLabel ?? {}).map(([key, forms]) => [
+      key.replace(/_/g, '-').toLowerCase(),
+      forms,
+    ]),
+  )
+  if (locale) {
+    const requested = locale.replace(/_/g, '-').toLowerCase()
+    const language = requested.split('-')[0]
+    const forms =
+      labels[requested] ??
+      labels[language] ??
+      Object.entries(labels).find(
+        ([key]) => key.split('-')[0] === language,
+      )?.[1]
+    if (forms) {
+      return forms
+    }
+  }
+  return labels['en'] ?? Object.values(labels)[0] ?? {}
+}
+
+export function getUnitLabels(
+  price?: Pick<schemas['ProductPriceUnitBased'], 'unit_label'> | null,
+  locale?: string,
+): { unitLabel: string; unitLabelPlural: string } {
+  const forms = resolveUnitLabelForms(price?.unit_label, locale)
+  const unitLabel = forms['=1']?.trim() || forms['other']?.trim() || 'unit'
+  const unitLabelPlural = forms['other']?.trim() || 'units'
+  return { unitLabel, unitLabelPlural }
+}
 
 const _getProductById = async (
   api: Client,

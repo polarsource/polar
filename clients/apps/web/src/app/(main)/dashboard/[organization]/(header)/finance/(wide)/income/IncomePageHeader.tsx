@@ -32,14 +32,13 @@ export function IncomePageHeader({
         )}
         variant="secondary"
         wrapperClassNames="gap-x-2"
-        disabled={!account}
       >
         <FileDownloadOutlined fontSize="inherit" />
         <Text>Export</Text>
       </Button>
       <ExportTransactionsModal
         organization={organization}
-        accountId={account?.id}
+        account={account}
         isShown={isExportModalShown}
         hide={hideExportModal}
       />

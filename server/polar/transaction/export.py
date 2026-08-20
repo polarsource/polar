@@ -1,14 +1,10 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import cast
-from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import Select
 from sqlalchemy.orm import selectinload
 
-from polar.auth.models import AuthSubject, User
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.currency import get_currency_decimal_factor
 from polar.kit.db.postgres import AsyncReadSession
@@ -17,7 +13,6 @@ from polar.models import Account, Order, Transaction
 from polar.models.transaction import TransactionType
 
 from .repository import TransactionRepository
-from .service.transaction import transaction as transaction_service
 
 
 class TransactionExportColumn(StrEnum):
@@ -154,10 +149,9 @@ def get_filename(
 
 async def generate_csv(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User],
+    account: Account,
     *,
     type: TransactionType | None,
-    account_id: UUID | None,
     exclude_platform_fees: bool,
     created_after: datetime | None,
     created_before: datetime | None,
@@ -171,37 +165,31 @@ async def generate_csv(
         tuple(TRANSACTION_EXPORT_HEADERS[column] for column in export_columns)
     )
 
-    delay: timedelta | None = None
-    if account_id is not None:
-        account = await session.get(Account, account_id)
-        if account is not None:
-            delay = account.payout_transaction_delay
-
+    delay = account.payout_transaction_delay
     now = utc_now()
-    statement = cast(
-        Select[tuple[Transaction]],
-        transaction_service._get_readable_transactions_statement(auth_subject),
-    ).options(
-        selectinload(Transaction.account_incurred_transactions),
-        selectinload(Transaction.pledge),
-        selectinload(Transaction.issue_reward),
-        selectinload(Transaction.order).selectinload(Order.product),
-        selectinload(Transaction.payment_transaction),
-        selectinload(Transaction.payout_transaction),
+    repository = TransactionRepository.from_session(session)
+    statement = (
+        repository.get_base_statement()
+        .where(Transaction.account_id == account.id)
+        .options(
+            selectinload(Transaction.account_incurred_transactions),
+            selectinload(Transaction.pledge),
+            selectinload(Transaction.issue_reward),
+            selectinload(Transaction.order).selectinload(Order.product),
+            selectinload(Transaction.payment_transaction),
+            selectinload(Transaction.payout_transaction),
+        )
     )
     if type is not None:
         statement = statement.where(Transaction.type == type)
-    if account_id is not None:
-        statement = statement.where(Transaction.account_id == account_id)
     if exclude_platform_fees:
         statement = statement.where(Transaction.platform_fee_type.is_(None))
     if created_after is not None:
         statement = statement.where(Transaction.created_at >= created_after)
     if created_before is not None:
         statement = statement.where(Transaction.created_at <= created_before)
-    statement = statement.distinct().order_by(Transaction.created_at.desc())
+    statement = statement.order_by(Transaction.created_at.desc())
 
-    repository = TransactionRepository.from_session(session)
     async for transaction in repository.stream(statement):
         row = _row(transaction, timezone, now, delay)
         yield csv_writer.getrow(tuple(row[column] for column in export_columns))

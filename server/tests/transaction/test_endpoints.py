@@ -141,7 +141,9 @@ class TestGetSummary:
 @pytest.mark.asyncio
 class TestExportTransactions:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get("/v1/transactions/export")
+        response = await client.get(
+            "/v1/transactions/export", params={"account_id": str(uuid.uuid4())}
+        )
 
         assert response.status_code == 401
 
@@ -149,10 +151,13 @@ class TestExportTransactions:
     async def test_valid(
         self,
         client: AsyncClient,
+        account: Account,
         user_organization: UserOrganization,
-        readable_user_transactions: list[Transaction],
+        account_transactions: list[Transaction],
     ) -> None:
-        response = await client.get("/v1/transactions/export")
+        response = await client.get(
+            "/v1/transactions/export", params={"account_id": str(account.id)}
+        )
 
         assert response.status_code == 200
         assert response.headers["content-type"] == "text/csv; charset=utf-8"
@@ -160,7 +165,7 @@ class TestExportTransactions:
         assert csv_lines[0] == (
             "Created At,Type,Product,Gross,Fees,Tax,Net,Currency,Status,Paid Out At"
         )
-        assert len(csv_lines) == len(readable_user_transactions) + 1
+        assert len(csv_lines) == len(account_transactions) + 1
 
     @pytest.mark.auth
     async def test_filter_by_date_range(
@@ -184,6 +189,7 @@ class TestExportTransactions:
         response = await client.get(
             "/v1/transactions/export",
             params={
+                "account_id": str(account.id),
                 "created_after": "2024-06-01T00:00:00Z",
                 "created_before": "2024-06-30T23:59:59Z",
             },
@@ -209,7 +215,11 @@ class TestExportTransactions:
         )
 
         response = await client.get(
-            "/v1/transactions/export", params={"timezone": "Europe/Stockholm"}
+            "/v1/transactions/export",
+            params={
+                "account_id": str(account.id),
+                "timezone": "Europe/Stockholm",
+            },
         )
 
         assert response.status_code == 200

@@ -42492,9 +42492,9 @@ export interface operations {
   }
   'transactions:export': {
     parameters: {
-      query?: {
+      query: {
+        account_id: string
         type?: components['schemas']['TransactionType'] | null
-        account_id?: string | null
         exclude_platform_fees?: boolean
         /** @description Only include transactions created after this date. Must include a UTC offset. */
         created_after?: string | null

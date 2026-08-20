@@ -6,6 +6,7 @@ import DateRangePicker, {
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import {
+  Alert,
   Button,
   InlineModal,
   InlineModalHeader,
@@ -39,14 +40,14 @@ const formatGMTOffset = (date: Date = new Date()): string =>
 
 interface ExportTransactionsModalProps {
   organization: schemas['Organization']
-  accountId?: string
+  account?: schemas['Account'] | null
   isShown: boolean
   hide: () => void
 }
 
 const ExportTransactionsModal: React.FC<ExportTransactionsModalProps> = ({
   organization,
-  accountId,
+  account,
   isShown,
   hide,
 }) => {
@@ -64,13 +65,15 @@ const ExportTransactionsModal: React.FC<ExportTransactionsModalProps> = ({
   const rangeLabel = formatExportRange(dateRange)
 
   const onExport = () => {
+    if (!account) {
+      return
+    }
+
     const url = new URL(
       getServerURL('/v1/transactions/export'),
       window.location.origin,
     )
-    if (accountId) {
-      url.searchParams.set('account_id', accountId)
-    }
+    url.searchParams.set('account_id', account.id)
     url.searchParams.set('type', 'balance')
     url.searchParams.set('exclude_platform_fees', 'true')
     url.searchParams.set('created_after', dateRange.from.toISOString())
@@ -104,6 +107,14 @@ const ExportTransactionsModal: React.FC<ExportTransactionsModalProps> = ({
             paddingBottom="2xl"
           >
             <Text color="muted">Download your income as a CSV file.</Text>
+
+            {!account ? (
+              <Alert
+                variant="danger"
+                title="No finance account"
+                description="This organization doesn't have a finance account yet, so income can't be exported."
+              />
+            ) : null}
 
             <List size="small">
               <ListItem
@@ -196,7 +207,7 @@ const ExportTransactionsModal: React.FC<ExportTransactionsModalProps> = ({
             <Box flexDirection="column" rowGap="s">
               <Button
                 fullWidth
-                disabled={columns.length === 0 || !accountId}
+                disabled={!account || columns.length === 0}
                 onClick={onExport}
               >
                 Export CSV

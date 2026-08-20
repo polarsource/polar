@@ -79,8 +79,8 @@ async def search_transactions(
 )
 async def export(
     auth_subject: transactions_auth.TransactionsRead,
+    account_id: UUID4,
     type: TransactionType | None = Query(None),
-    account_id: UUID4 | None = Query(None),
     exclude_platform_fees: bool = Query(False),
     created_after: AwareDatetime | None = Query(
         None,
@@ -111,13 +111,21 @@ async def export(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CSVStreamingResponse:
     """Export transactions as a CSV file."""
+    account = await account_service.get(
+        session,
+        auth_subject,
+        account_id,
+        permission=OrganizationPermission.finance_read,
+    )
+    if account is None:
+        raise ResourceNotFound()
+
     tzinfo = ZoneInfo(timezone)
     return CSVStreamingResponse(
         generate_csv(
             session,
-            auth_subject,
+            account,
             type=type,
-            account_id=account_id,
             exclude_platform_fees=exclude_platform_fees,
             created_after=created_after,
             created_before=created_before,

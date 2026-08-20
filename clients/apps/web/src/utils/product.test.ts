@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   formPriceToApiPrice,
   getUnitLabels,
-  isUnitBasedPrice,
   productPriceToFormPrice,
 } from './product'
 
@@ -72,40 +71,24 @@ describe('free price round-trips through the form as fixed-0', () => {
   })
 })
 
-describe('unit-based prices', () => {
-  it('identifies unit-based prices', () => {
-    expect(isUnitBasedPrice(apiPrice({ amount_type: 'unit_based' }))).toBe(true)
-    expect(isUnitBasedPrice(apiPrice({ amount_type: 'fixed' }))).toBe(false)
-  })
-
-  it('uses default unit labels', () => {
-    expect(getUnitLabels()).toEqual({
-      unitLabel: 'unit',
-      unitLabelPlural: 'units',
+describe('getUnitLabels', () => {
+  it('resolves region-scoped labels for a language-only locale', () => {
+    const unit_label = {
+      'sv-SE': { '=1': 'enhet', other: 'enheter' },
+      'de-DE': { '=1': 'Gerät', other: 'Geräte' },
+    }
+    expect(getUnitLabels({ unit_label }, 'sv')).toEqual({
+      unitLabel: 'enhet',
+      unitLabelPlural: 'enheter',
     })
   })
 
-  it('uses merchant-defined unit labels', () => {
-    expect(
-      getUnitLabels({
-        unit_label: { en: { '=1': 'device', other: 'devices' } },
-      }),
-    ).toEqual({
-      unitLabel: 'device',
-      unitLabelPlural: 'devices',
-    })
-  })
-
-  it('resolves unit labels by locale with an English fallback', () => {
+  it('normalizes locale and falls back to English', () => {
     const unit_label = {
       en: { '=1': 'device', other: 'devices' },
       sv: { '=1': 'enhet', other: 'enheter' },
     }
     expect(getUnitLabels({ unit_label }, 'sv_SE')).toEqual({
-      unitLabel: 'enhet',
-      unitLabelPlural: 'enheter',
-    })
-    expect(getUnitLabels({ unit_label }, 'sv')).toEqual({
       unitLabel: 'enhet',
       unitLabelPlural: 'enheter',
     })

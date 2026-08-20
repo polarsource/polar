@@ -17,6 +17,14 @@ import { ProductFormType } from '../ProductForm'
 
 const formatUnits = (value: number) => value.toLocaleString('en-US')
 
+const parseTierBoundInput = (raw: string): number | null => {
+  if (raw === '') {
+    return null
+  }
+  const parsed = Number(raw)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
 export interface UnitTierCardProps {
   index: number
   tierIndex: number
@@ -42,6 +50,39 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
 }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
   const titleId = `unit-tier-title-${index}-${tierIndex}`
+
+  const handleBoundChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    onChange: (value: number | null) => void,
+  ) => {
+    if (isLast) {
+      return
+    }
+    onChange(parseTierBoundInput(event.target.value))
+    setValue(`prices.${index}.id`, '')
+  }
+
+  const handleBoundBlur = (
+    event: React.FocusEvent<HTMLInputElement>,
+    onChange: (value: number | null) => void,
+    onBlur: () => void,
+  ) => {
+    onBlur()
+    if (isLast) {
+      onChange(null)
+      return
+    }
+    const parsed = parseTierBoundInput(event.target.value)
+    const minAllowed = previousBound + 1
+    if (parsed == null) {
+      onChange(minAllowed)
+      return
+    }
+    if (!Number.isInteger(parsed)) {
+      return
+    }
+    onChange(Math.max(parsed, minAllowed))
+  }
 
   const fields = (
     <Grid templateColumns="1fr 1fr" columnGap="m" alignItems="start">
@@ -75,21 +116,10 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
                 step={1}
                 value={field.value ?? ''}
                 placeholder={isLast ? 'Unlimited' : undefined}
-                onChange={(e) => {
-                  const parsed = Number.parseInt(e.target.value, 10)
-                  field.onChange(Number.isNaN(parsed) ? null : parsed)
-                  setValue(`prices.${index}.id`, '')
-                }}
-                onBlur={(e) => {
-                  field.onBlur()
-                  const parsed = Number.parseInt(e.target.value, 10)
-                  const minAllowed = previousBound + 1
-                  if (Number.isNaN(parsed)) {
-                    field.onChange(isLast ? null : minAllowed)
-                    return
-                  }
-                  field.onChange(Math.max(parsed, minAllowed))
-                }}
+                onChange={(e) => handleBoundChange(e, field.onChange)}
+                onBlur={(e) =>
+                  handleBoundBlur(e, field.onChange, field.onBlur)
+                }
               />
             </FormControl>
             <FormMessage />

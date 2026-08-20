@@ -87,7 +87,12 @@ const resolveUnitLabelForms = (
   if (locale) {
     const requested = locale.replace(/_/g, '-').toLowerCase()
     const language = requested.split('-')[0]
-    const forms = labels[requested] ?? labels[language]
+    const forms =
+      labels[requested] ??
+      labels[language] ??
+      Object.entries(labels).find(
+        ([key]) => key.split('-')[0] === language,
+      )?.[1]
     if (forms) {
       return forms
     }

@@ -162,6 +162,15 @@ export const ProductPriceUnitBasedItem: React.FC<
         name={`prices.${index}.minimum_units` as const}
         rules={{
           min: { value: 1, message: 'Must be at least 1' },
+          validate: (value) => {
+            if (value == null) {
+              return true
+            }
+            if (!Number.isInteger(Number(value))) {
+              return 'Must be a whole number of units'
+            }
+            return true
+          },
         }}
         render={({ field }) => (
           <FormItem>
@@ -175,8 +184,13 @@ export const ProductPriceUnitBasedItem: React.FC<
                 value={field.value ?? ''}
                 placeholder="1"
                 onChange={(e) => {
-                  const parsed = Number.parseInt(e.target.value, 10)
-                  field.onChange(Number.isNaN(parsed) ? null : parsed)
+                  const raw = e.target.value
+                  if (raw === '') {
+                    field.onChange(null)
+                  } else {
+                    const parsed = Number(raw)
+                    field.onChange(Number.isNaN(parsed) ? null : parsed)
+                  }
                   setValue(`prices.${index}.id`, '')
                 }}
               />

@@ -72,7 +72,10 @@ async def search_transactions(
 
 
 @router.get(
-    "/export", summary="Export Transactions", response_class=CSVStreamingResponse
+    "/export",
+    summary="Export Transactions",
+    response_class=CSVStreamingResponse,
+    tags=[APITag.private],
 )
 async def export(
     auth_subject: transactions_auth.TransactionsRead,

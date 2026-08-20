@@ -17,7 +17,7 @@ import type { ProductCheckoutPublic } from '../guards'
 import { isLegacyRecurringProductPrice } from '../guards'
 import { hasLegacyRecurringPrices } from '../utils/product'
 import { capitalize, decapitalize } from '../utils/string'
-import { getMinimumUnitAmount, getUnitLabels } from '../utils/units'
+import { getBasePricePerUnit, getMinimumUnitAmount, getUnitLabels } from '../utils/units'
 import AmountLabel from './AmountLabel'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -188,20 +188,8 @@ const FixedUnitPrice = ({
   locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale ?? DEFAULT_LOCALE)
-  const minimumUnits = unitPrice.minimum_units ?? 1
-  const tiers = unitPrice.tiers.tiers.toSorted((a, b) => {
-    if (a.bound == null) return 1
-    if (b.bound == null) return -1
-    return a.bound - b.bound
-  })
-  const matchingTier = tiers.find(
-    (tier) => tier.bound == null || minimumUnits <= tier.bound,
-  )
-  const basePricePerUnit = Number(
-    (unitPrice.tiers.type === 'graduated' ? tiers[0] : matchingTier)
-      ?.unit_amount ?? 0,
-  )
   const { unitLabel } = getUnitLabels(unitPrice, locale)
+  const basePricePerUnit = getBasePricePerUnit(unitPrice)
   return (
     <span className="flex flex-wrap items-baseline justify-end gap-x-1">
       <AmountLabel

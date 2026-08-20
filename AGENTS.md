@@ -154,6 +154,39 @@ Treat **Accepted** ADRs as binding:
 - **Redis**: cache and job queue.
 - **PostgreSQL**: primary database.
 
+## Claude Code on the web specific instructions
+
+`.claude/hooks/session-start.sh` provisions the container before the session starts (registered
+as a `SessionStart` hook in `.claude/settings.json`). It only runs when `CLAUDE_CODE_REMOTE=true`,
+so local machines are untouched. It upgrades `uv` if needed, installs CPython 3.14, runs
+`uv sync --dev --frozen`, generates `server/.env` and `server/.jwks.json`, builds the email
+renderer, and starts Postgres, Redis and an S3 endpoint. Afterwards, from `server/`:
+
+```bash
+uv run task lint_check   # ruff format --check + ruff check + custom AST linters
+uv run task lint_types   # mypy
+uv run pytest tests/...  # POLAR_ENV=testing is set by tests/conftest.py
+```
+
+The sandbox's egress policy shapes three of those steps, so don't "fix" them back:
+
+- **Docker Hub's blob CDN is blocked**, so `docker compose up` can't pull the images from
+  `server/docker-compose.yml`. The hook uses the Postgres and Redis packaged in the image, and
+  [moto](https://github.com/getmoto/moto) on port 9000 as an S3 stand-in for MinIO. The hook
+  creates the buckets `server/.minio/configure.sh` would. Two `tests/file/test_endpoints.py`
+  tests still fail on moto's fidelity gaps — it accepts unsigned requests, and multipart uploads
+  into a versioned bucket return a version id `GetObject` then can't resolve. They pass in CI.
+- **`releases.astral.sh` is blocked**, so `uv self update` fails. The hook installs uv from PyPI
+  with `uv tool install --force uv`. The preinstalled uv predates CPython 3.14's final release and
+  resolves `3.14` to 3.14.0rc2, which is why the upgrade happens at all.
+- **`iojs.org` is blocked**, so the `@yao-pkg/pkg` step of `uv run task emails` can't fetch its
+  Node base binary and silently falls back to compiling Node from source (>30 min). The hook runs
+  `tsup` and writes a shim at `server/emails/bin/react-email-pkg` that runs the same bundle
+  through the system Node — `polar/email/react.py` only ever invokes it as a subprocess.
+
+Tinybird is not provisioned — the tests that need it skip themselves. The frontend is not
+installed either: `clients/` wants Node 24 and the image ships Node 22.
+
 ## Cursor Cloud specific instructions
 
 Prefer the Polar Development CLI (`dev/cli/`, alias `dev`) — the same path local developers use.

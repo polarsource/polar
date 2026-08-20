@@ -83,6 +83,11 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("211003420017", "UY", ("211003420017", TaxIDFormat.uy_ruc)),
         ("21-100342-001-7", "UY", ("211003420017", TaxIDFormat.uy_ruc)),
         ("UY 21 140634 001 1", "UY", ("211406340011", TaxIDFormat.uy_ruc)),
+        # HK BR: 8-digit Business Registration Number
+        ("12345678", "HK", ("12345678", TaxIDFormat.hk_br)),
+        ("98765432", "HK", ("98765432", TaxIDFormat.hk_br)),
+        ("1234567-8", "HK", ("12345678", TaxIDFormat.hk_br)),
+        ("1234567(8)", "HK", ("12345678", TaxIDFormat.hk_br)),
     ],
 )
 def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> None:
@@ -120,6 +125,7 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("9999999999", "CR"),  # Invalid CR TIN
         ("1-1000-0001", "CR"),  # cédula física (individual), not accepted
         ("210303670014", "UY"),  # Wrong check digit
+        ("1234567", "HK"),  # Too short (7 digits)
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

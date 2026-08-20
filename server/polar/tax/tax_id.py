@@ -436,6 +436,16 @@ class GEVATValidator(ValidatorProtocol):
         return number
 
 
+class HKBRValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        # Business Registration Number: 8 digits (the trailing check digit is
+        # sometimes written in parentheses, e.g. 1234567(8)).
+        number = re.sub(r"[\s.()-]", "", number)
+        if len(number) != 8 or not number.isdigit():
+            raise InvalidTaxID(number, country)
+        return number
+
+
 class MUTANValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         # Remove spaces, dashes, and other common separators
@@ -465,6 +475,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return ECRUCValidator()
         case TaxIDFormat.ge_vat:
             return GEVATValidator()
+        case TaxIDFormat.hk_br:
+            return HKBRValidator()
         case TaxIDFormat.il_vat:
             return ILVATValidator()
         case TaxIDFormat.mk_vat:

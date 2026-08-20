@@ -37,7 +37,7 @@ from .canonical import (
 )
 from .cards import (
     CopiedCardResolutionError,
-    PaymentMethodMapping,
+    PaymentMethodMappingLike,
     link_payment_method,
 )
 from .precheck import subscription_import_reason
@@ -149,10 +149,11 @@ class SubscriptionCutover:
         except CopiedCardResolutionError as e:
             # Recorded rather than raised: one customer must not stop the run.
             log.warning(
-                "merchant_migration.cutover.ambiguous_card",
+                "merchant_migration.cutover.card_resolution_error",
                 migration_id=self.migration.id,
                 record_id=record.id,
-                customer_id=record.target_id,
+                subscription_id=record.target_id,
+                error=str(e),
             )
             return _fail(str(e))
         except stripe_lib.StripeError as e:
@@ -343,7 +344,7 @@ class SubscriptionCutover:
         """The card the first Polar renewal will charge. A card the `verify_cards`
         step linked wins; otherwise look again, because cards keep landing."""
         source_method = source.payment_method
-        mapping: PaymentMethodMapping | None = None
+        mapping: PaymentMethodMappingLike | None = None
         mapping_repository = (
             MerchantMigrationPaymentMethodMappingRepository.from_session(self.session)
         )
@@ -354,27 +355,26 @@ class SubscriptionCutover:
             if stored_mapping is not None:
                 if stored_mapping.source_customer_id != source.customer_source_id:
                     return None
-                mapping = PaymentMethodMapping(
-                    source_customer_id=stored_mapping.source_customer_id,
-                    source_payment_method_id=stored_mapping.source_payment_method_id,
-                    destination_customer_id=stored_mapping.destination_customer_id,
-                    destination_payment_method_id=(
-                        stored_mapping.destination_payment_method_id
-                    ),
-                )
+                mapping = stored_mapping
+        payment_method: PaymentMethod | None = None
+        if subscription.payment_method_id is not None:
+            payment_method = await PaymentMethodRepository.from_session(
+                self.session
+            ).get_by_id(subscription.payment_method_id)
         if mapping is not None:
+            if (
+                payment_method is not None
+                and payment_method.processor_id == mapping.destination_payment_method_id
+            ):
+                return payment_method
             return await link_payment_method(
                 self.session,
                 customer,
                 source_method=source_method,
                 mapping=mapping,
             )
-        if subscription.payment_method_id is not None:
-            payment_method = await PaymentMethodRepository.from_session(
-                self.session
-            ).get_by_id(subscription.payment_method_id)
-            if payment_method is not None:
-                return payment_method
+        if payment_method is not None:
+            return payment_method
         if await mapping_repository.has_any(self.migration.id):
             return None
         return await link_payment_method(

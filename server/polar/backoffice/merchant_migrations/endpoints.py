@@ -457,13 +457,14 @@ async def complete_step(
 ) -> HXRedirectResponse | None:
     migration = await _get_migration(session, id, for_update=request.method == "POST")
     step = _get_step(migration, key)
+    current = current_pan_step(migration)
     inputs = step_inputs(migration, key)
     mapping_error: str | None = None
 
     if request.method == "POST":
         form_data = await request.form()
         try:
-            if key == "stripe_copy":
+            if key == "stripe_copy" and current is not None and current.key == key:
                 mapping_file = form_data.get("payment_method_mapping")
                 if not isinstance(mapping_file, UploadFile):
                     raise PaymentMethodMappingCSVError(

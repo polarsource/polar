@@ -226,6 +226,42 @@ class TestRun:
         assert outcome.status == MerchantMigrationCutoverStatus.skipped
         _assert_left_alone(adapter, paused_subscription)
 
+    async def test_reuses_the_exact_mapped_method_already_in_polar(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        copied_card: PaymentMethod,
+    ) -> None:
+        await save_fixture(
+            MerchantMigrationPaymentMethodMapping(
+                merchant_migration=migration,
+                source_customer_id="cus_1",
+                source_payment_method_id="pm_source",
+                destination_customer_id="cus_1",
+                destination_payment_method_id=copied_card.processor_id,
+            )
+        )
+        get_payment_method = mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(
+                side_effect=stripe_lib.InvalidRequestError("unavailable", "id")
+            ),
+        )
+
+        outcome = await cutover(
+            _source(
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_source",
+                    type=CanonicalPaymentMethodType.card,
+                )
+            )
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        get_payment_method.assert_not_awaited()
+
     async def test_keeps_a_running_trial_running(
         self,
         cutover: RunCutover,

@@ -8,6 +8,7 @@ import csv
 import io
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Protocol
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -68,6 +69,20 @@ class PaymentMethodMapping:
     destination_payment_method_id: str
 
 
+class PaymentMethodMappingLike(Protocol):
+    @property
+    def source_customer_id(self) -> str: ...
+
+    @property
+    def source_payment_method_id(self) -> str: ...
+
+    @property
+    def destination_customer_id(self) -> str: ...
+
+    @property
+    def destination_payment_method_id(self) -> str: ...
+
+
 def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMapping]:
     try:
         decoded = contents.decode("utf-8-sig")
@@ -87,6 +102,7 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
     by_source: dict[str, PaymentMethodMapping] = {}
     by_destination: dict[str, PaymentMethodMapping] = {}
     customer_destinations: dict[str, str] = {}
+    destination_sources: dict[str, str] = {}
     for line_number, row in enumerate(reader, start=2):
         if None in row:
             raise PaymentMethodMappingCSVError(
@@ -132,6 +148,18 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
         customer_destinations[mapping.source_customer_id] = (
             mapping.destination_customer_id
         )
+        destination_source = destination_sources.get(mapping.destination_customer_id)
+        if (
+            destination_source is not None
+            and destination_source != mapping.source_customer_id
+        ):
+            raise PaymentMethodMappingCSVError(
+                f"Destination customer {mapping.destination_customer_id} is mapped "
+                "from more than one source customer."
+            )
+        destination_sources[mapping.destination_customer_id] = (
+            mapping.source_customer_id
+        )
 
     if not by_source:
         raise PaymentMethodMappingCSVError("The mapping CSV has no data rows.")
@@ -143,19 +171,24 @@ async def link_payment_method(
     customer: Customer,
     *,
     source_method: CanonicalPaymentMethod | None = None,
-    mapping: PaymentMethodMapping | None = None,
+    mapping: PaymentMethodMappingLike | None = None,
 ) -> PaymentMethod | None:
     """The method to charge, or None while nothing has landed for this customer.
 
     ``source_method`` is what the source subscription was charging; its copy
     wins. Idempotent, so it can run again as more cards arrive.
     """
-    if customer.stripe_customer_id is None:
-        return None
-
     if mapping is not None:
-        if customer.stripe_customer_id != mapping.destination_customer_id:
+        if (
+            customer.stripe_customer_id is not None
+            and customer.stripe_customer_id != mapping.destination_customer_id
+        ):
             raise InvalidCopiedCardMapping(mapping.destination_payment_method_id)
+        if customer.stripe_customer_id is None:
+            await CustomerRepository.from_session(session).update(
+                customer,
+                update_dict={"stripe_customer_id": mapping.destination_customer_id},
+            )
         try:
             stripe_payment_method = await stripe_service.get_payment_method(
                 mapping.destination_payment_method_id
@@ -171,33 +204,31 @@ async def link_payment_method(
         payment_method = await payment_method_service.upsert_from_stripe(
             session, customer, stripe_payment_method, flush=True
         )
-        if customer.default_payment_method_id is None:
-            await CustomerRepository.from_session(session).update(
-                customer, update_dict={"default_payment_method_id": payment_method.id}
-            )
-        return payment_method
+        preferred = payment_method
+    else:
+        if customer.stripe_customer_id is None:
+            return None
+        try:
+            stripe_payment_methods = [
+                stripe_payment_method
+                async for stripe_payment_method in stripe_service.list_payment_methods(
+                    customer.stripe_customer_id
+                )
+            ]
+        except stripe_lib.InvalidRequestError:
+            # No such customer on our account: the copy hasn't reached them.
+            return None
 
-    try:
-        stripe_payment_methods = [
-            stripe_payment_method
-            async for stripe_payment_method in stripe_service.list_payment_methods(
-                customer.stripe_customer_id
+        payment_methods = [
+            await payment_method_service.upsert_from_stripe(
+                session, customer, stripe_payment_method, flush=True
             )
+            for stripe_payment_method in stripe_payment_methods
         ]
-    except stripe_lib.InvalidRequestError:
-        # No such customer on our account: the copy hasn't reached them.
-        return None
+        if not payment_methods:
+            return None
+        preferred = _preferred(payment_methods, customer, source_method)
 
-    payment_methods = [
-        await payment_method_service.upsert_from_stripe(
-            session, customer, stripe_payment_method, flush=True
-        )
-        for stripe_payment_method in stripe_payment_methods
-    ]
-    if not payment_methods:
-        return None
-
-    preferred = _preferred(payment_methods, customer, source_method)
     # What the renewal charges when a subscription has no method of its own.
     if customer.default_payment_method_id is None:
         await CustomerRepository.from_session(session).update(

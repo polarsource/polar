@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from datetime import datetime
 from typing import NamedTuple, TypedDict
 from uuid import UUID
@@ -54,8 +54,8 @@ from .canonical import (
 )
 from .cards import (
     CopiedCardResolutionError,
-    PaymentMethodMapping,
     PaymentMethodMappingCSVError,
+    PaymentMethodMappingLike,
     link_payment_method,
     parse_payment_method_mapping_csv,
 )
@@ -254,17 +254,6 @@ class _CardLookup(NamedTuple):
 
 
 type ResolvedCards = dict[_CardLookup, PaymentMethod | None]
-
-
-def _payment_method_mapping(
-    mapping: MerchantMigrationPaymentMethodMapping,
-) -> PaymentMethodMapping:
-    return PaymentMethodMapping(
-        source_customer_id=mapping.source_customer_id,
-        source_payment_method_id=mapping.source_payment_method_id,
-        destination_customer_id=mapping.destination_customer_id,
-        destination_payment_method_id=mapping.destination_payment_method_id,
-    )
 
 
 def _staged_subscription(
@@ -737,8 +726,7 @@ class MerchantMigrationService:
             migration.id, source_payment_method_ids
         )
         mappings = {
-            mapping.source_payment_method_id: _payment_method_mapping(mapping)
-            for mapping in stored_mappings
+            mapping.source_payment_method_id: mapping for mapping in stored_mappings
         }
         mappings_uploaded = bool(stored_mappings) or await mapping_repository.has_any(
             migration.id
@@ -767,6 +755,10 @@ class MerchantMigrationService:
                 await subscription_repository.update(
                     subscription, update_dict={"payment_method_id": payment_method.id}
                 )
+            elif mappings_uploaded and subscription.payment_method_id is not None:
+                await subscription_repository.update(
+                    subscription, update_dict={"payment_method_id": None}
+                )
 
         if len(records) == CARD_VERIFICATION_BATCH_SIZE:
             enqueue_job(
@@ -786,7 +778,7 @@ class MerchantMigrationService:
         subscription: Subscription,
         resolved: ResolvedCards,
         *,
-        mappings: dict[str, PaymentMethodMapping],
+        mappings: Mapping[str, PaymentMethodMappingLike],
         mappings_uploaded: bool,
     ) -> PaymentMethod | None:
         """The method to charge, resolved once per customer and source method

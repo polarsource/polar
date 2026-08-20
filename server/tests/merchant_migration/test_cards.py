@@ -41,17 +41,13 @@ def _card(last4: str) -> dict[str, Any]:
     return {"last4": last4, "brand": "visa", "exp_month": 4, "exp_year": 2030}
 
 
-def _mapping_csv(*rows: str) -> bytes:
-    return (
-        "customer_id_old,source_id_old,customer_id_new,source_id_new\n"
-        + "\n".join(rows)
-    ).encode()
+MAPPING_CSV_HEADER = b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
 
 
 class TestParsePaymentMethodMappingCSV:
     def test_valid(self) -> None:
         mappings = parse_payment_method_mapping_csv(
-            _mapping_csv("cus_old,pm_old,cus_new,pm_new")
+            MAPPING_CSV_HEADER + b"cus_old,pm_old,cus_new,pm_new\n"
         )
 
         assert mappings == [
@@ -70,24 +66,30 @@ class TestParsePaymentMethodMappingCSV:
     def test_rejects_extra_values(self) -> None:
         with pytest.raises(PaymentMethodMappingCSVError):
             parse_payment_method_mapping_csv(
-                _mapping_csv("cus_old,pm_old,cus_new,pm_new,unexpected")
+                MAPPING_CSV_HEADER + b"cus_old,pm_old,cus_new,pm_new,unexpected\n"
             )
 
     def test_rejects_conflicting_source_mapping(self) -> None:
         with pytest.raises(PaymentMethodMappingCSVError):
             parse_payment_method_mapping_csv(
-                _mapping_csv(
-                    "cus_old,pm_old,cus_new,pm_new",
-                    "cus_old,pm_old,cus_new,pm_different",
-                )
+                MAPPING_CSV_HEADER
+                + b"cus_old,pm_old,cus_new,pm_new\n"
+                + b"cus_old,pm_old,cus_new,pm_different\n"
+            )
+
+    def test_rejects_shared_destination_customer(self) -> None:
+        with pytest.raises(PaymentMethodMappingCSVError):
+            parse_payment_method_mapping_csv(
+                MAPPING_CSV_HEADER
+                + b"cus_old_1,pm_old_1,cus_new,pm_new_1\n"
+                + b"cus_old_2,pm_old_2,cus_new,pm_new_2\n"
             )
 
     def test_deduplicates_identical_rows(self) -> None:
         mappings = parse_payment_method_mapping_csv(
-            _mapping_csv(
-                "cus_old,pm_old,cus_new,pm_new",
-                "cus_old,pm_old,cus_new,pm_new",
-            )
+            MAPPING_CSV_HEADER
+            + b"cus_old,pm_old,cus_new,pm_new\n"
+            + b"cus_old,pm_old,cus_new,pm_new\n"
         )
 
         assert len(mappings) == 1
@@ -240,6 +242,33 @@ class TestLinkPaymentMethod:
                     destination_payment_method_id="pm_mapped",
                 ),
             )
+
+    async def test_mapping_sets_a_missing_destination_customer_id(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        imported_customer.stripe_customer_id = None
+        mapped = _stripe_payment_method("pm_mapped", details=_card("1111"))
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=mapped),
+        )
+
+        payment_method = await link_payment_method(
+            session,
+            imported_customer,
+            mapping=PaymentMethodMapping(
+                source_customer_id="cus_source",
+                source_payment_method_id="pm_source",
+                destination_customer_id="cus_1",
+                destination_payment_method_id="pm_mapped",
+            ),
+        )
+
+        assert payment_method is not None
+        assert imported_customer.stripe_customer_id == "cus_1"
 
     async def test_prefers_a_card_over_a_bank_account(
         self,

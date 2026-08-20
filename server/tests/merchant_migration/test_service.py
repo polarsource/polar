@@ -1892,6 +1892,61 @@ class TestRunCardVerification:
             "pm_destination"
         )
 
+    async def test_clears_a_heuristic_method_missing_from_the_mapping(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+        record = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="unmapped-card@example.com",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_unmapped",
+                type=CanonicalPaymentMethodType.card,
+            ),
+        )
+        assert record.target_id is not None
+        subscription = await SubscriptionRepository.from_session(session).get_by_id(
+            record.target_id, options=(joinedload(Subscription.customer),)
+        )
+        assert subscription is not None
+        guessed = await create_payment_method(
+            save_fixture, subscription.customer, processor_id="pm_guessed"
+        )
+        subscription.payment_method = guessed
+        await save_fixture(subscription)
+        await save_fixture(
+            MerchantMigrationPaymentMethodMapping(
+                merchant_migration=migration,
+                source_customer_id="cus_other",
+                source_payment_method_id="pm_other",
+                destination_customer_id="cus_other",
+                destination_payment_method_id="pm_other_copy",
+            )
+        )
+        link = mocker.patch(
+            "polar.merchant_migration.service.link_payment_method",
+            new=mocker.AsyncMock(),
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        assert subscription.payment_method_id is None
+        link.assert_not_awaited()
+
     async def test_an_ambiguous_card_skips_that_customer_only(
         self,
         mocker: MockerFixture,

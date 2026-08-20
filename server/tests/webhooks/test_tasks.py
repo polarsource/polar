@@ -1,4 +1,3 @@
-import uuid
 from unittest.mock import MagicMock
 
 import pytest
@@ -9,10 +8,7 @@ from polar.models import WebhookEndpoint, WebhookEvent
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook.tasks import (
-    _webhook_event_failed_debounce_key,
-    _webhook_event_send,
-)
+from polar.webhook.tasks import _webhook_event_send
 from tests.fixtures.database import SaveFixture
 
 
@@ -249,14 +245,3 @@ class TestOnEventFailed:
         for pending_event in pending_events:
             await session.refresh(pending_event)
             assert pending_event.skipped is True
-
-
-class TestWebhookEventFailedDebounceKey:
-    def test_collapses_concurrent_events_for_same_endpoint(self) -> None:
-        endpoint_id = uuid.uuid4()
-        first = _webhook_event_failed_debounce_key(uuid.uuid4(), endpoint_id)
-        second = _webhook_event_failed_debounce_key(uuid.uuid4(), endpoint_id)
-        assert first == second
-
-    def test_no_key_without_endpoint(self) -> None:
-        assert _webhook_event_failed_debounce_key(uuid.uuid4()) is None

@@ -864,7 +864,12 @@ class CheckoutService:
                         custom_price, query_amount_int, currency
                     )
                     custom_amount = query_amount_int
-                except ValueError, TypeError, PolarRequestValidationError:
+                except (
+                    ValueError,
+                    TypeError,
+                    OverflowError,
+                    PolarRequestValidationError,
+                ):
                     pass
 
         amount = calculate_upfront_amount(

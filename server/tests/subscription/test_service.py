@@ -88,11 +88,11 @@ from polar.subscription.service import (
     BelowMinimumSeats,
     CannotPauseSubscription,
     CannotReinstateSubscription,
-    InactiveSubscription,
     MissingCheckoutCustomer,
     NoScheduledPause,
     NotARecurringProduct,
     NotASeatBasedSubscription,
+    NotBillableSubscription,
     NotPausedSubscription,
     SeatsAlreadyAssigned,
     SubscriptionMeterCycleLag,
@@ -1373,7 +1373,7 @@ class TestCycle:
             session, updated_subscription, reset_at=cycle_at
         )
 
-    async def test_inactive(
+    async def test_not_billable(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1384,7 +1384,7 @@ class TestCycle:
             save_fixture, product=product, customer=customer
         )
 
-        with pytest.raises(InactiveSubscription):
+        with pytest.raises(NotBillableSubscription):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1576,6 +1576,38 @@ class TestCycle:
         assert second_month_billing_entry.discount == discount
         assert third_month_billing_entry.discount == discount
         assert fourth_month_billing_entry.discount is None
+
+    async def test_past_due_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+            status=SubscriptionStatus.past_due,
+        )
+
+        previous_current_period_end = subscription.current_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.past_due
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
+        assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
 
     @freeze_time("2024-01-15")
     async def test_nth_month_cycle(

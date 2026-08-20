@@ -71,7 +71,7 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
             and subscription.current_meter_period_end <= now
         )
 
-        if not subscription.active or not (billing_due or meter_due):
+        if not subscription.billable or not (billing_due or meter_due):
             log.info(
                 "Subscription has already been cycled",
                 subscription_id=subscription_id,

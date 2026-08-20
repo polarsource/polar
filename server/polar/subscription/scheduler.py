@@ -189,7 +189,7 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
                 ~Organization.is_deleted,
                 Organization.can_renew_subscriptions,
                 Subscription.scheduler_locked_at.is_(None),
-                Subscription.active,
+                Subscription.billable,
                 Subscription.current_period_end.is_not(None),
             )
             .order_by(_next_run_time().asc())

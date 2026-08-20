@@ -1,53 +1,10 @@
 provider "tfe" {
 }
 
-# tflint-ignore: terraform_unused_declarations
-variable "logfire_token" {
-  type    = string
-  default = null
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "apple_client_id" {
-  type    = string
-  default = null
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "apple_team_id" {
-  type    = string
-  default = null
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "apple_key_id" {
-  type    = string
-  default = null
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "apple_key_value" {
-  type    = string
-  default = null
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "ghcr_auth_token" {
-  type    = string
-  default = null
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "ghcr_username" {
-  type    = string
-  default = null
-}
-
 resource "tfe_variable_set" "global" {
   name         = "Global Settings"
   description  = "For variables that are used in multiple or all environments"
   organization = "polar-sh"
-  global       = true
 }
 
 resource "tfe_variable" "apple_client_id" {
@@ -138,34 +95,6 @@ resource "tfe_variable" "grafana_cloud_prometheus_password" {
   variable_set_id = tfe_variable_set.global.id
 }
 
-resource "tfe_variable" "grafana_cloud_prometheus_query_key" {
-  key             = "grafana_cloud_prometheus_query_key"
-  category        = "terraform"
-  description     = "Grafana Cloud Prometheus Query API Key (read-only)"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.global.id
-}
-
-resource "tfe_variable" "slo_report_slack_bot_token" {
-  key             = "slo_report_slack_bot_token"
-  category        = "terraform"
-  description     = "Slack Bot Token for SLO weekly reports"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.global.id
-}
-
-resource "tfe_variable" "slo_report_slack_channel" {
-  key             = "slo_report_slack_channel"
-  category        = "terraform"
-  description     = "Slack channel ID for SLO weekly reports"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.global.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "cloudflare_api_token" {
   key             = "CLOUDFLARE_API_TOKEN"
   category        = "env"
@@ -186,14 +115,6 @@ resource "tfe_variable" "logfire_token" {
   key             = "logfire_token"
   category        = "terraform"
   description     = "Logfire Token"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.global.id
-}
-
-resource "tfe_variable" "tailscale_authkey" {
-  key             = "tailscale_authkey"
-  category        = "terraform"
-  description     = "Tailscale auth key for the subnet router"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
 }

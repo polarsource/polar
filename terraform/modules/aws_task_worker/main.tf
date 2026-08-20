@@ -147,7 +147,7 @@ data "aws_iam_policy_document" "lambda" {
       "sqs:SendMessage",
       "sqs:GetQueueUrl",
     ]
-    resources = ["arn:aws:sqs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${var.queue_prefix}-*"]
+    resources = ["arn:aws:sqs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${var.queue_prefix}-*"]
   }
 
   dynamic "statement" {

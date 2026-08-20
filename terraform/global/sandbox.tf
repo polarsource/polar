@@ -12,6 +12,11 @@ resource "tfe_variable_set" "sandbox" {
   parent_project_id = data.tfe_project.sandbox.id
 }
 
+resource "tfe_project_variable_set" "global_sandbox" {
+  variable_set_id = tfe_variable_set.global.id
+  project_id      = data.tfe_project.sandbox.id
+}
+
 resource "tfe_variable" "google_client_id_sandbox" {
   key             = "google_client_id_sandbox"
   category        = "terraform"

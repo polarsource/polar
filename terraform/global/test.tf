@@ -12,6 +12,11 @@ resource "tfe_variable_set" "test" {
   parent_project_id = data.tfe_project.test.id
 }
 
+resource "tfe_project_variable_set" "global_test" {
+  variable_set_id = tfe_variable_set.global.id
+  project_id      = data.tfe_project.test.id
+}
+
 resource "tfe_variable" "google_client_id_test" {
   key             = "google_client_id"
   category        = "terraform"

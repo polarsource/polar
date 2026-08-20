@@ -199,8 +199,7 @@ class MerchantMigrationRecordRepository(
             .join(Customer, Customer.id == MerchantMigrationRecord.target_id)
             .where(
                 MerchantMigrationRecord.organization_id == organization_id,
-                MerchantMigrationRecord.type
-                == MerchantMigrationRecordType.customer,
+                MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
                 MerchantMigrationRecord.status
                 == MerchantMigrationRecordStatus.imported,
                 MerchantMigrationRecord.source_id.in_(source_ids),

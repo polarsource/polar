@@ -62,9 +62,7 @@ def upgrade() -> None:
         unique=True,
     )
     op.create_index(
-        op.f(
-            "ix_merchant_migration_payment_method_mappings_merchant_migration_id"
-        ),
+        op.f("ix_merchant_migration_payment_method_mappings_merchant_migration_id"),
         "merchant_migration_payment_method_mappings",
         ["merchant_migration_id"],
         unique=False,

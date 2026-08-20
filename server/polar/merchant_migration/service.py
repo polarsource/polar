@@ -689,7 +689,9 @@ class MerchantMigrationService:
                     update_dict={"stripe_customer_id": destination_customer_id},
                 )
 
-        repository = MerchantMigrationPaymentMethodMappingRepository.from_session(session)
+        repository = MerchantMigrationPaymentMethodMappingRepository.from_session(
+            session
+        )
         await repository.replace(
             migration,
             [

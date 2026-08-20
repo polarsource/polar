@@ -469,9 +469,7 @@ async def complete_step(
                     raise PaymentMethodMappingCSVError(
                         "Upload Stripe's payment method mapping CSV."
                     )
-                contents = await mapping_file.read(
-                    PAYMENT_METHOD_MAPPING_MAX_BYTES + 1
-                )
+                contents = await mapping_file.read(PAYMENT_METHOD_MAPPING_MAX_BYTES + 1)
                 if len(contents) > PAYMENT_METHOD_MAPPING_MAX_BYTES:
                     raise PaymentMethodMappingCSVError(
                         "The payment method mapping CSV is larger than 20 MB."

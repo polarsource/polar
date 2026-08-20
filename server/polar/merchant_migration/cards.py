@@ -72,19 +72,26 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
     try:
         decoded = contents.decode("utf-8-sig")
     except UnicodeDecodeError as e:
-        raise PaymentMethodMappingCSVError("The mapping must be a UTF-8 CSV file.") from e
+        raise PaymentMethodMappingCSVError(
+            "The mapping must be a UTF-8 CSV file."
+        ) from e
 
     reader = csv.DictReader(io.StringIO(decoded))
     if tuple(reader.fieldnames or ()) != PAYMENT_METHOD_MAPPING_HEADERS:
         raise PaymentMethodMappingCSVError(
-            "The CSV headers must be: " + ", ".join(PAYMENT_METHOD_MAPPING_HEADERS) + "."
+            "The CSV headers must be: "
+            + ", ".join(PAYMENT_METHOD_MAPPING_HEADERS)
+            + "."
         )
 
     by_source: dict[str, PaymentMethodMapping] = {}
     by_destination: dict[str, PaymentMethodMapping] = {}
     customer_destinations: dict[str, str] = {}
     for line_number, row in enumerate(reader, start=2):
-        values = {header: (row.get(header) or "").strip() for header in PAYMENT_METHOD_MAPPING_HEADERS}
+        values = {
+            header: (row.get(header) or "").strip()
+            for header in PAYMENT_METHOD_MAPPING_HEADERS
+        }
         if not all(values.values()):
             raise PaymentMethodMappingCSVError(
                 f"Line {line_number} has an empty mapping value."
@@ -118,7 +125,9 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
             )
         by_source[mapping.source_payment_method_id] = mapping
         by_destination[mapping.destination_payment_method_id] = mapping
-        customer_destinations[mapping.source_customer_id] = mapping.destination_customer_id
+        customer_destinations[mapping.source_customer_id] = (
+            mapping.destination_customer_id
+        )
 
     if not by_source:
         raise PaymentMethodMappingCSVError("The mapping CSV has no data rows.")

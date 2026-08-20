@@ -31,8 +31,10 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
     serialize,
 )
-from polar.merchant_migration.cards import AmbiguousCopiedCard
-from polar.merchant_migration.cards import PaymentMethodMappingCSVError
+from polar.merchant_migration.cards import (
+    AmbiguousCopiedCard,
+    PaymentMethodMappingCSVError,
+)
 from polar.merchant_migration.cutover import CutoverOutcome
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
@@ -1592,7 +1594,7 @@ class TestImportPaymentMethodMappings:
                 canonical=serialize(
                     CanonicalCustomer(
                         source_id="cus_old",
-                        email=customer.email,
+                        email="mapped@example.com",
                         name=None,
                         country=None,
                     )

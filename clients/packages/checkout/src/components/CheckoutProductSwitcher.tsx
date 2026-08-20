@@ -17,7 +17,7 @@ import type { ProductCheckoutPublic } from '../guards'
 import { isLegacyRecurringProductPrice } from '../guards'
 import { hasLegacyRecurringPrices } from '../utils/product'
 import { capitalize, decapitalize } from '../utils/string'
-import { getUnitLabels } from '../utils/units'
+import { getMinimumUnitAmount, getUnitLabels } from '../utils/units'
 import AmountLabel from './AmountLabel'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -88,35 +88,9 @@ export const CheckoutProductSwitcherItemPrice = ({
       )
     }
 
-    const minimumUnits = price.minimum_units ?? 1
-    const tiers = price.tiers.tiers.toSorted((a, b) => {
-      if (a.bound == null) return 1
-      if (b.bound == null) return -1
-      return a.bound - b.bound
-    })
-    let minimumAmount: number
-    if (price.tiers.type === 'graduated') {
-      minimumAmount = 0
-      let allocated = 0
-      for (const tier of tiers) {
-        if (allocated >= minimumUnits) break
-        const tierEnd = tier.bound ?? minimumUnits
-        const unitsInTier = Math.min(minimumUnits, tierEnd) - allocated
-        if (unitsInTier > 0) {
-          minimumAmount += unitsInTier * Number(tier.unit_amount)
-        }
-        allocated += unitsInTier
-      }
-    } else {
-      const matchingTier = tiers.find(
-        (t) => t.bound == null || minimumUnits <= t.bound,
-      )
-      minimumAmount = minimumUnits * Number(matchingTier?.unit_amount ?? 0)
-    }
-
     return (
       <FromPrice
-        amount={minimumAmount}
+        amount={getMinimumUnitAmount(price)}
         currency={price.price_currency}
         interval={product.recurring_interval}
         intervalCount={product.recurring_interval_count}

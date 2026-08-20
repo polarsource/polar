@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { getUnitLabels } from './units'
+import { createUnitBasedPrice } from '../test-utils/makeCheckout'
+import { getMinimumUnitAmount, getUnitLabels, getUnitTierRows } from './units'
 
 describe('getUnitLabels', () => {
   it('defaults to unit / units', () => {
@@ -46,5 +47,63 @@ describe('getUnitLabels', () => {
       unitLabel: 'device',
       unitLabelPlural: 'devices',
     })
+  })
+})
+
+describe('getUnitTierRows', () => {
+  it('uses the matching volume tier for all units', () => {
+    const rows = getUnitTierRows(15, {
+      type: 'volume',
+      tiers: [
+        { bound: 10, unit_amount: '2900' },
+        { bound: null, unit_amount: '2500' },
+      ],
+    })
+
+    expect(rows).toEqual([{ units: 15, pricePerUnit: 2500 }])
+  })
+
+  it('allocates units across graduated tiers', () => {
+    const rows = getUnitTierRows(15, {
+      type: 'graduated',
+      tiers: [
+        { bound: 10, unit_amount: '2900' },
+        { bound: null, unit_amount: '2500' },
+      ],
+    })
+
+    expect(rows).toEqual([
+      { units: 10, pricePerUnit: 2900 },
+      { units: 5, pricePerUnit: 2500 },
+    ])
+  })
+})
+
+describe('getMinimumUnitAmount', () => {
+  const tiers = {
+    type: 'volume' as const,
+    tiers: [
+      { bound: 10, unit_amount: '2900' },
+      { bound: null, unit_amount: '2500' },
+    ],
+  }
+
+  it('totals the minimum purchase for volume pricing', () => {
+    const amount = getMinimumUnitAmount(
+      createUnitBasedPrice({ minimum_units: 15, tiers }),
+    )
+
+    expect(amount).toBe(37500)
+  })
+
+  it('totals the minimum purchase for graduated pricing', () => {
+    const amount = getMinimumUnitAmount(
+      createUnitBasedPrice({
+        minimum_units: 15,
+        tiers: { ...tiers, type: 'graduated' },
+      }),
+    )
+
+    expect(amount).toBe(41500)
   })
 })

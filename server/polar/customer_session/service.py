@@ -3,12 +3,14 @@ import uuid
 import structlog
 from pydantic import HttpUrl
 from sqlalchemy import select
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
+from polar.customer.exceptions import AmbiguousExternalCustomerID
 from polar.customer.repository import CustomerRepository
 from polar.enums import TokenType
 from polar.exceptions import PolarRequestValidationError
@@ -76,9 +78,14 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         else:
             id_field = "external_customer_id"
             id_value = customer_create.external_customer_id
-            customer = await repository.get_readable_by_external_id(
-                org_ids, customer_create.external_customer_id, options=options
-            )
+            try:
+                customer = await repository.get_readable_by_external_id(
+                    org_ids, customer_create.external_customer_id, options=options
+                )
+            except MultipleResultsFound as e:
+                raise AmbiguousExternalCustomerID(
+                    customer_create.external_customer_id
+                ) from e
 
         if customer is None:
             raise PolarRequestValidationError(

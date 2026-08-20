@@ -54041,6 +54041,15 @@ export interface operations {
           'application/json': components['schemas']['CustomerSession']
         }
       }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {

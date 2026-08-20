@@ -7,6 +7,7 @@ export interface StepInputField {
   name: string
   label: string
   placeholder?: string
+  hint?: string
   required: boolean
 }
 
@@ -20,6 +21,36 @@ export interface StepCopy {
   showsDestinationAccount?: boolean
 }
 
+export const STRIPE_MIGRATION_ID_FIELD = 'stripe_migration_request_id'
+
+export const STRIPE_COPY_STATUS_URL =
+  'https://dashboard.stripe.com/acct_1LzIVeDG1jUQrXwC/copy-status/shared'
+
+const STRIPE_MIGRATION_ID_RE = /^migreq_[A-Za-z0-9_]+$/
+
+export function isValidStripeMigrationId(value: string): boolean {
+  return STRIPE_MIGRATION_ID_RE.test(value)
+}
+
+export function stripeMigrationIdError(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+  if (!isValidStripeMigrationId(trimmed)) {
+    return 'Must start with migreq_ followed by letters, numbers, or underscores.'
+  }
+  return null
+}
+
+const STRIPE_MIGRATION_ID_INPUT: StepInputField = {
+  name: STRIPE_MIGRATION_ID_FIELD,
+  label: 'Stripe migration ID',
+  placeholder: 'migreq_…',
+  hint: 'Starts with migreq_. Find it on the Stripe copy status page.',
+  required: false,
+}
+
 export const STEP_COPY: Record<string, StepCopy> = {
   share_destination_account: {
     title: 'Get the Polar account ID',
@@ -30,21 +61,12 @@ export const STEP_COPY: Record<string, StepCopy> = {
     title: 'Start the copy in Stripe',
     description: 'Ask Stripe to copy your saved cards over to Polar.',
     guidance: [
-      'Open your Stripe Dashboard and go to Customers.',
-      'Click Copy customers, then pick a copy method.',
-      'Paste the Polar account ID above as the recipient.',
-      'Confirm the copy.',
+      'In Stripe, open Customers and choose Copy customers.',
+      'Upload the CSV, paste the Polar account ID as the recipient, then confirm.',
     ],
     warning:
       'Only the account owner can start a copy. Wallet cards, Bacs and old SEPA mandates do not copy.',
-    inputs: [
-      {
-        name: 'stripe_migration_request_id',
-        label: 'Stripe request ID',
-        placeholder: 'From the Stripe copy status page',
-        required: false,
-      },
-    ],
+    inputs: [STRIPE_MIGRATION_ID_INPUT],
     action: 'I started the copy',
     showsDestinationAccount: true,
   },
@@ -66,8 +88,7 @@ export const STEP_COPY: Record<string, StepCopy> = {
     // their provider on the next step, so it has to stay readable afterwards.
     inputs: [
       {
-        name: 'stripe_migration_request_id',
-        label: 'Stripe request ID',
+        ...STRIPE_MIGRATION_ID_INPUT,
         required: true,
       },
     ],

@@ -4,18 +4,21 @@ import { schemas } from '@polar-sh/client'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { SwitchPanel } from '../switch/SwitchPanel'
+import { OpsUpdate } from './OpsUpdate'
 import { StepCopy } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
+import { StartCopyStep } from './StartCopyStep'
 
 const SWITCH_STEP_KEY = 'cutover'
+const START_COPY_STEP_KEY = 'start_copy'
 
 interface Props {
   step: schemas['PanTransferStep']
   copy: StepCopy
   destinationAccountId: string | null
   migrationId: string
+  organizationId: string
 }
 
 export function PanTransferStepBody({
@@ -23,7 +26,20 @@ export function PanTransferStepBody({
   copy,
   destinationAccountId,
   migrationId,
+  organizationId,
 }: Props) {
+  if (step.key === START_COPY_STEP_KEY) {
+    return (
+      <StartCopyStep
+        step={step}
+        copy={copy}
+        destinationAccountId={destinationAccountId}
+        migrationId={migrationId}
+        organizationId={organizationId}
+      />
+    )
+  }
+
   const submittable = step.owner === 'merchant' && step.kind !== 'auto'
   // A newer backend: submitting would 422 on a field we never rendered, because
   // the accepted-input contract isn't on the wire.
@@ -87,34 +103,6 @@ export function PanTransferStepBody({
             stepKey={step.key}
           />
         ))
-      )}
-    </Box>
-  )
-}
-
-export function OpsUpdate({ step }: { step: schemas['PanTransferStep'] }) {
-  if (!step.note && !step.expected_at) {
-    return null
-  }
-
-  return (
-    <Box
-      flexDirection="column"
-      rowGap="xs"
-      padding="l"
-      borderRadius="m"
-      backgroundColor="background-secondary"
-    >
-      {/* Prose wraps on its own; a pasted link does not. */}
-      {step.note && (
-        <Box overflowX="auto" maxWidth="100%">
-          <Text variant="caption">{step.note}</Text>
-        </Box>
-      )}
-      {step.expected_at && (
-        <Text variant="caption" color="muted">
-          Expected by <FormattedDateTime datetime={step.expected_at} />
-        </Text>
       )}
     </Box>
   )

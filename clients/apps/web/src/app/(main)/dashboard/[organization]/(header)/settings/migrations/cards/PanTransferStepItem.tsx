@@ -4,13 +4,14 @@ import { schemas } from '@polar-sh/client'
 import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { OpsUpdate } from './OpsUpdate'
 import {
   ownerLabel,
   STEP_COPY,
   StepInputField,
   waitingLabel,
 } from './panTransferCopy'
-import { OpsUpdate, PanTransferStepBody } from './PanTransferStepBody'
+import { PanTransferStepBody } from './PanTransferStepBody'
 import { STATE_LABELS, StepMarker, StepState } from '../stepMarker'
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
   current: boolean
   destinationAccountId: string | null
   migrationId: string
+  organizationId: string
 }
 
 export function PanTransferStepItem({
@@ -25,6 +27,7 @@ export function PanTransferStepItem({
   current,
   destinationAccountId,
   migrationId,
+  organizationId,
 }: Props) {
   const copy = STEP_COPY[step.key]
   // Keep the row on an unknown key so the count and order still line up.
@@ -75,12 +78,24 @@ export function PanTransferStepItem({
 
         {current &&
           (copy ? (
-            <PanTransferStepBody
-              step={step}
-              copy={copy}
-              destinationAccountId={destinationAccountId}
-              migrationId={migrationId}
-            />
+            <Box
+              flexDirection="column"
+              padding="xl"
+              rowGap="l"
+              borderRadius="l"
+              borderWidth={1}
+              borderStyle="solid"
+              borderColor="border-primary"
+              backgroundColor="background-card"
+            >
+              <PanTransferStepBody
+                step={step}
+                copy={copy}
+                destinationAccountId={destinationAccountId}
+                migrationId={migrationId}
+                organizationId={organizationId}
+              />
+            </Box>
           ) : (
             <Text variant="caption" color="muted">
               This step needs a newer version of this page. Please refresh.

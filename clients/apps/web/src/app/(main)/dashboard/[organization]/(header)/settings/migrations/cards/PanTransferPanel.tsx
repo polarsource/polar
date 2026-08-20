@@ -13,7 +13,13 @@ const METHOD_INTRO: Record<schemas['PanTransferMethod'], string> = {
     "Your provider sends the saved cards to Stripe, and Stripe imports them onto Polar's account. This runs over a few weeks.",
 }
 
-export function PanTransferPanel({ migrationId }: { migrationId: string }) {
+export function PanTransferPanel({
+  migrationId,
+  organizationId,
+}: {
+  migrationId: string
+  organizationId: string
+}) {
   const { data: checklist, isLoading, isError } = usePanTransfer(migrationId)
 
   if (isLoading) {
@@ -78,6 +84,7 @@ export function PanTransferPanel({ migrationId }: { migrationId: string }) {
             current={step.key === checklist.current_step_key}
             destinationAccountId={checklist.destination_account_id}
             migrationId={migrationId}
+            organizationId={organizationId}
           />
         ))}
       </Box>

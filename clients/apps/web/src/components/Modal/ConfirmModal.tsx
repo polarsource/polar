@@ -27,7 +27,7 @@ export interface ConfirmModalProps extends Omit<
   destructive?: boolean
   destructiveText?: string
   confirmPrompt?: string
-  onConfirm: () => void | Promise<void>
+  onConfirm: () => unknown
   onCancel?: () => void
 }
 

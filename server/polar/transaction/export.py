@@ -28,6 +28,7 @@ class TransactionExportColumn(StrEnum):
     net_amount = "net_amount"
     currency = "currency"
     status = "status"
+    paid_out_at = "paid_out_at"
     invoice_number = "invoice_number"
     order_id = "order_id"
 
@@ -42,6 +43,7 @@ TRANSACTION_EXPORT_HEADERS: dict[TransactionExportColumn, str] = {
     TransactionExportColumn.net_amount: "Net",
     TransactionExportColumn.currency: "Currency",
     TransactionExportColumn.status: "Status",
+    TransactionExportColumn.paid_out_at: "Paid Out At",
     TransactionExportColumn.invoice_number: "Invoice number",
     TransactionExportColumn.order_id: "Order ID",
 }
@@ -56,6 +58,7 @@ TRANSACTION_EXPORT_DEFAULT_COLUMNS: list[TransactionExportColumn] = [
     TransactionExportColumn.net_amount,
     TransactionExportColumn.currency,
     TransactionExportColumn.status,
+    TransactionExportColumn.paid_out_at,
 ]
 
 
@@ -99,6 +102,17 @@ def _status(transaction: Transaction, now: datetime, delay: timedelta | None) ->
     return "pending"
 
 
+def _datetime(value: datetime | None, tz: ZoneInfo) -> str | None:
+    return value.astimezone(tz).isoformat() if value is not None else None
+
+
+def _paid_out_at(transaction: Transaction, tz: ZoneInfo) -> str | None:
+    payout = transaction.payout_transaction
+    if payout is None:
+        return None
+    return _datetime(payout.created_at, tz)
+
+
 def _cents(value: int) -> float:
     return value / 100
 
@@ -112,9 +126,7 @@ def _row(
     order = transaction.order
     payment = transaction.payment_transaction
     return {
-        TransactionExportColumn.created_at: transaction.created_at.astimezone(
-            tz
-        ).isoformat(),
+        TransactionExportColumn.created_at: _datetime(transaction.created_at, tz),
         TransactionExportColumn.type: _description_type(transaction),
         TransactionExportColumn.product: (
             order.product.name
@@ -131,6 +143,7 @@ def _row(
         TransactionExportColumn.net_amount: _cents(transaction.net_amount),
         TransactionExportColumn.currency: transaction.currency,
         TransactionExportColumn.status: _status(transaction, now, delay),
+        TransactionExportColumn.paid_out_at: _paid_out_at(transaction, tz),
         TransactionExportColumn.invoice_number: (
             order.invoice_number if order is not None else None
         ),
@@ -183,6 +196,7 @@ async def generate_csv(
         exclude_platform_fees=exclude_platform_fees,
         created_after=created_after,
         created_before=created_before,
+        include_payout_transactions=True,
         pagination=PaginationParams(limit=1000000, page=1),
     )
 

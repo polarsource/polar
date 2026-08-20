@@ -102,7 +102,7 @@ async def export(
         description=(
             "Columns to include in the CSV, in order. "
             "Defaults to created_at, type, product, gross_amount, fees, "
-            "tax_amount, net_amount, currency and status."
+            "tax_amount, net_amount, currency, status and paid_out_at."
         ),
     ),
     session: AsyncReadSession = Depends(get_db_read_session),

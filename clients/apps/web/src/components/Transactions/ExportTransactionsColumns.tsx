@@ -15,6 +15,7 @@ const EXPORT_COLUMN_GROUPS = [
       { value: 'type', label: 'Type' },
       { value: 'product', label: 'Product' },
       { value: 'status', label: 'Status' },
+      { value: 'paid_out_at', label: 'Paid out at' },
       { value: 'invoice_number', label: 'Invoice number' },
       { value: 'order_id', label: 'Order ID' },
     ],
@@ -54,6 +55,7 @@ export const DEFAULT_EXPORT_COLUMNS: ExportColumn[] = [
   'net_amount',
   'currency',
   'status',
+  'paid_out_at',
 ]
 
 export const transactionExportColumns = (

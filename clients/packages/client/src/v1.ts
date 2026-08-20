@@ -36557,6 +36557,7 @@ export interface components {
       | 'net_amount'
       | 'currency'
       | 'status'
+      | 'paid_out_at'
       | 'invoice_number'
       | 'order_id'
     /** TransactionIssueReward */
@@ -42501,7 +42502,7 @@ export interface operations {
         created_before?: string | null
         /** @description Time zone used to render dates in the CSV. */
         timezone?: string
-        /** @description Columns to include in the CSV, in order. Defaults to created_at, type, product, gross_amount, fees, tax_amount, net_amount, currency and status. */
+        /** @description Columns to include in the CSV, in order. Defaults to created_at, type, product, gross_amount, fees, tax_amount, net_amount, currency, status and paid_out_at. */
         columns?:
           | components['schemas']['TransactionExportColumn']
           | components['schemas']['TransactionExportColumn'][]
@@ -69068,6 +69069,7 @@ export const transactionExportColumnValues: ReadonlyArray<
   'net_amount',
   'currency',
   'status',
+  'paid_out_at',
   'invoice_number',
   'order_id',
 ]

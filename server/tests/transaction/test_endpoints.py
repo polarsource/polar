@@ -158,7 +158,7 @@ class TestExportTransactions:
         assert response.headers["content-type"] == "text/csv; charset=utf-8"
         csv_lines = response.text.strip().split("\r\n")
         assert csv_lines[0] == (
-            "Created At,Type,Product,Gross,Fees,Tax,Net,Currency,Status"
+            "Created At,Type,Product,Gross,Fees,Tax,Net,Currency,Status,Paid Out At"
         )
         assert len(csv_lines) == len(readable_user_transactions) + 1
 

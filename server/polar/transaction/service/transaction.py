@@ -6,7 +6,7 @@ from typing import Any, cast
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import joinedload, subqueryload
+from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -52,6 +52,7 @@ class TransactionService(BaseTransactionService):
         exclude_platform_fees: bool = False,
         created_after: datetime | None = None,
         created_before: datetime | None = None,
+        include_payout_transactions: bool = False,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[TransactionSortProperty]] = (
             (TransactionSortProperty.created_at, True),
@@ -73,6 +74,8 @@ class TransactionService(BaseTransactionService):
             # Payment Transaction
             subqueryload(Transaction.payment_transaction),
         )
+        if include_payout_transactions:
+            statement = statement.options(selectinload(Transaction.payout_transaction))
 
         if type is not None:
             statement = statement.where(Transaction.type == type)

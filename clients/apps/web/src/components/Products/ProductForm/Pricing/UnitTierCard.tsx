@@ -117,9 +117,7 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
                 value={field.value ?? ''}
                 placeholder={isLast ? 'Unlimited' : undefined}
                 onChange={(e) => handleBoundChange(e, field.onChange)}
-                onBlur={(e) =>
-                  handleBoundBlur(e, field.onChange, field.onBlur)
-                }
+                onBlur={(e) => handleBoundBlur(e, field.onChange, field.onBlur)}
               />
             </FormControl>
             <FormMessage />
@@ -142,7 +140,6 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
                 <MoneyInput
                   name={field.name}
                   currency={currency}
-                  aria-label={`Price per ${unitLabel}, ${title}`}
                   value={
                     field.value == null || field.value === ''
                       ? null

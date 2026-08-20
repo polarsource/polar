@@ -168,6 +168,13 @@ class MissingCheckoutCustomer(SubscriptionError):
         super().__init__(message)
 
 
+class NotBillableSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = f"Subscription {subscription.id} is not billable."
+        super().__init__(message, 403)
+
+
 class InactiveSubscription(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -951,8 +958,8 @@ class SubscriptionService:
         subscription: Subscription,
         update_cycle_dates: bool = True,
     ) -> Subscription:
-        if not subscription.active:
-            raise InactiveSubscription(subscription)
+        if not subscription.billable:
+            raise NotBillableSubscription(subscription)
 
         # Defensive: capability may have flipped off between scheduler
         # pick-up and task execution.

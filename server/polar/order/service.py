@@ -2125,13 +2125,16 @@ class OrderService:
             update_dict = {**update_dict, **await self._record_tax_transaction(order)}
 
         repository = OrderRepository.from_session(session)
-        order = await repository.update(order, update_dict=update_dict)
+        order = await repository.update(order, update_dict=update_dict, flush=True)
 
         # If this was a subscription retry success, reactivate the subscription
         if (
             previous_status == OrderStatus.pending
             and order.subscription is not None
             and order.subscription.status == SubscriptionStatus.past_due
+            # Make sure there are no other dunning orders for this subscription, otherwise we might reactivate it too early
+            and await repository.count_dunning_by_subscription(order.subscription.id)
+            == 0
         ):
             await subscription_service.mark_active(session, order.subscription)
 

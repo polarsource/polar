@@ -2334,10 +2334,8 @@ class SubscriptionService:
                     existing_pending.units = None
                     await subscription_update_repository.update(existing_pending)
             else:
-                await (
-                    subscription_update_repository.soft_delete_unapplied_by_subscription_id(
-                        subscription.id
-                    )
+                await subscription_update_repository.soft_delete_unapplied_by_subscription_id(
+                    subscription.id
                 )
                 subscription.pending_update = None
 

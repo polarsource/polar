@@ -120,7 +120,6 @@ from tests.fixtures.random_objects import (
     create_product_unit_based,
     create_subscription,
     create_subscription_with_seats,
-    create_subscription_with_units,
     create_trialing_subscription,
     set_product_benefits,
 )

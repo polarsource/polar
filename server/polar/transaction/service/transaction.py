@@ -6,7 +6,7 @@ from typing import Any, cast
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import joinedload, subqueryload
+from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -55,7 +55,15 @@ class TransactionService(BaseTransactionService):
             (TransactionSortProperty.created_at, True),
         ),
     ) -> tuple[Sequence[Transaction], int]:
-        statement = self._get_readable_transactions_statement(auth_subject)
+        statement = self._get_search_statement(
+            auth_subject,
+            type=type,
+            account_id=account_id,
+            payment_customer_id=payment_customer_id,
+            payment_organization_id=payment_organization_id,
+            payment_user_id=payment_user_id,
+            exclude_platform_fees=exclude_platform_fees,
+        )
 
         statement = statement.options(
             # Incurred transactions
@@ -72,23 +80,6 @@ class TransactionService(BaseTransactionService):
             subqueryload(Transaction.payment_transaction),
         )
 
-        if type is not None:
-            statement = statement.where(Transaction.type == type)
-        if account_id is not None:
-            statement = statement.where(Transaction.account_id == account_id)
-        if payment_customer_id is not None:
-            statement = statement.where(
-                Transaction.payment_customer_id == payment_customer_id
-            )
-        if payment_organization_id is not None:
-            statement = statement.where(
-                Transaction.payment_organization_id == payment_organization_id
-            )
-        if payment_user_id is not None:
-            statement = statement.where(Transaction.payment_user_id == payment_user_id)
-        if exclude_platform_fees:
-            statement = statement.where(Transaction.platform_fee_type.is_(None))
-
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
@@ -101,6 +92,47 @@ class TransactionService(BaseTransactionService):
         results, count = await paginate(session, statement, pagination=pagination)
 
         return results, count
+
+    async def export(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User],
+        *,
+        type: TransactionType | None = None,
+        account_id: uuid.UUID | None = None,
+        exclude_platform_fees: bool = False,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
+    ) -> Sequence[Transaction]:
+        statement = (
+            self._get_search_statement(
+                auth_subject,
+                type=type,
+                account_id=account_id,
+                exclude_platform_fees=exclude_platform_fees,
+                created_after=created_after,
+                created_before=created_before,
+            )
+            .options(
+                subqueryload(Transaction.account_incurred_transactions),
+                subqueryload(Transaction.pledge),
+                subqueryload(Transaction.issue_reward),
+                subqueryload(Transaction.order).options(
+                    joinedload(Order.product),
+                    joinedload(Order.customer),
+                ),
+                subqueryload(Transaction.payment_transaction).options(
+                    joinedload(Transaction.payment_customer),
+                ),
+                selectinload(Transaction.payout_transaction).selectinload(
+                    Transaction.payout
+                ),
+                selectinload(Transaction.account),
+            )
+            .order_by(desc(Transaction.created_at))
+        )
+        result = await session.execute(statement)
+        return result.unique().scalars().all()
 
     async def lookup(
         self,
@@ -336,6 +368,44 @@ class TransactionService(BaseTransactionService):
 
         result = await session.execute(statement)
         return int(result.scalar_one())
+
+    def _get_search_statement(
+        self,
+        auth_subject: AuthSubject[User],
+        *,
+        type: TransactionType | None = None,
+        account_id: uuid.UUID | None = None,
+        payment_customer_id: uuid.UUID | None = None,
+        payment_organization_id: uuid.UUID | None = None,
+        payment_user_id: uuid.UUID | None = None,
+        exclude_platform_fees: bool = False,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
+    ) -> Select[Any]:
+        statement = self._get_readable_transactions_statement(auth_subject)
+
+        if type is not None:
+            statement = statement.where(Transaction.type == type)
+        if account_id is not None:
+            statement = statement.where(Transaction.account_id == account_id)
+        if payment_customer_id is not None:
+            statement = statement.where(
+                Transaction.payment_customer_id == payment_customer_id
+            )
+        if payment_organization_id is not None:
+            statement = statement.where(
+                Transaction.payment_organization_id == payment_organization_id
+            )
+        if payment_user_id is not None:
+            statement = statement.where(Transaction.payment_user_id == payment_user_id)
+        if exclude_platform_fees:
+            statement = statement.where(Transaction.platform_fee_type.is_(None))
+        if created_after is not None:
+            statement = statement.where(Transaction.created_at >= created_after)
+        if created_before is not None:
+            statement = statement.where(Transaction.created_at <= created_before)
+
+        return statement
 
     def _get_readable_transactions_statement(
         self, auth_subject: AuthSubject[User]

@@ -57,7 +57,6 @@ const CheckoutUnitSelector = ({
   const hasMaximumLimit = maximumUnits !== null
   const isFixedUnits = hasMaximumLimit && minimumUnits === maximumUnits
 
-  // Display units clamped to at least the minimum
   const displayUnits = Math.max(checkout.units || minimumUnits, minimumUnits)
   const needsUnitCorrection =
     checkout.units !== null &&

@@ -54,8 +54,6 @@ function sortTiers(tiers: UnitTier[]): UnitTier[] {
   })
 }
 
-const toAmount = (value: string): number => Number(value)
-
 export function getUnitTierRows(
   units: number,
   tiersConfig: schemas['ProductPriceUnitBased']['tiers'],
@@ -72,7 +70,7 @@ export function getUnitTierRows(
       if (unitsInTier > 0) {
         rows.push({
           units: unitsInTier,
-          pricePerUnit: toAmount(tier.unit_amount),
+          pricePerUnit: Number(tier.unit_amount),
         })
       }
       allocated += unitsInTier
@@ -84,7 +82,7 @@ export function getUnitTierRows(
   return [
     {
       units,
-      pricePerUnit: toAmount(matchingTier?.unit_amount ?? '0'),
+      pricePerUnit: Number(matchingTier?.unit_amount ?? '0'),
     },
   ]
 }

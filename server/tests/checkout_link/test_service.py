@@ -23,6 +23,8 @@ from tests.fixtures.random_objects import (
     create_checkout_link,
     create_product,
     create_product_price_seat_unit,
+    create_product_price_unit_based,
+    create_product_unit_based,
 )
 
 
@@ -64,6 +66,17 @@ async def product_seat_based_2_to_20(
     )
     product.prices = [price]
     return product
+
+
+@pytest_asyncio.fixture
+async def product_unit_based_minimum_2(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product_unit_based(
+        save_fixture,
+        organization=organization,
+        minimum_units=2,
+    )
 
 
 @pytest_asyncio.fixture
@@ -346,6 +359,106 @@ class TestCreateSeats:
 
 
 @pytest.mark.asyncio
+class TestCreateUnits:
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based_minimum_2: Product,
+    ) -> None:
+        checkout_link = await checkout_link_service.create(
+            session,
+            CheckoutLinkCreateProducts(
+                payment_processor=PaymentProcessor.stripe,
+                products=[product_unit_based_minimum_2.id],
+                units=5,
+            ),
+            auth_subject,
+        )
+
+        assert checkout_link.units == 5
+
+    @pytest.mark.auth
+    async def test_non_unit_based_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.create(
+                session,
+                CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product_one_time.id],
+                    units=5,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_below_minimum(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based_minimum_2: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.create(
+                session,
+                CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product_unit_based_minimum_2.id],
+                    units=1,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_rejects_units_outside_any_currency_bounds(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # USD first (loose floor), then EUR (stricter). Validation used to check
+        # only the first unit price, so a lock of 5 would be accepted even though
+        # EUR checkout would ignore it.
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=organization,
+            minimum_units=1,
+            currency="usd",
+        )
+        eur_price = await create_product_price_unit_based(
+            save_fixture,
+            product=product,
+            price_per_unit=900,
+            minimum_units=10,
+            currency="eur",
+        )
+        product.prices.append(eur_price)
+        product.all_prices.append(eur_price)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.create(
+                session,
+                CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product.id],
+                    units=5,
+                ),
+                auth_subject,
+            )
+
+
+@pytest.mark.asyncio
 class TestUpdate:
     @pytest.mark.auth
     async def test_metadata(
@@ -598,6 +711,54 @@ class TestUpdate:
         await session.flush()
 
         assert updated.seats == 5
+
+    @pytest.mark.auth
+    async def test_units_valid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based_minimum_2: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_unit_based_minimum_2]
+        )
+
+        updated = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(units=10),
+            auth_subject,
+        )
+
+        assert updated.units == 10
+
+    @pytest.mark.auth
+    async def test_products_change_auto_clears_incompatible_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based_minimum_2: Product,
+        product_one_time: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_unit_based_minimum_2],
+            units=5,
+        )
+
+        updated = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(products=[product_one_time.id]),
+            auth_subject,
+        )
+        await session.flush()
+
+        assert updated.units is None
 
 
 @pytest.mark.asyncio

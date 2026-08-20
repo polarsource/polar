@@ -86,6 +86,11 @@ const timelineRenderers: TimelineRendererMap = {
     summary: ({ metadata }) =>
       `${metadata.old_seats} → ${metadata.new_seats} seats`,
   },
+  'subscription.units_updated': {
+    importance: 'medium',
+    summary: ({ metadata }) =>
+      `${metadata.old_units} → ${metadata.new_units} units`,
+  },
   'subscription.billing_period_updated': { importance: 'low' },
   'subscription.update_cleared': { importance: 'low' },
   'subscription.uncanceled': { importance: 'high' },

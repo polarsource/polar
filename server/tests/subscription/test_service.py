@@ -117,6 +117,7 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_product,
     create_product_fixed_and_seat,
+    create_product_unit_based,
     create_subscription,
     create_subscription_with_seats,
     create_trialing_subscription,
@@ -663,6 +664,42 @@ class TestCreateOrUpdateFromCheckout:
                 session, checkout, None
             )
 
+    async def test_new_unit_based(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=2900
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            units=10,
+        )
+
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert created is True
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.units == 10
+        assert subscription.seats is None
+        assert subscription.amount == 10 * 2900
+
+        enqueue_benefits_grants_mock.assert_called_once()
+
     async def test_new_fixed(
         self,
         enqueue_benefits_grants_mock: MagicMock,
@@ -924,6 +961,54 @@ class TestCreateOrUpdateFromCheckout:
             updated_subscription.anchor_day
             == updated_subscription.current_period_start.day
         )
+
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, updated_subscription
+        )
+
+    async def test_upgrade_to_unit_product(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_free_price: Product,
+        organization: Organization,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        unit_product = await create_product_unit_based(
+            save_fixture, organization=organization
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_free_price,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[unit_product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            subscription=subscription,
+            units=3,
+        )
+
+        (
+            updated_subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert created is False
+        assert updated_subscription.product == unit_product
+        assert updated_subscription.units == 3
+        assert updated_subscription.seats is None
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created

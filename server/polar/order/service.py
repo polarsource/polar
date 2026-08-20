@@ -685,14 +685,16 @@ class OrderService:
         *,
         amount: int | None,
         seats: int | None,
+        units: int | None = None,
     ) -> Sequence[OrderItem]:
         """
         Build order line items for the static prices of a product.
 
         Metered prices are skipped (they're billed through usage). Custom
-        (pay-what-you-want) prices use `amount`; seat-based prices use `seats`.
-        Callers are responsible for validating that `amount` / `seats` are
-        present when the product requires them.
+        (pay-what-you-want) prices use `amount`; seat-based prices use `seats`;
+        unit-based prices use `units`. Callers are responsible for validating
+        that `amount` / `seats` / `units` are present when the product requires
+        them.
         """
         items: list[OrderItem] = []
         for price in prices:
@@ -701,7 +703,7 @@ class OrderService:
             if is_custom_price(price):
                 items.append(OrderItem.from_price(price, 0, amount))
             else:
-                items.append(OrderItem.from_price(price, 0, seats=seats))
+                items.append(OrderItem.from_price(price, 0, seats=seats, units=units))
         return items
 
     def _build_draft_order_items(
@@ -800,7 +802,10 @@ class OrderService:
             )
             items = list(
                 self._build_static_order_items(
-                    currency_prices, amount=checkout.amount, seats=checkout.seats
+                    currency_prices,
+                    amount=checkout.amount,
+                    seats=checkout.seats,
+                    units=checkout.units,
                 )
             )
 
@@ -837,6 +842,7 @@ class OrderService:
                 custom_field_data=checkout.custom_field_data,
                 items=items,
                 seats=checkout.seats,
+                units=checkout.units,
             ),
             flush=True,
         )
@@ -942,6 +948,20 @@ class OrderService:
                         "loc": ("body", "product_id"),
                         "msg": (
                             "Seat-based products are not supported by the "
+                            "off-session charge API."
+                        ),
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+        if product.has_unit_based_price:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "Unit-based products are not supported by the "
                             "off-session charge API."
                         ),
                         "input": payload.product_id,

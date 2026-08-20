@@ -12406,6 +12406,21 @@ export interface components {
        */
       max_seats?: number | null
       /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units: number | null
+      /**
        * Discount Amount
        * @description Discount amount in cents.
        */
@@ -12643,6 +12658,11 @@ export interface components {
        * @description Number of seats for seat-based pricing.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description Number of units for unit-based pricing.
+       */
+      units?: number | null
       /** Is Business Customer */
       is_business_customer?: boolean | null
       /** Customer Name */
@@ -12977,6 +12997,11 @@ export interface components {
        */
       seats: number | null
       /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units: number | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
@@ -13066,6 +13091,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units?: number | null
+      /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
@@ -13146,6 +13176,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units?: number | null
+      /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
@@ -13223,6 +13258,11 @@ export interface components {
        * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units?: number | null
       /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
@@ -13400,6 +13440,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units?: number | null
+      /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
@@ -13527,6 +13572,21 @@ export interface components {
        * @description Maximum number of seats (works with seat-based pricing only)
        */
       max_seats?: number | null
+      /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units?: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units?: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units?: number | null
       /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
@@ -13772,6 +13832,21 @@ export interface components {
        */
       max_seats?: number | null
       /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units?: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units?: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units?: number | null
+      /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        * @default true
@@ -13925,6 +14000,21 @@ export interface components {
        * @description Maximum number of seats (works with seat-based pricing only)
        */
       max_seats?: number | null
+      /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units?: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units?: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units?: number | null
       /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
@@ -14109,6 +14199,21 @@ export interface components {
        * @description Maximum number of seats (works with seat-based pricing only)
        */
       max_seats?: number | null
+      /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units: number | null
       /**
        * Discount Amount
        * @description Discount amount in cents.
@@ -14381,6 +14486,21 @@ export interface components {
        */
       max_seats?: number | null
       /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units: number | null
+      /**
        * Discount Amount
        * @description Discount amount in cents.
        */
@@ -14609,6 +14729,11 @@ export interface components {
        * @description Number of seats for seat-based pricing.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description Number of units for unit-based pricing.
+       */
+      units?: number | null
       /** Is Business Customer */
       is_business_customer?: boolean | null
       /** Customer Name */
@@ -14732,6 +14857,11 @@ export interface components {
        * @description Number of seats for seat-based pricing.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description Number of units for unit-based pricing.
+       */
+      units?: number | null
       /** Is Business Customer */
       is_business_customer?: boolean | null
       /** Customer Name */
@@ -17320,6 +17450,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Number of units purchased (for unit-based pricing).
+       */
+      units: number | null
+      /**
        * Customer Id
        * Format: uuid4
        */
@@ -17693,6 +17828,11 @@ export interface components {
        * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -19200,6 +19340,11 @@ export interface components {
        * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -25587,6 +25732,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Number of units purchased (for unit-based pricing).
+       */
+      units: number | null
+      /**
        * Customer Id
        * Format: uuid4
        */
@@ -26415,6 +26565,11 @@ export interface components {
        * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -30517,6 +30672,11 @@ export interface components {
        * @description Number of seats to apply to the subscription. If `null`, the number of seats won't be changed.
        */
       seats: number | null
+      /**
+       * Units
+       * @description Number of units to apply to the subscription. If `null`, the number of units won't be changed.
+       */
+      units: number | null
     }
     /** PersonalAccessToken */
     PersonalAccessToken: {
@@ -33526,6 +33686,11 @@ export interface components {
        * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -33814,6 +33979,7 @@ export interface components {
     SubscriptionChangePreview:
       | components['schemas']['SubscriptionChangePreviewProduct']
       | components['schemas']['SubscriptionChangePreviewSeats']
+      | components['schemas']['SubscriptionChangePreviewUnits']
     /** SubscriptionChangePreviewProduct */
     SubscriptionChangePreviewProduct: {
       /**
@@ -33835,6 +34001,18 @@ export interface components {
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
+    /** SubscriptionChangePreviewUnits */
+    SubscriptionChangePreviewUnits: {
+      /**
+       * Units
+       * @description Preview a change of the subscription to this number of units.
+       */
+      units: number
       /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
@@ -35271,9 +35449,96 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count: number
     }
+    /**
+     * SubscriptionUnitsUpdatedEvent
+     * @description An event created by Polar when the units on a subscription are changed.
+     */
+    SubscriptionUnitsUpdatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.units_updated'
+      metadata: components['schemas']['SubscriptionUnitsUpdatedMetadata']
+    }
+    /** SubscriptionUnitsUpdatedMetadata */
+    SubscriptionUnitsUpdatedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Old Units */
+      old_units: number
+      /** New Units */
+      new_units: number
+      /** Proration Behavior */
+      proration_behavior: string
+    }
     SubscriptionUpdate:
       | components['schemas']['SubscriptionUpdateBase']
       | components['schemas']['SubscriptionUpdateSeats']
+      | components['schemas']['SubscriptionUpdateUnits']
       | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
@@ -35431,6 +35696,18 @@ export interface components {
         | components['schemas']['SubscriptionProrationBehavior']
         | null
     }
+    /** SubscriptionUpdateUnits */
+    SubscriptionUpdateUnits: {
+      /**
+       * Units
+       * @description Update the number of units for this subscription.
+       */
+      units: number
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
     /**
      * SubscriptionUpdatedEvent
      * @description An event created by Polar when a subscription is updated.
@@ -35517,6 +35794,8 @@ export interface components {
       trial_end?: string
       /** Seats */
       seats?: number
+      /** Units */
+      units?: number
       /** Billing Period End */
       billing_period_end?: string
       /** Subscription Id */
@@ -35775,6 +36054,7 @@ export interface components {
       | components['schemas']['SubscriptionUncanceledEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['SubscriptionSeatsUpdatedEvent']
+      | components['schemas']['SubscriptionUnitsUpdatedEvent']
       | components['schemas']['SubscriptionBillingPeriodUpdatedEvent']
       | components['schemas']['SubscriptionUpdateClearedEvent']
       | components['schemas']['OrderPaidEvent']
@@ -68545,6 +68825,9 @@ export const subscriptionStatusValues: ReadonlyArray<
 export const subscriptionUncanceledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUncanceledEvent']['name']
 > = ['subscription.uncanceled']
+export const subscriptionUnitsUpdatedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionUnitsUpdatedEvent']['name']
+> = ['subscription.units_updated']
 export const subscriptionUpdateClearedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUpdateClearedEvent']['name']
 > = ['subscription.update_cleared']

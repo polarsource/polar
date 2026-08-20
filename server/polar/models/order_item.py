@@ -15,6 +15,7 @@ from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceSeatUnit,
+    ProductPriceUnit,
 )
 
 if TYPE_CHECKING:
@@ -60,16 +61,23 @@ class OrderItem(RecordModel):
 
     @classmethod
     def format_price_label(
-        cls, product: "Product", price: ProductPrice, *, seats: int | None
+        cls,
+        product: "Product",
+        price: ProductPrice,
+        *,
+        seats: int | None,
+        units: int | None = None,
     ) -> str:
         """
         Human-readable label for a static-price line item: the product name,
-        with a seat count appended for seat-based prices (e.g.
+        with a seat or unit count appended for quantity-bearing prices (e.g.
         "Acme Pro (14 seats)"). Falls back to the bare product name for every
-        other price type, or when the seat count is unknown.
+        other price type, or when the count is unknown.
         """
         if isinstance(price, ProductPriceSeatUnit) and seats is not None:
             return f"{product.name} ({seats} seat{'' if seats == 1 else 's'})"
+        if isinstance(price, ProductPriceUnit) and units is not None:
+            return f"{product.name} ({units} {price.get_unit_noun(units)})"
         return product.name
 
     @classmethod
@@ -79,6 +87,7 @@ class OrderItem(RecordModel):
         tax_amount: int,
         amount: int | None = None,
         seats: int | None = None,
+        units: int | None = None,
         label: str | None = None,
     ) -> Self:
         if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
@@ -88,10 +97,13 @@ class OrderItem(RecordModel):
         elif isinstance(price, ProductPriceSeatUnit):
             assert seats is not None, "seats must be provided for seat-based prices"
             amount = price.calculate_amount(seats)
+        elif isinstance(price, ProductPriceUnit):
+            assert units is not None, "units must be provided for unit-based prices"
+            amount = price.calculate_amount(units)
         return cls(
             label=label
             if label is not None
-            else cls.format_price_label(price.product, price, seats=seats),
+            else cls.format_price_label(price.product, price, seats=seats, units=units),
             amount=amount,
             tax_amount=tax_amount,
             net_amount=amount,

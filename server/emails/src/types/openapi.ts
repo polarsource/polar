@@ -1543,6 +1543,11 @@ export interface components {
        */
       seats: number | null
       /**
+       * Units
+       * @description Number of units purchased (for unit-based pricing).
+       */
+      units: number | null
+      /**
        * Customer Id
        * Format: uuid4
        */
@@ -2856,6 +2861,11 @@ export interface components {
        * @default null
        */
       seats: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null

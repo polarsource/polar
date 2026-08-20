@@ -2,7 +2,6 @@ from uuid import UUID
 
 from fastapi import Depends, Query
 
-from polar.customer.exceptions import AmbiguousExternalCustomerID
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -24,7 +23,7 @@ from .schemas import (
     MemberCreateFromCustomer,
     MemberUpdate,
 )
-from .service import member_service
+from .service import AmbiguousExternalCustomerID, member_service
 
 router = APIRouter(
     prefix="/members",

@@ -10,10 +10,9 @@ from sqlalchemy.orm.strategy_options import contains_eager
 from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
-from polar.customer.exceptions import AmbiguousExternalCustomerID
 from polar.customer.repository import CustomerRepository
 from polar.enums import TokenType
-from polar.exceptions import PolarRequestValidationError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
@@ -31,6 +30,17 @@ from .schemas import CustomerSessionCreate, CustomerSessionCustomerIDCreate
 log: Logger = structlog.get_logger()
 
 CUSTOMER_SESSION_TOKEN_PREFIX = "polar_cst_"
+
+
+class AmbiguousExternalCustomerID(PolarError):
+    def __init__(self, external_customer_id: str) -> None:
+        self.external_customer_id = external_customer_id
+        super().__init__(
+            "Several customers across your organizations share this external "
+            "customer ID. Use an organization-scoped token, the Polar customer "
+            "ID, or a unique external ID to disambiguate.",
+            409,
+        )
 
 
 class CustomerSessionService(ResourceServiceReader[CustomerSession]):

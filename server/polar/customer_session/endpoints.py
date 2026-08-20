@@ -1,6 +1,5 @@
 from fastapi import Depends
 
-from polar.customer.exceptions import AmbiguousExternalCustomerID
 from polar.models import CustomerSession, MemberSession
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
@@ -9,6 +8,7 @@ from polar.routing import APIRouter
 from . import auth
 from .schemas import CustomerSession as CustomerSessionSchema
 from .schemas import CustomerSessionCreate
+from .service import AmbiguousExternalCustomerID
 from .service import customer_session as customer_session_service
 
 router = APIRouter(

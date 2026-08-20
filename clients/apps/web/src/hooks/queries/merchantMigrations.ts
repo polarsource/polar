@@ -192,9 +192,11 @@ export const useMigrationRecords = (
     status?: schemas['PrecheckRecordStatus']
     reasonLevel?: schemas['PrecheckReasonLevel']
     importStatus?: schemas['MerchantMigrationRecordStatus']
+    cutoverStatus?: schemas['MerchantMigrationCutoverStatus']
     page: number
     limit: number
   },
+  refetchInterval?: number | false,
 ) =>
   useQuery({
     queryKey: ['merchantMigrationRecords', { id, ...params }],
@@ -212,6 +214,9 @@ export const useMigrationRecords = (
               ...(params.importStatus
                 ? { import_status: params.importStatus }
                 : {}),
+              ...(params.cutoverStatus
+                ? { cutover_status: params.cutoverStatus }
+                : {}),
               page: params.page,
               limit: params.limit,
             },
@@ -220,10 +225,46 @@ export const useMigrationRecords = (
       ),
     retry: defaultRetry,
     enabled: !!id,
+    refetchInterval: refetchInterval ?? false,
   })
 
-// One read for every count the UI shows: asking per number made the server
-// re-read and re-classify the whole staged catalog once per count.
+const switchKey = (id: string) => ['merchantMigrationSwitch', { id }]
+
+export const useMigrationSwitch = (id: string) =>
+  useQuery({
+    queryKey: switchKey(id),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/cutover', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
+    refetchInterval: (query) => (query.state.data?.running ? 3000 : false),
+  })
+
+export const useStartMigrationSwitch = (id: string) =>
+  useMutation({
+    mutationFn: (options: ImportOptions = {}) =>
+      dataOrThrow(
+        api.POST('/v1/merchant-migrations/{id}/cutover', {
+          params: { path: { id } },
+          body: {
+            ...(options.recordIds ? { record_ids: options.recordIds } : {}),
+            ...(options.excludeRecordIds
+              ? { exclude_record_ids: options.excludeRecordIds }
+              : {}),
+          },
+        }),
+        "We couldn't switch these subscriptions.",
+      ),
+    onSuccess: (report) => {
+      getQueryClient().setQueryData(switchKey(id), report)
+      invalidateMigrationRecords(id)
+    },
+  })
+
 export const useMerchantMigrationRecordSummary = (id: string) =>
   useQuery({
     queryKey: ['merchantMigrationRecordSummary', { id }],

@@ -182,7 +182,11 @@ async def _webhook_event_send(
         if delivery_count >= settings.WEBHOOK_MAX_RETRIES:
             if event.succeeded is not True:
                 event.succeeded = False
-            enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
+            enqueue_job(
+                "webhook_event.failed",
+                webhook_event_id=webhook_event_id,
+                webhook_endpoint_id=event.webhook_endpoint_id,
+            )
         # Retry – compute backoff from delivery attempts only, so that
         # unrelated NotLatestEvent retries don't inflate the delay.
         else:
@@ -199,7 +203,11 @@ async def _webhook_event_send(
         delivery.succeeded = False
         event.succeeded = False
         delivery.response = str(e)
-        enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
+        enqueue_job(
+            "webhook_event.failed",
+            webhook_event_id=webhook_event_id,
+            webhook_endpoint_id=event.webhook_endpoint_id,
+        )
     # Success
     else:
         delivery.succeeded = True
@@ -219,8 +227,22 @@ async def webhook_event_success(webhook_event_id: UUID) -> None:
         return await webhook_service.on_event_success(session, webhook_event_id)
 
 
-@actor(actor_name="webhook_event.failed", priority=TaskPriority.HIGH)
-async def webhook_event_failed(webhook_event_id: UUID) -> None:
+def _webhook_event_failed_debounce_key(
+    webhook_event_id: UUID, webhook_endpoint_id: UUID | None = None
+) -> str | None:
+    if webhook_endpoint_id is None:
+        return None
+    return f"webhook_event.failed:{webhook_endpoint_id}"
+
+
+@actor(
+    actor_name="webhook_event.failed",
+    priority=TaskPriority.HIGH,
+    debounce_key=_webhook_event_failed_debounce_key,
+)
+async def webhook_event_failed(
+    webhook_event_id: UUID, webhook_endpoint_id: UUID | None = None
+) -> None:
     async with AsyncSessionMaker() as session:
         return await webhook_service.on_event_failed(session, webhook_event_id)
 

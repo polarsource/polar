@@ -94,6 +94,20 @@ export default {
       },
       inclTax: 'Podatki (w cenie)',
       basePrice: 'Cena bazowa',
+      perUnit: 'za {unitLabel}',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: 'Liczba {unitLabelPlural}',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'Minimum {min} {unitLabelPlural}',
+        maximum: 'Maksimum {max} {unitLabelPlural}',
+        updateFailed: 'Nie udało się zaktualizować liczby jednostek',
+      },
     },
     trial: {
       hero: {

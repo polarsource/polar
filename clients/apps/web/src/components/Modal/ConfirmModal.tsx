@@ -50,7 +50,6 @@ export const ConfirmModal = ({
     },
   })
   const { control, handleSubmit, reset, watch } = form
-  // eslint-disable-next-line react-hooks/incompatible-library
   const prompt = watch('prompt')
   const normalizedConfirmPrompt =
     confirmPrompt !== undefined ? normalizeWhitespace(confirmPrompt) : undefined

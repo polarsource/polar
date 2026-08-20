@@ -154,20 +154,20 @@ export const LicenseKeysPage = ({
     setLicenseKeyModalView(null)
     setSelectedLicenseKeyId(null)
     setDeepLinkParam(null)
-  }, [setSelectedLicenseKeyId, setDeepLinkParam])
+  }, [setLicenseKeyModalView, setSelectedLicenseKeyId, setDeepLinkParam])
 
   const openRotateConfirm = useCallback(() => {
     if (rotateLicenseKey.isPending) {
       return
     }
     setLicenseKeyModalView('rotate')
-  }, [rotateLicenseKey.isPending])
+  }, [rotateLicenseKey.isPending, setLicenseKeyModalView])
 
   const closeRotateConfirm = useCallback(() => {
     setLicenseKeyModalView((currentView) =>
       currentView === 'rotate' ? 'details' : currentView,
     )
-  }, [])
+  }, [setLicenseKeyModalView])
 
   const handleRotate = useCallback(async () => {
     if (!selectedLicenseKeyId || rotateLicenseKey.isPending) {

@@ -71,7 +71,7 @@ export const UnitQuantityControl = ({
   const handleInputBlur = () => {
     const newUnits = Number.parseInt(inputValue, 10)
     if (
-      !Number.isNaN(newUnits) &&
+      Number.isSafeInteger(newUnits) &&
       newUnits >= minimumUnits &&
       (!hasMaximumLimit || newUnits <= maximumUnits) &&
       newUnits !== units

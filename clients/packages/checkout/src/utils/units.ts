@@ -87,6 +87,19 @@ export function getUnitTierRows(
   ]
 }
 
+export function getBasePricePerUnit(
+  price: schemas['ProductPriceUnitBased'],
+): number {
+  const minimumUnits = price.minimum_units ?? 1
+  const tiers = sortTiers(price.tiers.tiers)
+
+  if (price.tiers.type === 'graduated') {
+    return Number(tiers[0]?.unit_amount ?? '0')
+  }
+
+  return getUnitTierRows(minimumUnits, price.tiers)[0]?.pricePerUnit ?? 0
+}
+
 export function getMinimumUnitAmount(
   price: schemas['ProductPriceUnitBased'],
 ): number {

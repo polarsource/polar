@@ -75,12 +75,18 @@ const CheckoutUnitSelector = ({
       !autoCorrectAttempted.current
     ) {
       autoCorrectAttempted.current = true
+      setIsUpdating(true)
+      setError(null)
 
       update({
         units: minimumUnits,
-      }).catch((err) => {
-        setError(getErrorMessage(err))
       })
+        .catch((err) => {
+          setError(getErrorMessage(err))
+        })
+        .finally(() => {
+          setIsUpdating(false)
+        })
     }
   }, [
     isUnitBased,

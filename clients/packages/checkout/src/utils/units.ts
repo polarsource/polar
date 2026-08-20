@@ -56,17 +56,13 @@ function sortTiers(tiers: UnitTier[]): UnitTier[] {
 
 const toAmount = (value: string): number => Number(value)
 
-export function getUnitRows(
-  checkout: schemas['CheckoutPublic'],
-): UnitRow[] | null {
-  const price = getUnitPrice(checkout)
-  if (!price) return null
-  const units = checkout.units
-  if (!units) return null
+export function getUnitTierRows(
+  units: number,
+  tiersConfig: schemas['ProductPriceUnitBased']['tiers'],
+): UnitRow[] {
+  const tiers = sortTiers(tiersConfig.tiers)
 
-  const tiers = sortTiers(price.tiers.tiers)
-
-  if (price.tiers.type === 'graduated') {
+  if (tiersConfig.type === 'graduated') {
     const rows: UnitRow[] = []
     let allocated = 0
     for (const tier of tiers) {
@@ -91,4 +87,25 @@ export function getUnitRows(
       pricePerUnit: toAmount(matchingTier?.unit_amount ?? '0'),
     },
   ]
+}
+
+export function getMinimumUnitAmount(
+  price: schemas['ProductPriceUnitBased'],
+): number {
+  const minimumUnits = price.minimum_units ?? 1
+  return getUnitTierRows(minimumUnits, price.tiers).reduce(
+    (total, row) => total + row.units * row.pricePerUnit,
+    0,
+  )
+}
+
+export function getUnitRows(
+  checkout: schemas['CheckoutPublic'],
+): UnitRow[] | null {
+  const price = getUnitPrice(checkout)
+  if (!price) return null
+  const units = checkout.units
+  if (!units) return null
+
+  return getUnitTierRows(units, price.tiers)
 }

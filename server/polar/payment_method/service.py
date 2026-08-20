@@ -151,6 +151,37 @@ class PaymentMethodService:
 
         return None
 
+    async def set_default(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> Customer:
+        if customer.stripe_customer_id is not None:
+            await stripe_service.update_customer(
+                customer.stripe_customer_id,
+                invoice_settings={
+                    "default_payment_method": payment_method.processor_id
+                },
+            )
+
+        repository = CustomerRepository.from_session(session)
+        return await repository.update(
+            customer,
+            update_dict={"default_payment_method": payment_method},
+            flush=True,
+        )
+
+    async def set_default_if_unset(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> Customer:
+        if customer.default_payment_method_id is not None:
+            return customer
+        return await self.set_default(session, customer, payment_method)
+
     async def send_expiration_reminder_email(
         self, session: AsyncSession, payment_method: PaymentMethod
     ) -> None:

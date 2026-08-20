@@ -121,6 +121,7 @@ from tests.fixtures.random_objects import (
     create_member,
     create_order,
     create_payment,
+    create_payment_method,
     create_product,
     create_product_fixed_and_seat,
     create_product_price_fixed,
@@ -6876,6 +6877,67 @@ class TestHandleSuccess:
             OrderBillingReasonInternal.subscription_create,
             payment,
         )
+
+    async def test_recurring_adopts_payment_method_as_customer_default(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_recurring: Checkout,
+        customer: Customer,
+        payment: Payment,
+    ) -> None:
+        mocker.patch(
+            "polar.payment_method.service.stripe_service",
+            new=MagicMock(spec=StripeService),
+        )
+        subscription_service_mock.create_or_update_from_checkout.return_value = (
+            MagicMock(),
+            True,
+        )
+        checkout_confirmed_recurring.customer = customer
+        await save_fixture(checkout_confirmed_recurring)
+        payment_method = await create_payment_method(save_fixture, customer)
+
+        await checkout_service.handle_success(
+            session, checkout_confirmed_recurring, payment, payment_method
+        )
+
+        assert customer.default_payment_method_id == payment_method.id
+
+    async def test_recurring_keeps_existing_customer_default_payment_method(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_recurring: Checkout,
+        customer: Customer,
+        payment: Payment,
+    ) -> None:
+        mocker.patch(
+            "polar.payment_method.service.stripe_service",
+            new=MagicMock(spec=StripeService),
+        )
+        subscription_service_mock.create_or_update_from_checkout.return_value = (
+            MagicMock(),
+            True,
+        )
+        existing_payment_method = await create_payment_method(save_fixture, customer)
+        customer.default_payment_method = existing_payment_method
+        await save_fixture(customer)
+        checkout_confirmed_recurring.customer = customer
+        await save_fixture(checkout_confirmed_recurring)
+        payment_method = await create_payment_method(save_fixture, customer)
+
+        await checkout_service.handle_success(
+            session, checkout_confirmed_recurring, payment, payment_method
+        )
+
+        assert customer.default_payment_method_id == existing_payment_method.id
 
     async def test_recurring_trial(
         self,

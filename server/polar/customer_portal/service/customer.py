@@ -394,25 +394,16 @@ class CustomerService:
                 client_secret=setup_intent.client_secret,
             )
 
-        if set_default:
-            if setup_intent.payment_method is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "invalid",
-                            "loc": ("body", "setup_intent_id"),
-                            "msg": "Invalid setup_intent_id.",
-                            "input": str(setup_intent.id),
-                        }
-                    ]
-                )
-            await stripe_service.update_customer(
-                customer.stripe_customer_id,
-                invoice_settings={
-                    "default_payment_method": get_expandable_id(
-                        setup_intent.payment_method
-                    )
-                },
+        if set_default and setup_intent.payment_method is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "invalid",
+                        "loc": ("body", "setup_intent_id"),
+                        "msg": "Invalid setup_intent_id.",
+                        "input": str(setup_intent.id),
+                    }
+                ]
             )
 
         payment_method = await payment_method_service.upsert_from_stripe(
@@ -421,10 +412,10 @@ class CustomerService:
             cast(stripe_lib.PaymentMethod, setup_intent.payment_method),
             flush=True,
         )
-        if set_default:
-            repository = CustomerRepository.from_session(session)
-            customer = await repository.update(
-                customer, update_dict={"default_payment_method": payment_method}
+        # A customer with no default adopts their first saved payment method.
+        if set_default or customer.default_payment_method_id is None:
+            customer = await payment_method_service.set_default(
+                session, customer, payment_method
             )
             await order_service.schedule_retry_for_past_due_orders(
                 session, customer, payment_method

@@ -93,6 +93,7 @@ from polar.observability.checkout_metrics import (
 )
 from polar.order.service import order as order_service
 from polar.organization.embed_hosts import match_origin, parse_origin
+from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
 from polar.product.custom_price import validate_custom_price_amount
@@ -1364,6 +1365,13 @@ class CheckoutService:
             )
 
         product = checkout.product
+        if payment_method is not None:
+            customer = checkout.customer
+            assert customer is not None
+            await payment_method_service.set_default_if_unset(
+                session, customer, payment_method
+            )
+
         subscription: Subscription | None = None
         order: Order | None = None
         if product.is_recurring:

@@ -89,6 +89,54 @@ class TestUpsertFromStripe:
 
 
 @pytest.mark.asyncio
+class TestSetDefaultIfUnset:
+    @pytest.fixture(autouse=True)
+    def stripe_service_mock(self, mocker: MockerFixture) -> MagicMock:
+        mock = MagicMock(spec=StripeService)
+        mocker.patch("polar.payment_method.service.stripe_service", new=mock)
+        return mock
+
+    async def test_adopts_payment_method_when_customer_has_no_default(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer)
+
+        updated_customer = await payment_method_service.set_default_if_unset(
+            session, customer, payment_method
+        )
+
+        assert updated_customer.default_payment_method_id == payment_method.id
+        stripe_service_mock.update_customer.assert_awaited_once_with(
+            customer.stripe_customer_id,
+            invoice_settings={"default_payment_method": payment_method.processor_id},
+        )
+
+    async def test_keeps_existing_default(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        existing = await create_payment_method(save_fixture, customer)
+        customer.default_payment_method = existing
+        await save_fixture(customer)
+
+        new_payment_method = await create_payment_method(save_fixture, customer)
+
+        updated_customer = await payment_method_service.set_default_if_unset(
+            session, customer, new_payment_method
+        )
+
+        assert updated_customer.default_payment_method_id == existing.id
+        stripe_service_mock.update_customer.assert_not_called()
+
+
+@pytest.mark.asyncio
 class TestDelete:
     @pytest.fixture(autouse=True)
     def stripe_service_mock(self, mocker: MockerFixture) -> MagicMock:

@@ -22,11 +22,13 @@ const PaymentMethod = ({
   customer,
   paymentMethod,
   deletable,
+  canSetDefault,
 }: {
   api: Client
   customer: schemas['CustomerPortalCustomer']
   paymentMethod: PaymentMethodType
   deletable: boolean
+  canSetDefault: boolean
 }) => {
   const deletePaymentMethod = useDeleteCustomerPaymentMethod(api)
   const { update: updateCustomer } = useCustomerPortalCustomer()
@@ -86,15 +88,17 @@ const PaymentMethod = ({
         {isDefault ? (
           <Status status="Default Method" color="green" />
         ) : (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onSetDefaultPaymentMethod}
-            loading={updateCustomer.isPending}
-            disabled={updateCustomer.isPending}
-          >
-            Make default
-          </Button>
+          canSetDefault && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onSetDefaultPaymentMethod}
+              loading={updateCustomer.isPending}
+              disabled={updateCustomer.isPending}
+            >
+              Make default
+            </Button>
+          )
         )}
         {deletable && (
           <Button

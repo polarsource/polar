@@ -27725,12 +27725,6 @@ export interface components {
        */
       seat_based_pricing_enabled: boolean
       /**
-       * Unit Based Pricing Enabled
-       * @description If this organization has unit-based pricing enabled
-       * @default false
-       */
-      unit_based_pricing_enabled: boolean
-      /**
        * Member Model Enabled
        * @description If this organization has the Member model enabled
        * @default false

@@ -32,7 +32,7 @@ from polar.merchant_migration.canonical import (
     serialize,
 )
 from polar.merchant_migration.cards import AmbiguousCopiedCard
-from polar.merchant_migration.cutover import CutoverOutcome
+from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
     STEP_MOVE_SUBSCRIPTIONS,
@@ -100,9 +100,12 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_subscription,
 )
+from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    canonical_subscription,
+    copied_cards,
     pan_steps_until,
 )
 
@@ -124,6 +127,7 @@ class _FakeAdapter:
         self._source_account = source_account or CanonicalAccount(
             country="US", has_connected_accounts=False
         )
+        self.stopped: list[str] = []
 
     async def verify_scopes(self) -> list[str]:
         if self._verify_error is not None:
@@ -139,6 +143,18 @@ class _FakeAdapter:
 
     async def get_source_account(self) -> CanonicalAccount:
         return self._source_account
+
+    async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
+        for record in self._records:
+            if (
+                isinstance(record, CanonicalSubscription)
+                and record.source_id == source_id
+            ):
+                return record
+        return None
+
+    async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
+        self.stopped.append(source_id)
 
 
 async def _enable_feature(
@@ -1381,6 +1397,53 @@ class TestImportCatalog:
         assert results[PrecheckEntity.subscriptions].imported == 0
         assert subscription_record.status == MerchantMigrationRecordStatus.pending
         assert subscription_record.target_id is None
+
+    @pytest.mark.auth
+    async def test_import_then_cutover_creates_and_activates_subscription(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        catalog = [*_importable_catalog(), canonical_subscription()]
+        adapter = _FakeAdapter(catalog)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        migration = await build_connected_migration(save_fixture, organization)
+        await service.run_precheck(session, auth_subject, migration.id)
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        result = await session.execute(
+            select(Subscription).where(Subscription.organization_id == organization.id)
+        )
+        assert result.scalars().unique().all() == []
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        assert record is not None
+        assert record.status == MerchantMigrationRecordStatus.pending
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        assert record.status == MerchantMigrationRecordStatus.imported
+        assert record.target_id is not None
+        subscription = await SubscriptionRepository.from_session(session).get_by_id(
+            record.target_id
+        )
+        assert subscription is not None
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
 
     @pytest.mark.auth
     async def test_excluded_product_id_is_ignored_when_subscriptions_exist(

@@ -33,7 +33,6 @@ interface Props {
   onPageSizeChange: (size: number) => void
   selection: SelectionState
   switchCount: number
-  switchableTotal: number
   canSelectAll: boolean
   onToggle: (id: string) => void
   onToggleAll: () => void
@@ -55,7 +54,6 @@ export function SwitchPanelView({
   onPageSizeChange,
   selection,
   switchCount,
-  switchableTotal,
   canSelectAll,
   onToggle,
   onToggleAll,

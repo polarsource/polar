@@ -121,7 +121,6 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
       onPageSizeChange={onPageSizeChange}
       selection={selection}
       switchCount={switchCount}
-      switchableTotal={switchableTotal}
       canSelectAll={canSelectAll}
       onToggle={onToggle}
       onToggleAll={onToggleAll}

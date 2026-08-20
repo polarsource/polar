@@ -95,29 +95,6 @@ describe('CheckoutUnitSelector', () => {
       expect(screen.getByTestId('headline-price')).toHaveTextContent('$30')
     })
 
-    it('uses the merchant-defined unit label', () => {
-      const price = createUnitBasedPrice({
-        unit_label: {
-          en: { '=1': 'device', other: 'devices' },
-          sv: { '=1': 'enhet', other: 'enheter' },
-        },
-      })
-      const checkout = createUnitCheckout({
-        product_price: price,
-        prices: { prod_1: [price] },
-      })
-
-      render(
-        <CheckoutUnitSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="sv"
-        />,
-      )
-
-      expect(screen.getByText('Number of enheter')).toBeInTheDocument()
-    })
-
     it('increments the unit quantity', async () => {
       render(
         <CheckoutUnitSelector

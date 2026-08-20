@@ -110,6 +110,7 @@ from polar.product.price_set import (
 )
 from polar.product.repository import ProductRepository
 from polar.receipt.service import receipt as receipt_service
+from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
@@ -2133,12 +2134,19 @@ class OrderService:
             and order.subscription is not None
             and order.subscription.status == SubscriptionStatus.past_due
         ):
-            # Make sure there are no other dunning orders for this subscription, otherwise we might reactivate it too early
-            dunning_orders = await repository.get_all_dunning_by_subscription(
+            subscription_repository = SubscriptionRepository.from_session(session)
+            locked_subscription = await subscription_repository.get_by_id(
                 order.subscription.id, for_update=True
             )
-            if len(dunning_orders) == 0:
-                await subscription_service.mark_active(session, order.subscription)
+            assert locked_subscription is not None
+            # Make sure there are no other dunning orders for this subscription, otherwise we might reactivate it too early
+            if (
+                await repository.count_dunning_by_subscription(locked_subscription.id)
+                == 0
+            ):
+                order.subscription = await subscription_service.mark_active(
+                    session, locked_subscription
+                )
 
         if update_dict:
             await self._on_order_updated(session, order, previous_status)

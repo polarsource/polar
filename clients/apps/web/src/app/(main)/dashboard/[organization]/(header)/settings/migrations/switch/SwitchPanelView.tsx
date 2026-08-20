@@ -75,9 +75,7 @@ export function SwitchPanelView({
     () =>
       buildSwitchColumns({
         isSelected: (id) => isRowSelected(selection, id),
-        headerState: canSelectAll
-          ? headerCheckState(selection)
-          : 'unchecked',
+        headerState: canSelectAll ? headerCheckState(selection) : 'unchecked',
         canSelectAll,
         onToggle,
         onToggleAll,

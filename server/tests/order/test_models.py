@@ -55,7 +55,9 @@ class TestFormatPriceLabel:
 
     def test_unit_custom_label(self) -> None:
         product = Product(name="Acme Pro")
-        price = ProductPriceUnit(unit_label="device", unit_label_plural="devices")
+        price = ProductPriceUnit(
+            unit_label={"en": {"=1": "device", "other": "devices"}}
+        )
         assert (
             OrderItem.format_price_label(product, price, seats=None, units=3)
             == "Acme Pro (3 devices)"

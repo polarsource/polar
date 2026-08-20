@@ -33746,6 +33746,7 @@ export interface components {
     SubscriptionChangePreview:
       | components['schemas']['SubscriptionChangePreviewProduct']
       | components['schemas']['SubscriptionChangePreviewSeats']
+      | components['schemas']['SubscriptionChangePreviewUnits']
     /** SubscriptionChangePreviewProduct */
     SubscriptionChangePreviewProduct: {
       /**
@@ -33767,6 +33768,18 @@ export interface components {
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
+    /** SubscriptionChangePreviewUnits */
+    SubscriptionChangePreviewUnits: {
+      /**
+       * Units
+       * @description Preview a change of the subscription to this number of units.
+       */
+      units: number
       /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']

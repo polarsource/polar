@@ -1663,10 +1663,9 @@ class SubscriptionService:
                     ]
                 )
 
+        # Seat → non-seat plan changes are not yet supported.
         old_has_seat_prices = any(is_seat_price(p) for p in subscription.prices)
         new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)
-
-        # Seat → non-seat plan changes are not yet supported.
         if old_has_seat_prices and not new_has_seat_prices:
             raise PolarRequestValidationError(
                 [
@@ -1679,16 +1678,16 @@ class SubscriptionService:
                 ]
             )
 
-        # Product changes involving unit-based prices are not yet supported.
+        # Unit → non-unit plan changes are not yet supported.
         old_has_unit_prices = any(is_unit_price(p) for p in subscription.prices)
         new_has_unit_prices = any(is_unit_price(p) for p in currency_prices)
-        if old_has_unit_prices or new_has_unit_prices:
+        if old_has_unit_prices and not new_has_unit_prices:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": "Can't change the product of a unit-based subscription, or switch to a unit-based product.",
+                        "msg": "Can't switch from a unit-based to a non-unit-based product.",
                         "input": product_id,
                     }
                 ]
@@ -1808,6 +1807,9 @@ class SubscriptionService:
                 proration_behavior = organization.proration_behavior
 
             is_initial_seat_transition = self._promote_seats_for_seat_transition(
+                subscription, currency_prices, proration_behavior
+            )
+            self._promote_units_for_unit_transition(
                 subscription, currency_prices, proration_behavior
             )
 
@@ -2321,12 +2323,23 @@ class SubscriptionService:
                 subscription_update
             )
         else:
-            await (
-                subscription_update_repository.soft_delete_unapplied_by_subscription_id(
-                    subscription.id
+            existing_pending = subscription.pending_update
+            if existing_pending is not None and existing_pending.product_id is not None:
+                # Preserve the scheduled product change. `apply_update`
+                # will read the updated `subscription.units` at cycle
+                # time, so the new count applies to the new product.
+                # The pending row's own units field is cleared; otherwise
+                # the cycle would reset the live count to that value.
+                if existing_pending.units is not None:
+                    existing_pending.units = None
+                    await subscription_update_repository.update(existing_pending)
+            else:
+                await (
+                    subscription_update_repository.soft_delete_unapplied_by_subscription_id(
+                        subscription.id
+                    )
                 )
-            )
-            subscription.pending_update = None
+                subscription.pending_update = None
 
             # Skip proration for trialing subscriptions - no billing during trial
             if not subscription.trialing:
@@ -2959,6 +2972,7 @@ class SubscriptionService:
         *,
         product_id: uuid.UUID | None = None,
         seats: int | None = None,
+        units: int | None = None,
         proration_behavior: SubscriptionProrationBehavior | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> SubscriptionChargePreview:
@@ -2971,6 +2985,7 @@ class SubscriptionService:
                 subscription,
                 product_id=product_id,
                 seats=seats,
+                units=units,
                 proration_behavior=proration_behavior,
                 allowed_visibilities=allowed_visibilities,
             )
@@ -2984,10 +2999,12 @@ class SubscriptionService:
         *,
         product_id: uuid.UUID | None,
         seats: int | None,
+        units: int | None,
         proration_behavior: SubscriptionProrationBehavior | None,
         allowed_visibilities: frozenset[Visibility],
     ) -> SubscriptionChargePreview:
-        assert (product_id is None) != (seats is None), "exactly one change per preview"
+        provided = [product_id is not None, seats is not None, units is not None]
+        assert sum(provided) == 1, "exactly one change per preview"
 
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
@@ -3008,6 +3025,9 @@ class SubscriptionService:
             self._promote_seats_for_seat_transition(
                 subscription, currency_prices, proration_behavior
             )
+            self._promote_units_for_unit_transition(
+                subscription, currency_prices, proration_behavior
+            )
             event = build_system_event(
                 SystemEvent.subscription_product_updated,
                 customer=subscription.customer,
@@ -3018,8 +3038,7 @@ class SubscriptionService:
                     "new_product_id": str(product.id),
                 },
             )
-        else:
-            assert seats is not None
+        elif seats is not None:
             await self.validate_seats_change(session, subscription, seats=seats)
             event = build_system_event(
                 SystemEvent.subscription_seats_updated,
@@ -3032,9 +3051,23 @@ class SubscriptionService:
                     "proration_behavior": proration_behavior.value,
                 },
             )
+        else:
+            assert units is not None
+            await self.validate_units_change(subscription, units=units)
+            event = build_system_event(
+                SystemEvent.subscription_units_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_units": subscription.units or 1,
+                    "new_units": units,
+                    "proration_behavior": proration_behavior.value,
+                },
+            )
 
         subscription_update, billing_entries = generate_subscription_update(
-            subscription, proration_behavior, product=product, seats=seats
+            subscription, proration_behavior, product=product, seats=seats, units=units
         )
 
         applies_now = proration_behavior != SubscriptionProrationBehavior.next_period
@@ -3138,6 +3171,40 @@ class SubscriptionService:
 
         subscription.seats = seat_price.get_minimum_seats()
         return True
+
+    def _promote_units_for_unit_transition(
+        self,
+        subscription: Subscription,
+        currency_prices: PriceSet,
+        proration_behavior: SubscriptionProrationBehavior,
+    ) -> None:
+        """Promote `subscription.units` to the new product's unit-price floor so
+        the proration debit and `apply_update`'s product-branch rebuild both see
+        a valid unit count. `next_period` is blocked because a pending apply
+        reads the live `subscription.units`, which must already be set.
+        """
+        if any(is_unit_price(price) for price in subscription.prices):
+            return
+
+        unit_price = next(
+            (price for price in currency_prices if is_unit_price(price)), None
+        )
+        if unit_price is None:
+            return
+
+        if proration_behavior == SubscriptionProrationBehavior.next_period:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "proration_behavior"),
+                        "msg": "Switching from a non-unit to a unit-based product must apply immediately and can't use the 'next_period' proration behavior.",
+                        "input": proration_behavior,
+                    }
+                ]
+            )
+
+        subscription.units = unit_price.get_minimum_purchasable_units()
 
     def _resolve_trial_end(
         self, subscription: Subscription, product: Product

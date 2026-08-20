@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import freezegun
@@ -14,6 +14,7 @@ from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.product_price import ProductPriceUnit
 from polar.postgres import AsyncSession
 from polar.product.tiers import Tiers, TierType
+from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.service import (
     AboveMaximumUnits,
     BelowMinimumUnits,
@@ -177,6 +178,79 @@ class TestUpdateUnits:
         assert updated.pending_update is not None
         assert updated.pending_update.units == 10
 
+    async def test_immediate_units_preserves_pending_product_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        with freezegun.freeze_time(datetime(2025, 1, 1, tzinfo=UTC)) as frozen_time:
+            product_a = await create_product_unit_based(
+                save_fixture, organization=organization, price_per_unit=1000
+            )
+            product_b = await create_product_unit_based(
+                save_fixture, organization=organization, price_per_unit=2000
+            )
+            subscription = await create_subscription_with_units(
+                save_fixture, product=product_a, customer=customer, units=3
+            )
+            previous_period_end = subscription.current_period_end
+            assert previous_period_end is not None
+
+            frozen_time.move_to(datetime(2025, 1, 16, 12, tzinfo=UTC))
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=product_b.id,
+                    proration_behavior=SubscriptionProrationBehavior.next_period,
+                )
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_units(
+                    session,
+                    ctx,
+                    subscription,
+                    units=10,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+            await session.flush()
+
+            assert updated.product == product_a
+            assert updated.units == 10
+
+            sub_update_repo = SubscriptionUpdateRepository.from_session(session)
+            pending = await sub_update_repo.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+            assert pending is not None
+            assert pending.product_id == product_b.id
+            assert pending.units is None
+
+            frozen_time.move_to(previous_period_end + timedelta(seconds=1))
+            async with SubscriptionUpdateContext(
+                session, updated, subscription_service
+            ) as ctx:
+                cycled = await subscription_service.cycle(session, ctx, updated)
+            await session.flush()
+
+            assert cycled.product == product_b
+            assert cycled.units == 10
+            assert cycled.pending_update is None
+
     async def test_same_units_is_noop(
         self,
         session: AsyncSession,
@@ -291,7 +365,7 @@ class TestUpdateUnits:
 
 
 @pytest.mark.asyncio
-class TestUnitProductChangeRejected:
+class TestUnitProductChange:
     async def test_switch_away_from_unit_product_rejected(
         self,
         session: AsyncSession,
@@ -316,7 +390,75 @@ class TestUnitProductChangeRejected:
                 session, subscription, product_id=other_product.id
             )
 
-    async def test_switch_to_unit_product_rejected(
+    async def test_switch_to_unit_product_promotes_minimum(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        unit_product = await create_product_unit_based(
+            save_fixture, organization=organization, minimum_units=5
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=unit_product.id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
+
+        assert updated.product == unit_product
+        assert updated.units == 5
+
+    async def test_unit_to_unit_product_change_keeps_count(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        old_unit_product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=1000
+        )
+        new_unit_product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=2000
+        )
+        subscription = await create_subscription_with_units(
+            save_fixture, product=old_unit_product, customer=customer, units=3
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_unit_product.id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
+
+        assert updated.product == new_unit_product
+        assert updated.units == 3
+
+    async def test_non_unit_to_unit_upgrade_rejects_next_period(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -331,7 +473,21 @@ class TestUnitProductChangeRejected:
             save_fixture, product=product, customer=customer
         )
 
-        with pytest.raises(PolarRequestValidationError):
-            await subscription_service.validate_product_change(
-                session, subscription, product_id=unit_product.id
-            )
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=unit_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.next_period,
+                )
+
+        errors = exc_info.value.errors()
+        assert any(
+            error["loc"] == ("body", "proration_behavior")
+            and "next_period" in error["msg"]
+            for error in errors
+        )

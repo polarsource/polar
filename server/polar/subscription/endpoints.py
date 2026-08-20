@@ -41,6 +41,7 @@ from .schemas import (
     SubscriptionCancelPreview,
     SubscriptionChangePreview,
     SubscriptionChangePreviewSeats,
+    SubscriptionChangePreviewUnits,
     SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionID,
@@ -356,6 +357,14 @@ async def preview_change(
             session,
             subscription,
             seats=change.seats,
+            proration_behavior=change.proration_behavior,
+        )
+
+    if isinstance(change, SubscriptionChangePreviewUnits):
+        return await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            units=change.units,
             proration_behavior=change.proration_behavior,
         )
 

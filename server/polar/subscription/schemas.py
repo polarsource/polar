@@ -636,7 +636,25 @@ class SubscriptionChangePreviewSeats(Schema):
     )
 
 
+class SubscriptionChangePreviewUnits(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    units: Int32 = Field(
+        description="Preview a change of the subscription to this number of units.",
+        ge=1,
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
 SubscriptionChangePreview = Annotated[
-    SubscriptionChangePreviewProduct | SubscriptionChangePreviewSeats,
+    SubscriptionChangePreviewProduct
+    | SubscriptionChangePreviewSeats
+    | SubscriptionChangePreviewUnits,
     SetSchemaReference("SubscriptionChangePreview"),
 ]

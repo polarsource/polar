@@ -188,8 +188,15 @@ async def run_task(
     )
     token = CurrentMessage._MESSAGE.set(message)
     try:
+        # Retries are expected: re-raise outside the span so Logfire doesn't record an error
+        retry: Retry | None = None
         with _task_span(actor_name, message, correlation_id, source_correlation_id):
-            await fn(*args, **kwargs)
+            try:
+                await fn(*args, **kwargs)
+            except Retry as e:
+                retry = e
+        if retry is not None:
+            raise retry
     finally:
         CurrentMessage._MESSAGE.reset(token)
         structlog.contextvars.unbind_contextvars(

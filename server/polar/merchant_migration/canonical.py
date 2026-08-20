@@ -34,6 +34,7 @@ class CanonicalCollectionMethod(StrEnum):
 
 class CanonicalPaymentMethodType(StrEnum):
     card = "card"
+    kr_card = "kr_card"
     us_bank_account = "us_bank_account"
     sepa_debit = "sepa_debit"
     bacs_debit = "bacs_debit"
@@ -43,6 +44,7 @@ class CanonicalPaymentMethodType(StrEnum):
     @property
     def requires_reentry(self) -> bool:
         return self in {
+            CanonicalPaymentMethodType.kr_card,
             CanonicalPaymentMethodType.bacs_debit,
             CanonicalPaymentMethodType.link,
             CanonicalPaymentMethodType.other,

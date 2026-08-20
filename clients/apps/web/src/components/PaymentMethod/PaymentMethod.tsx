@@ -1,30 +1,28 @@
-import { isCardPayment } from '@/utils/payment'
+import { isCardPayment, isKrCardPayment } from '@/utils/payment'
 import { schemas } from '@polar-sh/client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import CreditCardBrandIcon from '../CreditCardBrandIcon'
-
-const CardPaymentMethod = ({
-  payment,
-}: {
-  payment: schemas['CardPayment']
-}) => {
-  return (
-    <div className="flex flex-row items-center gap-1">
-      <CreditCardBrandIcon
-        height="1.5em"
-        brand={payment.method_metadata.brand}
-      />
-      <span className="capitalize">
-        {`•••• ${payment.method_metadata.last4}`}
-      </span>
-    </div>
-  )
-}
+import { getPaymentMethodTypeLabel } from '../PaymentMethodDisplay'
 
 const PaymentMethod = ({ payment }: { payment: schemas['Payment'] }) => {
-  if (isCardPayment(payment)) {
-    return <CardPaymentMethod payment={payment} />
+  const metadata =
+    isCardPayment(payment) || isKrCardPayment(payment)
+      ? payment.method_metadata
+      : null
+
+  if (metadata?.last4) {
+    return (
+      <Box alignItems="center" columnGap="xs">
+        <CreditCardBrandIcon
+          height="1.5em"
+          brand={metadata.brand ?? 'unknown'}
+        />
+        <Text>{`•••• ${metadata.last4}`}</Text>
+      </Box>
+    )
   }
-  return <span className="capitalize">{payment.method}</span>
+  return <Text>{getPaymentMethodTypeLabel(payment.method)}</Text>
 }
 
 export default PaymentMethod

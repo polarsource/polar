@@ -22,3 +22,7 @@ export const PaymentStatusDisplayColor: Record<
 export const isCardPayment = (
   payment: schemas['Payment'],
 ): payment is schemas['CardPayment'] => payment.method === 'card'
+
+export const isKrCardPayment = (
+  payment: schemas['Payment'],
+): payment is schemas['KrCardPayment'] => payment.method === 'kr_card'

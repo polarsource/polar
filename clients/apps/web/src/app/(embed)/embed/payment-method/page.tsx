@@ -110,6 +110,19 @@ export default async function Page(props: {
     )
   }
 
+  let setupCurrency = 'usd'
+  try {
+    const subscriptions = await unwrap(
+      api.GET('/v1/customer-portal/subscriptions/', {
+        params: { query: { active: true, limit: 1 } },
+        cache: 'no-store',
+      }),
+    )
+    setupCurrency = subscriptions.items[0]?.currency ?? 'usd'
+  } catch {
+    // A failed request only narrows the offered payment methods to the USD set
+  }
+
   return (
     <PaymentMethodEmbed
       sessionToken={sessionToken}
@@ -125,6 +138,7 @@ export default async function Page(props: {
         email: customer.email ?? null,
         address: customer.billing_address ?? null,
       }}
+      setupCurrency={setupCurrency}
       redirectStatus={redirect_status}
       setupIntentId={polar_setup_intent}
     />

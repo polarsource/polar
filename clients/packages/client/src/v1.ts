@@ -12147,7 +12147,7 @@ export interface components {
       amount: number
       /**
        * Currency
-       * @description The payment currency. Currently, only `usd` is supported.
+       * @description The payment currency
        * @example usd
        */
       currency: string
@@ -17787,6 +17787,7 @@ export interface components {
     }
     CustomerPaymentMethod:
       | components['schemas']['PaymentMethodCard']
+      | components['schemas']['PaymentMethodKrCard']
       | components['schemas']['PaymentMethodGeneric']
     /** CustomerPaymentMethodCard */
     CustomerPaymentMethodCard: {
@@ -17892,6 +17893,44 @@ export interface components {
       customer_id: string
       /** Type */
       type: string
+      /**
+       * Is Default
+       * @description Whether this payment method is the customer's default payment method.
+       * @example false
+       */
+      is_default: boolean
+    }
+    /** CustomerPaymentMethodKrCard */
+    CustomerPaymentMethodKrCard: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /**
+       * Type
+       * @constant
+       */
+      type: 'kr_card'
+      method_metadata: components['schemas']['PaymentMethodKrCardMetadata']
       /**
        * Is Default
        * @description Whether this payment method is the customer's default payment method.
@@ -22074,7 +22113,7 @@ export interface components {
       amount: number
       /**
        * Currency
-       * @description The payment currency. Currently, only `usd` is supported.
+       * @description The payment currency
        * @example usd
        */
       currency: string
@@ -22357,6 +22396,122 @@ export interface components {
       error: 'InvalidSourceCredentials'
       /** Detail */
       detail: string
+    }
+    /**
+     * KrCardPayment
+     * @description Schema of a payment with a South Korean card payment method.
+     */
+    KrCardPayment: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description The payment processor.
+       * @example stripe
+       */
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * @description The payment status.
+       * @example succeeded
+       */
+      status: components['schemas']['PaymentStatus']
+      /**
+       * Amount
+       * @description The payment amount in cents.
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Currency
+       * @description The payment currency
+       * @example usd
+       */
+      currency: string
+      /**
+       * Method
+       * @description The payment method used.
+       * @example kr_card
+       * @constant
+       */
+      method: 'kr_card'
+      /**
+       * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+       * @example subscription_cycle
+       */
+      trigger: components['schemas']['PaymentTrigger'] | null
+      /**
+       * Decline Reason
+       * @description Error code, if the payment was declined.
+       * @example insufficient_funds
+       */
+      decline_reason: string | null
+      /**
+       * Decline Message
+       * @description Human-readable error message, if the payment was declined.
+       * @example Your card has insufficient funds.
+       */
+      decline_message: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization that owns the payment.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Checkout Id
+       * @description The ID of the checkout session associated with this payment.
+       * @example e4b478fa-cd25-4253-9f1f-8a41e6370ede
+       */
+      checkout_id: string | null
+      /**
+       * Order Id
+       * @description The ID of the order associated with this payment.
+       * @example e4b478fa-cd25-4253-9f1f-8a41e6370ede
+       */
+      order_id: string | null
+      /**
+       * Processor Metadata
+       * @description Additional metadata from the payment processor for internal use.
+       */
+      processor_metadata?: {
+        [key: string]: unknown
+      }
+      /** @description Additional metadata for the South Korean card payment method. */
+      method_metadata: components['schemas']['KrCardPaymentMetadata']
+    }
+    /**
+     * KrCardPaymentMetadata
+     * @description Additional metadata for a South Korean card payment method.
+     */
+    KrCardPaymentMetadata: {
+      /**
+       * Brand
+       * @description The local South Korean card brand used for the payment.
+       * @example kookmin
+       * @example shinhan
+       */
+      brand: string | null
+      /**
+       * Last4
+       * @description The last 4 digits of the card number.
+       * @example 4242
+       */
+      last4: string | null
     }
     /** LLMMetadata */
     LLMMetadata: {
@@ -29821,6 +29976,7 @@ export interface components {
     }
     Payment:
       | components['schemas']['CardPayment']
+      | components['schemas']['KrCardPayment']
       | components['schemas']['GenericPayment']
     /** PaymentActionRequired */
     PaymentActionRequired: {
@@ -29879,6 +30035,7 @@ export interface components {
     }
     PaymentMethod:
       | components['schemas']['CustomerPaymentMethodCard']
+      | components['schemas']['CustomerPaymentMethodKrCard']
       | components['schemas']['CustomerPaymentMethodGeneric']
     /** PaymentMethodCard */
     PaymentMethodCard: {
@@ -29963,6 +30120,45 @@ export interface components {
       error: 'PaymentMethodInUseByActiveSubscription'
       /** Detail */
       detail: string
+    }
+    /** PaymentMethodKrCard */
+    PaymentMethodKrCard: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /**
+       * Type
+       * @constant
+       */
+      type: 'kr_card'
+      method_metadata: components['schemas']['PaymentMethodKrCardMetadata']
+    }
+    /** PaymentMethodKrCardMetadata */
+    PaymentMethodKrCardMetadata: {
+      /** Brand */
+      brand: string | null
+      /** Last4 */
+      last4: string | null
     }
     /** PaymentMethodRequired */
     PaymentMethodRequired: {

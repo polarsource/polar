@@ -410,7 +410,13 @@ class MeterService:
                 # This is slower but necessary for correctness
                 total_subquery = (
                     select(meter.aggregation.get_sql_column(Event))
-                    .where(and_(*event_clauses))
+                    .where(
+                        and_(
+                            *event_clauses,
+                            Event.timestamp >= start_timestamp,
+                            Event.timestamp <= end_timestamp,
+                        )
+                    )
                     .scalar_subquery()
                 )
                 total_column = func.coalesce(total_subquery, 0)
@@ -452,7 +458,13 @@ class MeterService:
                 # This is slower but necessary for correctness
                 total_subquery = (
                     select(meter.aggregation.get_sql_column(Event))
-                    .where(and_(*event_clauses))
+                    .where(
+                        and_(
+                            *event_clauses,
+                            Event.timestamp >= start_timestamp,
+                            Event.timestamp <= end_timestamp,
+                        )
+                    )
                     .scalar_subquery()
                 )
                 total_column = func.coalesce(total_subquery, 0)

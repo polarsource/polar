@@ -823,6 +823,91 @@ class TestGetQuantities:
         assert result.total == 4
 
     @pytest.mark.parametrize(
+        ("aggregation", "in_range_events", "out_of_range_events", "expected_total"),
+        [
+            pytest.param(
+                PropertyAggregation(func=AggregationFunction.avg, property="tokens"),
+                [{"tokens": 10, "model": "lite"}, {"tokens": 20, "model": "lite"}],
+                [{"tokens": 1000, "model": "lite"}, {"tokens": 2000, "model": "lite"}],
+                15,
+                id="avg",
+            ),
+            pytest.param(
+                UniqueAggregation(property="user_id"),
+                [{"user_id": "a", "model": "lite"}, {"user_id": "b", "model": "lite"}],
+                [{"user_id": "c", "model": "lite"}, {"user_id": "d", "model": "lite"}],
+                2,
+                id="unique",
+            ),
+        ],
+    )
+    async def test_total_respects_requested_range_for_non_summable_aggregation(
+        self,
+        aggregation: Aggregation,
+        in_range_events: list[dict[str, str | int]],
+        out_of_range_events: list[dict[str, str | int]],
+        expected_total: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        in_range_timestamp = utc_now()
+        start_timestamp = in_range_timestamp
+        end_timestamp = in_range_timestamp
+
+        for metadata in in_range_events:
+            await create_event(
+                save_fixture,
+                timestamp=in_range_timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata=metadata,
+            )
+
+        for timestamp in (
+            in_range_timestamp - timedelta(days=3),
+            in_range_timestamp + timedelta(days=3),
+        ):
+            for metadata in out_of_range_events:
+                await create_event(
+                    save_fixture,
+                    timestamp=timestamp,
+                    organization=customer.organization,
+                    customer=customer,
+                    metadata=metadata,
+                )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=aggregation,
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            customer_id=[customer.id],
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
+        )
+
+        assert len(result.quantities) == 1
+        quantity = result.quantities[0]
+        assert quantity.quantity == expected_total
+        assert result.total == expected_total
+
+    @pytest.mark.parametrize(
         "property",
         [
             pytest.param("model", id="not a numeric property"),

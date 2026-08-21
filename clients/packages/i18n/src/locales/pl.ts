@@ -105,6 +105,9 @@ export default {
         },
         updateFailed: 'Nie udało się zaktualizować liczby jednostek',
       },
+      meteredChargesMayApply:
+        'Mogą obowiązywać dodatkowe opłaty naliczane według zużycia',
+      meteredIncludedThen: '{units} w cenie, potem',
     },
     trial: {
       hero: {

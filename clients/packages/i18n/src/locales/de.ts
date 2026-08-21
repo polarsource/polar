@@ -105,6 +105,9 @@ export default {
         },
         updateFailed: 'Einheiten konnten nicht aktualisiert werden',
       },
+      meteredChargesMayApply:
+        'Zusätzliche nutzungsabhängige Gebühren können anfallen',
+      meteredIncludedThen: '{units} inklusive, danach',
     },
     trial: {
       hero: {

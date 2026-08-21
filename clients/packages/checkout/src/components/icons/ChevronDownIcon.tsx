@@ -10,6 +10,8 @@ const ChevronDownIcon = ({ className }: { className?: string }) => {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
       className={className}
     >
       <path d="m6 9 6 6 6-6" />

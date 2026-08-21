@@ -187,7 +187,9 @@
     "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
     "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -374,7 +376,9 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -561,7 +565,9 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -751,7 +757,9 @@
     "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
     "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -941,7 +949,9 @@
     "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
     "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1120,7 +1130,9 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1302,7 +1314,9 @@
     "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
     "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1481,7 +1495,9 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1660,7 +1676,9 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1839,7 +1857,9 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2021,7 +2041,9 @@
     "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
     "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2203,7 +2225,9 @@
     "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
     "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2385,6 +2409,8 @@
     "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
     "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
-    "checkout.pricing.units.updateFailed": "Failed to update units"
+    "checkout.pricing.units.updateFailed": "Failed to update units",
+    "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
+    "checkout.pricing.meteredIncludedThen": "{units} included, then"
   }
 }

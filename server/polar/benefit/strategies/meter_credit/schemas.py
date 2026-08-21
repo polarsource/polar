@@ -76,11 +76,21 @@ class BenefitMeterCreditSubscriber(BenefitSubscriberBase):
     properties: BenefitMeterCreditSubscriberProperties
 
 
+class BenefitMeterCreditPublicProperties(Schema):
+    """
+    Properties for a benefit of type `meter_credit`.
+    """
+
+    units: int
+    meter_id: UUID4
+
+
 class BenefitMeterCreditPublic(BenefitPublicBase):
     """
-    A public benefit of type `meter_credit`, exposing the number of units
-    granted so storefronts and checkouts can show included usage.
+    A benefit of type `meter_credit`.
+
+    Grants a number of units on a specific meter.
     """
 
     type: Literal[BenefitType.meter_credit]
-    properties: BenefitMeterCreditSubscriberProperties
+    properties: BenefitMeterCreditPublicProperties

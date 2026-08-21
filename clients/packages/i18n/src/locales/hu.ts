@@ -105,6 +105,8 @@ export default {
         },
         updateFailed: 'Nem sikerült frissíteni az egységeket',
       },
+      meteredChargesMayApply: 'További használatalapú díjak merülhetnek fel',
+      meteredIncludedThen: '{units} benne van, utána',
     },
     trial: {
       hero: {

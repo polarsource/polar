@@ -105,6 +105,9 @@ export default {
         },
         updateFailed: 'Impossible de mettre à jour les unités',
       },
+      meteredChargesMayApply:
+        'Des frais supplémentaires au compteur peuvent s’appliquer',
+      meteredIncludedThen: '{units} inclus, puis',
     },
     trial: {
       hero: {

@@ -105,6 +105,8 @@ export default {
         },
         updateFailed: '数量の更新に失敗しました',
       },
+      meteredChargesMayApply: '追加の従量課金が発生する場合があります',
+      meteredIncludedThen: '{units}まで含まれ、その後',
     },
     trial: {
       hero: {

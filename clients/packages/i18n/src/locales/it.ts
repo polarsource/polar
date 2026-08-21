@@ -105,6 +105,9 @@ export default {
         },
         updateFailed: 'Impossibile aggiornare le unità',
       },
+      meteredChargesMayApply:
+        'Potrebbero essere applicati costi aggiuntivi a consumo',
+      meteredIncludedThen: '{units} inclusi, poi',
     },
     trial: {
       hero: {

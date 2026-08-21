@@ -117,10 +117,21 @@ const Checkout = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ distinct_id: distinctId }),
       },
-    ).catch(() => {
-      // Silently ignore - don't affect checkout experience
-    })
-  }, [checkout.client_secret, posthog])
+    )
+      .then(async (response) => {
+        if (!response.ok) return
+        // The response may carry a billing country prefilled from the
+        // request's IP; apply it unless the customer already set one.
+        const opened = (await response.json()) as schemas['CheckoutPublic']
+        const country = opened.customer_billing_address?.country
+        if (country && !form.getValues('customer_billing_address.country')) {
+          form.setValue('customer_billing_address.country', country)
+        }
+      })
+      .catch(() => {
+        // Silently ignore - don't affect checkout experience
+      })
+  }, [checkout.client_secret, posthog, form])
 
   const themePreset = getThemePreset(theme)
 

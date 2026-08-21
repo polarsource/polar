@@ -1638,12 +1638,26 @@ class CheckoutService:
         return checkout
 
     async def mark_opened(
-        self, session: AsyncSession, checkout: Checkout, distinct_id: str | None = None
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        distinct_id: str | None = None,
+        *,
+        ip_address: str | None = None,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         """
         Mark a checkout as opened. This is called when the checkout page is first viewed.
         Stores opened_at timestamp and posthog distinct_id in analytics_metadata.
+
+        Since this request comes from the customer's browser, its IP is also
+        the best fallback to prefill the billing country for checkouts created
+        server-side without a forwarded `customer_ip_address`.
         """
+        checkout = await self._prefill_billing_country(
+            session, checkout, ip_address, ip_geolocation_client
+        )
+
         # Already opened - no-op
         if checkout.analytics_metadata and checkout.analytics_metadata.get("opened_at"):
             return checkout
@@ -2566,6 +2580,25 @@ class CheckoutService:
 
         currencies.append(organization.default_presentment_currency)
         return currencies
+
+    async def _prefill_billing_country(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        ip_address: str | None,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
+    ) -> Checkout:
+        if checkout.customer_billing_address is not None:
+            return checkout
+
+        if checkout.customer_ip_address is None and ip_address is not None:
+            checkout.customer_ip_address = ip_address
+            session.add(checkout)
+
+        ip_country = self._get_ip_country(
+            ip_geolocation_client, checkout.customer_ip_address
+        ) or self._get_ip_country(ip_geolocation_client, ip_address)
+        return await self._update_ip_country(session, checkout, ip_country)
 
     async def _update_ip_country(
         self, session: AsyncSession, checkout: Checkout, ip_country: str | None

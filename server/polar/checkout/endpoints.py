@@ -10,6 +10,7 @@ from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import PaymentNotReady, ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import (
     MultipleQueryFilter,
@@ -291,8 +292,10 @@ async def client_confirm(
     include_in_schema=False,
 )
 async def client_opened(
+    request: Request,
     client_secret: CheckoutClientSecret,
     checkout_opened: CheckoutOpened,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
@@ -300,7 +303,11 @@ async def client_opened(
     """
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
     return await checkout_service.mark_opened(
-        session, checkout, checkout_opened.distinct_id
+        session,
+        checkout,
+        checkout_opened.distinct_id,
+        ip_address=get_ip_address(request),
+        ip_geolocation_client=ip_geolocation_client,
     )
 
 

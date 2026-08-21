@@ -7362,6 +7362,126 @@ class TestMarkOpened:
         assert checkout.analytics_metadata.get("opened_at") is not None
         log_mock.error.assert_called_once()
 
+    async def test_prefills_billing_country_from_request_ip(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        mocker.patch("polar.checkout.service.posthog")
+        mocker.patch.object(checkout_service, "_get_ip_country", return_value="FR")
+
+        assert checkout_one_time_fixed.customer_billing_address is None
+        assert checkout_one_time_fixed.customer_ip_address is None
+
+        checkout = await checkout_service.mark_opened(
+            session,
+            checkout_one_time_fixed,
+            ip_address="1.2.3.4",
+            ip_geolocation_client=MagicMock(),
+        )
+
+        assert checkout.customer_ip_address == "1.2.3.4"
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "FR"
+
+    async def test_keeps_existing_billing_address(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        mocker.patch("polar.checkout.service.posthog")
+        get_ip_country_mock = mocker.patch.object(
+            checkout_service, "_get_ip_country", return_value="FR"
+        )
+
+        checkout_one_time_fixed.customer_billing_address = AddressInput.model_validate(
+            {"country": "US"}
+        )
+        await save_fixture(checkout_one_time_fixed)
+
+        checkout = await checkout_service.mark_opened(
+            session,
+            checkout_one_time_fixed,
+            ip_address="1.2.3.4",
+            ip_geolocation_client=MagicMock(),
+        )
+
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "US"
+        get_ip_country_mock.assert_not_called()
+
+    async def test_keeps_stored_customer_ip_address(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        mocker.patch("polar.checkout.service.posthog")
+        mocker.patch.object(checkout_service, "_get_ip_country", return_value="DE")
+
+        checkout_one_time_fixed.customer_ip_address = "9.9.9.9"
+        await save_fixture(checkout_one_time_fixed)
+
+        checkout = await checkout_service.mark_opened(
+            session,
+            checkout_one_time_fixed,
+            ip_address="1.2.3.4",
+            ip_geolocation_client=MagicMock(),
+        )
+
+        assert checkout.customer_ip_address == "9.9.9.9"
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "DE"
+
+    async def test_prefill_without_geolocation_match(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        mocker.patch("polar.checkout.service.posthog")
+        mocker.patch.object(checkout_service, "_get_ip_country", return_value=None)
+
+        checkout = await checkout_service.mark_opened(
+            session,
+            checkout_one_time_fixed,
+            ip_address="1.2.3.4",
+            ip_geolocation_client=MagicMock(),
+        )
+
+        assert checkout.customer_billing_address is None
+        assert checkout.analytics_metadata is not None
+        assert checkout.analytics_metadata.get("opened_at") is not None
+
+    async def test_prefills_billing_country_when_already_opened(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        mocker.patch("polar.checkout.service.posthog")
+        mocker.patch.object(checkout_service, "_get_ip_country", return_value="FR")
+
+        checkout_one_time_fixed.analytics_metadata = {
+            "opened_at": utc_now().isoformat()
+        }
+        await save_fixture(checkout_one_time_fixed)
+
+        checkout = await checkout_service.mark_opened(
+            session,
+            checkout_one_time_fixed,
+            ip_address="1.2.3.4",
+            ip_geolocation_client=MagicMock(),
+        )
+
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "FR"
+
 
 @pytest.mark.asyncio
 class TestHandleSuccessPostHogTracking:

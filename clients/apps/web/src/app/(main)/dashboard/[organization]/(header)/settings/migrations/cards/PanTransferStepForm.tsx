@@ -14,12 +14,18 @@ interface Props {
   copy: StepCopy
   migrationId: string
   stepKey: string
+  compact?: boolean
 }
 
 // The mutation lives here, not in the panel, so a failure stays attached to the
 // step that caused it. A shared one keeps showing the last error after a
 // refetch moves the checklist on.
-export function PanTransferStepForm({ copy, migrationId, stepKey }: Props) {
+export function PanTransferStepForm({
+  copy,
+  migrationId,
+  stepKey,
+  compact = false,
+}: Props) {
   const complete = useCompletePanTransferStep(migrationId)
   const [values, setValues] = useState<Record<string, string>>({})
   const fields = copy.inputs ?? []
@@ -34,7 +40,13 @@ export function PanTransferStepForm({ copy, migrationId, stepKey }: Props) {
   return (
     <Box
       as="form"
+      display={compact ? { base: 'flex', md: 'grid' } : 'flex'}
       flexDirection="column"
+      gridTemplateColumns={
+        compact ? { base: '1fr', md: 'minmax(0, 1fr) auto' } : undefined
+      }
+      alignItems={compact ? { base: 'stretch', md: 'end' } : undefined}
+      columnGap={compact ? 'l' : undefined}
       rowGap="m"
       onSubmit={(event) => {
         event.preventDefault()
@@ -52,7 +64,7 @@ export function PanTransferStepForm({ copy, migrationId, stepKey }: Props) {
             key={field.name}
             flexDirection="column"
             rowGap="xs"
-            maxWidth={380}
+            maxWidth={compact ? 520 : 380}
           >
             <Text
               as="label"
@@ -101,12 +113,6 @@ export function PanTransferStepForm({ copy, migrationId, stepKey }: Props) {
         )
       })}
 
-      {complete.error && (
-        <Text variant="caption" color="danger" role="alert">
-          {complete.error.message}
-        </Text>
-      )}
-
       <Box>
         <Button
           type="submit"
@@ -116,6 +122,14 @@ export function PanTransferStepForm({ copy, migrationId, stepKey }: Props) {
           {complete.isPending ? 'Saving…' : copy.action}
         </Button>
       </Box>
+
+      {complete.error && (
+        <Box gridColumn={compact ? '1 / -1' : undefined}>
+          <Text variant="caption" color="danger" role="alert">
+            {complete.error.message}
+          </Text>
+        </Box>
+      )}
     </Box>
   )
 }

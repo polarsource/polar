@@ -49,30 +49,24 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         for record in event.get("Records", []):
             message_id = record["messageId"]
             try:
-                (
-                    actor,
-                    args,
-                    kwargs,
-                    correlation_id,
-                    attempt,
-                    message_timestamp,
-                    task_message_id,
-                    debounce_key,
-                ) = parse_envelope(record["body"])
+                envelope = parse_envelope(record["body"])
                 _loop.run_until_complete(
                     run_task(
-                        actor,
-                        args,
-                        kwargs,
-                        receive_count=_effective_receive_count(record, attempt),
-                        source_correlation_id=correlation_id,
+                        envelope.actor,
+                        envelope.args,
+                        envelope.kwargs,
+                        receive_count=_effective_receive_count(
+                            record, envelope.attempt
+                        ),
+                        source_correlation_id=envelope.correlation_id,
                         remaining_time_seconds=(
                             context.get_remaining_time_in_millis() / 1000
                             - _REMAINING_TIME_MARGIN_SECONDS
                         ),
-                        message_timestamp=message_timestamp,
-                        message_id=task_message_id,
-                        debounce_key=debounce_key,
+                        message_timestamp=envelope.message_timestamp,
+                        message_id=envelope.message_id,
+                        debounce_key=envelope.debounce_key,
+                        message_options=envelope.message_options,
                     )
                 )
             except Retry as exc:
@@ -102,22 +96,13 @@ def _effective_receive_count(record: dict[str, Any], attempt: int) -> int:
 def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bool:
     """Schedule the failed message's next retry. Returns True if SQS should redeliver it."""
     try:
-        (
-            actor,
-            args,
-            kwargs,
-            correlation_id,
-            attempt,
-            message_timestamp,
-            task_message_id,
-            debounce_key,
-        ) = parse_envelope(record["body"])
+        envelope = parse_envelope(record["body"])
         queue_arn = record["eventSourceARN"]
-        receive_count = _effective_receive_count(record, attempt)
+        receive_count = _effective_receive_count(record, envelope.attempt)
         scheduler_role_arn = settings.WORKER_SQS_SCHEDULER_ROLE_ARN
 
         action, delay_seconds = plan_retry(
-            actor,
+            envelope.actor,
             receive_count,
             exception,
             scheduler_available=scheduler_role_arn is not None,
@@ -127,7 +112,7 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
             send_to_dlq(consumer_sqs_client, queue_arn, record["body"])
             log.info(
                 "polar.worker.sqs_retry_exhausted",
-                actor=actor,
+                actor=envelope.actor,
                 receive_count=receive_count,
             )
             return False
@@ -139,21 +124,24 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
                 queue_arn,
                 scheduler_role_arn,
                 build_envelope(
-                    actor,
-                    tuple(args),
-                    kwargs,
-                    correlation_id,
+                    envelope.actor,
+                    tuple(envelope.args),
+                    envelope.kwargs,
+                    envelope.correlation_id,
                     receive_count + 1,
-                    message_timestamp,
-                    message_id=task_message_id,
-                    debounce_key=debounce_key,
+                    envelope.message_timestamp,
+                    message_id=envelope.message_id,
+                    debounce_key=envelope.debounce_key,
+                    message_options=envelope.message_options,
                 ),
                 delay_seconds,
-                build_retry_schedule_name(queue_arn, record["messageId"], attempt),
+                build_retry_schedule_name(
+                    queue_arn, record["messageId"], envelope.attempt
+                ),
             )
             log.info(
                 "polar.worker.sqs_retry_scheduled_eventbridge",
-                actor=actor,
+                actor=envelope.actor,
                 receive_count=receive_count,
                 backoff_seconds=delay_seconds,
             )
@@ -167,7 +155,7 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
         )
         log.info(
             "polar.worker.sqs_retry_scheduled",
-            actor=actor,
+            actor=envelope.actor,
             receive_count=receive_count,
             backoff_seconds=delay_seconds,
         )

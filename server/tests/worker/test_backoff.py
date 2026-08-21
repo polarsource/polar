@@ -92,6 +92,21 @@ class TestSetMessageVisibility:
 
 class TestEnvelopeAttempt:
     def test_round_trips(self) -> None:
+        message_options = {
+            "group_completion_uuid": "group-1",
+            "group_completion_callbacks": [
+                {
+                    "queue_name": "low_priority",
+                    "actor_name": "dummy",
+                    "args": [],
+                    "kwargs": {"redis_key": "callback"},
+                    "options": {},
+                    "message_id": "callback-1",
+                    "message_timestamp": 1234567890000,
+                }
+            ],
+        }
+
         body = _sqs.build_envelope(
             "dummy",
             (1, "x"),
@@ -101,59 +116,45 @@ class TestEnvelopeAttempt:
             1234567890000,
             message_id="msg-1",
             debounce_key="debounce:test",
+            message_options=message_options,
         )
-        (
-            actor,
-            args,
-            kwargs,
-            correlation_id,
-            attempt,
-            message_timestamp,
-            message_id,
-            debounce_key,
-        ) = _sqs.parse_envelope(body)
-        assert actor == "dummy"
-        assert args == [1, "x"]
-        assert kwargs == {"k": 2}
-        assert correlation_id == "corr"
-        assert attempt == 7
-        assert message_timestamp == 1234567890000
-        assert message_id == "msg-1"
-        assert debounce_key == "debounce:test"
+
+        envelope = _sqs.parse_envelope(body)
+        assert envelope.actor == "dummy"
+        assert envelope.args == [1, "x"]
+        assert envelope.kwargs == {"k": 2}
+        assert envelope.correlation_id == "corr"
+        assert envelope.attempt == 7
+        assert envelope.message_timestamp == 1234567890000
+        assert envelope.message_id == "msg-1"
+        assert envelope.debounce_key == "debounce:test"
+        assert envelope.message_options == message_options
 
     def test_defaults_to_one(self) -> None:
         body = _sqs.build_envelope("dummy", (), {}, None)
-        _, _, _, _, attempt, _, message_id, debounce_key = _sqs.parse_envelope(body)
-        assert attempt == 1
-        assert message_id is None
-        assert debounce_key is None
+        envelope = _sqs.parse_envelope(body)
+        assert envelope.attempt == 1
+        assert envelope.message_id is None
+        assert envelope.debounce_key is None
 
     def test_stamps_current_timestamp_by_default(self) -> None:
         before = int(time.time() * 1000)
         body = _sqs.build_envelope("dummy", (), {}, None)
         after = int(time.time() * 1000)
-        _, _, _, _, _, message_timestamp, _, _ = _sqs.parse_envelope(body)
-        assert message_timestamp is not None
-        assert before <= message_timestamp <= after
+        envelope = _sqs.parse_envelope(body)
+        assert envelope.message_timestamp is not None
+        assert before <= envelope.message_timestamp <= after
 
     def test_legacy_body_without_attempt(self) -> None:
         body = json.dumps(
             {"actor": "dummy", "args": [], "kwargs": {}, "correlation_id": None}
         )
-        (
-            _,
-            _,
-            _,
-            _,
-            attempt,
-            message_timestamp,
-            message_id,
-            debounce_key,
-        ) = _sqs.parse_envelope(body)
-        assert attempt == 1
-        assert message_timestamp is None
-        assert message_id is None
-        assert debounce_key is None
+        envelope = _sqs.parse_envelope(body)
+        assert envelope.attempt == 1
+        assert envelope.message_timestamp is None
+        assert envelope.message_id is None
+        assert envelope.debounce_key is None
+        assert envelope.message_options == {}
 
 
 class TestPlanRetry:

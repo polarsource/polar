@@ -47,35 +47,29 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                     MessageSystemAttributeNames=["ApproximateReceiveCount"],
                 )
                 for message in response.get("Messages", []):
-                    (
-                        actor,
-                        args,
-                        kwargs,
-                        correlation_id,
-                        attempt,
-                        message_timestamp,
-                        message_id,
-                        debounce_key,
-                    ) = parse_envelope(message["Body"])
+                    envelope = parse_envelope(message["Body"])
                     sqs_receive_count = int(
                         message.get("Attributes", {}).get(
                             "ApproximateReceiveCount", "1"
                         )
                     )
-                    receive_count = attempt + (sqs_receive_count - 1)
+                    receive_count = envelope.attempt + (sqs_receive_count - 1)
                     try:
                         await run_task(
-                            actor,
-                            args,
-                            kwargs,
+                            envelope.actor,
+                            envelope.args,
+                            envelope.kwargs,
                             receive_count=receive_count,
-                            source_correlation_id=correlation_id,
-                            message_timestamp=message_timestamp,
-                            message_id=message_id,
-                            debounce_key=debounce_key,
+                            source_correlation_id=envelope.correlation_id,
+                            message_timestamp=envelope.message_timestamp,
+                            message_id=envelope.message_id,
+                            debounce_key=envelope.debounce_key,
+                            message_options=envelope.message_options,
                         )
                     except Exception:
-                        log.exception("polar.worker.sqs_poll_failed", actor=actor)
+                        log.exception(
+                            "polar.worker.sqs_poll_failed", actor=envelope.actor
+                        )
                         continue
                     await asyncio.to_thread(
                         client.delete_message,

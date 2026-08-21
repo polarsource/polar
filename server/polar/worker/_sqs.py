@@ -3,7 +3,7 @@ import hashlib
 import json
 import time
 from collections import defaultdict
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, NamedTuple
 
@@ -33,6 +33,11 @@ MAX_VISIBILITY_TIMEOUT_SECONDS = 43_200
 # Argument budget for a single job, leaving room for the envelope around it.
 MAX_JOB_PAYLOAD_BYTES = 200_000
 
+GROUP_COMPLETION_OPTION_KEYS = (
+    "group_completion_uuid",
+    "group_completion_callbacks",
+)
+
 
 class Job(NamedTuple):
     actor: str
@@ -42,6 +47,25 @@ class Job(NamedTuple):
     correlation_id: str | None = None
     message_id: str | None = None
     debounce_key: str | None = None
+    message_options: dict[str, Any] | None = None
+
+
+class Envelope(NamedTuple):
+    actor: str
+    args: list[Any]
+    kwargs: dict[str, Any]
+    correlation_id: str | None
+    attempt: int
+    message_timestamp: int | None
+    message_id: str | None
+    debounce_key: str | None
+    message_options: dict[str, Any]
+
+
+def extract_group_completion_options(
+    options: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {key: options[key] for key in GROUP_COMPLETION_OPTION_KEYS if key in options}
 
 
 class SQSSendError(Exception):
@@ -151,6 +175,7 @@ def build_envelope(
     message_timestamp: int | None = None,
     message_id: str | None = None,
     debounce_key: str | None = None,
+    message_options: Mapping[str, Any] | None = None,
 ) -> str:
     if message_timestamp is None:
         message_timestamp = int(time.time() * 1000)
@@ -164,27 +189,27 @@ def build_envelope(
             "message_timestamp": message_timestamp,
             "message_id": message_id,
             "debounce_key": debounce_key,
+            "message_options": message_options or {},
         },
         separators=(",", ":"),
         default=json_obj_serializer,
     )
 
 
-def parse_envelope(
-    body: str,
-) -> tuple[
-    str, list[Any], dict[str, Any], str | None, int, int | None, str | None, str | None
-]:
+def parse_envelope(body: str) -> Envelope:
     data = json.loads(body)
-    return (
-        data["actor"],
-        data.get("args", []),
-        data.get("kwargs", {}),
-        data.get("correlation_id"),
-        data.get("attempt", 1),
-        data.get("message_timestamp"),
-        data.get("message_id"),
-        data.get("debounce_key"),
+    return Envelope(
+        actor=data["actor"],
+        args=data.get("args", []),
+        kwargs=data.get("kwargs", {}),
+        correlation_id=data.get("correlation_id"),
+        attempt=data.get("attempt", 1),
+        message_timestamp=data.get("message_timestamp"),
+        message_id=data.get("message_id"),
+        debounce_key=data.get("debounce_key"),
+        message_options=extract_group_completion_options(
+            data.get("message_options", {})
+        ),
     )
 
 
@@ -286,6 +311,7 @@ def send_jobs_sync(jobs: list[Job]) -> None:
                 job.correlation_id,
                 message_id=job.message_id,
                 debounce_key=job.debounce_key,
+                message_options=job.message_options,
             ),
         }
         if job.delay:

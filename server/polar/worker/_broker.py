@@ -205,6 +205,9 @@ class RoutingRedisBroker(RedisBroker):
                         CorrelationID.get(),
                         message.message_id,
                         message.options.get("debounce_key"),
+                        message_options=_sqs.extract_group_completion_options(
+                            message.options
+                        ),
                     )
                 ]
             )

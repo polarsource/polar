@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock
 import dramatiq
 import pytest
 from dramatiq.errors import Retry
+from dramatiq.middleware.group_callbacks import GroupCallbacks
 from fakeredis import FakeAsyncRedis
 from logfire.testing import CaptureLogfire
 from opentelemetry.sdk.trace import ReadableSpan
@@ -29,6 +30,43 @@ def _task_spans(capfire: CaptureLogfire) -> list[ReadableSpan]:
 
 @pytest.mark.asyncio
 class TestRunTask:
+    @pytest.mark.parametrize(
+        "exception",
+        [
+            pytest.param(Retry(delay=1000), id="retry"),
+            pytest.param(ValueError("boom"), id="exception"),
+        ],
+    )
+    async def test_failure_does_not_notify_group_completion(
+        self, exception: Exception, mocker: MockerFixture
+    ) -> None:
+        async def raising_task() -> None:
+            raise exception
+
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"dummy": raising_task},
+        )
+        group_callbacks = next(
+            middleware
+            for middleware in dramatiq.get_broker().middleware
+            if isinstance(middleware, GroupCallbacks)
+        )
+        after_process_message = mocker.patch.object(
+            group_callbacks, "after_process_message"
+        )
+
+        with pytest.raises(type(exception)):
+            await run_task(
+                "dummy",
+                message_options={
+                    "group_completion_uuid": "group-1",
+                    "group_completion_callbacks": [],
+                },
+            )
+
+        after_process_message.assert_not_called()
+
     async def test_retry_not_recorded_as_span_error(
         self, capfire: CaptureLogfire, mocker: MockerFixture
     ) -> None:

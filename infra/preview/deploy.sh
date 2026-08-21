@@ -214,7 +214,7 @@ log "Restarting services"
 systemctl restart polar-backend polar-frontend
 
 # --- Deferred demo and analytics data ---
-systemctl reset-failed "$SEED_COMPLEMENT_UNIT"
+systemctl reset-failed "$SEED_COMPLEMENT_UNIT" 2>/dev/null || true
 systemctl restart --no-block "$SEED_COMPLEMENT_UNIT"
 log "Simple-complement seed started; status at ${BASE_URL}/_logs/seed"
 

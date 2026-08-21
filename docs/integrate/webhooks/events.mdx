@@ -12,21 +12,21 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="checkout.created"
     icon="link"
-    href="/api-reference/checkoutcreated"
+    href="/api-reference/checkout_created"
     horizontal
   ></Card>
 
   <Card
     title="checkout.updated"
     icon="link"
-    href="/api-reference/checkoutupdated"
+    href="/api-reference/checkout_updated"
     horizontal
   ></Card>
 
   <Card
     title="checkout.expired"
     icon="link"
-    href="/api-reference/checkoutexpired"
+    href="/api-reference/checkout_expired"
     horizontal
   >
     Fired when a checkout link has expired without being completed.
@@ -39,7 +39,7 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="customer.created"
     icon="link"
-    href="/api-reference/customercreated"
+    href="/api-reference/customer_created"
     horizontal
   >
     Fired when a new customer has been created.
@@ -48,7 +48,7 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="customer.updated"
     icon="link"
-    href="/api-reference/customerupdated"
+    href="/api-reference/customer_updated"
     horizontal
   >
     Fired when a customer has been updated.
@@ -57,7 +57,7 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="customer.deleted"
     icon="link"
-    href="/api-reference/customerdeleted"
+    href="/api-reference/customer_deleted"
     horizontal
   >
     Fired when a customer has been deleted.
@@ -66,7 +66,7 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="customer.state_changed"
     icon="link"
-    href="/api-reference/customerstate_changed"
+    href="/api-reference/customer_state_changed"
     horizontal
   >
     Fired when a customer's state has changed. Includes active subscriptions and
@@ -82,7 +82,7 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.created"
     icon="link"
-    href="/api-reference/subscriptioncreated"
+    href="/api-reference/subscription_created"
     horizontal
   >
     Fired when a new subscription has been created.
@@ -91,21 +91,21 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.active"
     icon="link"
-    href="/api-reference/subscriptionactive"
+    href="/api-reference/subscription_active"
     horizontal
   ></Card>
 
   <Card
     title="subscription.uncanceled"
     icon="link"
-    href="/api-reference/subscriptionuncanceled"
+    href="/api-reference/subscription_uncanceled"
     horizontal
   ></Card>
 
   <Card
     title="subscription.cycled"
     icon="link"
-    href="/api-reference/subscriptioncycled"
+    href="/api-reference/subscription_cycled"
     horizontal
   >
     Fired when a subscription enters a new billing period, before the renewal order exists and whether or not the payment succeeds.
@@ -114,14 +114,14 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.canceled"
     icon="link"
-    href="/api-reference/subscriptioncanceled"
+    href="/api-reference/subscription_canceled"
     horizontal
   ></Card>
 
   <Card
     title="subscription.past_due"
     icon="link"
-    href="/api-reference/subscriptionpast_due"
+    href="/api-reference/subscription_past_due"
     horizontal
   >
     Fired when a subscription payment has failed. The customer can recover by updating their payment method.
@@ -130,7 +130,7 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.updated"
     icon="link"
-    href="/api-reference/subscriptionupdated"
+    href="/api-reference/subscription_updated"
     horizontal
   >
     Use this event if you want to handle cancellations, un-cancellations, etc. The
@@ -143,7 +143,7 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="order.created"
     icon="link"
-    href="/api-reference/ordercreated"
+    href="/api-reference/order_created"
     horizontal
   >
     Carries a `billing_reason` field, which can be `purchase`,
@@ -155,14 +155,14 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.revoked"
     icon="link"
-    href="/api-reference/subscriptionrevoked"
+    href="/api-reference/subscription_revoked"
     horizontal
   ></Card>
 
   <Card
     title="subscription.paused"
     icon="link"
-    href="/api-reference/subscriptionpaused"
+    href="/api-reference/subscription_paused"
     horizontal
   >
     Fired when a scheduled pause takes effect at the end of the period. Billing stops and benefits are revoked until the subscription resumes.
@@ -171,7 +171,7 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.resumed"
     icon="link"
-    href="/api-reference/subscriptionresumed"
+    href="/api-reference/subscription_resumed"
     horizontal
   >
     Fired when a paused subscription resumes. A new billing period starts and the customer is charged immediately.
@@ -268,25 +268,25 @@ The subscription data reflects the new period through `current_period_start` and
   <Card
     title="order.created"
     icon="link"
-    href="/api-reference/ordercreated"
+    href="/api-reference/order_created"
     horizontal
   ></Card>
   <Card
     title="order.paid"
     icon="link"
-    href="/api-reference/orderpaid"
+    href="/api-reference/order_paid"
     horizontal
   ></Card>
   <Card
     title="order.updated"
     icon="link"
-    href="/api-reference/orderupdated"
+    href="/api-reference/order_updated"
     horizontal
   ></Card>
   <Card
     title="order.refunded"
     icon="link"
-    href="/api-reference/orderrefunded"
+    href="/api-reference/order_refunded"
     horizontal
   ></Card>
 </Columns>
@@ -297,13 +297,13 @@ The subscription data reflects the new period through `current_period_start` and
   <Card
     title="refund.created"
     icon="link"
-    href="/api-reference/refundcreated"
+    href="/api-reference/refund_created"
     horizontal
   ></Card>
   <Card
     title="refund.updated"
     icon="link"
-    href="/api-reference/refundupdated"
+    href="/api-reference/refund_updated"
     horizontal
   ></Card>
 </Columns>
@@ -314,19 +314,19 @@ The subscription data reflects the new period through `current_period_start` and
   <Card
     title="benefit_grant.created"
     icon="link"
-    href="/api-reference/benefit_grantcreated"
+    href="/api-reference/benefit_grant_created"
     horizontal
   ></Card>
   <Card
     title="benefit_grant.updated"
     icon="link"
-    href="/api-reference/benefit_grantupdated"
+    href="/api-reference/benefit_grant_updated"
     horizontal
   ></Card>
   <Card
     title="benefit_grant.revoked"
     icon="link"
-    href="/api-reference/benefit_grantrevoked"
+    href="/api-reference/benefit_grant_revoked"
     horizontal
   ></Card>
 </Columns>
@@ -339,13 +339,13 @@ The subscription data reflects the new period through `current_period_start` and
   <Card
     title="benefit.created"
     icon="link"
-    href="/api-reference/benefitcreated"
+    href="/api-reference/benefit_created"
     horizontal
   ></Card>
   <Card
     title="benefit.updated"
     icon="link"
-    href="/api-reference/benefitupdated"
+    href="/api-reference/benefit_updated"
     horizontal
   ></Card>
 </Columns>
@@ -356,13 +356,13 @@ The subscription data reflects the new period through `current_period_start` and
   <Card
     title="product.created"
     icon="link"
-    href="/api-reference/productcreated"
+    href="/api-reference/product_created"
     horizontal
   ></Card>
   <Card
     title="product.updated"
     icon="link"
-    href="/api-reference/productupdated"
+    href="/api-reference/product_updated"
     horizontal
   ></Card>
 </Columns>
@@ -373,21 +373,21 @@ The subscription data reflects the new period through `current_period_start` and
   <Card
     title="discount.created"
     icon="link"
-    href="/api-reference/discountcreated"
+    href="/api-reference/discount_created"
     horizontal
   ></Card>
 
   <Card
     title="discount.updated"
     icon="link"
-    href="/api-reference/discountupdated"
+    href="/api-reference/discount_updated"
     horizontal
   ></Card>
 
   <Card
     title="discount.deleted"
     icon="link"
-    href="/api-reference/discountdeleted"
+    href="/api-reference/discount_deleted"
     horizontal
   ></Card>
 </Columns>
@@ -398,7 +398,7 @@ The subscription data reflects the new period through `current_period_start` and
   <Card
     title="organization.updated"
     icon="link"
-    href="/api-reference/organizationupdated"
+    href="/api-reference/organization_updated"
     horizontal
   ></Card>
 </Columns>

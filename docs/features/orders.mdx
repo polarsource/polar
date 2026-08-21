@@ -71,7 +71,7 @@ curl --request POST \
   --data '{}'
 ```
 
-On success, the order transitions to `paid`, an invoice number is assigned, any [benefits](/features/benefits/introduction) attached to the product are granted, the customer is emailed their confirmation, and the [`order.paid`](/api-reference/orderpaid) webhook fires.
+On success, the order transitions to `paid`, an invoice number is assigned, any [benefits](/features/benefits/introduction) attached to the product are granted, the customer is emailed their confirmation, and the [`order.paid`](/api-reference/order_paid) webhook fires.
 
 If the charge fails, the API returns an error and the order is reverted to `draft` so you can fix the problem and finalize the same order again — no invoice number is consumed by a failed attempt:
 
@@ -144,10 +144,10 @@ Orders can be refunded in full or in part from the dashboard, or programmaticall
 
 If you're integrating orders into your own system, Polar emits an event on every state transition:
 
-- [`order.created`](/api-reference/ordercreated) — a new order exists (not necessarily paid yet).
-- [`order.paid`](/api-reference/orderpaid) — the order has been collected. This is the one most integrations care about.
-- [`order.updated`](/api-reference/orderupdated) — something changed on the order.
-- [`order.refunded`](/api-reference/orderrefunded) — a refund was issued against the order.
+- [`order.created`](/api-reference/order_created) — a new order exists (not necessarily paid yet).
+- [`order.paid`](/api-reference/order_paid) — the order has been collected. This is the one most integrations care about.
+- [`order.updated`](/api-reference/order_updated) — something changed on the order.
+- [`order.refunded`](/api-reference/order_refunded) — a refund was issued against the order.
 
 ## Next steps
 

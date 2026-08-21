@@ -152,7 +152,8 @@ class MerchantMigrationRecordItem(Schema):
     dependencies_imported: bool | None = Field(
         description=(
             "Whether this subscription's customer and product are already in Polar, "
-            "so it can be created at cutover. Null for non-subscription rows."
+            "so it can be created at cutover, or the subscription itself is already "
+            "in Polar. Null for non-subscription rows."
         ),
     )
 
@@ -162,9 +163,9 @@ class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
 
     imported: int = Field(description="How many are already in Polar.")
     selectable: int = Field(
-        description="How many an import would still prepare: importable by the "
-        "pre-check and still pending in the ledger. For subscriptions, rows whose "
-        "customer and product are already in Polar are excluded."
+        description="How many subscriptions an import would still prepare: "
+        "importable by the pre-check, pending in the ledger, and not already backed "
+        "by an imported customer and product. Zero for other entities."
     )
 
 
@@ -231,8 +232,9 @@ class MerchantMigrationCutoverRequest(Schema):
     exclude_record_ids: list[UUID4] | None = Field(
         default=None,
         description=(
-            "Switch every imported subscription except these — the opt-out "
-            "selection for large catalogs. Ignored when `record_ids` is set."
+            "Switch every subscription whose customer and product are in Polar "
+            "except these — the opt-out selection for large catalogs. Ignored when "
+            "`record_ids` is set."
         ),
     )
 

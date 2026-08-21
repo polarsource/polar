@@ -175,14 +175,11 @@ class CatalogImporter:
             records, MerchantMigrationRecordType.subscription
         )
 
-        product_source_ids: set[str] | None = None
-        customer_source_ids: set[str] | None = None
-        if subscription_records:
-            product_source_ids, customer_source_ids = (
-                self._selected_subscription_dependencies(
-                    subscription_records, product_records, customer_records
-                )
+        product_source_ids, customer_source_ids = (
+            self._selected_subscription_dependencies(
+                subscription_records, product_records, customer_records
             )
+        )
 
         product_result = await self._import_products(
             product_records, selected_source_ids=product_source_ids
@@ -208,13 +205,7 @@ class CatalogImporter:
     ) -> list[MerchantMigrationRecord]:
         return [record for record in records if record.type == type]
 
-    def _is_selected(
-        self,
-        record: MerchantMigrationRecord,
-        selected_source_ids: set[str] | None = None,
-    ) -> bool:
-        if selected_source_ids is not None:
-            return record.source_id in selected_source_ids
+    def _is_subscription_selected(self, record: MerchantMigrationRecord) -> bool:
         if self.record_ids is not None:
             return record.id in self.record_ids
         if self.exclude_record_ids is not None:
@@ -256,7 +247,7 @@ class CatalogImporter:
         ):
             if (
                 record.status != MerchantMigrationRecordStatus.pending
-                or not self._is_selected(record)
+                or not self._is_subscription_selected(record)
                 or plans[subscription.source_id] is not None
             ):
                 continue
@@ -270,7 +261,7 @@ class CatalogImporter:
         self,
         records: Sequence[MerchantMigrationRecord],
         *,
-        selected_source_ids: set[str] | None = None,
+        selected_source_ids: set[str],
     ) -> MerchantMigrationImportResult:
         products = [
             self._as(deserialize(record.type, record.canonical), CanonicalProduct)
@@ -282,7 +273,7 @@ class CatalogImporter:
 
         counts = ImportCounts()
         for record, product in zip(records, products, strict=True):
-            if not self._is_selected(record, selected_source_ids):
+            if record.source_id not in selected_source_ids:
                 continue
             if record.status != MerchantMigrationRecordStatus.pending:
                 counts.settle(record.status)
@@ -306,7 +297,7 @@ class CatalogImporter:
         self,
         records: Sequence[MerchantMigrationRecord],
         *,
-        selected_source_ids: set[str] | None = None,
+        selected_source_ids: set[str],
     ) -> MerchantMigrationImportResult:
         customers = [
             self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
@@ -316,7 +307,7 @@ class CatalogImporter:
 
         counts = ImportCounts()
         for record, customer in zip(records, customers, strict=True):
-            if not self._is_selected(record, selected_source_ids):
+            if record.source_id not in selected_source_ids:
                 continue
             if record.status != MerchantMigrationRecordStatus.pending:
                 counts.settle(record.status)

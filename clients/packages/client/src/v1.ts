@@ -24249,7 +24249,7 @@ export interface components {
       record_ids?: string[] | null
       /**
        * Exclude Record Ids
-       * @description Switch every imported subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
+       * @description Switch every subscription whose customer and product are in Polar except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
     }
@@ -24401,7 +24401,7 @@ export interface components {
       has_payment_method: boolean | null
       /**
        * Dependencies Imported
-       * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
+       * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover, or the subscription itself is already in Polar. Null for non-subscription rows.
        */
       dependencies_imported: boolean | null
     }
@@ -24455,7 +24455,7 @@ export interface components {
       imported: number
       /**
        * Selectable
-       * @description How many an import would still prepare: importable by the pre-check and still pending in the ledger. For subscriptions, rows whose customer and product are already in Polar are excluded.
+       * @description How many subscriptions an import would still prepare: importable by the pre-check, pending in the ledger, and not already backed by an imported customer and product. Zero for other entities.
        */
       selectable: number
     }

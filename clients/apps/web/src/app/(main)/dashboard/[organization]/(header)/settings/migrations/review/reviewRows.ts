@@ -1,22 +1,14 @@
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { ENTITY_LABELS } from '../reasons'
 
 export type ReviewRow = schemas['MerchantMigrationRecordItem']
 export type ReviewEntity = ReviewRow['entity']
-// The table can scope to one listable entity or show them all together. Prices
-// aren't listed as their own rows, so they're excluded from the scope.
-export type ReviewScope = 'all' | 'products' | 'customers' | 'subscriptions'
 
 const SINGULAR_LABELS: Record<ReviewEntity, string> = {
   subscriptions: 'Subscription',
   customers: 'Customer',
   products: 'Product',
   prices: 'Price',
-}
-
-export function entityLabelPlural(entity: ReviewScope): string {
-  return entity === 'all' ? 'All' : ENTITY_LABELS[entity]
 }
 
 export function entityLabelSingular(entity: ReviewEntity): string {

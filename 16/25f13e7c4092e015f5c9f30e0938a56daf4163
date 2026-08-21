@@ -1,0 +1,21 @@
+server/polar/backoffice/orders/endpoints.py
+  s_7e1de8e37b8efc::t_1a0af0ff26ab1b 224
+  s_7e1de8e37b8efc::t_0f6afe06aea0fd 225-226
+  s_7e1de8e37b8efc::t_a8635ca601f2f7 223
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "1625f13e7c4092e015f5c9f30e0938a56daf4163",
+  "prompts": {},
+  "sessions": {
+    "s_7e1de8e37b8efc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "66f06069-c1b8-4629-9a6e-b496ebb080ca",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

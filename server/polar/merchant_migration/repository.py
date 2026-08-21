@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, delete, func, select
+from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -15,7 +15,6 @@ from polar.kit.repository import (
 from polar.models import (
     Customer,
     MerchantMigration,
-    MerchantMigrationPaymentMethodMapping,
     MerchantMigrationRecord,
     PaymentMethod,
     Subscription,
@@ -98,61 +97,6 @@ class MerchantMigrationRepository(
         )
 
 
-class MerchantMigrationPaymentMethodMappingRepository(
-    RepositoryBase[MerchantMigrationPaymentMethodMapping]
-):
-    model = MerchantMigrationPaymentMethodMapping
-
-    async def replace(
-        self,
-        migration: MerchantMigration,
-        mappings: Sequence[MerchantMigrationPaymentMethodMapping],
-    ) -> None:
-        await self.session.execute(
-            delete(MerchantMigrationPaymentMethodMapping).where(
-                MerchantMigrationPaymentMethodMapping.merchant_migration_id
-                == migration.id
-            )
-        )
-        for mapping in mappings:
-            await self.create(mapping)
-        await self.session.flush()
-
-    async def list_by_source_payment_method_ids(
-        self, migration_id: UUID, source_payment_method_ids: Sequence[str]
-    ) -> Sequence[MerchantMigrationPaymentMethodMapping]:
-        if not source_payment_method_ids:
-            return []
-        statement = self.get_base_statement().where(
-            MerchantMigrationPaymentMethodMapping.merchant_migration_id == migration_id,
-            MerchantMigrationPaymentMethodMapping.source_payment_method_id.in_(
-                source_payment_method_ids
-            ),
-        )
-        return await self.get_all(statement)
-
-    async def get_by_source_payment_method_id(
-        self, migration_id: UUID, source_payment_method_id: str
-    ) -> MerchantMigrationPaymentMethodMapping | None:
-        statement = self.get_base_statement().where(
-            MerchantMigrationPaymentMethodMapping.merchant_migration_id == migration_id,
-            MerchantMigrationPaymentMethodMapping.source_payment_method_id
-            == source_payment_method_id,
-        )
-        return await self.get_one_or_none(statement)
-
-    async def has_any(self, migration_id: UUID) -> bool:
-        statement = (
-            select(MerchantMigrationPaymentMethodMapping.id)
-            .where(
-                MerchantMigrationPaymentMethodMapping.merchant_migration_id
-                == migration_id
-            )
-            .limit(1)
-        )
-        return await self.session.scalar(statement) is not None
-
-
 class MerchantMigrationRecordRepository(
     RepositorySoftDeletionIDMixin[MerchantMigrationRecord, UUID],
     RepositorySoftDeletionMixin[MerchantMigrationRecord],
@@ -190,7 +134,7 @@ class MerchantMigrationRecordRepository(
         return await self.get_all(statement)
 
     async def imported_customers_by_source_ids(
-        self, organization_id: UUID, source_ids: Sequence[str]
+        self, migration_id: UUID, source_ids: Sequence[str]
     ) -> dict[str, Customer]:
         if not source_ids:
             return {}
@@ -198,7 +142,7 @@ class MerchantMigrationRecordRepository(
             select(MerchantMigrationRecord.source_id, Customer)
             .join(Customer, Customer.id == MerchantMigrationRecord.target_id)
             .where(
-                MerchantMigrationRecord.organization_id == organization_id,
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
                 MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
                 MerchantMigrationRecord.status
                 == MerchantMigrationRecordStatus.imported,
@@ -366,6 +310,11 @@ class MerchantMigrationRecordRepository(
             .limit(limit)
         )
         return await self.get_all(statement)
+
+    async def list_all_imported_subscriptions(
+        self, migration_id: UUID
+    ) -> Sequence[MerchantMigrationRecord]:
+        return await self.get_all(self._imported_subscriptions_statement(migration_id))
 
     def _selection_filter(
         self, selection: MerchantMigrationOperationSelection | None

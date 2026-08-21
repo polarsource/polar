@@ -35,13 +35,9 @@ from .canonical import (
     CanonicalSubscriptionStatus,
     deserialize,
 )
-from .cards import (
-    CopiedCardResolutionError,
-    PaymentMethodMappingLike,
-    link_payment_method,
-)
+from . import pan_transfer
+from .cards import CopiedCardResolutionError, link_payment_method
 from .precheck import subscription_import_reason
-from .repository import MerchantMigrationPaymentMethodMappingRepository
 
 log: Logger = structlog.get_logger()
 
@@ -344,38 +340,16 @@ class SubscriptionCutover:
         """The card the first Polar renewal will charge. A card the `verify_cards`
         step linked wins; otherwise look again, because cards keep landing."""
         source_method = source.payment_method
-        mapping: PaymentMethodMappingLike | None = None
-        mapping_repository = (
-            MerchantMigrationPaymentMethodMappingRepository.from_session(self.session)
-        )
-        if source_method is not None:
-            stored_mapping = await mapping_repository.get_by_source_payment_method_id(
-                self.migration.id, source_method.source_id
-            )
-            if stored_mapping is not None:
-                if stored_mapping.source_customer_id != source.customer_source_id:
-                    return None
-                mapping = stored_mapping
         payment_method: PaymentMethod | None = None
         if subscription.payment_method_id is not None:
             payment_method = await PaymentMethodRepository.from_session(
                 self.session
             ).get_by_id(subscription.payment_method_id)
-        if mapping is not None:
-            if (
-                payment_method is not None
-                and payment_method.processor_id == mapping.destination_payment_method_id
-            ):
-                return payment_method
-            return await link_payment_method(
-                self.session,
-                customer,
-                source_method=source_method,
-                mapping=mapping,
-            )
         if payment_method is not None:
             return payment_method
-        if await mapping_repository.has_any(self.migration.id):
+        if pan_transfer.stripe_mapping_applied(
+            self.migration.pan_transfer_method, self.migration.pan_transfer_steps
+        ):
             return None
         return await link_payment_method(
             self.session, customer, source_method=source_method

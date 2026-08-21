@@ -49,9 +49,6 @@ from .merchant_migration_operation import (
     MerchantMigrationOperationSelection,
     MerchantMigrationOperationStatus,
 )
-from .merchant_migration_payment_method_mapping import (
-    MerchantMigrationPaymentMethodMapping,
-)
 from .merchant_migration_record import (
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecord,
@@ -182,7 +179,6 @@ __all__ = [
     "MerchantMigrationOperation",
     "MerchantMigrationOperationSelection",
     "MerchantMigrationOperationStatus",
-    "MerchantMigrationPaymentMethodMapping",
     "MerchantMigrationRecord",
     "MerchantMigrationRecordStatus",
     "MerchantMigrationRecordType",

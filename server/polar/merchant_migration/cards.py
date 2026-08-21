@@ -8,7 +8,6 @@ import csv
 import io
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -67,20 +66,6 @@ class PaymentMethodMapping:
     source_payment_method_id: str
     destination_customer_id: str
     destination_payment_method_id: str
-
-
-class PaymentMethodMappingLike(Protocol):
-    @property
-    def source_customer_id(self) -> str: ...
-
-    @property
-    def source_payment_method_id(self) -> str: ...
-
-    @property
-    def destination_customer_id(self) -> str: ...
-
-    @property
-    def destination_payment_method_id(self) -> str: ...
 
 
 def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMapping]:
@@ -171,7 +156,7 @@ async def link_payment_method(
     customer: Customer,
     *,
     source_method: CanonicalPaymentMethod | None = None,
-    mapping: PaymentMethodMappingLike | None = None,
+    mapping: PaymentMethodMapping | None = None,
 ) -> PaymentMethod | None:
     """The method to charge, or None while nothing has landed for this customer.
 

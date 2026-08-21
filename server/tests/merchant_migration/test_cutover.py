@@ -22,7 +22,6 @@ from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.models import (
     Customer,
     MerchantMigration,
-    MerchantMigrationPaymentMethodMapping,
     MerchantMigrationRecord,
     Organization,
     PaymentMethod,
@@ -44,6 +43,7 @@ from tests.merchant_migration._helpers import (
     build_connected_migration,
     canonical_subscription,
     copied_cards,
+    pan_steps_until,
     stage_subscription_record,
 )
 
@@ -209,15 +209,10 @@ class TestRun:
         cutover: RunCutover,
         paused_subscription: Subscription,
     ) -> None:
-        await save_fixture(
-            MerchantMigrationPaymentMethodMapping(
-                merchant_migration=migration,
-                source_customer_id="cus_other",
-                source_payment_method_id="pm_other",
-                destination_customer_id="cus_other",
-                destination_payment_method_id="pm_other_copy",
-            )
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
         )
+        await save_fixture(migration)
         copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
         adapter = _source()
 
@@ -234,15 +229,10 @@ class TestRun:
         cutover: RunCutover,
         copied_card: PaymentMethod,
     ) -> None:
-        await save_fixture(
-            MerchantMigrationPaymentMethodMapping(
-                merchant_migration=migration,
-                source_customer_id="cus_1",
-                source_payment_method_id="pm_source",
-                destination_customer_id="cus_1",
-                destination_payment_method_id=copied_card.processor_id,
-            )
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
         )
+        await save_fixture(migration)
         get_payment_method = mocker.patch(
             "polar.merchant_migration.cards.stripe_service.get_payment_method",
             new=mocker.AsyncMock(

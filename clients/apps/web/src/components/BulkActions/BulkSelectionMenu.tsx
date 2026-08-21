@@ -1,5 +1,6 @@
 'use client'
 
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -32,6 +33,7 @@ export const BulkSelectionMenu = ({
   const pageFullySelected = pageSize > 0 && pageSelectedCount === pageSize
 
   return (
+    <Box alignItems="center" columnGap="xs">
     <DropdownMenu>
       <DropdownMenuTrigger className="focus:outline-none" asChild>
         <Button
@@ -72,5 +74,14 @@ export const BulkSelectionMenu = ({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={onClear}
+        aria-label="Clear selection"
+      >
+        <CloseOutlined fontSize="inherit" />
+      </Button>
+    </Box>
   )
 }

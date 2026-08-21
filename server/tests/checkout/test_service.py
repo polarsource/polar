@@ -4282,6 +4282,110 @@ class TestUpdate:
         assert updated_checkout.product == product_one_time
         assert updated_checkout.seats is None
 
+    async def test_switching_products_preserves_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based: Product,
+        product_seat_based_with_min_max: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based, product_seat_based_with_min_max],
+            product=product_seat_based,
+            seats=5,
+        )
+
+        assert checkout.seats == 5
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based_with_min_max.id),
+        )
+
+        assert updated_checkout.product == product_seat_based_with_min_max
+        assert updated_checkout.seats == 5
+
+    async def test_switching_products_clamps_seats_to_new_bounds(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based: Product,
+        product_seat_based_with_max: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based, product_seat_based_with_max],
+            product=product_seat_based,
+            seats=15,
+        )
+
+        assert checkout.seats == 15
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based_with_max.id),
+        )
+
+        assert updated_checkout.product == product_seat_based_with_max
+        assert updated_checkout.seats == 10
+
+    async def test_switching_products_preserves_locked_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based: Product,
+        product_seat_based_with_min_max: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based, product_seat_based_with_min_max],
+            product=product_seat_based,
+            seats=5,
+            min_seats=5,
+            max_seats=5,
+        )
+
+        assert checkout.seats == 5
+        assert checkout.min_seats == 5
+        assert checkout.max_seats == 5
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based_with_min_max.id),
+        )
+
+        assert updated_checkout.product == product_seat_based_with_min_max
+        assert updated_checkout.seats == 5
+        assert updated_checkout.min_seats == 5
+        assert updated_checkout.max_seats == 5
+
+    async def test_switching_products_enforces_locked_seats_on_override(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based: Product,
+        product_seat_based_with_min_max: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based, product_seat_based_with_min_max],
+            product=product_seat_based,
+            seats=5,
+            min_seats=5,
+            max_seats=5,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout,
+                CheckoutUpdate(product_id=product_seat_based_with_min_max.id, seats=10),
+            )
+
     async def test_update_seats_below_minimum(
         self,
         save_fixture: SaveFixture,

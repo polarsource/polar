@@ -17,6 +17,7 @@ interface Props {
   copy: StepCopy
   destinationAccountId: string | null
   migrationId: string
+  sourceStripeAccountId?: string
 }
 
 export function PanTransferStepBody({
@@ -24,6 +25,7 @@ export function PanTransferStepBody({
   copy,
   destinationAccountId,
   migrationId,
+  sourceStripeAccountId,
 }: Props) {
   if (step.key === START_COPY_STEP_KEY) {
     return (
@@ -32,6 +34,7 @@ export function PanTransferStepBody({
         copy={copy}
         destinationAccountId={destinationAccountId}
         migrationId={migrationId}
+        sourceStripeAccountId={sourceStripeAccountId}
       />
     )
   }

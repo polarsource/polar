@@ -5,7 +5,13 @@ import { Alert, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { PanTransferStepItem } from './PanTransferStepItem'
 
-export function PanTransferPanel({ migrationId }: { migrationId: string }) {
+export function PanTransferPanel({
+  migrationId,
+  sourceStripeAccountId,
+}: {
+  migrationId: string
+  sourceStripeAccountId?: string
+}) {
   const { data: checklist, isLoading, isError } = usePanTransfer(migrationId)
 
   if (isLoading) {
@@ -63,6 +69,7 @@ export function PanTransferPanel({ migrationId }: { migrationId: string }) {
             current={step.key === checklist.current_step_key}
             destinationAccountId={checklist.destination_account_id}
             migrationId={migrationId}
+            sourceStripeAccountId={sourceStripeAccountId}
           />
         ))}
       </Box>

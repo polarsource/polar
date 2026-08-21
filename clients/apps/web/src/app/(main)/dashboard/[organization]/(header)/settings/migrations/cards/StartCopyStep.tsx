@@ -7,7 +7,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import type { ReactNode } from 'react'
 import { OpsUpdate } from './OpsUpdate'
-import { StepCopy, STRIPE_COPY_STATUS_URL } from './panTransferCopy'
+import { StepCopy, stripeCopyStatusUrl } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
 
 interface Props {
@@ -15,6 +15,7 @@ interface Props {
   copy: StepCopy
   destinationAccountId: string | null
   migrationId: string
+  sourceStripeAccountId?: string
 }
 
 export function StartCopyStep({
@@ -22,6 +23,7 @@ export function StartCopyStep({
   copy,
   destinationAccountId,
   migrationId,
+  sourceStripeAccountId,
 }: Props) {
   const customerIdsUrl = `${getServerURL()}/v1/merchant-migrations/${migrationId}/customer-ids.csv`
 
@@ -77,7 +79,7 @@ export function StartCopyStep({
           <Box>
             <Button variant="secondary" size="sm" asChild>
               <a
-                href={STRIPE_COPY_STATUS_URL}
+                href={stripeCopyStatusUrl(sourceStripeAccountId)}
                 target="_blank"
                 rel="noopener noreferrer"
               >

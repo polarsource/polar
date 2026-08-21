@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isValidStripeMigrationId,
   STEP_COPY,
+  stripeCopyStatusUrl,
   stripeMigrationIdError,
 } from './panTransferCopy'
 
@@ -43,5 +44,23 @@ describe('start copy', () => {
     expect(STEP_COPY.start_copy.warning).toBe(
       'Only the account owner can start a copy.',
     )
+  })
+
+  it('builds the copy status URL from the source Stripe account', () => {
+    expect(stripeCopyStatusUrl('acct_source')).toBe(
+      'https://dashboard.stripe.com/acct_source/copy-status/shared',
+    )
+    expect(stripeCopyStatusUrl()).toBe(
+      'https://dashboard.stripe.com/copy-status/shared',
+    )
+  })
+})
+
+describe('provider export', () => {
+  it('keeps provider contact optional', () => {
+    expect(STEP_COPY.request_provider_export.inputs?.[1]).toMatchObject({
+      name: 'provider_contact',
+      required: false,
+    })
   })
 })

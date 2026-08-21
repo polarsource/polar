@@ -73,6 +73,7 @@ export function PanTransferStepForm({
               color="muted"
             >
               {field.label}
+              {field.required ? '' : ' (optional)'}
             </Text>
             <Input
               id={field.name}

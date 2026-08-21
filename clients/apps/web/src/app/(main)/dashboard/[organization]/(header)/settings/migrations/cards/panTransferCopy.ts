@@ -20,8 +20,10 @@ export interface StepCopy {
 
 export const STRIPE_MIGRATION_ID_FIELD = 'stripe_migration_request_id'
 
-export const STRIPE_COPY_STATUS_URL =
-  'https://dashboard.stripe.com/acct_1LzIVeDG1jUQrXwC/copy-status/shared'
+export const stripeCopyStatusUrl = (sourceAccountId?: string): string =>
+  sourceAccountId
+    ? `https://dashboard.stripe.com/${sourceAccountId}/copy-status/shared`
+    : 'https://dashboard.stripe.com/copy-status/shared'
 
 const STRIPE_MIGRATION_ID_RE = /^migreq_[A-Za-z0-9_]+$/
 

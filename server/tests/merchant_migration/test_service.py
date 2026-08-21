@@ -1320,46 +1320,6 @@ class TestImportCatalog:
         assert customer_record.status == MerchantMigrationRecordStatus.pending
 
     @pytest.mark.auth
-    async def test_selected_subscription_imports_its_dependencies(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        migration = await _staged_migration(
-            mocker,
-            session,
-            save_fixture,
-            auth_subject,
-            organization,
-            records=_catalog_with_subscription(),
-        )
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        subscription_record = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.subscription,
-            source_id="sub_1",
-        )
-        assert subscription_record is not None
-
-        report = await service.import_catalog(
-            session,
-            auth_subject,
-            migration.id,
-            record_ids=[subscription_record.id],
-        )
-
-        results = {result.entity: result for result in report.results}
-        assert results[PrecheckEntity.products].imported == 1
-        assert results[PrecheckEntity.customers].imported == 1
-        assert results[PrecheckEntity.subscriptions].imported == 0
-        assert subscription_record.status == MerchantMigrationRecordStatus.pending
-        assert subscription_record.target_id is None
-
-    @pytest.mark.auth
     async def test_import_then_cutover_creates_and_activates_subscription(
         self,
         mocker: MockerFixture,

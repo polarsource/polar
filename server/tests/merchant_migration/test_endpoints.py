@@ -488,7 +488,6 @@ class TestImport:
             await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
         ).status_code == 200
 
-        # Pick the subscription row's ledger id from the records listing.
         records = await client.get(
             f"/v1/merchant-migrations/{migration.id}/records",
             params={"entity": "subscriptions"},

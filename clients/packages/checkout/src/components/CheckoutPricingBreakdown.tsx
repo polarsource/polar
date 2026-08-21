@@ -72,11 +72,13 @@ function getDiscountEndDate(
 export interface CheckoutPricingBreakdownProps {
   checkout: schemas['CheckoutPublic']
   locale?: AcceptedLocale
+  trialDueTodayExperiment?: boolean
 }
 
 const CheckoutPricingBreakdown = ({
   checkout,
   locale = DEFAULT_LOCALE,
+  trialDueTodayExperiment = false,
 }: CheckoutPricingBreakdownProps) => {
   const t = useTranslations(locale)
 
@@ -258,7 +260,7 @@ const CheckoutPricingBreakdown = ({
               : '—'}
           </DetailRow>
 
-          <DetailRow title={totalLabel} emphasis>
+          <DetailRow title={totalLabel} emphasis={!trialDueTodayExperiment}>
             <AmountLabel
               amount={checkout.total_amount}
               currency={checkout.currency}
@@ -268,6 +270,11 @@ const CheckoutPricingBreakdown = ({
               locale={locale}
             />
           </DetailRow>
+          {trialDueTodayExperiment && (
+            <DetailRow title={t('checkout.pricing.dueToday')} emphasis>
+              {formatCurrency('standard', locale)(0, checkout.currency)}
+            </DetailRow>
+          )}
           <MeteredChargesDetails checkout={checkout} locale={locale} />
         </>
       ) : (

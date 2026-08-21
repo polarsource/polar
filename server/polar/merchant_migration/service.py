@@ -703,7 +703,9 @@ class MerchantMigrationService:
             payment_methods[mapping.source_payment_method_id] = payment_method
 
         subscription_repository = SubscriptionRepository.from_session(session)
-        async for record in record_repository.stream_imported_subscriptions(migration.id):
+        async for record in record_repository.stream_imported_subscriptions(
+            migration.id
+        ):
             if record.target_id is None:
                 continue
             staged = _staged_subscription(record)

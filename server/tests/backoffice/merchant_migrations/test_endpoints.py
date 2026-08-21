@@ -617,7 +617,7 @@ class TestCompleteStep:
                 canonical=serialize(
                     CanonicalCustomer(
                         source_id="cus_old",
-                        email=customer.email,
+                        email="already-completed@example.com",
                         name=None,
                         country=None,
                     )

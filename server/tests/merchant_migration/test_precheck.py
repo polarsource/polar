@@ -126,6 +126,7 @@ def build_subscription(
     quantity: int = 1,
     payment_method: CanonicalPaymentMethod | None = None,
     has_discount: bool = False,
+    currency: str | None = None,
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
         source_id=source_id,
@@ -141,6 +142,7 @@ def build_subscription(
         quantity=quantity,
         payment_method=payment_method,
         has_discount=has_discount,
+        currency=currency,
     )
 
 
@@ -955,6 +957,24 @@ class TestClassifyCascade:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_product_not_importable"
 
+    def test_subscription_uses_currency_option_on_shared_price_id(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                prices=[
+                    build_price(source_id="price_1", currency="eur", amount=900),
+                    build_price(source_id="price_1", currency="usd", amount=1000),
+                ]
+            ),
+            build_customer(),
+            build_subscription(currency="usd"),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].currency == "usd"
+        assert items[0].amount == 1000
+
 
 class TestPlanProductImports:
     def test_importable_product_lists_its_prices(self) -> None:
@@ -964,7 +984,7 @@ class TestPlanProductImports:
 
         plan = plans[product.source_id]
         assert plan.importable is True
-        assert plan.importable_price_ids == {"price_1"}
+        assert plan.importable_prices == {("price_1", "usd")}
 
     def test_one_time_product_is_skipped(self) -> None:
         product = build_product(source_id="prod_1:one_time", recurring_interval=None)
@@ -989,7 +1009,7 @@ class TestPlanProductImports:
         plan = plan_product_imports([product], "usd")[product.source_id]
 
         assert plan.importable is True
-        assert plan.importable_price_ids == {"price_ok"}
+        assert plan.importable_prices == {("price_ok", "usd")}
 
     def test_product_with_no_importable_price_is_skipped(self) -> None:
         product = build_product(
@@ -1026,7 +1046,7 @@ class TestPlanProductImports:
         assert plan.importable is False
         assert plan.skip is not None
         assert plan.skip.code == "product_name_too_short"
-        assert plan.importable_price_ids == set()
+        assert plan.importable_prices == set()
 
     def test_default_currency_price_keeps_the_other_currencies(self) -> None:
         product = build_product(
@@ -1039,7 +1059,10 @@ class TestPlanProductImports:
         plan = plan_product_imports([product], "usd")[product.source_id]
 
         assert plan.importable is True
-        assert plan.importable_price_ids == {"price_usd", "price_eur"}
+        assert plan.importable_prices == {
+            ("price_usd", "usd"),
+            ("price_eur", "eur"),
+        }
 
     def test_products_sharing_a_name_both_import(self) -> None:
         first = build_product(source_id="prod_1:month:1", product_source_id="prod_1")

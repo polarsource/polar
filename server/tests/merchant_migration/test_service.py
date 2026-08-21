@@ -690,6 +690,53 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
     ]
 
 
+def _multi_currency_catalog() -> list[CanonicalRecord]:
+    return [
+        CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_1",
+                    currency="eur",
+                    amount=900,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                ),
+                CanonicalPrice(
+                    source_id="price_1",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                ),
+            ],
+        ),
+        CanonicalCustomer(
+            source_id="cus_1",
+            email="alice@example.com",
+            name="Alice",
+            country="US",
+        ),
+        CanonicalSubscription(
+            source_id="sub_1",
+            customer_source_id="cus_1",
+            price_source_id="price_1",
+            status=CanonicalSubscriptionStatus.active,
+            collection_method=CanonicalCollectionMethod.charge_automatically,
+            current_period_start=None,
+            current_period_end=None,
+            trialing=False,
+            paused_collection=False,
+            line_item_count=1,
+            quantity=1,
+            payment_method=None,
+            currency="usd",
+        ),
+    ]
+
+
 async def _products(session: AsyncSession, organization: Organization) -> list[Product]:
     result = await session.execute(
         select(Product)
@@ -1430,6 +1477,56 @@ class TestImportCatalog:
         assert record.status == MerchantMigrationRecordStatus.skipped
         assert record.error is not None
         assert "USD" in record.error
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("legacy_shape", [False, True], ids=["current", "legacy"])
+    async def test_multi_currency_price_imports_every_currency(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        legacy_shape: bool,
+    ) -> None:
+        records = _multi_currency_catalog()
+        if legacy_shape:
+            product = records[0]
+            canonical_subscription = records[-1]
+            assert isinstance(product, CanonicalProduct)
+            assert isinstance(canonical_subscription, CanonicalSubscription)
+            product.prices[1].source_id = "price_1:usd"
+            canonical_subscription.price_source_id = "price_1:usd"
+            canonical_subscription.currency = None
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=records,
+        )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 1
+        assert results[PrecheckEntity.subscriptions].imported == 1
+
+        products = await _products(session, organization)
+        assert len(products) == 1
+        assert {
+            (price.price_currency, price.price_amount)
+            for price in products[0].prices
+            if isinstance(price, ProductPriceFixed)
+        } == {("eur", 900), ("usd", 1000)}
+
+        result = await session.execute(
+            select(Subscription).where(Subscription.organization_id == organization.id)
+        )
+        subscription = result.scalars().unique().one()
+        assert subscription.currency == "usd"
 
 
 @pytest.mark.asyncio

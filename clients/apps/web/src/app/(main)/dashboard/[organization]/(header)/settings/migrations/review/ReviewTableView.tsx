@@ -261,7 +261,9 @@ export function ReviewTableView({
             pagination={pagination}
             onPaginationChange={onPaginationChange}
             isLoading={false}
-            getRowId={(row) => row.record_id ?? row.source_id}
+            getRowId={(row) =>
+              row.record_id ?? `${row.source_id}:${row.currency}`
+            }
             onRowClick={(row) => setOpenRow(row.original)}
           />
         )}

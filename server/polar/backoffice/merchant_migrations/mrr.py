@@ -17,6 +17,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
     PriceKey,
     price_key,
+    subscription_price_key_values,
 )
 from polar.merchant_migration.repository import CanonicalRow
 from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
@@ -178,12 +179,10 @@ def breakdown(
             continue
         if not _is_earning(canonical):
             continue
-        source_id = canonical.get("price_source_id", "")
-        currency = canonical.get("currency")
-        key = (
-            price_key(source_id, currency)
-            if currency is not None
-            else legacy_price_keys.get(source_id)
+        key = subscription_price_key_values(
+            canonical.get("price_source_id", ""),
+            canonical.get("currency"),
+            legacy_price_keys,
         )
         price = prices.get(key) if key is not None else None
         if price is None:

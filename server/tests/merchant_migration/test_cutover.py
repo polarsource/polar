@@ -530,11 +530,9 @@ class TestSkips:
     async def test_billed_currency_changed(
         self,
         cutover: RunCutover,
-        record: MerchantMigrationRecord,
         paused_subscription: Subscription,
     ) -> None:
-        record.canonical["currency"] = "eur"
-        adapter = _source(currency="usd")
+        adapter = _source(currency="eur")
 
         outcome = await cutover(adapter)
 

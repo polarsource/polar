@@ -139,7 +139,7 @@ def canonical_subscription(
     stopped_for_migration: bool = False,
     anchor_day: int | None = None,
     payment_method: CanonicalPaymentMethod | None = None,
-    currency: str | None = None,
+    currency: str | None = "usd",
 ) -> CanonicalSubscription:
     """Renews outside the safety window, so a test only states its own field."""
     return CanonicalSubscription(
@@ -172,7 +172,7 @@ async def stage_subscription_record(
     *,
     source_id: str = "sub_1",
     price_source_id: str = "price_1",
-    currency: str | None = None,
+    currency: str | None = "usd",
 ) -> MerchantMigrationRecord:
     """An imported subscription in the ledger: what the cutover reads."""
     record = MerchantMigrationRecord(

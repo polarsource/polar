@@ -306,7 +306,7 @@ class TestMultipleCurrencies:
 
     def test_legacy_suffixed_price_id_still_resolves(self) -> None:
         rows = [
-            _product("price_1:eur", 2500, currency="eur"),
+            _product("price_1", 2500, currency="eur"),
             _subscription(
                 "sub_1",
                 "price_1:eur",

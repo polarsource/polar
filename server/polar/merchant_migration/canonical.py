@@ -186,12 +186,22 @@ def subscription_price_key(
     subscription: CanonicalSubscription,
     legacy_keys: Mapping[str, PriceKey] | None = None,
 ) -> PriceKey | None:
-    if subscription.currency is not None:
-        return price_key(subscription.price_source_id, subscription.currency)
-    legacy_key = _legacy_price_key(subscription.price_source_id)
+    return subscription_price_key_values(
+        subscription.price_source_id, subscription.currency, legacy_keys
+    )
+
+
+def subscription_price_key_values(
+    source_id: str,
+    currency: str | None,
+    legacy_keys: Mapping[str, PriceKey] | None = None,
+) -> PriceKey | None:
+    if currency is not None:
+        return price_key(source_id, currency)
+    legacy_key = _legacy_price_key(source_id)
     if legacy_key is not None:
         return legacy_key
-    return (legacy_keys or {}).get(subscription.price_source_id)
+    return (legacy_keys or {}).get(source_id)
 
 
 def serialize(record: CanonicalRecord) -> dict[str, Any]:

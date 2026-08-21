@@ -36,7 +36,6 @@ from .canonical import (
     CanonicalSubscriptionStatus,
     deserialize,
     normalize_price_source_id,
-    subscription_price_key,
 )
 from .cards import AmbiguousCopiedCard, link_payment_method
 from .precheck import subscription_import_reason
@@ -192,7 +191,7 @@ class SubscriptionCutover:
             # over would cancel it on the source and then never bill it.
             if not subscription.organization.can_renew_subscriptions:
                 return _skip(_RENEWALS_DISABLED)
-            reason = self._source_reason(source, record)
+            reason = self._source_reason(source, record, subscription.currency)
             if reason is not None:
                 return _skip(reason)
 
@@ -289,7 +288,10 @@ class SubscriptionCutover:
         )
 
     def _source_reason(
-        self, source: CanonicalSubscription, record: MerchantMigrationRecord
+        self,
+        source: CanonicalSubscription,
+        record: MerchantMigrationRecord,
+        imported_currency: str,
     ) -> str | None:
         """Why the source says this subscription shouldn't move today."""
         if source.status == CanonicalSubscriptionStatus.canceled:
@@ -314,10 +316,7 @@ class SubscriptionCutover:
                 staged.price_source_id
             ) != normalize_price_source_id(source.price_source_id):
                 return _PLAN_CHANGED
-            staged_price = subscription_price_key(staged)
-            if staged_price is not None and staged_price != subscription_price_key(
-                source
-            ):
+            if source.currency != imported_currency:
                 return _PLAN_CHANGED
         return self._renewal_reason(source)
 

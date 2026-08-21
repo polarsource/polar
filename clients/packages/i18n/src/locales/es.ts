@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'Impuestos (incluidos)',
       basePrice: 'Precio base',
+      dueToday: 'A pagar hoy',
     },
     trial: {
       hero: {

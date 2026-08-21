@@ -94,6 +94,7 @@ export default {
       },
       inclTax: '부가세 (포함)',
       basePrice: '기본 가격',
+      dueToday: '오늘 결제 금액',
     },
     trial: {
       hero: {

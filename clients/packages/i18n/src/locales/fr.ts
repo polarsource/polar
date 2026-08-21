@@ -97,6 +97,10 @@ export default {
       meteredChargesMayApply:
         'Des frais supplémentaires au compteur peuvent s’appliquer',
       meteredIncluded: '{units} inclus',
+      meterUnits: {
+        token: 'jetons',
+        scalar: 'unités',
+      },
     },
     trial: {
       hero: {

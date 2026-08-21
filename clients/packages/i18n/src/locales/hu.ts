@@ -96,6 +96,10 @@ export default {
       basePrice: 'Alapár',
       meteredChargesMayApply: 'További használatalapú díjak merülhetnek fel',
       meteredIncluded: 'tartalmazza: {units}',
+      meterUnits: {
+        token: 'tokenek',
+        scalar: 'egységek',
+      },
     },
     trial: {
       hero: {

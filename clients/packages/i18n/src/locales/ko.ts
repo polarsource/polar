@@ -96,6 +96,10 @@ export default {
       basePrice: '기본 가격',
       meteredChargesMayApply: '추가 사용량 요금이 부과될 수 있습니다',
       meteredIncluded: '{units} 포함',
+      meterUnits: {
+        token: '토큰',
+        scalar: '단위',
+      },
     },
     trial: {
       hero: {

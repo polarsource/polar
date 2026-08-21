@@ -1,5 +1,3 @@
-import { schemas } from '@polar-sh/client'
-
 // The backend checklist stores state only. All wording lives here, keyed by
 // step key, so we can reword a step without a data migration.
 
@@ -58,15 +56,11 @@ export const STEP_COPY: Record<string, StepCopy> = {
   },
   start_copy: {
     title: 'Start the copy in Stripe',
-    description: 'Ask Stripe to copy your saved cards over to Polar.',
-    guidance: [
-      'In Stripe, open Customers and choose Copy customers.',
-      'Upload the CSV, paste the Polar account ID as the recipient, then confirm.',
-    ],
+    description: 'Copy saved cards from your Stripe account to Polar.',
     warning:
       'Only the account owner can start a copy. Wallet cards, Bacs and old SEPA mandates do not copy.',
     inputs: [STRIPE_MIGRATION_ID_INPUT],
-    action: 'I started the copy',
+    action: 'Mark copy started',
   },
   authorize_copy: {
     title: 'Polar accepts the copy',
@@ -166,31 +160,3 @@ export const STEP_COPY: Record<string, StepCopy> = {
       'We start billing the subscriptions you picked. They are charged on their next renewal date.',
   },
 }
-
-type Owner = schemas['PanStepOwner']
-
-// Polar Ops and the Polar app are the same party to a merchant. The split only
-// matters to us.
-const OWNER_LABEL: Record<Owner, string> = {
-  merchant: 'You',
-  polar_ops: 'Polar',
-  polar_app: 'Polar',
-  stripe: 'Stripe',
-  provider: 'Your provider',
-}
-
-const WAITING_LABEL: Record<Owner, string> = {
-  merchant: 'Your turn',
-  polar_ops: 'With Polar',
-  polar_app: 'With Polar',
-  stripe: 'With Stripe',
-  provider: 'With your provider',
-}
-
-// An owner the backend added but this build doesn't know yet still has to read
-// as something, the same way an unknown step key does.
-export const ownerLabel = (owner: Owner): string =>
-  OWNER_LABEL[owner] ?? 'Polar'
-
-export const waitingLabel = (owner: Owner): string =>
-  WAITING_LABEL[owner] ?? 'In progress'

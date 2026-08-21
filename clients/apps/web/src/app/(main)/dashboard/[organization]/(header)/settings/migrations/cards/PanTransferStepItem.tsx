@@ -1,16 +1,11 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { Status, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { OpsUpdate } from './OpsUpdate'
-import {
-  ownerLabel,
-  STEP_COPY,
-  StepInputField,
-  waitingLabel,
-} from './panTransferCopy'
+import { STEP_COPY, StepInputField } from './panTransferCopy'
 import { PanTransferStepBody } from './PanTransferStepBody'
 import { STATE_LABELS, StepMarker, StepState } from '../stepMarker'
 
@@ -46,27 +41,9 @@ export function PanTransferStepItem({
       </Box>
 
       <Box flex={1} minWidth={0} flexDirection="column" rowGap="m">
-        <Box alignItems="center" columnGap="s" flexWrap="wrap">
-          <Text
-            variant={current ? 'label' : 'caption'}
-            color={current ? 'default' : 'muted'}
-          >
-            {title}
-          </Text>
-          {current ? (
-            <Status
-              status={waitingLabel(step.owner)}
-              color={step.owner === 'merchant' ? 'blue' : 'gray'}
-              size="small"
-            />
-          ) : (
-            !done && (
-              <Text variant="caption" color="muted">
-                {ownerLabel(step.owner)}
-              </Text>
-            )
-          )}
-        </Box>
+        <Text variant="caption" color={current ? 'default' : 'muted'}>
+          {title}
+        </Text>
 
         {done && <CompletedSummary step={step} fields={copy?.inputs ?? []} />}
 
@@ -76,23 +53,12 @@ export function PanTransferStepItem({
 
         {current &&
           (copy ? (
-            <Box
-              flexDirection="column"
-              padding="xl"
-              rowGap="l"
-              borderRadius="l"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
-              backgroundColor="background-card"
-            >
-              <PanTransferStepBody
-                step={step}
-                copy={copy}
-                destinationAccountId={destinationAccountId}
-                migrationId={migrationId}
-              />
-            </Box>
+            <PanTransferStepBody
+              step={step}
+              copy={copy}
+              destinationAccountId={destinationAccountId}
+              migrationId={migrationId}
+            />
           ) : (
             <Text variant="caption" color="muted">
               This step needs a newer version of this page. Please refresh.

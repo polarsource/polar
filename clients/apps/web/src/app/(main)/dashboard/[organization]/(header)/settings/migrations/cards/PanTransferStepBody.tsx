@@ -1,7 +1,7 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { Alert, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { SwitchPanel } from '../switch/SwitchPanel'
 import { OpsUpdate } from './OpsUpdate'
@@ -63,7 +63,11 @@ export function PanTransferStepBody({
         </Box>
       )}
 
-      {copy.warning && <Alert variant="warning" title={copy.warning} />}
+      {copy.warning && (
+        <Text variant="caption" color="muted">
+          Note: {copy.warning}
+        </Text>
+      )}
 
       <OpsUpdate step={step} />
 

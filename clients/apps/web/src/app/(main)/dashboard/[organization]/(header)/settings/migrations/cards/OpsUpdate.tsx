@@ -11,13 +11,7 @@ export function OpsUpdate({ step }: { step: schemas['PanTransferStep'] }) {
   }
 
   return (
-    <Box
-      flexDirection="column"
-      rowGap="xs"
-      padding="l"
-      borderRadius="m"
-      backgroundColor="background-secondary"
-    >
+    <Box flexDirection="column" rowGap="xs">
       {/* Prose wraps on its own; a pasted link does not. */}
       {step.note && (
         <Box overflowX="auto" maxWidth="100%">

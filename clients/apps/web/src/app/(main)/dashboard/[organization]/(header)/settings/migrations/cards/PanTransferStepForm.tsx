@@ -61,7 +61,6 @@ export function PanTransferStepForm({ copy, migrationId, stepKey }: Props) {
               color="muted"
             >
               {field.label}
-              {field.required ? '' : ' (optional)'}
             </Text>
             <Input
               id={field.name}

@@ -1,17 +1,9 @@
 'use client'
 
 import { usePanTransfer } from '@/hooks/queries/merchantMigrations'
-import { schemas } from '@polar-sh/client'
 import { Alert, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { PanTransferStepItem } from './PanTransferStepItem'
-
-const METHOD_INTRO: Record<schemas['PanTransferMethod'], string> = {
-  pan_copy:
-    "Stripe copies your customers' saved cards onto Polar's Stripe account. Nothing changes for your customers.",
-  pan_import:
-    "Your provider sends the saved cards to Stripe, and Stripe imports them onto Polar's account. This runs over a few weeks.",
-}
 
 export function PanTransferPanel({ migrationId }: { migrationId: string }) {
   const { data: checklist, isLoading, isError } = usePanTransfer(migrationId)
@@ -50,25 +42,18 @@ export function PanTransferPanel({ migrationId }: { migrationId: string }) {
   const finished = done === checklist.steps.length
 
   return (
-    <Box flexDirection="column" rowGap="xl">
+    <Box flexDirection="column" rowGap="l">
       {finished ? (
-        <Alert
-          variant="success"
-          title="Every step is done"
-          description="Your customers' cards are on Polar and their subscriptions have moved over."
-        />
+        <Text variant="caption" color="muted">
+          Every step is complete.
+        </Text>
       ) : (
-        <Box flexDirection="column" rowGap="xs">
-          <Text variant="caption" color="muted">
-            {METHOD_INTRO[checklist.method]}
-          </Text>
-          <Text variant="caption" color="muted">
-            {done} of {checklist.steps.length} steps done
-          </Text>
-        </Box>
+        <Text variant="caption" color="muted">
+          {done} of {checklist.steps.length} complete
+        </Text>
       )}
 
-      <Box as="ol" flexDirection="column" rowGap="xl">
+      <Box as="ol" flexDirection="column" rowGap="l">
         {checklist.steps.map((step) => (
           <PanTransferStepItem
             // Migration-scoped: another migration lands on the same step key,

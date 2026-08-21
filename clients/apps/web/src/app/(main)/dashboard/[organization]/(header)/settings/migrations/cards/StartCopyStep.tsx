@@ -5,7 +5,6 @@ import { schemas } from '@polar-sh/client'
 import { Alert, Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import { ArrowUpRight, Download } from 'lucide-react'
 import { OpsUpdate } from './OpsUpdate'
 import { StepCopy, STRIPE_COPY_STATUS_URL } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
@@ -26,89 +25,85 @@ export function StartCopyStep({
   const customerIdsUrl = `${getServerURL()}/v1/merchant-migrations/${migrationId}/customer-ids.csv`
 
   return (
-    <Box flexDirection="column" rowGap="xl">
+    <Box flexDirection="column" rowGap="l" maxWidth={640}>
       <Text variant="caption" color="muted">
         {copy.description}
       </Text>
 
-      <Box flexDirection="column" rowGap="m">
-        <Text variant="label">1. Download customer CSV</Text>
-        <Text variant="caption" color="muted">
-          Upload this file in Stripe when you start the copy.
-        </Text>
-        <Box>
-          <Button variant="secondary" size="sm" asChild>
-            <a href={customerIdsUrl} target="_blank" rel="noopener noreferrer">
-              <Box alignItems="center" columnGap="xs">
-                <Download size={14} aria-hidden />
-                Download customer CSV
-              </Box>
-            </a>
-          </Button>
+      <Box as="ol" flexDirection="column" rowGap="l">
+        <Box as="li" flexDirection="column" rowGap="s">
+          <Text variant="caption">
+            1. Download the customer CSV and upload it in Stripe.
+          </Text>
+          <Box>
+            <Button variant="ghost" size="sm" asChild>
+              <a
+                href={customerIdsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Download CSV
+              </a>
+            </Button>
+          </Box>
         </Box>
-      </Box>
 
-      <Box flexDirection="column" rowGap="m">
-        <Text variant="label">2. Start copy in Stripe</Text>
-        {destinationAccountId ? (
-          <Box flexDirection="column" rowGap="xs" maxWidth={380}>
+        <Box as="li" flexDirection="column" rowGap="s">
+          <Text variant="caption">
+            2. In Stripe, open Customers → Copy customers and paste this Polar
+            account ID as the recipient.
+          </Text>
+          {destinationAccountId ? (
+            <Box flexDirection="column" rowGap="xs" maxWidth={420}>
+              <Text variant="caption" color="muted">
+                Polar account ID
+              </Text>
+              <CopyToClipboardInput
+                value={destinationAccountId}
+                variant="mono"
+              />
+            </Box>
+          ) : (
+            <Alert
+              variant="danger"
+              title="We can't show the Polar account ID right now"
+              description="Please contact support before you start the copy in Stripe."
+            />
+          )}
+          <Text variant="caption" color="muted">
+            Upload the CSV, paste the account ID, and confirm the copy.
+          </Text>
+          {copy.warning && (
             <Text variant="caption" color="muted">
-              Polar destination ID
+              Note: {copy.warning}
             </Text>
-            <CopyToClipboardInput value={destinationAccountId} variant="mono" />
-          </Box>
-        ) : (
-          <Alert
-            variant="danger"
-            title="We can't show the Polar account ID right now"
-            description="Please contact support before you start the copy in Stripe."
-          />
-        )}
-        {copy.guidance && (
-          <Box as="ol" flexDirection="column" rowGap="xs">
-            {copy.guidance.map((line, index) => (
-              <Box as="li" key={index} display="flex" columnGap="s">
-                <Text variant="caption" color="muted" tabularNums>
-                  {index + 1}.
-                </Text>
-                <Text variant="caption" color="muted">
-                  {line}
-                </Text>
-              </Box>
-            ))}
-          </Box>
-        )}
-        {copy.warning && <Alert variant="warning" title={copy.warning} />}
-      </Box>
-
-      <Box flexDirection="column" rowGap="m">
-        <Text variant="label">3. Save Stripe migration ID</Text>
-        <Text variant="caption" color="muted">
-          After you start the copy, paste the migration ID from Stripe. It
-          starts with migreq_.
-        </Text>
-        <Box>
-          <Button variant="secondary" size="sm" asChild>
-            <a
-              href={STRIPE_COPY_STATUS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Box alignItems="center" columnGap="xs">
+          )}
+          <Box>
+            <Button variant="ghost" size="sm" asChild>
+              <a
+                href={STRIPE_COPY_STATUS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Open Stripe copy status
-                <ArrowUpRight size={14} aria-hidden />
-              </Box>
-            </a>
-          </Button>
+              </a>
+            </Button>
+          </Box>
         </Box>
-        <OpsUpdate step={step} />
-        {copy.action && (
-          <PanTransferStepForm
-            copy={copy}
-            migrationId={migrationId}
-            stepKey={step.key}
-          />
-        )}
+
+        <Box as="li" flexDirection="column" rowGap="s">
+          <Text variant="caption">
+            3. After starting the copy, paste the optional Stripe migration ID.
+          </Text>
+          <OpsUpdate step={step} />
+          {copy.action && (
+            <PanTransferStepForm
+              copy={copy}
+              migrationId={migrationId}
+              stepKey={step.key}
+            />
+          )}
+        </Box>
       </Box>
     </Box>
   )

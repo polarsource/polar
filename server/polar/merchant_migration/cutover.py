@@ -6,6 +6,7 @@ stays there.
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import TypeIs
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -132,7 +133,7 @@ def _fail(reason: str) -> CutoverOutcome:
     return CutoverOutcome(MerchantMigrationCutoverStatus.failed, reason)
 
 
-def _is_chargeable(payment_method: PaymentMethod | None) -> bool:
+def _is_chargeable(payment_method: PaymentMethod | None) -> TypeIs[PaymentMethod]:
     return payment_method is not None and CanonicalPaymentMethodType.is_chargeable_type(
         payment_method.type
     )

@@ -5,6 +5,7 @@ import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
+  type TranslateFn,
 } from '@polar-sh/i18n'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { useId, useState } from 'react'
@@ -29,11 +30,14 @@ const getIncludedUnitsByMeter = (
 
 const getUnitNoun = (
   meter: schemas['ProductPriceMeteredUnit']['meter'],
+  t: TranslateFn,
 ): string => {
-  if (meter.unit === 'custom') {
-    return meter.custom_label ?? 'units'
+  if (meter.unit === 'custom' && meter.custom_label) {
+    return meter.custom_label
   }
-  return meter.unit === 'token' ? 'tokens' : 'units'
+  return meter.unit === 'token'
+    ? t('checkout.pricing.meterUnits.token')
+    : t('checkout.pricing.meterUnits.scalar')
 }
 
 interface MeteredChargesDetailsProps {
@@ -92,7 +96,7 @@ const MeteredChargesDetails = ({
                 subtitle={
                   includedUnits
                     ? t('checkout.pricing.meteredIncluded', {
-                        units: `${numberFormat.format(includedUnits)} ${getUnitNoun(meteredPrice.meter)}`,
+                        units: `${numberFormat.format(includedUnits)} ${getUnitNoun(meteredPrice.meter, t)}`,
                       })
                     : undefined
                 }

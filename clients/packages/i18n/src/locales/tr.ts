@@ -95,7 +95,7 @@ export default {
       },
       basePrice: 'Temel fiyat',
       meteredChargesMayApply: 'Ek kullanım ücreti uygulanabilir',
-      meteredIncludedThen: '{units} dahil, sonra',
+      meteredIncluded: '{units} dahil',
     },
     trial: {
       hero: {

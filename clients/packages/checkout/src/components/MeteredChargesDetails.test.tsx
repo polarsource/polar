@@ -24,7 +24,6 @@ function createMeterCreditBenefit(
     organization_id: 'org_1',
     properties: {
       units,
-      rollover: false,
       meter_id: meterId,
     },
   }

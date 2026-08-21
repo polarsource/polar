@@ -96,7 +96,7 @@ export default {
       basePrice: 'Preço base',
       meteredChargesMayApply:
         'Cobranças adicionais por uso podem ser aplicadas',
-      meteredIncludedThen: '{units} incluídos, depois',
+      meteredIncluded: '{units} incluídos',
     },
     trial: {
       hero: {

@@ -95,7 +95,7 @@ export default {
       },
       basePrice: '基本料金',
       meteredChargesMayApply: '追加の従量課金が発生する場合があります',
-      meteredIncludedThen: '{units}まで含まれ、その後',
+      meteredIncluded: '{units}分込み',
     },
     trial: {
       hero: {

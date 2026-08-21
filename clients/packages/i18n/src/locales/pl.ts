@@ -96,7 +96,7 @@ export default {
       basePrice: 'Cena bazowa',
       meteredChargesMayApply:
         'Mogą obowiązywać dodatkowe opłaty naliczane według zużycia',
-      meteredIncludedThen: '{units} w cenie, potem',
+      meteredIncluded: 'w tym {units}',
     },
     trial: {
       hero: {

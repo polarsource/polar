@@ -95,7 +95,7 @@ export default {
       inclTax: 'ÁFA (tartalmazza)',
       basePrice: 'Alapár',
       meteredChargesMayApply: 'További használatalapú díjak merülhetnek fel',
-      meteredIncludedThen: '{units} benne van, utána',
+      meteredIncluded: 'tartalmazza: {units}',
     },
     trial: {
       hero: {

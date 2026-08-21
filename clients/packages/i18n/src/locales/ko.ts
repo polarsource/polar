@@ -95,7 +95,7 @@ export default {
       inclTax: '부가세 (포함)',
       basePrice: '기본 가격',
       meteredChargesMayApply: '추가 사용량 요금이 부과될 수 있습니다',
-      meteredIncludedThen: '{units} 포함, 이후',
+      meteredIncluded: '{units} 포함',
     },
     trial: {
       hero: {

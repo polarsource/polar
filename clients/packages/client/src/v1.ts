@@ -53793,6 +53793,15 @@ export interface operations {
           'text/csv': string
         }
       }
+      /** @description Authentication required. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': components['schemas']['Unauthorized']
+        }
+      }
       /** @description Not allowed to manage this organization. */
       403: {
         headers: {

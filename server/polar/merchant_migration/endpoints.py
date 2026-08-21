@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Depends, Query
 from pydantic import UUID4
 
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -213,6 +213,10 @@ async def import_catalog(
     summary="Export Merchant Migration Customer IDs",
     response_class=CSVStreamingResponse,
     responses={
+        401: {
+            "description": "Authentication required.",
+            "model": Unauthorized.schema(),
+        },
         403: {
             "description": "Not allowed to manage this organization.",
             "model": NotPermitted.schema(),
@@ -226,7 +230,9 @@ async def import_catalog(
 async def export_customer_ids(
     id: UUID4,
     auth_subject: MerchantMigrationWrite,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    # The primary: this CSV is downloaded right after import, and replica lag
+    # would omit customer IDs the import receipt already counted.
+    session: AsyncSession = Depends(get_db_session),
 ) -> CSVStreamingResponse:
     """One imported Stripe customer ID per row, no header — for Stripe Copy upload."""
     source_ids = await merchant_migration_service.stream_imported_customer_source_ids(

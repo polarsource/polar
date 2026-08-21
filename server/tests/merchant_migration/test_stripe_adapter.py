@@ -317,8 +317,6 @@ class TestExtractProducts:
     async def test_multi_currency_price_yields_one_price_per_currency(
         self, mocker: MockerFixture
     ) -> None:
-        """A Stripe price sold in several currencies is one Polar price per
-        currency, so the product isn't reported as unpriced in any of them."""
         adapter, client = _adapter(mocker)
         _listed_prices(
             mocker,
@@ -342,8 +340,6 @@ class TestExtractProducts:
         ] == [("price_1", "eur", 900), ("price_1:usd", "usd", 1000)]
 
     async def test_currency_options_are_expanded(self, mocker: MockerFixture) -> None:
-        # Stripe leaves `currency_options` out of the response unless asked for
-        # it, which reads as a multi-currency price having a single currency.
         adapter, client = _adapter(mocker)
         _listed_prices(mocker, client)
 
@@ -369,8 +365,6 @@ class TestGetSubscription:
         assert subscription.current_period_end is not None
 
     async def test_reads_the_price_it_is_billed_in(self, mocker: MockerFixture) -> None:
-        """On a multi-currency price the subscription's own currency says which
-        price it charges, so it must not land on the price's default one."""
         adapter, client = _adapter(mocker)
         client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
             return_value=_stripe_subscription(

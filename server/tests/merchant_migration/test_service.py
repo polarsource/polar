@@ -691,8 +691,6 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
 
 
 def _multi_currency_catalog() -> list[CanonicalRecord]:
-    """What one Stripe price sold in EUR and USD reads as, with a subscription
-    billed in EUR: the extra currency carries its own price source id."""
     return [
         CanonicalProduct(
             source_id="prod_1:month:1",
@@ -1489,8 +1487,6 @@ class TestImportCatalog:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # One source price sold in EUR and USD becomes one Polar price per
-        # currency, and a subscription keeps the currency it was billed in.
         migration = await _staged_migration(
             mocker,
             session,

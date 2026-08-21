@@ -46,14 +46,7 @@ _SUBSCRIPTION_EXPAND = [
 
 
 def _canonical_price_id(price_id: str, currency: str, default_currency: str) -> str:
-    """The canonical id for one currency of a source price.
-
-    A Stripe price can carry an amount in several currencies at once
-    (`currency_options`), and each maps to its own Polar price, so the price id
-    alone doesn't identify one. The default currency keeps the bare price id:
-    every single-currency price is one, and it's the id already-staged
-    migrations were read with.
-    """
+    """Keep the default currency on the bare price id so already-staged rows still match."""
     if currency.lower() == default_currency.lower():
         return price_id
     return f"{price_id}:{currency.lower()}"
@@ -166,8 +159,6 @@ class StripeAdapter:
             params={
                 "active": True,
                 "limit": PAGE_SIZE,
-                # `currency_options` is not returned unless expanded, and without
-                # it a multi-currency price reads as priced in one currency only.
                 "expand": ["data.product", "data.currency_options"],
             }
         )
@@ -260,12 +251,6 @@ class StripeAdapter:
         return subscription.status == "canceled"
 
     def _map_prices(self, price: stripe_lib.Price) -> list[CanonicalPrice]:
-        """One canonical price per currency the source price sells in.
-
-        A Polar product holds one price per currency, so a Stripe price with
-        `currency_options` becomes several: taking only its default currency
-        would report a product as unpriced in currencies it does sell in.
-        """
         pricing_scheme = self._map_pricing_scheme(price)
         amounts: dict[str, int | None] = {price.currency: price.unit_amount}
         for currency, option in (price.get("currency_options") or {}).items():
@@ -319,9 +304,6 @@ class StripeAdapter:
         )
 
     def _price_source_id(self, subscription: stripe_lib.Subscription, item: Any) -> str:
-        """The canonical price this subscription bills. A multi-currency source
-        price carries an amount per currency, and the subscription's currency
-        says which of them it charges."""
         price = item["price"]
         if isinstance(price, str):
             return price

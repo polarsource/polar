@@ -64,9 +64,6 @@ class CanonicalPaymentMethod:
 
 @dataclass
 class CanonicalPrice:
-    # One price in one currency, since that's what a Polar price is. A source
-    # price sold in several currencies at once therefore maps to one canonical
-    # price per currency, and the adapter makes their source ids unique.
     source_id: str
     currency: str
     # None when the source has no representable integer amount (e.g. a sub-cent

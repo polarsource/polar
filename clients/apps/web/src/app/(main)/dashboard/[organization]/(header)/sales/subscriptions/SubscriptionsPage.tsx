@@ -1,10 +1,9 @@
 'use client'
 
-import { ExportModal } from '@/components/Export/ExportModal'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { useModal } from '@/components/Modal/useModal'
-import { subscriptionsColumnConfig } from '@/components/Subscriptions/ExportSubscriptionsColumns'
+import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import {
   DEFAULT_SUBSCRIPTION_STATUS,
@@ -300,31 +299,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           />
         ) : null}
       </div>
-      <ExportModal
-        start={new Date(organization.created_at)}
-        endpoint="/v1/subscriptions/export"
-        title="Export subscriptions"
-        description="Download your subscriptions as a CSV file."
-        dateRangeLabel="Started between"
-        columnConfig={subscriptionsColumnConfig}
-        buildParams={({ url, dateRange, timezone }) => {
-          url.searchParams.set('organization_id', organization.id)
-          if (productId) {
-            url.searchParams.append('product_id', productId)
-          }
-          if (status !== 'any') {
-            url.searchParams.append('status', status)
-          }
-          if (cancelAtPeriodEnd !== null && cancelAtPeriodEnd !== undefined) {
-            url.searchParams.set(
-              'cancel_at_period_end',
-              String(cancelAtPeriodEnd),
-            )
-          }
-          url.searchParams.set('started_after', dateRange.from.toISOString())
-          url.searchParams.set('started_before', dateRange.to.toISOString())
-          url.searchParams.set('timezone', timezone)
-        }}
+      <ExportSubscriptionsModal
+        organization={organization}
+        productId={productId}
+        status={status}
+        cancelAtPeriodEnd={cancelAtPeriodEnd}
         isShown={isExportModalShown}
         hide={hideExportModal}
       />

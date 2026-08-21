@@ -3,7 +3,6 @@
 import DateRangePicker, {
   DateRange,
 } from '@/components/Metrics/DateRangePicker'
-import { getServerURL } from '@/utils/api'
 import {
   Button,
   InlineModal,
@@ -16,8 +15,9 @@ import {
 import { Box } from '@polar-sh/orbit/Box'
 import { endOfToday, format, startOfDay } from 'date-fns'
 import { ChevronDown } from 'lucide-react'
-import React, { useState } from 'react'
-import { ExportColumnConfig, ExportColumns } from './ExportColumns'
+import React, { useMemo, useState } from 'react'
+import { ExportColumnGroup, ExportColumns } from './ExportColumns'
+import { ExportSelection, createExportColumnConfig } from './utils'
 
 const formatExportRange = (range: DateRange): string => {
   const from = format(range.from, 'MMM d, yyyy')
@@ -30,20 +30,14 @@ const formatGMTOffset = (date: Date = new Date()): string =>
     .formatToParts(date)
     .find((part) => part.type === 'timeZoneName')?.value ?? 'Local'
 
-export interface ExportRequestContext {
-  url: URL
-  dateRange: DateRange
-  timezone: string
-}
-
 interface ExportModalProps<T extends string> {
-  start: Date
-  endpoint: string
+  start: string | Date
   title: string
   description: string
   dateRangeLabel: string
-  columnConfig: ExportColumnConfig<T>
-  buildParams: (context: ExportRequestContext) => void
+  columns: readonly ExportColumnGroup<T>[]
+  defaultColumns: T[]
+  onExport: (selection: ExportSelection<T>) => void
   banner?: React.ReactNode
   exportDisabled?: boolean
   isShown: boolean
@@ -52,20 +46,24 @@ interface ExportModalProps<T extends string> {
 
 export function ExportModal<T extends string>({
   start,
-  endpoint,
   title,
   description,
   dateRangeLabel,
-  columnConfig,
-  buildParams,
+  columns: columnGroups,
+  defaultColumns,
+  onExport,
   banner,
   exportDisabled = false,
   isShown,
   hide,
 }: ExportModalProps<T>) {
+  const columnConfig = useMemo(
+    () => createExportColumnConfig(columnGroups, defaultColumns),
+    [columnGroups, defaultColumns],
+  )
   const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
   const localOffsetLabel = formatGMTOffset()
-  const rangeStart = startOfDay(start)
+  const rangeStart = startOfDay(new Date(start))
   const [timezone, setTimezone] = useState<'local' | 'utc'>('local')
   const [dateRange, setDateRange] = useState<DateRange>({
     from: rangeStart,
@@ -76,23 +74,16 @@ export function ExportModal<T extends string>({
 
   const rangeLabel = formatExportRange(dateRange)
 
-  const onExport = () => {
+  const handleExport = () => {
     if (exportDisabled) {
       return
     }
 
-    const url = new URL(getServerURL(endpoint), window.location.origin)
-    buildParams({
-      url,
+    onExport({
       dateRange,
       timezone: timezone === 'utc' ? 'UTC' : localTimezone,
+      columns: columnConfig.order(columns),
     })
-
-    for (const column of columnConfig.order(columns)) {
-      url.searchParams.append('columns', column)
-    }
-
-    window.open(url, '_blank')
     hide()
   }
 
@@ -211,7 +202,7 @@ export function ExportModal<T extends string>({
               <Button
                 fullWidth
                 disabled={exportDisabled || columns.length === 0}
-                onClick={onExport}
+                onClick={handleExport}
               >
                 Export CSV
               </Button>

@@ -7,9 +7,9 @@ export type ReviewFilterCounts = Record<ReviewFilter, number>
 const numberFormat = new Intl.NumberFormat('en-US')
 
 const OPTIONS: { value: ReviewFilter; label: string }[] = [
+  { value: 'all', label: 'All rows' },
   { value: 'attention', label: 'Needs attention' },
   { value: 'skipped', label: "Won't import" },
-  { value: 'all', label: 'All rows' },
 ]
 
 export const EMPTY_MESSAGES: Record<ReviewFilter, string> = {

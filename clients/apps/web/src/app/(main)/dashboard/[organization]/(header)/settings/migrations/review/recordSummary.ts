@@ -37,6 +37,7 @@ export const useRecordSummary = (id: string) => {
         customers: counts.customers.imported,
       },
       selectableTotal: counts.subscriptions.selectable,
+      // The review table only lists subscriptions; the API counts those flags.
       attentionCount: query.data?.action_required ?? 0,
     }
   }, [query.data])

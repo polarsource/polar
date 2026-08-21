@@ -35,6 +35,7 @@ from polar.subscription.service import subscription as subscription_service
 
 from .adapters import SourceAdapter
 from .canonical import (
+    CanonicalPaymentMethodType,
     CanonicalProduct,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
@@ -78,8 +79,8 @@ _PLAN_CHANGED = (
     "subscription no longer matches. Re-run the import for this customer."
 )
 _NO_CARD = (
-    "No copied card has landed on Polar for this customer yet. They need to "
-    "enter their billing details again, or the copy has to pick them up."
+    "No copied payment method has landed on Polar for this customer yet. They "
+    "need to enter their billing details again, or the copy has to pick them up."
 )
 _STRANDED = (
     "It was already stopped on the source, but no payment method has landed on "
@@ -129,6 +130,12 @@ def _skip(reason: str) -> CutoverOutcome:
 
 def _fail(reason: str) -> CutoverOutcome:
     return CutoverOutcome(MerchantMigrationCutoverStatus.failed, reason)
+
+
+def _is_chargeable(payment_method: PaymentMethod | None) -> bool:
+    return payment_method is not None and CanonicalPaymentMethodType.is_chargeable_type(
+        payment_method.type
+    )
 
 
 class SubscriptionCutover:
@@ -187,10 +194,10 @@ class SubscriptionCutover:
             return _skip(_NOT_IMPORTED)
 
         customer_record = await self.record_repository.get_imported_customer_dependency(
-            self.migration.id, staged.customer_source_id
+            self.migration.organization_id, staged.customer_source_id
         )
         product_record = await self.record_repository.get_imported_product_dependency(
-            self.migration.id, staged.price_source_id
+            self.migration.organization_id, staged.price_source_id
         )
         if (
             customer_record is None
@@ -236,7 +243,7 @@ class SubscriptionCutover:
             self.session, customer, source_method=source.payment_method
         )
         if already_stopped:
-            if payment_method is None or payment_method.type != "card":
+            if not _is_chargeable(payment_method):
                 log.error(
                     "merchant_migration.cutover.stranded",
                     migration_id=self.migration.id,
@@ -244,7 +251,7 @@ class SubscriptionCutover:
                     source_id=record.source_id,
                 )
                 return _fail(_STRANDED)
-        elif payment_method is None or payment_method.type != "card":
+        elif not _is_chargeable(payment_method):
             return _skip(_NO_CARD)
 
         try:

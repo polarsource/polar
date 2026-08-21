@@ -1447,12 +1447,67 @@ class TestSummarizeRecords:
             session,
             auth_subject,
             migration.id,
-            entity=None,
+            entity=PrecheckEntity.subscriptions,
             status=None,
             reason_level=PrecheckReasonLevel.action_required,
             pagination=PaginationParams(page=1, limit=100),
         )
         assert summary.action_required == count
+
+    @pytest.mark.auth
+    async def test_attention_count_ignores_customer_and_product_flags(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *_catalog(),
+                CanonicalCustomer(
+                    source_id="cus_1",
+                    email="alice@example.com",
+                    name="Alice",
+                    country=None,
+                ),
+                CanonicalSubscription(
+                    source_id="sub_1",
+                    customer_source_id="cus_1",
+                    price_source_id="price_1",
+                    status=CanonicalSubscriptionStatus.active,
+                    collection_method=CanonicalCollectionMethod.charge_automatically,
+                    current_period_start=None,
+                    current_period_end=None,
+                    trialing=False,
+                    paused_collection=False,
+                    line_item_count=1,
+                    quantity=1,
+                    payment_method=None,
+                ),
+            ],
+        )
+
+        summary = await service.summarize_records(session, auth_subject, migration.id)
+
+        _, customer_flags = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.customers,
+            status=None,
+            reason_level=PrecheckReasonLevel.action_required,
+            pagination=PaginationParams(page=1, limit=100),
+        )
+        assert customer_flags == 1
+        assert summary.action_required == 0
 
     @pytest.mark.auth
     async def test_summary_counts_what_is_still_selectable(

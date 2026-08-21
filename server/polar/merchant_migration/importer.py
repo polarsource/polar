@@ -162,6 +162,15 @@ class CatalogImporter:
 
     async def run(self) -> MerchantMigrationImportReport:
         records = await self.record_repository.list_by_migration(self.migration.id)
+        imported_dependencies = (
+            await self.record_repository.list_imported_catalog_dependencies(
+                self.organization.id
+            )
+        )
+        by_identity = {(record.type, record.source_id): record for record in records}
+        for record in imported_dependencies:
+            by_identity.setdefault((record.type, record.source_id), record)
+        catalog = list(by_identity.values())
         product_records = self._records_of(records, MerchantMigrationRecordType.product)
         customer_records = self._records_of(
             records, MerchantMigrationRecordType.customer
@@ -172,7 +181,9 @@ class CatalogImporter:
 
         product_source_ids, customer_source_ids = (
             self._selected_subscription_dependencies(
-                subscription_records, product_records, customer_records
+                subscription_records,
+                self._records_of(catalog, MerchantMigrationRecordType.product),
+                self._records_of(catalog, MerchantMigrationRecordType.customer),
             )
         )
 

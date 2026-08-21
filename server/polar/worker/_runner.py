@@ -5,7 +5,7 @@ import functools
 import inspect
 import math
 import time
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 
 import dramatiq
@@ -14,6 +14,7 @@ import structlog
 from dramatiq.common import compute_backoff
 from dramatiq.errors import Retry
 from dramatiq.middleware.current_message import CurrentMessage
+from dramatiq.middleware.group_callbacks import GroupCallbacks
 from dramatiq.middleware.retries import DEFAULT_MAX_BACKOFF
 
 from polar import tasks  # noqa: F401  (registers all actors with the broker)
@@ -184,6 +185,7 @@ async def run_task(
     message_timestamp: int | None = None,
     message_id: str | None = None,
     debounce_key: str | None = None,
+    message_options: Mapping[str, Any] | None = None,
 ) -> None:
     registry = build_registry()
     fn = registry.get(actor_name)
@@ -191,7 +193,8 @@ async def run_task(
         raise UnknownActor(actor_name)
 
     kwargs = kwargs or {}
-    actor_obj = dramatiq.get_broker().get_actor(actor_name)
+    broker = dramatiq.get_broker()
+    actor_obj = broker.get_actor(actor_name)
     time_limit_ms = actor_obj.options.get("time_limit", TASK_TIME_LIMIT_DEFAULT_MS)
     timeout_seconds = time_limit_ms / 1000
     if remaining_time_seconds is not None:
@@ -202,6 +205,7 @@ async def run_task(
         args=tuple(args),
         kwargs=kwargs,
         options={
+            **(message_options or {}),
             "retries": receive_count - 1,
             "max_retries": actor_obj.options.get(
                 "max_retries", settings.WORKER_MAX_RETRIES
@@ -262,6 +266,15 @@ async def run_task(
                 )
         if retry is not None:
             raise retry
+        if message.options.get("group_completion_uuid"):
+            group_callbacks = next(
+                middleware
+                for middleware in broker.middleware
+                if isinstance(middleware, GroupCallbacks)
+            )
+            await asyncio.to_thread(
+                group_callbacks.after_process_message, broker, message
+            )
     finally:
         CurrentMessage._MESSAGE.reset(token)
         structlog.contextvars.unbind_contextvars(

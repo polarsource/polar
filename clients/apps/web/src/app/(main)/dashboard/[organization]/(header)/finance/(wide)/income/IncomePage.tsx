@@ -72,18 +72,16 @@ export default function ClientPage({
   const pageCount = balancesHook.data?.pagination.max_page ?? 1
 
   return (
-    <div className="flex flex-col gap-y-8">
-      <TransactionsList
-        transactions={balances}
-        rowCount={rowCount}
-        pageCount={pageCount}
-        pagination={pagination}
-        onPaginationChange={setPagination}
-        sorting={sorting}
-        onSortingChange={setSorting}
-        isLoading={accountIsLoading || balancesHook.isLoading}
-        payoutTransactionDelay={payoutTransactionDelay}
-      />
-    </div>
+    <TransactionsList
+      transactions={balances}
+      rowCount={rowCount}
+      pageCount={pageCount}
+      pagination={pagination}
+      onPaginationChange={setPagination}
+      sorting={sorting}
+      onSortingChange={setSorting}
+      isLoading={accountIsLoading || balancesHook.isLoading}
+      payoutTransactionDelay={payoutTransactionDelay}
+    />
   )
 }

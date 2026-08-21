@@ -1,9 +1,10 @@
 'use client'
 
+import { ExportModal } from '@/components/Export/ExportModal'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
-import ExportOrdersModal from '@/components/Orders/ExportOrdersModal'
+import { ordersColumnConfig } from '@/components/Orders/ExportOrdersColumns'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
@@ -298,10 +299,25 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           />
         )}
       </div>
-      <ExportOrdersModal
-        organization={organization}
-        productId={productId ?? undefined}
-        status={status}
+      <ExportModal
+        start={new Date(organization.created_at)}
+        endpoint="/v1/orders/export"
+        title="Export orders"
+        description="Download your orders as a CSV file."
+        dateRangeLabel="Date range"
+        columnConfig={ordersColumnConfig}
+        buildParams={({ url, dateRange, timezone }) => {
+          url.searchParams.set('organization_id', organization.id)
+          for (const id of productId ?? []) {
+            url.searchParams.append('product_id', id)
+          }
+          if (status) {
+            url.searchParams.append('status', status)
+          }
+          url.searchParams.set('created_after', dateRange.from.toISOString())
+          url.searchParams.set('created_before', dateRange.to.toISOString())
+          url.searchParams.set('timezone', timezone)
+        }}
         isShown={isExportModalShown}
         hide={hideExportModal}
       />

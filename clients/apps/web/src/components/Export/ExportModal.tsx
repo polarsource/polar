@@ -36,13 +36,13 @@ export interface ExportRequestContext {
   timezone: string
 }
 
-interface ExportModalProps<C extends string> {
+interface ExportModalProps<T extends string> {
   start: Date
   endpoint: string
   title: string
   description: string
   dateRangeLabel: string
-  columnConfig: ExportColumnConfig<C>
+  columnConfig: ExportColumnConfig<T>
   buildParams: (context: ExportRequestContext) => void
   banner?: React.ReactNode
   exportDisabled?: boolean
@@ -50,7 +50,7 @@ interface ExportModalProps<C extends string> {
   hide: () => void
 }
 
-export function ExportModal<C extends string>({
+export function ExportModal<T extends string>({
   start,
   endpoint,
   title,
@@ -62,7 +62,7 @@ export function ExportModal<C extends string>({
   exportDisabled = false,
   isShown,
   hide,
-}: ExportModalProps<C>) {
+}: ExportModalProps<T>) {
   const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
   const localOffsetLabel = formatGMTOffset()
   const rangeStart = startOfDay(start)
@@ -71,7 +71,7 @@ export function ExportModal<C extends string>({
     from: rangeStart,
     to: endOfToday(),
   })
-  const [columns, setColumns] = useState<C[]>(columnConfig.defaults)
+  const [columns, setColumns] = useState<T[]>(columnConfig.defaults)
   const [columnsExpanded, setColumnsExpanded] = useState(false)
 
   const rangeLabel = formatExportRange(dateRange)

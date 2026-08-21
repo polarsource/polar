@@ -4,26 +4,26 @@ import { ChipSelect } from '@/components/Form/ChipSelect'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
-export interface ExportColumnGroup<C extends string> {
+export interface ExportColumnGroup<T extends string> {
   readonly label: string
-  readonly columns: readonly { readonly value: C; readonly label: string }[]
+  readonly columns: readonly { readonly value: T; readonly label: string }[]
 }
 
-export interface ExportColumnConfig<C extends string> {
-  groups: readonly ExportColumnGroup<C>[]
-  all: C[]
-  labels: Record<C, string>
-  defaults: C[]
-  order: (selected: C[]) => C[]
-  isDefault: (selected: C[]) => boolean
-  summarize: (selected: C[]) => string
+export interface ExportColumnConfig<T extends string> {
+  groups: readonly ExportColumnGroup<T>[]
+  all: T[]
+  labels: Record<T, string>
+  defaults: T[]
+  order: (selected: T[]) => T[]
+  isDefault: (selected: T[]) => boolean
+  summarize: (selected: T[]) => string
 }
 
-export function createExportColumnConfig<C extends string>(
-  groups: readonly ExportColumnGroup<C>[],
-  defaults: C[],
-): ExportColumnConfig<C> {
-  const all: C[] = groups.flatMap((group) =>
+export function createExportColumnConfig<T extends string>(
+  groups: readonly ExportColumnGroup<T>[],
+  defaults: T[],
+): ExportColumnConfig<T> {
+  const all: T[] = groups.flatMap((group) =>
     group.columns.map((column) => column.value),
   )
 
@@ -31,16 +31,16 @@ export function createExportColumnConfig<C extends string>(
     groups.flatMap((group) =>
       group.columns.map((column) => [column.value, column.label]),
     ),
-  ) as Record<C, string>
+  ) as Record<T, string>
 
-  const order = (selected: C[]): C[] =>
+  const order = (selected: T[]): T[] =>
     all.filter((column) => selected.includes(column))
 
-  const isDefault = (selected: C[]): boolean =>
+  const isDefault = (selected: T[]): boolean =>
     selected.length === defaults.length &&
     defaults.every((column) => selected.includes(column))
 
-  const summarize = (selected: C[]): string => {
+  const summarize = (selected: T[]): string => {
     if (selected.length === 0) return 'No fields selected'
     if (selected.length === all.length) return 'All fields'
     const ordered = order(selected)
@@ -54,17 +54,17 @@ export function createExportColumnConfig<C extends string>(
   return { groups, all, labels, defaults, order, isDefault, summarize }
 }
 
-interface ExportColumnsProps<C extends string> {
-  config: ExportColumnConfig<C>
-  selected: C[]
-  onChange: (columns: C[]) => void
+interface ExportColumnsProps<T extends string> {
+  config: ExportColumnConfig<T>
+  selected: T[]
+  onChange: (columns: T[]) => void
 }
 
-export function ExportColumns<C extends string>({
+export function ExportColumns<T extends string>({
   config,
   selected,
   onChange,
-}: ExportColumnsProps<C>) {
+}: ExportColumnsProps<T>) {
   const allSelected = selected.length === config.all.length
   const isDefault = config.isDefault(selected)
 
@@ -99,7 +99,7 @@ export function ExportColumns<C extends string>({
       </Box>
 
       {config.groups.map((group) => {
-        const groupValues: C[] = group.columns.map((column) => column.value)
+        const groupValues: T[] = group.columns.map((column) => column.value)
         return (
           <Box key={group.label} flexDirection="column" rowGap="s">
             <Text variant="label" color="muted">
@@ -113,7 +113,7 @@ export function ExportColumns<C extends string>({
               onChange={(next) =>
                 onChange([
                   ...selected.filter((column) => !groupValues.includes(column)),
-                  ...(next as C[]),
+                  ...(next as T[]),
                 ])
               }
             />

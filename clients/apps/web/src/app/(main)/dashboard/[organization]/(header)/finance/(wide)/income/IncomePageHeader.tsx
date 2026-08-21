@@ -1,10 +1,11 @@
 'use client'
 
+import { ExportModal } from '@/components/Export/ExportModal'
 import { useModal } from '@/components/Modal/useModal'
-import ExportTransactionsModal from '@/components/Transactions/ExportTransactionsModal'
+import { transactionsColumnConfig } from '@/components/Transactions/ExportTransactionsColumns'
 import { useOrganizationAccount } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
+import { Alert, Button, Text } from '@polar-sh/orbit'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { twMerge } from 'tailwind-merge'
 
@@ -36,9 +37,34 @@ export function IncomePageHeader({
         <FileDownloadOutlined fontSize="inherit" />
         <Text>Export</Text>
       </Button>
-      <ExportTransactionsModal
-        organization={organization}
-        account={account}
+      <ExportModal
+        start={new Date(organization.created_at)}
+        endpoint="/v1/transactions/export"
+        title="Export income"
+        description="Download your income as a CSV file."
+        dateRangeLabel="Date range"
+        columnConfig={transactionsColumnConfig}
+        exportDisabled={!account}
+        banner={
+          !account ? (
+            <Alert
+              variant="danger"
+              title="No finance account"
+              description="This organization doesn't have a finance account yet, so income can't be exported."
+            />
+          ) : null
+        }
+        buildParams={({ url, dateRange, timezone }) => {
+          if (!account) {
+            return
+          }
+          url.searchParams.set('account_id', account.id)
+          url.searchParams.set('type', 'balance')
+          url.searchParams.set('exclude_platform_fees', 'true')
+          url.searchParams.set('created_after', dateRange.from.toISOString())
+          url.searchParams.set('created_before', dateRange.to.toISOString())
+          url.searchParams.set('timezone', timezone)
+        }}
         isShown={isExportModalShown}
         hide={hideExportModal}
       />

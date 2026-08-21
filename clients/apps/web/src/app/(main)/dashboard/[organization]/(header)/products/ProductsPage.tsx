@@ -2,11 +2,13 @@
 
 import { BulkActionBar } from '@/components/BulkActions/BulkActionBar'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import Pagination from '@/components/Pagination/Pagination'
+import {
+  BulkArchiveAction,
+  BulkArchiveProductsModal,
+} from '@/components/Products/BulkArchiveProductsModal'
 import { ProductListItem } from '@/components/Products/ProductListItem'
-import { toast } from '@/components/Toast/use-toast'
-import { useProducts, useUpdateProducts } from '@/hooks/queries/products'
+import { useProducts } from '@/hooks/queries/products'
 import { useSelection } from '@/hooks/useSelection'
 import { useDebouncedCallback } from '@/hooks/utils'
 import {
@@ -35,33 +37,6 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
-
-const getProductId = (product: schemas['Product']) => product.id
-
-const pluralizeProducts = (count: number) =>
-  `${count} ${count === 1 ? 'product' : 'products'}`
-
-type BulkAction = 'archive' | 'unarchive'
-
-const BULK_ACTIONS = {
-  archive: {
-    label: 'Archive',
-    pastTense: 'archived',
-    title: 'Products Archived',
-    partialTitle: 'Some Products Were Not Archived',
-    consequence:
-      'will stop accepting new purchases. Existing customers keep their benefits and subscriptions continue normally',
-    untouchedState: 'archived',
-  },
-  unarchive: {
-    label: 'Unarchive',
-    pastTense: 'unarchived',
-    title: 'Products Unarchived',
-    partialTitle: 'Some Products Were Not Unarchived',
-    consequence: 'will be available for purchase again',
-    untouchedState: 'active',
-  },
-} as const satisfies Record<BulkAction, unknown>
 
 export default function ClientPage({
   organization: org,
@@ -165,84 +140,30 @@ export default function ClientPage({
 
   const items = useMemo(
     () =>
-      [...(products.data?.items ?? [])].sort((a, b) => {
-        if (a.is_archived === b.is_archived) return 0
-        return a.is_archived ? 1 : -1
-      }),
+      [...(products.data?.items ?? [])].sort(
+        (a, b) => Number(a.is_archived) - Number(b.is_archived),
+      ),
     [products.data],
   )
 
   const selection = useSelection({
     items,
-    getId: getProductId,
+    getId: (product) => product.id,
     resetKey: `${query ?? ''}|${show}`,
   })
 
-  const activeSelected = useMemo(
-    () => selection.selected.filter((product) => !product.is_archived),
-    [selection.selected],
+  const activeSelected = selection.selected.filter(
+    (product) => !product.is_archived,
   )
-  const archivedSelected = useMemo(
-    () => selection.selected.filter((product) => product.is_archived),
-    [selection.selected],
+  const archivedSelected = selection.selected.filter(
+    (product) => product.is_archived,
   )
 
-  const archiveProducts = useUpdateProducts()
-  const unarchiveProducts = useUpdateProducts()
-
-  const [confirmingAction, setConfirmingAction] = useState<BulkAction | null>(
-    null,
-  )
-
-  const runBulkAction = useCallback(
-    async (action: BulkAction) => {
-      const isArchiving = action === 'archive'
-      const copy = BULK_ACTIONS[action]
-      try {
-        const { succeeded, failed } = await (
-          isArchiving ? archiveProducts : unarchiveProducts
-        ).mutateAsync({
-          products: isArchiving ? activeSelected : archivedSelected,
-          body: { is_archived: isArchiving },
-        })
-        if (failed.length > 0) {
-          toast({
-            title: copy.partialTitle,
-            description: `${String(succeeded.length)} ${copy.pastTense}, ${String(failed.length)} failed`,
-          })
-        } else {
-          toast({
-            title: copy.title,
-            description: `${pluralizeProducts(succeeded.length)} ${copy.pastTense}`,
-          })
-        }
-      } catch {
-        toast({
-          title: copy.partialTitle,
-          description: `No products were ${copy.pastTense}`,
-        })
-      } finally {
-        selection.clear()
-      }
-    },
-    [
-      archiveProducts,
-      unarchiveProducts,
-      activeSelected,
-      archivedSelected,
-      selection,
-    ],
-  )
+  const [confirmingAction, setConfirmingAction] =
+    useState<BulkArchiveAction | null>(null)
 
   const isMixedSelection =
     activeSelected.length > 0 && archivedSelected.length > 0
-
-  const confirming = confirmingAction ?? 'archive'
-  const confirmingCopy = BULK_ACTIONS[confirming]
-  const confirmingTargets =
-    confirming === 'archive' ? activeSelected : archivedSelected
-  const confirmingUntouched =
-    confirming === 'archive' ? archivedSelected : activeSelected
 
   return (
     <DashboardBody>
@@ -261,7 +182,6 @@ export default function ClientPage({
                 <Button
                   variant="destructive"
                   onClick={() => setConfirmingAction('archive')}
-                  loading={archiveProducts.isPending}
                 >
                   Archive
                   {isMixedSelection ? ` (${activeSelected.length})` : ''}
@@ -271,7 +191,6 @@ export default function ClientPage({
                 <Button
                   variant="secondary"
                   onClick={() => setConfirmingAction('unarchive')}
-                  loading={unarchiveProducts.isPending}
                 >
                   Unarchive
                   {isMixedSelection ? ` (${archivedSelected.length})` : ''}
@@ -396,19 +315,16 @@ export default function ClientPage({
           </ShadowBoxOnMd>
         )}
       </div>
-      <ConfirmModal
-        isShown={confirmingAction !== null}
-        hide={() => setConfirmingAction(null)}
-        title={`${confirmingCopy.label} ${pluralizeProducts(confirmingTargets.length)}`}
-        description={`${pluralizeProducts(confirmingTargets.length)} ${confirmingCopy.consequence}.${
-          confirmingUntouched.length > 0
-            ? ` ${pluralizeProducts(confirmingUntouched.length)} in your selection ${confirmingUntouched.length === 1 ? 'is' : 'are'} already ${confirmingCopy.untouchedState} and will not be changed.`
-            : ''
-        }`}
-        onConfirm={() => runBulkAction(confirming)}
-        destructive={confirming === 'archive'}
-        destructiveText={confirmingCopy.label}
-      />
+      {confirmingAction ? (
+        <BulkArchiveProductsModal
+          action={confirmingAction}
+          products={
+            confirmingAction === 'archive' ? activeSelected : archivedSelected
+          }
+          hide={() => setConfirmingAction(null)}
+          onComplete={selection.clear}
+        />
+      ) : null}
     </DashboardBody>
   )
 }

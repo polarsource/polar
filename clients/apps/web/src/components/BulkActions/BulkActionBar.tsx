@@ -9,11 +9,7 @@ export interface BulkActionBarProps {
   pageSize: number
   onPageSelectedChange: (selected: boolean) => void
   onClear: () => void
-  /**
-   * Stretch the bar across its container, pushing the actions to the far end.
-   * Use when the bar stands in for a full-width toolbar rather than sitting in
-   * a slot next to other controls.
-   */
+  // Stretch the bar to fill its container, pushing the actions to the far end.
   stretch?: boolean
   children: React.ReactNode
 }

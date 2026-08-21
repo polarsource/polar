@@ -151,21 +151,6 @@ export default {
           '=1': '# {unitLabel}',
           other: '# {unitLabelPlural}',
         },
-        range: {
-          value: '{min} - {max} {unitLabelPlural}',
-          _llmContext:
-            'Shown when a unit-based product has both a minimum and maximum unit count. {unitLabelPlural} is the merchant-defined plural noun, or "units" when unset. Displayed as: "5 - 100 devices". Always plural.',
-        },
-        minimum: {
-          value: 'Minimum {min} {unitLabelPlural}',
-          _llmContext:
-            'Shown when a unit-based product has a minimum unit count but no maximum. The {min} value is always > 1 in this context, so the noun is always plural. {unitLabelPlural} is the merchant-defined plural noun, or "units" when unset.',
-        },
-        maximum: {
-          value: 'Maximum {max} {unitLabelPlural}',
-          _llmContext:
-            'Shown when a unit-based product has a maximum unit count but no minimum constraint. {unitLabelPlural} is the merchant-defined plural noun, or "units" when unset.',
-        },
         updateFailed: 'Failed to update units',
       },
       discount: {

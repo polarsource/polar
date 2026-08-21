@@ -230,6 +230,98 @@ class TestRun:
         assert subscription.payment_method_id is not None
         assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
 
+    async def test_creates_activates_with_copied_bank_debit(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(
+            mocker,
+            build_stripe_payment_method(type="us_bank_account", customer="cus_1"),
+        )
+        adapter = _source()
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(
+            pending_record
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert outcome.message is None
+        assert pending_record.target_id is not None
+        subscription = await SubscriptionRepository.from_session(session).get_by_id(
+            pending_record.target_id
+        )
+        assert subscription is not None
+        assert subscription.payment_method_id is not None
+
+    async def test_creates_from_dependencies_imported_on_earlier_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        earlier = await build_connected_migration(save_fixture, organization)
+        current = await build_connected_migration(save_fixture, organization)
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=earlier,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_1",
+                target_id=imported_customer.id,
+                canonical={},
+            )
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=earlier,
+                organization=organization,
+                type=MerchantMigrationRecordType.product,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="prod_1:month:1",
+                target_id=product.id,
+                canonical=serialize(
+                    CanonicalProduct(
+                        source_id="prod_1:month:1",
+                        product_source_id="prod_1",
+                        name="Product",
+                        recurring_interval="month",
+                        recurring_interval_count=1,
+                        prices=[
+                            CanonicalPrice(
+                                source_id="price_1",
+                                currency="usd",
+                                amount=1000,
+                                pricing_scheme=CanonicalPricingScheme.fixed,
+                            )
+                        ],
+                    )
+                ),
+            )
+        )
+        pending = MerchantMigrationRecord(
+            merchant_migration=current,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_1",
+            target_id=None,
+            canonical=serialize(canonical_subscription()),
+        )
+        await save_fixture(pending)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await SubscriptionCutover(session, current, _source()).run(pending)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert pending.target_id is not None
+
     async def test_duplicate_pending_subscription_stays_on_source(
         self,
         session: AsyncSession,
@@ -253,6 +345,39 @@ class TestRun:
         assert "already has a live subscription" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)
         assert pending_record.status == MerchantMigrationRecordStatus.pending
+
+    async def test_second_source_sub_for_the_same_product_stays_on_source(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        organization: Organization,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        second = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_2",
+            canonical=serialize(canonical_subscription(source_id="sub_2")),
+        )
+        await save_fixture(second)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        cutover = SubscriptionCutover(session, migration, adapter)
+
+        first = await cutover.run(pending_record)
+        later = await cutover.run(second)
+
+        assert first.status == MerchantMigrationCutoverStatus.moved
+        assert later.status == MerchantMigrationCutoverStatus.skipped
+        assert "already has a live subscription" in (later.message or "")
+        assert second.target_id is None
+        assert adapter.stopped == ["sub_1"]
 
     async def test_moves_and_stops_the_source(
         self,
@@ -288,6 +413,26 @@ class TestRun:
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id is not None
+
+    async def test_moves_with_copied_bank_debit(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(
+            mocker,
+            build_stripe_payment_method(type="sepa_debit", customer="cus_1"),
+        )
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert outcome.message is None
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
         assert subscription.payment_method_id is not None
 
     async def test_keeps_a_running_trial_running(
@@ -679,7 +824,7 @@ class TestSkips:
         outcome = await cutover(adapter)
 
         assert outcome.status == MerchantMigrationCutoverStatus.skipped
-        assert "No copied card" in (outcome.message or "")
+        assert "No copied payment method" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)
 
     async def test_customer_deleted_on_polar(

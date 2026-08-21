@@ -176,9 +176,10 @@ class MerchantMigrationRecordSummary(Schema):
     )
     action_required: int = Field(
         description=(
-            "How many records the pre-check flagged for the merchant to fix, "
-            "across entities. Classification only, so a flagged record that has "
-            "since been imported still counts."
+            "How many subscription records the pre-check flagged for the merchant "
+            "to fix. Classification only, so a flagged record that has since been "
+            "imported still counts. Product and customer flags are not included: "
+            "the review table only lists subscriptions."
         )
     )
 

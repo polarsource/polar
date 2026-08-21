@@ -655,7 +655,7 @@ class MerchantMigrationService:
             if staged is None:
                 continue
             customer_record = await record_repository.get_imported_customer_dependency(
-                migration.id, staged.customer_source_id
+                migration.organization_id, staged.customer_source_id
             )
             if customer_record is None or customer_record.target_id is None:
                 continue
@@ -1176,7 +1176,22 @@ class MerchantMigrationService:
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         staged = await record_repository.list_by_migration(migration.id)
+        extra_dependencies: Sequence[MerchantMigrationRecord] = ()
+        if PrecheckEntity.subscriptions in entities:
+            extra_dependencies = (
+                await record_repository.list_imported_catalog_dependencies(
+                    migration.organization_id
+                )
+            )
         records = [deserialize(record.type, record.canonical) for record in staged]
+        staged_identities = {
+            (staged_record.type, staged_record.source_id) for staged_record in staged
+        }
+        extra_canonicals = [
+            deserialize(record.type, record.canonical)
+            for record in extra_dependencies
+            if (record.type, record.source_id) not in staged_identities
+        ]
         # Only product classification consults it.
         existing_product_names: set[str] = set()
         if PrecheckEntity.products in entities:
@@ -1186,13 +1201,18 @@ class MerchantMigrationService:
 
         items: list[MerchantMigrationRecordItem] = []
         for entity_type in entities:
+            classified_from = records
+            if entity_type == PrecheckEntity.subscriptions:
+                classified_from = [*records, *extra_canonicals]
             entity_items = classify_records(
-                records,
+                classified_from,
                 entity_type,
                 organization.default_presentment_currency,
                 existing_product_names,
             )
-            self._attach_record_ids(entity_items, staged, entity_type)
+            self._attach_record_ids(
+                entity_items, staged, entity_type, extra_dependencies
+            )
             items.extend(entity_items)
         return items
 
@@ -1212,7 +1232,8 @@ class MerchantMigrationService:
             action_required=sum(
                 1
                 for item in items
-                if item.reason_level == PrecheckReasonLevel.action_required
+                if item.entity == PrecheckEntity.subscriptions
+                and item.reason_level == PrecheckReasonLevel.action_required
             ),
         )
 
@@ -1221,6 +1242,7 @@ class MerchantMigrationService:
         items: Sequence[MerchantMigrationRecordItem],
         staged: Sequence[MerchantMigrationRecord],
         entity: PrecheckEntity,
+        extra_dependencies: Sequence[MerchantMigrationRecord] = (),
     ) -> None:
         """Give each item its ledger record id. The 1:1 entities
         (products/customers/subscriptions) map to their staged records in order —
@@ -1236,14 +1258,15 @@ class MerchantMigrationService:
         imported_customer_source_ids: set[str] = set()
         imported_product_price_source_ids: set[str] = set()
         if entity == PrecheckEntity.subscriptions:
+            imported_rows = [*staged, *extra_dependencies]
             imported_customer_source_ids = {
                 record.source_id
-                for record in staged
+                for record in imported_rows
                 if record.type == MerchantMigrationRecordType.customer
                 and record.status == MerchantMigrationRecordStatus.imported
                 and record.target_id is not None
             }
-            for product_record in staged:
+            for product_record in imported_rows:
                 if (
                     product_record.type != MerchantMigrationRecordType.product
                     or product_record.status != MerchantMigrationRecordStatus.imported

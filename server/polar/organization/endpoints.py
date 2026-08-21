@@ -29,6 +29,7 @@ from polar.exceptions import (
     ResourceNotFound,
 )
 from polar.integrations.polar.exceptions import (
+    PolarSelfPaidSubscriptionAlreadyExists,
     PolarSelfPaymentMethodInUse,
 )
 from polar.integrations.polar.schemas import (
@@ -1007,6 +1008,7 @@ async def get_subscription(
     summary="Start Subscription Checkout",
     responses={
         201: {"description": "Checkout session created."},
+        409: {"model": PolarSelfPaidSubscriptionAlreadyExists.schema()},
         404: OrganizationNotFound,
     },
     tags=[APITag.private],

@@ -32,6 +32,7 @@ from polar.integrations.polar.exceptions import (
     PolarSelfNotConfigured,
     PolarSelfNotPaidOrder,
     PolarSelfOrderNotFound,
+    PolarSelfPaidSubscriptionAlreadyExists,
     PolarSelfPlanNotFound,
     PolarSelfWebhookError,
     SupportBenefitError,
@@ -1349,9 +1350,11 @@ def _make_subscription(
     id: str = "sub_1",
     product_id: str = "prod_1",
     amount: int = 0,
+    price_amount: int | None = None,
     cancel_at_period_end: bool = False,
     discount_id: str | None = None,
 ) -> Subscription:
+    product = _make_product(id=product_id, price_amount=price_amount)
     return deserialize(
         {
             "created_at": "2026-01-01T00:00:00Z",
@@ -1384,9 +1387,9 @@ def _make_subscription(
             "customer_cancellation_comment": None,
             "metadata": {},
             "customer": _CUSTOMER_DICT,
-            "product": dataclasses.asdict(_make_product(id=product_id)),
+            "product": dataclasses.asdict(product),
             "discount": None,
-            "prices": [],
+            "prices": [dataclasses.asdict(price) for price in product.prices],
             "meters": [],
             "pending_update": None,
         },
@@ -1594,6 +1597,68 @@ class TestStartCheckout:
             )
 
         client_mock.create_checkout.assert_not_awaited()
+
+    @pytest.mark.parametrize("amount", [2000, 0])
+    async def test_existing_paid_subscription_rejected(
+        self,
+        amount: int,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_paid", metadata={"order": 1}),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing",
+            product_id="prod_pro",
+            amount=amount,
+            price_amount=2000,
+        )
+
+        with pytest.raises(PolarSelfPaidSubscriptionAlreadyExists) as exc_info:
+            await polar_self.start_checkout(
+                session=read_session_mock,
+                organization_id=ORG_A,
+                product_id="prod_paid",
+            )
+
+        assert exc_info.value.status_code == 409
+        client_mock.create_checkout.assert_not_awaited()
+
+    async def test_existing_free_subscription_upgraded_through_checkout(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_paid", metadata={"order": 1}),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_free",
+            product_id="prod_free",
+            price_amount=0,
+        )
+
+        await polar_self.start_checkout(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_paid",
+        )
+
+        client_mock.create_checkout.assert_awaited_once_with(
+            product_id="prod_paid",
+            external_customer_id=str(ORG_A),
+            subscription_id="sub_free",
+            customer_ip_address=None,
+            success_url=None,
+            return_url=None,
+            embed_origin=None,
+            discount_id=None,
+        )
 
     async def test_does_not_touch_existing_discount_on_checkout(
         self,

@@ -55,7 +55,8 @@ Or rebuild from scratch: `ssh exe.dev rm polar-base` and run the build again.
 3. Mints a single-use ephemeral Tailscale key (10 min TTL) via the trust credential.
 4. Pipes a JSON payload over SSH to `sudo /srv/preview-tools/deploy.sh`, which joins
    the tailnet (first deploy only), checks out the SHA, delta-builds, writes env
-   files, migrates, seeds once, and restarts the services.
+   files, migrates, loads readiness-critical seed data, restarts the services,
+   and starts a deferred background seed for the remaining demo data.
 
 On PR close: `ssh exe.dev rm pr-<N>` plus `scripts.preview destroy`.
 

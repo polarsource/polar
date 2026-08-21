@@ -260,7 +260,7 @@ class TestComplete:
 
     @pytest.mark.parametrize(
         ("method", "key", "actor"),
-        (
+        [
             (
                 PanTransferMethod.pan_copy,
                 "start_copy",
@@ -271,7 +271,7 @@ class TestComplete:
                 "open_stripe_request",
                 PanStepActor.ops,
             ),
-        ),
+        ],
     )
     def test_rejects_invalid_stripe_migration_id(
         self,

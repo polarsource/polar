@@ -13,11 +13,11 @@ Kept free of `polar.models` imports so the model layer can use `PanTransferStep`
 as its column type.
 """
 
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-import re
 from typing import Any
 
 from pydantic import Field

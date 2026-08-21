@@ -106,7 +106,7 @@ export default {
         updateFailed: 'Det gick inte att uppdatera antalet',
       },
       meteredChargesMayApply: 'Ytterligare rörliga avgifter kan tillkomma',
-      meteredIncludedThen: '{units} ingår, därefter',
+      meteredIncluded: '{units} ingår',
     },
     trial: {
       hero: {

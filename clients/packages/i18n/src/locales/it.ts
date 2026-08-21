@@ -107,7 +107,7 @@ export default {
       },
       meteredChargesMayApply:
         'Potrebbero essere applicati costi aggiuntivi a consumo',
-      meteredIncludedThen: '{units} inclusi, poi',
+      meteredIncluded: 'Inclusi {units}',
     },
     trial: {
       hero: {

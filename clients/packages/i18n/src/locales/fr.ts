@@ -107,7 +107,7 @@ export default {
       },
       meteredChargesMayApply:
         'Des frais supplémentaires au compteur peuvent s’appliquer',
-      meteredIncludedThen: '{units} inclus, puis',
+      meteredIncluded: '{units} inclus',
     },
     trial: {
       hero: {

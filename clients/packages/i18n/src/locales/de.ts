@@ -107,7 +107,7 @@ export default {
       },
       meteredChargesMayApply:
         'Zusätzliche nutzungsabhängige Gebühren können anfallen',
-      meteredIncludedThen: '{units} inklusive, danach',
+      meteredIncluded: '{units} inklusive',
     },
     trial: {
       hero: {

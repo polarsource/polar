@@ -106,7 +106,7 @@ export default {
         updateFailed: 'No se pudieron actualizar las unidades',
       },
       meteredChargesMayApply: 'Pueden aplicarse cargos adicionales por uso',
-      meteredIncludedThen: '{units} incluidos, luego',
+      meteredIncluded: '{units} incluidos',
     },
     trial: {
       hero: {

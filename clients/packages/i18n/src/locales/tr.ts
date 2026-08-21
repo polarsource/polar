@@ -106,7 +106,7 @@ export default {
         updateFailed: 'Üniteler güncellenemedi',
       },
       meteredChargesMayApply: 'Ek kullanım ücreti uygulanabilir',
-      meteredIncludedThen: '{units} dahil, sonra',
+      meteredIncluded: '{units} dahil',
     },
     trial: {
       hero: {

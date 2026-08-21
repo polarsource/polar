@@ -669,3 +669,11 @@ resource "tfe_variable" "slo_report_slack_channel_production" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "merchant_migration_destination_stripe_account_id_production" {
+  key             = "merchant_migration_destination_stripe_account_id"
+  category        = "terraform"
+  description     = "Stripe account ID merchants copy or import saved cards into for production"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+}

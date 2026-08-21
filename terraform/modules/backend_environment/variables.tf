@@ -52,8 +52,9 @@ variable "backend_config" {
     invoices_vat_numbers                 = optional(string, "{}")
     tax_processors                       = optional(string, "[\"stripe\"]")
     tax_record_processor                 = optional(string, "stripe")
-    customer_portal_url_overrides        = optional(string, "{}")
-    plain_default_tier_external_id       = optional(string, "")
+    customer_portal_url_overrides                  = optional(string, "{}")
+    plain_default_tier_external_id                 = optional(string, "")
+    merchant_migration_destination_stripe_account_id = optional(string, "")
   })
 }
 

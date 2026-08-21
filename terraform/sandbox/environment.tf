@@ -18,8 +18,9 @@ locals {
     auth_cookie_key                      = "polar_sandbox_session"
     tax_processors                       = "[\"numeral\",\"stripe\"]"
     tax_record_processor                 = "numeral"
-    customer_portal_url_overrides        = var.customer_portal_url_overrides
-    plain_default_tier_external_id       = var.plain_default_tier_external_id
+    customer_portal_url_overrides                    = var.customer_portal_url_overrides
+    plain_default_tier_external_id                   = var.plain_default_tier_external_id
+    merchant_migration_destination_stripe_account_id = var.merchant_migration_destination_stripe_account_id
   }
 
   backend_secrets = {

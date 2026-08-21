@@ -21,7 +21,7 @@ import { ReviewFilter } from './ReviewStatusTabs'
 import { ReviewTableView } from './ReviewTableView'
 
 export function ReviewTable({ migrationId }: { migrationId: string }) {
-  const [filter, setFilter] = useState<ReviewFilter>('attention')
+  const [filter, setFilter] = useState<ReviewFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [selection, setSelection] = useState<SelectionState>(initialSelection)

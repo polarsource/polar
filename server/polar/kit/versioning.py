@@ -1,18 +1,28 @@
+import contextlib
+import contextvars
 import dataclasses
 import functools
 import re
 import typing
-from collections.abc import Awaitable, Callable, Iterable, Sequence
+from collections.abc import (
+    Awaitable,
+    Callable,
+    Generator,
+    Iterable,
+    Sequence,
+)
 
 from fastapi import APIRouter, FastAPI
 from fastapi.routing import APIRoute
+from pydantic import Field, GetJsonSchemaHandler
+from pydantic.fields import FieldInfo
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema, PydanticOmit
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import JSONResponse
 from starlette.routing import BaseRoute, Match
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from starlette.websockets import WebSocketClose
-
-from polar.openapi import get_openapi
 
 _API_VERSION_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
 
@@ -52,6 +62,62 @@ class APIVersion:
         headers = Headers(scope=scope)
         raw_version = headers.get(VERSION_HEADER)
         return cls.parse(raw_version) if raw_version else default
+
+
+_ACTIVE_API_VERSION = contextvars.ContextVar[APIVersion | None](
+    "active_api_version", default=None
+)
+
+
+@contextlib.contextmanager
+def api_version_context(version: APIVersion) -> Generator[None]:
+    token = _ACTIVE_API_VERSION.set(version)
+    try:
+        yield
+    finally:
+        _ACTIVE_API_VERSION.reset(token)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class _VersionAvailability:
+    versions: frozenset[APIVersion]
+    include_matches: bool
+
+    def is_available(self, version: APIVersion) -> bool:
+        return (version in self.versions) is self.include_matches
+
+    def __get_pydantic_json_schema__(
+        self, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        version = _ACTIVE_API_VERSION.get()
+        if version is not None and not self.is_available(version):
+            raise PydanticOmit
+        return handler(core_schema)
+
+
+def _versioned_field(
+    versions: tuple[APIVersion, ...], *, include_matches: bool
+) -> FieldInfo:
+    if not versions:
+        raise ValueError("At least one API version is required")
+
+    availability = _VersionAvailability(frozenset(versions), include_matches)
+
+    def exclude_if_unavailable(_: typing.Any) -> bool:
+        version = _ACTIVE_API_VERSION.get()
+        return version is not None and not availability.is_available(version)
+
+    field_info = Field(exclude_if=exclude_if_unavailable)
+    field_info.metadata.append(availability)
+    return field_info
+
+
+def IncludedIn(*versions: APIVersion) -> FieldInfo:
+    return _versioned_field(versions, include_matches=True)
+
+
+def ExcludedIn(*versions: APIVersion) -> FieldInfo:
+    return _versioned_field(versions, include_matches=False)
 
 
 def version[**P, R](
@@ -113,7 +179,8 @@ class APIVersionMiddleware:
                 headers[VERSION_HEADER] = str(api_version)
             await send(message)
 
-        await self.app(scope, receive, send_wrapper)
+        with api_version_context(api_version):
+            await self.app(scope, receive, send_wrapper)
 
 
 class VersionedAPIRoute(APIRoute):
@@ -221,6 +288,8 @@ def _create_openapi_endpoint(
 ) -> Callable[[], Awaitable[JSONResponse]]:
     @functools.cache
     def get_schema() -> dict[str, typing.Any]:
+        from polar.openapi import get_openapi
+
         return get_openapi(version=version, routes=routes, webhooks=webhooks)
 
     async def openapi() -> JSONResponse:

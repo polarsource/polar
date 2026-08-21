@@ -6,6 +6,7 @@ from fastapi.openapi.utils import get_openapi as _get_openapi
 from starlette.routing import BaseRoute
 
 from polar.kit.metadata import add_metadata_query_schema
+from polar.kit.versioning import api_version_context
 from polar.oauth2.schemas import add_oauth2_form_schemas
 
 if TYPE_CHECKING:
@@ -63,29 +64,30 @@ class APITag(StrEnum):
 def get_openapi(
     version: "APIVersion", routes: Sequence[BaseRoute], webhooks: Sequence[BaseRoute]
 ) -> dict[str, Any]:
-    openapi_schema = _get_openapi(
-        title="Polar API",
-        version=str(version),
-        summary="Polar HTTP and Webhooks API",
-        description="Read the docs at https://polar.sh/docs/api-reference",
-        routes=routes,
-        webhooks=webhooks,
-        tags=APITag.metadata(),  # type: ignore
-        servers=[
-            {
-                "url": "https://api.polar.sh",
-                "description": "Production environment",
-                "x-speakeasy-server-id": "production",
-                "x-polar-environment": "production",
-            },
-            {
-                "url": "https://sandbox-api.polar.sh",
-                "description": "Sandbox environment",
-                "x-speakeasy-server-id": "sandbox",
-                "x-polar-environment": "sandbox",
-            },
-        ],
-    )
+    with api_version_context(version):
+        openapi_schema = _get_openapi(
+            title="Polar API",
+            version=str(version),
+            summary="Polar HTTP and Webhooks API",
+            description="Read the docs at https://polar.sh/docs/api-reference",
+            routes=routes,
+            webhooks=webhooks,
+            tags=APITag.metadata(),  # type: ignore
+            servers=[
+                {
+                    "url": "https://api.polar.sh",
+                    "description": "Production environment",
+                    "x-speakeasy-server-id": "production",
+                    "x-polar-environment": "production",
+                },
+                {
+                    "url": "https://sandbox-api.polar.sh",
+                    "description": "Sandbox environment",
+                    "x-speakeasy-server-id": "sandbox",
+                    "x-polar-environment": "sandbox",
+                },
+            ],
+        )
     openapi_schema = add_metadata_query_schema(openapi_schema)
     openapi_schema = add_oauth2_form_schemas(openapi_schema)
 

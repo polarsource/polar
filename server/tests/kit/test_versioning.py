@@ -4,9 +4,35 @@ from typing import Annotated
 import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
+from pydantic import BaseModel, Field
 
-from polar.kit.versioning import APIVersion, add_versioned_routers, version
+from polar.kit.versioning import (
+    APIVersion,
+    ExcludedIn,
+    IncludedIn,
+    add_versioned_routers,
+    api_version_context,
+    version,
+)
 from polar.routing import APIRouter
+
+CURRENT_VERSION = APIVersion(2026, 4)
+NEXT_VERSION = APIVersion(2026, 10)
+
+
+class VersionedProduct(BaseModel):
+    name: str
+    shared_field: Annotated[str, IncludedIn(CURRENT_VERSION, NEXT_VERSION)] = "shared"
+    current_field: Annotated[str, ExcludedIn(NEXT_VERSION)] = "current"
+    next_field: Annotated[
+        str,
+        IncludedIn(NEXT_VERSION),
+        Field(description="Only available in the next API version."),
+    ] = "next"
+
+
+class VersionedSubscription(BaseModel):
+    product: VersionedProduct
 
 
 def test_api_version_is_ordered_hashable_and_immutable() -> None:
@@ -30,6 +56,48 @@ def test_version_decorator_only_adds_metadata() -> None:
     assert decorated_endpoint is endpoint
     assert getattr(decorated_endpoint, "_api_versions") == frozenset({api_version})
     assert decorated_endpoint(1) == 2
+
+
+def test_versioned_fields_are_serialized_for_requested_version() -> None:
+    subscription = VersionedSubscription(product=VersionedProduct(name="Pro"))
+
+    with api_version_context(CURRENT_VERSION):
+        assert subscription.model_dump() == {
+            "product": {
+                "name": "Pro",
+                "shared_field": "shared",
+                "current_field": "current",
+            }
+        }
+
+    with api_version_context(NEXT_VERSION):
+        assert subscription.model_dump() == {
+            "product": {
+                "name": "Pro",
+                "shared_field": "shared",
+                "next_field": "next",
+            }
+        }
+
+
+def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
+    with api_version_context(CURRENT_VERSION):
+        current_schema = VersionedSubscription.model_json_schema()
+    current_product = current_schema["$defs"]["VersionedProduct"]
+    assert set(current_product["properties"]) == {
+        "name",
+        "shared_field",
+        "current_field",
+    }
+
+    with api_version_context(NEXT_VERSION):
+        next_schema = VersionedSubscription.model_json_schema()
+    next_product = next_schema["$defs"]["VersionedProduct"]
+    assert set(next_product["properties"]) == {"name", "shared_field", "next_field"}
+    assert (
+        next_product["properties"]["next_field"]["description"]
+        == "Only available in the next API version."
+    )
 
 
 def test_versioned_routes() -> None:

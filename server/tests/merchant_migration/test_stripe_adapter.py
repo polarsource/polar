@@ -339,6 +339,27 @@ class TestExtractProducts:
             for price in products[0].prices
         ] == [("price_1", "eur", 900), ("price_1:usd", "usd", 1000)]
 
+    async def test_only_maps_configured_currency_options(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(
+            mocker,
+            client,
+            _stripe_price(
+                currency="eur",
+                unit_amount=900,
+                currency_options={
+                    "eur": {"unit_amount": 900},
+                    "gbp": {"unit_amount": 800},
+                },
+            ),
+        )
+
+        products = await _extracted_products(adapter)
+
+        assert {price.currency for price in products[0].prices} == {"eur", "gbp"}
+
     async def test_currency_options_are_expanded(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
         _listed_prices(mocker, client)

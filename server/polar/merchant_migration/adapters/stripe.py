@@ -305,13 +305,9 @@ class StripeAdapter:
 
     def _price_source_id(self, subscription: stripe_lib.Subscription, item: Any) -> str:
         price = item["price"]
-        if isinstance(price, str):
-            return price
-        price_currency = price.get("currency")
-        billed_currency = subscription.get("currency")
-        if price_currency is None or billed_currency is None:
-            return price["id"]
-        return _canonical_price_id(price["id"], billed_currency, price_currency)
+        return _canonical_price_id(
+            price["id"], subscription.currency, price["currency"]
+        )
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

@@ -69,7 +69,9 @@ uv run task worker            # background worker (separate terminal)
 pnpm install && pnpm dev
 ```
 
-**Stripe** — add to `server/.env`:
+**Stripe** — run `dev stripe` (sets up a personal sandbox). Keys live in the central secrets file
+`~/.config/polar/secrets.env`, **not** `server/.env` — `setup-environment` regenerates `server/.env`
+from it, so direct edits are overwritten:
 - `POLAR_STRIPE_SECRET_KEY`
 - `POLAR_STRIPE_PUBLISHABLE_KEY`
 - `POLAR_STRIPE_WEBHOOK_SECRET`

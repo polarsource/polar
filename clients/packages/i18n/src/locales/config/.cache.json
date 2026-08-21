@@ -374,9 +374,6 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
-    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
-    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "sv": {
@@ -564,9 +561,6 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
-    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
-    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "es": {
@@ -1126,9 +1120,6 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
-    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
-    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "it": {
@@ -1490,9 +1481,6 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
-    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
-    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "pt": {
@@ -1672,9 +1660,6 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
-    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
-    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "pt-PT": {
@@ -1854,9 +1839,6 @@
     "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
     "checkout.pricing.units.count.=1": "# {unitLabel}",
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
-    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
-    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
-    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "ja": {

@@ -1628,6 +1628,35 @@ class TestImportPaymentMethodMappings:
                 canonical=serialize(canonical),
             )
         )
+        guessed = await create_payment_method(
+            save_fixture, customer, processor_id="pm_guessed"
+        )
+        uncovered_subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=guessed,
+            status=SubscriptionStatus.paused,
+        )
+        uncovered_canonical = _canonical_subscription(
+            source_id="sub_uncovered",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_uncovered",
+                type=CanonicalPaymentMethodType.card,
+            ),
+        )
+        uncovered_canonical.customer_source_id = "cus_old"
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.subscription,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="sub_uncovered",
+                target_id=uncovered_subscription.id,
+                canonical=serialize(uncovered_canonical),
+            )
+        )
         stripe_payment_method = build_stripe_payment_method(customer="cus_new")
         stripe_payment_method.id = "pm_new"
         mocker.patch(
@@ -1652,6 +1681,7 @@ class TestImportPaymentMethodMappings:
         )
         assert payment_method is not None
         assert payment_method.processor_id == "pm_new"
+        assert uncovered_subscription.payment_method_id is None
 
     async def test_rejects_a_mapping_for_another_migration(
         self,

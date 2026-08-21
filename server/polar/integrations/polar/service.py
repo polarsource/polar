@@ -38,7 +38,6 @@ from polar.v2026_04.outputs import (
     CustomerBenefitGrantSlackSharedChannel,
     LegacyRecurringProductPriceFixed,
     ProductPriceFixed,
-    ProductPriceSeatBased,
 )
 from polar.v2026_04.webhooks import (
     WebhookBenefitGrantCreatedPayload,
@@ -339,7 +338,10 @@ class PolarSelfService:
         existing = await client.get_active_subscription(
             external_customer_id=str(organization_id)
         )
-        if existing is not None and not self._subscription_is_free(existing):
+        if (
+            existing is not None
+            and self._product_fixed_price_amount(existing.product) != 0
+        ):
             raise PolarSelfPaidSubscriptionAlreadyExists(organization_id)
         # Auto-apply the Startup Program discount when an eligible organization
         # checks out the Scale plan.
@@ -976,18 +978,6 @@ class PolarSelfService:
             if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
                 return price.price_amount
         return 0
-
-    def _subscription_is_free(self, subscription: "Subscription") -> bool:
-        for price in subscription.prices:
-            if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
-                if price.price_amount != 0:
-                    return False
-            elif isinstance(price, ProductPriceSeatBased):
-                if any(tier.price_per_seat != 0 for tier in price.seat_tiers.tiers):
-                    return False
-            else:
-                return False
-        return True
 
     def _resolve_organization_id(
         self, customer: "Customer | SubscriptionCustomer"

@@ -9,11 +9,14 @@ from polar.auth.scope import Scope
 from polar.config import settings
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
+    CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
     CanonicalRecord,
+    CanonicalSubscription,
+    CanonicalSubscriptionStatus,
 )
 from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.models import MerchantMigration, Organization, UserOrganization
@@ -395,6 +398,20 @@ async def _catalog_with_customer_extract() -> AsyncIterator[CanonicalRecord]:
         name="Alice",
         country="US",
     )
+    yield CanonicalSubscription(
+        source_id="sub_1",
+        customer_source_id="cus_1",
+        price_source_id="price_1",
+        status=CanonicalSubscriptionStatus.active,
+        collection_method=CanonicalCollectionMethod.charge_automatically,
+        current_period_start=None,
+        current_period_end=None,
+        trialing=False,
+        paused_collection=False,
+        line_item_count=1,
+        quantity=1,
+        payment_method=None,
+    )
 
 
 @pytest.mark.asyncio
@@ -449,7 +466,7 @@ class TestImport:
         assert results["customers"]["imported"] == 1
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_imports_only_selected_records(
+    async def test_imports_selected_subscription_dependencies(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -471,23 +488,21 @@ class TestImport:
             await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
         ).status_code == 200
 
-        # pick the customer row's ledger id from the records listing
         records = await client.get(
             f"/v1/merchant-migrations/{migration.id}/records",
-            params={"entity": "customers"},
+            params={"entity": "subscriptions"},
         )
-        customer_record_id = records.json()["items"][0]["record_id"]
-        assert customer_record_id is not None
+        subscription_record_id = records.json()["items"][0]["record_id"]
+        assert subscription_record_id is not None
 
         response = await client.post(
             f"/v1/merchant-migrations/{migration.id}/import",
-            json={"record_ids": [customer_record_id]},
+            json={"record_ids": [subscription_record_id]},
         )
         assert response.status_code == 200
         results = {r["entity"]: r for r in response.json()["results"]}
-        # only the customer was selected; the product stays pending
         assert results["customers"]["imported"] == 1
-        assert results["products"]["imported"] == 0
+        assert results["products"]["imported"] == 1
 
 
 def _configure_destination(mocker: MockerFixture) -> None:

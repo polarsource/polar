@@ -14,6 +14,7 @@ const baseRow = {
   reason: null,
   reason_code: null,
   reason_level: null,
+  dependencies_imported: null,
 }
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {
@@ -98,6 +99,18 @@ describe('reviewStatus', () => {
   })
 
   describe('ready', () => {
+    it('shows "Ready to switch" when a pending subscription has imported dependencies', () => {
+      expect(
+        reviewStatus(
+          row({
+            status: 'importable',
+            import_status: 'pending',
+            dependencies_imported: true,
+          }),
+        ),
+      ).toEqual({ label: 'Ready to switch' })
+    })
+
     it('shows "Ready" when importable and pending with no reason', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: 'pending' })),

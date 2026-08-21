@@ -1,8 +1,7 @@
-"""The cutover: Polar takes over billing for the imported subscriptions.
+"""The cutover: Polar creates subscriptions immediately before taking over billing.
 
-Imported subscriptions sit paused so nothing bills while the cards move. Cutting
-one over stops it on the source, then unpauses it on Polar. Every check runs
-before the stop, so a subscription that fails one is left billing on the source.
+Every check runs before the source is stopped, so a subscription that fails one
+stays there.
 """
 
 from dataclasses import dataclass
@@ -13,6 +12,7 @@ import stripe as stripe_lib
 import structlog
 from sqlalchemy.orm import joinedload, noload, selectinload
 
+from polar.customer.repository import CustomerRepository
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
@@ -20,24 +20,34 @@ from polar.models import (
     MerchantMigration,
     MerchantMigrationRecord,
     PaymentMethod,
+    Product,
     Subscription,
 )
-from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
+from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
+    MerchantMigrationRecordStatus,
+)
 from polar.models.subscription import SubscriptionStatus
-from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
+from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 
 from .adapters import SourceAdapter
 from .canonical import (
-    CanonicalPaymentMethod,
+    CanonicalProduct,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
 )
 from .cards import AmbiguousCopiedCard, link_payment_method
+from .importer import (
+    _CUSTOMER_ALREADY_SUBSCRIBED,
+    create_imported_subscription,
+    find_imported_price,
+)
 from .precheck import subscription_import_reason
+from .repository import MerchantMigrationRecordRepository
 
 log: Logger = structlog.get_logger()
 
@@ -50,9 +60,6 @@ MIGRATABLE_SOURCE_STATUSES = frozenset(
 )
 
 _MINIMUM_PERIOD = timedelta(days=1)
-
-# Re-read under the lock, so anything the activation decides on belongs here.
-_LOCKED_COLUMNS = ["status", "current_period_start", "current_period_end"]
 
 _GONE = "It no longer exists on the source, so there is nothing to take over."
 _SOURCE_CANCELED = (
@@ -74,7 +81,6 @@ _NO_CARD = (
     "No copied card has landed on Polar for this customer yet. They need to "
     "enter their billing details again, or the copy has to pick them up."
 )
-_NOT_PAUSED = "It isn't paused in Polar any more, so it was left alone."
 _STRANDED = (
     "It was already stopped on the source, but no payment method has landed on "
     "Polar for this customer, so nobody is billing them. They need to enter "
@@ -138,6 +144,9 @@ class SubscriptionCutover:
         self.migration = migration
         self.adapter = adapter
         self.subscription_repository = SubscriptionRepository.from_session(session)
+        self.customer_repository = CustomerRepository.from_session(session)
+        self.product_repository = ProductRepository.from_session(session)
+        self.record_repository = MerchantMigrationRecordRepository.from_session(session)
 
     async def run(self, record: MerchantMigrationRecord) -> CutoverOutcome:
         try:
@@ -163,46 +172,71 @@ class SubscriptionCutover:
             return _fail(e.user_message or str(e))
 
     async def _run(self, record: MerchantMigrationRecord) -> CutoverOutcome:
-        if record.target_id is None:
-            return _fail(_NOT_IMPORTED)
-        subscription = await self._load_subscription(record.target_id)
-        if subscription is None:
-            return _fail(_SUBSCRIPTION_GONE)
-        if SubscriptionStatus.is_active(subscription.status):
-            return await self._reconcile_active(record)
-        if subscription.status != SubscriptionStatus.paused:
-            return _skip(_NOT_PAUSED)
+        if record.target_id is not None:
+            return await self._reconcile_existing(record)
+        return await self._create_and_activate(record)
 
-        customer = subscription.customer
+    async def _create_and_activate(
+        self, record: MerchantMigrationRecord
+    ) -> CutoverOutcome:
+        try:
+            staged = deserialize(record.type, record.canonical)
+        except KeyError, TypeError, ValueError:
+            return _skip(_NOT_IMPORTED)
+        if not isinstance(staged, CanonicalSubscription):
+            return _skip(_NOT_IMPORTED)
+
+        customer_record = await self.record_repository.get_imported_customer_dependency(
+            self.migration.id, staged.customer_source_id
+        )
+        product_record = await self.record_repository.get_imported_product_dependency(
+            self.migration.id, staged.price_source_id
+        )
+        if (
+            customer_record is None
+            or customer_record.target_id is None
+            or product_record is None
+            or product_record.target_id is None
+        ):
+            return _skip(_NOT_IMPORTED)
+
+        customer = await self.customer_repository.get_by_id(
+            customer_record.target_id, include_deleted=True
+        )
+        product = await self.product_repository.get_by_id_and_organization(
+            product_record.target_id,
+            self.migration.organization_id,
+            options=(
+                selectinload(Product.prices),
+                joinedload(Product.organization),
+            ),
+        )
+        if customer is None or product is None:
+            return _skip(_NOT_IMPORTED)
         if customer.is_deleted:
             return _skip(_CUSTOMER_DELETED)
 
         source = await self.adapter.get_subscription(record.source_id)
         if source is None:
             return _skip(_GONE)
-
-        # We cancelled it ourselves, in an attempt that died before it committed.
-        # The checks below would read that as the customer churning and skip for
-        # good, leaving them cancelled on the source and paused here.
         already_stopped = source.stopped_for_migration
         if not already_stopped:
-            # The renewal scheduler filters on this, so taking the subscription
-            # over would cancel it on the source and then never bill it.
-            if not subscription.organization.can_renew_subscriptions:
+            if not product.organization.can_renew_subscriptions:
                 return _skip(_RENEWALS_DISABLED)
             reason = self._source_reason(source, record)
             if reason is not None:
                 return _skip(reason)
 
-        # Behind the gate above because resolving writes: it upserts the copied
-        # methods and may set the customer's default.
-        payment_method = await self._resolve_payment_method(
-            subscription, customer, source.payment_method
+        if await self.subscription_repository.exists_live_by_customer_and_product(
+            customer.id, product.id
+        ):
+            return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
+
+        payment_method = await link_payment_method(
+            self.session, customer, source_method=source.payment_method
         )
         if already_stopped:
-            # An unproven card beats no biller at all: a failed first renewal
-            # goes to dunning, which is recoverable.
-            if payment_method is None:
+            if payment_method is None or payment_method.type != "card":
                 log.error(
                     "merchant_migration.cutover.stranded",
                     migration_id=self.migration.id,
@@ -210,16 +244,38 @@ class SubscriptionCutover:
                     source_id=record.source_id,
                 )
                 return _fail(_STRANDED)
-            if subscription.is_period_lapsed(self._period_end(source, subscription)):
-                return _fail(_LAPSED)
-        elif payment_method is None:
+        elif payment_method is None or payment_method.type != "card":
             return _skip(_NO_CARD)
 
-        # Locked only now: the portal takes this same row lock, and everything
-        # above spends seconds in Stripe. Bailing here is still free.
-        await self.session.refresh(subscription, _LOCKED_COLUMNS, with_for_update=True)
-        if subscription.status != SubscriptionStatus.paused:
-            return _skip(_NOT_PAUSED)
+        try:
+            canonical_product = deserialize(
+                product_record.type, product_record.canonical
+            )
+        except KeyError, TypeError, ValueError:
+            return _skip(_NOT_IMPORTED)
+        if not isinstance(canonical_product, CanonicalProduct):
+            return _skip(_NOT_IMPORTED)
+        price = find_imported_price(product, canonical_product, staged.price_source_id)
+        if price is None:
+            return _skip(_NOT_IMPORTED)
+
+        subscription = await create_imported_subscription(
+            self.session, staged, product, price, customer
+        )
+        await self.record_repository.update(
+            record,
+            update_dict={
+                "target_id": subscription.id,
+                "status": MerchantMigrationRecordStatus.imported,
+                "error": None,
+            },
+            flush=True,
+        )
+
+        if already_stopped and subscription.is_period_lapsed(
+            self._period_end(source, subscription)
+        ):
+            return _fail(_LAPSED)
 
         if not already_stopped:
             await self.adapter.stop_source_subscription(
@@ -238,8 +294,6 @@ class SubscriptionCutover:
                 payment_method=payment_method,
             )
         except Exception:
-            # The source is stopped and this rolls back, ledger row included, so
-            # the log is the only trace of a customer nobody is billing.
             log.exception(
                 "merchant_migration.cutover.stopped_but_unfinished",
                 migration_id=self.migration.id,
@@ -254,6 +308,23 @@ class SubscriptionCutover:
             source_id=record.source_id,
         )
         return _moved(self._card_note(payment_method))
+
+    async def _reconcile_existing(
+        self, record: MerchantMigrationRecord
+    ) -> CutoverOutcome:
+        """A previous cutover already created the Polar subscription.
+
+        If it's live, stop the source if it is still billing. Anything else is
+        left alone: Polar never created paused leftovers in production.
+        """
+        if record.target_id is None:
+            return _skip(_NOT_IMPORTED)
+        subscription = await self._load_subscription(record.target_id)
+        if subscription is None:
+            return _fail(_SUBSCRIPTION_GONE)
+        if SubscriptionStatus.is_active(subscription.status):
+            return await self._reconcile_active(record)
+        return _moved()
 
     async def _reconcile_active(
         self, record: MerchantMigrationRecord
@@ -328,24 +399,6 @@ class SubscriptionCutover:
             f"It renews on the source at {renewal.isoformat()}, too soon to hand "
             "over without risking a double charge. Retry once that renewal has "
             "gone through."
-        )
-
-    async def _resolve_payment_method(
-        self,
-        subscription: Subscription,
-        customer: Customer,
-        source_method: CanonicalPaymentMethod | None,
-    ) -> PaymentMethod | None:
-        """The card the first Polar renewal will charge. A card the `verify_cards`
-        step linked wins; otherwise look again, because cards keep landing."""
-        if subscription.payment_method_id is not None:
-            payment_method = await PaymentMethodRepository.from_session(
-                self.session
-            ).get_by_id(subscription.payment_method_id)
-            if payment_method is not None:
-                return payment_method
-        return await link_payment_method(
-            self.session, customer, source_method=source_method
         )
 
     def _card_note(self, payment_method: PaymentMethod) -> str | None:

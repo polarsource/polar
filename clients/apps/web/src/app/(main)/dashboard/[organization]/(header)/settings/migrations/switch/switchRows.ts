@@ -8,10 +8,11 @@ export function isSwitched(row: SwitchRow): boolean {
 }
 
 export function isSwitchable(row: SwitchRow): boolean {
+  const dependenciesReady =
+    row.import_status === 'imported' ||
+    (row.import_status === 'pending' && row.dependencies_imported === true)
   return (
-    row.record_id != null &&
-    row.import_status === 'imported' &&
-    row.cutover_status !== 'moved'
+    row.record_id != null && dependenciesReady && row.cutover_status !== 'moved'
   )
 }
 

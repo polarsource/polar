@@ -5,22 +5,22 @@ from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
+    Customer,
     MerchantMigration,
     MerchantMigrationRecord,
     PaymentMethod,
-    Subscription,
 )
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -39,13 +39,13 @@ from polar.models.merchant_migration_record import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
-from polar.subscription.repository import SubscriptionRepository
 from polar.worker import enqueue_job
 
 from . import pan_transfer
 from .adapters import SourceAdapter, StripeAdapter
 from .canonical import (
     CanonicalPaymentMethod,
+    CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
     deserialize,
@@ -286,8 +286,11 @@ def _summarize_entities(
         if item.status != PrecheckRecordStatus.importable:
             continue
         tally["importable"] += 1
-        # Only pending rows move; the importer skips every other ledger status.
-        if item.import_status == MerchantMigrationRecordStatus.pending:
+        if (
+            item.entity == PrecheckEntity.subscriptions
+            and item.import_status == MerchantMigrationRecordStatus.pending
+            and not item.dependencies_imported
+        ):
             tally["selectable"] += 1
 
     return [
@@ -645,24 +648,21 @@ class MerchantMigrationService:
         records = await record_repository.list_imported_subscriptions(
             migration.id, offset=offset, limit=CARD_VERIFICATION_BATCH_SIZE
         )
-        subscription_repository = SubscriptionRepository.from_session(session)
+        customer_repository = CustomerRepository.from_session(session)
         resolved: ResolvedCards = {}
         for record in records:
-            if record.target_id is None:
+            staged = _staged_subscription(record)
+            if staged is None:
                 continue
-            subscription = await subscription_repository.get_by_id(
-                record.target_id, options=(joinedload(Subscription.customer),)
+            customer_record = await record_repository.get_imported_customer_dependency(
+                migration.id, staged.customer_source_id
             )
-            # Already covered, or gone from Polar: nothing to link either way.
-            if subscription is None or subscription.payment_method_id is not None:
+            if customer_record is None or customer_record.target_id is None:
                 continue
-            payment_method = await self._resolve_card(
-                session, record, subscription, resolved
-            )
-            if payment_method is not None:
-                await subscription_repository.update(
-                    subscription, update_dict={"payment_method_id": payment_method.id}
-                )
+            customer = await customer_repository.get_by_id(customer_record.target_id)
+            if customer is None:
+                continue
+            await self._resolve_card(session, record, customer, resolved)
 
         if len(records) == CARD_VERIFICATION_BATCH_SIZE:
             enqueue_job(
@@ -679,20 +679,20 @@ class MerchantMigrationService:
         self,
         session: AsyncSession,
         record: MerchantMigrationRecord,
-        subscription: Subscription,
+        customer: Customer,
         resolved: ResolvedCards,
     ) -> PaymentMethod | None:
         """The method to charge, resolved once per customer and source method
         rather than once per subscription they hold."""
         source_method = _staged_payment_method(record)
         key = _CardLookup(
-            customer_id=subscription.customer_id,
+            customer_id=customer.id,
             source_method_id=source_method.source_id if source_method else None,
         )
         if key not in resolved:
             try:
                 resolved[key] = await link_payment_method(
-                    session, subscription.customer, source_method=source_method
+                    session, customer, source_method=source_method
                 )
             except AmbiguousCopiedCard as e:
                 log.error(
@@ -1156,10 +1156,7 @@ class MerchantMigrationService:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         covered = await record_repository.payment_method_coverage(migration.id)
         for item in items:
-            if (
-                item.entity != PrecheckEntity.subscriptions
-                or item.import_status != MerchantMigrationRecordStatus.imported
-            ):
+            if item.entity != PrecheckEntity.subscriptions or item.record_id is None:
                 continue
             item.has_payment_method = item.record_id in covered
 
@@ -1225,10 +1222,10 @@ class MerchantMigrationService:
         staged: Sequence[MerchantMigrationRecord],
         entity: PrecheckEntity,
     ) -> None:
-        """Give each item its ledger record id, so a row can be selected for
-        import. The 1:1 entities (products/customers/subscriptions) map to their
-        staged records in order — both derive from the same `staged` fetch. Prices
-        aren't their own record (they live in a product), so they keep a null id.
+        """Give each item its ledger record id. The 1:1 entities
+        (products/customers/subscriptions) map to their staged records in order —
+        both derive from the same `staged` fetch. Prices aren't their own record
+        (they live in a product), so they keep a null id.
         """
         record_type = _ENTITY_RECORD_TYPE.get(entity)
         if record_type is None:
@@ -1236,6 +1233,28 @@ class MerchantMigrationService:
         staged_of_type = [record for record in staged if record.type == record_type]
         if len(staged_of_type) != len(items):
             return
+        imported_customer_source_ids: set[str] = set()
+        imported_product_price_source_ids: set[str] = set()
+        if entity == PrecheckEntity.subscriptions:
+            imported_customer_source_ids = {
+                record.source_id
+                for record in staged
+                if record.type == MerchantMigrationRecordType.customer
+                and record.status == MerchantMigrationRecordStatus.imported
+                and record.target_id is not None
+            }
+            for product_record in staged:
+                if (
+                    product_record.type != MerchantMigrationRecordType.product
+                    or product_record.status != MerchantMigrationRecordStatus.imported
+                    or product_record.target_id is None
+                ):
+                    continue
+                product = deserialize(product_record.type, product_record.canonical)
+                if isinstance(product, CanonicalProduct):
+                    imported_product_price_source_ids.update(
+                        price.source_id for price in product.prices
+                    )
         for item, record in zip(items, staged_of_type, strict=True):
             item.record_id = record.id
             item.import_status = record.status
@@ -1243,6 +1262,17 @@ class MerchantMigrationService:
                 item.cutover_status = record.cutover_status
                 item.cutover_error = record.cutover_error
                 item.renews_at = self._staged_renews_at(record)
+                subscription = _staged_subscription(record)
+                item.dependencies_imported = (
+                    record.status == MerchantMigrationRecordStatus.imported
+                    and record.target_id is not None
+                ) or (
+                    record.status == MerchantMigrationRecordStatus.pending
+                    and subscription is not None
+                    and subscription.customer_source_id in imported_customer_source_ids
+                    and subscription.price_source_id
+                    in imported_product_price_source_ids
+                )
 
     def _staged_renews_at(self, record: MerchantMigrationRecord) -> datetime | None:
         """When the source subscription renews, as captured at import. Best-effort:

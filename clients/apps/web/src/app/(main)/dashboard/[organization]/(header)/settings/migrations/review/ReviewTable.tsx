@@ -9,7 +9,6 @@ import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useState } from 'react'
 import { useRecordSummary } from './recordSummary'
-import { ReviewScope } from './reviewRows'
 import {
   selectionPayload,
   initialSelection,
@@ -22,14 +21,13 @@ import { ReviewFilter } from './ReviewStatusTabs'
 import { ReviewTableView } from './ReviewTableView'
 
 export function ReviewTable({ migrationId }: { migrationId: string }) {
-  const [entity, setEntity] = useState<ReviewScope>('all')
-  const [filter, setFilter] = useState<ReviewFilter>('attention')
+  const [filter, setFilter] = useState<ReviewFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [selection, setSelection] = useState<SelectionState>(initialSelection)
 
   const records = useMigrationRecords(migrationId, {
-    ...(entity !== 'all' ? { entity } : {}),
+    entity: 'subscriptions',
     page,
     limit: pageSize,
     ...(filter === 'attention' ? { reasonLevel: 'action_required' } : {}),
@@ -43,11 +41,6 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   } = useRecordSummary(migrationId)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
-
-  const onEntityChange = (next: ReviewScope) => {
-    setEntity(next)
-    setPage(1)
-  }
 
   const onFilterChange = (next: ReviewFilter) => {
     setFilter(next)
@@ -89,8 +82,6 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
 
   return (
     <ReviewTableView
-      entity={entity}
-      onEntityChange={onEntityChange}
       filter={filter}
       onFilterChange={onFilterChange}
       counts={counts}

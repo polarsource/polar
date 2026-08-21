@@ -257,6 +257,32 @@ export const useCustomerLicenseKey = (api: Client, id: string) =>
     retry: defaultRetry,
   })
 
+export const useCustomerLicenseKeyRotate = (api: Client, id: string) =>
+  useMutation({
+    mutationFn: () =>
+      api.POST('/v1/customer-portal/license-keys/{id}/rotate', {
+        params: { path: { id } },
+      }),
+    onSuccess: async (result) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.setQueryData(
+        ['customer_license_keys', { id }],
+        (old: schemas['LicenseKeyWithActivations'] | undefined) => {
+          if (!old) {
+            return { ...result.data, activations: [] }
+          }
+          return { ...old, ...result.data }
+        },
+      )
+      queryClient.invalidateQueries({
+        queryKey: ['customer_benefit_grants'],
+      })
+    },
+  })
+
 export const useCustomerLicenseKeyDeactivate = (api: Client, id: string) =>
   useMutation({
     mutationFn: (opts: {

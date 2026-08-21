@@ -4650,6 +4650,32 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/license-keys/{id}/rotate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Rotate License Key
+     * @description Rotate a license key.
+     *
+     *     Generates a new key string for the same license key record. The previous
+     *     key string immediately stops validating. Status, usage, limits, expiry,
+     *     and activations are preserved.
+     *
+     *     **Scopes**: `customer_portal:write`
+     */
+    post: operations['customer_portal:license_keys:rotate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/license-keys/validate': {
     parameters: {
       query?: never
@@ -52473,6 +52499,64 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['LicenseKeyWithActivations']
+        }
+      }
+      /** @description License key not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:license_keys:rotate': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LicenseKeyRead']
+        }
+      }
+      /** @description License key cannot be rotated in its current status. Allowed statuses: disabled, granted. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RotateNotPermitted']
+        }
+      }
+      /** @description Not authorized to manage license key. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
         }
       }
       /** @description License key not found. */

@@ -152,8 +152,7 @@ class MerchantMigrationRecordItem(Schema):
     dependencies_imported: bool | None = Field(
         description=(
             "Whether this subscription's customer and product are already in Polar, "
-            "so it can be created at cutover, or the subscription itself is already "
-            "in Polar. Null for non-subscription rows."
+            "so it can be created at cutover. Null for non-subscription rows."
         ),
     )
 

@@ -7,7 +7,7 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
@@ -98,7 +98,6 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
     create_payment_method,
-    create_subscription,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
@@ -1479,12 +1478,16 @@ class TestSummarizeRecords:
 
 
 def _canonical_subscription(
-    *, source_id: str, payment_method: CanonicalPaymentMethod | None
+    *,
+    source_id: str,
+    payment_method: CanonicalPaymentMethod | None,
+    customer_source_id: str | None = None,
+    price_source_id: str | None = None,
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
         source_id=source_id,
-        customer_source_id=f"cus_{source_id}",
-        price_source_id="price_1",
+        customer_source_id=customer_source_id or f"cus_{source_id}",
+        price_source_id=price_source_id or f"price_{source_id}",
         status=CanonicalSubscriptionStatus.active,
         collection_method=CanonicalCollectionMethod.charge_automatically,
         current_period_start=utc_now(),
@@ -1511,8 +1514,7 @@ async def _imported_subscription(
     email: str,
     payment_method: CanonicalPaymentMethod | None = None,
 ) -> MerchantMigrationRecord:
-    """One paused subscription in Polar, staged as imported. The card check
-    reads the ledger row and its target, never the canonical blob."""
+    """A pending subscription whose customer and product are already in Polar."""
     customer = await create_customer(
         save_fixture, organization=organization, email=email
     )
@@ -1534,19 +1536,39 @@ async def _imported_subscription(
             ),
         )
     )
-    subscription = await create_subscription(
-        save_fixture,
-        product=product,
-        customer=customer,
-        status=SubscriptionStatus.paused,
+    await save_fixture(
+        MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.product,
+            status=MerchantMigrationRecordStatus.imported,
+            source_id=f"prod_{source_id}:month:1",
+            target_id=product.id,
+            canonical=serialize(
+                CanonicalProduct(
+                    source_id=f"prod_{source_id}:month:1",
+                    product_source_id=f"prod_{source_id}",
+                    name="Product",
+                    recurring_interval="month",
+                    recurring_interval_count=1,
+                    prices=[
+                        CanonicalPrice(
+                            source_id=f"price_{source_id}",
+                            currency="usd",
+                            amount=1000,
+                            pricing_scheme=CanonicalPricingScheme.fixed,
+                        )
+                    ],
+                )
+            ),
+        )
     )
     record = MerchantMigrationRecord(
         merchant_migration=migration,
         organization=organization,
         type=MerchantMigrationRecordType.subscription,
-        status=MerchantMigrationRecordStatus.imported,
+        status=MerchantMigrationRecordStatus.pending,
         source_id=source_id,
-        target_id=subscription.id,
         canonical=serialize(
             _canonical_subscription(source_id=source_id, payment_method=payment_method)
         ),
@@ -1615,7 +1637,7 @@ class TestRunCardVerification:
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
         await save_fixture(migration)
-        covered = await _imported_subscription(
+        await _imported_subscription(
             save_fixture,
             migration,
             organization,
@@ -1631,30 +1653,24 @@ class TestRunCardVerification:
             source_id="sub_uncovered",
             email="uncovered@example.com",
         )
-        assert covered.target_id is not None
-        subscription_repository = SubscriptionRepository.from_session(session)
-        landed = await subscription_repository.get_by_id(
-            covered.target_id, options=(joinedload(Subscription.customer),)
-        )
-        assert landed is not None
+        covered_customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("covered@example.com", organization.id)
+        assert covered_customer is not None
         payment_method = await create_payment_method(
-            save_fixture, landed.customer, processor_id="pm_copied"
+            save_fixture, covered_customer, processor_id="pm_copied"
         )
         mocker.patch(
             "polar.merchant_migration.service.link_payment_method",
             new=mocker.AsyncMock(
                 side_effect=lambda _session, customer, **_kwargs: (
-                    payment_method if customer.id == landed.customer_id else None
+                    payment_method if customer.id == covered_customer.id else None
                 )
             ),
         )
 
         await service.run_card_verification(session, migration.id)
 
-        await session.flush()
-        await session.refresh(landed)
-        assert landed.payment_method_id == payment_method.id
-        # The step is done, so the merchant is asked to chase the uncovered one.
         checklist = service._checklist(migration)
         assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
 
@@ -1674,7 +1690,7 @@ class TestRunCardVerification:
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
         await save_fixture(migration)
-        first = await _imported_subscription(
+        await _imported_subscription(
             save_fixture,
             migration,
             organization,
@@ -1682,7 +1698,7 @@ class TestRunCardVerification:
             source_id="sub_first",
             email="first@example.com",
         )
-        late = await _imported_subscription(
+        await _imported_subscription(
             save_fixture,
             migration,
             organization,
@@ -1690,25 +1706,21 @@ class TestRunCardVerification:
             source_id="sub_late",
             email="late@example.com",
         )
-        subscription_repository = SubscriptionRepository.from_session(session)
-        assert first.target_id is not None
-        assert late.target_id is not None
-        eager = (joinedload(Subscription.customer),)
-        first_subscription = await subscription_repository.get_by_id(
-            first.target_id, options=eager
+        customer_repository = CustomerRepository.from_session(session)
+        first_customer = await customer_repository.get_by_email_and_organization(
+            "first@example.com", organization.id
         )
-        late_subscription = await subscription_repository.get_by_id(
-            late.target_id, options=eager
+        late_customer = await customer_repository.get_by_email_and_organization(
+            "late@example.com", organization.id
         )
-        assert first_subscription is not None
-        assert late_subscription is not None
+        assert first_customer is not None
+        assert late_customer is not None
 
         landed: dict[UUID, PaymentMethod] = {}
 
         async def _link(
             _session: AsyncSession, customer: Customer, **_kwargs: object
         ) -> PaymentMethod | None:
-            # None is what the real one answers before a card has landed.
             return landed.get(customer.id)
 
         link = mocker.patch(
@@ -1716,33 +1728,21 @@ class TestRunCardVerification:
             new=mocker.AsyncMock(side_effect=_link),
         )
 
-        # Only the first customer's card has landed.
-        landed[first_subscription.customer_id] = await create_payment_method(
-            save_fixture, first_subscription.customer, processor_id="pm_first"
+        landed[first_customer.id] = await create_payment_method(
+            save_fixture, first_customer, processor_id="pm_first"
         )
         await service.run_card_verification(session, migration.id)
-        await session.flush()
 
-        # The merchant re-runs the copy and the second card lands.
-        landed[late_subscription.customer_id] = await create_payment_method(
-            save_fixture, late_subscription.customer, processor_id="pm_late"
+        landed[late_customer.id] = await create_payment_method(
+            save_fixture, late_customer, processor_id="pm_late"
         )
         link.reset_mock()
         await service.run_card_verification(session, migration.id)
-        await session.flush()
 
-        await session.refresh(first_subscription)
-        await session.refresh(late_subscription)
-        assert (
-            first_subscription.payment_method_id
-            == landed[first_subscription.customer_id].id
-        )
-        assert (
-            late_subscription.payment_method_id
-            == landed[late_subscription.customer_id].id
-        )
-        # The already-linked one is not looked up a second time.
-        assert link.await_count == 1
+        assert {call.args[1].id for call in link.await_args_list} == {
+            first_customer.id,
+            late_customer.id,
+        }
 
     async def test_links_the_card_the_source_was_charging(
         self,
@@ -1766,7 +1766,7 @@ class TestRunCardVerification:
             exp_month=4,
             exp_year=2030,
         )
-        record = await _imported_subscription(
+        await _imported_subscription(
             save_fixture,
             migration,
             organization,
@@ -1775,13 +1775,12 @@ class TestRunCardVerification:
             email="two-cards@example.com",
             payment_method=charged,
         )
-        assert record.target_id is not None
-        subscription = await SubscriptionRepository.from_session(session).get_by_id(
-            record.target_id, options=(joinedload(Subscription.customer),)
-        )
-        assert subscription is not None
+        customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("two-cards@example.com", organization.id)
+        assert customer is not None
         linked = await create_payment_method(
-            save_fixture, subscription.customer, processor_id="pm_charged"
+            save_fixture, customer, processor_id="pm_charged"
         )
         link = mocker.patch(
             "polar.merchant_migration.service.link_payment_method",
@@ -1808,7 +1807,7 @@ class TestRunCardVerification:
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
         await save_fixture(migration)
-        ambiguous = await _imported_subscription(
+        await _imported_subscription(
             save_fixture,
             migration,
             organization,
@@ -1816,7 +1815,7 @@ class TestRunCardVerification:
             source_id="sub_ambiguous",
             email="ambiguous@example.com",
         )
-        clear = await _imported_subscription(
+        await _imported_subscription(
             save_fixture,
             migration,
             organization,
@@ -1824,26 +1823,23 @@ class TestRunCardVerification:
             source_id="sub_clear",
             email="clear@example.com",
         )
-        eager = (joinedload(Subscription.customer),)
-        subscription_repository = SubscriptionRepository.from_session(session)
-        assert ambiguous.target_id is not None
-        assert clear.target_id is not None
-        ambiguous_subscription = await subscription_repository.get_by_id(
-            ambiguous.target_id, options=eager
+        customer_repository = CustomerRepository.from_session(session)
+        ambiguous_customer = await customer_repository.get_by_email_and_organization(
+            "ambiguous@example.com", organization.id
         )
-        clear_subscription = await subscription_repository.get_by_id(
-            clear.target_id, options=eager
+        clear_customer = await customer_repository.get_by_email_and_organization(
+            "clear@example.com", organization.id
         )
-        assert ambiguous_subscription is not None
-        assert clear_subscription is not None
+        assert ambiguous_customer is not None
+        assert clear_customer is not None
         linked = await create_payment_method(
-            save_fixture, clear_subscription.customer, processor_id="pm_clear"
+            save_fixture, clear_customer, processor_id="pm_clear"
         )
 
         async def _link(
             _session: AsyncSession, customer: Customer, **_kwargs: object
         ) -> PaymentMethod | None:
-            if customer.id == ambiguous_subscription.customer_id:
+            if customer.id == ambiguous_customer.id:
                 raise AmbiguousCopiedCard(customer.id, 2)
             return linked
 
@@ -1854,11 +1850,6 @@ class TestRunCardVerification:
 
         await service.run_card_verification(session, migration.id)
 
-        await session.flush()
-        await session.refresh(ambiguous_subscription)
-        await session.refresh(clear_subscription)
-        assert ambiguous_subscription.payment_method_id is None
-        assert clear_subscription.payment_method_id == linked.id
         checklist = service._checklist(migration)
         assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
 
@@ -1884,31 +1875,22 @@ class TestRunCardVerification:
             source_id="sub_one",
             email="holder@example.com",
         )
-        assert first.target_id is not None
-        subscription_repository = SubscriptionRepository.from_session(session)
-        held = await subscription_repository.get_by_id(
-            first.target_id, options=(joinedload(Subscription.customer),)
-        )
-        assert held is not None
-        second = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=held.customer,
-            status=SubscriptionStatus.paused,
-        )
         await save_fixture(
             MerchantMigrationRecord(
                 merchant_migration=migration,
                 organization=organization,
                 type=MerchantMigrationRecordType.subscription,
-                status=MerchantMigrationRecordStatus.imported,
+                status=MerchantMigrationRecordStatus.pending,
                 source_id="sub_two",
-                target_id=second.id,
-                canonical={},
+                canonical=first.canonical,
             )
         )
+        customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("holder@example.com", organization.id)
+        assert customer is not None
         linked = await create_payment_method(
-            save_fixture, held.customer, processor_id="pm_shared"
+            save_fixture, customer, processor_id="pm_shared"
         )
         link = mocker.patch(
             "polar.merchant_migration.service.link_payment_method",
@@ -1917,12 +1899,6 @@ class TestRunCardVerification:
 
         await service.run_card_verification(session, migration.id)
 
-        await session.flush()
-        await session.refresh(held)
-        await session.refresh(second)
-        assert held.payment_method_id == linked.id
-        assert second.payment_method_id == linked.id
-        # Both subscriptions charge the same customer, so one Stripe listing.
         assert link.await_count == 1
 
 
@@ -2475,20 +2451,11 @@ class TestListRecordsCutover:
             source_id="sub_1",
             email="a@example.com",
         )
-        assert record.target_id is not None
-        subscription_repository = SubscriptionRepository.from_session(session)
-        subscription = await subscription_repository.get_by_id(
-            record.target_id, options=(joinedload(Subscription.customer),)
-        )
-        assert subscription is not None
-        payment_method = await create_payment_method(
-            save_fixture, subscription.customer, processor_id="pm_1"
-        )
-        await subscription_repository.update(
-            subscription,
-            update_dict={"payment_method_id": payment_method.id},
-            flush=True,
-        )
+        customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("a@example.com", organization.id)
+        assert customer is not None
+        await create_payment_method(save_fixture, customer, processor_id="pm_1")
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         await record_repository.update(
             record,

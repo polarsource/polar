@@ -1,12 +1,14 @@
 import asyncio
 import hashlib
-import itertools
 import json
+import time
 from collections import defaultdict
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import boto3
+import dramatiq
 import structlog
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -24,10 +26,22 @@ log: Logger = structlog.get_logger()
 
 # SQS hard limits.
 SQS_BATCH_SIZE = 10
+SQS_MAX_BATCH_BYTES = 262_144
 MAX_DELAY_SECONDS = 900
 MAX_VISIBILITY_TIMEOUT_SECONDS = 43_200
 
-type Job = tuple[str, tuple[Any, ...], dict[str, Any], int | None, str | None]
+# Argument budget for a single job, leaving room for the envelope around it.
+MAX_JOB_PAYLOAD_BYTES = 200_000
+
+
+class Job(NamedTuple):
+    actor: str
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
+    delay: int | None = None
+    correlation_id: str | None = None
+    message_id: str | None = None
+    debounce_key: str | None = None
 
 
 class SQSSendError(Exception):
@@ -95,8 +109,9 @@ def get_consumer_scheduler_client() -> "EventBridgeSchedulerClient":
 sqs_client = get_sqs_client()
 
 
-def actor_to_queue_name(_actor_name: str) -> str:
-    return f"{settings.WORKER_SQS_QUEUE_PREFIX}-default"
+def actor_to_queue_name(actor_name: str) -> str:
+    queue_name = dramatiq.get_broker().get_actor(actor_name).queue_name
+    return f"{settings.WORKER_SQS_QUEUE_PREFIX}-{queue_name.replace('_', '-')}"
 
 
 _queue_url_cache: dict[tuple[int, str], str] = {}
@@ -111,13 +126,34 @@ def get_queue_url(client: "SQSClient", queue_name: str) -> str:
     return url
 
 
+def resolve_queue_url(client: "SQSClient", queue_name: str) -> str:
+    """Fall back to the default queue while a per-queue rollout is in flight."""
+    try:
+        return get_queue_url(client, queue_name)
+    except client.exceptions.QueueDoesNotExist:
+        default_queue_name = f"{settings.WORKER_SQS_QUEUE_PREFIX}-default"
+        if queue_name == default_queue_name:
+            raise
+        log.warning(
+            "polar.worker.sqs_queue_missing_fallback",
+            queue=queue_name,
+            fallback=default_queue_name,
+        )
+        return get_queue_url(client, default_queue_name)
+
+
 def build_envelope(
     actor: str,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
     correlation_id: str | None,
     attempt: int = 1,
+    message_timestamp: int | None = None,
+    message_id: str | None = None,
+    debounce_key: str | None = None,
 ) -> str:
+    if message_timestamp is None:
+        message_timestamp = int(time.time() * 1000)
     return json.dumps(
         {
             "actor": actor,
@@ -125,6 +161,9 @@ def build_envelope(
             "kwargs": kwargs,
             "correlation_id": correlation_id,
             "attempt": attempt,
+            "message_timestamp": message_timestamp,
+            "message_id": message_id,
+            "debounce_key": debounce_key,
         },
         separators=(",", ":"),
         default=json_obj_serializer,
@@ -133,7 +172,9 @@ def build_envelope(
 
 def parse_envelope(
     body: str,
-) -> tuple[str, list[Any], dict[str, Any], str | None, int]:
+) -> tuple[
+    str, list[Any], dict[str, Any], str | None, int, int | None, str | None, str | None
+]:
     data = json.loads(body)
     return (
         data["actor"],
@@ -141,6 +182,9 @@ def parse_envelope(
         data.get("kwargs", {}),
         data.get("correlation_id"),
         data.get("attempt", 1),
+        data.get("message_timestamp"),
+        data.get("message_id"),
+        data.get("debounce_key"),
     )
 
 
@@ -198,6 +242,27 @@ def send_to_dlq(client: "SQSClient", queue_arn: str, body: str) -> None:
     client.send_message(QueueUrl=dlq_url, MessageBody=body)
 
 
+def pack_batches(
+    entries: list["SendMessageBatchRequestEntryTypeDef"],
+) -> Iterator[list["SendMessageBatchRequestEntryTypeDef"]]:
+    """Group entries into SQS batches within both the count and the size limit."""
+    batch: list[SendMessageBatchRequestEntryTypeDef] = []
+    batch_bytes = 0
+    for entry in entries:
+        entry_bytes = len(entry["MessageBody"].encode("utf-8"))
+        if batch and (
+            len(batch) >= SQS_BATCH_SIZE
+            or batch_bytes + entry_bytes > SQS_MAX_BATCH_BYTES
+        ):
+            yield batch
+            batch = []
+            batch_bytes = 0
+        batch.append(entry)
+        batch_bytes += entry_bytes
+    if batch:
+        yield batch
+
+
 async def send_jobs(jobs: list[Job]) -> None:
     if not jobs:
         return
@@ -210,22 +275,27 @@ def send_jobs_sync(jobs: list[Job]) -> None:
     client = get_sqs_client()
 
     by_queue: dict[str, list[SendMessageBatchRequestEntryTypeDef]] = defaultdict(list)
-    for actor, args, kwargs, delay, correlation_id in jobs:
-        entries = by_queue[actor_to_queue_name(actor)]
+    for job in jobs:
+        entries = by_queue[actor_to_queue_name(job.actor)]
         entry: SendMessageBatchRequestEntryTypeDef = {
             "Id": str(len(entries)),
-            "MessageBody": build_envelope(actor, args, kwargs, correlation_id),
+            "MessageBody": build_envelope(
+                job.actor,
+                job.args,
+                job.kwargs,
+                job.correlation_id,
+                message_id=job.message_id,
+                debounce_key=job.debounce_key,
+            ),
         }
-        if delay:
-            entry["DelaySeconds"] = min(round(delay / 1000), MAX_DELAY_SECONDS)
+        if job.delay:
+            entry["DelaySeconds"] = min(round(job.delay / 1000), MAX_DELAY_SECONDS)
         entries.append(entry)
 
     for queue_name, entries in by_queue.items():
-        queue_url = get_queue_url(client, queue_name)
-        for batch in itertools.batched(entries, SQS_BATCH_SIZE):
-            response = client.send_message_batch(
-                QueueUrl=queue_url, Entries=list(batch)
-            )
+        queue_url = resolve_queue_url(client, queue_name)
+        for batch in pack_batches(entries):
+            response = client.send_message_batch(QueueUrl=queue_url, Entries=batch)
             failed = response.get("Failed", [])
             if failed:
                 log.error(
@@ -236,6 +306,7 @@ def send_jobs_sync(jobs: list[Job]) -> None:
 
 
 __all__ = [
+    "MAX_JOB_PAYLOAD_BYTES",
     "MAX_VISIBILITY_TIMEOUT_SECONDS",
     "Job",
     "SQSSendError",
@@ -246,7 +317,9 @@ __all__ = [
     "get_consumer_sqs_client",
     "get_queue_url",
     "get_sqs_client",
+    "pack_batches",
     "parse_envelope",
+    "resolve_queue_url",
     "schedule_delayed_message",
     "send_jobs",
     "send_jobs_sync",

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, timedelta
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Self
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -593,10 +593,10 @@ class _FinishedRun:
     async def __anext__(self) -> Any:
         raise StopAsyncIteration
 
-    async def __aenter__(self) -> "_FinishedRun":
+    async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(self, *args: Any) -> bool:
+    async def __aexit__(self, *args: object) -> bool:
         return False
 
 

@@ -38,6 +38,26 @@ The client uses the production environment by default. To use the sandbox, pass
 Keep organization access tokens on the server and never expose them in browser or client-side
 code.
 
+## Request Timeouts
+
+Set the default timeout for all requests when creating the client. Timeout values are expressed
+in seconds:
+
+```typescript
+const polar = createPolar({
+    accessToken: "polar_oat_xxx",
+    timeout: 30,
+});
+```
+
+Override the timeout for an individual request with the final request options argument:
+
+```typescript
+const customerState = await polar.customers.getStateExternal("customer_external_id", {
+    timeout: 60,
+});
+```
+
 ## Individual API Functions
 
 To import individual API functions for tree-shaking, create a core client and pass it to the

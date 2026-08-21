@@ -56,9 +56,9 @@ class MemberService:
         external_customer_id: str | None = None,
         role: MemberRole | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[MemberSortProperty]] = [
-            (MemberSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[MemberSortProperty]] = (
+            (MemberSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Member], int]:
         """List members with pagination and filtering."""
         repository = MemberRepository.from_session(session)

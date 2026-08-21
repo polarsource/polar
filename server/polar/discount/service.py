@@ -65,9 +65,9 @@ class DiscountService(ResourceServiceReader[Discount]):
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[DiscountSortProperty]] = [
-            (DiscountSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[DiscountSortProperty]] = (
+            (DiscountSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Discount], int]:
         statement = self._get_readable_discount_statement(auth_subject)
 
@@ -157,14 +157,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount_model = discount_create.type.get_model()
         discount_id = uuid.uuid4()
 
-        if isinstance(discount_create, DiscountFixedCreate):
-            if (
-                discount_create.amount is not None
-                and discount_create.currency is not None
-            ):
-                discount_create.amounts = {
-                    discount_create.currency: discount_create.amount
-                }
+        if isinstance(discount_create, DiscountFixedCreate) and (
+            discount_create.amount is not None and discount_create.currency is not None
+        ):
+            discount_create.amounts = {discount_create.currency: discount_create.amount}
 
         discount = discount_model(
             **discount_create.model_dump(
@@ -374,15 +370,17 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount is None:
             return None
 
-        if currency is not None and isinstance(discount, DiscountFixed):
-            if currency not in discount.amounts:
-                return None
+        if (
+            currency is not None
+            and isinstance(discount, DiscountFixed)
+            and currency not in discount.amounts
+        ):
+            return None
 
-        if products is not None:
-            if len(discount.products) > 0:
-                for product in products:
-                    if product not in discount.products:
-                        return None
+        if products is not None and len(discount.products) > 0:
+            for product in products:
+                if product not in discount.products:
+                    return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):
             return None
@@ -430,9 +428,12 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount is None:
             return None
 
-        if currency is not None and isinstance(discount, DiscountFixed):
-            if currency not in discount.amounts:
-                return None
+        if (
+            currency is not None
+            and isinstance(discount, DiscountFixed)
+            and currency not in discount.amounts
+        ):
+            return None
 
         if len(discount.products) > 0 and product not in discount.products:
             return None

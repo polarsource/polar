@@ -27,3 +27,8 @@ output "redis_endpoint_service_name" {
   description = "VPC endpoint service name for the worker Redis. Provide to Render when creating the private link."
   value       = module.redis_private_link.service_name
 }
+
+output "grafana_cloudwatch_role_arn" {
+  description = "IAM role ARN to provide in the Grafana Cloud CloudWatch scrape setup."
+  value       = module.grafana_cloudwatch_role.role_arn
+}

@@ -47,6 +47,7 @@ apt-get install -y \
     curl \
     jq \
     rsync \
+    util-linux \
     build-essential \
     libpq-dev
 
@@ -114,7 +115,7 @@ cp "${CHECKOUT}/infra/preview/Caddyfile" /etc/caddy/Caddyfile
 systemctl enable caddy
 systemctl restart caddy
 
-for f in polar-backend.service polar-frontend.service polar-logs.service; do
+for f in polar-backend.service polar-frontend.service polar-logs.service polar-seed-simple-complement.service; do
     cp "${CHECKOUT}/infra/preview/${f}" "/etc/systemd/system/${f}"
 done
 systemctl daemon-reload

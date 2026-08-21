@@ -210,7 +210,7 @@ async def run_backfill(
             delta = c.new_amount - c.old_amount
             by_currency[c.currency] = by_currency.get(c.currency, 0) + delta
             typer.echo(
-                f"{str(c.entry_id):38} {str(c.subscription_id):38} {c.direction:>6} "
+                f"{c.entry_id!s:38} {c.subscription_id!s:38} {c.direction:>6} "
                 f"{c.currency:>4} {c.base_amount:>8} {c.old_amount:>8} "
                 f"{c.new_amount:>8} {c.new_discount:>8} {delta:>8}"
             )

@@ -127,7 +127,10 @@ export const EditOAuthClientModal = ({
           >
             <FieldName />
             <FieldClientID clientId={client.client_id} />
-            <FieldClientSecret clientSecret={client.client_secret} />
+            {client.token_endpoint_auth_method !== 'none' &&
+              client.client_secret && (
+                <FieldClientSecret clientSecret={client.client_secret} />
+              )}
             <FieldClientType />
             <FieldRedirectURIs />
             <FieldScopes />

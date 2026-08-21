@@ -66,45 +66,56 @@ locals {
   files_bucket_name        = "polar-test-files"
   files_public_bucket_name = "polar-test-public-files"
 
-  lambda_worker_environment = local.test_enabled ? {
-    POLAR_ENV                         = "test"
-    POLAR_BASE_URL                    = "https://test-api.polar.sh"
-    POLAR_FRONTEND_BASE_URL           = "https://test.polar.sh"
-    POLAR_CHECKOUT_BASE_URL           = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
-    POLAR_JWKS                        = "/tmp/jwks.json"
-    POLAR_LOG_LEVEL                   = "INFO"
-    POLAR_TESTING                     = "0"
-    POLAR_POSTGRES_DATABASE           = local.db_name
-    POLAR_POSTGRES_HOST               = local.db_external_host
-    POLAR_POSTGRES_PORT               = local.db_port
-    POLAR_POSTGRES_USER               = local.db_user
-    POLAR_POSTGRES_SSL                = "true"
-    POLAR_REDIS_HOST                  = module.redis[0].host
-    POLAR_REDIS_PORT                  = tostring(module.redis[0].port)
-    POLAR_REDIS_DB                    = "1"
-    POLAR_AWS_REGION                  = "us-east-2"
-    POLAR_S3_FILES_BUCKET_NAME        = local.files_bucket_name
-    POLAR_S3_FILES_PUBLIC_BUCKET_NAME = local.files_public_bucket_name
-    POLAR_EMAIL_SENDER                = "resend"
-    POLAR_EMAIL_FROM_NAME             = "[TEST] Polar"
-    POLAR_EMAIL_FROM_DOMAIN           = "notifications.test.polar.sh"
-    POLAR_WORKER_SQS_ENABLED          = "true"
-    POLAR_WORKER_SQS_QUEUE_PREFIX     = "polar-test-tasks"
-  } : {}
+  worker_sqs_queue_prefix = "polar-test-tasks"
 
-  lambda_worker_secrets = local.test_enabled ? {
-    POLAR_CURRENT_JWK_KID = var.backend_current_jwk_kid
-    POLAR_JWKS_CONTENT    = var.backend_jwks
-    POLAR_LOGFIRE_TOKEN   = var.logfire_token
-    POLAR_POSTGRES_PWD    = local.db_password
-    POLAR_RESEND_API_KEY  = var.backend_resend_api_key
-    POLAR_SECRET          = var.backend_secret
-    POLAR_SENTRY_DSN      = var.backend_sentry_dsn
-    TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
-  } : {}
+  lambda_worker_secrets = local.test_enabled ? merge(
+    module.backend_environment[0].environment_variables,
+    module.backend_environment[0].secret_environment_variables,
+    {
+      POLAR_JWKS              = "/tmp/jwks.json"
+      POLAR_POSTGRES_DATABASE = local.db_name
+      POLAR_POSTGRES_HOST     = module.pgbouncer_aws[0].host
+      POLAR_POSTGRES_PORT     = module.pgbouncer_aws[0].port
+      POLAR_POSTGRES_USER     = local.db_user
+      POLAR_POSTGRES_SSL      = "false"
+      POLAR_REDIS_HOST        = module.redis[0].host
+      POLAR_REDIS_PORT        = tostring(module.redis[0].port)
+      POLAR_REDIS_DB          = "1"
+      POLAR_JWKS_CONTENT      = var.backend_jwks
+      POLAR_POSTGRES_PWD      = local.db_password
+      TAILSCALE_AUTHKEY       = var.lambda_worker_tailscale_token
+    },
+  ) : {}
 
   lambda_worker_name                 = "default"
   lambda_worker_reserved_concurrency = null
+
+  lambda_worker_tags = {
+    Environment = "test"
+    Service     = "task-worker"
+  }
+
+  lambda_worker_queues = {
+    "high-priority"         = {}
+    "medium-priority"       = { max_parallel_tasks = 8 }
+    "low-priority"          = { max_parallel_tasks = 16, task_time_limit_seconds = 660 }
+    "webhooks"              = { max_parallel_tasks = 16, max_retries = 250 } # Must stay above webhook_event.send's max_retries.
+    "tinybird"              = { max_parallel_tasks = 128 }
+    "invoices-and-receipts" = { max_parallel_tasks = 3, task_time_limit_seconds = 240 }
+  }
+}
+
+resource "aws_secretsmanager_secret" "lambda_worker" {
+  count                   = local.test_enabled ? 1 : 0
+  name                    = "polar-test-worker-lambda"
+  recovery_window_in_days = 0
+  tags                    = local.lambda_worker_tags
+}
+
+resource "aws_secretsmanager_secret_version" "lambda_worker" {
+  count         = local.test_enabled ? 1 : 0
+  secret_id     = aws_secretsmanager_secret.lambda_worker[0].id
+  secret_string = jsonencode(local.lambda_worker_secrets)
 }
 
 module "lambda_worker" {
@@ -113,16 +124,44 @@ module "lambda_worker" {
 
   environment              = "test"
   name                     = local.lambda_worker_name
-  queue_name               = "polar-test-tasks-${local.lambda_worker_name}"
+  queue_name               = "${local.worker_sqs_queue_prefix}-${local.lambda_worker_name}"
+  queue_prefix             = local.worker_sqs_queue_prefix
   image_uri                = "${module.lambda_worker_ecr[0].repository_url}:latest"
   enabled                  = true
   reserved_concurrency     = local.lambda_worker_reserved_concurrency
+  tags                     = local.lambda_worker_tags
   subnet_ids               = local.lambda_subnet_ids
   security_group_ids       = local.lambda_security_group_ids
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 
-  environment_variables        = local.lambda_worker_environment
-  secret_environment_variables = local.lambda_worker_secrets
+  secrets_arn        = aws_secretsmanager_secret.lambda_worker[0].arn
+  secrets_version_id = aws_secretsmanager_secret_version.lambda_worker[0].version_id
+  kms_key_arn        = module.secrets_kms[0].key_arn
+}
+
+module "lambda_worker_queue" {
+  for_each = local.test_enabled ? local.lambda_worker_queues : {}
+  source   = "../modules/aws_task_worker"
+
+  environment              = "test"
+  name                     = each.key
+  queue_name               = "${local.worker_sqs_queue_prefix}-${each.key}"
+  queue_prefix             = local.worker_sqs_queue_prefix
+  image_uri                = "${module.lambda_worker_ecr[0].repository_url}:latest"
+  enabled                  = try(each.value.processing_enabled, null)
+  timeout_seconds          = try(each.value.task_time_limit_seconds, null)
+  max_concurrency          = try(each.value.max_parallel_tasks, null)
+  reserved_concurrency     = try(each.value.guaranteed_parallel_tasks, null)
+  max_retries              = try(each.value.max_retries, null)
+  memory_size              = try(each.value.memory_mb, null)
+  tags                     = local.lambda_worker_tags
+  subnet_ids               = local.lambda_subnet_ids
+  security_group_ids       = local.lambda_security_group_ids
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  secrets_arn        = aws_secretsmanager_secret.lambda_worker[0].arn
+  secrets_version_id = aws_secretsmanager_secret_version.lambda_worker[0].version_id
+  kms_key_arn        = module.secrets_kms[0].key_arn
 }
 
 # =============================================================================
@@ -138,7 +177,10 @@ data "aws_iam_policy_document" "tasks_producer" {
       "sqs:SendMessage",
       "sqs:GetQueueUrl",
     ]
-    resources = [module.lambda_worker[0].queue_arn]
+    resources = concat(
+      [module.lambda_worker[0].queue_arn],
+      [for worker in module.lambda_worker_queue : worker.queue_arn],
+    )
   }
 }
 
@@ -179,9 +221,15 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
   }
 
   statement {
-    sid       = "UpdateFunctionCode"
-    actions   = ["lambda:UpdateFunctionCode"]
-    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.lambda_worker[0].function_name}"]
+    sid     = "UpdateFunctionCode"
+    actions = ["lambda:UpdateFunctionCode"]
+    resources = [
+      for function_name in concat(
+        [module.lambda_worker[0].function_name],
+        [for worker in module.lambda_worker_queue : worker.function_name],
+      ) :
+      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${function_name}"
+    ]
   }
 }
 
@@ -220,4 +268,14 @@ module "guardduty_scan_events" {
   queue_url         = module.lambda_worker[0].queue_url
   dlq_arn           = module.lambda_worker[0].dlq_arn
   dlq_url           = module.lambda_worker[0].dlq_url
+}
+
+module "grafana_cloudwatch_role" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/grafana_cloudwatch_role"
+
+  name                     = "polar-test-grafana-cloudwatch"
+  external_id              = var.grafana_cloud_aws_external_id
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+  tags                     = local.lambda_worker_tags
 }

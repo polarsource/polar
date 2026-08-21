@@ -1,7 +1,7 @@
 import types
 import typing
 
-from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
+from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
 
 {% for service in api.services %}
 from polar.{{ version }}.services.{{ service.name | service_name }} import {{ service.name }}Async
@@ -25,9 +25,12 @@ class Polar:
         *,
         environment: Environment = "production",
         base_url: str | None = None,
+        timeout: RequestTimeout | None = 5.0,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
-        self._client = SyncClientBase(resolved_base_url, self.version, access_token)
+        self._client = SyncClientBase(
+            resolved_base_url, self.version, access_token, timeout
+        )
 {% for service in api.services %}
         self.{{ service.name | service_name }} = {{ service.name }}Sync(self._client)
 {% endfor %}
@@ -54,9 +57,12 @@ class PolarAsync:
         *,
         environment: Environment = "production",
         base_url: str | None = None,
+        timeout: RequestTimeout | None = 5.0,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
-        self._client = AsyncClientBase(resolved_base_url, self.version, access_token)
+        self._client = AsyncClientBase(
+            resolved_base_url, self.version, access_token, timeout
+        )
 {% for service in api.services %}
         self.{{ service.name | service_name }} = {{ service.name }}Async(self._client)
 {% endfor %}

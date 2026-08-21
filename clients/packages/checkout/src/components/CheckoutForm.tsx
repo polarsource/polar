@@ -45,6 +45,15 @@ import PolarLogo from './PolarLogo'
 import { CheckoutBanner } from './CheckoutBanner'
 
 const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay', 'link']
+const DEFAULT_PAYMENT_METHOD_ORDER = ['apple_pay', 'google_pay', 'card']
+const KRW_PAYMENT_METHOD_ORDER = [
+  'kr_card',
+  'kakao_pay',
+  'naver_pay',
+  'samsung_pay',
+  'payco',
+  ...DEFAULT_PAYMENT_METHOD_ORDER,
+]
 
 type ContactField = 'customer_email' | 'customer_name'
 
@@ -893,7 +902,10 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             {checkout.is_payment_form_required && (
               <PaymentElement
                 options={{
-                  paymentMethodOrder: ['apple_pay', 'google_pay', 'card'],
+                  paymentMethodOrder:
+                    checkout.currency === 'krw'
+                      ? KRW_PAYMENT_METHOD_ORDER
+                      : DEFAULT_PAYMENT_METHOD_ORDER,
                   layout: 'tabs',
                   fields: {
                     billingDetails: {

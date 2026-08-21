@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 UNITS = {
     "/_logs/backend": "polar-backend",
     "/_logs/frontend": "polar-frontend",
+    "/_logs/seed": "polar-seed-simple-complement",
 }
 
 

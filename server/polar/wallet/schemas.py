@@ -32,8 +32,6 @@ class Wallet(WalletBase):
     They can top-up their wallet, and use the balance to pay for usage.
     """
 
-    pass
-
 
 class WalletTopUpCreate(Schema):
     """

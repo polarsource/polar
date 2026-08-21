@@ -1543,6 +1543,11 @@ export interface components {
        */
       seats: number | null
       /**
+       * Units
+       * @description Number of units purchased (for unit-based pricing).
+       */
+      units: number | null
+      /**
        * Customer Id
        * Format: uuid4
        */
@@ -2127,6 +2132,12 @@ export interface components {
        */
       seat_based_pricing_enabled: boolean
       /**
+       * Unit Based Pricing Enabled
+       * @description If this organization has unit-based pricing enabled
+       * @default false
+       */
+      unit_based_pricing_enabled: boolean
+      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false
@@ -2162,6 +2173,12 @@ export interface components {
        * @default false
        */
       off_session_charges_enabled: boolean
+      /**
+       * Meter Cycling Enabled
+       * @description If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).
+       * @default false
+       */
+      meter_cycling_enabled: boolean
       /**
        * Slack Benefit Enabled
        * @description Enables the slack shared channel benefit
@@ -2844,6 +2861,11 @@ export interface components {
        * @default null
        */
       seats: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null

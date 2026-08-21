@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta
 
 import structlog
+from opentelemetry import trace
 from sqlalchemy.orm import selectinload
 
 from polar.exceptions import PolarTaskError
@@ -70,7 +71,7 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
             and subscription.current_meter_period_end <= now
         )
 
-        if not subscription.active or not (billing_due or meter_due):
+        if not subscription.billable or not (billing_due or meter_due):
             log.info(
                 "Subscription has already been cycled",
                 subscription_id=subscription_id,
@@ -79,6 +80,9 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
                 subscription, update_dict={"scheduler_locked_at": None}
             )
             return
+
+        span = trace.get_current_span()
+        span.set_attribute("cycle_type", "default" if billing_due else "meter")
 
         if billing_due:
             # Honor the multi-period meter lag guard even when billing is due.

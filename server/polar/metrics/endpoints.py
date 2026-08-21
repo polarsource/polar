@@ -219,7 +219,7 @@ async def export(
             ]
         )
 
-    async def create_csv() -> AsyncGenerator[str, None]:
+    async def create_csv() -> AsyncGenerator[str]:
         response = await metrics_service.get_metrics(
             session,
             auth_subject,

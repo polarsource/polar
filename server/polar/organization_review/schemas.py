@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+import contextlib
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
@@ -214,11 +213,9 @@ class UsageInfo(Schema):
         import genai_prices
 
         estimated_cost: float | None = None
-        try:
+        with contextlib.suppress(Exception):
             price = genai_prices.calc_price(usage, model, provider_id=provider)
             estimated_cost = float(price.total_price)
-        except Exception:
-            pass
         return cls(
             input_tokens=usage.input_tokens or 0,
             output_tokens=usage.output_tokens or 0,

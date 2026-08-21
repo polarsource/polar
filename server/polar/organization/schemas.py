@@ -175,6 +175,9 @@ class OrganizationFeatureSettings(Schema):
     seat_based_pricing_enabled: bool = Field(
         False, description="If this organization has seat-based pricing enabled"
     )
+    unit_based_pricing_enabled: bool = Field(
+        False, description="If this organization has unit-based pricing enabled"
+    )
     wallets_enabled: bool = Field(
         False, description="If this organization has Wallets enabled"
     )
@@ -198,6 +201,13 @@ class OrganizationFeatureSettings(Schema):
         description=(
             "If this organization can create and finalize draft orders via the API "
             "(off-session charges against a saved payment method)."
+        ),
+    )
+    meter_cycling_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization can set a separate meter cycle on recurring "
+            "products (a meter interval independent of the billing interval)."
         ),
     )
     slack_benefit_enabled: bool = Field(
@@ -358,9 +368,7 @@ def detect_platform_from_url(url: str) -> str | None:
     try:
         parsed = urlparse(url.lower())
         hostname = parsed.hostname or ""
-        # Strip www. prefix
-        if hostname.startswith("www."):
-            hostname = hostname[4:]
+        hostname = hostname.removeprefix("www.")
         return DOMAIN_TO_PLATFORM.get(hostname)
     except Exception:
         return None

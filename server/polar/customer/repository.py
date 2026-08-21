@@ -432,6 +432,43 @@ class CustomerRepository(
         result = await self.session.execute(statement)
         return {external_id: id for external_id, id in result.all()}
 
+    async def resolve_customer_identifiers(
+        self,
+        organization_id: UUID,
+        customer_ids: Sequence[UUID],
+        external_customer_ids: Sequence[str],
+    ) -> set[tuple[UUID | None, str | None]]:
+        if not customer_ids and not external_customer_ids:
+            return set()
+
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(Customer.id, Customer.external_id)
+            .where(
+                Customer.organization_id == organization_id,
+                or_(
+                    Customer.id.in_(customer_ids),
+                    Customer.external_id.in_(external_customer_ids),
+                ),
+            )
+        )
+        result = await self.session.execute(statement)
+        resolved_identifiers: set[tuple[UUID | None, str | None]] = set(
+            result.tuples().all()
+        )
+
+        resolved_external_customer_ids = {
+            external_customer_id
+            for _, external_customer_id in resolved_identifiers
+            if external_customer_id is not None
+        }
+        resolved_identifiers.update(
+            (None, external_customer_id)
+            for external_customer_id in external_customer_ids
+            if external_customer_id not in resolved_external_customer_ids
+        )
+        return resolved_identifiers
+
     async def lower_first_user_event_at(
         self, timestamps: Mapping[UUID, datetime]
     ) -> None:

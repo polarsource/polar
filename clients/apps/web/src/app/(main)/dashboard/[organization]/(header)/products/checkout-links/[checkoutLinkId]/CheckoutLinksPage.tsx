@@ -5,8 +5,10 @@ import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayou
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
+import { useHasPermission } from '@/hooks/permissions'
 import { useDeleteCheckoutLink } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
@@ -30,6 +32,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   checkoutLink,
 }) => {
   const pushRouteWithoutCache = usePushRouteWithoutCache()
+  const canManageProducts = useHasPermission(organization.id, 'products:manage')
 
   const { mutateAsync: deleteCheckoutLink, isPending: isDeletePending } =
     useDeleteCheckoutLink()
@@ -90,7 +93,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 align="end"
                 className="dark:bg-polar-800 bg-gray-50 shadow-lg"
               >
-                <DropdownMenuItem destructive onClick={showDeleteModal}>
+                <DropdownMenuItem
+                  destructive
+                  onClick={() => {
+                    if (!canManageProducts) {
+                      toast({
+                        title: 'Restricted access',
+                        description: permissionDeniedMessage('products:manage'),
+                      })
+                      return
+                    }
+
+                    showDeleteModal()
+                  }}
+                >
                   Delete Checkout Link
                 </DropdownMenuItem>
               </DropdownMenuContent>

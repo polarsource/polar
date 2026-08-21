@@ -39,8 +39,6 @@ class EmailSenderError(PolarError): ...
 class EmailSenderOperationalError(EmailSenderError):
     """Operational error for email sender (e.g., timeout, network issues)."""
 
-    pass
-
 
 class SendEmailError(EmailSenderError):
     def __init__(self, message: str) -> None:

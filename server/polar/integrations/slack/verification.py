@@ -21,7 +21,7 @@ def verify_slack_signature(
     """
     try:
         timestamp = int(timestamp_header)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return False
 
     current = now if now is not None else time.time()

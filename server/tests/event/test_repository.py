@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timedelta
 
 import pytest
+from sqlalchemy import select
 
 from polar.event.repository import EventRepository
 from polar.kit.utils import utc_now
@@ -9,6 +10,7 @@ from polar.models import Event, Organization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_customer
 
 
 async def _create_event(
@@ -20,6 +22,8 @@ async def _create_event(
     source: EventSource = EventSource.user,
     name: str = "test_event",
     user_metadata: dict[str, object] | None = None,
+    customer_id: uuid.UUID | None = None,
+    external_customer_id: str | None = None,
 ) -> Event:
     event_id = uuid.uuid4()
     event = Event(
@@ -31,9 +35,92 @@ async def _create_event(
         organization=organization,
         root_id=event_id,
         user_metadata=user_metadata or {},
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
     )
     await save_fixture(event)
     return event
+
+
+@pytest.mark.asyncio
+class TestCustomerFilterClause:
+    async def test_customer_id_matches_external_id_within_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        external_id = "shared-external-id"
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id=external_id,
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization_second,
+            external_id=external_id,
+        )
+        matching_event = await _create_event(
+            save_fixture,
+            organization=organization,
+            ingested_at=utc_now(),
+            external_customer_id=external_id,
+        )
+        await _create_event(
+            save_fixture,
+            organization=organization_second,
+            ingested_at=utc_now(),
+            external_customer_id=external_id,
+        )
+
+        repository = EventRepository.from_session(session)
+        clause = repository.get_customer_filter_clause(
+            organization.id, [customer.id], [external_id]
+        )
+        result = await session.scalars(select(Event).where(clause))
+
+        assert list(result) == [matching_event]
+
+    async def test_external_customer_id_matches_customer_within_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        external_id = "shared-external-id"
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id=external_id,
+        )
+        other_customer = await create_customer(
+            save_fixture,
+            organization=organization_second,
+            external_id=external_id,
+        )
+        matching_event = await _create_event(
+            save_fixture,
+            organization=organization,
+            ingested_at=utc_now(),
+            customer_id=customer.id,
+        )
+        await _create_event(
+            save_fixture,
+            organization=organization_second,
+            ingested_at=utc_now(),
+            customer_id=other_customer.id,
+        )
+
+        repository = EventRepository.from_session(session)
+        clause = repository.get_customer_filter_clause(
+            organization.id, [customer.id], [external_id]
+        )
+        result = await session.scalars(select(Event).where(clause))
+
+        assert list(result) == [matching_event]
 
 
 @pytest.mark.asyncio

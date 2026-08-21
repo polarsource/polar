@@ -7,15 +7,13 @@ import type { Client, operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/orbit'
 import { X } from 'lucide-react'
-import { PaymentMethodDisplay } from '../PaymentMethodDisplay'
+import {
+  PaymentMethodDisplay,
+  getPaymentMethodCardInfo,
+} from '../PaymentMethodDisplay'
 
 type PaymentMethodType =
   operations['customer_portal:customers:list_payment_methods']['responses']['200']['content']['application/json']['items'][number]
-
-const isCardPaymentMethod = (
-  paymentMethod: PaymentMethodType,
-): paymentMethod is schemas['PaymentMethodCard'] =>
-  paymentMethod.type === 'card'
 
 const PaymentMethod = ({
   api,
@@ -76,11 +74,7 @@ const PaymentMethod = ({
     <div className="flex items-center justify-between gap-2">
       <PaymentMethodDisplay
         type={paymentMethod.type}
-        card={
-          isCardPaymentMethod(paymentMethod)
-            ? paymentMethod.method_metadata
-            : null
-        }
+        card={getPaymentMethodCardInfo(paymentMethod)}
       />
       <div className="flex flex-row items-center gap-x-4">
         {isDefault ? (

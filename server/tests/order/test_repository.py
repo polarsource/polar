@@ -52,7 +52,7 @@ class TestStreamStalePaymentLock:
 
         async def capture(
             self: OrderRepository, statement: Select[tuple[Order]]
-        ) -> AsyncGenerator[Order, None]:
+        ) -> AsyncGenerator[Order]:
             captured.append(statement)
             empty: list[Order] = []
             for order in empty:

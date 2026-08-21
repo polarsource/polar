@@ -32,6 +32,7 @@ class SystemEvent(StrEnum):
     subscription_uncanceled = "subscription.uncanceled"
     subscription_product_updated = "subscription.product_updated"
     subscription_seats_updated = "subscription.seats_updated"
+    subscription_units_updated = "subscription.units_updated"
     subscription_billing_period_updated = "subscription.billing_period_updated"
     subscription_update_cleared = "subscription.update_cleared"
     order_paid = "order.paid"
@@ -73,6 +74,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "order.unvoided": "Order Unvoided",
     "checkout.created": "Checkout Created",
     "subscription.seats_updated": "Subscription Seats Updated",
+    "subscription.units_updated": "Subscription Units Updated",
     "subscription.billing_period_updated": "Subscription Billing Period Updated",
     "subscription.update_cleared": "Subscription Update Cleared",
     "customer.created": "Customer Created",
@@ -223,6 +225,7 @@ class SubscriptionUpdatedMetadataFields(TypedDict, total=False):
     discount_id: str | None
     trial_end: str
     seats: int
+    units: int
     billing_period_end: str
 
 
@@ -414,6 +417,20 @@ class SubscriptionSeatsUpdatedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_seats_updated]]
         user_metadata: Mapped[SubscriptionSeatsUpdatedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionUnitsUpdatedMetadata(TypedDict):
+    subscription_id: str
+    old_units: int
+    new_units: int
+    proration_behavior: str
+
+
+class SubscriptionUnitsUpdatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_units_updated]]
+        user_metadata: Mapped[SubscriptionUnitsUpdatedMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionBillingPeriodUpdatedMetadata(TypedDict):
@@ -828,6 +845,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionSeatsUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_units_updated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionUnitsUpdatedMetadata,
 ) -> Event: ...
 
 

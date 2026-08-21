@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
     ManualRetryLimitExceeded,
@@ -44,6 +49,7 @@ class OrdersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerOrderSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomerOrder:
         """
         List orders of the authenticated customer.
@@ -56,6 +62,8 @@ class OrdersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -76,6 +84,7 @@ class OrdersSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -95,6 +104,7 @@ class OrdersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerOrderSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[CustomerOrder, None, None]:
         """
         List orders of the authenticated customer.
@@ -107,6 +117,8 @@ class OrdersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type CustomerOrder.
@@ -126,6 +138,7 @@ class OrdersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -135,12 +148,16 @@ class OrdersSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrder:
         """
         Get an order by ID for the authenticated customer.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -156,6 +173,7 @@ class OrdersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -167,6 +185,8 @@ class OrdersSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerOrderUpdate],
     ) -> CustomerOrder:
         """
@@ -174,6 +194,8 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -190,6 +212,7 @@ class OrdersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -202,12 +225,16 @@ class OrdersSync(SyncServiceBase):
     def invoice(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrderInvoice:
         """
         Get an order's invoice data.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -223,6 +250,7 @@ class OrdersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -234,12 +262,16 @@ class OrdersSync(SyncServiceBase):
     def generate_invoice(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Any:
         """
         Trigger generation of an order's invoice.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -256,6 +288,7 @@ class OrdersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -268,12 +301,16 @@ class OrdersSync(SyncServiceBase):
     def receipt(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrderReceipt:
         """
         Get a presigned URL to download an order's receipt PDF.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -289,6 +326,7 @@ class OrdersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -300,12 +338,16 @@ class OrdersSync(SyncServiceBase):
     def get_payment_status(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrderPaymentStatus:
         """
         Get the current payment status for an order.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -321,6 +363,7 @@ class OrdersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -332,6 +375,8 @@ class OrdersSync(SyncServiceBase):
     def confirm_retry_payment(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerOrderConfirmPayment],
     ) -> CustomerOrderPaymentConfirmation:
         """
@@ -339,6 +384,8 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -357,6 +404,7 @@ class OrdersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -384,6 +432,7 @@ class OrdersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerOrderSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomerOrder:
         """
         List orders of the authenticated customer.
@@ -396,6 +445,8 @@ class OrdersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -416,6 +467,7 @@ class OrdersAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -435,6 +487,7 @@ class OrdersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerOrderSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[CustomerOrder, None]:
         """
         List orders of the authenticated customer.
@@ -447,6 +500,8 @@ class OrdersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type CustomerOrder.
@@ -466,6 +521,7 @@ class OrdersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -476,12 +532,16 @@ class OrdersAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrder:
         """
         Get an order by ID for the authenticated customer.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -497,6 +557,7 @@ class OrdersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -508,6 +569,8 @@ class OrdersAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerOrderUpdate],
     ) -> CustomerOrder:
         """
@@ -515,6 +578,8 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -531,6 +596,7 @@ class OrdersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -543,12 +609,16 @@ class OrdersAsync(AsyncServiceBase):
     async def invoice(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrderInvoice:
         """
         Get an order's invoice data.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -564,6 +634,7 @@ class OrdersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -575,12 +646,16 @@ class OrdersAsync(AsyncServiceBase):
     async def generate_invoice(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Any:
         """
         Trigger generation of an order's invoice.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -597,6 +672,7 @@ class OrdersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -609,12 +685,16 @@ class OrdersAsync(AsyncServiceBase):
     async def receipt(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrderReceipt:
         """
         Get a presigned URL to download an order's receipt PDF.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -630,6 +710,7 @@ class OrdersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -641,12 +722,16 @@ class OrdersAsync(AsyncServiceBase):
     async def get_payment_status(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrderPaymentStatus:
         """
         Get the current payment status for an order.
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Order not found.
@@ -662,6 +747,7 @@ class OrdersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -673,6 +759,8 @@ class OrdersAsync(AsyncServiceBase):
     async def confirm_retry_payment(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerOrderConfirmPayment],
     ) -> CustomerOrderPaymentConfirmation:
         """
@@ -680,6 +768,8 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -698,6 +788,7 @@ class OrdersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

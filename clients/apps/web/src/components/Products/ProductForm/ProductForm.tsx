@@ -25,11 +25,19 @@ type ApiProductFormPrice = NonNullable<
 
 export type ProductFormPrice = ApiProductFormPrice | FreeProductPriceCreate
 
+// The meter cycle only exists on recurring creates, so it isn't part of the keys shared by
+// the union members — carry it explicitly.
+export type ProductMeterCycleMixin = Pick<
+  schemas['ProductCreateRecurring'],
+  'meter_interval' | 'meter_interval_count'
+>
+
 export type ProductFormType = Omit<
   schemas['ProductCreate'] | schemas['ProductUpdate'],
   'metadata' | 'prices'
 > &
-  ProductFullMediasMixin & {
+  ProductFullMediasMixin &
+  ProductMeterCycleMixin & {
     metadata: { key: string; value: string | number | boolean }[]
     prices: ProductFormPrice[]
   }
@@ -38,16 +46,22 @@ const ProductForm = ({
   organization,
   update,
   benefitsSlot,
+  hasMeterCreditBenefit,
 }: {
   organization: schemas['Organization']
   update?: boolean
   benefitsSlot: React.ReactNode
+  hasMeterCreditBenefit?: boolean
 }) => {
   return (
     <div className="dark:divide-polar-700 flex flex-col divide-y">
       <ProductInfoSection />
 
-      <ProductPricingSection organization={organization} update={update} />
+      <ProductPricingSection
+        organization={organization}
+        update={update}
+        hasMeterCreditBenefit={hasMeterCreditBenefit}
+      />
 
       {benefitsSlot}
 

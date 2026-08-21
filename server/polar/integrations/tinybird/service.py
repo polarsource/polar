@@ -1,6 +1,6 @@
 import json
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from functools import partial
@@ -11,6 +11,7 @@ import logfire
 import sqlalchemy
 import structlog
 from clickhouse_connect.cc_sqlalchemy.dialect import ClickHouseDialect
+from clickhouse_connect.cc_sqlalchemy.sql.compiler import ChStatementCompiler
 from sqlalchemy import (
     Column,
     ColumnClause,
@@ -38,13 +39,63 @@ from polar.meter.aggregation import Aggregation, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event
 from polar.models.event import EventSource
+from polar.worker import MAX_JOB_PAYLOAD_BYTES
 
 from .client import client
 from .schemas import TinybirdEvent
 
 log: Logger = structlog.get_logger()
 
-clickhouse_dialect = ClickHouseDialect()
+
+def _ch_bind_type(type_: Any) -> str:
+    if isinstance(type_, DateTime):
+        return "DateTime64(3)"
+    if isinstance(type_, Float):
+        return "Float64"
+    if isinstance(type_, sqlalchemy.Integer):
+        return "Int64"
+    return "String"
+
+
+class _ChBindCompiler(ChStatementCompiler):
+    """Render values as ClickHouse bound parameters (``{name:Type}``), never inlined."""
+
+    _expanding_ch_type: str = "String"
+
+    @property
+    def bindtemplate(self) -> str:
+        return f"{{%(name)s:{self._expanding_ch_type}}}"
+
+    @bindtemplate.setter
+    def bindtemplate(self, value: str) -> None:
+        pass
+
+    def bindparam_string(  # type: ignore[override]
+        self, name: str, post_compile: bool = False, expanding: bool = False, **kw: Any
+    ) -> str:
+        if expanding:
+            return super().bindparam_string(
+                name, post_compile=post_compile, expanding=expanding, **kw
+            )
+        bind = self.binds.get(name)
+        ch_type = _ch_bind_type(bind.type) if bind is not None else "String"
+        return f"{{{name}:{ch_type}}}"
+
+    def _literal_execute_expanding_parameter(
+        self, name: str, parameter: Any, values: Any
+    ) -> Any:
+        self._expanding_ch_type = _ch_bind_type(parameter.type)
+        try:
+            return super()._literal_execute_expanding_parameter(name, parameter, values)
+        finally:
+            self._expanding_ch_type = "String"
+
+
+class _ClickHouseDialect(ClickHouseDialect):
+    statement_compiler = _ChBindCompiler
+
+
+clickhouse_dialect = _ClickHouseDialect()
 
 
 def _contains(column: Any, value: str) -> ColumnElement[bool]:
@@ -179,7 +230,7 @@ def _truncate_datetime_to_millis(dt_str: str | None) -> str | None:
     try:
         dt = datetime.fromisoformat(dt_str)
         return dt.isoformat(timespec="milliseconds")
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return dt_str
 
 
@@ -276,6 +327,24 @@ def events_to_tinybird(
     ancestors_by_event: Mapping[UUID, Sequence[str]] | None = None,
 ) -> list[TinybirdEvent]:
     return [_event_to_tinybird(e, (ancestors_by_event or {}).get(e.id)) for e in events]
+
+
+def chunk_tinybird_events(
+    events: Sequence[TinybirdEvent],
+) -> Iterator[list[TinybirdEvent]]:
+    """Split events into groups that each fit in a single job payload."""
+    chunk: list[TinybirdEvent] = []
+    chunk_bytes = 0
+    for event in events:
+        event_bytes = len(json.dumps(event).encode("utf-8"))
+        if chunk and chunk_bytes + event_bytes > MAX_JOB_PAYLOAD_BYTES:
+            yield chunk
+            chunk = []
+            chunk_bytes = 0
+        chunk.append(event)
+        chunk_bytes += event_bytes
+    if chunk:
+        yield chunk
 
 
 async def ingest_events(
@@ -415,8 +484,8 @@ async def get_first_user_event_at(
 
     timestamps: list[datetime] = []
     for statement in statements:
-        sql, template = _compile(statement)
-        rows = await client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
         timestamps.extend(
             _parse_datetime(value)
             for row in rows
@@ -430,20 +499,16 @@ def _finite(value: Any, default: float = 0.0) -> float:
     """Convert a value to float, returning default for NaN/Infinity."""
     try:
         result = float(value or 0)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
     return result if math.isfinite(result) else default
 
 
-def _compile(statement: Select[Any]) -> tuple[str, str]:
-    compiled = statement.compile(dialect=clickhouse_dialect)
-    template = str(compiled)
-    literal = str(
-        statement.compile(
-            dialect=clickhouse_dialect, compile_kwargs={"literal_binds": True}
-        )
+def _compile(statement: Select[Any]) -> tuple[str, dict[str, Any]]:
+    compiled = statement.compile(
+        dialect=clickhouse_dialect, compile_kwargs={"render_postcompile": True}
     )
-    return literal, template
+    return str(compiled), dict(compiled.params)
 
 
 def _parse_datetime(value: datetime | date | str) -> datetime:
@@ -453,7 +518,7 @@ def _parse_datetime(value: datetime | date | str) -> datetime:
         return value
     if isinstance(value, date):
         return datetime(value.year, value.month, value.day, tzinfo=UTC)
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return datetime.fromisoformat(value)
 
 
 def _parse_uuid(value: UUID | str) -> UUID:
@@ -685,9 +750,10 @@ class TinybirdEventsQuery:
             return self._ch_comparison(col, clause)
 
         parts = clause.property.split(".")
-        if clause.operator in (FilterOperator.like, FilterOperator.not_like):
-            attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
-        elif isinstance(clause.value, str):
+        if clause.operator in (
+            FilterOperator.like,
+            FilterOperator.not_like,
+        ) or isinstance(clause.value, str):
             attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
         else:
             attr = func.JSONExtractFloat(events_table.c.user_metadata, *parts)
@@ -758,10 +824,10 @@ class TinybirdEventsQuery:
         else:
             statement = statement.order_by(func.max(events_table.c.timestamp).desc())
 
-        sql, template = _compile(statement)
+        sql, params = _compile(statement)
 
         try:
-            rows = await client.query(sql, db_statement=template)
+            rows = await client.query(sql, parameters=params, db_statement=sql)
             return _parse_event_type_stats(rows)
         except Exception as e:
             log.error("tinybird.get_event_type_stats.failed", error=str(e))
@@ -795,13 +861,17 @@ class TinybirdEventsQuery:
         for f in self._filters:
             ids_statement = ids_statement.where(f)
 
-        count_sql, count_template = _compile(count_statement)
-        ids_sql, ids_template = _compile(ids_statement)
+        count_sql, count_params = _compile(count_statement)
+        ids_sql, ids_params = _compile(ids_statement)
 
-        count_rows = await client.query(count_sql, db_statement=count_template)
+        count_rows = await client.query(
+            count_sql, parameters=count_params, db_statement=count_sql
+        )
         total = count_rows[0]["total"] if count_rows else 0
 
-        id_rows = await client.query(ids_sql, db_statement=ids_template)
+        id_rows = await client.query(
+            ids_sql, parameters=ids_params, db_statement=ids_sql
+        )
         event_ids = [str(row["id"]) for row in id_rows]
 
         return event_ids, total
@@ -823,11 +893,15 @@ class TinybirdEventsQuery:
             customer_statement = customer_statement.where(f)
             external_statement = external_statement.where(f)
 
-        customer_sql, customer_template = _compile(customer_statement)
-        external_sql, external_template = _compile(external_statement)
+        customer_sql, customer_params = _compile(customer_statement)
+        external_sql, external_params = _compile(external_statement)
 
-        customer_rows = await client.query(customer_sql, db_statement=customer_template)
-        external_rows = await client.query(external_sql, db_statement=external_template)
+        customer_rows = await client.query(
+            customer_sql, parameters=customer_params, db_statement=customer_sql
+        )
+        external_rows = await client.query(
+            external_sql, parameters=external_params, db_statement=external_sql
+        )
 
         return (
             [str(row["customer_id"]) for row in customer_rows],
@@ -852,7 +926,7 @@ class TinybirdEventsQuery:
             label = field_path.replace(".", "_")
             ae_col = self._get_agg_col_for_table(ae, field_path)
             agg_columns.append(
-                func.coalesce(func.sum(ae_col), 0).label(f"{label}_total")
+                func.coalesce(func.sum(ae_col), 0.0).label(f"{label}_total")
             )
 
         org_filter_values = self._organization_ids
@@ -980,8 +1054,8 @@ class TinybirdEventsQuery:
             .order_by(bucket, per_root.c.organization_id, per_root.c.root_name)
         )
 
-        sql, template = _compile(statement)
-        rows = await client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
 
         results = []
         for row in rows:
@@ -1024,8 +1098,8 @@ class TinybirdEventsQuery:
             .group_by(per_root.c.organization_id, per_root.c.root_name)
         )
 
-        sql, template = _compile(statement)
-        rows = await client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
 
         results = []
         for row in rows:
@@ -1034,7 +1108,7 @@ class TinybirdEventsQuery:
                 TinybirdTimeseriesStats(
                     organization_id=row["organization_id"],
                     name=row["name"],
-                    bucket=datetime.min,
+                    bucket=datetime.min.replace(tzinfo=UTC),
                     occurrences=row["occurrences"],
                     customers=row["customers"],
                     totals=totals,
@@ -1071,8 +1145,8 @@ class TinybirdEventsQuery:
         for f in self._filters:
             statement = statement.where(f)
 
-        sql, template = _compile(statement)
-        rows = await client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
 
         if not rows:
             return 0, {f.replace(".", "_"): 0.0 for f in aggregate_fields}
@@ -1092,7 +1166,7 @@ class TinybirdEventsQuery:
 
         base_filter = self._get_organization_filter()
 
-        ids_str = ", ".join(f"'{str(aid)}'" for aid in ancestor_ids)
+        ids_str = ", ".join(f"'{aid!s}'" for aid in ancestor_ids)
         ids_array: ColumnClause[str] = literal_column(f"[{ids_str}]")
 
         matched_ancestor = func.arrayJoin(
@@ -1123,8 +1197,8 @@ class TinybirdEventsQuery:
             statement = statement.where(f)
         statement = statement.group_by(literal_column("matched_ancestor"))
 
-        sql, template = _compile(statement)
-        rows = await client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
 
         result: dict[str, tuple[int, dict[str, float]]] = {}
         for row in rows:
@@ -1167,9 +1241,10 @@ class TinybirdEventsQuery:
                     ).label(f"{label}_sum")
                 )
 
+        group_value = group_col.label("value")
         statement = (
             sqlalchemy.select(
-                group_col.label("value"),
+                group_value,
                 func.count().label("occurrences"),
                 literal_column(
                     "uniqExact(if(customer_id IS NOT NULL,"
@@ -1181,7 +1256,7 @@ class TinybirdEventsQuery:
             .select_from(events_table)
             .where(base_filter)
             .where(group_col != "")
-            .group_by(group_col)
+            .group_by(group_value)
         )
 
         for f in self._filters:
@@ -1193,8 +1268,8 @@ class TinybirdEventsQuery:
 
         statement = statement.limit(limit)
 
-        sql, template = _compile(statement)
-        rows = await client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
 
         results = []
         for row in rows:
@@ -1253,8 +1328,8 @@ class TinybirdEventsQuery:
             sqlalchemy.select(customer_sums, share_col).order_by(order_col).limit(limit)
         )
 
-        sql, template = _compile(statement)
-        rows = await client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
 
         results = []
         for row in rows:
@@ -1343,8 +1418,8 @@ class TinybirdEventsQuery:
             .limit(limit)
         )
 
-        sql, template = _compile(statement)
-        rows = await client.query(sql, db_statement=template)
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
 
         results = []
         for row in rows:

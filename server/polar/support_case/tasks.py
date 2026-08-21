@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import joinedload
@@ -122,6 +123,10 @@ async def notify_organization_of_new_message(message_id: UUID) -> None:
             )
 
 
+def _read_attachment(service: FileServiceTypes, path: str) -> bytes:
+    return S3_SERVICES[service].get_object_or_raise(path)["Body"].read()
+
+
 @actor(actor_name="support_case.merge_attachments", priority=TaskPriority.LOW)
 async def merge_case_attachments(case_id: UUID, attachment_ids: list[UUID]) -> None:
     """Merge the selected case attachments into one PDF stored back on the
@@ -145,10 +150,9 @@ async def merge_case_attachments(case_id: UUID, attachment_ids: list[UUID]) -> N
         # than dropped, so the merge still runs as long as anything was selected.
         payloads = []
         for attachment in mergeable:
-            s3_service = S3_SERVICES[attachment.file.service]
-            content = s3_service.get_object_or_raise(attachment.file.path)[
-                "Body"
-            ].read()
+            content = await asyncio.to_thread(
+                _read_attachment, attachment.file.service, attachment.file.path
+            )
             payloads.append((attachment.file.name, attachment.file.mime_type, content))
         skipped = [a for a in selected if not is_mergeable(a.file.mime_type)]
         if skipped:
@@ -176,7 +180,7 @@ async def merge_case_attachments(case_id: UUID, attachment_ids: list[UUID]) -> N
             f"{case.organization_id}/{uuid4()}/{filename}"
         )
         s3_service = S3_SERVICES[FileServiceTypes.support_case_attachment]
-        s3_service.upload(merged, path, "application/pdf")
+        await asyncio.to_thread(s3_service.upload, merged, path, "application/pdf")
 
         file = File(
             organization=case.organization,

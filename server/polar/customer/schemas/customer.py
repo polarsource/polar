@@ -34,7 +34,11 @@ from polar.kit.schemas import (
 from polar.member import MemberOwnerCreate
 from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
-from polar.payment_method.schemas import PaymentMethodCard, PaymentMethodGeneric
+from polar.payment_method.schemas import (
+    PaymentMethodCard,
+    PaymentMethodGeneric,
+    PaymentMethodKrCard,
+)
 from polar.tax.tax_id import TaxID
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
@@ -305,12 +309,18 @@ class CustomerPaymentMethodCard(PaymentMethodCard):
     is_default: bool = Field(description=_is_default_description, examples=[True])
 
 
+class CustomerPaymentMethodKrCard(PaymentMethodKrCard):
+    is_default: bool = Field(description=_is_default_description, examples=[False])
+
+
 class CustomerPaymentMethodGeneric(PaymentMethodGeneric):
     is_default: bool = Field(description=_is_default_description, examples=[False])
 
 
 CustomerPaymentMethod = Annotated[
-    CustomerPaymentMethodCard | CustomerPaymentMethodGeneric,
+    CustomerPaymentMethodCard
+    | CustomerPaymentMethodKrCard
+    | CustomerPaymentMethodGeneric,
     SetSchemaReference("PaymentMethod"),
     MergeJSONSchema({"title": "PaymentMethod"}),
     ClassName("PaymentMethod"),

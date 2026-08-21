@@ -27,7 +27,9 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_product,
     create_product_fixed_and_seat,
+    create_product_unit_based,
     create_subscription_with_seats,
+    create_subscription_with_units,
     create_trialing_subscription,
 )
 
@@ -253,6 +255,104 @@ class TestCalculateChangePreview:
 
         # Half a cycle of two extra seats at 1000 each.
         assert preview.proration_amount == 1000
+        assert preview.total_amount == 1000
+
+    async def test_unit_increase_at_half_period_charges_the_delta(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        unit_product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=1000
+        )
+
+        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+            subscription = await create_subscription_with_units(
+                save_fixture,
+                product=unit_product,
+                customer=customer,
+                units=10,
+                current_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+                current_period_end=datetime(2025, 2, 1, tzinfo=UTC),
+            )
+
+            preview = await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                units=12,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        # Half a cycle of two extra units at 1000 each.
+        assert preview.proration_amount == 1000
+        assert preview.total_amount == 1000
+
+    async def test_unit_preview_persists_nothing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        unit_product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=1000
+        )
+        subscription = await create_subscription_with_units(
+            save_fixture, product=unit_product, customer=customer, units=10
+        )
+        subscription_id = subscription.id
+
+        await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            units=12,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        assert await session.scalar(select(func.count()).select_from(BillingEntry)) == 0
+        assert (
+            await session.scalar(
+                select(Subscription.units).where(Subscription.id == subscription_id)
+            )
+            == 10
+        )
+
+    async def test_non_unit_to_unit_quotes_the_minimum_units(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        unit_product = await create_product_unit_based(
+            save_fixture,
+            organization=organization,
+            price_per_unit=1000,
+            minimum_units=3,
+        )
+
+        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                current_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+                current_period_end=datetime(2025, 2, 1, tzinfo=UTC),
+            )
+
+            preview = await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                product_id=unit_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        # Half a cycle of the three minimum units, less the old plan's unused half.
+        assert sorted(p.amount for p in preview.prorations) == [-500, 1500]
         assert preview.total_amount == 1000
 
     async def test_seat_preview_persists_nothing(

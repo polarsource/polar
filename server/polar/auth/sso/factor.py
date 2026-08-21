@@ -81,6 +81,7 @@ class SSOClientSecretFactor(SSOFactorMixin, OIDCFactor):
             client_secret=client_secret,
             discovery_endpoint=_discovery_endpoint(issuer),
             state_service=state_service,
+            advance_by=2,
         )
         self.connection_id = connection_id
         self.organization_slug = organization_slug
@@ -107,6 +108,7 @@ class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
             kid=settings.CURRENT_JWK_KID,
             discovery_endpoint=_discovery_endpoint(issuer),
             state_service=state_service,
+            advance_by=2,
         )
         self.connection_id = connection_id
         self.organization_slug = organization_slug

@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
@@ -9,7 +10,10 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
-from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
+from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
+    MerchantMigrationRecordStatus,
+)
 
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
@@ -122,6 +126,29 @@ class MerchantMigrationRecordItem(Schema):
             "reason."
         )
     )
+    cutover_status: MerchantMigrationCutoverStatus | None = Field(
+        description=(
+            "What the switch did with this subscription: `moved` (Polar bills it "
+            "now), `skipped` (left on the source, see `cutover_error`) or `failed` "
+            "(retryable). Null when the switch hasn't reached it, and for every "
+            "entity other than subscriptions."
+        ),
+    )
+    cutover_error: str | None = Field(
+        description="Why the switch skipped or failed this subscription.",
+    )
+    renews_at: datetime | None = Field(
+        description=(
+            "When the subscription next renews on the source, as staged at import. "
+            "Null for non-subscription rows or when the source reported none."
+        ),
+    )
+    has_payment_method: bool | None = Field(
+        description=(
+            "Whether the imported Polar subscription has a card to charge yet. "
+            "Null for non-subscription rows or rows not imported."
+        ),
+    )
 
 
 class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
@@ -182,6 +209,37 @@ class MerchantMigrationImportReport(Schema):
     results: list[MerchantMigrationImportResult] = Field(
         description="Per-entity counts of what was imported vs skipped."
     )
+
+
+class MerchantMigrationCutoverRequest(Schema):
+    record_ids: list[UUID4] | None = Field(
+        default=None,
+        description=(
+            "The imported-subscription record ids to switch (from the records "
+            "listing). When omitted, every imported subscription is switched "
+            "(subject to `exclude_record_ids`)."
+        ),
+    )
+    exclude_record_ids: list[UUID4] | None = Field(
+        default=None,
+        description=(
+            "Switch every imported subscription except these — the opt-out "
+            "selection for large catalogs. Ignored when `record_ids` is set."
+        ),
+    )
+
+
+class MerchantMigrationCutoverReport(Schema):
+    """Where the switch has got to, for the imported subscriptions."""
+
+    started: bool = Field(description="Whether the merchant has confirmed the switch.")
+    running: bool = Field(description="Whether a switch run is in progress.")
+    completed: bool = Field(description="Whether the last switch run has finished.")
+    total: int = Field(description="Imported subscriptions in scope.")
+    pending: int = Field(description="Not switched yet.")
+    moved: int = Field(description="Now billed by Polar.")
+    skipped: int = Field(description="Left on the source.")
+    failed: int = Field(description="Hit an unexpected error.")
 
 
 class PanTransferStepComplete(Schema):

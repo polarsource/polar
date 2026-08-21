@@ -169,10 +169,9 @@ class TestPagesByKey:
         assert [len(page) for page in pages] == [2, 1]
         # The second page resumes after the last key of the first, cast so
         # ClickHouse compares UUIDs rather than a UUID against a string.
-        assert (
-            f"customer_id` > toUUID('{customer_ids[1]}')"
-            in query_mock.await_args_list[1].args[0]
-        )
+        second_call = query_mock.await_args_list[1]
+        assert "`customer_id` > toUUID(" in second_call.args[0]
+        assert str(customer_ids[1]) in second_call.kwargs["parameters"].values()
 
     async def test_pages_the_external_customer_id_view(
         self, mocker: MockerFixture
@@ -202,11 +201,11 @@ class TestPagesByKey:
         ]
 
         assert [len(page) for page in pages] == [2, 1]
-        # This view keys on a String, so the cursor is a plain literal rather than
-        # the toUUID() cast the customer id view needs.
-        assert (
-            "external_customer_id` > 'EXT_2'" in query_mock.await_args_list[1].args[0]
-        )
+        # This view keys on a String, so the cursor is bound directly rather than
+        # wrapped in the toUUID() cast the customer id view needs.
+        second_call = query_mock.await_args_list[1]
+        assert "`external_customer_id` > {" in second_call.args[0]
+        assert "EXT_2" in second_call.kwargs["parameters"].values()
 
     async def test_no_rows(self, mocker: MockerFixture) -> None:
         mocker.patch(

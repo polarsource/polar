@@ -15,6 +15,7 @@ export { Checkbox } from './components/Checkbox'
 export { DataTable, DataTableColumnHeader } from './components/datatable'
 export type { DataTableSelection } from './components/datatable'
 export type {
+  DataTableCellContext,
   DataTableColumnDef,
   DataTablePaginationState,
   DataTableSortingState,

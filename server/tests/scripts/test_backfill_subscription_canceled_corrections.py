@@ -23,7 +23,7 @@ def _event_canceled_at(event: Event) -> datetime | None:
     )
     if not isinstance(canceled_at, str) or canceled_at == "":
         return None
-    return datetime.fromisoformat(canceled_at.replace("Z", "+00:00"))
+    return datetime.fromisoformat(canceled_at)
 
 
 @pytest.mark.asyncio

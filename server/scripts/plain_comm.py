@@ -16,6 +16,8 @@ import plain_client as pl
 import rich.progress
 import structlog
 import typer
+from anyio import Path as AsyncPath
+from anyio import to_thread
 from rich.console import Console
 from rich.progress import Progress
 
@@ -124,6 +126,12 @@ def _write_json(data: dict[Any, Any]) -> pathlib.Path:
     return pathlib.Path(f.name)
 
 
+def _compress_file(source: pathlib.Path, destination: pathlib.Path) -> None:
+    with source.open("rb") as source_file:
+        with gzip.open(destination, "wb") as destination_file:
+            destination_file.writelines(source_file)
+
+
 async def _upload_attachment(
     plain: pl.Plain, customer_id: str, file_name: str, file_path: pathlib.Path
 ) -> str:
@@ -135,9 +143,7 @@ async def _upload_attachment(
     # If file is larger than 6MB, compress it with gzip
     if file_size >= 6 * 1024 * 1024:
         compressed_path = file_path.with_suffix(file_path.suffix + ".gz")
-        with open(file_path, "rb") as f_in:
-            with gzip.open(compressed_path, "wb") as f_out:
-                f_out.writelines(f_in)
+        await to_thread.run_sync(_compress_file, file_path, compressed_path)
         file_path.unlink()
         file_path = compressed_path
         file_name = file_name + ".gz"
@@ -163,17 +169,17 @@ async def _upload_attachment(
     upload_form_url = attachment_result.attachment_upload_url.upload_form_url
     upload_form_data = attachment_result.attachment_upload_url.upload_form_data
 
-    with open(file_path, "rb") as f:
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(
-                    upload_form_url,
-                    data={item.key: item.value for item in upload_form_data},
-                    files={"file": f},
-                )
-                response.raise_for_status()
-            except httpx.HTTPError as e:
-                raise PlainScriptError(f"Failed to upload file: {e}")
+    file_contents = await AsyncPath(file_path).read_bytes()
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                upload_form_url,
+                data={item.key: item.value for item in upload_form_data},
+                files={"file": (file_name, file_contents)},
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            raise PlainScriptError(f"Failed to upload file: {e}")
 
     file_path.unlink()
     return attachment_result.attachment_upload_url.attachment.id
@@ -406,7 +412,7 @@ async def webhooks_comm(
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
 
-    if path.startswith("http://") or path.startswith("https://"):
+    if path.startswith(("http://", "https://")):
         with Progress() as progress:
             with tempfile.NamedTemporaryFile(delete=False) as f:
                 async with httpx.AsyncClient() as client:
@@ -433,26 +439,23 @@ async def webhooks_comm(
     failed_orgs: list[tuple[str, str]] = []
 
     async with sessionmaker() as session:
-        with file.open() as f:
-            data: WebhooksData = json.loads(f.read())
-            if organization_id is not None:
-                organizations = {
-                    id: data["organizations"][id] for id in organization_id
-                }
-            else:
-                organizations = data["organizations"]
-            with rich.progress.Progress() as progress:
-                task = progress.add_task(
-                    "[cyan]Sending communication...", total=len(organizations)
-                )
-                for id, organization_data in organizations.items():
-                    progress.update(task, description=f"[cyan]Handling {id}")
-                    try:
-                        await _send_email(session, uuid.UUID(id), organization_data)
-                    except PlainScriptError as e:
-                        failed_orgs.append((id, str(e)))
-                    finally:
-                        progress.update(task, advance=1)
+        data: WebhooksData = json.loads(await AsyncPath(file).read_text())
+        if organization_id is not None:
+            organizations = {id: data["organizations"][id] for id in organization_id}
+        else:
+            organizations = data["organizations"]
+        with rich.progress.Progress() as progress:
+            task = progress.add_task(
+                "[cyan]Sending communication...", total=len(organizations)
+            )
+            for id, organization_data in organizations.items():
+                progress.update(task, description=f"[cyan]Handling {id}")
+                try:
+                    await _send_email(session, uuid.UUID(id), organization_data)
+                except PlainScriptError as e:
+                    failed_orgs.append((id, str(e)))
+                finally:
+                    progress.update(task, advance=1)
     await engine.dispose()
 
     for failed_org, error in failed_orgs:

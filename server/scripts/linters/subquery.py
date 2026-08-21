@@ -19,8 +19,6 @@ Rules:
   cases where full-column projection is intentional.
 """
 
-from __future__ import annotations
-
 import ast
 
 from .base import Rule, Violation
@@ -98,9 +96,7 @@ def _chain_is_safe(receiver: ast.AST) -> bool:
     if len(root.args) != 1 or root.keywords:
         return True
     arg = root.args[0]
-    if isinstance(arg, ast.Name) and arg.id[:1].isupper():
-        return False
-    return True
+    return not (isinstance(arg, ast.Name) and arg.id[:1].isupper())
 
 
 def check(tree: ast.Module) -> list[Violation]:

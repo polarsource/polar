@@ -1,4 +1,4 @@
-import type { ClientBase } from "{{ base_import }}";
+import type { ClientBase{% if service.methods %}, RequestOptions{% endif %} } from "{{ base_import }}";
 {% if imports.models %}
 import type { {% for name in imports.models %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %} } from "{{ models_import }}";
 {% endif %}
@@ -27,6 +27,7 @@ export const {{ method.name | exported_operation_name(service.name) }} = (
 {% if method.body %}
 * @param body - Request body{% if method.body.description %}: {{ method.body.description }}{% endif +%}
 {% endif %}
+* @param requestOptions - Request options
 {% if method.response_type == 'json' %}
 * @returns {{'{'}}{{ method.response | ts_type }}{{'}'}}
 {% elif method.response_type == 'text' %}
@@ -49,11 +50,12 @@ export const {{ method.name | exported_operation_name(service.name) }} = (
     query{{ "?" if not method.query_params | selectattr("required", "eq", true) | list else "" }}: {
       {% for param in method.query_params %}
       {{ param.name }}{% if not param.required %}?{% endif %}: {{ param.type | ts_type }};{% endfor %}
-    }{% if method.body %},{% endif %}
+    },
     {% endif %}
     {% if method.body %}
-    body: {{ method.body | ts_type }}
+    body: {{ method.body | ts_type }},
     {% endif %}
+    requestOptions?: RequestOptions,
   ): Promise<{{ method.response | ts_type if method.response_type == 'json' else 'string' if method.response_type == 'text' else 'void' }}> => {
     const pathParams = {
       {% for param in method.path_params %}"{{ param.name }}": {{ param.parameter_name }},{% endfor %}
@@ -68,7 +70,7 @@ export const {{ method.name | exported_operation_name(service.name) }} = (
       queryParams,
       {% if method.body %}body{% else %}undefined{% endif %}
     );
-    const response = await client.sendRequest(request);
+    const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<{{ method.response | ts_type if method.response_type == 'json' else 'string' if method.response_type == 'text' else 'void' }}>(
       response,
       "{{ method.response_type }}",
@@ -95,6 +97,7 @@ export const {{ method.name | exported_operation_name(service.name) }} = (
 {% if method.body %}
 * @param body - Request body{% if method.body.description %}: {{ method.body.description }}{% endif +%}
 {% endif %}
+* @param requestOptions - Request options
 * @returns {AsyncGenerator<{{ method.pagination.item_schema | ts_type }}>} A generator that yields items of type {{ method.pagination.item_schema | ts_type }}.
 * @throws {{'{'}}PolarNetworkError{{'}'}} When a network error occurs
 * @throws {{'{'}}PolarRateLimitError{{'}'}} When the rate limit is exceeded
@@ -114,11 +117,12 @@ export const {{ method.name | exported_paginator_name(service.name) }} = (
     query{{ "?" if not method.query_params | selectattr("required", "eq", true) | list else "" }}: {
       {% for param in method.query_params %}
       {{ param.name }}{% if not param.required %}?{% endif %}: {{ param.type | ts_type }};{% endfor %}
-    }{% if method.body %},{% endif %}
+    },
     {% endif %}
     {% if method.body %}
-    body: {{ method.body | ts_type }}
+    body: {{ method.body | ts_type }},
     {% endif %}
+    requestOptions?: RequestOptions,
   ): AsyncGenerator<{{ method.pagination.item_schema | ts_type }}> {
     let page: number;
     {% if method.query_params %}
@@ -150,8 +154,9 @@ export const {{ method.name | exported_paginator_name(service.name) }} = (
         { page, limit },
         {% endif %}
         {% if method.body %}
-        body
+        body,
         {% endif %}
+        requestOptions,
       );
       for (const item of response.items) {
         yield item;

@@ -34,6 +34,7 @@ class CanonicalCollectionMethod(StrEnum):
 
 class CanonicalPaymentMethodType(StrEnum):
     card = "card"
+    kr_card = "kr_card"
     us_bank_account = "us_bank_account"
     sepa_debit = "sepa_debit"
     bacs_debit = "bacs_debit"
@@ -43,6 +44,7 @@ class CanonicalPaymentMethodType(StrEnum):
     @property
     def requires_reentry(self) -> bool:
         return self in {
+            CanonicalPaymentMethodType.kr_card,
             CanonicalPaymentMethodType.bacs_debit,
             CanonicalPaymentMethodType.link,
             CanonicalPaymentMethodType.other,
@@ -124,6 +126,9 @@ class CanonicalSubscription:
     # cutover, so a retry after a crash finishes the move instead of reading its
     # own cancellation as the customer having churned.
     stopped_for_migration: bool = False
+    # The renewal day before any month-end clamping. A period boundary can't be
+    # trusted for it: a 31st anchor reads as Feb 28 in a February period.
+    anchor_day: int | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -210,6 +215,7 @@ def deserialize(
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
+                anchor_day=data.get("anchor_day"),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

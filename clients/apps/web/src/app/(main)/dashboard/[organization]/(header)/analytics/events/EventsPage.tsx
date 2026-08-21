@@ -93,6 +93,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const { data } = useEventNames(organization.id, {
     sorting: ['name'],
     limit: 500,
+    customer_id: selectedCustomerIds ?? undefined,
   })
 
   const eventTypes = useMemo(

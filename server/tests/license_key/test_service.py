@@ -1,4 +1,5 @@
 import asyncio
+from typing import cast
 from uuid import UUID
 
 import pytest
@@ -6,6 +7,9 @@ from pytest_mock import MockerFixture
 from sqlalchemy import delete, func, select
 
 from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.strategies.license_keys.properties import (
+    BenefitGrantLicenseKeysProperties,
+)
 from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeysCreateProperties,
 )
@@ -22,6 +26,7 @@ from polar.license_key.schemas import (
     LicenseKeyUpdate,
     LicenseKeyValidate,
 )
+from polar.license_key.service import RotateNotPermitted
 from polar.license_key.service import license_key as license_key_service
 from polar.models import (
     Account,
@@ -357,3 +362,72 @@ class TestUpdate:
 
         assert license_key.limit_activations == 5
         enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestRotate:
+    async def test_rotates_key_and_updates_grant_display_key(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        license_key, grant = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+        old_key = license_key.key
+        old_id = license_key.id
+        old_properties = cast(BenefitGrantLicenseKeysProperties, grant.properties)
+        old_display_key = old_properties["display_key"]
+
+        rotated = await license_key_service.rotate(session, license_key=license_key)
+
+        assert rotated.id == old_id
+        assert rotated.key != old_key
+        assert rotated.key.startswith("TESTING-")
+        assert rotated.status == LicenseKeyStatus.granted
+        assert rotated.display_key != old_display_key
+        assert rotated.display_key == f"****-{rotated.key[-6:]}"
+
+        repository = LicenseKeyRepository.from_session(session)
+        assert (
+            await repository.get_by_organization_and_key(organization.id, old_key)
+            is None
+        )
+        assert (
+            await repository.get_by_organization_and_key(organization.id, rotated.key)
+            is not None
+        )
+
+        await session.refresh(grant)
+        properties = cast(BenefitGrantLicenseKeysProperties, grant.properties)
+        assert properties["display_key"] == rotated.display_key
+        assert properties["license_key_id"] == str(rotated.id)
+
+    async def test_revoked_raises_bad_request(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        license_key, _ = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+        license_key.status = LicenseKeyStatus.revoked
+        await save_fixture(license_key)
+
+        with pytest.raises(
+            RotateNotPermitted,
+            match=(
+                "License key cannot be rotated in its current status. "
+                "Current status: revoked. "
+                "Allowed statuses: disabled, granted."
+            ),
+        ):
+            await license_key_service.rotate(session, license_key=license_key)

@@ -53,10 +53,10 @@ class TestSearch:
         for result in results:
             assert result.id in readable_user_transactions_id
             # Check that relationships are eagerly loaded
-            result.issue_reward
-            result.order
+            _ = result.issue_reward
+            _ = result.order
             if result.order is not None:
-                result.order.product
+                _ = result.order.product
 
     @pytest.mark.auth
     async def test_filter_type(
@@ -404,6 +404,6 @@ class TestLookup:
 
         assert transaction.id == readable_user_transactions[0].id
         # Check that relationships are eagerly loaded
-        transaction.pledge
-        transaction.issue_reward
-        transaction.order
+        _ = transaction.pledge
+        _ = transaction.issue_reward
+        _ = transaction.order

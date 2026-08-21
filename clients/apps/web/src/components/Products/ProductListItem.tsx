@@ -8,6 +8,7 @@ import {
   hasLegacyRecurringPrices,
   isMeteredPrice,
   isSeatBasedPrice,
+  isUnitBasedPrice,
 } from '@/utils/product'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
@@ -91,6 +92,10 @@ export const ProductListItem = ({
     isSeatBasedPrice(price),
   )
 
+  const isUnitBasedProduct = product.prices.some((price) =>
+    isUnitBasedPrice(price),
+  )
+
   return (
     <>
       <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
@@ -137,6 +142,14 @@ export const ProductListItem = ({
                     className="hidden px-3 py-1 text-xs md:block"
                   >
                     Seat Pricing
+                  </Pill>
+                )}
+                {isUnitBasedProduct && (
+                  <Pill
+                    color="purple"
+                    className="hidden px-3 py-1 text-xs md:block"
+                  >
+                    Unit Pricing
                   </Pill>
                 )}
                 <span className="text-sm leading-snug">
@@ -205,7 +218,6 @@ export const ProductListItem = ({
                         Edit Product
                       </DropdownMenuItem>
                     )}
-
                     <DropdownMenuItem
                       onClick={handleContextMenuCallback(() => {
                         router.push(

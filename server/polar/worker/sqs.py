@@ -9,7 +9,7 @@ from polar.config import settings
 from polar.logging import Logger
 
 from ._runner import bootstrap, run_task, shutdown
-from ._sqs import actor_to_queue_name, get_queue_url, parse_envelope, sqs_client
+from ._sqs import actor_to_queue_name, parse_envelope, resolve_queue_url, sqs_client
 
 log: Logger = structlog.get_logger()
 
@@ -33,7 +33,7 @@ def run(actor: str, body: str = typer.Argument("{}")) -> None:
 
 async def _poll_loop(actors: list[str], max_iterations: int) -> None:
     client = sqs_client
-    queue_urls = {a: get_queue_url(client, actor_to_queue_name(a)) for a in actors}
+    queue_urls = {a: resolve_queue_url(client, actor_to_queue_name(a)) for a in actors}
     iterations = 0
     try:
         while max_iterations == 0 or iterations < max_iterations:
@@ -47,9 +47,16 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                     MessageSystemAttributeNames=["ApproximateReceiveCount"],
                 )
                 for message in response.get("Messages", []):
-                    actor, args, kwargs, correlation_id, attempt = parse_envelope(
-                        message["Body"]
-                    )
+                    (
+                        actor,
+                        args,
+                        kwargs,
+                        correlation_id,
+                        attempt,
+                        message_timestamp,
+                        message_id,
+                        debounce_key,
+                    ) = parse_envelope(message["Body"])
                     sqs_receive_count = int(
                         message.get("Attributes", {}).get(
                             "ApproximateReceiveCount", "1"
@@ -63,11 +70,12 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                             kwargs,
                             receive_count=receive_count,
                             source_correlation_id=correlation_id,
+                            message_timestamp=message_timestamp,
+                            message_id=message_id,
+                            debounce_key=debounce_key,
                         )
                     except Exception:
-                        log.error(
-                            "polar.worker.sqs_poll_failed", actor=actor, exc_info=True
-                        )
+                        log.exception("polar.worker.sqs_poll_failed", actor=actor)
                         continue
                     await asyncio.to_thread(
                         client.delete_message,

@@ -449,6 +449,7 @@ class CatalogImporter:
             customer=customer,
             current_period_start=subscription.current_period_start,
             current_period_end=subscription.current_period_end,
+            anchor_day=subscription.anchor_day,
             user_metadata={"stripe_subscription_id": subscription.source_id},
         )
 

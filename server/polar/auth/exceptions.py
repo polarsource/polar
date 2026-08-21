@@ -7,8 +7,6 @@ class PolarAuthError(PolarError):
     Base exception class for authentication errors.
     """
 
-    pass
-
 
 class UnavailableFactorError(PolarAuthError):
     """

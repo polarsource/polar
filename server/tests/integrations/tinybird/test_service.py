@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 import pytest
 import respx
+from sqlalchemy import select
 
 from polar.integrations.tinybird.client import (
     MAX_RETRIES,
@@ -14,18 +15,27 @@ from polar.integrations.tinybird.client import (
     TinybirdOperationalError,
     TinybirdRequestError,
 )
+from polar.integrations.tinybird.schemas import TinybirdEvent
 from polar.integrations.tinybird.service import (
     DATASOURCE_EVENTS,
     TinybirdEventsQuery,
     TinybirdEventTypesQuery,
+    _compile,
     _event_to_tinybird,
+    chunk_tinybird_events,
     clickhouse_dialect,
     count_user_events_by_organization,
     events_table,
 )
-from polar.meter.filter import FilterClause, FilterOperator
+from polar.meter.filter import (
+    Filter,
+    FilterClause,
+    FilterConjunction,
+    FilterOperator,
+)
 from polar.models import Event
 from polar.models.event import EventSource
+from polar.worker import MAX_JOB_PAYLOAD_BYTES
 from tests.fixtures.tinybird import tinybird_available
 
 pytestmark = pytest.mark.xdist_group(name="tinybird")
@@ -136,67 +146,170 @@ class TestEventToTinybird:
         assert result["amount"] is None
 
 
-def compile_clause(clause: Any) -> str:
-    return str(
-        clause.compile(
-            dialect=clickhouse_dialect, compile_kwargs={"literal_binds": True}
-        )
+def compile_clause(clause: Any) -> tuple[str, dict[str, Any]]:
+    compiled = clause.compile(
+        dialect=clickhouse_dialect, compile_kwargs={"render_postcompile": True}
     )
+    return str(compiled), dict(compiled.params)
+
+
+class TestChunkTinybirdEvents:
+    def make_events(self, count: int, metadata_bytes: int) -> list[TinybirdEvent]:
+        return [
+            _event_to_tinybird(
+                create_test_event(
+                    name="usage",
+                    source=EventSource.user,
+                    user_metadata={"blob": "x" * metadata_bytes},
+                )
+            )
+            for _ in range(count)
+        ]
+
+    def test_empty(self) -> None:
+        assert list(chunk_tinybird_events([])) == []
+
+    def test_small_batch_stays_in_one_chunk(self) -> None:
+        events = self.make_events(50, 100)
+
+        chunks = list(chunk_tinybird_events(events))
+
+        assert chunks == [events]
+
+    def test_large_batch_is_split_below_the_payload_budget(self) -> None:
+        events = self.make_events(20, 50_000)
+
+        chunks = list(chunk_tinybird_events(events))
+
+        assert len(chunks) > 1
+        for chunk in chunks:
+            assert len(json.dumps(chunk).encode("utf-8")) <= MAX_JOB_PAYLOAD_BYTES
+
+    def test_every_event_is_kept_exactly_once_and_in_order(self) -> None:
+        events = self.make_events(20, 50_000)
+
+        chunks = list(chunk_tinybird_events(events))
+
+        assert [event for chunk in chunks for event in chunk] == events
+
+    def test_event_larger_than_the_budget_is_not_dropped(self) -> None:
+        events = self.make_events(1, MAX_JOB_PAYLOAD_BYTES * 2)
+
+        chunks = list(chunk_tinybird_events(events))
+
+        assert chunks == [events]
 
 
 class TestQueryWildcardsAreLiteral:
     def test_filter_name_query(self) -> None:
         query = TinybirdEventsQuery([uuid.uuid4()]).filter_name_query("ai_gen%")
-        compiled = compile_clause(query._filters[-1])
-        assert (
-            compiled
-            == "positionCaseInsensitiveUTF8(`events_by_timestamp`.`name`, 'ai_gen%') > 0"
-        )
+        sql, params = compile_clause(query._filters[-1])
+        assert "positionCaseInsensitiveUTF8(`events_by_timestamp`.`name`," in sql
+        assert "like" not in sql.lower()
+        assert "ai_gen%" in params.values()
 
     def test_filter_by_query(self) -> None:
         query = TinybirdEventsQuery([uuid.uuid4()]).filter_by_query("100%_x")
-        compiled = compile_clause(query._filters[-1])
+        sql, params = compile_clause(query._filters[-1])
         for column in ("name", "source", "user_metadata"):
             assert (
-                f"positionCaseInsensitiveUTF8(`events_by_timestamp`.`{column}`, '100%_x') > 0"
-                in compiled
+                f"positionCaseInsensitiveUTF8(`events_by_timestamp`.`{column}`," in sql
             )
+        assert list(params.values()).count("100%_x") == 3
 
     def test_like_operator(self) -> None:
         clause = FilterClause(
             property="name", operator=FilterOperator.like, value="api_test"
         )
-        compiled = compile_clause(
+        sql, params = compile_clause(
             TinybirdEventsQuery._ch_comparison(events_table.c.name, clause)
         )
-        assert (
-            compiled
-            == "position(toString(`events_by_timestamp`.`name`), 'api_test') > 0"
-        )
+        assert "position(toString(`events_by_timestamp`.`name`)," in sql
+        assert "api_test" in params.values()
 
     def test_not_like_operator(self) -> None:
         clause = FilterClause(
             property="name", operator=FilterOperator.not_like, value="api_test"
         )
-        compiled = compile_clause(
+        sql, params = compile_clause(
             TinybirdEventsQuery._ch_comparison(events_table.c.name, clause)
         )
-        assert (
-            compiled
-            == "position(toString(`events_by_timestamp`.`name`), 'api_test') <= 0"
-        )
+        assert "position(toString(`events_by_timestamp`.`name`)," in sql
+        assert "<= " in sql
+        assert "api_test" in params.values()
 
     def test_like_operator_numeric_column(self) -> None:
         clause = FilterClause(
             property="_cost.amount", operator=FilterOperator.like, value=10
         )
-        compiled = compile_clause(
+        sql, params = compile_clause(
             TinybirdEventsQuery._ch_comparison(events_table.c.cost_amount, clause)
         )
-        assert (
-            compiled
-            == "position(toString(`events_by_timestamp`.`cost_amount`), '10') > 0"
+        assert "position(toString(`events_by_timestamp`.`cost_amount`)," in sql
+        assert "10" in params.values()
+
+
+class TestQueryBindsValuesInsteadOfInlining:
+    def _compile_filters(
+        self, query: TinybirdEventsQuery
+    ) -> tuple[str, dict[str, Any]]:
+        statement = select(events_table.c.name).where(query._get_organization_filter())
+        for f in query._filters:
+            statement = statement.where(f)
+        return _compile(statement)
+
+    def test_injection_payloads_never_reach_the_sql_string(self) -> None:
+        query = TinybirdEventsQuery([uuid.uuid4()])
+        query.filter_name_query("aaa\\")
+        query.filter_customer(external_customer_ids=["e\\", "e2"])
+        query.filter_by_query("uniontest")
+        query.filter_by_filter(
+            Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name",
+                        operator=FilterOperator.eq,
+                        value="') UNION SELECT customer_email FROM events --",
+                    )
+                ],
+            )
         )
+        sql, params = self._compile_filters(query)
+
+        for injected in (
+            "UNION SELECT",
+            "customer_email",
+            "--",
+            "e\\",
+            "aaa\\",
+        ):
+            assert injected not in sql
+        assert "') UNION SELECT customer_email FROM events --" in params.values()
+
+    def test_value_is_a_typed_placeholder(self) -> None:
+        query = TinybirdEventsQuery([uuid.uuid4()]).filter_by_filter(
+            Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name", operator=FilterOperator.eq, value="O'Brien"
+                    )
+                ],
+            )
+        )
+        sql, params = self._compile_filters(query)
+        assert "{name_1:String}" in sql
+        assert "O'Brien" in params.values()
+
+    def test_in_list_placeholders_are_typed_by_column(self) -> None:
+        statement = select(events_table.c.name).where(
+            events_table.c.organization_id.in_(["a", "b"]),
+            events_table.c.cost_amount.in_([1.5, 2.5]),
+        )
+        sql, _ = _compile(statement)
+        assert "{organization_id_1_1:String}" in sql
+        assert "{cost_amount_1_1:Float64}" in sql
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
@@ -394,6 +507,157 @@ class TestTinybirdEventsQuery:
             stats_by_key[(org_2, "shared.event", EventSource.system)].occurrences == 1
         )
         assert stats_by_key[(org_2, "org2.only", EventSource.user)].occurrences == 1
+
+    async def test_statistics_methods_execute_with_bound_params(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        customer_id = uuid.uuid4()
+        events = []
+        for i in range(4):
+            event = create_test_event(
+                organization_id=org_id,
+                name="llm.request",
+                source=EventSource.user,
+                user_metadata={
+                    "_cost": {"amount": float(i + 1), "currency": "usd"},
+                    "_llm": {"model": "gpt-4", "vendor": "openai"},
+                },
+            )
+            event.customer_id = customer_id
+            events.append(event)
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        property_stats = await TinybirdEventsQuery([org_id]).get_property_group_stats(
+            "_llm.model", ["_cost.amount"]
+        )
+        timeseries = await TinybirdEventsQuery([org_id]).get_timeseries_stats(
+            "day", "UTC", ["_cost.amount"]
+        )
+        customer_stats = await TinybirdEventsQuery([org_id]).get_customer_stats(
+            ["_cost.amount"]
+        )
+        variance = await TinybirdEventsQuery([org_id]).get_variance_events(
+            ["_cost.amount"]
+        )
+
+        assert property_stats[0].value == "gpt-4"
+        assert property_stats[0].occurrences == 4
+        assert property_stats[0].totals["_cost_amount"] == 10.0
+        assert timeseries[0].occurrences == 4
+        assert timeseries[0].customers == 1
+        assert customer_stats[0].occurrences == 4
+        assert len(variance) >= 1
+
+    async def test_property_group_stats_on_custom_metadata_key(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        events = [
+            create_test_event(
+                organization_id=org_id,
+                name="checkout",
+                source=EventSource.user,
+                user_metadata={"tier": tier},
+            )
+            for tier in ("pro", "pro", "free")
+        ]
+        await tinybird_client.ingest(
+            DATASOURCE_EVENTS, [_event_to_tinybird(e) for e in events], wait=True
+        )
+
+        stats = await TinybirdEventsQuery([org_id]).get_property_group_stats(
+            "tier", ["_cost.amount"]
+        )
+
+        by_value = {s.value: s.occurrences for s in stats}
+        assert by_value == {"pro": 2, "free": 1}
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.asyncio
+class TestSearchBehaviorAndInjectionSafety:
+    async def _ingest(self, tinybird_client: TinybirdClient, org_id: uuid.UUID) -> None:
+        events = [
+            create_test_event(
+                organization_id=org_id,
+                name="checkout.completed",
+                source=EventSource.user,
+            ),
+            create_test_event(
+                organization_id=org_id, name="checkout.failed", source=EventSource.user
+            ),
+            create_test_event(
+                organization_id=org_id, name="login.success", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_id, name="weird'na\\me", source=EventSource.system
+            ),
+        ]
+        await tinybird_client.ingest(
+            DATASOURCE_EVENTS, [_event_to_tinybird(e) for e in events], wait=True
+        )
+
+    async def test_searches_return_correct_results(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        await self._ingest(tinybird_client, org_id)
+
+        async def count(query: TinybirdEventsQuery) -> int:
+            _, total = await query.get_event_ids_and_count(100, 0)
+            return total
+
+        assert await count(TinybirdEventsQuery([org_id])) == 4
+        assert (
+            await count(TinybirdEventsQuery([org_id]).filter_name_query("checkout"))
+            == 2
+        )
+        assert (
+            await count(TinybirdEventsQuery([org_id]).filter_name_query("CHECKOUT"))
+            == 2
+        )
+        assert (
+            await count(TinybirdEventsQuery([org_id]).filter_source(EventSource.system))
+            == 2
+        )
+        assert (
+            await count(TinybirdEventsQuery([org_id]).filter_name_query("d'na\\m")) == 1
+        )
+
+    async def test_wildcards_are_literal_not_operators(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        await self._ingest(tinybird_client, org_id)
+        _, total = await (
+            TinybirdEventsQuery([org_id])
+            .filter_name_query("check%")
+            .get_event_ids_and_count(100, 0)
+        )
+        assert total == 0
+
+    async def test_injection_payloads_are_inert(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        await self._ingest(tinybird_client, org_id)
+
+        _, breakout_total = await (
+            TinybirdEventsQuery([org_id])
+            .filter_name_query("' OR 1=1 -- ")
+            .get_event_ids_and_count(100, 0)
+        )
+        assert breakout_total == 0
+
+        _, throwif_total = await (
+            TinybirdEventsQuery([org_id])
+            .filter_name_query("z' OR throwIf(1=1) -- ")
+            .get_event_ids_and_count(100, 0)
+        )
+        assert throwif_total == 0
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")

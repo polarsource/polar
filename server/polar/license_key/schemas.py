@@ -183,7 +183,7 @@ class LicenseKeyActivationRead(LicenseKeyActivationBase):
 class LicenseKeyUpdate(Schema):
     status: LicenseKeyStatus | None = None
     usage: Int32 = 0
-    limit_activations: Int32 | None = Field(gt=0, le=1000, default=None)
+    limit_activations: Int32 | None = Field(gt=0, default=None)
     limit_usage: Int32 | None = Field(gt=0, default=None)
     expires_at: datetime | None = None
 
@@ -216,7 +216,7 @@ class LicenseKeyCreate(LicenseKeyUpdate):
                     return now + relativedelta(months=ttl)
                 case _:
                     return now + relativedelta(days=ttl)
-        except (ValueError, OverflowError):
+        except ValueError, OverflowError:
             raise ValueError(
                 f"Expiration date overflows: ttl={ttl} with timeframe='{timeframe}' "
                 f"produces a date beyond year 9999."

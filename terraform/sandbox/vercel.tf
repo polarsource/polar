@@ -23,6 +23,8 @@ module "vercel" {
   name     = "polar-sandbox"
   git_repo = "polarsource/polar"
 
+  preview_deployments_disabled = true
+
   domains = [
     {
       name = "sandbox.polar.sh"

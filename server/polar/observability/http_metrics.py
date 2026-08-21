@@ -23,7 +23,7 @@ prometheus_dir = settings.WORKER_PROMETHEUS_DIR
 prometheus_dir.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("PROMETHEUS_MULTIPROC_DIR", str(prometheus_dir))
 
-from prometheus_client import (  # noqa: E402
+from prometheus_client import (
     Counter,
     Gauge,
     Histogram,

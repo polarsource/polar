@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -46,9 +47,9 @@ class FileRepository(
         organization_id: UUID,
         *,
         service: FileServiceTypes | None = None,
-        sorting: list[Sorting[FileSortProperty]] = [
-            (FileSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[FileSortProperty]] = (
+            (FileSortProperty.created_at, True),
+        ),
         limit: int,
         page: int,
     ) -> tuple[list[File], int]:

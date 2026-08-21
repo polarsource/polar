@@ -33,7 +33,7 @@ dependencies = [
   "authlib>=1.7.2",
   "standardwebhooks>=1.0.0",
   "typer>=0.26.7",
-  "logfire[fastapi,httpx,sqlalchemy,redis]>=4.37.0",
+  "logfire[fastapi,httpx,sqlalchemy,redis]>=4.38.0",
   "makefun>=1.15.6",
   "boto3>=1.43.38",
   "itsdangerous>=2.2.0",
@@ -66,7 +66,7 @@ dependencies = [
   "anyio>=4.14.0",
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
-  "reauth==0.2.1",
+  "reauth==0.2.2",
   "langcodes>=3.5.1",
   "pypdf>=6.14.2",
   "google-auth[requests]>=2.38.0",
@@ -152,23 +152,30 @@ exclude_lines = [
 ] # See: https://github.com/nedbat/coveragepy/issues/831
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 extend-select = [
   "I",
   "UP",
   "T20",
-  "B039",
   "PT",
-  "RUF022",
-  "RUF023",
   "RUF10",
-  "RUF20",
 ]
 ignore = [
-  "F841", # remove unused variables
+  "F841",
   "PT012",
+  "B008",
+  "B009",
+  "B010",
+  "BLE001",
+  "PLC0105",
+  "PYI041",
+  "RUF012",
+  "RUF059",
+  "SIM117",
+  "TRY",
+  "UP037",
 ]
 
 [tool.ruff.lint.per-file-ignores]

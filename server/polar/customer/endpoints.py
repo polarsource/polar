@@ -126,7 +126,7 @@ async def export(
 ) -> CSVStreamingResponse:
     """Export customers as a CSV file."""
 
-    async def create_csv() -> AsyncGenerator[str, None]:
+    async def create_csv() -> AsyncGenerator[str]:
         csv_writer = IterableCSVWriter(dialect="excel")
 
         yield csv_writer.getrow(

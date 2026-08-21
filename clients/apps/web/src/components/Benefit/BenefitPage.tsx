@@ -10,11 +10,10 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
-import { DataTable } from '@polar-sh/orbit'
+import { DataTable, DataTableColumnDef } from '@polar-sh/orbit'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ColumnDef } from '@tanstack/react-table'
 import { ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -113,8 +112,8 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
     )
   }
 
-  const columns: ColumnDef<schemas['BenefitGrant']>[] = useMemo(() => {
-    const cols: ColumnDef<schemas['BenefitGrant']>[] = [
+  const columns: DataTableColumnDef<schemas['BenefitGrant']>[] = useMemo(() => {
+    const cols: DataTableColumnDef<schemas['BenefitGrant']>[] = [
       {
         accessorKey: 'customer',
         header: 'Customer',
@@ -169,7 +168,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
               cell: ({ row: { original: grant } }) => (
                 <SlackGrantDetails grant={grant} />
               ),
-            } satisfies ColumnDef<schemas['BenefitGrant']>,
+            } satisfies DataTableColumnDef<schemas['BenefitGrant']>,
           ]
         : []),
       {

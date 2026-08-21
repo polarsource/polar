@@ -75,6 +75,12 @@ variable "environment_variables" {
   default     = {}
 }
 
+variable "secrets" {
+  description = "Environment variables injected from Secrets Manager, as name => secret ARN."
+  type        = map(string)
+  default     = {}
+}
+
 variable "subnet_ids" {
   description = "Subnets the tasks run in."
   type        = list(string)
@@ -91,9 +97,36 @@ variable "task_role_arn" {
   default     = null
 }
 
+variable "service_registry" {
+  description = "Cloud Map service the tasks register in, if any. Wrapped in an object so the null-check stays decidable when the ARN is computed."
+  type = object({
+    arn = string
+  })
+  default = null
+}
+
+variable "repository_credentials" {
+  description = "Secrets Manager secret with credentials for a private image registry, if any. Wrapped in an object so the null-check stays decidable when the ARN is computed."
+  type = object({
+    arn = string
+  })
+  default = null
+}
+
 variable "permissions_boundary_arn" {
   description = "Permissions boundary for the execution role."
   type        = string
+}
+
+variable "logfire" {
+  description = "Ship container logs to Logfire via a FireLens fluent-bit sidecar instead of CloudWatch, if set."
+  type = object({
+    token        = string
+    host         = optional(string, "logfire-us.pydantic.dev")
+    router_image = optional(string, "public.ecr.aws/aws-observability/aws-for-fluent-bit:3.4.13")
+  })
+  default   = null
+  sensitive = true
 }
 
 variable "log_retention_days" {

@@ -9,12 +9,12 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.92"
+      version = "~> 6.61"
     }
 
     render = {
       source  = "render-oss/render"
-      version = "1.8.0"
+      version = "1.9.1"
     }
 
     cloudflare = {
@@ -24,7 +24,7 @@ terraform {
 
     tfe = {
       source  = "hashicorp/tfe"
-      version = "0.71.0"
+      version = "0.80.0"
     }
 
     vercel = {

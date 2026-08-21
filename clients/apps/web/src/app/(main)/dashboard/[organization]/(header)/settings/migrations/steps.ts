@@ -52,11 +52,11 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
   },
   {
     key: 'cutover',
-    short: 'Cutover',
+    short: 'Switch',
     owner: 'polar',
-    title: 'Cut over billing',
+    title: 'Switch billing to Polar',
     description:
-      'Polar takes over billing for active subscriptions and stops them on Stripe.',
+      'Polar starts billing the subscriptions you pick and stops them on Stripe.',
     steps: ['activate_subscriptions'],
   },
 ]

@@ -17,14 +17,14 @@ test:
     uv run pytest tests/
 
 openapi:
-  uv run -m --directory ../../server scripts.generate_openapi | jq -r > openapi.json
+  uv run -m cli openapi
 
 generate language:
-  uv run -m cli generate openapi.json ../{{language}} --language {{language}} --clear
+  uv run -m cli generate openapi/* ../{{language}} --language {{language}} --clear
 
 generate-all:
-  uv run -m cli generate openapi.json ../python --language python --clear
-  uv run -m cli generate openapi.json ../typescript --language typescript --clear
+  uv run -m cli generate openapi/* ../python --language python --clear
+  uv run -m cli generate openapi/* ../typescript --language typescript --clear
 
 docs-openapi version="0.0.0":
   uv run -m cli docs-openapi --version {{version}}

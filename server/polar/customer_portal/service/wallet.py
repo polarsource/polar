@@ -19,9 +19,9 @@ class CustomerWalletService(ResourceServiceReader[Wallet]):
         auth_subject: AuthSubject[Customer | Member],
         *,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerWalletSortProperty]] = [
-            (CustomerWalletSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[CustomerWalletSortProperty]] = (
+            (CustomerWalletSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Wallet], int]:
         repository = CustomerWalletRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).options(

@@ -14,11 +14,16 @@ from polar.models import (
     SubscriptionUpdate,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.product_price import ProductPriceFixed, ProductPriceSeatUnit
+from polar.models.product_price import (
+    ProductPriceFixed,
+    ProductPriceSeatUnit,
+    ProductPriceUnit,
+)
 from polar.product.guard import (
     is_fixed_price,
     is_recurring_product,
     is_seat_price,
+    is_unit_price,
 )
 from polar.product.price_set import PriceSet
 
@@ -42,13 +47,13 @@ def _calculate_time_proration(
 
 
 def _collect_proratable_amounts(
-    prices: list[ProductPrice], *, seats: int | None
+    prices: list[ProductPrice], *, seats: int | None, units: int | None = None
 ) -> list[tuple[ProductPrice, int]]:
     """Pair each proratable price with its base amount.
 
-    Only fixed and seat prices with a non-zero amount are prorated; free (zero-amount),
-    custom and metered prices are skipped, as they would only contribute a meaningless
-    zero proration entry.
+    Only fixed, seat and unit prices with a non-zero amount are prorated; free
+    (zero-amount), custom and metered prices are skipped, as they would only
+    contribute a meaningless zero proration entry.
     """
     priced_entries: list[tuple[ProductPrice, int]] = []
     for price in prices:
@@ -58,6 +63,8 @@ def _collect_proratable_amounts(
             priced_entries.append((price, price.price_amount))
         elif is_seat_price(price) and seats is not None:
             priced_entries.append((price, price.calculate_amount(seats)))
+        elif is_unit_price(price) and units is not None:
+            priced_entries.append((price, price.calculate_amount(units)))
     return priced_entries
 
 
@@ -77,6 +84,7 @@ def _generate_product_credit_proration_billing_entries(
             subscription.prices, subscription.currency
         ).get_static_prices(),
         seats=subscription.seats,
+        units=subscription.units,
     )
 
     discount_amounts = [0] * len(priced_entries)
@@ -132,6 +140,7 @@ def _generate_product_debit_proration_billing_entries(
     priced_entries = _collect_proratable_amounts(
         PriceSet.from_product(new_product, subscription.currency).get_static_prices(),
         seats=subscription.seats,
+        units=subscription.units,
     )
 
     discount_amounts = [0] * len(priced_entries)
@@ -220,58 +229,58 @@ def _generate_product_subscription_update(
     return subscription_update, billing_entries
 
 
-def _generate_seats_subscription_update(
+def _generate_quantity_subscription_update(
     subscription_update: SubscriptionUpdate,
+    *,
+    price: ProductPriceSeatUnit | ProductPriceUnit,
+    old_quantity: int,
+    new_quantity: int,
+    increase_type: BillingEntryType,
+    decrease_type: BillingEntryType,
 ) -> tuple[SubscriptionUpdate, list[BillingEntry]]:
+    """Shared proration for a declared-quantity change (seats or units): one
+    billing entry for the prorated delta between the old and new amounts."""
     subscription = subscription_update.subscription
-    old_seats = subscription.seats
-    assert old_seats is not None
-    new_seats = subscription_update.seats
-    assert new_seats is not None
 
-    seat_price = subscription.get_price_by_type(ProductPriceSeatUnit)
-    assert seat_price is not None
-
-    old_base_amount = seat_price.calculate_amount(old_seats)
-    new_base_amount = seat_price.calculate_amount(new_seats)
+    old_base_amount = price.calculate_amount(old_quantity)
+    new_base_amount = price.calculate_amount(new_quantity)
 
     # Apply the discount to the old and new effective amounts, not to the delta.
     # Computing the discount on the delta double-counts fixed discounts: a $10
     # fixed discount applies once to the subscription total, not again to every
-    # seat change.
+    # quantity change.
     #
     # When there's also a fixed base fee, the discount is split proportionally
-    # between it and the seat charge, so we allocate across [fixed, seat] and keep
-    # the seat's share. Today no product combines a fixed fee with a seat price,
-    # so this allocates the whole discount to the seat amount.
+    # between it and the quantity charge, so we allocate across [fixed, quantity]
+    # and keep the quantity's share.
     # Like the product prorations, the discount follows the subscription regardless
-    # of applicability to the current product, keeping seat changes symmetric with
-    # the recurring charge.
+    # of applicability to the current product, keeping quantity changes symmetric
+    # with the recurring charge.
     old_discount_amount = 0
     new_discount_amount = 0
     if subscription.discount:
         fixed_price = subscription.get_price_by_type(ProductPriceFixed)
         fixed_amount = fixed_price.price_amount if fixed_price is not None else None
 
-        def _seat_slice(seat_amount: int) -> int:
+        def _quantity_slice(quantity_amount: int) -> int:
             assert subscription.discount is not None
             amounts = (
-                [fixed_amount, seat_amount]
+                [fixed_amount, quantity_amount]
                 if fixed_amount is not None
-                else [seat_amount]
+                else [quantity_amount]
             )
             return subscription.discount.allocate_discount_amounts(
                 amounts, subscription.currency
             )[-1]
 
-        old_discount_amount = _seat_slice(old_base_amount)
-        new_discount_amount = _seat_slice(new_base_amount)
+        old_discount_amount = _quantity_slice(old_base_amount)
+        new_discount_amount = _quantity_slice(new_base_amount)
 
     start_timestamp = subscription_update.applies_at
     end_timestamp = subscription.current_period_end
 
     if subscription_update.proration_behavior == SubscriptionProrationBehavior.reset:
-        # In reset mode, we don't prorate the amount, we just charge the full amount of the new seats immediately.
+        # In reset mode, we don't prorate the amount, we just charge the full amount of the new quantity immediately.
         proration_factor = Decimal(1)
         amount_delta = new_base_amount - new_discount_amount
         entry_discount_amount = new_discount_amount
@@ -303,10 +312,10 @@ def _generate_seats_subscription_update(
 
     if prorated_amount > 0:
         direction = BillingEntryDirection.debit
-        entry_type = BillingEntryType.subscription_seats_increase
+        entry_type = increase_type
     else:
         direction = BillingEntryDirection.credit
-        entry_type = BillingEntryType.subscription_seats_decrease
+        entry_type = decrease_type
         prorated_amount = abs(prorated_amount)
 
     # Calculate prorated discount amount
@@ -321,7 +330,7 @@ def _generate_seats_subscription_update(
         end_timestamp=end_timestamp,
         subscription=subscription,
         customer=subscription.customer,
-        product_price=seat_price,
+        product_price=price,
         amount=prorated_amount,
         discount_amount=prorated_discount_amount
         if prorated_discount_amount > 0
@@ -334,12 +343,57 @@ def _generate_seats_subscription_update(
     return subscription_update, [billing_entry]
 
 
+def _generate_seats_subscription_update(
+    subscription_update: SubscriptionUpdate,
+) -> tuple[SubscriptionUpdate, list[BillingEntry]]:
+    subscription = subscription_update.subscription
+    old_seats = subscription.seats
+    assert old_seats is not None
+    new_seats = subscription_update.seats
+    assert new_seats is not None
+
+    seat_price = subscription.get_price_by_type(ProductPriceSeatUnit)
+    assert seat_price is not None
+
+    return _generate_quantity_subscription_update(
+        subscription_update,
+        price=seat_price,
+        old_quantity=old_seats,
+        new_quantity=new_seats,
+        increase_type=BillingEntryType.subscription_seats_increase,
+        decrease_type=BillingEntryType.subscription_seats_decrease,
+    )
+
+
+def _generate_units_subscription_update(
+    subscription_update: SubscriptionUpdate,
+) -> tuple[SubscriptionUpdate, list[BillingEntry]]:
+    subscription = subscription_update.subscription
+    old_units = subscription.units
+    assert old_units is not None
+    new_units = subscription_update.units
+    assert new_units is not None
+
+    unit_price = subscription.get_price_by_type(ProductPriceUnit)
+    assert unit_price is not None
+
+    return _generate_quantity_subscription_update(
+        subscription_update,
+        price=unit_price,
+        old_quantity=old_units,
+        new_quantity=new_units,
+        increase_type=BillingEntryType.subscription_units_increase,
+        decrease_type=BillingEntryType.subscription_units_decrease,
+    )
+
+
 def generate_subscription_update(
     subscription: Subscription,
     proration_behavior: SubscriptionProrationBehavior,
     *,
     product: Product | None = None,
     seats: int | None = None,
+    units: int | None = None,
     discount: Discount | typing.Literal["unset"] | None = None,
 ) -> tuple[SubscriptionUpdate, list[BillingEntry]]:
     match proration_behavior:
@@ -359,6 +413,7 @@ def generate_subscription_update(
         subscription_id=subscription.id,
         product=product,
         seats=seats,
+        units=units,
         discount_unset=discount == "unset",
         discount=discount if discount != "unset" else None,
     )
@@ -369,4 +424,7 @@ def generate_subscription_update(
     if seats is not None:
         return _generate_seats_subscription_update(subscription_update)
 
-    raise NotImplementedError("Only product and seats updates are supported")
+    if units is not None:
+        return _generate_units_subscription_update(subscription_update)
+
+    raise NotImplementedError("Only product, seats and units updates are supported")

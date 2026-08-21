@@ -1,4 +1,3 @@
-import builtins
 from collections.abc import Sequence
 from typing import Literal, Unpack
 from uuid import UUID
@@ -100,9 +99,9 @@ class BenefitGrantService:
         customer_id: Sequence[UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         pagination: PaginationParams,
-        sorting: builtins.list[Sorting[BenefitGrantSortProperty]] = [
-            (BenefitGrantSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[BenefitGrantSortProperty]] = (
+            (BenefitGrantSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[BenefitGrant], int]:
         repository = BenefitGrantRepository.from_session(session)
         org_ids = await get_accessible_org_ids(

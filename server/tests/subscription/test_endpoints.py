@@ -69,8 +69,8 @@ class TestListSubscriptions:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         response = await client.get("/v1/subscriptions/")
@@ -396,7 +396,7 @@ class TestSubscriptionProductUpdate:
         non_existing = uuid.uuid4()
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(non_existing)),
+            json={"product_price_id": str(non_existing)},
         )
         assert response.status_code == 401
 
@@ -417,7 +417,7 @@ class TestSubscriptionProductUpdate:
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_id=str(product_second.id)),
+            json={"product_id": str(product_second.id)},
         )
         assert response.status_code == 403
 
@@ -436,11 +436,11 @@ class TestSubscriptionProductUpdate:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_id=str(non_existing)),
+            json={"product_id": str(non_existing)},
         )
         assert response.status_code == 422
 
@@ -461,7 +461,7 @@ class TestSubscriptionProductUpdate:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
@@ -484,11 +484,11 @@ class TestSubscriptionProductUpdate:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_id=str(product_organization_second.id)),
+            json={"product_id": str(product_organization_second.id)},
         )
         assert response.status_code == 422
 
@@ -516,7 +516,7 @@ class TestSubscriptionProductUpdate:
 
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_id=str(private_product.id)),
+            json={"product_id": str(private_product.id)},
         )
         assert response.status_code == 200
         updated_subscription = response.json()
@@ -542,7 +542,7 @@ class TestSubscriptionProductUpdate:
 
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_id=str(product_second.id)),
+            json={"product_id": str(product_second.id)},
         )
         assert response.status_code == 200
         updated_subscription = response.json()
@@ -625,7 +625,7 @@ class TestSubscriptionUpdateMixedFields:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
@@ -648,15 +648,15 @@ class TestSubscriptionUpdateCancel:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-                customer_cancellation_reason="too_expensive",
-                customer_cancellation_comment="Inflation be crazy",
-            ),
+            json={
+                "cancel_at_period_end": True,
+                "customer_cancellation_reason": "too_expensive",
+                "customer_cancellation_comment": "Inflation be crazy",
+            },
         )
         assert response.status_code == 401
 
@@ -674,15 +674,15 @@ class TestSubscriptionUpdateCancel:
             save_fixture,
             product=product_organization_second,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-                customer_cancellation_reason="too_expensive",
-                customer_cancellation_comment="Inflation be crazy",
-            ),
+            json={
+                "cancel_at_period_end": True,
+                "customer_cancellation_reason": "too_expensive",
+                "customer_cancellation_comment": "Inflation be crazy",
+            },
         )
         assert response.status_code == 404
 
@@ -699,7 +699,7 @@ class TestSubscriptionUpdateCancel:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
 
         reason = "too_expensive"
@@ -707,11 +707,11 @@ class TestSubscriptionUpdateCancel:
 
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-                customer_cancellation_reason=reason,
-                customer_cancellation_comment=comment,
-            ),
+            json={
+                "cancel_at_period_end": True,
+                "customer_cancellation_reason": reason,
+                "customer_cancellation_comment": comment,
+            },
         )
 
         assert response.status_code == 200
@@ -737,7 +737,7 @@ class TestSubscriptionUpdateCancel:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
             status=SubscriptionStatus.past_due,
         )
 
@@ -746,11 +746,11 @@ class TestSubscriptionUpdateCancel:
 
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-                customer_cancellation_reason=reason,
-                customer_cancellation_comment=comment,
-            ),
+            json={
+                "cancel_at_period_end": True,
+                "customer_cancellation_reason": reason,
+                "customer_cancellation_comment": comment,
+            },
         )
 
         assert response.status_code == 200
@@ -775,9 +775,9 @@ class TestSubscriptionUpdateUncancel:
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=False,
-            ),
+            json={
+                "cancel_at_period_end": False,
+            },
         )
         assert response.status_code == 401
 
@@ -798,9 +798,9 @@ class TestSubscriptionUpdateUncancel:
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-            ),
+            json={
+                "cancel_at_period_end": True,
+            },
         )
         assert response.status_code == 404
 
@@ -819,9 +819,9 @@ class TestSubscriptionUpdateUncancel:
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=False,
-            ),
+            json={
+                "cancel_at_period_end": False,
+            },
         )
         assert response.status_code == 410
 
@@ -842,9 +842,9 @@ class TestSubscriptionUpdateUncancel:
 
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=False,
-            ),
+            json={
+                "cancel_at_period_end": False,
+            },
         )
 
         assert response.status_code == 200
@@ -871,15 +871,15 @@ class TestSubscriptionUpdateRevoke:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                revoke=True,
-                customer_cancellation_reason="too_expensive",
-                customer_cancellation_comment="Inflation be crazy",
-            ),
+            json={
+                "revoke": True,
+                "customer_cancellation_reason": "too_expensive",
+                "customer_cancellation_comment": "Inflation be crazy",
+            },
         )
         assert response.status_code == 401
 
@@ -897,15 +897,15 @@ class TestSubscriptionUpdateRevoke:
             save_fixture,
             product=product_organization_second,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                revoke=True,
-                customer_cancellation_reason="too_expensive",
-                customer_cancellation_comment="Inflation be crazy",
-            ),
+            json={
+                "revoke": True,
+                "customer_cancellation_reason": "too_expensive",
+                "customer_cancellation_comment": "Inflation be crazy",
+            },
         )
         assert response.status_code == 404
 
@@ -922,7 +922,7 @@ class TestSubscriptionUpdateRevoke:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
 
         reason = "too_expensive"
@@ -930,11 +930,11 @@ class TestSubscriptionUpdateRevoke:
 
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(
-                revoke=True,
-                customer_cancellation_reason=reason,
-                customer_cancellation_comment=comment,
-            ),
+            json={
+                "revoke": True,
+                "customer_cancellation_reason": reason,
+                "customer_cancellation_comment": comment,
+            },
         )
 
         assert response.status_code == 200
@@ -962,7 +962,7 @@ class TestSubscriptionRevoke:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.delete(f"/v1/subscriptions/{subscription.id}")
         assert response.status_code == 401
@@ -981,7 +981,7 @@ class TestSubscriptionRevoke:
             save_fixture,
             product=product_organization_second,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
         response = await client.delete(f"/v1/subscriptions/{subscription.id}")
         assert response.status_code == 404
@@ -999,7 +999,7 @@ class TestSubscriptionRevoke:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
 
         response = await client.delete(f"/v1/subscriptions/{subscription.id}")
@@ -1288,7 +1288,7 @@ class TestSubscriptionUpdateBillingPeriod:
         new_period_end = (datetime.now(UTC) + timedelta(days=365)).isoformat()
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(current_billing_period_end=new_period_end),
+            json={"current_billing_period_end": new_period_end},
         )
         assert response.status_code == 401
 
@@ -1307,7 +1307,7 @@ class TestSubscriptionUpdateBillingPeriod:
         new_period_end = (datetime.now(UTC) + timedelta(days=365)).isoformat()
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(current_billing_period_end=new_period_end),
+            json={"current_billing_period_end": new_period_end},
         )
         assert response.status_code == 404
 
@@ -1327,7 +1327,7 @@ class TestSubscriptionUpdateBillingPeriod:
         new_period_end = datetime.now(UTC) + timedelta(days=365)
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(current_billing_period_end=new_period_end.isoformat()),
+            json={"current_billing_period_end": new_period_end.isoformat()},
         )
 
         assert response.status_code == 200
@@ -1357,7 +1357,7 @@ class TestSubscriptionUpdateBillingPeriod:
         new_period_end = (datetime.now(UTC) + timedelta(days=365)).isoformat()
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(current_billing_period_end=new_period_end),
+            json={"current_billing_period_end": new_period_end},
         )
 
         assert response.status_code == 403
@@ -1382,7 +1382,7 @@ class TestSubscriptionUpdateBillingPeriod:
         new_period_end = datetime.now(UTC) + timedelta(days=365)
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(current_billing_period_end=new_period_end.isoformat()),
+            json={"current_billing_period_end": new_period_end.isoformat()},
         )
 
         assert response.status_code == 403
@@ -1402,14 +1402,14 @@ class TestSubscriptionUpdateBillingPeriod:
             product=product,
             customer=customer,
             status=SubscriptionStatus.past_due,
-            started_at=datetime(2023, 1, 1),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
             current_period_end=current_end,
         )
 
         new_period_end = (datetime.now(UTC) + timedelta(days=365)).isoformat()
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(current_billing_period_end=new_period_end),
+            json={"current_billing_period_end": new_period_end},
         )
 
         assert response.status_code == 403

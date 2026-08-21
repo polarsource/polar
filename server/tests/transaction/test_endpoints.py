@@ -1,10 +1,17 @@
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
-from polar.models import Account, Organization, Transaction, User, UserOrganization
+from polar.models import (
+    Account,
+    Organization,
+    Transaction,
+    User,
+    UserOrganization,
+)
 from polar.models.user_organization import OrganizationRole
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -129,3 +136,92 @@ class TestGetSummary:
         json = response.json()
         assert "balance" in json
         assert "payout" in json
+
+
+@pytest.mark.asyncio
+class TestExportTransactions:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/v1/transactions/export", params={"account_id": str(uuid.uuid4())}
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        account: Account,
+        user_organization: UserOrganization,
+        account_transactions: list[Transaction],
+    ) -> None:
+        response = await client.get(
+            "/v1/transactions/export", params={"account_id": str(account.id)}
+        )
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        csv_lines = response.text.strip().split("\r\n")
+        assert csv_lines[0] == (
+            "Created At,Type,Product,Gross,Fees,Tax,Net,Currency,Status,Paid Out At"
+        )
+        assert len(csv_lines) == len(account_transactions) + 1
+
+    @pytest.mark.auth
+    async def test_filter_by_date_range(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        account: Account,
+    ) -> None:
+        await create_transaction(
+            save_fixture,
+            account=account,
+            created_at=datetime(2024, 1, 15, tzinfo=UTC),
+        )
+        await create_transaction(
+            save_fixture,
+            account=account,
+            created_at=datetime(2024, 6, 15, tzinfo=UTC),
+        )
+
+        response = await client.get(
+            "/v1/transactions/export",
+            params={
+                "account_id": str(account.id),
+                "created_after": "2024-06-01T00:00:00Z",
+                "created_before": "2024-06-30T23:59:59Z",
+            },
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert len(csv_lines) == 2
+        assert "2024-06-15T00:00:00+00:00" in csv_lines[1]
+
+    @pytest.mark.auth
+    async def test_timezone(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        account: Account,
+    ) -> None:
+        await create_transaction(
+            save_fixture,
+            account=account,
+            created_at=datetime(2024, 6, 15, 23, 0, tzinfo=UTC),
+        )
+
+        response = await client.get(
+            "/v1/transactions/export",
+            params={
+                "account_id": str(account.id),
+                "timezone": "Europe/Stockholm",
+            },
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert "2024-06-16T01:00:00+02:00" in csv_lines[1]

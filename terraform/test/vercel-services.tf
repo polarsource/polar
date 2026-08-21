@@ -414,6 +414,8 @@ module "vercel_services" {
   name     = "polar-test-services"
   git_repo = "polarsource/polar"
 
+  preview_deployments_disabled = true
+
   resource_config = {
     function_default_regions = ["cle1"]
   }

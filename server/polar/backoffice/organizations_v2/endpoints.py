@@ -4483,7 +4483,7 @@ async def grant_credit(
             amount_str = form_data.get("amount", "0")
             amount_dollars = float(str(amount_str))
             amount_cents = int(amount_dollars * 100)
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             amount_dollars = 0
             amount_cents = 0
 

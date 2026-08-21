@@ -110,6 +110,7 @@ from polar.product.price_set import (
 )
 from polar.product.repository import ProductRepository
 from polar.receipt.service import receipt as receipt_service
+from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
@@ -385,9 +386,9 @@ class OrderService:
         created_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[OrderSortProperty]] = [
-            (OrderSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[OrderSortProperty]] = (
+            (OrderSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Order], int]:
         repository = OrderRepository.from_session(session)
         accessible_org_ids = await get_accessible_org_ids(
@@ -685,14 +686,16 @@ class OrderService:
         *,
         amount: int | None,
         seats: int | None,
+        units: int | None = None,
     ) -> Sequence[OrderItem]:
         """
         Build order line items for the static prices of a product.
 
         Metered prices are skipped (they're billed through usage). Custom
-        (pay-what-you-want) prices use `amount`; seat-based prices use `seats`.
-        Callers are responsible for validating that `amount` / `seats` are
-        present when the product requires them.
+        (pay-what-you-want) prices use `amount`; seat-based prices use `seats`;
+        unit-based prices use `units`. Callers are responsible for validating
+        that `amount` / `seats` / `units` are present when the product requires
+        them.
         """
         items: list[OrderItem] = []
         for price in prices:
@@ -701,7 +704,7 @@ class OrderService:
             if is_custom_price(price):
                 items.append(OrderItem.from_price(price, 0, amount))
             else:
-                items.append(OrderItem.from_price(price, 0, seats=seats))
+                items.append(OrderItem.from_price(price, 0, seats=seats, units=units))
         return items
 
     def _build_draft_order_items(
@@ -800,7 +803,10 @@ class OrderService:
             )
             items = list(
                 self._build_static_order_items(
-                    currency_prices, amount=checkout.amount, seats=checkout.seats
+                    currency_prices,
+                    amount=checkout.amount,
+                    seats=checkout.seats,
+                    units=checkout.units,
                 )
             )
 
@@ -837,6 +843,7 @@ class OrderService:
                 custom_field_data=checkout.custom_field_data,
                 items=items,
                 seats=checkout.seats,
+                units=checkout.units,
             ),
             flush=True,
         )
@@ -942,6 +949,20 @@ class OrderService:
                         "loc": ("body", "product_id"),
                         "msg": (
                             "Seat-based products are not supported by the "
+                            "off-session charge API."
+                        ),
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+        if product.has_unit_based_price:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "Unit-based products are not supported by the "
                             "off-session charge API."
                         ),
                         "input": payload.product_id,
@@ -1714,7 +1735,7 @@ class OrderService:
             return None
 
         if order.payment_lock_acquired_at is not None:
-            log.warn("Payment already in progress", order_id=order.id)
+            log.warning("Payment already in progress", order_id=order.id)
             raise PaymentAlreadyInProgress(order)
 
         if (
@@ -2069,11 +2090,10 @@ class OrderService:
             )
 
         except Exception as exc:
-            log.error(
+            log.exception(
                 "Exception during retry payment",
                 order_id=order.id,
                 error=str(exc),
-                exc_info=True,  # Include full traceback
             )
 
             return CustomerOrderPaymentConfirmation(
@@ -2126,15 +2146,26 @@ class OrderService:
             update_dict = {**update_dict, **await self._record_tax_transaction(order)}
 
         repository = OrderRepository.from_session(session)
-        order = await repository.update(order, update_dict=update_dict)
+        order = await repository.update(order, update_dict=update_dict, flush=True)
 
         # If this was a subscription retry success, reactivate the subscription
-        if (
-            previous_status == OrderStatus.pending
-            and order.subscription is not None
-            and order.subscription.status == SubscriptionStatus.past_due
-        ):
-            await subscription_service.mark_active(session, order.subscription)
+        if previous_status == OrderStatus.pending and order.subscription is not None:
+            subscription_repository = SubscriptionRepository.from_session(session)
+            locked_subscription = await subscription_repository.get_by_id(
+                order.subscription.id, for_update=True
+            )
+            assert locked_subscription is not None
+            # Make sure there are no other dunning orders for this subscription, otherwise we might reactivate it too early
+            if (
+                locked_subscription.status == SubscriptionStatus.past_due
+                and await repository.count_dunning_by_subscription(
+                    locked_subscription.id
+                )
+                == 0
+            ):
+                order.subscription = await subscription_service.mark_active(
+                    session, locked_subscription
+                )
 
         if update_dict:
             await self._on_order_updated(session, order, previous_status)
@@ -2271,7 +2302,10 @@ class OrderService:
                     first_media.path
                 )
         except Exception:
-            pass
+            log.exception(
+                "Failed to get product image for admin notification",
+                order_id=order.id,
+            )
 
         billing_address = order.billing_address
         customer = order.customer

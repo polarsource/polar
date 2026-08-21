@@ -46,10 +46,10 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@stylexjs/stylex": "^0.18.2",
-    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table": "^9.1.2",
     "class-variance-authority": "^0.7.1",
-    "motion": "^12.38.0",
     "lucide-react": "^0.577.0",
+    "motion": "^12.38.0",
     "react-focus-lock": "^2.13.7",
     "tailwind-merge": "^3.5.0"
   },

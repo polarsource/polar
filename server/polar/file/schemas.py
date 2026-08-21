@@ -170,23 +170,23 @@ class FileDownload(S3FileDownload):
 
     @classmethod
     def from_presigned(cls, file: File, url: str, expires_at: datetime) -> Self:
-        file_dict: dict[str, Any] = dict(
-            id=file.id,
-            organization_id=file.organization_id,
-            name=file.name,
-            path=file.path,
-            mime_type=file.mime_type,
-            size=file.size,
-            version=file.version,
-            service=file.service,
-            checksum_etag=file.checksum_etag,
-            last_modified_at=file.last_modified_at,
-            storage_version=file.storage_version,
-            is_uploaded=file.is_uploaded,
-            created_at=file.created_at,
-            checksum_sha256_base64=file.checksum_sha256_base64,
-            checksum_sha256_hex=file.checksum_sha256_hex,
-        )
+        file_dict: dict[str, Any] = {
+            "id": file.id,
+            "organization_id": file.organization_id,
+            "name": file.name,
+            "path": file.path,
+            "mime_type": file.mime_type,
+            "size": file.size,
+            "version": file.version,
+            "service": file.service,
+            "checksum_etag": file.checksum_etag,
+            "last_modified_at": file.last_modified_at,
+            "storage_version": file.storage_version,
+            "is_uploaded": file.is_uploaded,
+            "created_at": file.created_at,
+            "checksum_sha256_base64": file.checksum_sha256_base64,
+            "checksum_sha256_hex": file.checksum_sha256_hex,
+        }
 
         return cls(
             **file_dict,

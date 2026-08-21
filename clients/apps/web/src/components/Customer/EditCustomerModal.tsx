@@ -1,8 +1,12 @@
 import revalidate from '@/app/actions'
+import AccessRestricted from '@/components/Finance/AccessRestricted'
+import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateCustomer } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Input } from '@polar-sh/orbit'
 import {
   Form,
@@ -31,6 +35,11 @@ export const EditCustomerModal = ({
     | schemas['SubscriptionCustomer']
   onClose: () => void
 }) => {
+  const canManageCustomers = useHasPermission(
+    customer.organization_id,
+    'customers:manage',
+  )
+
   const form = useForm<CustomerUpdateForm>({
     defaultValues: {
       name: customer.name || '',
@@ -78,6 +87,21 @@ export const EditCustomerModal = ({
       revalidate(`customer:${customer.id}`)
       onClose()
     })
+  }
+
+  if (!canManageCustomers) {
+    return (
+      <Box flexDirection="column" height="100%">
+        <InlineModalHeader hide={onClose}>
+          <h2 className="text-xl">Edit Customer</h2>
+        </InlineModalHeader>
+        <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+          <AccessRestricted
+            message={permissionDeniedMessage('customers:manage')}
+          />
+        </Box>
+      </Box>
+    )
   }
 
   return (

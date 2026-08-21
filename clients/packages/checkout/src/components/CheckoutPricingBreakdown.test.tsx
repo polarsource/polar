@@ -130,8 +130,36 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
+      expect(getRowValue('Subtotal')).toBe('$9.99')
       expect(getRowValue('Taxes (included)')).toBe('$2')
       expect(getRowValue('Total')).toBe('$9.99')
+    })
+
+    it('shows the pre-discount subtotal when a discount is applied', () => {
+      const checkout = createBaseCheckout({
+        amount: 1000,
+        discount_amount: 500,
+        net_amount: 400,
+        tax_amount: 100,
+        tax_behavior: 'inclusive',
+        total_amount: 500,
+        discount: {
+          id: 'disc_1',
+          name: '50% off',
+          type: 'percentage',
+          duration: 'once',
+          code: null,
+          basis_points: 5000,
+        } satisfies schemas['CheckoutPublic']['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(getRowValue('Subtotal')).toBe('$10')
+      expect(getRowValue('50% off')).toBe('-$5')
+      expect(getRowValue('Taxable amount')).toBe('$4')
+      expect(getRowValue('Taxes (included)')).toBe('$1')
+      expect(getRowValue('Total')).toBe('$5')
     })
   })
 

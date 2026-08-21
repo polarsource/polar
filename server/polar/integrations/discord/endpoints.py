@@ -67,9 +67,7 @@ async def discord_bot_authorize(
     authorization_url = await oauth.bot_client.get_authorization_url(
         redirect_uri=str(request.url_for("integrations.discord.bot_callback")),
         state=encoded_state,
-        extras_params=dict(
-            permissions=settings.DISCORD_BOT_PERMISSIONS,
-        ),
+        extras_params={"permissions": settings.DISCORD_BOT_PERMISSIONS},
     )
     return RedirectResponse(authorization_url, 303)
 

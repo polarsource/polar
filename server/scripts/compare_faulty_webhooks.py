@@ -14,6 +14,7 @@ import dramatiq
 import httpx
 import structlog
 import typer
+from anyio import Path as AsyncPath
 from rich.console import Console
 from sqlalchemy import select
 
@@ -381,9 +382,10 @@ async def download_file(url: str) -> Path:
         response = await client.get(url)
         response.raise_for_status()
 
-    temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False)
-    temp_file.write(response.text)
-    temp_file.close()
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".csv", delete=False
+    ) as temp_file:
+        temp_file.write(response.text)
     console.print(f"[green]Downloaded to {temp_file.name}[/green]")
     return Path(temp_file.name)
 
@@ -530,9 +532,8 @@ async def compare(
             console.print(f"[red]File not found: {csv_path}[/red]")
             raise typer.Exit(1)
 
-    with open(csv_path) as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
+    csv_contents = await AsyncPath(csv_path).read_text()
+    rows = list(csv.DictReader(csv_contents.splitlines()))
 
     result = await analyze_webhooks(rows)
     print_results(result, output_json=output_json)
@@ -608,8 +609,7 @@ async def resume(
             console.print(f"[red]File not found: {json_path}[/red]")
             raise typer.Exit(1)
 
-    with open(json_path) as f:
-        data = json.load(f)
+    data = json.loads(await AsyncPath(json_path).read_text())
 
     result = load_result_from_json(data)
     console.print(

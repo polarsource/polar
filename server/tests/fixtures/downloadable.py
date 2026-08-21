@@ -148,8 +148,8 @@ class TestDownloadable:
             .where(
                 Downloadable.customer_id == customer.id,
                 File.deleted_at.is_(None),
-                File.is_uploaded == True,  # noqa
-                File.is_enabled == True,  # noqa
+                File.is_uploaded == True,
+                File.is_enabled == True,
                 Benefit.deleted_at.is_(None),
             )
         )

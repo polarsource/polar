@@ -111,13 +111,11 @@ class OAuthAccount(RecordModel):
         return time.time() > self.expires_at
 
     def should_refresh_access_token(self, unless_ttl_gt: int = 60 * 30) -> bool:
-        if (
+        return bool(
             self.expires_at
             and self.refresh_token
-            and self.expires_at <= (time.time() + unless_ttl_gt)
-        ):
-            return True
-        return False
+            and self.expires_at <= time.time() + unless_ttl_gt
+        )
 
     async def get_access_token(self) -> str:
         if self.access_token_encrypted is not None:

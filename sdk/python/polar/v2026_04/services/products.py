@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
     NotPermitted,
@@ -41,6 +46,7 @@ class ProductsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceProduct:
         """
         List products.
@@ -59,6 +65,8 @@ class ProductsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -83,6 +91,7 @@ class ProductsSync(SyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -104,6 +113,7 @@ class ProductsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[Product, None, None]:
         """
         List products.
@@ -122,6 +132,8 @@ class ProductsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type Product.
@@ -145,6 +157,7 @@ class ProductsSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -154,17 +167,23 @@ class ProductsSync(SyncServiceBase):
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[ProductCreateRecurring],
     ) -> Product: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[ProductCreateOneTime],
     ) -> Product: ...
 
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Product:
         """
@@ -173,6 +192,8 @@ class ProductsSync(SyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -186,6 +207,7 @@ class ProductsSync(SyncServiceBase):
             url="/v1/products/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -197,6 +219,8 @@ class ProductsSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Product:
         """
         Get a product by ID.
@@ -205,6 +229,8 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Product not found.
@@ -220,6 +246,7 @@ class ProductsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -231,6 +258,8 @@ class ProductsSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[ProductUpdate],
     ) -> Product:
         """
@@ -240,6 +269,8 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -257,6 +288,7 @@ class ProductsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -270,6 +302,8 @@ class ProductsSync(SyncServiceBase):
     def update_benefits(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[ProductBenefitsUpdate],
     ) -> Product:
         """
@@ -279,6 +313,8 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -296,6 +332,7 @@ class ProductsSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -322,6 +359,7 @@ class ProductsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceProduct:
         """
         List products.
@@ -340,6 +378,8 @@ class ProductsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -364,6 +404,7 @@ class ProductsAsync(AsyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -385,6 +426,7 @@ class ProductsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[Product, None]:
         """
         List products.
@@ -403,6 +445,8 @@ class ProductsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type Product.
@@ -426,6 +470,7 @@ class ProductsAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -436,17 +481,23 @@ class ProductsAsync(AsyncServiceBase):
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[ProductCreateRecurring],
     ) -> Product: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[ProductCreateOneTime],
     ) -> Product: ...
 
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Product:
         """
@@ -455,6 +506,8 @@ class ProductsAsync(AsyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -468,6 +521,7 @@ class ProductsAsync(AsyncServiceBase):
             url="/v1/products/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -479,6 +533,8 @@ class ProductsAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Product:
         """
         Get a product by ID.
@@ -487,6 +543,8 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Product not found.
@@ -502,6 +560,7 @@ class ProductsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -513,6 +572,8 @@ class ProductsAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[ProductUpdate],
     ) -> Product:
         """
@@ -522,6 +583,8 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -539,6 +602,7 @@ class ProductsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -552,6 +616,8 @@ class ProductsAsync(AsyncServiceBase):
     async def update_benefits(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[ProductBenefitsUpdate],
     ) -> Product:
         """
@@ -561,6 +627,8 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -578,6 +646,7 @@ class ProductsAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

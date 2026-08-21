@@ -1109,6 +1109,110 @@ class TestGetQuantities:
         assert quantity.quantity == expected_value
         assert result.total == expected_value
 
+    async def test_external_customer_id_filter_without_customer_record(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        timestamp = utc_now()
+        external_customer_id = "unresolved-external-customer"
+        for _ in range(3):
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                external_customer_id=external_customer_id,
+                metadata={"model": "lite"},
+            )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=CountAggregation(),
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            external_customer_id=[external_customer_id],
+            start_timestamp=timestamp,
+            end_timestamp=timestamp,
+            interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
+        )
+
+        assert len(result.quantities) == 1
+        assert result.quantities[0].quantity == 3
+        assert result.total == 3
+
+    @pytest.mark.parametrize("use_external_customer_id", [False, True])
+    async def test_customer_filter_resolves_both_identifiers(
+        self,
+        use_external_customer_id: bool,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer_external_id: Customer,
+    ) -> None:
+        customer = customer_external_id
+        assert customer.external_id is not None
+        timestamp = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=timestamp,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp,
+            organization=customer.organization,
+            external_customer_id=customer.external_id,
+            metadata={"model": "lite"},
+        )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=CountAggregation(),
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            customer_id=None if use_external_customer_id else [customer.id],
+            external_customer_id=(
+                [customer.external_id] if use_external_customer_id else None
+            ),
+            start_timestamp=timestamp,
+            end_timestamp=timestamp,
+            interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
+        )
+
+        assert len(result.quantities) == 1
+        assert result.quantities[0].quantity == 2
+        assert result.total == 2
+
 
 @pytest.mark.asyncio
 class TestGetQuantity:

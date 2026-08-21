@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import ast
 import re
 from collections.abc import Callable

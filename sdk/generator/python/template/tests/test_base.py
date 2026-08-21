@@ -1,9 +1,10 @@
 import dataclasses
 import typing
 
+import httpx
 import pytest
 
-from polar import deserialize
+from polar import deserialize, PolarDeserializationError
 from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
 
 SERVERS = {
@@ -32,6 +33,11 @@ def test_deserialize_model() -> None:
 
     typing.assert_type(cat, Cat)
     assert cat == Cat(type="cat", lives=9)
+
+
+def test_deserialize_model_invalid() -> None:
+    with pytest.raises(PolarDeserializationError):
+        deserialize({"type": "cat", "lives": "nine"}, Cat)
 
 
 def test_deserialize_union() -> None:
@@ -67,6 +73,51 @@ def client(request) -> SyncClientBase | AsyncClientBase:
 
 
 class TestBuildRequest:
+    def test_client_timeout(self, client: SyncClientBase | AsyncClientBase) -> None:
+        request = client.build_request(method="GET", url="/v1/items/")
+
+        assert request.extensions["timeout"] == {
+            "connect": 5.0,
+            "read": 5.0,
+            "write": 5.0,
+            "pool": 5.0,
+        }
+
+    def test_request_timeout_override(
+        self, client: SyncClientBase | AsyncClientBase
+    ) -> None:
+        request = client.build_request(
+            method="GET", url="/v1/items/", request_timeout=30.0
+        )
+
+        assert request.extensions["timeout"] == {
+            "connect": 30.0,
+            "read": 30.0,
+            "write": 30.0,
+            "pool": 30.0,
+        }
+
+    @pytest.mark.parametrize("client_class", [SyncClientBase, AsyncClientBase])
+    def test_advanced_client_timeout(
+        self,
+        client_class: type[SyncClientBase] | type[AsyncClientBase],
+    ) -> None:
+        client = client_class(
+            base_url="https://api.polar.sh",
+            version="2026-04",
+            access_token="polar_at_u_xxx",
+            timeout=httpx.Timeout(30.0, connect=10.0),
+        )
+
+        request = client.build_request(method="GET", url="/v1/items/")
+
+        assert request.extensions["timeout"] == {
+            "connect": 10.0,
+            "read": 30.0,
+            "write": 30.0,
+            "pool": 30.0,
+        }
+
     @pytest.mark.parametrize(
         ("value", "expected"),
         [

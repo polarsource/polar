@@ -44,7 +44,7 @@ def _report_failures[**P, R](method: Callable[P, R]) -> Callable[P, R]:
         try:
             return method(*args, **kwargs)
         except Exception as e:
-            log.error("subscription.scheduler.job_store_failure", exc_info=True)
+            log.exception("subscription.scheduler.job_store_failure")
             sentry_sdk.capture_exception(e)
             raise
 
@@ -189,7 +189,7 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
                 ~Organization.is_deleted,
                 Organization.can_renew_subscriptions,
                 Subscription.scheduler_locked_at.is_(None),
-                Subscription.active,
+                Subscription.billable,
                 Subscription.current_period_end.is_not(None),
             )
             .order_by(_next_run_time().asc())

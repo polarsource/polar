@@ -1,0 +1,153 @@
+name: Unapproved merges report
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect PRs merged without approval
+        id: collect
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const now = new Date();
+            const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            const daysSinceMonday = (today.getUTCDay() + 6) % 7;
+            const lastMonday = new Date(today);
+            lastMonday.setUTCDate(today.getUTCDate() - daysSinceMonday - 7);
+            const lastSunday = new Date(lastMonday);
+            lastSunday.setUTCDate(lastMonday.getUTCDate() + 6);
+            const isoDate = (d) => d.toISOString().slice(0, 10);
+            const start = isoDate(lastMonday);
+            const end = isoDate(lastSunday);
+
+            const searchQuery = `repo:${context.repo.owner}/${context.repo.repo} is:pr is:merged merged:${start}..${end}`;
+            const prs = [];
+            let cursor = null;
+            while (true) {
+              const { search } = await github.graphql(
+                `query($searchQuery: String!, $cursor: String) {
+                  search(query: $searchQuery, type: ISSUE, first: 100, after: $cursor) {
+                    pageInfo { hasNextPage, endCursor }
+                    nodes {
+                      ... on PullRequest {
+                        number
+                        title
+                        url
+                        mergedAt
+                        author { login }
+                        reviews(states: APPROVED, first: 100) {
+                          nodes { author { login, __typename } }
+                        }
+                      }
+                    }
+                  }
+                }`,
+                { searchQuery, cursor },
+              );
+              prs.push(...search.nodes);
+              if (!search.pageInfo.hasNextPage) break;
+              cursor = search.pageInfo.endCursor;
+            }
+
+            const unapproved = prs
+              .filter((pr) => !pr.reviews.nodes.some((r) => r.author?.__typename === 'User'))
+              .map((pr) => ({
+                number: pr.number,
+                title: pr.title,
+                url: pr.url,
+                mergedAt: pr.mergedAt,
+                login: pr.author?.login ?? null,
+              }));
+
+            core.info(`${prs.length} PR(s) merged ${start}..${end}, ${unapproved.length} without human approval`);
+            core.setOutput('unapproved', JSON.stringify(unapproved));
+            core.setOutput('count', String(unapproved.length));
+            core.setOutput('window_start', start);
+            core.setOutput('window_end', end);
+
+      - name: Post report to Slack
+        if: steps.collect.outputs.count != '0'
+        uses: actions/github-script@v9
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: C093CJXJXPT
+          UNAPPROVED: ${{ steps.collect.outputs.unapproved }}
+          WINDOW_START: ${{ steps.collect.outputs.window_start }}
+          WINDOW_END: ${{ steps.collect.outputs.window_end }}
+        with:
+          script: |
+            const unapproved = JSON.parse(process.env.UNAPPROVED);
+            const formatDate = (iso) =>
+              new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+            const mergedDay = (iso) =>
+              new Date(iso).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+
+            const header =
+              `:memo: *${unapproved.length} PR(s) merged without approval last week ` +
+              `(${formatDate(process.env.WINDOW_START)} – ${formatDate(process.env.WINDOW_END)})*`;
+            const lines = unapproved.map(
+              (pr) => `• <${pr.url}|#${pr.number}: ${pr.title}> — ${pr.login ?? 'unknown'} (merged ${mergedDay(pr.mergedAt)})`,
+            );
+
+            const section = (text) => ({ type: 'section', text: { type: 'mrkdwn', text } });
+            const blocks = [section(header)];
+            let chunk = [];
+            let chunkLength = 0;
+            for (const line of lines) {
+              if (chunk.length && chunkLength + line.length + 1 > 2900) {
+                blocks.push(section(chunk.join('\n')));
+                chunk = [];
+                chunkLength = 0;
+              }
+              chunk.push(line);
+              chunkLength += line.length + 1;
+            }
+            blocks.push(section(chunk.join('\n')));
+
+            const response = await fetch('https://slack.com/api/chat.postMessage', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+              },
+              body: JSON.stringify({
+                channel: process.env.SLACK_CHANNEL,
+                text: `${unapproved.length} PR(s) merged without approval last week`,
+                blocks,
+              }),
+            });
+
+            const result = await response.json();
+            if (!result.ok) {
+              core.setFailed(`Slack notification failed: ${result.error}`);
+            }
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
+          payload: |
+            {
+              "channel": "C093CJXJXPT",
+              "text": "Unapproved merges report failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":rotating_light: *Unapproved merges report failed* — the weekly report could not be generated or posted.\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                  }
+                }
+              ]
+            }

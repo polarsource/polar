@@ -1,5 +1,4 @@
 import { AppealCaseUnreadBadge } from '@/components/Organization/HumanReviewCase/AppealCaseUnreadBadge'
-import { useHasPermission } from '@/hooks/permissions'
 import { PolarHog, usePostHog } from '@/hooks/posthog'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
@@ -130,26 +129,11 @@ export const useResolveRoutes = (
   }, [org, path, allowAll, routesResolver, posthog])
 }
 
-type RouteOptions = {
-  canManageBilling: boolean
-}
-
-const useRouteOptions = (org?: schemas['Organization']): RouteOptions => {
-  const canManageBilling =
-    useHasPermission(org?.id, 'organization:manage') === true
-  return { canManageBilling }
-}
-
 export const useDashboardRoutes = (
   org?: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  const options = useRouteOptions(org)
-  return useResolveRoutes(
-    (org) => dashboardRoutesList(org, options),
-    org,
-    allowAll,
-  )
+  return useResolveRoutes((org) => dashboardRoutesList(org), org, allowAll)
 }
 
 export const useGeneralRoutes = (
@@ -163,12 +147,7 @@ export const useOrganizationRoutes = (
   org?: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  const options = useRouteOptions(org)
-  return useResolveRoutes(
-    (org) => organizationRoutesList(org, options),
-    org,
-    allowAll,
-  )
+  return useResolveRoutes((org) => organizationRoutesList(org), org, allowAll)
 }
 
 export const useAccountRoutes = (): RouteWithActive[] => {
@@ -305,11 +284,10 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
 
 const dashboardRoutesList = (
   org: schemas['Organization'] | undefined,
-  options: RouteOptions,
 ): Route[] => [
   ...accountRoutesList(),
   ...generalRoutesList(org),
-  ...organizationRoutesList(org, options),
+  ...organizationRoutesList(org),
 ]
 
 const accountRoutesList = (): Route[] => [
@@ -352,7 +330,6 @@ const orgFinanceSubRoutesList = (org?: schemas['Organization']): SubRoute[] => [
 
 const organizationRoutesList = (
   org: schemas['Organization'] | undefined,
-  options: RouteOptions,
 ): Route[] => [
   {
     id: 'finance',
@@ -377,7 +354,6 @@ const organizationRoutesList = (
       {
         title: 'Billing',
         link: `/dashboard/${org?.slug}/settings/billing`,
-        if: options.canManageBilling,
       },
       {
         title: 'Members',

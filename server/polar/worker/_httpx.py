@@ -19,6 +19,12 @@ async def _close_client() -> None:
         _httpx = None
 
 
+def setup_httpx() -> None:
+    global _httpx
+    _httpx = httpx.AsyncClient()
+    log.info("Created HTTPX client")
+
+
 class HTTPXMiddleware(dramatiq.Middleware):
     """
     Middleware managing the lifecycle of an HTTPX AsyncClient.
@@ -26,7 +32,6 @@ class HTTPXMiddleware(dramatiq.Middleware):
 
     @classmethod
     def get(cls) -> httpx.AsyncClient:
-        global _httpx
         if _httpx is None:
             raise RuntimeError("HTTPX not initialized")
         return _httpx
@@ -34,9 +39,7 @@ class HTTPXMiddleware(dramatiq.Middleware):
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
-        global _httpx
-        _httpx = httpx.AsyncClient()
-        log.info("Created HTTPX client")
+        setup_httpx()
 
     def after_worker_shutdown(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker

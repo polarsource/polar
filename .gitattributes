@@ -1,3 +1,4 @@
 clients/packages/client/src/v1.ts linguist-generated=true
 sdk/python/** linguist-generated=true
 sdk/typescript/** linguist-generated=true
+docs/openapi/** linguist-generated=true

@@ -84,9 +84,9 @@ class DisputeService:
         order_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[DisputeStatus] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[DisputeSortProperty]] = [
-            (DisputeSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[DisputeSortProperty]] = (
+            (DisputeSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Dispute], int]:
         repository = DisputeRepository.from_session(session)
         org_ids = await get_accessible_org_ids(

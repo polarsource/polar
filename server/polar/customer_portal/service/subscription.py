@@ -94,9 +94,9 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         active: bool | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerSubscriptionSortProperty]] = [
-            (CustomerSubscriptionSortProperty.started_at, True)
-        ],
+        sorting: Sequence[Sorting[CustomerSubscriptionSortProperty]] = (
+            (CustomerSubscriptionSortProperty.started_at, True),
+        ),
     ) -> tuple[Sequence[Subscription], int]:
         statement = self._get_readable_subscription_statement(auth_subject).where(
             Subscription.started_at.is_not(None)

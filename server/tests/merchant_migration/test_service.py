@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from datetime import timedelta
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
@@ -31,7 +32,10 @@ from polar.merchant_migration.canonical import (
     serialize,
 )
 from polar.merchant_migration.cards import AmbiguousCopiedCard
+from polar.merchant_migration.cutover import CutoverOutcome
 from polar.merchant_migration.pan_transfer import (
+    STEP_CUTOVER,
+    STEP_MOVE_SUBSCRIPTIONS,
     STEP_RESOLVE_UNCOVERED,
     STEP_VERIFY_CARDS,
 )
@@ -48,6 +52,7 @@ from polar.merchant_migration.schemas import (
 from polar.merchant_migration.service import (
     CatalogImportBlocked,
     CatalogImportNotReady,
+    CutoverNotStarted,
     InvalidSourceCredentials,
     MissingStripeScopes,
     SourceAccountNotMigratable,
@@ -72,11 +77,18 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_operation import (
+    STALL_THRESHOLD,
+    MerchantMigrationOperation,
+    MerchantMigrationOperationSelection,
+    MerchantMigrationOperationStatus,
+)
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.models.product_price import ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -1877,3 +1889,641 @@ class TestRunCardVerification:
         assert second.payment_method_id == linked.id
         # Both subscriptions charge the same customer, so one Stripe listing.
         assert link.await_count == 1
+
+
+def _fake_cutover(
+    mocker: MockerFixture,
+    outcome: CutoverOutcome | None = None,
+) -> Mock:
+    """Stand in for the Stripe-touching engine: record every subscription it's
+    asked to switch and answer with a fixed outcome."""
+    outcome = outcome or CutoverOutcome(MerchantMigrationCutoverStatus.moved)
+    runner = mocker.Mock(run=mocker.AsyncMock(return_value=outcome))
+    mocker.patch(
+        "polar.merchant_migration.service.SubscriptionCutover",
+        return_value=runner,
+    )
+    mocker.patch.object(
+        service, "_build_adapter", new=mocker.AsyncMock(return_value=object())
+    )
+    return runner
+
+
+@pytest.mark.asyncio
+class TestStartCutover:
+    @pytest.mark.auth
+    async def test_confirms_step_stores_selection_and_enqueues(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_CUTOVER
+        )
+        await save_fixture(migration)
+        record = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="a@example.com",
+        )
+
+        report = await service.start_cutover(
+            session, auth_subject, migration.id, record_ids=[record.id]
+        )
+
+        await session.refresh(migration)
+        assert service._step_completed(migration, STEP_CUTOVER)
+        # Confirming the step moves the migration into the switch phase.
+        assert migration.step == MerchantMigrationStep.activate_subscriptions
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
+        assert migration.operation.selection is not None
+        assert migration.operation.selection.record_ids == [record.id]
+        enqueue.assert_called_once_with(
+            "merchant_migration.cutover", merchant_migration_id=migration.id
+        )
+        assert report.started is True
+        assert report.running is True
+
+    @pytest.mark.auth
+    async def test_not_reachable_before_the_switch_step(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+
+        with pytest.raises(CutoverNotStarted):
+            await service.start_cutover(session, auth_subject, migration.id)
+
+    @pytest.mark.auth
+    async def test_retry_reopens_only_non_moved(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        # Already switched once: the step is done and the migration is at cleanup.
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, None
+        )
+        migration.step = MerchantMigrationStep.cleanup
+        await save_fixture(migration)
+        moved = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_moved",
+            email="moved@example.com",
+        )
+        skipped = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_skipped",
+            email="skipped@example.com",
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await record_repository.update(
+            moved,
+            update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved},
+            flush=True,
+        )
+        await record_repository.update(
+            skipped,
+            update_dict={
+                "cutover_status": MerchantMigrationCutoverStatus.skipped,
+                "cutover_error": "Renews too soon.",
+            },
+            flush=True,
+        )
+
+        await service.start_cutover(session, auth_subject, migration.id)
+
+        await session.refresh(moved)
+        await session.refresh(skipped)
+        # What moved stays moved; the skipped one re-opens for another look.
+        assert moved.cutover_status == MerchantMigrationCutoverStatus.moved
+        assert skipped.cutover_status is None
+        assert skipped.cutover_error is None
+        enqueue.assert_called_once_with(
+            "merchant_migration.cutover", merchant_migration_id=migration.id
+        )
+
+
+@pytest.mark.asyncio
+class TestRunCutover:
+    async def test_moves_one_then_reenqueues(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running
+        )
+        await save_fixture(migration)
+        first = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="1@example.com",
+        )
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_2",
+            email="2@example.com",
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        await session.flush()
+        await session.refresh(first)
+        # One subscription per run, and it hands off to the next.
+        assert runner.run.await_count == 1
+        assert first.cutover_status == MerchantMigrationCutoverStatus.moved
+        enqueue.assert_called_once_with(
+            "merchant_migration.cutover", merchant_migration_id=migration.id
+        )
+
+    async def test_finishes_when_nothing_is_left(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running
+        )
+        await save_fixture(migration)
+        settled = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_done",
+            email="done@example.com",
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await record_repository.update(
+            settled,
+            update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved},
+            flush=True,
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        await session.flush()
+        await session.refresh(migration)
+        assert service._step_completed(migration, STEP_MOVE_SUBSCRIPTIONS)
+        assert migration.step == MerchantMigrationStep.cleanup
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+
+    async def test_honours_the_selection(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        picked = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_picked",
+            email="picked@example.com",
+        )
+        untouched = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_untouched",
+            email="untouched@example.com",
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            selection=MerchantMigrationOperationSelection(record_ids=[picked.id]),
+        )
+        await save_fixture(migration)
+
+        # Run until the selected subset is exhausted.
+        await service.run_cutover(session, migration.id)
+        await session.flush()
+        await service.run_cutover(session, migration.id)
+        await session.flush()
+
+        await session.refresh(picked)
+        await session.refresh(untouched)
+        assert runner.run.await_count == 1
+        assert picked.cutover_status == MerchantMigrationCutoverStatus.moved
+        # Outside the selection: never looked at.
+        assert untouched.cutover_status is None
+
+    async def test_skips_when_renewals_disabled(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        organization.capabilities = {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]}
+        await save_fixture(organization)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running
+        )
+        await save_fixture(migration)
+        record = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="1@example.com",
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        await session.refresh(record)
+        await session.refresh(migration)
+        # Nothing on the source is touched while the org can't bill renewals.
+        assert runner.run.await_count == 0
+        assert record.cutover_status is None
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.failed
+        assert migration.operation.error is not None
+
+    async def test_does_not_finish_while_another_worker_holds_the_lock(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running
+        )
+        await save_fixture(migration)
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="1@example.com",
+        )
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        mocker.patch.object(
+            record_repository,
+            "get_next_cutover_candidate",
+            return_value=None,
+        )
+        mocker.patch.object(
+            record_repository,
+            "has_pending_cutover_candidates",
+            return_value=True,
+        )
+        mocker.patch.object(
+            MerchantMigrationRecordRepository,
+            "from_session",
+            return_value=record_repository,
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        await session.refresh(migration)
+        assert runner.run.await_count == 0
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
+        assert migration.step != MerchantMigrationStep.cleanup
+
+    async def test_skips_when_operation_is_terminal(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.failed,
+            error="Switch stalled with no progress; start it again to resume.",
+        )
+        await save_fixture(migration)
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="1@example.com",
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        assert runner.run.await_count == 0
+
+
+@pytest.mark.asyncio
+class TestGetCutoverReport:
+    @pytest.mark.auth
+    async def test_counts_the_imported_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_CUTOVER
+        )
+        await save_fixture(migration)
+        moved = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_moved",
+            email="moved@example.com",
+        )
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_pending",
+            email="pending@example.com",
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await record_repository.update(
+            moved,
+            update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved},
+            flush=True,
+        )
+
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+
+        assert report.total == 2
+        assert report.moved == 1
+        assert report.pending == 1
+        assert report.started is False
+
+    @pytest.mark.auth
+    async def test_counts_all_imports_even_with_a_selection(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_CUTOVER
+        )
+        picked = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_picked",
+            email="picked@example.com",
+        )
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_outside",
+            email="outside@example.com",
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            selection=MerchantMigrationOperationSelection(record_ids=[picked.id]),
+        )
+        await save_fixture(migration)
+
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+
+        # The picker lists every imported subscription; tab counts must match.
+        assert report.total == 2
+        assert report.pending == 2
+
+    @pytest.mark.auth
+    async def test_marks_a_stalled_switch_failed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now() - STALL_THRESHOLD - timedelta(minutes=1),
+        )
+        await save_fixture(migration)
+
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+
+        await session.refresh(migration)
+        assert report.running is False
+        assert report.completed is True
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.failed
+
+
+@pytest.mark.asyncio
+class TestListRecordsCutover:
+    @pytest.mark.auth
+    async def test_carries_cutover_fields_and_coverage(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        await save_fixture(migration)
+        record = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="a@example.com",
+        )
+        assert record.target_id is not None
+        subscription_repository = SubscriptionRepository.from_session(session)
+        subscription = await subscription_repository.get_by_id(
+            record.target_id, options=(joinedload(Subscription.customer),)
+        )
+        assert subscription is not None
+        payment_method = await create_payment_method(
+            save_fixture, subscription.customer, processor_id="pm_1"
+        )
+        await subscription_repository.update(
+            subscription,
+            update_dict={"payment_method_id": payment_method.id},
+            flush=True,
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await record_repository.update(
+            record,
+            update_dict={
+                "cutover_status": MerchantMigrationCutoverStatus.skipped,
+                "cutover_error": "Renews too soon.",
+            },
+            flush=True,
+        )
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=50),
+        )
+
+        assert len(items) == 1
+        item = items[0]
+        assert item.cutover_status == MerchantMigrationCutoverStatus.skipped
+        assert item.cutover_error == "Renews too soon."
+        assert item.has_payment_method is True
+        assert item.renews_at is not None
+
+    @pytest.mark.auth
+    async def test_filters_on_cutover_status(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        await save_fixture(migration)
+        skipped = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_skipped",
+            email="skipped@example.com",
+        )
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_pending",
+            email="pending@example.com",
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await record_repository.update(
+            skipped,
+            update_dict={"cutover_status": MerchantMigrationCutoverStatus.skipped},
+            flush=True,
+        )
+
+        items, count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            cutover_status=MerchantMigrationCutoverStatus.skipped,
+            pagination=PaginationParams(page=1, limit=50),
+        )
+
+        assert count == 1
+        assert items[0].source_id == "sub_skipped"

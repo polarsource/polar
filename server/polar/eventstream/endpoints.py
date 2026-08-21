@@ -39,9 +39,8 @@ def _uvicorn_should_exit() -> bool:
                 frame = coroutine.cr_frame  # type: ignore
                 if frame is not None:
                     args = frame.f_locals
-                    if self := args.get("self"):
-                        if isinstance(self, Server):
-                            return self.should_exit
+                    if (self := args.get("self")) and isinstance(self, Server):
+                        return self.should_exit
     except RuntimeError:
         pass
     return False

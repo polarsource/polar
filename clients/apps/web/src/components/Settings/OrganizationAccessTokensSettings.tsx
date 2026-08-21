@@ -29,12 +29,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { type Ref, useCallback, useEffect, useRef, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast, useToast } from '../Toast/use-toast'
 import { CreateAccessTokenModal } from './CreateAccessTokenModal'
 import { TreeMultiSelect } from './TreeMultiSelect'
+import { useResumeOrganizationAccessTokenCreation } from './useResumeOrganizationAccessTokenCreation'
 
 export interface AccessTokenCreate {
   comment: string
@@ -194,10 +195,12 @@ const AccessTokenItem = ({
   token,
   rawToken,
   minimal,
+  rootRef,
 }: {
   token: schemas['OrganizationAccessToken']
   rawToken?: string
   minimal?: boolean
+  rootRef?: Ref<HTMLDivElement>
 }) => {
   const {
     isShown: updateModalShown,
@@ -236,7 +239,7 @@ const AccessTokenItem = ({
   }, [token, deleteToken])
 
   return (
-    <div className="flex flex-col gap-y-4">
+    <div ref={rootRef} className="flex flex-col gap-y-4">
       <div className="flex flex-col gap-y-2 md:flex-row md:items-center md:justify-between md:gap-x-4">
         <div className="flex min-w-0 flex-row">
           <div className="flex min-w-0 flex-col">
@@ -351,6 +354,7 @@ const OrganizationAccessTokensSettings = ({
   const tokens = useOrganizationAccessTokens(organization.id)
   const [createdToken, setCreatedToken] =
     useState<schemas['OrganizationAccessTokenCreateResponse']>()
+  const createdTokenRef = useRef<HTMLDivElement>(null)
 
   const {
     isShown: createModalShown,
@@ -358,26 +362,43 @@ const OrganizationAccessTokensSettings = ({
     hide: hideCreateModal,
   } = useModal()
 
-  const onCreate = (
-    token: schemas['OrganizationAccessTokenCreateResponse'],
-  ) => {
-    hideCreateModal()
-    setCreatedToken(token)
-    onTokenCreated?.(token.token)
-  }
+  const onCreate = useCallback(
+    (token: schemas['OrganizationAccessTokenCreateResponse']) => {
+      hideCreateModal()
+      setCreatedToken(token)
+      onTokenCreated?.(token.token)
+    },
+    [hideCreateModal, onTokenCreated],
+  )
 
-  const hasTokens =
-    (tokens.data?.items && tokens.data.items.length > 0) || createdToken
-  const showNewTokenButton = !singleTokenMode || !hasTokens
+  useResumeOrganizationAccessTokenCreation({
+    organizationId: organization.id,
+    onSuccess: onCreate,
+  })
 
-  const hasExistingTokens = tokens.data?.items && tokens.data.items.length > 0
+  const createdAccessToken = createdToken?.organization_access_token
+  const listedTokens = tokens.data?.items ?? []
+  const displayedTokens =
+    createdAccessToken &&
+    !listedTokens.some((token) => token.id === createdAccessToken.id)
+      ? [createdAccessToken, ...listedTokens]
+      : listedTokens
+  const createdTokenId = createdAccessToken?.id
+
+  useEffect(() => {
+    if (!createdTokenId) return
+    createdTokenRef.current?.scrollIntoView({ block: 'center' })
+  }, [createdTokenId])
+
+  const hasExistingTokens = displayedTokens.length > 0
+  const showNewTokenButton = !singleTokenMode || !hasExistingTokens
 
   // Minimal mode: just show a button or the created token
   if (minimal) {
     return (
       <div className="flex w-full flex-col items-start gap-y-4">
         {hasExistingTokens
-          ? tokens.data?.items.map((token) => {
+          ? displayedTokens.map((token) => {
               const isNewToken =
                 token.id === createdToken?.organization_access_token.id
               return (
@@ -389,6 +410,7 @@ const OrganizationAccessTokensSettings = ({
                     token={token}
                     minimal={minimal}
                     rawToken={isNewToken ? createdToken?.token : undefined}
+                    rootRef={isNewToken ? createdTokenRef : undefined}
                   />
                 </div>
               )
@@ -417,7 +439,7 @@ const OrganizationAccessTokensSettings = ({
     <div className="flex w-full flex-col">
       <ListGroup>
         {hasExistingTokens ? (
-          tokens.data?.items.map((token) => {
+          displayedTokens.map((token) => {
             const isNewToken =
               token.id === createdToken?.organization_access_token.id
 
@@ -426,6 +448,7 @@ const OrganizationAccessTokensSettings = ({
                 <AccessTokenItem
                   token={token}
                   rawToken={isNewToken ? createdToken?.token : undefined}
+                  rootRef={isNewToken ? createdTokenRef : undefined}
                 />
               </ListGroup.Item>
             )

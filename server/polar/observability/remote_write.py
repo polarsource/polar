@@ -9,6 +9,7 @@ https://prometheus.io/docs/specs/prw/remote_write_spec/
 
 import asyncio
 import base64
+import contextlib
 import fcntl
 import math
 import os
@@ -41,6 +42,7 @@ _pusher_thread: threading.Thread | None = None
 _shutdown_event: threading.Event | None = None
 _start_lock = threading.Lock()
 _lock_file: IO[bytes] | None = None
+_lock_stack: contextlib.ExitStack | None = None
 
 
 def _encode_varint(value: int) -> bytes:
@@ -106,7 +108,7 @@ def _encode_write_request(timeseries_list: list[bytes]) -> bytes:
     return result
 
 
-def _collect_metrics() -> Generator[tuple[list[tuple[str, str]], float], None, None]:
+def _collect_metrics() -> Generator[tuple[list[tuple[str, str]], float]]:
     registry = CollectorRegistry()
     multiprocess.MultiProcessCollector(registry)
 
@@ -239,11 +241,10 @@ def _run_push_loop(
                         loop.run_until_complete(_update_queue_metrics(redis))
                     _push_metrics(client, url, headers)
                 except Exception as e:
-                    log.error(
+                    log.exception(
                         "prometheus_remote_write_error",
                         error=str(e),
                         error_type=type(e).__name__,
-                        exc_info=True,
                     )
 
                 elapsed = time.monotonic() - start_time
@@ -264,7 +265,7 @@ def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
         include_queue_metrics: If True, collect Redis queue metrics (for workers).
                                If False, only push standard prometheus metrics (for API).
     """
-    global _pusher_thread, _shutdown_event, _lock_file
+    global _pusher_thread, _shutdown_event, _lock_file, _lock_stack
 
     with _start_lock:
         if _pusher_thread is not None:
@@ -287,16 +288,18 @@ def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
         lock_path = settings.WORKER_PROMETHEUS_DIR / ".pusher.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            _lock_file = open(lock_path, "wb")
+            _lock_stack = contextlib.ExitStack()
+            _lock_file = _lock_stack.enter_context(lock_path.open("wb"))
             fcntl.flock(_lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except (OSError, BlockingIOError):
+        except OSError, BlockingIOError:
             log.info(
                 "prometheus_remote_write_skipped",
                 reason="another process holds the lock",
             )
-            if _lock_file:
-                _lock_file.close()
-                _lock_file = None
+            if _lock_stack:
+                _lock_stack.close()
+            _lock_file = None
+            _lock_stack = None
             return False
 
         _shutdown_event = threading.Event()
@@ -324,7 +327,7 @@ def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
 
 
 def stop_remote_write_pusher(timeout: float = 5.0) -> None:
-    global _pusher_thread, _shutdown_event, _lock_file
+    global _pusher_thread, _shutdown_event, _lock_file, _lock_stack
 
     with _start_lock:
         if _pusher_thread is None or _shutdown_event is None:
@@ -349,7 +352,9 @@ def stop_remote_write_pusher(timeout: float = 5.0) -> None:
         if _lock_file:
             try:
                 fcntl.flock(_lock_file.fileno(), fcntl.LOCK_UN)
-                _lock_file.close()
             except OSError:
                 pass
-            _lock_file = None
+        if _lock_stack:
+            _lock_stack.close()
+        _lock_file = None
+        _lock_stack = None

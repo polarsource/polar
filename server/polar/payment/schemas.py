@@ -27,7 +27,7 @@ class PaymentBase(IDSchema, TimestampedSchema):
     )
     amount: int = Field(description="The payment amount in cents.", examples=[1000])
     currency: str = Field(
-        description="The payment currency. Currently, only `usd` is supported.",
+        description="The payment currency",
         examples=["usd"],
     )
     method: str = Field(description="The payment method used.", examples=["card"])
@@ -91,8 +91,31 @@ class CardPayment(PaymentBase):
     )
 
 
+class KrCardPaymentMetadata(Schema):
+    """Additional metadata for a South Korean card payment method."""
+
+    brand: str | None = Field(
+        description="The local South Korean card brand used for the payment.",
+        examples=["kookmin", "shinhan"],
+    )
+    last4: str | None = Field(
+        description="The last 4 digits of the card number.", examples=["4242"]
+    )
+
+
+class KrCardPayment(PaymentBase):
+    """Schema of a payment with a South Korean card payment method."""
+
+    method: Literal["kr_card"] = Field(
+        description="The payment method used.", examples=["kr_card"]
+    )
+    method_metadata: KrCardPaymentMetadata = Field(
+        description="Additional metadata for the South Korean card payment method."
+    )
+
+
 Payment = Annotated[
-    CardPayment | GenericPayment,
+    CardPayment | KrCardPayment | GenericPayment,
     SetSchemaReference("Payment"),
     ClassName("Payment"),
 ]

@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
 )
@@ -26,6 +31,7 @@ class MembersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceMember:
         """
         List members with optional customer ID filter.
@@ -39,6 +45,8 @@ class MembersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -58,6 +66,7 @@ class MembersSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -74,6 +83,7 @@ class MembersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[Member, None, None]:
         """
         List members with optional customer ID filter.
@@ -87,6 +97,8 @@ class MembersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type Member.
@@ -105,6 +117,7 @@ class MembersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -122,6 +135,7 @@ class MembersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceMember:
         """
         List members with optional customer ID filter.
@@ -135,6 +149,8 @@ class MembersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -154,6 +170,7 @@ class MembersAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -170,6 +187,7 @@ class MembersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[Member, None]:
         """
         List members with optional customer ID filter.
@@ -183,6 +201,8 @@ class MembersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type Member.
@@ -201,6 +221,7 @@ class MembersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item

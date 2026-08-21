@@ -75,6 +75,14 @@ _seats_description = (
     "seats. If the products no longer accommodate this value when the link is "
     "opened, it'll be ignored."
 )
+_units_description = (
+    "Preconfigured number of units for unit-based pricing. "
+    "When set, checkout sessions created from this link are locked to this number "
+    "of units and the customer won't be able to change it. "
+    "All products on the link must use unit-based pricing and allow this number of "
+    "units. If the products no longer accommodate this value when the link is "
+    "opened, it'll be ignored."
+)
 
 
 class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
@@ -96,6 +104,7 @@ class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, S
     seats: Int32 | None = Field(
         default=None, ge=1, le=10000, description=_seats_description
     )
+    units: Int32 | None = Field(default=None, ge=1, description=_units_description)
     success_url: SuccessURL = None
     return_url: ReturnURL = None
 
@@ -158,6 +167,7 @@ class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
     seats: Int32 | None = Field(
         default=None, ge=1, le=10000, description=_seats_description
     )
+    units: Int32 | None = Field(default=None, ge=1, description=_units_description)
     success_url: SuccessURL = None
     return_url: ReturnURL = None
 
@@ -189,6 +199,7 @@ class CheckoutLinkBase(
     )
     discount_id: UUID4 | None = Field(description=_discount_id_description)
     seats: int | None = Field(description=_seats_description)
+    units: int | None = Field(description=_units_description)
     organization_id: OrganizationID
 
     @computed_field  # type: ignore[prop-decorator]

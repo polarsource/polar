@@ -124,7 +124,7 @@ async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGr
 
     try:
         return _get_ip(scope)
-    except (EmptyInformation, ValueError, TypeError):
+    except EmptyInformation, ValueError, TypeError:
         return _ANONYMOUS_IDENTITY, RateLimitGroup.default
 
 

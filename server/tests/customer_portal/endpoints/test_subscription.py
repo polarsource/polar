@@ -116,7 +116,7 @@ class TestCustomerSubscriptionProductUpdate:
         non_existing = uuid.uuid4()
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_id=str(non_existing)),
+            json={"product_id": str(non_existing)},
         )
         assert response.status_code == 401
 
@@ -127,7 +127,7 @@ class TestCustomerSubscriptionProductUpdate:
         non_existing = uuid.uuid4()
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_id=str(non_existing)),
+            json={"product_id": str(non_existing)},
         )
         assert response.status_code == 422
 
@@ -145,7 +145,7 @@ class TestCustomerSubscriptionProductUpdate:
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_id=str(product.id)),
+            json={"product_id": str(product.id)},
         )
         assert response.status_code == 422
 
@@ -158,7 +158,7 @@ class TestCustomerSubscriptionProductUpdate:
     ) -> None:
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_id=str(product_organization_second.id)),
+            json={"product_id": str(product_organization_second.id)},
         )
         assert response.status_code == 422
 
@@ -179,7 +179,7 @@ class TestCustomerSubscriptionProductUpdate:
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_id=str(private_product.id)),
+            json={"product_id": str(private_product.id)},
         )
         assert response.status_code == 422
 
@@ -202,7 +202,7 @@ class TestCustomerSubscriptionProductUpdate:
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_id=str(product_second.id)),
+            json={"product_id": str(product_second.id)},
         )
 
         assert response.status_code == 200
@@ -218,7 +218,7 @@ class TestCustomerSubscriptionUpdateUnknownFields:
     ) -> None:
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(pause_at_periodend=True),
+            json={"pause_at_periodend": True},
         )
         assert response.status_code == 422
 
@@ -239,9 +239,9 @@ class TestCustomerSubscriptionUpdateCancel:
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-            ),
+            json={
+                "cancel_at_period_end": True,
+            },
         )
         assert response.status_code == 401
 
@@ -260,9 +260,9 @@ class TestCustomerSubscriptionUpdateCancel:
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-            ),
+            json={
+                "cancel_at_period_end": True,
+            },
         )
         assert response.status_code == 404
 
@@ -285,11 +285,11 @@ class TestCustomerSubscriptionUpdateCancel:
 
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-                cancellation_reason=reason,
-                cancellation_comment=comment,
-            ),
+            json={
+                "cancel_at_period_end": True,
+                "cancellation_reason": reason,
+                "cancellation_comment": comment,
+            },
         )
 
         assert response.status_code == 200
@@ -321,9 +321,9 @@ class TestSubscriptionUpdateUncancel:
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=False,
-            ),
+            json={
+                "cancel_at_period_end": False,
+            },
         )
         assert response.status_code == 401
 
@@ -343,9 +343,9 @@ class TestSubscriptionUpdateUncancel:
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=False,
-            ),
+            json={
+                "cancel_at_period_end": False,
+            },
         )
         assert response.status_code == 404
 
@@ -362,9 +362,9 @@ class TestSubscriptionUpdateUncancel:
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=False,
-            ),
+            json={
+                "cancel_at_period_end": False,
+            },
         )
         assert response.status_code == 410
 
@@ -384,9 +384,9 @@ class TestSubscriptionUpdateUncancel:
 
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=False,
-            ),
+            json={
+                "cancel_at_period_end": False,
+            },
         )
 
         assert response.status_code == 409
@@ -408,9 +408,9 @@ class TestSubscriptionUpdateUncancel:
 
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=False,
-            ),
+            json={
+                "cancel_at_period_end": False,
+            },
         )
 
         assert response.status_code == 200
@@ -627,10 +627,10 @@ class TestMemberRoleEnforcementSubscriptionUpdate:
 
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-                cancellation_reason="too_expensive",
-            ),
+            json={
+                "cancel_at_period_end": True,
+                "cancellation_reason": "too_expensive",
+            },
         )
 
         assert response.status_code == 200
@@ -655,10 +655,10 @@ class TestMemberRoleEnforcementSubscriptionUpdate:
 
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-                cancellation_reason="too_expensive",
-            ),
+            json={
+                "cancel_at_period_end": True,
+                "cancellation_reason": "too_expensive",
+            },
         )
 
         assert response.status_code == 200
@@ -683,9 +683,9 @@ class TestMemberRoleEnforcementSubscriptionUpdate:
 
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(
-                cancel_at_period_end=True,
-            ),
+            json={
+                "cancel_at_period_end": True,
+            },
         )
 
         assert response.status_code == 403

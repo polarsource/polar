@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     CustomerPortalSeatsAssignSeat400Error,
     CustomerPortalSeatsAssignSeat401Error,
@@ -38,6 +43,7 @@ class SeatsSync(SyncServiceBase):
         *,
         subscription_id: str | None = None,
         order_id: str | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> SeatsList:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -45,6 +51,8 @@ class SeatsSync(SyncServiceBase):
         Args:
             subscription_id: Subscription ID
             order_id: Order ID
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerPortalSeatsListSeats401Error: Authentication required
@@ -63,6 +71,7 @@ class SeatsSync(SyncServiceBase):
                 "subscription_id": subscription_id,
                 "order_id": order_id,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -75,10 +84,14 @@ class SeatsSync(SyncServiceBase):
 
     def assign_seat(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSeatAssign],
     ) -> CustomerSeat:
         """
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -96,6 +109,7 @@ class SeatsSync(SyncServiceBase):
             url="/v1/customer-portal/seats",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -111,10 +125,14 @@ class SeatsSync(SyncServiceBase):
     def revoke_seat(
         self,
         seat_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSeat:
         """
         Args:
             seat_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerPortalSeatsRevokeSeat401Error: Authentication required
@@ -132,6 +150,7 @@ class SeatsSync(SyncServiceBase):
                 "seat_id": seat_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -145,10 +164,14 @@ class SeatsSync(SyncServiceBase):
     def resend_invitation(
         self,
         seat_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSeat:
         """
         Args:
             seat_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerPortalSeatsResendInvitation400Error: Seat is not pending or already claimed
@@ -167,6 +190,7 @@ class SeatsSync(SyncServiceBase):
                 "seat_id": seat_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -183,6 +207,7 @@ class SeatsSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomerSubscription:
         """
         List all subscriptions where the authenticated customer has claimed a seat.
@@ -192,6 +217,8 @@ class SeatsSync(SyncServiceBase):
         Args:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerPortalSeatsListClaimedSubscriptions401Error: Authentication required
@@ -208,6 +235,7 @@ class SeatsSync(SyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -223,6 +251,7 @@ class SeatsSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[CustomerSubscription, None, None]:
         """
         List all subscriptions where the authenticated customer has claimed a seat.
@@ -232,6 +261,8 @@ class SeatsSync(SyncServiceBase):
         Args:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type CustomerSubscription.
@@ -247,6 +278,7 @@ class SeatsSync(SyncServiceBase):
             response = self.list_claimed_subscriptions(
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -260,6 +292,7 @@ class SeatsAsync(AsyncServiceBase):
         *,
         subscription_id: str | None = None,
         order_id: str | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> SeatsList:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -267,6 +300,8 @@ class SeatsAsync(AsyncServiceBase):
         Args:
             subscription_id: Subscription ID
             order_id: Order ID
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerPortalSeatsListSeats401Error: Authentication required
@@ -285,6 +320,7 @@ class SeatsAsync(AsyncServiceBase):
                 "subscription_id": subscription_id,
                 "order_id": order_id,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -297,10 +333,14 @@ class SeatsAsync(AsyncServiceBase):
 
     async def assign_seat(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSeatAssign],
     ) -> CustomerSeat:
         """
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -318,6 +358,7 @@ class SeatsAsync(AsyncServiceBase):
             url="/v1/customer-portal/seats",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -333,10 +374,14 @@ class SeatsAsync(AsyncServiceBase):
     async def revoke_seat(
         self,
         seat_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSeat:
         """
         Args:
             seat_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerPortalSeatsRevokeSeat401Error: Authentication required
@@ -354,6 +399,7 @@ class SeatsAsync(AsyncServiceBase):
                 "seat_id": seat_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -367,10 +413,14 @@ class SeatsAsync(AsyncServiceBase):
     async def resend_invitation(
         self,
         seat_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerSeat:
         """
         Args:
             seat_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerPortalSeatsResendInvitation400Error: Seat is not pending or already claimed
@@ -389,6 +439,7 @@ class SeatsAsync(AsyncServiceBase):
                 "seat_id": seat_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -405,6 +456,7 @@ class SeatsAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomerSubscription:
         """
         List all subscriptions where the authenticated customer has claimed a seat.
@@ -414,6 +466,8 @@ class SeatsAsync(AsyncServiceBase):
         Args:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             CustomerPortalSeatsListClaimedSubscriptions401Error: Authentication required
@@ -430,6 +484,7 @@ class SeatsAsync(AsyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -445,6 +500,7 @@ class SeatsAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[CustomerSubscription, None]:
         """
         List all subscriptions where the authenticated customer has claimed a seat.
@@ -454,6 +510,8 @@ class SeatsAsync(AsyncServiceBase):
         Args:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type CustomerSubscription.
@@ -469,6 +527,7 @@ class SeatsAsync(AsyncServiceBase):
             response = await self.list_claimed_subscriptions(
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item

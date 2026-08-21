@@ -4,6 +4,7 @@ import typing
 
 from polar.base import (
     AsyncServiceBase,
+    RequestTimeout,
     SyncServiceBase,
     parse_response_json,
     parse_response_none,
@@ -34,6 +35,7 @@ class WebhooksSync(SyncServiceBase):
         organization_id: str | list[str] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceWebhookEndpoint:
         """
         List webhook endpoints.
@@ -44,6 +46,8 @@ class WebhooksSync(SyncServiceBase):
             organization_id: Filter by organization ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -60,6 +64,7 @@ class WebhooksSync(SyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -73,6 +78,7 @@ class WebhooksSync(SyncServiceBase):
         organization_id: str | list[str] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[WebhookEndpoint, None, None]:
         """
         List webhook endpoints.
@@ -83,6 +89,8 @@ class WebhooksSync(SyncServiceBase):
             organization_id: Filter by organization ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type WebhookEndpoint.
@@ -98,6 +106,7 @@ class WebhooksSync(SyncServiceBase):
                 organization_id=organization_id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -106,6 +115,8 @@ class WebhooksSync(SyncServiceBase):
 
     def create_webhook_endpoint(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[WebhookEndpointCreate],
     ) -> WebhookEndpoint:
         """
@@ -114,6 +125,8 @@ class WebhooksSync(SyncServiceBase):
         **Scopes**: `webhooks:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -127,6 +140,7 @@ class WebhooksSync(SyncServiceBase):
             url="/v1/webhooks/endpoints",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -138,6 +152,8 @@ class WebhooksSync(SyncServiceBase):
     def get_webhook_endpoint(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> WebhookEndpoint:
         """
         Get a webhook endpoint by ID.
@@ -146,6 +162,8 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Webhook endpoint not found.
@@ -161,6 +179,7 @@ class WebhooksSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -172,6 +191,8 @@ class WebhooksSync(SyncServiceBase):
     def delete_webhook_endpoint(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a webhook endpoint.
@@ -180,6 +201,8 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Webhook endpoint not found.
@@ -195,6 +218,7 @@ class WebhooksSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -206,6 +230,8 @@ class WebhooksSync(SyncServiceBase):
     def update_webhook_endpoint(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[WebhookEndpointUpdate],
     ) -> WebhookEndpoint:
         """
@@ -215,6 +241,8 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -231,6 +259,7 @@ class WebhooksSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -243,6 +272,8 @@ class WebhooksSync(SyncServiceBase):
     def reset_webhook_endpoint_secret(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> WebhookEndpoint:
         """
         Regenerate a webhook endpoint secret.
@@ -251,6 +282,8 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Webhook endpoint not found.
@@ -266,6 +299,7 @@ class WebhooksSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -286,6 +320,7 @@ class WebhooksSync(SyncServiceBase):
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceWebhookDelivery:
         """
         List webhook deliveries.
@@ -304,6 +339,8 @@ class WebhooksSync(SyncServiceBase):
             event_type: Filter by webhook event type.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -326,6 +363,7 @@ class WebhooksSync(SyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -345,6 +383,7 @@ class WebhooksSync(SyncServiceBase):
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[WebhookDelivery, None, None]:
         """
         List webhook deliveries.
@@ -363,6 +402,8 @@ class WebhooksSync(SyncServiceBase):
             event_type: Filter by webhook event type.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type WebhookDelivery.
@@ -384,6 +425,7 @@ class WebhooksSync(SyncServiceBase):
                 event_type=event_type,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -393,6 +435,8 @@ class WebhooksSync(SyncServiceBase):
     def redeliver_webhook_event(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Any:
         """
         Schedule the re-delivery of a webhook event.
@@ -401,6 +445,8 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook event ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Webhook event not found.
@@ -416,6 +462,7 @@ class WebhooksSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -432,6 +479,7 @@ class WebhooksAsync(AsyncServiceBase):
         organization_id: str | list[str] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceWebhookEndpoint:
         """
         List webhook endpoints.
@@ -442,6 +490,8 @@ class WebhooksAsync(AsyncServiceBase):
             organization_id: Filter by organization ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -458,6 +508,7 @@ class WebhooksAsync(AsyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -471,6 +522,7 @@ class WebhooksAsync(AsyncServiceBase):
         organization_id: str | list[str] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[WebhookEndpoint, None]:
         """
         List webhook endpoints.
@@ -481,6 +533,8 @@ class WebhooksAsync(AsyncServiceBase):
             organization_id: Filter by organization ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type WebhookEndpoint.
@@ -496,6 +550,7 @@ class WebhooksAsync(AsyncServiceBase):
                 organization_id=organization_id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -505,6 +560,8 @@ class WebhooksAsync(AsyncServiceBase):
 
     async def create_webhook_endpoint(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[WebhookEndpointCreate],
     ) -> WebhookEndpoint:
         """
@@ -513,6 +570,8 @@ class WebhooksAsync(AsyncServiceBase):
         **Scopes**: `webhooks:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -526,6 +585,7 @@ class WebhooksAsync(AsyncServiceBase):
             url="/v1/webhooks/endpoints",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -537,6 +597,8 @@ class WebhooksAsync(AsyncServiceBase):
     async def get_webhook_endpoint(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> WebhookEndpoint:
         """
         Get a webhook endpoint by ID.
@@ -545,6 +607,8 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Webhook endpoint not found.
@@ -560,6 +624,7 @@ class WebhooksAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -571,6 +636,8 @@ class WebhooksAsync(AsyncServiceBase):
     async def delete_webhook_endpoint(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a webhook endpoint.
@@ -579,6 +646,8 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Webhook endpoint not found.
@@ -594,6 +663,7 @@ class WebhooksAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -605,6 +675,8 @@ class WebhooksAsync(AsyncServiceBase):
     async def update_webhook_endpoint(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[WebhookEndpointUpdate],
     ) -> WebhookEndpoint:
         """
@@ -614,6 +686,8 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -630,6 +704,7 @@ class WebhooksAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -642,6 +717,8 @@ class WebhooksAsync(AsyncServiceBase):
     async def reset_webhook_endpoint_secret(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> WebhookEndpoint:
         """
         Regenerate a webhook endpoint secret.
@@ -650,6 +727,8 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Webhook endpoint not found.
@@ -665,6 +744,7 @@ class WebhooksAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -685,6 +765,7 @@ class WebhooksAsync(AsyncServiceBase):
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceWebhookDelivery:
         """
         List webhook deliveries.
@@ -703,6 +784,8 @@ class WebhooksAsync(AsyncServiceBase):
             event_type: Filter by webhook event type.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -725,6 +808,7 @@ class WebhooksAsync(AsyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -744,6 +828,7 @@ class WebhooksAsync(AsyncServiceBase):
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[WebhookDelivery, None]:
         """
         List webhook deliveries.
@@ -762,6 +847,8 @@ class WebhooksAsync(AsyncServiceBase):
             event_type: Filter by webhook event type.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type WebhookDelivery.
@@ -783,6 +870,7 @@ class WebhooksAsync(AsyncServiceBase):
                 event_type=event_type,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -793,6 +881,8 @@ class WebhooksAsync(AsyncServiceBase):
     async def redeliver_webhook_event(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Any:
         """
         Schedule the re-delivery of a webhook event.
@@ -801,6 +891,8 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook event ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Webhook event not found.
@@ -816,6 +908,7 @@ class WebhooksAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {

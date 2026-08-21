@@ -1,11 +1,17 @@
 'use client'
 
 import type { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { useState } from 'react'
 import CreditCardBrandIcon from '../CreditCardBrandIcon'
+import {
+  getPaymentMethodCardInfo,
+  getPaymentMethodTypeLabel,
+} from '../PaymentMethodDisplay'
 
-type PaymentMethodType = schemas['PaymentMethodCard']
+type PaymentMethodType =
+  | schemas['PaymentMethodCard']
+  | schemas['PaymentMethodKrCard']
 
 interface SavedCardsSelectorProps {
   paymentMethods: PaymentMethodType[]
@@ -53,8 +59,7 @@ export const SavedCardsSelector = ({
         <h4 className="font-medium">Saved Payment Methods</h4>
         <div className="space-y-2">
           {paymentMethods.map((paymentMethod) => {
-            const { brand, last4, exp_year, exp_month } =
-              paymentMethod.method_metadata
+            const card = getPaymentMethodCardInfo(paymentMethod)
             const isSelected = selectedMethodId === paymentMethod.id
 
             return (
@@ -71,16 +76,22 @@ export const SavedCardsSelector = ({
                 <div className="flex items-center gap-3">
                   <CreditCardBrandIcon
                     width="2.5em"
-                    brand={brand}
+                    brand={card?.brand ?? 'unknown'}
                     className="dark:border-polar-700 shrink-0 rounded-sm border border-gray-200 p-1"
                   />
                   <div className="grow">
                     <div className="font-medium capitalize">
-                      {brand} •••• {last4}
+                      {card?.brand ??
+                        getPaymentMethodTypeLabel(paymentMethod.type)}
+                      {card?.last4 ? ` •••• ${card.last4}` : ''}
                     </div>
-                    <div className="dark:text-polar-500 text-sm text-gray-500">
-                      Expires {exp_month.toString().padStart(2, '0')}/{exp_year}
-                    </div>
+                    {card?.exp_month !== undefined &&
+                      card?.exp_year !== undefined && (
+                        <Text color="muted" variant="caption">
+                          Expires {card.exp_month.toString().padStart(2, '0')}/
+                          {card.exp_year}
+                        </Text>
+                      )}
                   </div>
                   {isSelected && (
                     <div className="shrink-0">

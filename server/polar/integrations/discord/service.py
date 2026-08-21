@@ -27,11 +27,12 @@ class DiscordBotService:
                 continue
 
             # Keep only our bot role
-            if tags := role.get("tags"):
-                if tags.get("bot_id") == settings.DISCORD_CLIENT_ID:
-                    roles.append(
-                        DiscordGuildRole.model_validate({**role, "is_polar_bot": True})
-                    )
+            if (tags := role.get("tags")) and tags.get(
+                "bot_id"
+            ) == settings.DISCORD_CLIENT_ID:
+                roles.append(
+                    DiscordGuildRole.model_validate({**role, "is_polar_bot": True})
+                )
 
         return DiscordGuild(name=guild["name"], roles=roles)
 
@@ -66,9 +67,10 @@ class DiscordBotService:
         """
         guild = await bot_client.get_guild(guild_id)
         for role in sorted(guild["roles"], key=lambda r: r["position"]):
-            if tags := role.get("tags"):
-                if tags.get("bot_id") == settings.DISCORD_CLIENT_ID:
-                    return False
+            if (tags := role.get("tags")) and tags.get(
+                "bot_id"
+            ) == settings.DISCORD_CLIENT_ID:
+                return False
             if role["id"] == role_id:
                 return True
 

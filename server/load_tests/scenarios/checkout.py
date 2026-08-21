@@ -5,6 +5,8 @@ This module contains Locust user classes for testing the complete
 checkout and payment processing flow.
 """
 
+import logging
+
 from locust import HttpUser, SequentialTaskSet, between, task
 
 from load_tests.common import (
@@ -14,6 +16,8 @@ from load_tests.common import (
     get_auth_headers,
 )
 from load_tests.config import config
+
+logger = logging.getLogger(__name__)
 
 
 class CheckoutFlowTaskSet(SequentialTaskSet):
@@ -73,7 +77,7 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                 else:
                     response.failure(f"Failed to update: {response.text}")
         except Exception:
-            pass
+            logger.exception("Failed to update checkout customer details")
 
     @task
     def get_checkout_status(self):
@@ -93,7 +97,7 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                 else:
                     response.failure(f"Failed to get status: {response.status_code}")
         except Exception:
-            pass
+            logger.exception("Failed to get checkout status")
 
     @task
     def confirm_checkout(self):
@@ -141,7 +145,7 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                         f"Failed to confirm (HTTP {response.status_code}): {response.text}"
                     )
         except Exception:
-            pass
+            logger.exception("Failed to confirm checkout")
 
 
 class CheckoutUser(HttpUser):

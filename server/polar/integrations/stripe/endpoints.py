@@ -89,7 +89,7 @@ async def stripe_connect_refresh(
 
     try:
         link = await payout_account_service.onboarding_link(payout_account, return_path)
-    except (PayoutAccountExternalLinkUnsupported, stripe.StripeError):
+    except PayoutAccountExternalLinkUnsupported, stripe.StripeError:
         log.warning("stripe.connect.refresh_link_failed", payout_account_id=str(id))
         return dashboard
 

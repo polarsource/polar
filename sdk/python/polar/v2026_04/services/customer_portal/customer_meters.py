@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -28,6 +33,7 @@ class CustomerMetersSync(SyncServiceBase):
         sorting: builtins.list[CustomerCustomerMeterSortProperty] | None = [
             "-modified_at"
         ],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomerCustomerMeter:
         """
         List meters of the authenticated customer.
@@ -40,6 +46,8 @@ class CustomerMetersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -58,6 +66,7 @@ class CustomerMetersSync(SyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -77,6 +86,7 @@ class CustomerMetersSync(SyncServiceBase):
         sorting: builtins.list[CustomerCustomerMeterSortProperty] | None = [
             "-modified_at"
         ],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[CustomerCustomerMeter, None, None]:
         """
         List meters of the authenticated customer.
@@ -89,6 +99,8 @@ class CustomerMetersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type CustomerCustomerMeter.
@@ -106,6 +118,7 @@ class CustomerMetersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -115,6 +128,8 @@ class CustomerMetersSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerCustomerMeter:
         """
         Get a meter by ID for the authenticated customer.
@@ -123,6 +138,8 @@ class CustomerMetersSync(SyncServiceBase):
 
         Args:
             id: The customer meter ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer meter not found.
@@ -138,6 +155,7 @@ class CustomerMetersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -158,6 +176,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         sorting: builtins.list[CustomerCustomerMeterSortProperty] | None = [
             "-modified_at"
         ],
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomerCustomerMeter:
         """
         List meters of the authenticated customer.
@@ -170,6 +189,8 @@ class CustomerMetersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -188,6 +209,7 @@ class CustomerMetersAsync(AsyncServiceBase):
                 "limit": limit,
                 "sorting": sorting,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -207,6 +229,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         sorting: builtins.list[CustomerCustomerMeterSortProperty] | None = [
             "-modified_at"
         ],
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[CustomerCustomerMeter, None]:
         """
         List meters of the authenticated customer.
@@ -219,6 +242,8 @@ class CustomerMetersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type CustomerCustomerMeter.
@@ -236,6 +261,7 @@ class CustomerMetersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 sorting=sorting,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -246,6 +272,8 @@ class CustomerMetersAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerCustomerMeter:
         """
         Get a meter by ID for the authenticated customer.
@@ -254,6 +282,8 @@ class CustomerMetersAsync(AsyncServiceBase):
 
         Args:
             id: The customer meter ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer meter not found.
@@ -269,6 +299,7 @@ class CustomerMetersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {

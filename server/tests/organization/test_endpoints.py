@@ -116,6 +116,7 @@ class TestListRoles:
             OrganizationRole.member.value,
             OrganizationRole.admin.value,
             OrganizationRole.owner.value,
+            OrganizationRole.finance.value,
         }
         # Every role's permissions list is non-empty.
         for entry in roles:
@@ -822,7 +823,7 @@ class TestInviteOrganization:
 
         new_members = set(members_after) - set(members_before)
         assert len(new_members) == 1
-        assert list(new_members)[0].user.email == email_to_invite
+        assert next(iter(new_members)).user.email == email_to_invite
 
     @pytest.mark.auth
     @pytest.mark.keep_session_state
@@ -878,6 +879,24 @@ class TestSetMemberRole:
         json = response.json()
         assert json["user_id"] == str(user_second.id)
         assert json["role"] == "admin"
+
+    @pytest.mark.auth
+    @pytest.mark.keep_session_state
+    async def test_assign_finance_role(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_second: User,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/members/{user_second.id}",
+            json={"role": "finance"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["role"] == "finance"
 
     @pytest.mark.auth
     @pytest.mark.keep_session_state

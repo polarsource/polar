@@ -71,6 +71,23 @@ class TestRoutingBroker:
         assert sent[0][0] == SUBSCRIPTION_ACTOR
         assert sent[0][2] == {"subscription_id": subscription_id}
 
+    def test_allowlisted_actor_forwards_debounce_key_to_sqs(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(settings, "WORKER_SQS_ENABLED", True)
+        mocker.patch.object(settings, "WORKER_SQS_ACTORS", {"customer.webhook"})
+        mocker.patch.object(RedisBroker, "enqueue")
+        send_jobs_sync = mocker.patch("polar.worker._broker._sqs.send_jobs_sync")
+
+        broker = dramatiq.get_broker()
+        message = broker.get_actor("customer.webhook").message()
+        message = message.copy(options={"debounce_key": "debounce:test:key"})
+        broker.enqueue(message)
+
+        job = send_jobs_sync.call_args.args[0][0]
+        assert job.message_id == message.message_id
+        assert job.debounce_key == "debounce:test:key"
+
 
 class TestValidateAllowlist:
     def test_accepts_cron_actor(self, mocker: MockerFixture) -> None:
@@ -78,8 +95,17 @@ class TestValidateAllowlist:
 
         validate_allowlist()
 
-    def test_rejects_debounced_actor(self, mocker: MockerFixture) -> None:
+    def test_accepts_debounced_actor(self, mocker: MockerFixture) -> None:
         mocker.patch.object(settings, "WORKER_SQS_ACTORS", {"customer.webhook"})
 
-        with pytest.raises(ValueError, match="debounce"):
+        validate_allowlist()
+
+    def test_rejects_debounce_min_threshold_over_sqs_delay_cap(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(settings, "WORKER_SQS_ACTORS", {"customer.webhook"})
+        actor = dramatiq.get_broker().get_actor("customer.webhook")
+        mocker.patch.dict(actor.options, {"debounce_min_threshold": 901})
+
+        with pytest.raises(ValueError, match="debounce_min_threshold"):
             validate_allowlist()

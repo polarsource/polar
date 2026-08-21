@@ -21,7 +21,10 @@ type ProcessName = Literal["app", "worker", "scheduler", "script"]
 
 
 def create_async_engine(
-    process_name: ProcessName, *, pool_logging_name: str | None = None
+    process_name: ProcessName,
+    *,
+    pool_logging_name: str | None = None,
+    pool_pre_ping: bool = False,
 ) -> AsyncEngine:
     return _create_async_engine(
         dsn=str(settings.get_postgres_dsn("asyncpg")),
@@ -30,13 +33,16 @@ def create_async_engine(
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        pool_pre_ping=pool_pre_ping,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
         ssl="require" if settings.POSTGRES_SSL else None,
     )
 
 
-def create_async_read_engine(process_name: ProcessName) -> AsyncEngine:
+def create_async_read_engine(
+    process_name: ProcessName, *, pool_pre_ping: bool = False
+) -> AsyncEngine:
     return _create_async_engine(
         dsn=str(settings.get_postgres_read_dsn("asyncpg")),
         application_name=f"{settings.ENV.value}.{process_name}",
@@ -44,6 +50,7 @@ def create_async_read_engine(process_name: ProcessName) -> AsyncEngine:
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        pool_pre_ping=pool_pre_ping,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
         ssl="require" if settings.POSTGRES_SSL else None,

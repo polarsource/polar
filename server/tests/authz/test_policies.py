@@ -65,6 +65,34 @@ class TestFinanceCanRead:
         assert isinstance(result, str)
         assert "permission" in result.lower()
 
+    @pytest.mark.auth
+    async def test_finance_allowed(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _set_role(save_fixture, user_organization, OrganizationRole.finance)
+
+        result = await finance_policy.can_read(session, auth_subject, organization)
+        assert result is True
+
+    @pytest.mark.auth
+    async def test_finance_cannot_manage(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _set_role(save_fixture, user_organization, OrganizationRole.finance)
+
+        result = await finance_policy.can_manage(session, auth_subject, organization)
+        assert result == "You don't have permission to manage financial data"
+
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_subject_allowed(
         self,
@@ -107,6 +135,20 @@ class TestOrgCanManage:
         result = await org_policy.can_manage(session, auth_subject, organization)
         assert result == "You don't have permission to manage the organization"
 
+    @pytest.mark.auth
+    async def test_finance_denied(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _set_role(save_fixture, user_organization, OrganizationRole.finance)
+
+        result = await org_policy.can_manage(session, auth_subject, organization)
+        assert result == "You don't have permission to manage the organization"
+
 
 @pytest.mark.asyncio
 class TestMembersCanManage:
@@ -134,6 +176,20 @@ class TestMembersCanManage:
         user_organization: UserOrganization,
     ) -> None:
         await _set_role(save_fixture, user_organization, OrganizationRole.member)
+
+        result = await members.can_manage(session, auth_subject, organization)
+        assert result == "You don't have permission to manage members"
+
+    @pytest.mark.auth
+    async def test_finance_denied(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _set_role(save_fixture, user_organization, OrganizationRole.finance)
 
         result = await members.can_manage(session, auth_subject, organization)
         assert result == "You don't have permission to manage members"

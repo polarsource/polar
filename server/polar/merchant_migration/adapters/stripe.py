@@ -286,7 +286,12 @@ class StripeAdapter:
             cancel_at_period_end=bool(subscription.cancel_at_period_end),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
+            anchor_day=self._anchor_day(subscription),
         )
+
+    def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
+        anchor = self._to_datetime(subscription.billing_cycle_anchor)
+        return anchor.day if anchor is not None else None
 
     def _stopped_for_migration(self, subscription: stripe_lib.Subscription) -> bool:
         """Prefix, not the full reference: missing our own cancellation strands a

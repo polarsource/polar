@@ -192,6 +192,13 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
             for price in self.prices
         )
 
+    @property
+    def has_unit_based_price(self) -> bool:
+        return any(
+            price.amount_type == ProductPriceAmountType.unit_based
+            for price in self.prices
+        )
+
     @hybrid_property
     def is_recurring(self) -> bool:
         if self.recurring_interval is not None:

@@ -157,6 +157,9 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
         default=None,
         description="The number of seats for seat-based subscriptions. None for non-seat subscriptions.",
     )
+    units: int | None = Field(
+        description="The number of units for unit-based subscriptions. None for non-unit subscriptions.",
+    )
 
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
@@ -221,6 +224,9 @@ class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
     )
     seats: int | None = Field(
         description="Number of seats to apply to the subscription. If `null`, the number of seats won't be changed."
+    )
+    units: int | None = Field(
+        description="Number of units to apply to the subscription. If `null`, the number of units won't be changed."
     )
 
 
@@ -376,6 +382,22 @@ class SubscriptionUpdateSeats(Schema):
     )
 
 
+class SubscriptionUpdateUnits(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    units: Int32 = Field(
+        description="Update the number of units for this subscription.",
+        ge=1,
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
 class SubscriptionUpdateBillingPeriod(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -493,7 +515,7 @@ class SubscriptionResume(Schema):
 class SubscriptionUpdateClear(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    pending_update: Literal[None] = Field(
+    pending_update: None = Field(
         description="Clear the pending subscription update. Set to null to remove scheduled changes."
     )
 
@@ -501,6 +523,7 @@ class SubscriptionUpdateClear(Schema):
 SubscriptionUpdate = Annotated[
     SubscriptionUpdateBase
     | SubscriptionUpdateSeats
+    | SubscriptionUpdateUnits
     | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
     | SubscriptionRevoke
@@ -613,7 +636,25 @@ class SubscriptionChangePreviewSeats(Schema):
     )
 
 
+class SubscriptionChangePreviewUnits(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    units: Int32 = Field(
+        description="Preview a change of the subscription to this number of units.",
+        ge=1,
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
 SubscriptionChangePreview = Annotated[
-    SubscriptionChangePreviewProduct | SubscriptionChangePreviewSeats,
+    SubscriptionChangePreviewProduct
+    | SubscriptionChangePreviewSeats
+    | SubscriptionChangePreviewUnits,
     SetSchemaReference("SubscriptionChangePreview"),
 ]

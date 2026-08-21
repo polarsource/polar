@@ -1,6 +1,7 @@
 'use client'
 
 import { LoadingBox } from '@/components/Shared/LoadingBox'
+import { ORGANIZATION_ACCESS_TOKEN_RESUME_PARAM } from '@/components/Settings/organizationAccessTokenContinuation'
 import { useAccountSetup } from '@/providers/accountSetup'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
@@ -8,6 +9,7 @@ import { Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { AnimatePresence, motion } from 'motion/react'
+import { useSearchParams } from 'next/navigation'
 import { useContext, useEffect, useState } from 'react'
 import { StatusIcon } from './StatusIcon'
 import { COMMON_REASON_LABELS, STEP_CONFIG } from './sections'
@@ -42,7 +44,11 @@ const collapsedActionLabel = (
 export const ChecklistRow = ({ step, isLoading }: Props) => {
   const { organization } = useContext(OrganizationContext)
   const { targetStepKey, setTargetStepKey } = useAccountSetup()
-  const [isExpanded, setIsExpanded] = useState(false)
+  const searchParams = useSearchParams()
+  const isTokenCreationResume =
+    step?.key === 'setup_readiness' &&
+    searchParams.has(ORGANIZATION_ACCESS_TOKEN_RESUME_PARAM)
+  const [isExpanded, setIsExpanded] = useState(isTokenCreationResume)
   const [isDeepLinkTarget] = useState(
     () => targetStepKey != null && step?.key === targetStepKey,
   )

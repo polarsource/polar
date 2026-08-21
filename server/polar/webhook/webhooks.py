@@ -393,11 +393,11 @@ class WebhookOrderPayloadBase(BaseWebhookPayload):
     Base class for order payloads.
     """
 
-    type: (
-        Literal[WebhookEventType.order_created]
-        | Literal[WebhookEventType.order_updated]
-        | Literal[WebhookEventType.order_paid]
-    )
+    type: Literal[
+        WebhookEventType.order_created,
+        WebhookEventType.order_updated,
+        WebhookEventType.order_paid,
+    ]
     data: OrderSchema
 
     def get_discord_payload(self, target: User | Organization) -> str:
@@ -684,16 +684,16 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
     Base class for subscription updated payloads.
     """
 
-    type: (
-        Literal[WebhookEventType.subscription_updated]
-        | Literal[WebhookEventType.subscription_active]
-        | Literal[WebhookEventType.subscription_canceled]
-        | Literal[WebhookEventType.subscription_uncanceled]
-        | Literal[WebhookEventType.subscription_revoked]
-        | Literal[WebhookEventType.subscription_past_due]
-        | Literal[WebhookEventType.subscription_paused]
-        | Literal[WebhookEventType.subscription_resumed]
-    )
+    type: Literal[
+        WebhookEventType.subscription_updated,
+        WebhookEventType.subscription_active,
+        WebhookEventType.subscription_canceled,
+        WebhookEventType.subscription_uncanceled,
+        WebhookEventType.subscription_revoked,
+        WebhookEventType.subscription_past_due,
+        WebhookEventType.subscription_paused,
+        WebhookEventType.subscription_resumed,
+    ]
     data: SubscriptionSchema
 
     def _get_paused_discord_payload(self, target: User | Organization) -> str:
@@ -1259,10 +1259,7 @@ class WebhookRefundBase(BaseWebhookPayload):
     Base Refund
     """
 
-    type: (
-        Literal[WebhookEventType.refund_created]
-        | Literal[WebhookEventType.refund_updated]
-    )
+    type: Literal[WebhookEventType.refund_created, WebhookEventType.refund_updated]
     data: RefundSchema
 
     def _get_discord_fields(
@@ -1615,10 +1612,15 @@ def get_webhook_routes() -> Sequence[WebhookAPIRoute]:
                 event_type,
                 endpoint,
                 methods=["POST"],
-                summary=event_type,
+                summary=event_type.name,
                 description=inspect.getdoc(webhook_schema),
                 openapi_extra={
-                    "x-mint": {"metadata": {"sidebarTitle": event_type.value}}
+                    "x-mint": {
+                        "metadata": {
+                            "title": event_type.value,
+                            "sidebarTitle": event_type.value,
+                        }
+                    }
                 },
             )
         )

@@ -328,26 +328,28 @@ async def run_review_agent(
         # For PRODUCT_CHANGED context: a bad verdict pulls the active org back
         # into REVIEW for a human to look at. A clean APPROVE is a no-op — the
         # org keeps operating. We never auto-deny here, only escalate.
-        if review_context == ReviewContext.PRODUCT_CHANGED:
-            if report.verdict != ReviewVerdict.APPROVE:
-                organization.set_status(OrganizationStatus.REVIEW)
-                session.add(organization)
+        if (
+            review_context == ReviewContext.PRODUCT_CHANGED
+            and report.verdict != ReviewVerdict.APPROVE
+        ):
+            organization.set_status(OrganizationStatus.REVIEW)
+            session.add(organization)
 
-                await review_repository.record_agent_decision(
-                    organization_id=organization_id,
-                    agent_review_id=agent_review_id,
-                    decision=DecisionType.ESCALATE,
-                    review_context=ReviewContext.PRODUCT_CHANGED,
-                    verdict=report.verdict,
-                    risk_score=report.overall_risk_score,
-                )
+            await review_repository.record_agent_decision(
+                organization_id=organization_id,
+                agent_review_id=agent_review_id,
+                decision=DecisionType.ESCALATE,
+                review_context=ReviewContext.PRODUCT_CHANGED,
+                verdict=report.verdict,
+                risk_score=report.overall_risk_score,
+            )
 
-                log.info(
-                    "organization_review.product_changed.escalated_to_review",
-                    organization_id=str(organization_id),
-                    slug=organization.slug,
-                    verdict=report.verdict.value,
-                )
+            log.info(
+                "organization_review.product_changed.escalated_to_review",
+                organization_id=str(organization_id),
+                slug=organization.slug,
+                verdict=report.verdict.value,
+            )
 
 
 @actor(

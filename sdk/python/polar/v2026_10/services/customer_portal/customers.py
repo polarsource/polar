@@ -1,0 +1,766 @@
+from __future__ import annotations
+
+import typing
+
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
+from polar.v2026_10.errors import (
+    CustomerNotReady,
+    CustomerPortalCustomersCheckEmailUpdate401Error,
+    CustomerPortalCustomersVerifyEmailUpdate401Error,
+    CustomerPortalCustomersVerifyEmailUpdate422Error,
+    HTTPValidationError,
+    PaymentMethodInUseByActiveSubscription,
+    PaymentMethodSetupFailed,
+    ResourceNotFound,
+)
+from polar.v2026_10.inputs import (
+    CustomerEmailUpdateRequest,
+    CustomerEmailUpdateVerifyRequest,
+    CustomerPaymentMethodConfirm,
+    CustomerPaymentMethodCreate,
+    CustomerPortalCustomerUpdate,
+)
+from polar.v2026_10.outputs import (
+    CustomerEmailUpdateVerifyResponse,
+    CustomerPaymentMethod,
+    CustomerPaymentMethodCreateResponse,
+    CustomerPortalCustomer,
+    ListResourceCustomerPaymentMethod,
+)
+
+
+class CustomersSync(SyncServiceBase):
+    def get(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+    ) -> CustomerPortalCustomer:
+        """
+        Get authenticated customer.
+
+        **Scopes**: `customer_portal:read` `customer_portal:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customer-portal/customers/me",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+        )
+        response = self.client.send_request(request)
+        return parse_response_json(response, CustomerPortalCustomer)
+
+    def update(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerPortalCustomerUpdate],
+    ) -> CustomerPortalCustomer:
+        """
+        Update authenticated customer.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/customer-portal/customers/me",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, CustomerPortalCustomer, method_errors)
+
+    def list_payment_methods(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
+    ) -> ListResourceCustomerPaymentMethod:
+        """
+        Get saved payment methods of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customer-portal/customers/me/payment-methods",
+            path_params={},
+            query_params={
+                "page": page,
+                "limit": limit,
+            },
+            request_timeout=request_timeout,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(
+            response, ListResourceCustomerPaymentMethod, method_errors
+        )
+
+    def iter_list_payment_methods(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
+    ) -> typing.Generator[CustomerPaymentMethod, None, None]:
+        """
+        Get saved payment methods of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
+
+        Returns:
+            A generator that yields items of type CustomerPaymentMethod.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_payment_methods(
+                page=page,
+                limit=limit,
+                request_timeout=request_timeout,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
+    def add_payment_method(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerPaymentMethodCreate],
+    ) -> CustomerPaymentMethodCreateResponse:
+        """
+        Add a payment method to the authenticated customer.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            PaymentMethodSetupFailed: The card was declined while setting up the payment method.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/customers/me/payment-methods",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            400: PaymentMethodSetupFailed,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(
+            response, CustomerPaymentMethodCreateResponse, method_errors
+        )
+
+    def confirm_payment_method(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerPaymentMethodConfirm],
+    ) -> CustomerPaymentMethodCreateResponse:
+        """
+        Confirm a payment method for the authenticated customer.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            CustomerNotReady: Customer is not ready to confirm a payment method.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/customers/me/payment-methods/confirm",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: CustomerNotReady,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(
+            response, CustomerPaymentMethodCreateResponse, method_errors
+        )
+
+    def delete_payment_method(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+    ) -> None:
+        """
+        Delete a payment method from the authenticated customer.
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            PaymentMethodInUseByActiveSubscription: Payment method is still needed to bill a subscription.
+            ResourceNotFound: Payment method not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="DELETE",
+            url="/v1/customer-portal/customers/me/payment-methods/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            400: PaymentMethodInUseByActiveSubscription,
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_none(response, method_errors)
+
+    def request_email_update(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerEmailUpdateRequest],
+    ) -> typing.Any:
+        """
+        Request an email change for the authenticated customer.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/customers/me/email-update/request",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, typing.Any, method_errors)
+
+    def check_email_update(
+        self,
+        *,
+        token: str,
+        request_timeout: RequestTimeout | None = None,
+    ) -> None:
+        """
+        Check if an email change verification token is still valid.
+
+        Args:
+            token:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            CustomerPortalCustomersCheckEmailUpdate401Error: Invalid or expired verification token.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customer-portal/customers/me/email-update/check",
+            path_params={},
+            query_params={
+                "token": token,
+            },
+            request_timeout=request_timeout,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            401: CustomerPortalCustomersCheckEmailUpdate401Error,
+            422: HTTPValidationError,
+        }
+        return parse_response_none(response, method_errors)
+
+    def verify_email_update(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerEmailUpdateVerifyRequest],
+    ) -> CustomerEmailUpdateVerifyResponse:
+        """
+        Verify an email change using the token from the verification email.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            CustomerPortalCustomersVerifyEmailUpdate401Error: Invalid or expired verification token.
+            CustomerPortalCustomersVerifyEmailUpdate422Error: Email address is already in use.
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/customers/me/email-update/verify",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            401: CustomerPortalCustomersVerifyEmailUpdate401Error,
+            422: CustomerPortalCustomersVerifyEmailUpdate422Error,
+        }
+        return parse_response_json(
+            response, CustomerEmailUpdateVerifyResponse, method_errors
+        )
+
+
+class CustomersAsync(AsyncServiceBase):
+    async def get(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+    ) -> CustomerPortalCustomer:
+        """
+        Get authenticated customer.
+
+        **Scopes**: `customer_portal:read` `customer_portal:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customer-portal/customers/me",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+        )
+        response = await self.client.send_request(request)
+        return parse_response_json(response, CustomerPortalCustomer)
+
+    async def update(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerPortalCustomerUpdate],
+    ) -> CustomerPortalCustomer:
+        """
+        Update authenticated customer.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/customer-portal/customers/me",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, CustomerPortalCustomer, method_errors)
+
+    async def list_payment_methods(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
+    ) -> ListResourceCustomerPaymentMethod:
+        """
+        Get saved payment methods of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customer-portal/customers/me/payment-methods",
+            path_params={},
+            query_params={
+                "page": page,
+                "limit": limit,
+            },
+            request_timeout=request_timeout,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(
+            response, ListResourceCustomerPaymentMethod, method_errors
+        )
+
+    async def iter_list_payment_methods(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
+    ) -> typing.AsyncGenerator[CustomerPaymentMethod, None]:
+        """
+        Get saved payment methods of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
+
+        Returns:
+            An async generator that yields items of type CustomerPaymentMethod.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_payment_methods(
+                page=page,
+                limit=limit,
+                request_timeout=request_timeout,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
+    async def add_payment_method(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerPaymentMethodCreate],
+    ) -> CustomerPaymentMethodCreateResponse:
+        """
+        Add a payment method to the authenticated customer.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            PaymentMethodSetupFailed: The card was declined while setting up the payment method.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/customers/me/payment-methods",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            400: PaymentMethodSetupFailed,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(
+            response, CustomerPaymentMethodCreateResponse, method_errors
+        )
+
+    async def confirm_payment_method(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerPaymentMethodConfirm],
+    ) -> CustomerPaymentMethodCreateResponse:
+        """
+        Confirm a payment method for the authenticated customer.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            CustomerNotReady: Customer is not ready to confirm a payment method.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/customers/me/payment-methods/confirm",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: CustomerNotReady,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(
+            response, CustomerPaymentMethodCreateResponse, method_errors
+        )
+
+    async def delete_payment_method(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+    ) -> None:
+        """
+        Delete a payment method from the authenticated customer.
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            PaymentMethodInUseByActiveSubscription: Payment method is still needed to bill a subscription.
+            ResourceNotFound: Payment method not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="DELETE",
+            url="/v1/customer-portal/customers/me/payment-methods/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            400: PaymentMethodInUseByActiveSubscription,
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_none(response, method_errors)
+
+    async def request_email_update(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerEmailUpdateRequest],
+    ) -> typing.Any:
+        """
+        Request an email change for the authenticated customer.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/customers/me/email-update/request",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, typing.Any, method_errors)
+
+    async def check_email_update(
+        self,
+        *,
+        token: str,
+        request_timeout: RequestTimeout | None = None,
+    ) -> None:
+        """
+        Check if an email change verification token is still valid.
+
+        Args:
+            token:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            CustomerPortalCustomersCheckEmailUpdate401Error: Invalid or expired verification token.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customer-portal/customers/me/email-update/check",
+            path_params={},
+            query_params={
+                "token": token,
+            },
+            request_timeout=request_timeout,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            401: CustomerPortalCustomersCheckEmailUpdate401Error,
+            422: HTTPValidationError,
+        }
+        return parse_response_none(response, method_errors)
+
+    async def verify_email_update(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerEmailUpdateVerifyRequest],
+    ) -> CustomerEmailUpdateVerifyResponse:
+        """
+        Verify an email change using the token from the verification email.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            CustomerPortalCustomersVerifyEmailUpdate401Error: Invalid or expired verification token.
+            CustomerPortalCustomersVerifyEmailUpdate422Error: Email address is already in use.
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/customers/me/email-update/verify",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            401: CustomerPortalCustomersVerifyEmailUpdate401Error,
+            422: CustomerPortalCustomersVerifyEmailUpdate422Error,
+        }
+        return parse_response_json(
+            response, CustomerEmailUpdateVerifyResponse, method_errors
+        )

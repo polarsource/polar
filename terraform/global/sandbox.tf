@@ -12,6 +12,11 @@ resource "tfe_variable_set" "sandbox" {
   parent_project_id = data.tfe_project.sandbox.id
 }
 
+resource "tfe_project_variable_set" "global_sandbox" {
+  variable_set_id = tfe_variable_set.global.id
+  project_id      = data.tfe_project.sandbox.id
+}
+
 resource "tfe_variable" "google_client_id_sandbox" {
   key             = "google_client_id_sandbox"
   category        = "terraform"
@@ -507,16 +512,38 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
 }
 
 resource "tfe_variable" "worker_sqs_actors_sandbox" {
-  key             = "worker_sqs_actors"
-  category        = "terraform"
-  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox"
-  sensitive       = false
-  value           = "[\"dummy\"]"
+  key         = "worker_sqs_actors"
+  category    = "terraform"
+  description = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox"
+  sensitive   = false
+  value = jsonencode([
+    "auth.delete_expired",
+    "authentication_session.delete_expired",
+    "checkout.expire_open_checkouts",
+    "customer.state_changed",
+    "customer_email_update.delete_expired",
+    "customer_session.delete_expired",
+    "dummy",
+    "email.send",
+    "email_otp.delete_expired",
+    "email_update.delete_expired_record",
+    "eventstream.publish",
+    "external_event.prune",
+    "license_key.sync_benefit_grant",
+    "member_session.delete_expired",
+    "oauth2_token.delete_expired",
+    "observability.invariants.check",
+    "observability.invariants.enqueue",
+    "order.invoice",
+    "receipt.render",
+    "tinybird.ingest",
+    "webhook_event.archive",
+    "webhook_event.failed",
+    "webhook_event.publish",
+    "webhook_event.send",
+    "webhook_event.success",
+  ])
   variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
 }
 
 resource "tfe_variable" "stripe_app_client_id_sandbox" {
@@ -540,5 +567,13 @@ resource "tfe_variable" "turnstile_secret_sandbox" {
   category        = "terraform"
   description     = "Cloudflare Turnstile secret for sandbox"
   sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "grafana_cloud_aws_external_id_sandbox" {
+  key             = "grafana_cloud_aws_external_id"
+  value           = "2341705"
+  category        = "terraform"
+  description     = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
   variable_set_id = tfe_variable_set.sandbox.id
 }

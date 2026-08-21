@@ -30,5 +30,15 @@ class PaymentMethodCard(PaymentMethodBase):
     method_metadata: PaymentMethodCardMetadata
 
 
-PaymentMethod = PaymentMethodCard | PaymentMethodGeneric
+class PaymentMethodKrCardMetadata(Schema):
+    brand: str | None
+    last4: str | None
+
+
+class PaymentMethodKrCard(PaymentMethodBase):
+    type: Literal["kr_card"]
+    method_metadata: PaymentMethodKrCardMetadata
+
+
+PaymentMethod = PaymentMethodCard | PaymentMethodKrCard | PaymentMethodGeneric
 PaymentMethodTypeAdapter: TypeAdapter[PaymentMethod] = TypeAdapter(PaymentMethod)

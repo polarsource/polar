@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     UUID4,
+    AfterValidator,
     BeforeValidator,
     Discriminator,
     Field,
@@ -61,7 +62,6 @@ from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceSource,
     ProductPriceType,
-    SeatTierType,
 )
 from polar.models.product_price import (
     ProductPriceCustom as ProductPriceCustomModel,
@@ -75,8 +75,21 @@ from polar.models.product_price import (
 from polar.models.product_price import (
     ProductPriceSeatUnit as ProductPriceSeatUnitModel,
 )
+from polar.models.product_price import (
+    ProductPriceUnit as ProductPriceUnitModel,
+)
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
+from polar.product.tiers import (
+    NonContiguousTiersError,
+    SeatTiersData,
+    SeatTierType,
+    Tiers,
+    UnboundedTierNotLastError,
+    seat_tiers_to_tiers,
+    seat_tiers_unit_bounds,
+    validate_unit_bounds,
+)
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 64
@@ -139,6 +152,47 @@ ProductDescription = Annotated[
     str | None,
     Field(description="The description of the product."),
     EmptyStrToNoneValidator,
+]
+
+UNIT_LABEL_MAX_LENGTH = 32
+
+
+def _clean_unit_label_forms(forms: dict[str, str]) -> dict[str, str]:
+    cleaned: dict[str, str] = {}
+    for key, value in forms.items():
+        stripped = value.strip()
+        if not stripped:
+            continue
+        if len(stripped) > UNIT_LABEL_MAX_LENGTH:
+            raise PydanticCustomError(
+                "unit_label_form_too_long",
+                "Unit label forms must be at most {max_length} characters",
+                {"max_length": UNIT_LABEL_MAX_LENGTH},
+            )
+        cleaned[key] = stripped
+    if "other" not in cleaned:
+        raise PydanticCustomError(
+            "missing_other_plural",
+            "Each locale must include a non-empty 'other' form",
+        )
+    return cleaned
+
+
+def _validate_unit_label(
+    value: dict[str, dict[str, str]],
+) -> dict[str, dict[str, str]]:
+    return {locale: _clean_unit_label_forms(forms) for locale, forms in value.items()}
+
+
+UnitLabel = Annotated[
+    dict[str, dict[str, str]],
+    AfterValidator(_validate_unit_label),
+    Field(
+        min_length=1,
+        json_schema_extra={
+            "examples": [{"en": {"=1": "seat", "other": "seats"}}],
+        },
+    ),
 ]
 
 
@@ -279,32 +333,49 @@ class ProductPriceSeatTiers(Schema):
     def validate_tiers(
         cls, v: list[ProductPriceSeatTier]
     ) -> list[ProductPriceSeatTier]:
-        """Validate that tiers form continuous ranges without gaps or overlaps."""
-        if not v:
-            raise ValueError("At least one tier is required")
+        """
+        Validate that tiers are well-formed and form continuous ranges.
 
-        # Sort by min_seats
+        This will be slimmed down once we make the move to the shared tiers data.
+        """
         sorted_tiers = sorted(v, key=lambda t: t.min_seats)
-
-        # First tier must start at >= 1
         if sorted_tiers[0].min_seats < 1:
             raise ValueError("First tier must start at min_seats >= 1")
 
-        # Validate continuous ranges without gaps/overlaps
-        for i in range(len(sorted_tiers) - 1):
-            current = sorted_tiers[i]
-            next_tier = sorted_tiers[i + 1]
-
-            if current.max_seats is None:
-                raise ValueError(
-                    "Only the last tier can have unlimited max_seats (None)"
-                )
-
-            if next_tier.min_seats != current.max_seats + 1:
-                raise ValueError(
-                    "Gap or overlap between tiers: "
-                    + f"tier ending at {current.max_seats} and tier starting at {next_tier.min_seats}"
-                )
+        seat_tiers: SeatTiersData = {
+            "seat_tier_type": SeatTierType.volume,
+            "tiers": [
+                {
+                    "min_seats": tier.min_seats,
+                    "max_seats": tier.max_seats,
+                    "price_per_seat": tier.price_per_seat,
+                }
+                for tier in sorted_tiers
+            ],
+        }
+        try:
+            minimum_units, maximum_units = seat_tiers_unit_bounds(seat_tiers)
+            shared_tiers = seat_tiers_to_tiers(seat_tiers)
+            validate_unit_bounds(
+                shared_tiers,
+                minimum_units=minimum_units,
+                maximum_units=maximum_units,
+            )
+        except UnboundedTierNotLastError:
+            raise ValueError(
+                "Only the last tier can have unlimited max_seats (None)"
+            ) from None
+        except NonContiguousTiersError as e:
+            raise ValueError(str(e)) from None
+        except ValueError as e:
+            message = (
+                str(e)
+                .replace("minimum_units", "minimum_seats")
+                .replace("maximum_units", "maximum_seats")
+                .replace("bound values", "max_seats values")
+                .replace("last tier's bound", "last tier's max_seats")
+            )
+            raise ValueError(message) from None
 
         return sorted_tiers
 
@@ -376,6 +447,49 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
         return ProductPriceMeteredUnitModel
 
 
+class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
+    """
+    Schema to create a unit-based price: the buyer picks a quantity of units,
+    pays for it up-front, and changes are prorated.
+    """
+
+    amount_type: Literal[ProductPriceAmountType.unit_based]
+    tiers: Tiers = Field(
+        description="Tiered pricing based on the purchased unit quantity."
+    )
+    minimum_units: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "The minimum purchasable quantity (inclusive). Defaults to 1 when not set."
+        ),
+    )
+    unit_label: UnitLabel | None = Field(
+        default=None,
+        description=(
+            "Per-locale unit nouns shown at checkout and on invoices. "
+            '`{"en": {"=1": "device", "other": "devices"}}`. '
+            'Defaults to "unit"/"units" when unset.'
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_rates_and_bounds(self) -> Self:
+        for tier in self.tiers.tiers:
+            if tier.unit_amount != tier.unit_amount.to_integral_value():
+                raise ValueError(
+                    f"Unit tier rates must be in smallest currency unit, got {tier.unit_amount}"
+                )
+        try:
+            validate_unit_bounds(self.tiers, minimum_units=self.minimum_units)
+        except ValueError as e:
+            raise ValueError(str(e)) from None
+        return self
+
+    def get_model_class(self) -> builtins.type[ProductPriceUnitModel]:
+        return ProductPriceUnitModel
+
+
 def _coerce_legacy_free_price(value: Any) -> Any:
     """
     Backward compatibility for the removed `free` price type.
@@ -404,6 +518,7 @@ ProductPriceCreate = Annotated[
         ProductPriceFixedCreate
         | ProductPriceCustomCreate
         | ProductPriceSeatBasedCreate
+        | ProductPriceUnitBasedCreate
         | ProductPriceMeteredUnitCreate,
         Discriminator("amount_type"),
     ],
@@ -520,10 +635,10 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
 
 
 class ProductCreateOneTime(ProductCreateBase):
-    recurring_interval: Literal[None] = Field(
+    recurring_interval: None = Field(
         default=None, description="States that the product is a one-time purchase."
     )
-    recurring_interval_count: Literal[None] = Field(
+    recurring_interval_count: None = Field(
         default=None,
         description="One-time products don't have a recurring interval count.",
     )
@@ -719,6 +834,31 @@ class ProductPriceSeatBasedBase(ProductPriceBase):
         return self.seat_tiers.tiers[0].price_per_seat
 
 
+class ProductPriceUnitBasedBase(ProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.unit_based]
+    tiers: Tiers = Field(
+        description="Tiered pricing based on the purchased unit quantity."
+    )
+    minimum_units: int | None = Field(
+        description="The minimum purchasable quantity (inclusive).",
+    )
+    unit_label: UnitLabel | None = Field(
+        description=(
+            "Per-locale unit nouns shown at checkout and on invoices. "
+            '`null` defaults to "unit"/"units".'
+        ),
+    )
+
+    @computed_field(
+        description=(
+            "The maximum purchasable quantity, from the last tier's bound. "
+            "`null` for unlimited."
+        )
+    )
+    def maximum_units(self) -> int | None:
+        return self.tiers.last_bound
+
+
 class LegacyRecurringProductPriceMixin:
     @computed_field
     def legacy(self) -> Literal[True]:
@@ -784,6 +924,13 @@ class ProductPriceSeatBased(ProductPriceSeatBasedBase):
     """
 
 
+class ProductPriceUnitBased(ProductPriceUnitBasedBase):
+    """
+    A unit-based price for a product: the buyer picks a quantity of units,
+    pays for it up-front, and changes are prorated.
+    """
+
+
 class ProductPriceMeter(IDSchema):
     """
     A meter associated to a metered price.
@@ -818,6 +965,7 @@ NewProductPrice = Annotated[
     ProductPriceFixed
     | ProductPriceCustom
     | ProductPriceSeatBased
+    | ProductPriceUnitBased
     | ProductPriceMeteredUnit,
     Discriminator("amount_type"),
     SetSchemaReference("ProductPrice"),

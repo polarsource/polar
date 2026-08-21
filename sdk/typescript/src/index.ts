@@ -5,3 +5,4 @@ export {
   PolarClientError,
   PolarRateLimitError,
 } from "./base";
+export type { RequestOptions } from "./base";

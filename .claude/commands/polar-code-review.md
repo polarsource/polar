@@ -1,119 +1,95 @@
 # Polar Code Review
 
-Review the diff against Polar-specific rules that the built-in reviewers cannot know:
-conventions and Accepted ADRs.
+Review the diff against the things only Polar knows: its conventions, its Accepted ADRs, its
+shared helpers, its API contract, its deploy shape, its billing domain.
 
-This command does NOT hunt for bugs, security issues, or generic simplifications. Those are
-covered better by the built-in `/code-review`, `/security-review`, and `/simplify` (they verify
-findings and can apply fixes). This command adds the one thing they lack: knowledge of Polar's
-own patterns and architecture decisions.
+Not a bug hunt and not a security review — `/code-review` and `/security-review` do those
+better, and they verify findings and can apply fixes. This adds what they cannot know.
 
-## Instructions
+This is only a router. Every lens is a skill you can also run on its own.
 
-1. **Get the diff** against main:
-   ```bash
-   git diff main...HEAD
-   ```
-   If that fails, use `git diff HEAD~1` or ask the user for the comparison base. Keep both the
-   file list and the full diff. You will pass the diff to the agents, not just file names.
+## 1. Diff
 
-2. **List the Accepted ADRs** so the ADR agent knows what to check:
-   ```bash
-   ls handbook/engineering/decisions/
-   ```
+```bash
+git diff main...HEAD --stat
+git diff main...HEAD
+```
 
-3. **Launch 2 agents IN PARALLEL** using the Task tool. Both must be launched in a SINGLE message
-   with two Task tool calls. Give each agent the full diff from step 1.
+If that fails use `git diff HEAD~1`, or ask for the base. Keep the full diff — every agent
+gets it, not just file names.
 
-   The two agents must NOT overlap. Agent 2 owns everything covered by an Accepted ADR. Agent 1
-   only checks conventions that no ADR covers. If a rule is in an ADR, leave it to Agent 2.
+## 2. Route
 
-### Agent 1: Conventions Review
+Run the first four always. Add the rest only when the trigger matches.
+
+| Skill | Runs when |
+|---|---|
+| `conventions-check` | always |
+| `adr-check` | always |
+| `reuse-check` | always |
+| `slop-check` | always |
+| `api-surface-review` | `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`, `sdk/`, `clients/packages/client/` |
+| `ship-safety` | `migrations/versions/`, `**/tasks.py`, `polar/models/`, `server/scripts/`; an endpoint is removed; or the diff spans `server/` and `clients/` with a dependency between them |
+| `billing-review` | the billing paths listed in that skill's Scope section |
+
+## 3. Launch
+
+One message, one `Agent` call per selected skill, `subagent_type: "general-purpose"`. They are
+independent and must not wait on each other. Same prompt for every lens:
 
 ```
-description: "Conventions review"
-subagent_type: "feature-dev:code-reviewer"
+description: "<skill name>"
+subagent_type: "general-purpose"
 prompt: |
-  CONVENTIONS REVIEW for the Polar codebase.
+  Read `.agents/skills/<skill name>/SKILL.md` and follow it exactly.
 
-  Review this diff against Polar conventions. Only the changed lines are in scope.
+  Review this diff. Only changed lines are in scope — never the rest of the repo.
 
   [INSERT FULL DIFF]
 
-  These rules are NOT covered by an ADR. Do not check ADR topics here (errors, transactions,
-  auth, Orbit Box, output schema defaults, migrations). Another agent owns those.
-
-  **Backend (server/polar/):**
-  - All DB queries live in repository files, not services.
-  - Services are singletons: instance at module level, e.g. `resource = ResourceService()`.
-  - Use AsyncReadSession for reads, AsyncSession for writes.
-  - Pydantic schemas: separate read, create, and update schemas.
-  - Update (input) schemas: every field optional with a None default.
-  - Create repositories with `from_session(session)`.
-  - Relationships use lazy="raise". Load what you need explicitly.
-  - Endpoints return ORM models, not hand-built dicts.
-
-  **Frontend (clients/):**
-  - TanStack Query for data fetching. Zustand for client state.
-  - New translatable strings go only in clients/packages/i18n/src/locales/en.ts.
-  - Keep files under the 250-line max-lines limit.
-
-  **API:**
-  - POST returns 201. PATCH returns 200. DELETE returns 204.
-  - List endpoints return ListResource with pagination.
-  - Use PolarRequestValidationError for 422 errors.
-  - API fields are snake_case.
-
-  Report each violation with a file:line reference, the rule it breaks, and the fix.
-  Only report HIGH-confidence violations. Do not nitpick style or flag unchanged code.
+  Use the output format the skill defines. High-confidence findings only. If you are unsure
+  whether something is a defect, put it under Question instead of asserting it.
 ```
 
-### Agent 2: ADR Compliance
+Each skill declares what it does **not** own, so the lenses do not overlap by construction.
 
-```
-description: "ADR compliance"
-subagent_type: "feature-dev:code-reviewer"
-prompt: |
-  ADR COMPLIANCE REVIEW for the Polar codebase.
+`adr-check` predates this command and has its own terser format: either `No violations`, or a
+list of ADR id, `file:line`, what breaks, and the fix. Map its findings to 🔴.
 
-  Accepted ADRs live in handbook/engineering/decisions/. Read the index at
-  handbook/engineering/decisions/index.mdx and any ADR that looks relevant to this diff.
+## 4. Merge
 
-  Review this diff. Only the changed lines are in scope.
+- **Deduplicate.** One line, one finding. Precedence when two lenses hit the same line:
+  `billing-review` → `api-surface-review` → `ship-safety` → `adr-check` →
+  `conventions-check` → `reuse-check` → `slop-check`.
+- **Surface conflicts.** If two lenses disagree, say so rather than picking silently.
+- **Cut the padding.** A short report that is all true beats a long one that is half true.
 
-  [INSERT FULL DIFF]
+## 5. Report
 
-  For each change, check whether it contradicts an Accepted ADR. If it does, report:
-  - file:line reference
-  - the ADR id and title it violates (e.g. "violates ADR-0002")
-  - a short explanation of the conflict
-  - the fix, or a note that a new ADR may be needed
+```markdown
+## Polar Review
 
-  Only report HIGH-confidence conflicts. If nothing conflicts, say so.
-```
+### 🔴 Blocking
+- **[lens]** `file:line` — <what breaks>. Fix: <fix>
 
-4. **Wait for both agents to complete**, then summarize.
+### 🟠 Should fix
+- **[lens]** `file:line` — <claim>. Fix: <fix>
 
-## Summary Format
+### 🟡 Questions
+- **[lens]** `file:line` — <question>
 
----
+### 🧹 Delete
+- `file:line-line` — <why>
 
-## Polar Review Summary
+### Notes
+<deploy notes from ship-safety, surface delta from api-surface-review. Omit if neither ran.>
 
-### 🟡 Convention Violations
-[Findings from Agent 1, or "None found"]
-- [rule broken] - `file:line` - [fix]
-
-### 📐 ADR Conflicts
-[Findings from Agent 2, or "None found"]
-- **violates ADR-XXXX**: [explanation] - `file:line`
+### Coverage
+Ran: <...>. Skipped: <...> (no matching paths).
 
 ### Verdict
+✅ APPROVED  |  ❌ CHANGES REQUESTED — n blocking, n should-fix
+```
 
-**✅ APPROVED** - No Polar-specific issues found
-or
-**❌ CHANGES REQUESTED** - [number] issues to address
-
----
-
-Any ADR conflict makes the verdict CHANGES REQUESTED.
+Any 🔴 means CHANGES REQUESTED. 🟠 alone is a judgement call: say which way you lean and why.
+The 🟡 section is expected to have content — Polar reviews are mostly questions.

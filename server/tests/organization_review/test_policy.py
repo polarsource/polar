@@ -1,3 +1,5 @@
+from typing import Self
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -20,7 +22,7 @@ class _EmptyResponse:
 
 
 class _StubClient:
-    async def __aenter__(self) -> "_StubClient":
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(self, *args: object) -> bool:

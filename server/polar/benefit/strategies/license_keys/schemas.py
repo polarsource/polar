@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from polar.kit.schemas import EmptyStrToNone, Schema
+from polar.kit.schemas import EmptyStrToNone, Int32, Schema
 from polar.models.benefit import BenefitType
 
 from ..base.schemas import (
@@ -35,7 +35,7 @@ class BenefitLicenseKeyExpirationProperties(Schema):
 
 
 class BenefitLicenseKeyActivationCreateProperties(Schema):
-    limit: int = Field(gt=0, le=50)
+    limit: Int32 = Field(gt=0)
     enable_customer_admin: bool
 
 
@@ -48,7 +48,7 @@ class BenefitLicenseKeysCreateProperties(Schema):
     prefix: EmptyStrToNone | None = None
     expires: BenefitLicenseKeyExpirationProperties | None = None
     activations: BenefitLicenseKeyActivationCreateProperties | None = None
-    limit_usage: int | None = Field(gt=0, default=None)
+    limit_usage: Int32 | None = Field(gt=0, default=None)
 
 
 class BenefitLicenseKeysProperties(Schema):

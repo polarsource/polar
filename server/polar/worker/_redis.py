@@ -32,7 +32,6 @@ class RedisMiddleware(dramatiq.Middleware):
 
     @classmethod
     def get(cls) -> Redis:
-        global _redis
         if _redis is None:
             raise RuntimeError("Redis not initialized")
         return _redis

@@ -1,16 +1,28 @@
-"""Find subscriptions whose meters are missing a reset event for the current cycle.
+"""Find subscriptions stuck without a meter reset for their current cycle.
 
 Every cycle, ``subscription.cycle`` emits a ``meter.reset`` system event stamped
 at the cycle boundary (see #13483). That event bounds the current period's usage
-window. Subscriptions that cycled before #13483 shipped — or otherwise got stuck
-retrying their cycle order (the perf issue #13479 fixes) — never got that event,
-so their meters have no reset at or after ``current_period_start``.
+window. Subscriptions that got stuck retrying their cycle order (the perf issue
+#13479 fixes) never got that event, so their prior-period usage is still pending
+and unbounded — it would be billed into the eventual order.
 
-This script reports those subscriptions. It's read-only; feed the ids it prints
-to ``scripts.emit_meter_reset_events`` to emit the missing events.
+This script reports exactly those subscriptions. It's read-only; feed the ids it
+prints to ``scripts.emit_meter_reset_events`` to emit the missing events.
 
-A meter is considered missing its reset when it has no ``meter.reset`` event with
-a timestamp at or after the subscription's ``current_period_start``.
+A subscription is reported when, for one of its meters, ALL of the following hold:
+
+  - it is active (trials are excluded — they haven't cycled/billed yet);
+  - it has pending (not yet ordered) metered billing entries with a
+    ``start_timestamp`` before ``current_period_start`` — i.e. usage from a past
+    period the stuck cycle order never rolled up;
+  - there is no ``meter.reset`` event for that meter at or after
+    ``current_period_start``.
+
+The pending-entries condition is what makes this precise: it targets the actual
+over-billing risk and, by construction, only matches subscriptions that have
+cycled — so it doesn't flag first-period subscriptions, meters added mid-period,
+or early-cycled subscriptions (whose reset is legitimately stamped before the
+new period start).
 
 Usage:
 
@@ -26,14 +38,16 @@ from typing import Any
 
 import structlog
 import typer
-from rich.progress import Progress
-from sqlalchemy import exists, func
+from sqlalchemy import String, cast, select
 
-from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.models import Subscription, SubscriptionMeter
+from polar.models import BillingEntry, Event, Subscription
+from polar.models.billing_entry import BillingEntryType
+from polar.models.event import EventSource
+from polar.models.product_price import ProductPriceMeteredUnit
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import create_async_engine
-from polar.subscription.repository import SubscriptionRepository
 
 cli = typer.Typer()
 
@@ -64,60 +78,78 @@ def find_subscriptions_missing_reset_events(
         sessionmaker = create_async_sessionmaker(engine)
 
         async with sessionmaker() as session:
-            repository = SubscriptionRepository.from_session(session)
-            event_repository = EventRepository.from_session(session)
-
-            statement = repository.get_base_statement().where(
-                Subscription.active,
-                exists().where(SubscriptionMeter.subscription_id == Subscription.id),
-            )
-            count = await session.scalar(
-                statement.with_only_columns(func.count()).order_by(None)
-            )
-
-            missing: list[tuple[Subscription, list[SubscriptionMeter]]] = []
-            with Progress(disable=ids_only) as progress:
-                task = progress.add_task(
-                    "[cyan]Checking metered subscriptions...", total=count
+            # A reset event for this customer + meter at or after the current
+            # period start — its absence is what we're looking for.
+            reset_exists = (
+                select(Event.id)
+                .where(
+                    Event.customer_id == BillingEntry.customer_id,
+                    Event.source == EventSource.system,
+                    Event.name == SystemEvent.meter_reset,
+                    Event.user_metadata["meter_id"].as_string()
+                    == cast(ProductPriceMeteredUnit.meter_id, String),
+                    Event.timestamp >= Subscription.current_period_start,
                 )
-                eager_statement = statement.options(*repository.get_eager_options())
-                async for subscription in repository.stream(eager_statement):
-                    missing_meters = []
-                    for subscription_meter in subscription.meters:
-                        latest_reset = await event_repository.get_latest_meter_reset(
-                            subscription.customer, subscription_meter.meter_id
-                        )
-                        if (
-                            latest_reset is None
-                            or latest_reset.timestamp
-                            < subscription.current_period_start
-                        ):
-                            missing_meters.append(subscription_meter)
-                    if missing_meters:
-                        missing.append((subscription, missing_meters))
-                    progress.advance(task)
+                .exists()
+            )
+
+            statement = (
+                select(
+                    Subscription.id,
+                    Subscription.current_period_start,
+                    ProductPriceMeteredUnit.meter_id,
+                )
+                .join(BillingEntry, BillingEntry.subscription_id == Subscription.id)
+                .join(
+                    ProductPriceMeteredUnit,
+                    BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
+                )
+                .where(
+                    Subscription.deleted_at.is_(None),
+                    Subscription.status == SubscriptionStatus.active,
+                    BillingEntry.deleted_at.is_(None),
+                    BillingEntry.order_item_id.is_(None),
+                    BillingEntry.type == BillingEntryType.metered,
+                    BillingEntry.start_timestamp < Subscription.current_period_start,
+                    ~reset_exists,
+                )
+                .distinct()
+                .order_by(Subscription.id)
+            )
+
+            result = await session.execute(statement)
+
+            by_subscription: dict[Any, tuple[Any, list[Any]]] = {}
+            for subscription_id, current_period_start, meter_id in result:
+                _, meter_ids = by_subscription.setdefault(
+                    subscription_id, (current_period_start, [])
+                )
+                meter_ids.append(meter_id)
 
             if ids_only:
-                for subscription, _ in missing:
-                    typer.echo(str(subscription.id))
+                for subscription_id in by_subscription:
+                    typer.echo(str(subscription_id))
                 return
 
-            if not missing:
+            if not by_subscription:
                 typer.echo("No subscriptions missing reset events. ✨")
                 return
 
-            for subscription, missing_meters in missing:
-                meter_ids = ", ".join(str(sm.meter_id) for sm in missing_meters)
+            for subscription_id, (
+                current_period_start,
+                meter_ids,
+            ) in by_subscription.items():
+                meters = ", ".join(str(meter_id) for meter_id in meter_ids)
                 typer.echo(
-                    f"{subscription.id} "
-                    f"(period start {subscription.current_period_start.isoformat()}): "
-                    f"{len(missing_meters)} meter(s) missing reset — {meter_ids}"
+                    f"{subscription_id} "
+                    f"(period start {current_period_start.isoformat()}): "
+                    f"{len(meter_ids)} meter(s) missing reset — {meters}"
                 )
             typer.echo(
-                f"\n{len(missing)} subscription(s) missing reset events. "
+                f"\n{len(by_subscription)} subscription(s) missing reset events. "
                 "Emit them with:\n"
                 "    uv run python -m scripts.emit_meter_reset_events "
-                + " ".join(str(subscription.id) for subscription, _ in missing)
+                + " ".join(str(subscription_id) for subscription_id in by_subscription)
             )
 
     asyncio.run(run())

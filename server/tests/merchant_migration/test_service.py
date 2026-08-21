@@ -722,7 +722,7 @@ def _multi_currency_catalog() -> list[CanonicalRecord]:
         CanonicalSubscription(
             source_id="sub_1",
             customer_source_id="cus_1",
-            price_source_id="price_1",
+            price_source_id="price_1:usd",
             status=CanonicalSubscriptionStatus.active,
             collection_method=CanonicalCollectionMethod.charge_automatically,
             current_period_start=None,
@@ -1514,7 +1514,7 @@ class TestImportCatalog:
             select(Subscription).where(Subscription.organization_id == organization.id)
         )
         subscription = result.scalars().unique().one()
-        assert subscription.currency == "eur"
+        assert subscription.currency == "usd"
 
 
 @pytest.mark.asyncio

@@ -91,7 +91,7 @@ if ! git -C "$CHECKOUT" fetch origin "$BRANCH" 2>/dev/null; then
     log "Branch no longer exists on remote (PR likely merged), skipping deploy"
     exit 0
 fi
-if ! git -C "$CHECKOUT" cat-file -e "${SHA}^{commit}" 2>/dev/null; then
+if [[ "$(git -C "$CHECKOUT" rev-parse FETCH_HEAD 2>/dev/null || true)" != "$SHA" ]]; then
     log "Commit ${SHA} is gone from the remote (branch force-pushed), skipping superseded deploy"
     exit 0
 fi

@@ -43,6 +43,9 @@ locals {
     var.backend_config.plain_default_tier_external_id != "" ? {
       POLAR_PLAIN_DEFAULT_TIER_EXTERNAL_ID = var.backend_config.plain_default_tier_external_id
     } : {},
+    var.backend_config.merchant_migration_destination_stripe_account_id != "" ? {
+      POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = var.backend_config.merchant_migration_destination_stripe_account_id
+    } : {},
   )
 
   backend_secrets = merge(

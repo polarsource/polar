@@ -29,31 +29,32 @@ variable "pydantic_ai_gateway_secrets" {
 
 variable "backend_config" {
   type = object({
-    environment                          = optional(string, null)
-    base_url                             = string
-    backoffice_host                      = optional(string, null)
-    checkout_link_host                   = optional(string, null)
-    user_session_cookie_domain           = string
-    user_session_cookie_key              = optional(string, "")
-    authentication_session_cookie_domain = string
-    oauth2_session_state_cookie_domain   = string
-    debug                                = string
-    email_sender                         = string
-    email_from_name                      = string
-    email_from_domain                    = string
-    frontend_base_url                    = string
-    checkout_base_url                    = string
-    jwks_path                            = string
-    log_level                            = string
-    testing                              = string
-    auth_cookie_domain                   = string
-    auth_cookie_key                      = optional(string, "")
-    invoices_additional_info             = optional(string, "")
-    invoices_vat_numbers                 = optional(string, "{}")
-    tax_processors                       = optional(string, "[\"stripe\"]")
-    tax_record_processor                 = optional(string, "stripe")
-    customer_portal_url_overrides        = optional(string, "{}")
-    plain_default_tier_external_id       = optional(string, "")
+    environment                                      = optional(string, null)
+    base_url                                         = string
+    backoffice_host                                  = optional(string, null)
+    checkout_link_host                               = optional(string, null)
+    user_session_cookie_domain                       = string
+    user_session_cookie_key                          = optional(string, "")
+    authentication_session_cookie_domain             = string
+    oauth2_session_state_cookie_domain               = string
+    debug                                            = string
+    email_sender                                     = string
+    email_from_name                                  = string
+    email_from_domain                                = string
+    frontend_base_url                                = string
+    checkout_base_url                                = string
+    jwks_path                                        = string
+    log_level                                        = string
+    testing                                          = string
+    auth_cookie_domain                               = string
+    auth_cookie_key                                  = optional(string, "")
+    invoices_additional_info                         = optional(string, "")
+    invoices_vat_numbers                             = optional(string, "{}")
+    tax_processors                                   = optional(string, "[\"stripe\"]")
+    tax_record_processor                             = optional(string, "stripe")
+    customer_portal_url_overrides                    = optional(string, "{}")
+    plain_default_tier_external_id                   = optional(string, "")
+    merchant_migration_destination_stripe_account_id = optional(string, "")
   })
 }
 

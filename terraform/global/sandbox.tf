@@ -577,3 +577,11 @@ resource "tfe_variable" "grafana_cloud_aws_external_id_sandbox" {
   description     = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "merchant_migration_destination_stripe_account_id_sandbox" {
+  key             = "merchant_migration_destination_stripe_account_id"
+  category        = "terraform"
+  description     = "Stripe account ID merchants copy or import saved cards into for sandbox"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.sandbox.id
+}

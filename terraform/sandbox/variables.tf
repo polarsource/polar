@@ -466,3 +466,9 @@ variable "grafana_cloud_aws_external_id" {
   description = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
   type        = string
 }
+
+variable "merchant_migration_destination_stripe_account_id" {
+  description = "Stripe account ID merchants copy or import saved cards into"
+  type        = string
+  default     = ""
+}

@@ -735,6 +735,54 @@ describe('CheckoutPricingBreakdown', () => {
     })
   })
 
+  describe('trial zero due today', () => {
+    const trialCheckout = () =>
+      createCheckout({
+        amount: 999,
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
+        product: {
+          ...createCheckout().product,
+          recurring_interval: 'month',
+          is_recurring: true,
+        },
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
+      })
+
+    it('shows an emphasized due-today row and mutes the recurring total', () => {
+      render(
+        <CheckoutPricingBreakdown
+          checkout={trialCheckout()}
+          locale="en"
+          trialDueTodayExperiment
+        />,
+      )
+
+      const dueTodayRow = screen.getByTestId('detail-row-Due today')
+      expect(dueTodayRow).toHaveTextContent('$0')
+      expect(dueTodayRow).toHaveClass('font-medium')
+      expect(screen.getByTestId('detail-row-Monthly')).not.toHaveClass(
+        'font-medium',
+      )
+    })
+
+    it('keeps the emphasized recurring total by default', () => {
+      render(
+        <CheckoutPricingBreakdown checkout={trialCheckout()} locale="en" />,
+      )
+
+      expect(
+        screen.queryByTestId('detail-row-Due today'),
+      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('detail-row-Monthly')).toHaveClass(
+        'font-medium',
+      )
+    })
+  })
+
   describe('volume seat pricing', () => {
     it('shows single seat row above subtotal', () => {
       const checkout = createCheckout({

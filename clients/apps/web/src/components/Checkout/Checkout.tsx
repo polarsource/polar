@@ -1,6 +1,7 @@
 'use client'
 
 import { UploadImage } from '@/components/Image/Image'
+import { useExperiment } from '@/experiments/client'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
@@ -98,6 +99,14 @@ const Checkout = ({
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
+
+  const hasActiveTrial = Boolean(
+    checkout.active_trial_interval && checkout.active_trial_interval_count,
+  )
+  const { isTreatment } = useExperiment('checkout_trial_due_today', {
+    trackExposure: hasActiveTrial,
+  })
+  const trialDueTodayExperiment = hasActiveTrial && isTreatment
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -294,7 +303,11 @@ const Checkout = ({
                       <hr className="dark:border-polar-700 border-gray-200" />
                     </>
                   )}
-                <CheckoutPricingBreakdown checkout={checkout} locale={locale} />
+                <CheckoutPricingBreakdown
+                  checkout={checkout}
+                  locale={locale}
+                  trialDueTodayExperiment={trialDueTodayExperiment}
+                />
                 <CheckoutDiscountInput
                   checkout={checkout}
                   update={update}
@@ -434,6 +447,7 @@ const Checkout = ({
                     <CheckoutPricingBreakdown
                       checkout={checkout}
                       locale={locale}
+                      trialDueTodayExperiment={trialDueTodayExperiment}
                     />
                     <CheckoutDiscountInput
                       checkout={checkout}

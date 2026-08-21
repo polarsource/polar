@@ -115,8 +115,13 @@ def pan_steps_until(
         current = pan_transfer.current(steps)
         if current is None or current.key == target_key:
             return steps
+        template = pan_transfer._template(method, current.key)
         steps = pan_transfer.complete(
-            method, steps, current.key, actor=_STEP_ACTORS[current.owner], inputs={}
+            method,
+            steps,
+            current.key,
+            actor=_STEP_ACTORS[current.owner],
+            inputs={key: "value" for key in template.required_inputs},
         )
 
 

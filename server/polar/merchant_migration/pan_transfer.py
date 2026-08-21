@@ -219,7 +219,7 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
         key="start_copy",
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
-        optional_inputs=("stripe_migration_request_id",),
+        required_inputs=("stripe_migration_request_id",),
     ),
     PanStepTemplate(
         key="authorize_copy",

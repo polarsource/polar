@@ -649,7 +649,7 @@ class TestCompletePanTransferStep:
 
         response = await client.post(
             f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete",
-            json={"inputs": {"stripe_migration_request_id": "mig_123"}},
+            json={"inputs": {"stripe_migration_request_id": "migreq_123"}},
         )
         assert response.status_code == 200
         assert response.json()["current_step_key"] == "authorize_copy"
@@ -661,8 +661,35 @@ class TestCompletePanTransferStep:
         assert steps["start_copy"]["status"] == "completed"
         assert steps["start_copy"]["completed_by"] == "merchant"
         assert steps["start_copy"]["inputs"] == {
-            "stripe_migration_request_id": "mig_123"
+            "stripe_migration_request_id": "migreq_123"
         }
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_complete_requires_stripe_migration_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+        await client.post(f"/v1/merchant-migrations/{migration.id}/pan-transfer")
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete",
+            json={"inputs": {}},
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == [
+            "body",
+            "inputs",
+            "stripe_migration_request_id",
+        ]
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_complete_rejects_an_ops_step(
@@ -679,7 +706,8 @@ class TestCompletePanTransferStep:
         )
         await client.post(f"/v1/merchant-migrations/{migration.id}/pan-transfer")
         await client.post(
-            f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete"
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete",
+            json={"inputs": {"stripe_migration_request_id": "migreq_123"}},
         )
 
         response = await client.post(

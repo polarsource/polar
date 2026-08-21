@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isValidStripeMigrationId,
+  STEP_COPY,
   stripeMigrationIdError,
 } from './panTransferCopy'
 
@@ -18,7 +19,7 @@ describe('isValidStripeMigrationId', () => {
 })
 
 describe('stripeMigrationIdError', () => {
-  it('allows empty optional values', () => {
+  it('leaves empty values to required-field validation', () => {
     expect(stripeMigrationIdError('')).toBeNull()
     expect(stripeMigrationIdError('   ')).toBeNull()
   })
@@ -29,5 +30,18 @@ describe('stripeMigrationIdError', () => {
 
   it('returns null for a valid id', () => {
     expect(stripeMigrationIdError('migreq_ok_1')).toBeNull()
+  })
+})
+
+describe('start copy', () => {
+  it('requires the Stripe migration ID without payment method caveats', () => {
+    expect(STEP_COPY.start_copy.inputs?.[0]).toMatchObject({
+      name: 'stripe_migration_request_id',
+      label: 'Stripe migration ID',
+      required: true,
+    })
+    expect(STEP_COPY.start_copy.warning).toBe(
+      'Only the account owner can start a copy.',
+    )
   })
 })

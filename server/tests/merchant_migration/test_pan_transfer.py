@@ -132,7 +132,7 @@ class TestComplete:
             _copy_steps(),
             "start_copy",
             actor=PanStepActor.merchant,
-            inputs={},
+            inputs={"stripe_migration_request_id": "migreq_123"},
         )
 
         assert steps[1].status == PanStepStatus.completed
@@ -143,16 +143,16 @@ class TestComplete:
         assert current.key == "authorize_copy"
         assert current.started_at is not None
 
-    def test_stores_optional_inputs(self) -> None:
+    def test_stores_required_inputs(self) -> None:
         steps = pan_transfer.complete(
             PanTransferMethod.pan_copy,
             _copy_steps(),
             "start_copy",
             actor=PanStepActor.merchant,
-            inputs={"stripe_migration_request_id": " mig_123 "},
+            inputs={"stripe_migration_request_id": " migreq_123 "},
         )
 
-        assert steps[1].inputs == {"stripe_migration_request_id": "mig_123"}
+        assert steps[1].inputs == {"stripe_migration_request_id": "migreq_123"}
 
     def test_rejects_a_step_that_is_not_current(self) -> None:
         with pytest.raises(PanStepNotActionable):
@@ -170,7 +170,7 @@ class TestComplete:
             _copy_steps(),
             "start_copy",
             actor=PanStepActor.merchant,
-            inputs={},
+            inputs={"stripe_migration_request_id": "migreq_123"},
         )
 
         with pytest.raises(PanStepNotActionable):
@@ -210,7 +210,7 @@ class TestComplete:
             _copy_steps(),
             "start_copy",
             actor=PanStepActor.ops,
-            inputs={},
+            inputs={"stripe_migration_request_id": "migreq_123"},
         )
 
         assert steps[1].completed_by == PanStepActor.ops
@@ -239,6 +239,20 @@ class TestComplete:
                 actor=PanStepActor.ops,
                 inputs={"stripe_migration_request_id": "   "},
             )
+        errors = exc.value.errors()
+        assert [error["type"] for error in errors] == ["missing"]
+        assert errors[0]["loc"] == ("body", "inputs", "stripe_migration_request_id")
+
+    def test_copy_requires_stripe_migration_id(self) -> None:
+        with pytest.raises(PolarRequestValidationError) as exc:
+            pan_transfer.complete(
+                PanTransferMethod.pan_copy,
+                _copy_steps(),
+                "start_copy",
+                actor=PanStepActor.merchant,
+                inputs={},
+            )
+
         errors = exc.value.errors()
         assert [error["type"] for error in errors] == ["missing"]
         assert errors[0]["loc"] == ("body", "inputs", "stripe_migration_request_id")
@@ -321,7 +335,7 @@ class TestPanTransferStepsType:
             _copy_steps(),
             "start_copy",
             actor=PanStepActor.merchant,
-            inputs={"stripe_migration_request_id": "mig_123"},
+            inputs={"stripe_migration_request_id": "migreq_123"},
         )
         column = PanTransferStepsType()
 

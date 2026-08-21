@@ -42,10 +42,10 @@ export function stripeMigrationIdError(value: string): string | null {
 
 const STRIPE_MIGRATION_ID_INPUT: StepInputField = {
   name: STRIPE_MIGRATION_ID_FIELD,
-  label: 'Stripe migration ID (optional)',
+  label: 'Stripe migration ID',
   placeholder: 'migreq_…',
-  hint: 'After starting the copy, paste it from Stripe copy status. Starts with migreq_.',
-  required: false,
+  hint: 'Starts with migreq_. Find it on the Stripe copy status page.',
+  required: true,
 }
 
 export const STEP_COPY: Record<string, StepCopy> = {
@@ -57,9 +57,13 @@ export const STEP_COPY: Record<string, StepCopy> = {
   start_copy: {
     title: 'Start the copy in Stripe',
     description: 'Copy saved cards from your Stripe account to Polar.',
-    warning:
-      'Only the account owner can start a copy. Wallet cards, Bacs and old SEPA mandates do not copy.',
-    inputs: [STRIPE_MIGRATION_ID_INPUT],
+    warning: 'Only the account owner can start a copy.',
+    inputs: [
+      {
+        ...STRIPE_MIGRATION_ID_INPUT,
+        hint: 'After starting the copy, paste it from Stripe copy status. Starts with migreq_.',
+      },
+    ],
     action: 'Mark copy started',
   },
   authorize_copy: {
@@ -78,14 +82,7 @@ export const STEP_COPY: Record<string, StepCopy> = {
       'We open a migration request with Stripe and share our PCI documents.',
     // Ops fills this in, but the merchant is the one who has to quote it to
     // their provider on the next step, so it has to stay readable afterwards.
-    inputs: [
-      {
-        ...STRIPE_MIGRATION_ID_INPUT,
-        label: 'Stripe migration ID',
-        hint: 'Starts with migreq_. Find it on the Stripe copy status page.',
-        required: true,
-      },
-    ],
+    inputs: [STRIPE_MIGRATION_ID_INPUT],
   },
   request_provider_export: {
     title: 'Ask your provider for the card export',

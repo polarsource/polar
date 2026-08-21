@@ -235,6 +235,25 @@ class SubscriptionCutover:
             if reason is not None:
                 return _skip(reason)
 
+        try:
+            canonical_product = deserialize(
+                product_record.type, product_record.canonical
+            )
+        except KeyError, TypeError, ValueError:
+            return _skip(_NOT_IMPORTED)
+        if not isinstance(canonical_product, CanonicalProduct):
+            return _skip(_NOT_IMPORTED)
+        price = find_imported_price(product, canonical_product, staged.price_source_id)
+        if price is None:
+            return _skip(_NOT_IMPORTED)
+
+        # Concurrent workers claim different source rows. Lock the Polar customer
+        # so two of those rows cannot both create a live sub for this pair.
+        customer = await self.customer_repository.get_by_id(
+            customer.id, include_deleted=True, for_update=True
+        )
+        if customer is None or customer.is_deleted:
+            return _skip(_CUSTOMER_DELETED)
         if await self.subscription_repository.exists_live_by_customer_and_product(
             customer.id, product.id
         ):
@@ -254,18 +273,6 @@ class SubscriptionCutover:
                 return _fail(_STRANDED)
         elif not _is_chargeable(payment_method):
             return _skip(_NO_CARD)
-
-        try:
-            canonical_product = deserialize(
-                product_record.type, product_record.canonical
-            )
-        except KeyError, TypeError, ValueError:
-            return _skip(_NOT_IMPORTED)
-        if not isinstance(canonical_product, CanonicalProduct):
-            return _skip(_NOT_IMPORTED)
-        price = find_imported_price(product, canonical_product, staged.price_source_id)
-        if price is None:
-            return _skip(_NOT_IMPORTED)
 
         subscription = await create_imported_subscription(
             self.session, staged, product, price, customer

@@ -346,6 +346,39 @@ class TestRun:
         _assert_left_alone(adapter, pending_record)
         assert pending_record.status == MerchantMigrationRecordStatus.pending
 
+    async def test_second_source_sub_for_the_same_product_stays_on_source(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        organization: Organization,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        second = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_2",
+            canonical=serialize(canonical_subscription(source_id="sub_2")),
+        )
+        await save_fixture(second)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        cutover = SubscriptionCutover(session, migration, adapter)
+
+        first = await cutover.run(pending_record)
+        later = await cutover.run(second)
+
+        assert first.status == MerchantMigrationCutoverStatus.moved
+        assert later.status == MerchantMigrationCutoverStatus.skipped
+        assert "already has a live subscription" in (later.message or "")
+        assert second.target_id is None
+        assert adapter.stopped == ["sub_1"]
+
     async def test_moves_and_stops_the_source(
         self,
         mocker: MockerFixture,

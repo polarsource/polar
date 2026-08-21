@@ -14,6 +14,7 @@ from polar.config import settings
 from polar.kit.pagination import PaginationParamsQuery
 from polar.merchant_migration.cards import PaymentMethodMappingCSVError
 from polar.merchant_migration.pan_transfer import (
+    STEP_STRIPE_COPY,
     PanStepOwner,
     PanStepStatus,
     PanTransferStep,
@@ -464,7 +465,7 @@ async def complete_step(
     if request.method == "POST":
         form_data = await request.form()
         try:
-            if key == "stripe_copy" and current is not None and current.key == key:
+            if key == STEP_STRIPE_COPY and current is not None and current.key == key:
                 mapping_file = form_data.get("payment_method_mapping")
                 if not isinstance(mapping_file, UploadFile):
                     raise PaymentMethodMappingCSVError(
@@ -531,7 +532,7 @@ async def complete_step(
                         value=step.inputs.get(name, ""),
                     ):
                         pass
-            if key == "stripe_copy":
+            if key == STEP_STRIPE_COPY:
                 if mapping_error is not None:
                     with alert("error", soft=True):
                         text(mapping_error)

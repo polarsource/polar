@@ -215,7 +215,7 @@ async def link_payment_method(
         preferred = _preferred(payment_methods, customer, source_method)
 
     # What the renewal charges when a subscription has no method of its own.
-    if customer.default_payment_method_id is None:
+    if mapping is None and customer.default_payment_method_id is None:
         await CustomerRepository.from_session(session).update(
             customer, update_dict={"default_payment_method_id": preferred.id}
         )

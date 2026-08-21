@@ -216,6 +216,7 @@ class TestLinkPaymentMethod:
 
         assert payment_method is not None
         assert payment_method.processor_id == "pm_mapped"
+        assert imported_customer.default_payment_method_id is None
         list_payment_methods.assert_not_called()
 
     async def test_rejects_a_mapped_method_owned_by_another_customer(

@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from typing import Any
 from uuid import UUID
 
@@ -311,10 +311,13 @@ class MerchantMigrationRecordRepository(
         )
         return await self.get_all(statement)
 
-    async def list_all_imported_subscriptions(
+    async def stream_imported_subscriptions(
         self, migration_id: UUID
-    ) -> Sequence[MerchantMigrationRecord]:
-        return await self.get_all(self._imported_subscriptions_statement(migration_id))
+    ) -> AsyncIterator[MerchantMigrationRecord]:
+        async for record in self.stream(
+            self._imported_subscriptions_statement(migration_id)
+        ):
+            yield record
 
     def _selection_filter(
         self, selection: MerchantMigrationOperationSelection | None

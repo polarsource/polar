@@ -589,7 +589,6 @@ class TestCompleteStep:
 
     async def test_does_not_apply_mapping_after_stripe_copy_completed(
         self,
-        mocker: MockerFixture,
         session: AsyncSession,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
@@ -601,10 +600,29 @@ class TestCompleteStep:
             step=MerchantMigrationStep.copy_cards,
             steps=_advance_to("verify_cards"),
         )
-        import_mappings = mocker.patch(
-            "polar.backoffice.merchant_migrations.endpoints."
-            "merchant_migration_service.import_payment_method_mappings",
-            new=mocker.AsyncMock(),
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="already-completed@example.com",
+            stripe_customer_id="cus_old",
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_old",
+                target_id=customer.id,
+                canonical=serialize(
+                    CanonicalCustomer(
+                        source_id="cus_old",
+                        email=customer.email,
+                        name=None,
+                        country=None,
+                    )
+                ),
+            )
         )
 
         response = await backoffice_client.post(
@@ -623,7 +641,7 @@ class TestCompleteStep:
         )
 
         assert response.status_code == 200
-        import_mappings.assert_not_awaited()
+        assert customer.stripe_customer_id == "cus_old"
 
     async def test_warns_when_completing_on_the_merchants_behalf(
         self,

@@ -36,7 +36,7 @@ export function StartCopyStep({
             1. Download the customer CSV and upload it in Stripe.
           </Text>
           <Box>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="secondary" size="sm" asChild>
               <a
                 href={customerIdsUrl}
                 target="_blank"
@@ -70,16 +70,11 @@ export function StartCopyStep({
               description="Please contact support before you start the copy in Stripe."
             />
           )}
-          <Text variant="caption" color="muted">
-            Upload the CSV, paste the account ID, and confirm the copy.
-          </Text>
           {copy.warning && (
-            <Text variant="caption" color="muted">
-              Note: {copy.warning}
-            </Text>
+            <Text variant="caption">Important: {copy.warning}</Text>
           )}
           <Box>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="secondary" size="sm" asChild>
               <a
                 href={STRIPE_COPY_STATUS_URL}
                 target="_blank"

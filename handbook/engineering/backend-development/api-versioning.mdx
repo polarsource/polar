@@ -1,0 +1,275 @@
+---
+title: "API Versioning"
+description: "How API versions are selected, evolved, and released without changing frozen contracts"
+---
+
+Polar uses date-based API versions to evolve its public API without changing the
+contract seen by clients pinned to a stable version.
+
+## When to use API versioning
+
+Target the **Next** API version whenever a change affects the public API contract,
+including:
+
+- Adding, removing, or replacing an endpoint.
+- Adding, removing, or changing a request or response field.
+- Changing a field's type, requiredness, validation, or enum values.
+- Changing request parameters, response status codes, error responses, or
+  authentication requirements.
+
+Bug fixes, performance improvements, and internal implementation changes do not
+need API versioning as long as the public contract remains unchanged.
+
+## Version lifecycle
+
+Polar maintains three API versions on a quarterly release cadence:
+
+| Version        | Purpose                                               | Contract changes |
+| -------------- | ----------------------------------------------------- | ---------------- |
+| **Deprecated** | Stable and scheduled for removal at the next release  | Not allowed      |
+| **Current**    | Stable and used when no version is requested          | Not allowed      |
+| **Next**       | In development and used for upcoming contract changes | Allowed          |
+
+During the first week of January, April, July, and October:
+
+1. The Deprecated version is removed.
+2. Current becomes Deprecated.
+3. Next becomes Current and is frozen.
+4. A new Next version is created.
+
+Releases are calendar-driven, even when Next contains no contract changes. Each
+version is therefore supported for approximately nine months: three months in
+each lifecycle stage.
+
+Schema-lock tests enforce the freeze on Deprecated and Current. Even
+backwards-compatible contract changes, such as adding an optional response
+field, must target Next.
+
+<Info>
+  API versioning is currently being rolled out. Until the first full rotation,
+  only Current and Next exist; there is no Deprecated version or
+  `DEPRECATED_API_VERSION` constant yet. The three-version lifecycle and
+  examples below describe the steady state after that rotation.
+</Info>
+
+Versions use the `YYYY-MM` format, such as `2026-04`.
+
+## Selecting an API version
+
+Clients select a version with the `Polar-Version` request header:
+
+```http
+Polar-Version: 2026-04
+```
+
+When the header is omitted, the request uses Current. Successful responses
+include the resolved version in the `Polar-Version` response header. A malformed,
+unknown, or removed version returns `404 Not Found`.
+
+<Warning>
+  Current changes every quarter. External clients should always set the header
+  explicitly, either directly or by using a versioned SDK import.
+</Warning>
+
+### OpenAPI schemas and SDKs
+
+An OpenAPI schema is generated for every supported version and exposed at
+`/YYYY-MM/openapi.json`, for example `/2026-04/openapi.json`.
+
+The Python and TypeScript SDKs ship the schemas and types for every supported API
+version. The import path pins the client to that version and automatically sends
+the corresponding header:
+
+```python
+from polar.v2026_04 import Polar
+```
+
+```ts
+import { createPolar } from "@polar-sh/sdk/2026-04";
+```
+
+## How to change the API
+
+The versioning helpers take exact version sets. They do not mean "this version
+and every version after it." An annotation usually remains in place across two
+release rotations before it can be removed.
+
+### Adding an endpoint
+
+Use `@version` to expose a new endpoint only in Next:
+
+```python
+from polar.kit.versioning import version
+from polar.version import NEXT_API_VERSION
+
+
+@router.get("/new")
+@version(NEXT_API_VERSION)
+async def new() -> dict[str, str]:
+    return {"message": "New endpoint"}
+```
+
+The decorator must be below the router decorator, as shown above, so its metadata
+is present when FastAPI registers the route.
+
+At the first rotation, update it to remain unavailable in the newly Deprecated
+version:
+
+```python
+@version(CURRENT_API_VERSION, NEXT_API_VERSION)
+```
+
+At the following rotation, every supported version contains the endpoint, so the
+decorator can be removed.
+
+### Changing an existing endpoint
+
+Keep the existing undecorated endpoint as the fallback for stable versions and
+register a second endpoint with the same path and method for Next:
+
+```python
+@router.get("/{customer_id}")
+async def get_customer(customer_id: UUID) -> Customer:
+    ...
+
+
+@router.get("/{customer_id}")
+@version(NEXT_API_VERSION)
+async def get_customer_next(customer_id: UUID) -> CustomerNext:
+    ...
+```
+
+The version-specific route overrides the general route for Next. At the first
+rotation, mark the new route for Current and Next; the old route will then serve
+only Deprecated. At the following rotation, delete the old route and remove the
+decorator from the new one.
+
+Use this pattern for request-schema changes as well as changes to an endpoint's
+response or behavior.
+
+### Removing an endpoint
+
+During development, restrict the old endpoint to the two frozen versions so it
+is absent from Next:
+
+```python
+from polar.kit.versioning import version
+from polar.version import CURRENT_API_VERSION, DEPRECATED_API_VERSION
+
+
+@router.get("/old")
+@version(DEPRECATED_API_VERSION, CURRENT_API_VERSION)
+async def old() -> dict[str, str]:
+    ...
+```
+
+During the initial two-version rollout, use
+`@version(CURRENT_API_VERSION)` instead.
+
+At the first rotation, the endpoint becomes Deprecated-only:
+
+```python
+@version(DEPRECATED_API_VERSION)
+```
+
+Delete the endpoint at the following rotation, when that Deprecated version is
+removed.
+
+### Adding an output field
+
+Use `IncludedIn` to serialize a new output field and include it in the OpenAPI
+schema only for Next:
+
+```python
+from typing import Annotated
+
+from polar.kit.versioning import IncludedIn
+from polar.version import NEXT_API_VERSION
+
+
+class Customer(Schema):
+    email: str
+    new_field: Annotated[str, IncludedIn(NEXT_API_VERSION)]
+```
+
+At the first rotation, change the annotation to:
+
+```python
+new_field: Annotated[
+    str,
+    IncludedIn(CURRENT_API_VERSION, NEXT_API_VERSION),
+]
+```
+
+Remove the annotation at the following rotation, when the field exists in every
+supported version.
+
+### Removing an output field
+
+Use `ExcludedIn` to omit an existing output field from Next serialization and
+its OpenAPI schema:
+
+```python
+from typing import Annotated
+
+from polar.kit.versioning import ExcludedIn
+from polar.version import NEXT_API_VERSION
+
+
+class Customer(Schema):
+    email: str
+    old_field: Annotated[str, ExcludedIn(NEXT_API_VERSION)]
+```
+
+At the first rotation, keep it absent from both Current and Next:
+
+```python
+old_field: Annotated[
+    str,
+    ExcludedIn(CURRENT_API_VERSION, NEXT_API_VERSION),
+]
+```
+
+Delete the field at the following rotation, when no supported version exposes
+it.
+
+<Warning>
+  `IncludedIn` and `ExcludedIn` control OpenAPI schema generation and output
+  serialization. They do not change Pydantic input validation. To change an
+  input schema, create a version-specific endpoint with a separate request
+  model.
+</Warning>
+
+### Release transition reference
+
+Use this table when rotating versions:
+
+| Change               | While developing Next           | After first rotation        | After second rotation |
+| -------------------- | ------------------------------- | --------------------------- | --------------------- |
+| Added endpoint       | `@version(Next)`                | `@version(Current, Next)`   | Remove decorator      |
+| Removed endpoint     | `@version(Deprecated, Current)` | `@version(Deprecated)`      | Delete endpoint       |
+| Added output field   | `IncludedIn(Next)`              | `IncludedIn(Current, Next)` | Remove annotation     |
+| Removed output field | `ExcludedIn(Next)`              | `ExcludedIn(Current, Next)` | Delete field          |
+
+At every rotation, update the version constants and all exact-version markers,
+regenerate every supported OpenAPI schema and SDK, and run the schema-lock tests
+before merging.
+
+## How it works under the hood
+
+The versioning middleware reads `Polar-Version`, defaults it to
+`CURRENT_API_VERSION`, rejects unsupported values, and stores the selected
+version in the request context. It also adds the selected version to the response
+headers.
+
+Routes without `@version` are available in every supported version unless a
+version-specific route with the same path and HTTP methods overrides them. Routes
+with `@version` are available only in the exact versions passed to the decorator.
+
+For fields, `IncludedIn` and `ExcludedIn` inspect the active request version when
+serializing Pydantic models and generating JSON Schema. Finally, the application
+filters routes and fields for each supported version to generate the versioned
+OpenAPI documents used by the SDK generator and schema-lock tests.
+
+See the [API versioning design document](/engineering/design-documents/api-versioning)
+for the rationale, lifecycle timeline, and SDK release strategy.

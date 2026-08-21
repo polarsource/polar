@@ -221,6 +221,10 @@ async def list(
                             OrderBillingReason.subscription_cycle.value,
                         ),
                         (
+                            "Meter Cycle",
+                            OrderBillingReason.subscription_meter_cycle.value,
+                        ),
+                        (
                             "Subscription Update",
                             OrderBillingReason.subscription_update.value,
                         ),

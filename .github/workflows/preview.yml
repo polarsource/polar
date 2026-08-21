@@ -271,7 +271,8 @@ jobs:
     needs: preview
     if: |
       github.event_name == 'pull_request' &&
-      needs.preview.result == 'success'
+      needs.preview.result == 'success' &&
+      needs.preview.outputs.preview_url != ''
     runs-on: ubuntu-latest
     steps:
       - name: Find existing preview comment

@@ -187,6 +187,27 @@ class TestRun:
         assert paused_subscription.current_period_end == renewal
         assert paused_subscription.payment_method_id == copied_card.id
 
+    async def test_moves_subscription_loaded_from_database(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        record: MerchantMigrationRecord,
+        copied_card: PaymentMethod,
+        paused_subscription: Subscription,
+    ) -> None:
+        subscription_id = paused_subscription.id
+        session.expunge_all()
+        adapter = _source()
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
+
+        subscription = await session.get(Subscription, subscription_id)
+        assert subscription is not None
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.payment_method_id == copied_card.id
+
     async def test_charges_a_card_that_landed_after_the_card_check(
         self,
         mocker: MockerFixture,

@@ -11,7 +11,7 @@ from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy.orm import joinedload, noload
+from sqlalchemy.orm import joinedload, noload, selectinload
 
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -282,7 +282,7 @@ class SubscriptionCutover:
                 joinedload(Subscription.customer).noload(Customer.owner),
                 joinedload(Subscription.organization),
                 noload(Subscription.meters),
-                noload(Subscription.subscription_product_prices),
+                selectinload(Subscription.subscription_product_prices),
             ),
         )
 

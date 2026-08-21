@@ -24401,7 +24401,7 @@ export interface components {
       has_payment_method: boolean | null
       /**
        * Dependencies Imported
-       * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover, or the subscription itself is already in Polar. Null for non-subscription rows.
+       * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
        */
       dependencies_imported: boolean | null
     }

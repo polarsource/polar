@@ -1,7 +1,7 @@
 """The cutover: Polar creates subscriptions immediately before taking over billing.
 
-Legacy imported subscriptions are activated from their paused state. Every check
-runs before the source is stopped, so a subscription that fails one stays there.
+Every check runs before the source is stopped, so a subscription that fails one
+stays there.
 """
 
 from dataclasses import dataclass
@@ -28,7 +28,6 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
 )
 from polar.models.subscription import SubscriptionStatus
-from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -36,7 +35,6 @@ from polar.subscription.service import subscription as subscription_service
 
 from .adapters import SourceAdapter
 from .canonical import (
-    CanonicalPaymentMethod,
     CanonicalProduct,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
@@ -217,8 +215,8 @@ class SubscriptionCutover:
 
         # Behind the gate above because resolving writes: it upserts the copied
         # methods and may set the customer's default.
-        payment_method = await self._resolve_payment_method(
-            subscription, customer, source.payment_method
+        payment_method = await link_payment_method(
+            self.session, customer, source_method=source.payment_method
         )
         if already_stopped:
             # An unproven card beats no biller at all: a failed first renewal
@@ -323,7 +321,7 @@ class SubscriptionCutover:
         if not already_stopped:
             if not product.organization.can_renew_subscriptions:
                 return _skip(_RENEWALS_DISABLED)
-            reason = self._source_reason(source, record)
+            reason = self._source_reason(source, record, staged.currency)
             if reason is not None:
                 return _skip(reason)
 
@@ -355,9 +353,12 @@ class SubscriptionCutover:
             return _skip(_NOT_IMPORTED)
         if not isinstance(canonical_product, CanonicalProduct):
             return _skip(_NOT_IMPORTED)
-        price = find_imported_price(product, canonical_product, staged.price_source_id)
+        price = find_imported_price(product, canonical_product, staged)
         if price is None:
             return _skip(_NOT_IMPORTED)
+
+        if already_stopped and self._period_is_lapsed(source, product):
+            return _fail(_LAPSED)
 
         subscription = await create_imported_subscription(
             self.session, staged, product, price, customer
@@ -371,11 +372,6 @@ class SubscriptionCutover:
             },
             flush=True,
         )
-
-        if already_stopped and subscription.is_period_lapsed(
-            self._period_end(source, subscription)
-        ):
-            return _fail(_LAPSED)
 
         if not already_stopped:
             await self.adapter.stop_source_subscription(
@@ -444,7 +440,7 @@ class SubscriptionCutover:
         self,
         source: CanonicalSubscription,
         record: MerchantMigrationRecord,
-        imported_currency: str,
+        imported_currency: str | None,
     ) -> str | None:
         """Why the source says this subscription shouldn't move today."""
         if source.status == CanonicalSubscriptionStatus.canceled:
@@ -469,7 +465,11 @@ class SubscriptionCutover:
                 staged.price_source_id
             ) != normalize_price_source_id(source.price_source_id):
                 return _PLAN_CHANGED
-            if source.currency != imported_currency:
+            if (
+                source.currency is not None
+                and imported_currency is not None
+                and source.currency != imported_currency
+            ):
                 return _PLAN_CHANGED
         return self._renewal_reason(source)
 
@@ -487,24 +487,6 @@ class SubscriptionCutover:
             f"It renews on the source at {renewal.isoformat()}, too soon to hand "
             "over without risking a double charge. Retry once that renewal has "
             "gone through."
-        )
-
-    async def _resolve_payment_method(
-        self,
-        subscription: Subscription,
-        customer: Customer,
-        source_method: CanonicalPaymentMethod | None,
-    ) -> PaymentMethod | None:
-        """The card the first Polar renewal will charge. A card the `verify_cards`
-        step linked wins; otherwise look again, because cards keep landing."""
-        if subscription.payment_method_id is not None:
-            payment_method = await PaymentMethodRepository.from_session(
-                self.session
-            ).get_by_id(subscription.payment_method_id)
-            if payment_method is not None:
-                return payment_method
-        return await link_payment_method(
-            self.session, customer, source_method=source_method
         )
 
     def _card_note(self, payment_method: PaymentMethod) -> str | None:
@@ -538,6 +520,19 @@ class SubscriptionCutover:
         self, source: CanonicalSubscription, subscription: Subscription
     ) -> datetime:
         return source.current_period_end or subscription.current_period_end
+
+    def _period_is_lapsed(
+        self, source: CanonicalSubscription, product: Product
+    ) -> bool:
+        end = source.current_period_end
+        interval = product.recurring_interval
+        count = product.recurring_interval_count
+        if end is None or interval is None or count is None:
+            return False
+        now = utc_now()
+        if end > now:
+            return False
+        return interval.get_next_period(end, source.anchor_day, count) <= now
 
     def _trial_end(self, source: CanonicalSubscription) -> datetime | None:
         """Keep a running trial running: Polar bills at its end, not today.

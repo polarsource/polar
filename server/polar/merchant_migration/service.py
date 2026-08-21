@@ -5,7 +5,6 @@ from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -22,7 +21,6 @@ from polar.models import (
     MerchantMigration,
     MerchantMigrationRecord,
     PaymentMethod,
-    Subscription,
 )
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -41,7 +39,6 @@ from polar.models.merchant_migration_record import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
-from polar.subscription.repository import SubscriptionRepository
 from polar.worker import enqueue_job
 
 from . import pan_transfer
@@ -651,43 +648,21 @@ class MerchantMigrationService:
         records = await record_repository.list_imported_subscriptions(
             migration.id, offset=offset, limit=CARD_VERIFICATION_BATCH_SIZE
         )
-        subscription_repository = SubscriptionRepository.from_session(session)
         customer_repository = CustomerRepository.from_session(session)
         resolved: ResolvedCards = {}
         for record in records:
-            subscription: Subscription | None = None
-            customer: Customer | None = None
-            if record.target_id is not None:
-                subscription = await subscription_repository.get_by_id(
-                    record.target_id, options=(joinedload(Subscription.customer),)
-                )
-                if subscription is None or subscription.payment_method_id is not None:
-                    continue
-                customer = subscription.customer
-            else:
-                staged = _staged_subscription(record)
-                if staged is None:
-                    continue
-                customer_record = (
-                    await record_repository.get_imported_customer_dependency(
-                        migration.id, staged.customer_source_id
-                    )
-                )
-                if customer_record is None or customer_record.target_id is None:
-                    continue
-                customer = await customer_repository.get_by_id(
-                    customer_record.target_id
-                )
-                if customer is None:
-                    continue
-
-            payment_method = await self._resolve_card(
-                session, record, customer, resolved
+            staged = _staged_subscription(record)
+            if staged is None:
+                continue
+            customer_record = await record_repository.get_imported_customer_dependency(
+                migration.id, staged.customer_source_id
             )
-            if payment_method is not None and subscription is not None:
-                await subscription_repository.update(
-                    subscription, update_dict={"payment_method_id": payment_method.id}
-                )
+            if customer_record is None or customer_record.target_id is None:
+                continue
+            customer = await customer_repository.get_by_id(customer_record.target_id)
+            if customer is None:
+                continue
+            await self._resolve_card(session, record, customer, resolved)
 
         if len(records) == CARD_VERIFICATION_BATCH_SIZE:
             enqueue_job(

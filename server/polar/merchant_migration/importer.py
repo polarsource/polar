@@ -80,13 +80,18 @@ _CUSTOMER_STRIPE_ID_CONFLICT = Reason(
 def find_imported_price(
     product: Product,
     canonical_product: CanonicalProduct,
-    price_source_id: str,
+    subscription: CanonicalSubscription,
 ) -> ProductPriceFixed | None:
+    key = subscription_price_key(
+        subscription, legacy_price_keys([canonical_product])
+    )
+    if key is None:
+        return None
     canonical_price = next(
         (
             price
             for price in canonical_product.prices
-            if price.source_id == price_source_id
+            if canonical_price_key(price) == key
         ),
         None,
     )

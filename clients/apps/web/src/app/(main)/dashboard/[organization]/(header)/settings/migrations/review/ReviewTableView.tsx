@@ -85,13 +85,13 @@ export function ReviewTableView({
 
   const columns = useMemo(
     () =>
-      buildReviewColumns('subscriptions', {
+      buildReviewColumns({
         isSelected: (id) => isRowSelected(selection, id),
         // The opt-out default reads as "all" even when no row can be picked,
         // which would show as ticked-but-disabled.
         headerState:
           selectableTotal > 0 ? headerCheckState(selection) : 'unchecked',
-        // It flips the whole catalog, not this page, so gate it on the same scope.
+        // It flips every subscription, not this page, so gate it on the same scope.
         canSelectAll: selectableTotal > 0,
         onToggle,
         onToggleAll,
@@ -125,8 +125,8 @@ export function ReviewTableView({
     )
   }
 
-  // Reaching this step means a scan already ran, so an empty ledger means
-  // Stripe had nothing we can migrate, not that the merchant still has to scan.
+  // Reaching this step means a scan already ran, so no subscription rows means
+  // Stripe had no subscriptions we can migrate.
   if (!hasCatalog) {
     return (
       <Box
@@ -146,8 +146,8 @@ export function ReviewTableView({
             Nothing to import
           </Text>
           <Text variant="caption" color="muted">
-            We found no products, customers or subscriptions in Stripe that can
-            move to Polar. If you have added some since, scan again.
+            We found no subscriptions in Stripe that can move to Polar. If you
+            have added some since, scan again.
           </Text>
         </Box>
         {onRerunPrecheck && (

@@ -289,9 +289,10 @@ def _summarize_entities(
         if item.status != PrecheckRecordStatus.importable:
             continue
         tally["importable"] += 1
-        if item.import_status == MerchantMigrationRecordStatus.pending and (
-            item.entity != PrecheckEntity.subscriptions
-            or not item.dependencies_imported
+        if (
+            item.entity == PrecheckEntity.subscriptions
+            and item.import_status == MerchantMigrationRecordStatus.pending
+            and not item.dependencies_imported
         ):
             tally["selectable"] += 1
 
@@ -1246,10 +1247,10 @@ class MerchantMigrationService:
         staged: Sequence[MerchantMigrationRecord],
         entity: PrecheckEntity,
     ) -> None:
-        """Give each item its ledger record id, so a row can be selected for
-        import. The 1:1 entities (products/customers/subscriptions) map to their
-        staged records in order — both derive from the same `staged` fetch. Prices
-        aren't their own record (they live in a product), so they keep a null id.
+        """Give each item its ledger record id. The 1:1 entities
+        (products/customers/subscriptions) map to their staged records in order —
+        both derive from the same `staged` fetch. Prices aren't their own record
+        (they live in a product), so they keep a null id.
         """
         record_type = _ENTITY_RECORD_TYPE.get(entity)
         if record_type is None:

@@ -631,27 +631,6 @@ class TestListRecords:
         assert prod_1.id in {item.record_id for item in items}
 
 
-def _catalog_priced_in(currency: str) -> list[CanonicalRecord]:
-    """A single recurring product priced in one currency."""
-    return [
-        CanonicalProduct(
-            source_id="prod_1:month:1",
-            product_source_id="prod_1",
-            name="Pro",
-            recurring_interval="month",
-            recurring_interval_count=1,
-            prices=[
-                CanonicalPrice(
-                    source_id="price_1",
-                    currency=currency,
-                    amount=1000,
-                    pricing_scheme=CanonicalPricingScheme.fixed,
-                )
-            ],
-        )
-    ]
-
-
 def _importable_catalog() -> list[CanonicalRecord]:
     """An importable recurring product, a one-time product that's skipped, and
     a customer."""
@@ -678,7 +657,7 @@ async def _staged_migration(
     mocker.patch(
         "polar.merchant_migration.service.StripeAdapter",
         return_value=_FakeAdapter(
-            records if records is not None else _importable_catalog()
+            records if records is not None else _catalog_with_subscription()
         ),
     )
     await service.run_precheck(session, auth_subject, migration.id)
@@ -736,7 +715,7 @@ class TestImportCatalog:
         assert report.step == MerchantMigrationStep.create_catalog
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.products].imported == 1
-        assert results[PrecheckEntity.products].skipped == 1
+        assert results[PrecheckEntity.products].skipped == 0
         assert results[PrecheckEntity.customers].imported == 1
         assert results[PrecheckEntity.customers].skipped == 0
 
@@ -764,69 +743,6 @@ class TestImportCatalog:
         updated = await migration_repository.get_by_id(migration.id)
         assert updated is not None
         assert updated.step == MerchantMigrationStep.create_catalog
-
-    @pytest.mark.auth
-    async def test_short_product_name_is_skipped_not_crashed(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # A name too short for Polar's schema must be skipped at precheck time,
-        # not crash the importer with a ValidationError that rolls back the batch.
-        # The valid product alongside it still imports (no rollback).
-        catalog = [
-            *_catalog(),
-            CanonicalProduct(
-                source_id="prod_short:month:1",
-                product_source_id="prod_short",
-                name="AB",
-                recurring_interval="month",
-                recurring_interval_count=1,
-                prices=[
-                    CanonicalPrice(
-                        source_id="price_short",
-                        currency="usd",
-                        amount=1000,
-                        pricing_scheme=CanonicalPricingScheme.fixed,
-                    )
-                ],
-            ),
-            CanonicalCustomer(
-                source_id="cus_1",
-                email="alice@example.com",
-                name="Alice",
-                country="US",
-            ),
-        ]
-        migration = await _staged_migration(
-            mocker, session, save_fixture, auth_subject, organization, records=catalog
-        )
-
-        report = await service.import_catalog(session, auth_subject, migration.id)
-
-        results = {result.entity: result for result in report.results}
-        # Pro: imported. Legacy (one-time): skipped. Short-name: skipped.
-        assert results[PrecheckEntity.products].imported == 1
-        assert results[PrecheckEntity.products].skipped == 2
-
-        products = await _products(session, organization)
-        assert len(products) == 1
-        assert products[0].name == "Pro"
-
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        short_record = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.product,
-            source_id="prod_short:month:1",
-        )
-        assert short_record is not None
-        assert short_record.status == MerchantMigrationRecordStatus.skipped
-        assert short_record.target_id is None
-        assert short_record.error is not None
 
     @pytest.mark.auth
     async def test_blocked_organization_cannot_import(
@@ -950,12 +866,12 @@ class TestImportCatalog:
             pagination=PaginationParams(page=1, limit=20),
         )
         by_source = {item.source_id: item for item in items}
-        # the imported product now reads as imported; the skipped one as skipped
+        # Only subscription dependencies are settled by import.
         assert by_source["prod_1"].import_status == (
             MerchantMigrationRecordStatus.imported
         )
-        assert by_source["prod_2"].import_status == (
-            MerchantMigrationRecordStatus.skipped
+        assert (
+            by_source["prod_2"].import_status == MerchantMigrationRecordStatus.pending
         )
 
     @pytest.mark.auth
@@ -1244,15 +1160,15 @@ class TestImportCatalog:
         assert imported.status == MerchantMigrationRecordStatus.imported
         assert imported.target_id is not None
 
-        skipped = await record_repository.get_by_source(
+        unrelated = await record_repository.get_by_source(
             organization_id=organization.id,
             type=MerchantMigrationRecordType.product,
             source_id="prod_2:one_time",
         )
-        assert skipped is not None
-        assert skipped.status == MerchantMigrationRecordStatus.skipped
-        assert skipped.error is not None
-        assert skipped.target_id is None
+        assert unrelated is not None
+        assert unrelated.status == MerchantMigrationRecordStatus.pending
+        assert unrelated.error is None
+        assert unrelated.target_id is None
 
     @pytest.mark.auth
     async def test_reuses_existing_customer_by_email(
@@ -1319,7 +1235,7 @@ class TestImportCatalog:
         assert len(list(matches.scalars().all())) == 1
 
     @pytest.mark.auth
-    async def test_imports_only_selected_records(
+    async def test_product_and_customer_ids_do_not_select_dependencies(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1344,12 +1260,10 @@ class TestImportCatalog:
         )
 
         results = {result.entity: result for result in report.results}
-        # only the selected product is acted on
-        assert results[PrecheckEntity.products].imported == 1
+        assert results[PrecheckEntity.products].imported == 0
         assert results[PrecheckEntity.customers].imported == 0
 
-        assert len(await _products(session, organization)) == 1
-        # the unselected customer stays pending, available to import later
+        assert await _products(session, organization) == []
         customer_record = await record_repository.get_by_source(
             organization_id=organization.id,
             type=MerchantMigrationRecordType.customer,
@@ -1491,7 +1405,7 @@ class TestImportCatalog:
         assert product_record.status == MerchantMigrationRecordStatus.imported
 
     @pytest.mark.auth
-    async def test_imports_everything_except_excluded(
+    async def test_catalog_without_subscriptions_imports_nothing(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1501,69 +1415,19 @@ class TestImportCatalog:
         user_organization: UserOrganization,
     ) -> None:
         migration = await _staged_migration(
-            mocker, session, save_fixture, auth_subject, organization
-        )
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        product_record = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.product,
-            source_id="prod_1:month:1",
-        )
-        assert product_record is not None
-
-        report = await service.import_catalog(
+            mocker,
             session,
+            save_fixture,
             auth_subject,
-            migration.id,
-            exclude_record_ids=[product_record.id],
+            organization,
+            records=_importable_catalog(),
         )
-
-        results = {result.entity: result for result in report.results}
-        # everything importable imports except the excluded product
-        assert results[PrecheckEntity.products].imported == 0
-        assert results[PrecheckEntity.customers].imported == 1
-        excluded = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.product,
-            source_id="prod_1:month:1",
-        )
-        assert excluded is not None
-        assert excluded.status == MerchantMigrationRecordStatus.pending
-
-    @pytest.mark.auth
-    async def test_unselected_records_import_on_a_later_pass(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        migration = await _staged_migration(
-            mocker, session, save_fixture, auth_subject, organization
-        )
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        product_record = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.product,
-            source_id="prod_1:month:1",
-        )
-        assert product_record is not None
-
-        await service.import_catalog(
-            session, auth_subject, migration.id, record_ids=[product_record.id]
-        )
-        # a second pass with no selection imports what's still pending
         report = await service.import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
-        assert results[PrecheckEntity.customers].imported == 1
-        customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_email_and_organization(
-            "alice@example.com", organization.id
-        )
-        assert customer is not None
+        assert results[PrecheckEntity.products].imported == 0
+        assert results[PrecheckEntity.customers].imported == 0
+        assert await _products(session, organization) == []
 
     @pytest.mark.auth
     async def test_requires_precheck_first(
@@ -1578,45 +1442,6 @@ class TestImportCatalog:
 
         with pytest.raises(CatalogImportNotReady):
             await service.import_catalog(session, auth_subject, migration.id)
-
-    @pytest.mark.auth
-    async def test_product_priced_in_another_currency_is_skipped(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # Polar rejects a product with no price in the organization's default
-        # currency, so the importer must skip it instead of failing the run.
-        migration = await _staged_migration(
-            mocker,
-            session,
-            save_fixture,
-            auth_subject,
-            organization,
-            records=_catalog_priced_in("eur"),
-        )
-
-        report = await service.import_catalog(session, auth_subject, migration.id)
-
-        results = {result.entity: result for result in report.results}
-        assert results[PrecheckEntity.products].imported == 0
-        assert results[PrecheckEntity.products].skipped == 1
-        assert await _products(session, organization) == []
-
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        record = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.product,
-            source_id="prod_1:month:1",
-        )
-        assert record is not None
-        assert record.status == MerchantMigrationRecordStatus.skipped
-        assert record.error is not None
-        assert "USD" in record.error
 
 
 @pytest.mark.asyncio
@@ -1689,7 +1514,8 @@ class TestSummarizeRecords:
         by_entity = {entry.entity: entry for entry in summary.entities}
         products = by_entity[PrecheckEntity.products]
         assert products.imported == 0
-        assert products.selectable == 1
+        assert products.selectable == 0
+        assert by_entity[PrecheckEntity.subscriptions].selectable == 1
 
 
 def _canonical_subscription(

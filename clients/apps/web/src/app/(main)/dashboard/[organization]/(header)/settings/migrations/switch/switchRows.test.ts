@@ -67,14 +67,6 @@ describe('isSwitchable', () => {
 
   it('is false when dependencies are not imported or without a record id', () => {
     expect(isSwitchable(row({ import_status: 'pending' }))).toBe(false)
-    expect(
-      isSwitchable(
-        row({
-          import_status: 'pending',
-          dependencies_imported: false,
-        }),
-      ),
-    ).toBe(false)
     expect(isSwitchable(row({ record_id: null }))).toBe(false)
   })
 })

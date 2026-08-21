@@ -45,6 +45,20 @@ _SUBSCRIPTION_EXPAND = [
 ]
 
 
+def _canonical_price_id(price_id: str, currency: str, default_currency: str) -> str:
+    """The canonical id for one currency of a source price.
+
+    A Stripe price can carry an amount in several currencies at once
+    (`currency_options`), and each maps to its own Polar price, so the price id
+    alone doesn't identify one. The default currency keeps the bare price id:
+    every single-currency price is one, and it's the id already-staged
+    migrations were read with.
+    """
+    if currency.lower() == default_currency.lower():
+        return price_id
+    return f"{price_id}:{currency.lower()}"
+
+
 class StripeAdapter:
     def __init__(self, access_token: str) -> None:
         self._client = stripe_lib.StripeClient(
@@ -152,7 +166,9 @@ class StripeAdapter:
             params={
                 "active": True,
                 "limit": PAGE_SIZE,
-                "expand": ["data.product"],
+                # `currency_options` is not returned unless expanded, and without
+                # it a multi-currency price reads as priced in one currency only.
+                "expand": ["data.product", "data.currency_options"],
             }
         )
         async for price in prices.auto_paging_iter():
@@ -176,7 +192,7 @@ class StripeAdapter:
                     prices=[],
                 )
                 grouped[key] = canonical
-            canonical.prices.append(self._map_price(price))
+            canonical.prices.extend(self._map_prices(price))
         for canonical in grouped.values():
             yield canonical
 
@@ -243,13 +259,26 @@ class StripeAdapter:
             return e.code == "resource_missing"
         return subscription.status == "canceled"
 
-    def _map_price(self, price: stripe_lib.Price) -> CanonicalPrice:
-        return CanonicalPrice(
-            source_id=price.id,
-            currency=price.currency,
-            amount=price.unit_amount,
-            pricing_scheme=self._map_pricing_scheme(price),
-        )
+    def _map_prices(self, price: stripe_lib.Price) -> list[CanonicalPrice]:
+        """One canonical price per currency the source price sells in.
+
+        A Polar product holds one price per currency, so a Stripe price with
+        `currency_options` becomes several: taking only its default currency
+        would report a product as unpriced in currencies it does sell in.
+        """
+        pricing_scheme = self._map_pricing_scheme(price)
+        amounts: dict[str, int | None] = {price.currency: price.unit_amount}
+        for currency, option in (price.get("currency_options") or {}).items():
+            amounts[currency] = option.get("unit_amount")
+        return [
+            CanonicalPrice(
+                source_id=_canonical_price_id(price.id, currency, price.currency),
+                currency=currency,
+                amount=amount,
+                pricing_scheme=pricing_scheme,
+            )
+            for currency, amount in amounts.items()
+        ]
 
     def _map_pricing_scheme(self, price: stripe_lib.Price) -> CanonicalPricingScheme:
         if price.billing_scheme == "tiered":
@@ -267,7 +296,7 @@ class StripeAdapter:
         return CanonicalSubscription(
             source_id=subscription.id,
             customer_source_id=self._id_of(subscription.customer),
-            price_source_id=self._id_of(first_item["price"]),
+            price_source_id=self._price_source_id(subscription, first_item),
             status=self._map_status(subscription.status),
             collection_method=self._map_collection_method(
                 subscription.collection_method
@@ -288,6 +317,19 @@ class StripeAdapter:
             stopped_for_migration=self._stopped_for_migration(subscription),
             anchor_day=self._anchor_day(subscription),
         )
+
+    def _price_source_id(self, subscription: stripe_lib.Subscription, item: Any) -> str:
+        """The canonical price this subscription bills. A multi-currency source
+        price carries an amount per currency, and the subscription's currency
+        says which of them it charges."""
+        price = item["price"]
+        if isinstance(price, str):
+            return price
+        price_currency = price.get("currency")
+        billed_currency = subscription.get("currency")
+        if price_currency is None or billed_currency is None:
+            return price["id"]
+        return _canonical_price_id(price["id"], billed_currency, price_currency)
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

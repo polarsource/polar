@@ -29,13 +29,13 @@ from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 
+from . import pan_transfer
 from .adapters import SourceAdapter
 from .canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
 )
-from . import pan_transfer
 from .cards import CopiedCardResolutionError, link_payment_method
 from .precheck import subscription_import_reason
 

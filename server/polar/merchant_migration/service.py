@@ -709,16 +709,16 @@ class MerchantMigrationService:
                 continue
             staged = _staged_subscription(record)
             source_method = _staged_payment_method(record)
-            mapping = (
+            record_mapping = (
                 mappings_by_source.get(source_method.source_id)
                 if source_method is not None
                 else None
             )
             payment_method = (
-                payment_methods[mapping.source_payment_method_id]
-                if mapping is not None
+                payment_methods[record_mapping.source_payment_method_id]
+                if record_mapping is not None
                 and staged is not None
-                and staged.customer_source_id == mapping.source_customer_id
+                and staged.customer_source_id == record_mapping.source_customer_id
                 else None
             )
             subscription = await subscription_repository.get_by_id(record.target_id)

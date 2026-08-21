@@ -337,7 +337,7 @@ class TestExtractProducts:
         assert [
             (price.source_id, price.currency, price.amount)
             for price in products[0].prices
-        ] == [("price_1", "eur", 900), ("price_1:usd", "usd", 1000)]
+        ] == [("price_1", "eur", 900), ("price_1", "usd", 1000)]
 
     async def test_only_maps_configured_currency_options(
         self, mocker: MockerFixture
@@ -404,7 +404,8 @@ class TestGetSubscription:
         subscription = await adapter.get_subscription("sub_1")
 
         assert subscription is not None
-        assert subscription.price_source_id == "price_1:usd"
+        assert subscription.price_source_id == "price_1"
+        assert subscription.currency == "usd"
 
     async def test_default_currency_keeps_the_bare_price_id(
         self, mocker: MockerFixture
@@ -418,6 +419,7 @@ class TestGetSubscription:
 
         assert subscription is not None
         assert subscription.price_source_id == "price_1"
+        assert subscription.currency == "usd"
 
     async def test_carries_the_card_details_the_copy_keeps(
         self, mocker: MockerFixture

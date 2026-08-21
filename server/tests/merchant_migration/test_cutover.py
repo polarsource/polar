@@ -187,6 +187,19 @@ class TestRun:
         assert paused_subscription.current_period_end == renewal
         assert paused_subscription.payment_method_id == copied_card.id
 
+    async def test_legacy_suffixed_price_matches_explicit_currency(
+        self,
+        cutover: RunCutover,
+        copied_card: PaymentMethod,
+        record: MerchantMigrationRecord,
+    ) -> None:
+        record.canonical["price_source_id"] = "price_1:usd"
+        record.canonical.pop("currency", None)
+
+        outcome = await cutover(_source(currency="usd"))
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+
     async def test_moves_subscription_loaded_from_database(
         self,
         session: AsyncSession,
@@ -512,6 +525,21 @@ class TestSkips:
         assert outcome.status == MerchantMigrationCutoverStatus.skipped
         if expected_reason is not None:
             assert expected_reason in (outcome.message or "")
+        _assert_left_alone(adapter, paused_subscription)
+
+    async def test_billed_currency_changed(
+        self,
+        cutover: RunCutover,
+        record: MerchantMigrationRecord,
+        paused_subscription: Subscription,
+    ) -> None:
+        record.canonical["currency"] = "eur"
+        adapter = _source(currency="usd")
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "plan changed on the source" in (outcome.message or "")
         _assert_left_alone(adapter, paused_subscription)
 
     async def test_source_subscription_gone(

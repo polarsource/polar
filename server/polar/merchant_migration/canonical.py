@@ -1,6 +1,7 @@
 """Provider-agnostic records the adapters normalize into, so the precheck
 engine and importer don't need to know which billing provider data came from."""
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -8,6 +9,7 @@ from typing import Any
 
 from fastapi.encoders import jsonable_encoder
 
+from polar.kit.currency import PresentmentCurrency
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
 
 
@@ -129,6 +131,7 @@ class CanonicalSubscription:
     # The renewal day before any month-end clamping. A period boundary can't be
     # trusted for it: a 31st anchor reads as Feb 28 in a February period.
     anchor_day: int | None = None
+    currency: str | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -144,6 +147,51 @@ class CanonicalAccount:
 
 
 CanonicalRecord = CanonicalProduct | CanonicalCustomer | CanonicalSubscription
+PriceKey = tuple[str, str]
+
+
+def _legacy_price_key(source_id: str) -> PriceKey | None:
+    price_id, separator, currency = source_id.rpartition(":")
+    if not separator:
+        return None
+    try:
+        PresentmentCurrency(currency.lower())
+    except ValueError:
+        return None
+    return price_id, currency.lower()
+
+
+def normalize_price_source_id(source_id: str) -> str:
+    legacy_key = _legacy_price_key(source_id)
+    return legacy_key[0] if legacy_key is not None else source_id
+
+
+def price_key(source_id: str, currency: str) -> PriceKey:
+    return normalize_price_source_id(source_id), currency.lower()
+
+
+def canonical_price_key(price: CanonicalPrice) -> PriceKey:
+    return price_key(price.source_id, price.currency)
+
+
+def legacy_price_keys(products: Iterable[CanonicalProduct]) -> dict[str, PriceKey]:
+    keys: dict[str, PriceKey] = {}
+    for product in products:
+        for price in product.prices:
+            keys.setdefault(price.source_id, canonical_price_key(price))
+    return keys
+
+
+def subscription_price_key(
+    subscription: CanonicalSubscription,
+    legacy_keys: Mapping[str, PriceKey] | None = None,
+) -> PriceKey | None:
+    if subscription.currency is not None:
+        return price_key(subscription.price_source_id, subscription.currency)
+    legacy_key = _legacy_price_key(subscription.price_source_id)
+    if legacy_key is not None:
+        return legacy_key
+    return (legacy_keys or {}).get(subscription.price_source_id)
 
 
 def serialize(record: CanonicalRecord) -> dict[str, Any]:
@@ -216,6 +264,7 @@ def deserialize(
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
                 anchor_day=data.get("anchor_day"),
+                currency=data.get("currency"),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

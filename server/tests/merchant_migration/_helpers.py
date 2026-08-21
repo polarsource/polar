@@ -139,6 +139,7 @@ def canonical_subscription(
     stopped_for_migration: bool = False,
     anchor_day: int | None = None,
     payment_method: CanonicalPaymentMethod | None = None,
+    currency: str | None = None,
 ) -> CanonicalSubscription:
     """Renews outside the safety window, so a test only states its own field."""
     return CanonicalSubscription(
@@ -159,6 +160,7 @@ def canonical_subscription(
         trial_end=trial_end,
         stopped_for_migration=stopped_for_migration,
         anchor_day=anchor_day,
+        currency=currency,
     )
 
 
@@ -170,6 +172,7 @@ async def stage_subscription_record(
     *,
     source_id: str = "sub_1",
     price_source_id: str = "price_1",
+    currency: str | None = None,
 ) -> MerchantMigrationRecord:
     """An imported subscription in the ledger: what the cutover reads."""
     record = MerchantMigrationRecord(
@@ -180,7 +183,11 @@ async def stage_subscription_record(
         source_id=source_id,
         target_id=subscription.id,
         canonical=serialize(
-            canonical_subscription(source_id=source_id, price_source_id=price_source_id)
+            canonical_subscription(
+                source_id=source_id,
+                price_source_id=price_source_id,
+                currency=currency,
+            )
         ),
     )
     await save_fixture(record)

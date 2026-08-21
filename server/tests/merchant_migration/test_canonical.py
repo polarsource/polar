@@ -10,8 +10,10 @@ from polar.merchant_migration.canonical import (
     CanonicalProduct,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    deserialize,
     serialize,
 )
+from polar.models.merchant_migration_record import MerchantMigrationRecordType
 
 
 class TestSerialize:
@@ -70,6 +72,7 @@ class TestSerialize:
             payment_method=CanonicalPaymentMethod(
                 source_id="pm_1", type=CanonicalPaymentMethodType.card
             ),
+            currency="usd",
         )
 
         result = serialize(subscription)
@@ -77,6 +80,7 @@ class TestSerialize:
         assert result["current_period_start"] == "2026-01-01T00:00:00+00:00"
         assert result["current_period_end"] == "2026-02-01T00:00:00+00:00"
         assert result["status"] == "active"
+        assert result["currency"] == "usd"
         assert result["payment_method"] == {
             "source_id": "pm_1",
             "type": "card",
@@ -99,3 +103,53 @@ class TestSerialize:
             "name": None,
             "country": None,
         }
+
+
+class TestDeserialize:
+    def test_subscription_currency(self) -> None:
+        subscription = CanonicalSubscription(
+            source_id="sub_1",
+            customer_source_id="cus_1",
+            price_source_id="price_1",
+            status=CanonicalSubscriptionStatus.active,
+            collection_method=CanonicalCollectionMethod.charge_automatically,
+            current_period_start=None,
+            current_period_end=None,
+            trialing=False,
+            paused_collection=False,
+            line_item_count=1,
+            quantity=1,
+            payment_method=None,
+            currency="usd",
+        )
+
+        result = deserialize(
+            MerchantMigrationRecordType.subscription, serialize(subscription)
+        )
+
+        assert isinstance(result, CanonicalSubscription)
+        assert result.currency == "usd"
+
+    def test_legacy_subscription_without_currency(self) -> None:
+        canonical = serialize(
+            CanonicalSubscription(
+                source_id="sub_1",
+                customer_source_id="cus_1",
+                price_source_id="price_1:usd",
+                status=CanonicalSubscriptionStatus.active,
+                collection_method=CanonicalCollectionMethod.charge_automatically,
+                current_period_start=None,
+                current_period_end=None,
+                trialing=False,
+                paused_collection=False,
+                line_item_count=1,
+                quantity=1,
+                payment_method=None,
+            )
+        )
+        canonical.pop("currency")
+
+        result = deserialize(MerchantMigrationRecordType.subscription, canonical)
+
+        assert isinstance(result, CanonicalSubscription)
+        assert result.currency is None

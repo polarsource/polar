@@ -43,9 +43,14 @@ from polar.subscription.service import subscription as subscription_service
 
 from .canonical import (
     CanonicalCustomer,
+    CanonicalPrice,
     CanonicalProduct,
     CanonicalSubscription,
+    PriceKey,
+    canonical_price_key,
     deserialize,
+    legacy_price_keys,
+    subscription_price_key,
 )
 from .precheck import (
     ProductImportPlan,
@@ -252,7 +257,7 @@ class CatalogImporter:
         assert product.recurring_interval is not None
         prices: list[ProductPriceCreate] = []
         for price in product.prices:
-            if price.source_id not in plan.importable_price_ids:
+            if canonical_price_key(price) not in plan.importable_prices:
                 continue
             assert price.amount is not None
             prices.append(
@@ -352,8 +357,11 @@ class CatalogImporter:
             self.organization.default_presentment_currency,
         )
         product_by_price = {
-            price.source_id: product for product in products for price in product.prices
+            canonical_price_key(price): product
+            for product in products
+            for price in product.prices
         }
+        legacy_keys = legacy_price_keys(products)
         # Their ledger rows already carry target ids in-session, so resolve from
         # these maps instead of a query per subscription.
         customer_target_by_source = self._imported_targets(customer_records)
@@ -374,6 +382,7 @@ class CatalogImporter:
             result = await self._create_subscription(
                 subscription,
                 product_by_price,
+                legacy_keys,
                 customer_target_by_source,
                 product_target_by_source,
             )
@@ -397,14 +406,18 @@ class CatalogImporter:
     async def _create_subscription(
         self,
         subscription: CanonicalSubscription,
-        product_by_price: dict[str, CanonicalProduct],
+        product_by_price: dict[PriceKey, CanonicalProduct],
+        legacy_keys: dict[str, PriceKey],
         customer_target_by_source: dict[str, UUID],
         product_target_by_source: dict[str, UUID],
     ) -> ImportedSubscription:
         customer_target = customer_target_by_source.get(subscription.customer_source_id)
         if customer_target is None:
             return ImportedSubscription(skip=_CUSTOMER_NOT_IMPORTED)
-        canonical_product = product_by_price.get(subscription.price_source_id)
+        key = subscription_price_key(subscription, legacy_keys)
+        if key is None:
+            return ImportedSubscription(skip=_PRODUCT_NOT_IMPORTED)
+        canonical_product = product_by_price.get(key)
         if canonical_product is None:
             return ImportedSubscription(skip=_PRODUCT_NOT_IMPORTED)
         product_target = product_target_by_source.get(canonical_product.source_id)
@@ -423,9 +436,7 @@ class CatalogImporter:
         ):
             return ImportedSubscription(skip=_CUSTOMER_ALREADY_SUBSCRIBED)
 
-        price = self._find_price(
-            polar_product, canonical_product, subscription.price_source_id
-        )
+        price = self._find_price(polar_product, canonical_product, key)
         if price is None:
             return ImportedSubscription()
 
@@ -494,12 +505,16 @@ class CatalogImporter:
         self,
         product: Product,
         canonical_product: CanonicalProduct,
-        price_source_id: str,
+        key: PriceKey,
     ) -> ProductPriceFixed | None:
         # Prices carry no durable source id, and an imported product holds one
         # fixed price per currency, so the currency identifies it.
-        canonical_price = next(
-            (p for p in canonical_product.prices if p.source_id == price_source_id),
+        canonical_price: CanonicalPrice | None = next(
+            (
+                price
+                for price in canonical_product.prices
+                if canonical_price_key(price) == key
+            ),
             None,
         )
         if canonical_price is None:

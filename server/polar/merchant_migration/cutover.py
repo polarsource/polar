@@ -35,6 +35,8 @@ from .canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
+    normalize_price_source_id,
+    subscription_price_key,
 )
 from .cards import AmbiguousCopiedCard, link_payment_method
 from .precheck import subscription_import_reason
@@ -307,11 +309,16 @@ class SubscriptionCutover:
         except KeyError, TypeError, ValueError:
             # Raising would stall the chain, so it stops at this record instead.
             return _UNREADABLE
-        if (
-            isinstance(staged, CanonicalSubscription)
-            and staged.price_source_id != source.price_source_id
-        ):
-            return _PLAN_CHANGED
+        if isinstance(staged, CanonicalSubscription):
+            if normalize_price_source_id(
+                staged.price_source_id
+            ) != normalize_price_source_id(source.price_source_id):
+                return _PLAN_CHANGED
+            staged_price = subscription_price_key(staged)
+            if staged_price is not None and staged_price != subscription_price_key(
+                source
+            ):
+                return _PLAN_CHANGED
         return self._renewal_reason(source)
 
     def _renewal_reason(self, source: CanonicalSubscription) -> str | None:

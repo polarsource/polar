@@ -45,13 +45,6 @@ _SUBSCRIPTION_EXPAND = [
 ]
 
 
-def _canonical_price_id(price_id: str, currency: str, default_currency: str) -> str:
-    """Keep the default currency on the bare price id so already-staged rows still match."""
-    if currency.lower() == default_currency.lower():
-        return price_id
-    return f"{price_id}:{currency.lower()}"
-
-
 class StripeAdapter:
     def __init__(self, access_token: str) -> None:
         self._client = stripe_lib.StripeClient(
@@ -257,7 +250,7 @@ class StripeAdapter:
             amounts[currency] = option.get("unit_amount")
         return [
             CanonicalPrice(
-                source_id=_canonical_price_id(price.id, currency, price.currency),
+                source_id=price.id,
                 currency=currency,
                 amount=amount,
                 pricing_scheme=pricing_scheme,
@@ -281,7 +274,7 @@ class StripeAdapter:
         return CanonicalSubscription(
             source_id=subscription.id,
             customer_source_id=self._id_of(subscription.customer),
-            price_source_id=self._price_source_id(subscription, first_item),
+            price_source_id=self._id_of(first_item["price"]),
             status=self._map_status(subscription.status),
             collection_method=self._map_collection_method(
                 subscription.collection_method
@@ -301,12 +294,7 @@ class StripeAdapter:
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
             anchor_day=self._anchor_day(subscription),
-        )
-
-    def _price_source_id(self, subscription: stripe_lib.Subscription, item: Any) -> str:
-        price = item["price"]
-        return _canonical_price_id(
-            price["id"], subscription.currency, price["currency"]
+            currency=subscription.currency,
         )
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:

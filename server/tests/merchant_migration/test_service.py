@@ -706,7 +706,7 @@ def _multi_currency_catalog() -> list[CanonicalRecord]:
                     pricing_scheme=CanonicalPricingScheme.fixed,
                 ),
                 CanonicalPrice(
-                    source_id="price_1:usd",
+                    source_id="price_1",
                     currency="usd",
                     amount=1000,
                     pricing_scheme=CanonicalPricingScheme.fixed,
@@ -722,7 +722,7 @@ def _multi_currency_catalog() -> list[CanonicalRecord]:
         CanonicalSubscription(
             source_id="sub_1",
             customer_source_id="cus_1",
-            price_source_id="price_1:usd",
+            price_source_id="price_1",
             status=CanonicalSubscriptionStatus.active,
             collection_method=CanonicalCollectionMethod.charge_automatically,
             current_period_start=None,
@@ -732,6 +732,7 @@ def _multi_currency_catalog() -> list[CanonicalRecord]:
             line_item_count=1,
             quantity=1,
             payment_method=None,
+            currency="usd",
         ),
     ]
 
@@ -1478,6 +1479,7 @@ class TestImportCatalog:
         assert "USD" in record.error
 
     @pytest.mark.auth
+    @pytest.mark.parametrize("legacy_shape", [False, True], ids=["current", "legacy"])
     async def test_multi_currency_price_imports_every_currency(
         self,
         mocker: MockerFixture,
@@ -1486,14 +1488,24 @@ class TestImportCatalog:
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
+        legacy_shape: bool,
     ) -> None:
+        records = _multi_currency_catalog()
+        if legacy_shape:
+            product = records[0]
+            canonical_subscription = records[-1]
+            assert isinstance(product, CanonicalProduct)
+            assert isinstance(canonical_subscription, CanonicalSubscription)
+            product.prices[1].source_id = "price_1:usd"
+            canonical_subscription.price_source_id = "price_1:usd"
+            canonical_subscription.currency = None
         migration = await _staged_migration(
             mocker,
             session,
             save_fixture,
             auth_subject,
             organization,
-            records=_multi_currency_catalog(),
+            records=records,
         )
 
         report = await service.import_catalog(session, auth_subject, migration.id)

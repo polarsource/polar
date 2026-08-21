@@ -93,6 +93,7 @@ class TestUpsert:
                 payment_method=CanonicalPaymentMethod(
                     source_id="pm_1", type=CanonicalPaymentMethodType.card
                 ),
+                currency="usd",
             ),
         )
         await session.flush()
@@ -107,6 +108,7 @@ class TestUpsert:
         # datetimes round-trip through JSONB as ISO strings
         assert reloaded.canonical["current_period_start"] == "2026-01-01T00:00:00+00:00"
         assert reloaded.canonical["payment_method"]["type"] == "card"
+        assert reloaded.canonical["currency"] == "usd"
 
     async def test_is_idempotent_per_source(
         self,

@@ -134,6 +134,8 @@ variable "environment_groups" {
       POLAR_PLAIN_DEFAULT_TIER_EXTERNAL_ID       = optional(string)
       POLAR_USER_SESSION_COOKIE_KEY              = optional(string)
       POLAR_AUTH_COOKIE_KEY                      = optional(string)
+
+      POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = optional(string)
     })
     backend_production = object({
       POLAR_BACKOFFICE_HOST                = string

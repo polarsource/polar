@@ -94,6 +94,16 @@ export default {
         },
       },
       additionalMeteredUsage: 'Additional metered usage',
+      meteredChargesMayApply: {
+        value: 'Additional metered charges may apply',
+        _llmContext:
+          'Collapsed toggle label in the checkout pricing breakdown; clicking it reveals the list of usage-based (metered) prices.',
+      },
+      meteredIncludedThen: {
+        value: '{units} included, then',
+        _llmContext:
+          'Shown next to a metered price when the product grants included usage credits, e.g. "10,000 included, then" followed by the per-unit rate. {units} is a formatted number.',
+      },
       perSeat: 'per seat',
       basePrice: {
         value: 'Base price',

@@ -11539,6 +11539,62 @@ export interface components {
        */
       meter_id: string
     }
+    /**
+     * BenefitMeterCreditPublic
+     * @description A public benefit of type `meter_credit`, exposing the number of units
+     *     granted so storefronts and checkouts can show included usage.
+     */
+    BenefitMeterCreditPublic: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'meter_credit'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
+    }
     /** BenefitMeterCreditSubscriber */
     BenefitMeterCreditSubscriber: {
       /**
@@ -11642,8 +11698,11 @@ export interface components {
         | components['schemas']['BenefitMeterCreditCreateProperties']
         | null
     }
-    /** BenefitPublic */
-    BenefitPublic: {
+    BenefitPublic:
+      | components['schemas']['BenefitMeterCreditPublic']
+      | components['schemas']['BenefitPublicGeneric']
+    /** BenefitPublicGeneric */
+    BenefitPublicGeneric: {
       /**
        * Id
        * Format: uuid4

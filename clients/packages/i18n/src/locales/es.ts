@@ -107,6 +107,10 @@ export default {
       },
       meteredChargesMayApply: 'Pueden aplicarse cargos adicionales por uso',
       meteredIncluded: '{units} incluidos',
+      meterUnits: {
+        token: 'tokens',
+        scalar: 'unidades',
+      },
     },
     trial: {
       hero: {

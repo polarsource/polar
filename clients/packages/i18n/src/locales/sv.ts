@@ -107,6 +107,10 @@ export default {
       },
       meteredChargesMayApply: 'Ytterligare rörliga avgifter kan tillkomma',
       meteredIncluded: '{units} ingår',
+      meterUnits: {
+        token: 'tokens',
+        scalar: 'enheter',
+      },
     },
     trial: {
       hero: {

@@ -189,7 +189,9 @@
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -378,7 +380,9 @@
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -567,7 +571,9 @@
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -759,7 +765,9 @@
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -951,7 +959,9 @@
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1132,7 +1142,9 @@
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1316,7 +1328,9 @@
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1497,7 +1511,9 @@
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1678,7 +1694,9 @@
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1859,7 +1877,9 @@
     "checkout.pricing.units.count.other": "# {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2043,7 +2063,9 @@
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2227,7 +2249,9 @@
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2411,6 +2435,8 @@
     "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
     "checkout.pricing.units.updateFailed": "Failed to update units",
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
-    "checkout.pricing.meteredIncluded": "{units} included"
+    "checkout.pricing.meteredIncluded": "{units} included",
+    "checkout.pricing.meterUnits.token": "tokens",
+    "checkout.pricing.meterUnits.scalar": "units"
   }
 }

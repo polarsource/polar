@@ -107,6 +107,10 @@ export default {
       },
       meteredChargesMayApply: '追加の従量課金が発生する場合があります',
       meteredIncluded: '{units}分込み',
+      meterUnits: {
+        token: 'トークン',
+        scalar: '単位',
+      },
     },
     trial: {
       hero: {

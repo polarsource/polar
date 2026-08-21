@@ -2,6 +2,7 @@ import dramatiq
 import pytest
 from dramatiq.brokers.redis import RedisBroker
 from dramatiq.composition import group
+from dramatiq.errors import ActorNotFound
 from dramatiq.middleware.group_callbacks import GroupCallbacks
 from dramatiq.rate_limits.backends import RedisBackend as RateLimiterBackend
 from fakeredis import FakeRedis
@@ -10,6 +11,11 @@ from pytest_mock import MockerFixture
 import polar.tasks  # noqa: F401  (registers actors with the broker)
 from polar.config import settings
 from polar.worker import _sqs
+from polar.worker._enqueue import (
+    SQS_ACTORS_WILDCARD,
+    resolve_sqs_actors,
+    should_route_to_sqs,
+)
 from polar.worker._runner import run_task, validate_allowlist
 
 CRON_ACTOR = "organization.unsnooze_expired"
@@ -196,3 +202,39 @@ class TestValidateAllowlist:
 
         with pytest.raises(ValueError, match="debounce_min_threshold"):
             validate_allowlist()
+
+
+class TestWildcardAllowlist:
+    def test_resolves_to_every_declared_actor(self, mocker: MockerFixture) -> None:
+        mocker.patch.object(settings, "WORKER_SQS_ACTORS", {SQS_ACTORS_WILDCARD})
+
+        assert resolve_sqs_actors() == dramatiq.get_broker().get_declared_actors()
+
+    def test_wildcard_alongside_other_names_is_not_a_wildcard(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(settings, "WORKER_SQS_ENABLED", True)
+        mocker.patch.object(
+            settings, "WORKER_SQS_ACTORS", {SQS_ACTORS_WILDCARD, CRON_ACTOR}
+        )
+
+        assert resolve_sqs_actors() == {SQS_ACTORS_WILDCARD, CRON_ACTOR}
+        assert not should_route_to_sqs(SUBSCRIPTION_ACTOR)
+        with pytest.raises(ActorNotFound):
+            validate_allowlist()
+
+    @pytest.mark.parametrize(("enabled", "expected"), [(True, True), (False, False)])
+    def test_enabled_flag_dominates_the_wildcard(
+        self, mocker: MockerFixture, enabled: bool, expected: bool
+    ) -> None:
+        mocker.patch.object(settings, "WORKER_SQS_ENABLED", enabled)
+        mocker.patch.object(settings, "WORKER_SQS_ACTORS", {SQS_ACTORS_WILDCARD})
+
+        assert should_route_to_sqs(SUBSCRIPTION_ACTOR) is expected
+
+    def test_all_declared_actors_are_sqs_compatible(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(settings, "WORKER_SQS_ACTORS", {SQS_ACTORS_WILDCARD})
+
+        validate_allowlist()

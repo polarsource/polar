@@ -498,37 +498,11 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
 }
 
 resource "tfe_variable" "worker_sqs_actors_test" {
-  key         = "worker_sqs_actors"
-  category    = "terraform"
-  description = "JSON array of Dramatiq actor names routed to the SQS execution engine for test"
-  sensitive   = false
-  value = jsonencode([
-    "auth.delete_expired",
-    "authentication_session.delete_expired",
-    "checkout.expire_open_checkouts",
-    "customer.state_changed",
-    "customer_email_update.delete_expired",
-    "customer_session.delete_expired",
-    "dummy",
-    "email.send",
-    "email_otp.delete_expired",
-    "email_update.delete_expired_record",
-    "eventstream.publish",
-    "external_event.prune",
-    "license_key.sync_benefit_grant",
-    "member_session.delete_expired",
-    "oauth2_token.delete_expired",
-    "observability.invariants.check",
-    "observability.invariants.enqueue",
-    "order.invoice",
-    "receipt.render",
-    "tinybird.ingest",
-    "webhook_event.archive",
-    "webhook_event.failed",
-    "webhook_event.publish",
-    "webhook_event.send",
-    "webhook_event.success",
-  ])
+  key             = "worker_sqs_actors"
+  category        = "terraform"
+  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for test, or [\"*\"] for all of them"
+  sensitive       = false
+  value           = jsonencode(["*"])
   variable_set_id = tfe_variable_set.test.id
 }
 

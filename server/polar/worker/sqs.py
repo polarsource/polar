@@ -5,9 +5,9 @@ from typing import Any
 import structlog
 import typer
 
-from polar.config import settings
 from polar.logging import Logger
 
+from ._enqueue import resolve_sqs_actors
 from ._runner import bootstrap, run_task, shutdown
 from ._sqs import actor_to_queue_name, parse_envelope, resolve_queue_url, sqs_client
 
@@ -33,12 +33,14 @@ def run(actor: str, body: str = typer.Argument("{}")) -> None:
 
 async def _poll_loop(actors: list[str], max_iterations: int) -> None:
     client = sqs_client
-    queue_urls = {a: resolve_queue_url(client, actor_to_queue_name(a)) for a in actors}
+    queue_urls = {
+        resolve_queue_url(client, actor_to_queue_name(actor)) for actor in actors
+    }
     iterations = 0
     try:
         while max_iterations == 0 or iterations < max_iterations:
             iterations += 1
-            for url in queue_urls.values():
+            for url in queue_urls:
                 response = await asyncio.to_thread(
                     client.receive_message,
                     QueueUrl=url,
@@ -86,7 +88,7 @@ def poll(
     max_iterations: int = typer.Option(0, help="0 = loop forever"),
 ) -> None:
     """Local dev consumer: drain SQS through run_task without building the Lambda image."""
-    actors = [actor] if actor else sorted(settings.WORKER_SQS_ACTORS)
+    actors = [actor] if actor else sorted(resolve_sqs_actors())
     bootstrap()
     asyncio.run(_poll_loop(actors, max_iterations))
 

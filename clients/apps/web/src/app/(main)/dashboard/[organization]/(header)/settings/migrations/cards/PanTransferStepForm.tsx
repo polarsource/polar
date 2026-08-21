@@ -43,10 +43,10 @@ export function PanTransferStepForm({
       display={compact ? { base: 'flex', md: 'grid' } : 'flex'}
       flexDirection="column"
       gridTemplateColumns={
-        compact ? { base: '1fr', md: 'minmax(0, 1fr) auto' } : undefined
+        compact ? { base: '1fr', md: 'minmax(0, 1fr) 320px' } : undefined
       }
       alignItems={compact ? { base: 'stretch', md: 'center' } : undefined}
-      columnGap={compact ? 'l' : undefined}
+      columnGap={compact ? 'xl' : undefined}
       rowGap="m"
       onSubmit={(event) => {
         event.preventDefault()
@@ -113,7 +113,10 @@ export function PanTransferStepForm({
         )
       })}
 
-      <Box>
+      <Box
+        width={compact ? '100%' : undefined}
+        justifyContent={compact ? { base: 'start', md: 'end' } : undefined}
+      >
         <Button
           type="submit"
           size="sm"

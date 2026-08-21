@@ -57,7 +57,7 @@ export function StartCopyStep({
           description="Stripe → Customers → Copy customers"
         >
           {destinationAccountId ? (
-            <Box width={{ base: '100%', md: 320 }}>
+            <Box width="100%">
               <CopyToClipboardInput
                 value={destinationAccountId}
                 variant="mono"
@@ -114,11 +114,16 @@ function TaskRow({
   return (
     <Box
       as="li"
-      flexDirection={{ base: 'column', md: 'row' }}
+      display={{ base: 'flex', md: 'grid' }}
+      flexDirection="column"
+      gridTemplateColumns={{
+        base: '1fr',
+        md: 'minmax(0, 1fr) 320px',
+      }}
       alignItems={{ base: 'stretch', md: 'center' }}
-      justifyContent="between"
-      gap="m"
-      paddingVertical="m"
+      columnGap="xl"
+      rowGap="m"
+      paddingVertical="l"
       borderBottomWidth={1}
       borderStyle="solid"
       borderColor="border-secondary"
@@ -131,7 +136,13 @@ function TaskRow({
           </Text>
         )}
       </Box>
-      <Box flexShrink={0}>{children}</Box>
+      <Box
+        width="100%"
+        justifyContent={{ base: 'start', md: 'end' }}
+        flexShrink={0}
+      >
+        {children}
+      </Box>
     </Box>
   )
 }

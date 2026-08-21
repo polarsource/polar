@@ -252,13 +252,12 @@ def _stripe_subscription(
 
 def _stripe_price(
     *,
-    id: str = "price_1",
     currency: str = "usd",
     unit_amount: int | None = 1000,
     currency_options: dict[str, Any] | None = None,
 ) -> stripe_lib.Price:
     price: dict[str, Any] = {
-        "id": id,
+        "id": "price_1",
         "object": "price",
         "currency": currency,
         "unit_amount": unit_amount,

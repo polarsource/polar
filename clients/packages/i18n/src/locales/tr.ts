@@ -103,10 +103,7 @@ export default {
           other: '# {unitLabelPlural}',
           _mode: 'plural',
         },
-        range: '{min} - {max} {unitLabelPlural}',
-        minimum: 'En az {min} {unitLabelPlural}',
-        maximum: 'En fazla {max} {unitLabelPlural}',
-        updateFailed: 'Birimler güncellenemedi',
+        updateFailed: 'Üniteler güncellenemedi',
       },
     },
     trial: {

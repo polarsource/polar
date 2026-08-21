@@ -99,10 +99,10 @@ export default {
         _llmContext:
           'Collapsed toggle label in the checkout pricing breakdown; clicking it reveals the list of usage-based (metered) prices.',
       },
-      meteredIncludedThen: {
-        value: '{units} included, then',
+      meteredIncluded: {
+        value: '{units} included',
         _llmContext:
-          'Shown next to a metered price when the product grants included usage credits, e.g. "10,000 included, then" followed by the per-unit rate. {units} is a formatted number.',
+          'Shown next to a metered price when the product grants included usage credits. {units} is a pre-formatted quantity phrase including the unit noun, e.g. "10,000 tokens", so the sentence reads "10,000 tokens included". The per-unit overage rate is displayed separately on the same row.',
       },
       perSeat: 'per seat',
       basePrice: {

@@ -11493,8 +11493,9 @@ export interface components {
     }
     /**
      * BenefitMeterCreditPublic
-     * @description A public benefit of type `meter_credit`, exposing the number of units
-     *     granted so storefronts and checkouts can show included usage.
+     * @description A benefit of type `meter_credit`.
+     *
+     *     Grants a number of units on a specific meter.
      */
     BenefitMeterCreditPublic: {
       /**
@@ -11515,8 +11516,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'meter_credit'
       /**
@@ -11545,7 +11546,20 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
+      properties: components['schemas']['BenefitMeterCreditPublicProperties']
+    }
+    /**
+     * BenefitMeterCreditPublicProperties
+     * @description Properties for a benefit of type `meter_credit`.
+     */
+    BenefitMeterCreditPublicProperties: {
+      /** Units */
+      units: number
+      /**
+       * Meter Id
+       * Format: uuid4
+       */
+      meter_id: string
     }
     /** BenefitMeterCreditSubscriber */
     BenefitMeterCreditSubscriber: {
@@ -11672,8 +11686,18 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
-      /** @description The type of the benefit. */
-      type: components['schemas']['BenefitType']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type:
+        | 'custom'
+        | 'discord'
+        | 'downloadables'
+        | 'feature_flag'
+        | 'github_repository'
+        | 'license_keys'
+        | 'slack_shared_channel'
       /**
        * Description
        * @description The description of the benefit.
@@ -13465,7 +13489,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -13851,7 +13875,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -17749,7 +17773,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -18415,7 +18439,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -19686,7 +19710,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -67215,6 +67239,20 @@ export const benefitMeterCreditTypeValues: ReadonlyArray<
 export const benefitMeterCreditCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditCreate']['type']
 > = ['meter_credit']
+export const benefitMeterCreditPublicTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditPublic']['type']
+> = ['meter_credit']
+export const benefitPublicGenericTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitPublicGeneric']['type']
+> = [
+  'custom',
+  'discord',
+  'downloadables',
+  'feature_flag',
+  'github_repository',
+  'license_keys',
+  'slack_shared_channel',
+]
 export const benefitRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitRevokedEvent']['name']
 > = ['benefit.revoked']

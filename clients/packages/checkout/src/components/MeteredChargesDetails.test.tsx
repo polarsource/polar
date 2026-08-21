@@ -119,8 +119,44 @@ describe('MeteredChargesDetails', () => {
     )
 
     expect(screen.getByTestId('detail-row-API Calls')).toHaveTextContent(
-      '10,000 included, then',
+      '10,000 units included',
     )
+  })
+
+  it('labels included units with the meter unit noun', () => {
+    const base = createCheckout()
+    const meteredPrice = createMeteredPrice({
+      id: 'price_metered_1',
+      unit_amount: '0.001',
+      meter: {
+        id: 'meter_1',
+        name: 'AI Tokens',
+        unit: 'token' as const,
+        custom_label: null,
+        custom_multiplier: null,
+      },
+    })
+    const checkout = createCheckout({
+      prices: {
+        prod_1: [base.product_price, meteredPrice],
+      },
+      product: {
+        ...base.product,
+        benefits: [createMeterCreditBenefit('meter_1', 10_000_000)],
+      },
+    })
+
+    render(<MeteredChargesDetails checkout={checkout} locale="en" />)
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /additional metered charges may apply/i,
+      }),
+    )
+
+    const row = screen.getByTestId('detail-row-AI Tokens')
+    expect(row).toHaveTextContent('10,000,000 tokens included')
+    expect(row).toHaveTextContent('/ 1M tokens')
   })
 
   it('sums units across multiple credit benefits on the same meter', () => {
@@ -143,7 +179,7 @@ describe('MeteredChargesDetails', () => {
     )
 
     expect(screen.getByTestId('detail-row-API Calls')).toHaveTextContent(
-      '15,000 included, then',
+      '15,000 units included',
     )
   })
 

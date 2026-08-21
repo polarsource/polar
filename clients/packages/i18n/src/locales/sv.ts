@@ -94,6 +94,8 @@ export default {
       },
       inclTax: 'Moms (ingår)',
       basePrice: 'Grundavgift',
+      meteredChargesMayApply: 'Ytterligare rörliga avgifter kan tillkomma',
+      meteredIncludedThen: '{units} ingår, därefter',
     },
     trial: {
       hero: {

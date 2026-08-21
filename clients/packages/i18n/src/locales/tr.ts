@@ -94,6 +94,8 @@ export default {
         updateFailed: 'Koltuklar güncellenemedi',
       },
       basePrice: 'Temel fiyat',
+      meteredChargesMayApply: 'Ek kullanım ücreti uygulanabilir',
+      meteredIncludedThen: '{units} dahil, sonra',
     },
     trial: {
       hero: {

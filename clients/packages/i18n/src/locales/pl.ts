@@ -94,6 +94,9 @@ export default {
       },
       inclTax: 'Podatki (w cenie)',
       basePrice: 'Cena bazowa',
+      meteredChargesMayApply:
+        'Mogą obowiązywać dodatkowe opłaty naliczane według zużycia',
+      meteredIncludedThen: '{units} w cenie, potem',
     },
     trial: {
       hero: {

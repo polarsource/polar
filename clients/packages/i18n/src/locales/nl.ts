@@ -94,6 +94,9 @@ export default {
       },
       inclTax: 'Btw (inbegrepen)',
       basePrice: 'Basisprijs',
+      meteredChargesMayApply:
+        'Er kunnen extra kosten op basis van verbruik van toepassing zijn',
+      meteredIncludedThen: '{units} inbegrepen, daarna',
     },
     trial: {
       hero: {

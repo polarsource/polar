@@ -45,7 +45,7 @@ export function PanTransferStepForm({
       gridTemplateColumns={
         compact ? { base: '1fr', md: 'minmax(0, 1fr) auto' } : undefined
       }
-      alignItems={compact ? { base: 'stretch', md: 'end' } : undefined}
+      alignItems={compact ? { base: 'stretch', md: 'center' } : undefined}
       columnGap={compact ? 'l' : undefined}
       rowGap="m"
       onSubmit={(event) => {

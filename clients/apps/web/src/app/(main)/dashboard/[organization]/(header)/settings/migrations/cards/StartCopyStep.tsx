@@ -32,6 +32,7 @@ export function StartCopyStep({
       </Text>
 
       <Box
+        as="ol"
         flexDirection="column"
         borderTopWidth={1}
         borderStyle="solid"
@@ -60,6 +61,7 @@ export function StartCopyStep({
               <CopyToClipboardInput
                 value={destinationAccountId}
                 variant="mono"
+                ariaLabel="Polar account ID"
               />
             </Box>
           ) : (
@@ -111,6 +113,7 @@ function TaskRow({
 }) {
   return (
     <Box
+      as="li"
       flexDirection={{ base: 'column', md: 'row' }}
       alignItems={{ base: 'stretch', md: 'center' }}
       justifyContent="between"

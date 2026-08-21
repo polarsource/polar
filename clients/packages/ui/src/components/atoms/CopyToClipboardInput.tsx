@@ -11,6 +11,7 @@ const CopyToClipboardInput = ({
   disabled = false,
   className = '',
   variant = 'default',
+  ariaLabel,
 }: {
   value: string
   onCopy?: () => void
@@ -18,6 +19,7 @@ const CopyToClipboardInput = ({
   disabled?: boolean
   className?: string
   variant?: 'default' | 'mono'
+  ariaLabel?: string
 }) => {
   const [isCopied, setIsCopied] = useState(false)
 
@@ -49,6 +51,7 @@ const CopyToClipboardInput = ({
         )}
         value={value ?? ''}
         readOnly={true}
+        aria-label={ariaLabel}
       />
       {!disabled && (
         <Button

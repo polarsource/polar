@@ -44,7 +44,7 @@ const STRIPE_MIGRATION_ID_INPUT: StepInputField = {
   name: STRIPE_MIGRATION_ID_FIELD,
   label: 'Stripe migration ID (optional)',
   placeholder: 'migreq_…',
-  hint: 'Starts with migreq_. Find it on the Stripe copy status page.',
+  hint: 'After starting the copy, paste it from Stripe copy status. Starts with migreq_.',
   required: false,
 }
 
@@ -82,6 +82,7 @@ export const STEP_COPY: Record<string, StepCopy> = {
       {
         ...STRIPE_MIGRATION_ID_INPUT,
         label: 'Stripe migration ID',
+        hint: 'Starts with migreq_. Find it on the Stripe copy status page.',
         required: true,
       },
     ],

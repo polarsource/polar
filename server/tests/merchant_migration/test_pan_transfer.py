@@ -264,7 +264,10 @@ class TestComplete:
                 _copy_steps(),
                 "start_copy",
                 actor=PanStepActor.merchant,
-                inputs={"whatever": "x"},
+                inputs={
+                    "stripe_migration_request_id": "migreq_123",
+                    "whatever": "x",
+                },
             )
         errors = exc.value.errors()
         assert [error["type"] for error in errors] == ["extra_forbidden"]

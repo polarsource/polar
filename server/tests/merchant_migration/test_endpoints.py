@@ -752,7 +752,12 @@ class TestCompletePanTransferStep:
 
         response = await client.post(
             f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete",
-            json={"inputs": {"whatever": "x"}},
+            json={
+                "inputs": {
+                    "stripe_migration_request_id": "migreq_123",
+                    "whatever": "x",
+                }
+            },
         )
         # Per-field, so the client can point at the offending input.
         assert response.status_code == 422

@@ -475,9 +475,10 @@ async def complete_step(
                     raise PaymentMethodMappingCSVError(
                         "The payment method mapping CSV is larger than 20 MB."
                     )
-                await merchant_migration_service.import_payment_method_mappings(
-                    session, migration, contents
-                )
+                async with session.begin_nested():
+                    await merchant_migration_service.import_payment_method_mappings(
+                        session, migration, contents
+                    )
             await merchant_migration_service.complete_pan_step_as_ops(
                 session,
                 migration,

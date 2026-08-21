@@ -6,6 +6,7 @@ from uuid import UUID
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject
@@ -1686,6 +1687,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         covered = await _imported_subscription(
             save_fixture,
@@ -1745,6 +1747,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         first = await _imported_subscription(
             save_fixture,
@@ -1829,6 +1832,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         charged = CanonicalPaymentMethod(
             source_id="pm_source",
@@ -1879,6 +1883,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         ambiguous = await _imported_subscription(
             save_fixture,
@@ -1947,6 +1952,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         first = await _imported_subscription(
             save_fixture,

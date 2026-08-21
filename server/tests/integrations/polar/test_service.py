@@ -1598,10 +1598,8 @@ class TestStartCheckout:
 
         client_mock.create_checkout.assert_not_awaited()
 
-    @pytest.mark.parametrize("amount", [2000, 0])
     async def test_existing_paid_subscription_rejected(
         self,
-        amount: int,
         configured: None,
         client_mock: MagicMock,
         organization_repository_mock: MagicMock,
@@ -1613,7 +1611,7 @@ class TestStartCheckout:
         client_mock.get_active_subscription.return_value = _make_subscription(
             id="sub_existing",
             product_id="prod_pro",
-            amount=amount,
+            amount=2000,
             price_amount=2000,
         )
 

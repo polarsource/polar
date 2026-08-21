@@ -25,6 +25,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
+from tests.merchant_migration._helpers import pan_step_required_inputs
 
 NO_FAILURES = 0
 
@@ -63,7 +64,7 @@ def _advance_to(key: str) -> list[PanTransferStep]:
             steps,
             current.key,
             actor=actor,
-            inputs={key: "value" for key in template.required_inputs},
+            inputs=pan_step_required_inputs(template),
         )
 
 
@@ -161,7 +162,7 @@ class TestAttention:
                 steps,
                 current.key,
                 actor=actor,
-                inputs={key: "value" for key in template.required_inputs},
+                inputs=pan_step_required_inputs(template),
             )
         migration = _migration(step=MerchantMigrationStep.copy_cards, steps=steps)
 

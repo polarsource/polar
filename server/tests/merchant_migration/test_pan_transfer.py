@@ -16,6 +16,7 @@ from polar.merchant_migration.pan_transfer import (
 )
 from polar.models import MerchantMigration
 from polar.models.merchant_migration import MerchantMigrationSourcePlatform
+from tests.merchant_migration._helpers import pan_step_required_inputs
 
 
 def _copy_steps() -> list[PanTransferStep]:
@@ -46,7 +47,7 @@ def _advance_to(
             steps,
             step.key,
             actor=actor,
-            inputs={key: "value" for key in template.required_inputs},
+            inputs=pan_step_required_inputs(template),
         )
 
 
@@ -255,6 +256,41 @@ class TestComplete:
 
         errors = exc.value.errors()
         assert [error["type"] for error in errors] == ["missing"]
+        assert errors[0]["loc"] == ("body", "inputs", "stripe_migration_request_id")
+
+    @pytest.mark.parametrize(
+        ("method", "key", "actor"),
+        (
+            (
+                PanTransferMethod.pan_copy,
+                "start_copy",
+                PanStepActor.merchant,
+            ),
+            (
+                PanTransferMethod.pan_import,
+                "open_stripe_request",
+                PanStepActor.ops,
+            ),
+        ),
+    )
+    def test_rejects_invalid_stripe_migration_id(
+        self,
+        method: PanTransferMethod,
+        key: str,
+        actor: PanStepActor,
+    ) -> None:
+        steps = pan_transfer.build(method)
+        with pytest.raises(PolarRequestValidationError) as exc:
+            pan_transfer.complete(
+                method,
+                steps,
+                key,
+                actor=actor,
+                inputs={"stripe_migration_request_id": "mig_123"},
+            )
+
+        errors = exc.value.errors()
+        assert [error["type"] for error in errors] == ["string_pattern_mismatch"]
         assert errors[0]["loc"] == ("body", "inputs", "stripe_migration_request_id")
 
     def test_rejects_undeclared_inputs(self) -> None:

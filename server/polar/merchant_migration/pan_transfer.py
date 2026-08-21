@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+import re
 from typing import Any
 
 from pydantic import Field
@@ -98,6 +99,8 @@ STEP_VERIFY_CARDS = "verify_cards"
 STEP_RESOLVE_UNCOVERED = "resolve_uncovered"
 STEP_CUTOVER = "cutover"
 STEP_MOVE_SUBSCRIPTIONS = "move_subscriptions"
+STRIPE_MIGRATION_REQUEST_ID_INPUT = "stripe_migration_request_id"
+STRIPE_MIGRATION_REQUEST_ID_PATTERN = re.compile(r"^migreq_[A-Za-z0-9_]+$")
 
 
 class PanTransferError(MerchantMigrationError): ...
@@ -219,7 +222,7 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
         key="start_copy",
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
-        required_inputs=("stripe_migration_request_id",),
+        required_inputs=(STRIPE_MIGRATION_REQUEST_ID_INPUT,),
     ),
     PanStepTemplate(
         key="authorize_copy",
@@ -259,7 +262,7 @@ PAN_IMPORT_TEMPLATES: tuple[PanStepTemplate, ...] = (
         key="open_stripe_request",
         owner=PanStepOwner.polar_ops,
         kind=PanStepKind.input,
-        required_inputs=("stripe_migration_request_id",),
+        required_inputs=(STRIPE_MIGRATION_REQUEST_ID_INPUT,),
     ),
     PanStepTemplate(
         key="request_provider_export",
@@ -415,6 +418,23 @@ def _validate_inputs(template: PanStepTemplate, inputs: dict[str, str]) -> None:
         }
         for key in sorted(set(template.required_inputs) - set(inputs))
     ]
+    stripe_migration_request_id = inputs.get(STRIPE_MIGRATION_REQUEST_ID_INPUT)
+    if (
+        stripe_migration_request_id is not None
+        and STRIPE_MIGRATION_REQUEST_ID_PATTERN.fullmatch(stripe_migration_request_id)
+        is None
+    ):
+        errors.append(
+            {
+                "type": "string_pattern_mismatch",
+                "loc": ("body", "inputs", STRIPE_MIGRATION_REQUEST_ID_INPUT),
+                "msg": (
+                    "Must start with migreq_ followed by letters, numbers, "
+                    "or underscores."
+                ),
+                "input": stripe_migration_request_id,
+            }
+        )
     if errors:
         raise PolarRequestValidationError(errors)
 

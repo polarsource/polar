@@ -57,8 +57,13 @@ def _advance_to(key: str) -> list[PanTransferStep]:
             if current.owner == PanStepOwner.polar_app
             else PanStepActor.ops
         )
+        template = pan_transfer._template(PanTransferMethod.pan_copy, current.key)
         steps = pan_transfer.complete(
-            PanTransferMethod.pan_copy, steps, current.key, actor=actor, inputs={}
+            PanTransferMethod.pan_copy,
+            steps,
+            current.key,
+            actor=actor,
+            inputs={key: "value" for key in template.required_inputs},
         )
 
 
@@ -150,8 +155,13 @@ class TestAttention:
                 if current.owner == PanStepOwner.polar_app
                 else PanStepActor.ops
             )
+            template = pan_transfer._template(PanTransferMethod.pan_copy, current.key)
             steps = pan_transfer.complete(
-                PanTransferMethod.pan_copy, steps, current.key, actor=actor, inputs={}
+                PanTransferMethod.pan_copy,
+                steps,
+                current.key,
+                actor=actor,
+                inputs={key: "value" for key in template.required_inputs},
             )
         migration = _migration(step=MerchantMigrationStep.copy_cards, steps=steps)
 

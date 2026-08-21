@@ -24,6 +24,7 @@ from polar.logging import CorrelationID, Logger
 from . import _sqs
 from ._broker import TASK_TIME_LIMIT_DEFAULT_MS
 from ._debounce import DebounceContext, check_debounce, finalize_debounce
+from ._enqueue import resolve_sqs_actors
 from ._httpx import _close_client, setup_httpx
 from ._redis import RedisMiddleware, _close_redis, setup_redis
 from ._sqlalchemy import dispose_sqlalchemy_engine, setup_sqlalchemy
@@ -89,7 +90,7 @@ def validate_allowlist() -> None:
     default_min_threshold = int(
         settings.WORKER_DEFAULT_DEBOUNCE_MIN_THRESHOLD.total_seconds()
     )
-    for actor_name in settings.WORKER_SQS_ACTORS:
+    for actor_name in resolve_sqs_actors():
         actor_obj = broker.get_actor(actor_name)
         queue_name = _sqs.actor_to_queue_name(actor_name)
         if len(queue_name) > 80:

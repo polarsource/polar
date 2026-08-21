@@ -43,8 +43,21 @@ UUID_JSON_BYTES = 40
 EVENT_INGESTED_CHUNK_SIZE = _sqs.MAX_JOB_PAYLOAD_BYTES // UUID_JSON_BYTES
 
 
+SQS_ACTORS_WILDCARD = "*"
+
+
+def resolve_sqs_actors() -> set[str]:
+    """Expand the allowlist, resolving the wildcard to every declared actor."""
+    if settings.WORKER_SQS_ACTORS == {SQS_ACTORS_WILDCARD}:
+        return dramatiq.get_broker().get_declared_actors()
+    return settings.WORKER_SQS_ACTORS
+
+
 def should_route_to_sqs(actor_name: str) -> bool:
-    return settings.WORKER_SQS_ENABLED and actor_name in settings.WORKER_SQS_ACTORS
+    if not settings.WORKER_SQS_ENABLED:
+        return False
+    actors = settings.WORKER_SQS_ACTORS
+    return actors == {SQS_ACTORS_WILDCARD} or actor_name in actors
 
 
 class JobQueueManager:

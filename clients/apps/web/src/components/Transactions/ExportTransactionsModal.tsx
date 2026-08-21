@@ -1,42 +1,51 @@
 'use client'
 
-import DateRangePicker, {
-  DateRange,
-} from '@/components/Metrics/DateRangePicker'
-import { getServerURL } from '@/utils/api'
+import { ExportModal } from '@/components/Export/ExportModal'
+import { ExportColumnGroup } from '@/components/Export/ExportColumns'
+import { downloadCsvExport } from '@/components/Export/utils'
 import { schemas } from '@polar-sh/client'
-import {
-  Alert,
-  Button,
-  InlineModal,
-  InlineModalHeader,
-  List,
-  ListItem,
-  SegmentedControl,
-  Text,
-} from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
-import { endOfToday, format, startOfDay } from 'date-fns'
-import { ChevronDown } from 'lucide-react'
-import React, { useState } from 'react'
-import ExportTransactionsColumns, {
-  ALL_EXPORT_COLUMNS,
-  DEFAULT_EXPORT_COLUMNS,
-  ExportColumn,
-  summarizeExportColumns,
-  transactionExportColumns,
-} from './ExportTransactionsColumns'
+import { Alert } from '@polar-sh/orbit'
+import React from 'react'
 
-const formatExportRange = (range: DateRange): string => {
-  const from = format(range.from, 'MMM d, yyyy')
-  const to = format(range.to, 'MMM d, yyyy')
-  return from === to ? from : `${from} – ${to}`
-}
+type ExportColumn = schemas['TransactionExportColumn']
 
-const formatGMTOffset = (date: Date = new Date()): string =>
-  new Intl.DateTimeFormat('en', { timeZoneName: 'shortOffset' })
-    .formatToParts(date)
-    .find((part) => part.type === 'timeZoneName')?.value ?? 'Local'
+const columnGroups = [
+  {
+    label: 'Transaction',
+    columns: [
+      { value: 'created_at', label: 'Created At' },
+      { value: 'type', label: 'Type' },
+      { value: 'product', label: 'Product' },
+      { value: 'status', label: 'Status' },
+      { value: 'paid_out_at', label: 'Paid out at' },
+      { value: 'invoice_number', label: 'Invoice number' },
+      { value: 'order_id', label: 'Order ID' },
+    ],
+  },
+  {
+    label: 'Amounts',
+    columns: [
+      { value: 'gross_amount', label: 'Gross' },
+      { value: 'fees', label: 'Fees' },
+      { value: 'tax_amount', label: 'Tax' },
+      { value: 'net_amount', label: 'Net' },
+      { value: 'currency', label: 'Currency' },
+    ],
+  },
+] as const satisfies readonly ExportColumnGroup<ExportColumn>[]
+
+const defaultColumns: ExportColumn[] = [
+  'created_at',
+  'type',
+  'product',
+  'gross_amount',
+  'fees',
+  'tax_amount',
+  'net_amount',
+  'currency',
+  'status',
+  'paid_out_at',
+]
 
 interface ExportTransactionsModalProps {
   organization: schemas['Organization']
@@ -50,177 +59,44 @@ const ExportTransactionsModal: React.FC<ExportTransactionsModalProps> = ({
   account,
   isShown,
   hide,
-}) => {
-  const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  const localOffsetLabel = formatGMTOffset()
-  const organizationStart = startOfDay(new Date(organization.created_at))
-  const [timezone, setTimezone] = useState<'local' | 'utc'>('local')
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: organizationStart,
-    to: endOfToday(),
-  })
-  const [columns, setColumns] = useState<ExportColumn[]>(DEFAULT_EXPORT_COLUMNS)
-  const [columnsExpanded, setColumnsExpanded] = useState(false)
-
-  const rangeLabel = formatExportRange(dateRange)
-
-  const onExport = () => {
-    if (!account) {
-      return
+}) => (
+  <ExportModal
+    start={organization.created_at}
+    title="Export income"
+    description="Download your income as a CSV file."
+    dateRangeLabel="Date range"
+    columns={columnGroups}
+    defaultColumns={defaultColumns}
+    exportDisabled={!account}
+    banner={
+      !account ? (
+        <Alert
+          variant="danger"
+          title="No finance account"
+          description="This organization doesn't have a finance account yet, so income can't be exported."
+        />
+      ) : null
     }
-
-    const url = new URL(
-      getServerURL('/v1/transactions/export'),
-      window.location.origin,
-    )
-    url.searchParams.set('account_id', account.id)
-    url.searchParams.set('type', 'balance')
-    url.searchParams.set('exclude_platform_fees', 'true')
-    url.searchParams.set('created_after', dateRange.from.toISOString())
-    url.searchParams.set('created_before', dateRange.to.toISOString())
-    url.searchParams.set('timezone', timezone === 'utc' ? 'UTC' : localTimezone)
-
-    for (const column of transactionExportColumns(columns)) {
-      url.searchParams.append('columns', column)
-    }
-
-    window.open(url, '_blank')
-    hide()
-  }
-
-  return (
-    <InlineModal
-      isShown={isShown}
-      hide={hide}
-      modalContent={
-        <>
-          <InlineModalHeader hide={hide}>
-            <Text variant="heading-xs" as="h2">
-              Export income
-            </Text>
-          </InlineModalHeader>
-
-          <Box
-            flexDirection="column"
-            rowGap="xl"
-            paddingHorizontal="2xl"
-            paddingBottom="2xl"
-          >
-            <Text color="muted">Download your income as a CSV file.</Text>
-
-            {!account ? (
-              <Alert
-                variant="danger"
-                title="No finance account"
-                description="This organization doesn't have a finance account yet, so income can't be exported."
-              />
-            ) : null}
-
-            <List size="small">
-              <ListItem
-                size="small"
-                className="px-4 py-3 hover:bg-transparent dark:hover:bg-transparent"
-              >
-                <Box flexDirection="column" rowGap="xs" minWidth={0}>
-                  <Text>Time zone</Text>
-                  <Text variant="caption" color="muted" truncate>
-                    Dates in the file are written in this zone
-                  </Text>
-                </Box>
-                <SegmentedControl
-                  size="sm"
-                  options={[
-                    {
-                      value: 'local',
-                      label: localOffsetLabel,
-                    },
-                    { value: 'utc', label: 'UTC' },
-                  ]}
-                  value={timezone}
-                  onChange={(value) => setTimezone(value as 'local' | 'utc')}
-                />
-              </ListItem>
-
-              <ListItem
-                size="small"
-                className="px-4 py-3 hover:bg-transparent dark:hover:bg-transparent"
-              >
-                <Box flexDirection="column" rowGap="xs" minWidth={0}>
-                  <Text>Date range</Text>
-                  <Text variant="caption" color="muted" truncate>
-                    {rangeLabel}
-                  </Text>
-                </Box>
-                <Box flexShrink={0}>
-                  <DateRangePicker
-                    date={dateRange}
-                    onDateChange={setDateRange}
-                    minDate={organizationStart}
-                  />
-                </Box>
-              </ListItem>
-
-              <ListItem
-                size="small"
-                className="px-4 py-3 hover:bg-transparent dark:hover:bg-transparent"
-              >
-                <Box flexDirection="column" rowGap="xs" minWidth={0}>
-                  <Text>Columns</Text>
-                  <Text variant="caption" color="muted" truncate>
-                    {summarizeExportColumns(columns)}
-                  </Text>
-                </Box>
-                <Box flexShrink={0}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="h-9 px-4"
-                    aria-expanded={columnsExpanded}
-                    onClick={() => setColumnsExpanded((current) => !current)}
-                  >
-                    {columns.length === ALL_EXPORT_COLUMNS.length
-                      ? `All ${ALL_EXPORT_COLUMNS.length}`
-                      : `${columns.length} selected`}
-                    <ChevronDown
-                      className={`ml-2 h-4 w-4 opacity-50 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${
-                        columnsExpanded ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </Button>
-                </Box>
-              </ListItem>
-
-              {columnsExpanded ? (
-                <Box
-                  flexDirection="column"
-                  paddingHorizontal="l"
-                  paddingVertical="l"
-                >
-                  <ExportTransactionsColumns
-                    selected={columns}
-                    onChange={setColumns}
-                  />
-                </Box>
-              ) : null}
-            </List>
-
-            <Box flexDirection="column" rowGap="s">
-              <Button
-                fullWidth
-                disabled={!account || columns.length === 0}
-                onClick={onExport}
-              >
-                Export CSV
-              </Button>
-              <Text variant="caption" color="muted" align="center">
-                {columns.length} columns | {rangeLabel}
-              </Text>
-            </Box>
-          </Box>
-        </>
+    onExport={(selection) => {
+      if (!account) {
+        return
       }
-    />
-  )
-}
+      downloadCsvExport(
+        '/v1/transactions/export',
+        selection,
+        (search, { dateRange, timezone }) => {
+          search.set('account_id', account.id)
+          search.set('type', 'balance')
+          search.set('exclude_platform_fees', 'true')
+          search.set('created_after', dateRange.from.toISOString())
+          search.set('created_before', dateRange.to.toISOString())
+          search.set('timezone', timezone)
+        },
+      )
+    }}
+    isShown={isShown}
+    hide={hide}
+  />
+)
 
 export default ExportTransactionsModal

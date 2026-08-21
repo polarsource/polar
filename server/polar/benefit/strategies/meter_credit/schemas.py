@@ -9,6 +9,7 @@ from polar.models.benefit import BenefitType
 from ..base.schemas import (
     BenefitBase,
     BenefitCreateBase,
+    BenefitPublicBase,
     BenefitSubscriberBase,
     BenefitUpdateBase,
     BenefitUpdateVisibilityMixin,
@@ -71,5 +72,15 @@ class BenefitMeterCredit(BenefitBase):
 
 
 class BenefitMeterCreditSubscriber(BenefitSubscriberBase):
+    type: Literal[BenefitType.meter_credit]
+    properties: BenefitMeterCreditSubscriberProperties
+
+
+class BenefitMeterCreditPublic(BenefitPublicBase):
+    """
+    A public benefit of type `meter_credit`, exposing the number of units
+    granted so storefronts and checkouts can show included usage.
+    """
+
     type: Literal[BenefitType.meter_credit]
     properties: BenefitMeterCreditSubscriberProperties

@@ -1,6 +1,6 @@
-from typing import Annotated
+from typing import Annotated, Any
 
-from pydantic import UUID4, Discriminator
+from pydantic import UUID4, Discriminator, Tag
 
 from polar.benefit.strategies.custom.properties import BenefitGrantCustomProperties
 from polar.benefit.strategies.discord.properties import BenefitGrantDiscordProperties
@@ -66,6 +66,7 @@ from .strategies.license_keys.schemas import (
 from .strategies.meter_credit.schemas import (
     BenefitMeterCredit,
     BenefitMeterCreditCreate,
+    BenefitMeterCreditPublic,
     BenefitMeterCreditUpdate,
 )
 from .strategies.slack_shared_channel.schemas import (
@@ -209,4 +210,21 @@ BenefitGrantWebhook = Annotated[
 
 
 # Properties that are public (when embedding products benefits in storefront and checkout)
-class BenefitPublic(BenefitPublicBase): ...
+class BenefitPublicGeneric(BenefitPublicBase): ...
+
+
+def _benefit_public_discriminator(value: Any) -> str:
+    type_value = (
+        value.get("type") if isinstance(value, dict) else getattr(value, "type", None)
+    )
+    return "meter_credit" if type_value == BenefitType.meter_credit else "generic"
+
+
+BenefitPublic = Annotated[
+    Annotated[BenefitMeterCreditPublic, Tag("meter_credit")]
+    | Annotated[BenefitPublicGeneric, Tag("generic")],
+    Discriminator(_benefit_public_discriminator),
+    SetSchemaReference("BenefitPublic"),
+    MergeJSONSchema({"title": "BenefitPublic"}),
+    ClassName("BenefitPublic"),
+]

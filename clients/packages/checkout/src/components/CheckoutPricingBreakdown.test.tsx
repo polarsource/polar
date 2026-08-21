@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createBaseCheckout,
@@ -629,8 +629,74 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/additional metered usage/i)).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('detail-row-API Calls'),
+      ).not.toBeInTheDocument()
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /additional metered charges may apply/i,
+        }),
+      )
+
       expect(screen.getByTestId('detail-row-API Calls')).toBeInTheDocument()
+    })
+
+    it('shows included credit units before the rate', () => {
+      const meteredPrice = createMeteredPrice({
+        id: 'price_metered_1',
+        unit_amount: '900',
+        meter: {
+          id: 'meter_1',
+          name: 'API Calls',
+          unit: 'scalar' as const,
+          custom_label: null,
+          custom_multiplier: null,
+        },
+      })
+      const base = createCheckout()
+      const checkout = createCheckout({
+        amount: 999,
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
+        prices: {
+          prod_1: [base.product_price, meteredPrice],
+        },
+        product: {
+          ...base.product,
+          benefits: [
+            {
+              id: 'benefit_1',
+              created_at: new Date().toISOString(),
+              modified_at: null,
+              type: 'meter_credit',
+              description: '10,000 API calls',
+              selectable: true,
+              deletable: true,
+              is_deleted: false,
+              organization_id: 'org_1',
+              properties: {
+                units: 10000,
+                rollover: false,
+                meter_id: 'meter_1',
+              },
+            },
+          ],
+        },
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /additional metered charges may apply/i,
+        }),
+      )
+
+      const row = screen.getByTestId('detail-row-API Calls')
+      expect(row).toHaveTextContent('10,000 included, then')
+      expect(row).toHaveTextContent('$9.00')
     })
 
     it('strikes through the original rate when a percentage discount is active', () => {
@@ -665,6 +731,12 @@ describe('CheckoutPricingBreakdown', () => {
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /additional metered charges may apply/i,
+        }),
+      )
 
       const row = screen.getByTestId('detail-row-Workspaces')
       expect(row).toHaveTextContent('$9.00')
@@ -706,6 +778,12 @@ describe('CheckoutPricingBreakdown', () => {
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /additional metered charges may apply/i,
+        }),
+      )
 
       const row = screen.getByTestId('detail-row-Workspaces')
       expect(row).toHaveTextContent('$9.00')

@@ -30,10 +30,9 @@ jobs:
     name: "Preview: ${{ (github.event_name == 'pull_request_target' && 'Destroy') || (github.event_name == 'pull_request' && 'Deploy') || github.event.inputs.action }}"
     # Dependabot PRs read the Dependabot secret store, so preview secrets are empty.
     if: >-
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      (github.event_name != 'pull_request' ||
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: ubuntu-latest
     outputs:
       preview_url: ${{ steps.deploy.outputs.preview_url }}
     concurrency:

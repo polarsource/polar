@@ -18,11 +18,10 @@ import {
 } from '../guards'
 import { getSeatRows } from '../utils/seats'
 import { getDiscountDisplay } from '../utils/discount'
-import { getMeteredPrices } from '../utils/product'
 import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
 import DetailRow from './DetailRow'
-import MeteredPriceLabel from './MeteredPriceLabel'
+import MeteredChargesDetails from './MeteredChargesDetails'
 import SeatDetailRow from './SeatDetailRow'
 
 function formatShortDate(date: Date, locale: AcceptedLocale): string {
@@ -89,13 +88,6 @@ const CheckoutPricingBreakdown = ({
   const intervalCount = hasProductCheckout(checkout)
     ? checkout.product.recurring_interval_count
     : null
-
-  const { product, prices, currency } = checkout
-  const meteredPrices = useMemo(
-    () =>
-      product && prices ? getMeteredPrices(prices[product.id], currency) : [],
-    [product, prices, currency],
-  )
 
   const discountEndLabel = useMemo(() => {
     if (!checkout.discount || checkout.discount.duration === 'forever') {
@@ -276,25 +268,7 @@ const CheckoutPricingBreakdown = ({
               locale={locale}
             />
           </DetailRow>
-          {meteredPrices.length > 0 && (
-            <DetailRow
-              title={t('checkout.pricing.additionalMeteredUsage')}
-              className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-4"
-            />
-          )}
-          {meteredPrices.map((meteredPrice) => (
-            <DetailRow
-              title={meteredPrice.meter.name}
-              key={meteredPrice.id}
-              emphasis
-            >
-              <MeteredPriceLabel
-                price={meteredPrice}
-                locale={locale}
-                discount={checkout.discount}
-              />
-            </DetailRow>
-          ))}
+          <MeteredChargesDetails checkout={checkout} locale={locale} />
         </>
       ) : (
         <span>{t('checkout.pricing.free')}</span>

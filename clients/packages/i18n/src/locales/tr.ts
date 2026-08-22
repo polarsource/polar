@@ -94,6 +94,12 @@ export default {
         updateFailed: 'Koltuklar güncellenemedi',
       },
       basePrice: 'Temel fiyat',
+      meteredChargesMayApply: 'Ek kullanım ücreti uygulanabilir',
+      meteredIncluded: '{units} dahil',
+      meterUnits: {
+        token: 'tokenlar',
+        scalar: 'birimler',
+      },
     },
     trial: {
       hero: {

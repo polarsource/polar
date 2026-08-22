@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createBaseCheckout,
@@ -629,7 +629,16 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/additional metered usage/i)).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('detail-row-API Calls'),
+      ).not.toBeInTheDocument()
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /additional metered charges may apply/i,
+        }),
+      )
+
       expect(screen.getByTestId('detail-row-API Calls')).toBeInTheDocument()
     })
 
@@ -665,6 +674,12 @@ describe('CheckoutPricingBreakdown', () => {
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /additional metered charges may apply/i,
+        }),
+      )
 
       const row = screen.getByTestId('detail-row-Workspaces')
       expect(row).toHaveTextContent('$9.00')
@@ -706,6 +721,12 @@ describe('CheckoutPricingBreakdown', () => {
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /additional metered charges may apply/i,
+        }),
+      )
 
       const row = screen.getByTestId('detail-row-Workspaces')
       expect(row).toHaveTextContent('$9.00')

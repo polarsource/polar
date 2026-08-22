@@ -94,6 +94,13 @@ export default {
       },
       inclTax: 'MwSt. (inklusive)',
       basePrice: 'Grundpreis',
+      meteredChargesMayApply:
+        'Zusätzliche nutzungsabhängige Gebühren können anfallen',
+      meteredIncluded: '{units} inklusive',
+      meterUnits: {
+        token: 'Tokens',
+        scalar: 'Einheiten',
+      },
     },
     trial: {
       hero: {

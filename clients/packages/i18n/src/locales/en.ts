@@ -94,6 +94,28 @@ export default {
         },
       },
       additionalMeteredUsage: 'Additional metered usage',
+      meteredChargesMayApply: {
+        value: 'Additional metered charges may apply',
+        _llmContext:
+          'Collapsed toggle label in the checkout pricing breakdown; clicking it reveals the list of usage-based (metered) prices.',
+      },
+      meteredIncluded: {
+        value: '{units} included',
+        _llmContext:
+          'Shown next to a metered price when the product grants included usage credits. {units} is a pre-formatted quantity phrase including the unit noun, e.g. "10,000 tokens", so the sentence reads "10,000 tokens included". The per-unit overage rate is displayed separately on the same row.',
+      },
+      meterUnits: {
+        token: {
+          value: 'tokens',
+          _llmContext:
+            'Plural noun for AI/LLM tokens, used in quantity phrases like "10,000 tokens included".',
+        },
+        scalar: {
+          value: 'units',
+          _llmContext:
+            'Generic plural noun for metered usage units, used in quantity phrases like "10,000 units included".',
+        },
+      },
       perSeat: 'per seat',
       basePrice: {
         value: 'Base price',

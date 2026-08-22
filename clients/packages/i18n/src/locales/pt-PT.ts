@@ -94,6 +94,13 @@ export default {
       },
       inclTax: 'IVA (incluído)',
       basePrice: 'Preço base',
+      meteredChargesMayApply:
+        'Podem aplicar-se custos adicionais por utilização',
+      meteredIncluded: '{units} incluídos',
+      meterUnits: {
+        token: 'tokens',
+        scalar: 'unidades',
+      },
     },
     trial: {
       hero: {

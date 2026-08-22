@@ -149,7 +149,7 @@ async def get_optional_authentication_session(
     ),
 ) -> AuthenticationSessionDataclass | None:
     token = request.cookies.get(settings.AUTHENTICATION_SESSION_COOKIE_KEY)
-    if token is None:
+    if token is None or not token.isascii():
         return None
     try:
         return await authentication_session_service.get_by_token(token)

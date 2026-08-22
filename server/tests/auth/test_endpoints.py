@@ -60,6 +60,18 @@ class TestComplete:
         assert response.status_code == 401
         assert response.json()["error"] == "InvalidAuthenticationSession"
 
+    async def test_non_ascii_cookie(self, cookie_client: httpx.AsyncClient) -> None:
+        non_ascii_cookie = (
+            settings.AUTHENTICATION_SESSION_COOKIE_KEY.encode()
+            + b"=token-\xe4\xb8\xad\xe6\x96\x87"
+        )
+        response = await cookie_client.get(
+            "/v1/auth/complete", headers=[(b"cookie", non_ascii_cookie)]
+        )
+
+        assert response.status_code == 401
+        assert response.json()["error"] == "InvalidAuthenticationSession"
+
     async def test_valid(
         self,
         cookie_client: httpx.AsyncClient,

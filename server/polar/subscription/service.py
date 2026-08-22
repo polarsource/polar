@@ -1147,11 +1147,16 @@ class SubscriptionService:
         else:
             billing_reason = OrderBillingReasonInternal.subscription_cycle
 
+        # A cancelled subscription has no later invoice to carry usage onto, so its
+        # final settlement waits an hour for the entry fan-out to catch up with the
+        # window it is billing. The cutoff is explicit, so waiting changes when the
+        # window is computed, not which window.
         enqueue_job(
             "order.create_subscription_order",
             subscription.id,
             billing_reason,
             cutoff=cycle_at.isoformat(),
+            delay=60 * 60 * 1000 if revoke else None,
         )
 
         return subscription

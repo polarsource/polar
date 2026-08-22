@@ -49,6 +49,12 @@ variable "port" {
   default     = 6379
 }
 
+variable "log_retention_days" {
+  description = "CloudWatch retention for the slow log group."
+  type        = number
+  default     = 30
+}
+
 variable "tags" {
   description = "Tags applied to all created resources."
   type        = map(string)

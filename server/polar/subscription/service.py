@@ -3334,6 +3334,7 @@ class SubscriptionService:
             discount_amount=order.discount_amount,
             net_amount=order.net_amount,
             tax_amount=order.tax_amount,
+            tax_behavior=order.tax_behavior,
             total_amount=order.total_amount,
             applied_balance_amount=order.applied_balance_amount,
             due_amount=order.due_amount,

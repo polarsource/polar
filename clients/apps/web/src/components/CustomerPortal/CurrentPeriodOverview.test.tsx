@@ -73,7 +73,10 @@ const createSubscription = (
       : null,
   }) as unknown as schemas['CustomerSubscription']
 
-const mockChargePreview = (baseAmount: number) => {
+const mockChargePreview = (
+  baseAmount: number,
+  overrides: Partial<schemas['SubscriptionChargePreview']> = {},
+) => {
   const preview: schemas['SubscriptionChargePreview'] = {
     base_amount: baseAmount,
     metered_amount: 0,
@@ -83,9 +86,11 @@ const mockChargePreview = (baseAmount: number) => {
     discount_amount: 0,
     net_amount: baseAmount,
     tax_amount: 0,
+    tax_behavior: null,
     total_amount: baseAmount,
     applied_balance_amount: 0,
     due_amount: baseAmount,
+    ...overrides,
   }
 
   vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
@@ -114,6 +119,53 @@ describe('CurrentPeriodOverview', () => {
     )
     expect(container.textContent).not.toContain(
       formatCurrency('compact')(1999, 'usd'),
+    )
+  })
+
+  it('shows the net subtotal and an included-tax label for inclusive tax', () => {
+    mockChargePreview(700, {
+      net_amount: 560,
+      tax_amount: 140,
+      tax_behavior: 'inclusive',
+      total_amount: 700,
+      due_amount: 700,
+    })
+    const subscription = createSubscription(createFixedPrice(700), null, 700)
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(700))]}
+        api={{} as Client}
+      />,
+    )
+
+    expect(container.textContent).toContain('Taxes (included)')
+    expect(container.textContent).toContain(
+      formatCurrency('compact')(560, 'usd'),
+    )
+  })
+
+  it('shows the gross subtotal for exclusive tax', () => {
+    mockChargePreview(700, {
+      net_amount: 700,
+      tax_amount: 140,
+      tax_behavior: 'exclusive',
+      total_amount: 840,
+      due_amount: 840,
+    })
+    const subscription = createSubscription(createFixedPrice(700), null, 700)
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(700))]}
+        api={{} as Client}
+      />,
+    )
+
+    expect(container.textContent).toContain('Taxes')
+    expect(container.textContent).not.toContain('Taxes (included)')
+    expect(container.textContent).toContain(
+      formatCurrency('compact')(840, 'usd'),
     )
   })
 

@@ -30915,6 +30915,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** PolarSelfPaidSubscriptionAlreadyExists */
+    PolarSelfPaidSubscriptionAlreadyExists: {
+      /**
+       * Error
+       * @example PolarSelfPaidSubscriptionAlreadyExists
+       * @constant
+       */
+      error: 'PolarSelfPaidSubscriptionAlreadyExists'
+      /** Detail */
+      detail: string
+    }
     /** PolarSelfPaymentMethodInUse */
     PolarSelfPaymentMethodInUse: {
       /**
@@ -41278,6 +41289,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PolarSelfPaidSubscriptionAlreadyExists']
         }
       }
       /** @description Validation Error */

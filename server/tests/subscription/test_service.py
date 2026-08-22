@@ -5418,6 +5418,58 @@ class TestUpdateProduct:
         ]
         assert proration_entries == []
 
+    async def test_trial_added_via_update_trial_then_change_product_with_trial(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        # Regression: adding a trial to an active subscription via update_trial
+        # must set trial_start, so a subsequent product change recomputes the
+        # trial end instead of crashing in _resolve_trial_end.
+        trial_added_at = datetime(2025, 6, 1, 12, 0, 0, tzinfo=UTC)
+        with freezegun.freeze_time(trial_added_at):
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+            )
+
+            assert subscription.current_period_end is not None
+            trial_end = subscription.current_period_end + timedelta(days=14)
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end=trial_end
+                )
+
+            assert subscription.trial_start == trial_added_at
+
+            new_product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                trial_interval=TrialInterval.month,
+                trial_interval_count=1,
+            )
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_product(
+                    session, ctx, subscription, product_id=new_product.id
+                )
+
+        expected_trial_end = TrialInterval.month.get_end(trial_added_at, 1)
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == expected_trial_end
+        assert updated.current_period_end == expected_trial_end
+
     async def test_meters(
         self,
         session: AsyncSession,
@@ -6790,14 +6842,17 @@ class TestUpdateTrial:
 
         trial_end = subscription.current_period_end + timedelta(days=14)
 
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
-        ) as ctx:
-            updated_subscription = await subscription_service.update_trial(
-                session, ctx, subscription, trial_end=trial_end
-            )
+        trial_added_at = datetime(2025, 6, 1, 12, 0, 0, tzinfo=UTC)
+        with freezegun.freeze_time(trial_added_at):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end=trial_end
+                )
 
         assert updated_subscription.status == SubscriptionStatus.trialing
+        assert updated_subscription.trial_start == trial_added_at
         assert updated_subscription.trial_end == trial_end
         assert updated_subscription.current_period_end == trial_end
         assert updated_subscription.trialing

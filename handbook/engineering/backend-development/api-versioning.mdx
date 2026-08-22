@@ -54,6 +54,28 @@ field, must target Next.
 
 Versions use the `YYYY-MM` format, such as `2026-04`.
 
+Each concrete version has a stable identity constant for as long as it is
+supported. Lifecycle constants are aliases that change during a rotation:
+
+```python
+from polar.kit.versioning import APIVersion
+
+V2026_04 = APIVersion(year=2026, month=4)
+V2026_10 = APIVersion(year=2026, month=10)
+
+CURRENT_API_VERSION = V2026_04
+NEXT_API_VERSION = V2026_10
+
+VERSIONS = {
+    V2026_04,
+    V2026_10,
+}
+```
+
+Always use identity constants such as `V2026_10` in version markers. Using
+`CURRENT_API_VERSION` or `NEXT_API_VERSION` would change the meaning of the
+marker at the next rotation.
+
 ## Selecting an API version
 
 Clients select a version with the `Polar-Version` request header:
@@ -90,170 +112,203 @@ import { createPolar } from "@polar-sh/sdk/2026-04";
 
 ## How to change the API
 
-The versioning helpers take exact version sets. They do not mean "this version
-and every version after it." An annotation usually remains in place across two
-release rotations before it can be removed.
+The `version` endpoint decorator and `Version` field marker define an inclusive
+version range:
+
+```python
+def version(
+    *,
+    starting_from: APIVersion | None = None,
+    up_to: APIVersion | None = None,
+): ...
+```
+
+`Version` accepts the same range arguments. Omit `starting_from` when there is no
+lower bound and omit `up_to` when there is no upper bound. At least one bound is
+required. When both are provided, the version is available when:
+
+```python
+starting_from <= requested_version <= up_to
+```
+
+Because markers refer to stable version constants, they do not need to change
+when versions move between Next, Current, and Deprecated.
 
 ### Adding an endpoint
 
-Use `@version` to expose a new endpoint only in Next:
+Use `@version(starting_from=...)` to introduce an endpoint in Next and every
+version after it:
 
 ```python
 from polar.kit.versioning import version
-from polar.version import NEXT_API_VERSION
+from polar.version import V2026_10
 
 
 @router.get("/new")
-@version(NEXT_API_VERSION)
+@version(starting_from=V2026_10)
 async def new() -> dict[str, str]:
     return {"message": "New endpoint"}
 ```
 
 The decorator must be below the router decorator, as shown above, so its metadata
-is present when FastAPI registers the route.
-
-At the first rotation, update it to remain unavailable in the newly Deprecated
-version:
-
-```python
-@version(CURRENT_API_VERSION, NEXT_API_VERSION)
-```
-
-At the following rotation, every supported version contains the endpoint, so the
-decorator can be removed.
+is present when FastAPI registers the route. It remains unchanged when
+`V2026_10` becomes Current and then Deprecated.
 
 ### Changing an existing endpoint
 
-Keep the existing undecorated endpoint as the fallback for stable versions and
-register a second endpoint with the same path and method for Next:
+Request schema changes require separate Pydantic models and endpoint
+implementations. For example, to rename the `display_name` input field to `name`,
+keep the original endpoint as the fallback and introduce an override in Next:
 
 ```python
-@router.get("/{customer_id}")
-async def get_customer(customer_id: UUID) -> Customer:
+from uuid import UUID
+
+from polar.kit.schemas import Schema
+from polar.kit.versioning import version
+from polar.version import V2026_10
+
+
+class CustomerUpdateLegacy(Schema):
+    display_name: str
+
+
+class CustomerUpdate(Schema):
+    name: str
+
+
+@router.patch("/{customer_id}")
+async def update(
+    customer_id: UUID,
+    customer_update: CustomerUpdateLegacy,
+) -> Customer:
     ...
 
 
-@router.get("/{customer_id}")
-@version(NEXT_API_VERSION)
-async def get_customer_next(customer_id: UUID) -> CustomerNext:
+@router.patch("/{customer_id}", name="update")
+@version(starting_from=V2026_10)
+async def update_v2026_10(
+    customer_id: UUID,
+    customer_update: CustomerUpdate,
+) -> Customer:
     ...
 ```
 
-The version-specific route overrides the general route for Next. At the first
-rotation, mark the new route for Current and Next; the old route will then serve
-only Deprecated. At the following rotation, delete the old route and remove the
-decorator from the new one.
+The unversioned `update` endpoint serves versions that do not match a
+version-specific override. From `V2026_10` onward, `update_v2026_10` takes
+precedence. The router's built-in `name="update"` argument preserves the route
+name, so both versioned OpenAPI documents expose the operation ID
+`customers:update` and SDKs generate `polar.customers.update`.
 
-Use this pattern for request-schema changes as well as changes to an endpoint's
-response or behavior.
+Delete the fallback endpoint and its legacy schema when no supported version
+predates `V2026_10`. Keep the new implementation and marker until `V2026_10`
+itself is removed; then remove the decorator and rename the Python function to
+`update`. Use the same pattern for response or behavior changes that cannot be
+expressed with a field marker.
 
 ### Removing an endpoint
 
-During development, restrict the old endpoint to the two frozen versions so it
-is absent from Next:
+Use `@version(up_to=...)` with the last version that contains the endpoint:
 
 ```python
 from polar.kit.versioning import version
-from polar.version import CURRENT_API_VERSION, DEPRECATED_API_VERSION
+from polar.version import V2026_04
 
 
 @router.get("/old")
-@version(DEPRECATED_API_VERSION, CURRENT_API_VERSION)
+@version(up_to=V2026_04)
 async def old() -> dict[str, str]:
     ...
 ```
 
-During the initial two-version rollout, use
-`@version(CURRENT_API_VERSION)` instead.
-
-At the first rotation, the endpoint becomes Deprecated-only:
-
-```python
-@version(DEPRECATED_API_VERSION)
-```
-
-Delete the endpoint at the following rotation, when that Deprecated version is
-removed.
+The marker remains unchanged as `V2026_04` becomes Deprecated. Delete the
+endpoint when that version is removed.
 
 ### Adding an output field
 
-Use `IncludedIn` to serialize a new output field and include it in the OpenAPI
-schema only for Next:
+Use `Version(starting_from=...)` to introduce an output field in Next and every
+version after it:
 
 ```python
 from typing import Annotated
 
-from polar.kit.versioning import IncludedIn
-from polar.version import NEXT_API_VERSION
+from polar.kit.versioning import Version
+from polar.version import V2026_10
 
 
 class Customer(Schema):
     email: str
-    new_field: Annotated[str, IncludedIn(NEXT_API_VERSION)]
+    new_field: Annotated[str, Version(starting_from=V2026_10)]
 ```
 
-At the first rotation, change the annotation to:
-
-```python
-new_field: Annotated[
-    str,
-    IncludedIn(CURRENT_API_VERSION, NEXT_API_VERSION),
-]
-```
-
-Remove the annotation at the following rotation, when the field exists in every
-supported version.
+The marker remains unchanged during rotations.
 
 ### Removing an output field
 
-Use `ExcludedIn` to omit an existing output field from Next serialization and
-its OpenAPI schema:
+Use `Version(up_to=...)` with the last version that exposes the field:
 
 ```python
 from typing import Annotated
 
-from polar.kit.versioning import ExcludedIn
-from polar.version import NEXT_API_VERSION
+from polar.kit.versioning import Version
+from polar.version import V2026_04
 
 
 class Customer(Schema):
     email: str
-    old_field: Annotated[str, ExcludedIn(NEXT_API_VERSION)]
+    old_field: Annotated[str, Version(up_to=V2026_04)]
 ```
 
-At the first rotation, keep it absent from both Current and Next:
+Delete the field when `V2026_04` is removed.
+
+### Limiting availability to a bounded range
+
+Provide both bounds when an endpoint or field exists only during part of the API
+history:
 
 ```python
-old_field: Annotated[
+temporary_field: Annotated[
     str,
-    ExcludedIn(CURRENT_API_VERSION, NEXT_API_VERSION),
+    Version(starting_from=V2026_04, up_to=V2026_10),
 ]
 ```
 
-Delete the field at the following rotation, when no supported version exposes
-it.
+The same syntax applies to endpoints:
+
+```python
+@version(starting_from=V2026_04, up_to=V2026_10)
+```
 
 <Warning>
-  `IncludedIn` and `ExcludedIn` control OpenAPI schema generation and output
-  serialization. They do not change Pydantic input validation. To change an
-  input schema, create a version-specific endpoint with a separate request
-  model.
+  `Version` controls OpenAPI schema generation and output serialization. It does
+  not change Pydantic validation: the field must still be valid on the model even
+  in versions where it is hidden. To change an input schema, create a
+  version-specific endpoint with a separate request model instead of using
+  `Version`.
 </Warning>
 
-### Release transition reference
+### Cleaning up a removed version
 
-Use this table when rotating versions:
+During a rotation, update the lifecycle aliases and `VERSIONS`, then regenerate
+every supported OpenAPI schema and SDK and run the schema-lock tests. Version
+markers do not move merely because a version changes lifecycle stage.
 
-| Change               | While developing Next           | After first rotation        | After second rotation |
-| -------------------- | ------------------------------- | --------------------------- | --------------------- |
-| Added endpoint       | `@version(Next)`                | `@version(Current, Next)`   | Remove decorator      |
-| Removed endpoint     | `@version(Deprecated, Current)` | `@version(Deprecated)`      | Delete endpoint       |
-| Added output field   | `IncludedIn(Next)`              | `IncludedIn(Current, Next)` | Remove annotation     |
-| Removed output field | `ExcludedIn(Next)`              | `ExcludedIn(Current, Next)` | Delete field          |
+Also delete an unversioned fallback once every supported version matches its
+version-specific override. Since the fallback has no boundary marker of its own,
+look for these route pairs when removing the last version before an override's
+`starting_from` boundary.
 
-At every rotation, update the version constants and all exact-version markers,
-regenerate every supported OpenAPI schema and SDK, and run the schema-lock tests
-before merging.
+When removing the oldest supported version, find every reference to its identity
+constant. Since no remaining version can be older than it, cleanup follows three
+rules:
+
+| How the removed version is used | Cleanup |
+| --- | --- |
+| As `up_to` | Delete the endpoint implementation or field; its last supported version is gone |
+| As the only `starting_from` bound | Remove the field marker; for an endpoint, remove the decorator and rename the function to its route `name` |
+| As `starting_from` with a later `up_to` | Remove `starting_from` but keep the `up_to` bound |
+
+After resolving those references, delete the identity constant. Any missed
+imports will fail immediately during type checking or test collection.
 
 ## How it works under the hood
 
@@ -262,14 +317,16 @@ The versioning middleware reads `Polar-Version`, defaults it to
 version in the request context. It also adds the selected version to the response
 headers.
 
-Routes without `@version` are available in every supported version unless a
-version-specific route with the same path and HTTP methods overrides them. Routes
-with `@version` are available only in the exact versions passed to the decorator.
+Routes without `@version` are fallbacks for every supported version. A matching
+versioned route with the same path and HTTP methods takes precedence. At startup,
+overlapping versioned ranges are rejected if they match the same supported
+version. The router decorator's built-in `name` argument can override the route
+name used to generate the OpenAPI operation ID and SDK method name.
 
-For fields, `IncludedIn` and `ExcludedIn` inspect the active request version when
-serializing Pydantic models and generating JSON Schema. Finally, the application
-filters routes and fields for each supported version to generate the versioned
-OpenAPI documents used by the SDK generator and schema-lock tests.
+For fields, `Version` applies the same range comparison when serializing Pydantic
+models and generating JSON Schema. Finally, the application filters routes and
+fields for each supported version to generate the versioned OpenAPI documents
+used by the SDK generator and schema-lock tests.
 
 See the [API versioning design document](/engineering/design-documents/api-versioning)
 for the rationale, lifecycle timeline, and SDK release strategy.

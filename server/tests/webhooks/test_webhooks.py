@@ -1,3 +1,4 @@
+import base64
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -9,6 +10,7 @@ from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.config import settings
+from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
 from polar.models.organization import Organization
 from polar.models.subscription import Subscription
@@ -19,7 +21,9 @@ from polar.models.webhook_endpoint import (
     WebhookFormat,
 )
 from polar.models.webhook_event import WebhookEvent
+from polar.webhook.constants import WEBHOOK_SECRET_PREFIX
 from polar.webhook.repository import WebhookDeliveryRepository
+from polar.webhook.service import generate_standard_secret
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import _webhook_event_send, webhook_event_send
 from tests.fixtures.database import SaveFixture
@@ -274,3 +278,86 @@ async def test_webhook_standard_webhooks_compatible(
     request = route_mock.calls.last.request
     w = StandardWebhook(secret.encode("utf-8"))
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
+
+
+@pytest.mark.asyncio
+async def test_webhook_legacy_secret_single_signature(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    respx_mock: respx.MockRouter,
+    organization: Organization,
+) -> None:
+    secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+    route_mock = respx_mock.post("https://example.com/hook").mock(
+        return_value=httpx.Response(200)
+    )
+
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret=secret,
+    )
+    await save_fixture(endpoint)
+
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
+    await save_fixture(event)
+
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
+
+    request = route_mock.calls.last.request
+    assert len(request.headers["webhook-signature"].split(" ")) == 1
+    legacy_verifier = StandardWebhook(base64.b64encode(secret.encode()).decode())
+    assert (
+        legacy_verifier.verify(request.content, cast(dict[str, str], request.headers))
+        is not None
+    )
+
+
+@pytest.mark.asyncio
+async def test_webhook_standard_secret_dual_signature(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    respx_mock: respx.MockRouter,
+    organization: Organization,
+) -> None:
+    secret = generate_standard_secret()
+    route_mock = respx_mock.post("https://example.com/hook").mock(
+        return_value=httpx.Response(200)
+    )
+
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret=secret,
+    )
+    await save_fixture(endpoint)
+
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
+    await save_fixture(event)
+
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
+
+    request = route_mock.calls.last.request
+    assert len(request.headers["webhook-signature"].split(" ")) == 2
+
+    spec_verifier = StandardWebhook(secret)
+    assert (
+        spec_verifier.verify(request.content, cast(dict[str, str], request.headers))
+        is not None
+    )
+
+    legacy_verifier = StandardWebhook(base64.b64encode(secret.encode()).decode())
+    assert (
+        legacy_verifier.verify(request.content, cast(dict[str, str], request.headers))
+        is not None
+    )

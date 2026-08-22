@@ -101,7 +101,9 @@ uv sync --frozen
 uv run task emails
 uv run task backoffice
 cd "${CHECKOUT}/clients"
-pnpm install --frozen-lockfile
+# Same DTS skip as deploy.sh, so the warmed turbo cache matches the
+# hashes deploys look up.
+POLAR_SKIP_DTS=1 pnpm install --frozen-lockfile
 git -C "$CHECKOUT" rev-parse HEAD > "${CHECKOUT}/.deployed_sha"
 
 # --- Preview tools, Caddy config, systemd units ---

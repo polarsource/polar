@@ -12,7 +12,7 @@ export const options: Options[] = [
       'react/payment-method': 'src/react/payment-method.tsx',
     },
     format: ['cjs', 'esm'],
-    dts: true,
+    dts: process.env.POLAR_SKIP_DTS !== '1',
     minify: 'terser',
     define: allowedOriginsDefine,
     external: ['react'],
@@ -32,7 +32,7 @@ export const options: Options[] = [
     ],
     format: ['cjs', 'esm'],
     minify: true,
-    dts: true,
+    dts: process.env.POLAR_SKIP_DTS !== '1',
   },
 ]
 

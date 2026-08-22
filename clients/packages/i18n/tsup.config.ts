@@ -9,7 +9,7 @@ export const options: Options[] = [
     ],
     format: ['cjs', 'esm'],
     minify: true,
-    dts: true,
+    dts: process.env.POLAR_SKIP_DTS !== '1',
   },
 ]
 

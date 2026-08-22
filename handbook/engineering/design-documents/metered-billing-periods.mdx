@@ -1,0 +1,399 @@
+<Info>
+**Status**: Partially implemented — behind a per-organization switch, off everywhere
+
+**Created**: August 2026
+
+**Last Updated**: August 18, 2026
+</Info>
+
+## Summary
+
+Create orders without stamping an `order_item_id` onto every billing entry, so that a
+subscription with a very large number of entries can be invoiced without settlement time scaling
+with that count.
+
+A **meter period** is one row per (subscription, meter, period) carrying a time window.
+Settlement aggregates the billing entries whose timestamps fall inside it, prices the result,
+and records what it charged on the period row.
+
+Two rows are written per settlement — the period and its order item — whatever the subscription's
+volume. Scope is a timestamp range fixed when the period opens, so it never changes and never
+needs to be marked. `billed_amount` on the row is a high-water mark, so a period can be settled
+more than once and charges only the increase.
+
+Billing entries are untouched: still one per event, still written at ingestion, still carrying
+the customer-to-subscription resolution decided there. This changes only what an invoice
+considers in scope.
+
+One table, three operations, behind a per-organization switch.
+
+## Background
+
+An invoice's metered scope is `order_item_id IS NULL` — the entries not yet claimed by an order.
+Settling therefore has to *claim* them, stamping an id onto every row.
+
+Two things follow from scope being a column that invoicing writes.
+
+**Settling is proportional to the entry count, so any fixed time limit binds eventually.**
+`order_item_id` is indexed, so the update cannot be HOT and every row writes into every index on
+the table; and each row must be visited. Measured in production on 2026-08-17, a 624k-entry
+settlement failed 16 consecutive times against a 60s task limit, each rolled-back attempt leaving
+dead tuples that slowed the next. [#13785](https://github.com/polarsource/polar/pull/13785) has
+since removed the quadratic part of that cost and raised the limit to 600s, and the same
+settlement now completes in 186s. The work still scales with the entry count — see
+[Evidence](#evidence).
+
+**An invoice changes what a later invoice can see.** This produced the enterprise seat overcharge
+(`polar-internal#113`): a period's allowance arrived as an event carrying its own entry, the
+first invoice of the period claimed it, and every later invoice saw usage with no credit.
+[#13711](https://github.com/polarsource/polar/pull/13711) fixed the incident by not billing
+metered usage on a plan change at all — removing the second settlement rather than making it
+safe. The property is unchanged.
+
+A third thing is missing rather than wrong: **no row represents a period.**
+`Subscription.current_meter_period_start/end` is two columns the scheduler reads to decide when
+to wake, carrying no record of what has already been billed. A `max` meter settled twice bills
+its peak twice (12, then 15, for a period peak of 15).
+
+Note which mechanism fails. `billing_entry` is 6.9 GB against 188 GB of events, and the ingest
+fan-out runs at ~5 events/s against a ceiling in the hundreds — so *creating* entries is not
+what breaks. *Claiming* them is. Both of those hold at today's volume and are revisited under
+[Deferred: rollups](#deferred-rollups); neither is a reason to think the entry table is free
+forever.
+
+## Goals
+
+- **Settlement cost stops scaling with the number of billing entries.** It is the one cost that
+  grows without bound as usage grows.
+- An invoice's scope is immutable, so invoicing cannot change what a later invoice sees.
+- A past invoice can be recomputed at any time.
+- One grouping rule for every aggregation type: a period is per meter, so there is no
+  summable/non-summable split and no per-price deduplication.
+
+## Non-Goals
+
+- Changing the pricing model (`ProductPriceMeteredUnit`, cap amounts) or the meter definition
+  (filter, aggregation, unit).
+- Changing event ingestion, the `events` table, or how billing entries are created. Entries
+  keep being written at ingestion, which is what makes them the right thing to aggregate.
+- Reducing the size of `billing_entry`, or removing the per-meter ingest fan-out. Both were
+  candidates; the measurements below say neither is the binding constraint.
+- Cash balances. See [wallets](/engineering/design-documents/wallets).
+- Building pre-aggregation infrastructure now. See [Deferred: rollups](#deferred-rollups).
+
+## Design
+
+### One table
+
+```python
+class MeterPeriod(RecordModel):
+    """One accrual window for a (subscription, meter) pair."""
+    __tablename__ = "meter_periods"
+
+    subscription_id: Mapped[UUID]
+    meter_id: Mapped[UUID]
+    product_price_id: Mapped[UUID]      # the price this period bills at
+
+    starts_at: Mapped[datetime]         # half-open window [starts_at, ends_at)
+    ends_at: Mapped[datetime]
+    status: Mapped[MeterPeriodStatus]   # accruing | settled
+    billable: Mapped[bool]              # False during trial
+
+    quantity: Mapped[Decimal]           # as of the last settlement
+    credited_units: Mapped[Decimal]     # as of the last settlement
+    billed_amount: Mapped[int]          # total charged for this period so far
+    currency: Mapped[str]
+
+    __table_args__ = (UniqueConstraint("subscription_id", "meter_id", "starts_at"),)
+```
+
+### Three operations
+
+**Open** — at subscription start, cycle, or a meter-interval boundary, insert one period per
+metered price on the subscription. The price is snapshotted onto the row. Idempotent: a price
+that already has an accruing period is left alone.
+
+**Read** — current usage is the meter's aggregation over the entries in `[starts_at, now)`.
+Scoping on `BillingEntry.subscription_id` rather than on a customer is what carries the
+ingest-time resolution: a seat member's usage was already attributed to the seat holder's
+subscription when its entry was written, and each event produces exactly one entry against
+exactly one subscription, so a customer holding two subscriptions on one meter cannot be billed
+by both.
+
+**Settle** — compute what the window owes, then charge the increase over what has already been
+billed:
+
+```python
+quantity = aggregate(meter, window=[period.starts_at, cutoff))
+credits  = sum(credit.units for credit in credits_in_scope(period))
+amount   = price.get_amount(quantity - credits)
+
+charge = amount - period.billed_amount     # == amount on a first settlement
+```
+
+Settling is split: `compute_settlement` is read-only, `apply_settlement` persists. The charge
+preview and `subscription.update_meters` both build line items through the same generator, so a
+settlement that wrote from inside it would let previewing a charge advance a period's billing
+state.
+
+`apply_settlement(close=False)` records the settlement and leaves the window accruing with its
+credits in scope. Two properties follow: an allowance is scoped to the period rather than to a
+billing entry, so settling cannot consume it; and `billed_amount` is a high-water mark, so a
+`max` meter settled twice charges `price(15) - price(12)` rather than `price(12) + price(15)`.
+
+Nothing reaches that path today — since #13711 every settlement from the order path closes its
+period. It is kept because it makes settling twice *safe* rather than merely unused: #12510
+settles on its own clock, and every non-additive pricing model (tiered, graduated, package)
+double-bills without it.
+
+### Windows and late events
+
+Period membership is decided on `Event.timestamp`, never `ingested_at`; `ingested_at` stays
+operational, for detecting late arrivals.
+
+**A window is always settled before the last of its entries exists.** Entries are written by a
+cron behind a watermark, so at any cutoff the most recent events have been ingested but not yet
+turned into entries — measured at 12–20 minutes of lag. The sweep needs nothing for this: those
+entries are simply still pending and the next invoice picks them up. A window has to recover
+them explicitly.
+
+`compute_corrections` does that by rechecking the period settled at the previous invoice: the
+period row already records what was billed, so recomputing its window and charging the increase
+over `billed_amount` recovers whatever arrived late. The resulting line carries that period's
+dates, so the customer sees which window it belongs to.
+
+It is bounded to that one period per meter because an invoice is the only thing that runs it —
+anything older has already had its chance. A duration-based bound cannot work here: it would
+have to exceed one billing interval to fire at all.
+
+Only an increase is billed. A decrease is possible for `min` and `avg` meters, and is not
+refunded.
+
+**A cancellation settles late on purpose.** There is no next invoice to correct onto, so the
+final order is enqueued with an hour's delay — comfortably past the 15-minute cron and the
+12–20 minutes of watermark lag. Because the cutoff is passed explicitly,
+waiting changes when the window is computed, not which window, so the customer is billed for the
+same period either way. The sweep gains this too: entries created in those minutes used to sit
+pending on a cancelled subscription forever.
+
+Usage arriving later than that is still lost — nothing bounded can catch a customer who sends
+last month's events tomorrow — but it is now an unusual case rather than every cancellation.
+
+## What this changes
+
+| Today | With periods |
+|---|---|
+| scope is `order_item_id IS NULL` | scope is `start_timestamp` inside the period's window |
+| settling stamps an id onto every entry | settling writes the period row and the order item |
+| `_link_pending`, `link_pending_by_subscription_and_price` / `_and_meter` | — |
+| `PendingByPrice` / `PendingByMeter`, `processed_meters`, the active-price scan | the meter is a column on the period |
+| `_get_metered_line_item` and `_get_metered_line_item_by_meter` | one function |
+| nowhere to record what a period has been billed | `billed_amount`, a high-water mark |
+
+Entries themselves are untouched: still one per event, still written at ingestion, still
+carrying the customer-to-subscription resolution decided at that moment. That resolution —
+direct subscription over seat holder, the trial boundary, the price in force — is subtle,
+already correct, and inherited for free by aggregating over entries rather than re-deriving it
+from events at settlement.
+
+The summable/non-summable split disappears: one window, one aggregate per period, nothing to
+group by price and nothing to deduplicate. `get_quantity` still branches on `count`, which
+counts entries directly rather than reaching through to `events` — a performance shortcut the
+sweep already carries, not a difference in meaning.
+
+## Evidence
+
+Measured on production, 2026-08-17, against subscription `84234af1` — 624k pending entries on a
+single `count` meter, whose settlement had failed 16 consecutive times on the 60s task limit.
+
+**Settling costs a minute of reads before it writes anything.** The sweep stamps `order_item_id`
+onto every entry, in batches of 5,000. `order_item_id` is indexed, so the update cannot be HOT
+and every row writes into all **8 indexes** — ~5M index insertions for one settlement. Worse,
+the rows for one subscription sit ~1.6 per page *in index order*, so visiting them reads ~3 GB
+of scattered heap at the ~52 MB/s the storage sustains on random access. That is ~71s before a
+single write, against a 60s limit.
+
+**Then it finished, in 186 seconds.** [#13784](https://github.com/polarsource/polar/pull/13784)
+and [#13785](https://github.com/polarsource/polar/pull/13785) added
+`ix_billing_entry_pending_link`, keyset-paginated the loop so a batch resumes at `id > last`
+rather than rebuilding a bitmap over the whole subscription, and raised the actor's `time_limit`
+from 60s to 600s. On 2026-08-18 the same settlement completed in **186s**.
+
+That removes the quadratic term the six-second batches were spending their time in, and it ends
+the incident. It does not change the shape of the cost:
+
+| | 624k entries | scaling |
+|---|---|---|
+| Stamp every entry, pre-#13785 | never completed | quadratic in the batch count |
+| Stamp every entry, today | **186s** | linear — ~3.4k entries/s |
+| Count the window (what a period settles) | **1,127 ms**, cold cache | flat — two row writes per meter |
+
+186s is 31% of the raised ceiling, so this subscription has roughly **3× headroom** before
+600s is not enough either, on a table where the per-row cost only rises: a non-HOT update writes
+every index, and `billing_entry` now carries ten, two more than when the 71s figure was measured.
+A 186s transaction also holds back vacuum and pushes replication lag for its duration.
+
+So the case for this design is no longer "settlement cannot finish". It is that settlement costs
+186 seconds and grows with usage, against ~1 second that does not.
+
+The window scan reads 624,893 rows across 36,281 heap blocks — **17 rows per block**, in
+physical order, at ~367 MB/s. Same rows, same table; the difference is entirely the access
+pattern. `ix_billing_entry_window` narrows it further: one range scan instead of a `BitmapAnd`
+of two ill-suited indexes, and `count(*)` needs no heap columns so it can go index-only.
+
+**The trap is structural.** `order_item_id` must be indexed to find pending entries — it is the
+most-scanned index on the table, 28.9M scans and 8.2B tuples read. Being indexed is exactly what
+makes writing it expensive. The column that defines billing scope has to be queryable *and*
+has to be written on every settlement, and those requirements fight each other in proportion to
+entry count.
+
+A period's scope is a timestamp range, written once when the period opens and never updated.
+There is nothing to stamp, so none of the above applies.
+
+Two things worth fixing regardless of this design, since the sweep will exist for a while. The
+planner's estimate of 3,529 rows against 664,992 sent it to a bitmap plan that rebuilt the full
+bitmap on every batch; #13784 and #13785 address this with a dedicated index and keyset
+pagination, and extended statistics on `(subscription_id, product_price_id)` would fix the
+estimate itself. Autovacuum still wants tuning: the default `0.2` scale factor let 2.75M dead
+tuples accumulate on a 16M-row table before triggering, and each rolled-back settlement attempt
+adds more.
+
+### Deferred: rollups
+
+Settling a period is one aggregation over every event in it. At high enough volume the answer is
+an incremental rollup keyed `(customer_id, meter_id, bucket_start)`, upserted per ingest batch,
+so settlement reads ~720 hourly buckets instead of N events.
+
+**Not built.** The period model is what makes rollups possible at all — pre-aggregation is only
+sound over immutable, closed windows, which the per-event pending set is not.
+
+It is also where the *source* of a period's quantity gets swapped. Settlement reads events
+through their billing entries today, which inherits the ingest-time resolution and is what makes
+this change small. At 10-100× the volume the entry table and the per-meter fan-out both become
+binding, and quantity moves to a rollup keyed on the window instead. The period row, its window
+and its high-water mark are unchanged by that — only `get_quantity` is. Treat that method as the
+seam.
+
+When we do: `count`, `sum`, `min` and `max` merge across buckets trivially and `avg` decomposes
+into `(sum, count)`, but `unique` does not merge exactly without keeping the underlying sets.
+`get_quantities` already carves `avg` and `unique` out of its optimised path, so that constraint
+is pre-existing.
+
+## Security considerations
+
+**Data stored.** `meter_periods` holds a window, an aggregate quantity, credited units, and what
+has been charged, keyed by subscription, meter and price. No customer-identifying data and no
+event payloads: the quantity is a number derived at settlement, and the events it came from stay
+where they are. It is billing state at the same trust tier as `order_item`, and inherits the
+organization scoping of the subscription it hangs off.
+
+**Trust boundary.** The window is the boundary. `[starts_at, ends_at)` is fixed when the period
+opens and never updated, so an invoice cannot change what a later invoice sees. That is the
+property whose absence produced the enterprise seat overcharge (`polar-internal#113`), where the
+first invoice of a period consumed the allowance entry and every later one billed usage with no
+credit against it.
+
+**Attribution.** Quantity is scoped on `BillingEntry.subscription_id`, so a period only ever sees
+usage that ingestion already attributed to that subscription — seat member to seat holder, the
+trial boundary, the price in force. Each event produces exactly one entry against exactly one
+subscription, so a customer holding two subscriptions on one meter cannot be billed by both.
+Re-deriving attribution from events at settlement is what would reopen that.
+
+**Exposure.** No public API reads or writes periods. The switch is staff-only, absent from
+`OrganizationFeatureSettingsUpdate`, and settable from the backoffice; opening a period is a
+backoffice action. Nothing here widens what an organization can see about another.
+
+**The integrity risk is reversal, not access.** Turning the switch off after a period has settled
+double-bills: those entries were billed but never linked, so the sweep finds them pending and
+charges them again. Nothing in the schema prevents the flag being unset — the backoffice renders
+it as an ordinary checkbox — so it is a procedural constraint today. Reversing it safely means
+marking the affected entries first.
+
+## Rollout
+
+The switch is `feature_settings.metered_billing_periods_enabled`, staff-managed (absent from
+`OrganizationFeatureSettingsUpdate`) and off for every organization.
+
+**A period covering the window selects the path, not the flag.** An organization switched on
+mid-period has no period for the window it is already in, so billing falls back to the sweep
+until the next cycle opens one. That fallback fires *only* while the subscription has never had
+a period: afterwards its entries are billed by window and deliberately left unlinked, so a sweep
+would bill every one of them again.
+
+Turning it on:
+
+1. Flip the flag. Nothing changes immediately — the current window still bills by sweep, and
+   entries keep being written exactly as before.
+2. At the next cycle, `reset_meters` opens the first period.
+3. That cycle's invoice is the last one to link entries. Every invoice after it settles a
+   window and links nothing.
+
+**Turning it off is not safe** once a period has settled. The entries in that window were billed
+but never linked, so the sweep would find them pending and bill them a second time. Treat the
+switch as one-way per organization; reversing it needs those entries marked first.
+
+### Built
+
+`MeterPeriod`, its repository and service, migrations `6702e350fa99` (the table) and
+`8f31c4d7be05` (`ix_billing_entry_window`, built `CONCURRENTLY` — `billing_entry` is ~16M rows
+and a blocking build would stall every write to it for minutes), and the switch.
+
+Both halves of the billing path reach it through `compute_pending_metered_line_items`, which is
+the single producer of metered line items.
+
+That index is charged to the sweep: it takes `billing_entry` to ten indexes, so every stamped
+row does about a tenth more index work for as long as anything is still sweeping.
+
+Shadow-running both paths and comparing was considered and dropped in favour of the switch —
+which trades early detection for simplicity, so the first switched-on organization should be
+small and its first two invoices checked by hand.
+
+### Not built
+
+- Settling on a period's own clock. Settlement still happens when an invoice is built, which is
+  what bounds the correction look-back to one period.
+- Anything that would let the switch be reversed.
+- Opening periods for many subscriptions at once. The backoffice action is per subscription,
+  which suits switching one organization on deliberately and would not suit a fleet.
+
+### Relationship to #12510
+
+[#12510](https://github.com/polarsource/polar/pull/12510) settles meter cycles independently of
+billing, and this design adopts its semantics rather than reopening them: a two-clock scheduler
+wakes on whichever of `current_period_end` / `current_meter_period_end` fires first; each meter
+boundary settles into its own `subscription_meter_cycle` order and re-grants credits; a boundary
+coinciding with the billing boundary folds into the renewal invoice. Under periods those two
+clocks become one — the next `MeterPeriod.ends_at` — since a billing period is just the case
+where the meter interval equals the billing interval.
+
+Both halves of the meter cycle reach the period path without extra wiring:
+`compute_pending_metered_line_items` is the single producer of metered line items, so the
+`subscription_meter_cycle` order settles periods, and `cycle_meters` calls `reset_meters`, which
+opens the next one. Its tests (`tests/e2e/lifecycle/test_meter_cycle.py`) are the contract a
+switched-on organization has to keep meeting — they caught two `lazy="raise"` failures in the
+switch's flag checks that no unit test did.
+
+## Known issues in the current model
+
+The switch is off everywhere, so these still need fixing independently:
+
+1. **Settlement cost on the largest subscriptions.** No longer failing: after #13784 and #13785,
+   `84234af1` settled its 624k pending entries in 186s against a 600s limit. What remains is the
+   scaling — 186s of linear work per cycle, with ~3× headroom before the raised limit binds too.
+   **This design addresses it, but not by flipping the flag alone** — a subscription switched on
+   mid-life has no period covering the window being settled, and the fallback correctly sends it
+   back to the sweep. It needs a period opened over that window first, from the backoffice
+   (*Open Meter Period* on the subscription page), after which settlement is a ~1s window count
+   and two row writes per meter. The entries then stay unlinked permanently, which is why the
+   switch is one-way for that organization.
+
+2. **Pending entries on canceled subscriptions** — 41% of the pending set, the oldest 8 months
+   past its period end. Needs a root cause before cleanup.
+3. **`subscription.update_meters` recomputes from scratch on every 500-event batch**, and it
+   exists to keep `subscription_meter` fresh for dashboard reads rather than for billing. Its
+   cost therefore grows with a subscription's pending set, on a schedule set by ingest volume. A
+   debounce will not help: batches already arrive tens of minutes apart, so nothing coalesces.
+   It needs to be incremental or computed on read.
+4. **The line-item label is wrong.** `get_amount_and_label` renders `units - credited_units` as
+   "N consumed units", so a customer sees their net as their consumption. Independent of
+   everything above.

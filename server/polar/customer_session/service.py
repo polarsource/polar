@@ -3,6 +3,7 @@ import uuid
 import structlog
 from pydantic import HttpUrl
 from sqlalchemy import select
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -11,7 +12,7 @@ from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import TokenType
-from polar.exceptions import PolarRequestValidationError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
@@ -29,6 +30,17 @@ from .schemas import CustomerSessionCreate, CustomerSessionCustomerIDCreate
 log: Logger = structlog.get_logger()
 
 CUSTOMER_SESSION_TOKEN_PREFIX = "polar_cst_"
+
+
+class AmbiguousExternalCustomerID(PolarError):
+    def __init__(self, external_customer_id: str) -> None:
+        self.external_customer_id = external_customer_id
+        super().__init__(
+            "Several customers across your organizations share this external "
+            "customer ID. Use an organization-scoped token, the Polar customer "
+            "ID, or a unique external ID to disambiguate.",
+            409,
+        )
 
 
 class CustomerSessionService(ResourceServiceReader[CustomerSession]):
@@ -76,9 +88,14 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         else:
             id_field = "external_customer_id"
             id_value = customer_create.external_customer_id
-            customer = await repository.get_readable_by_external_id(
-                org_ids, customer_create.external_customer_id, options=options
-            )
+            try:
+                customer = await repository.get_readable_by_external_id(
+                    org_ids, customer_create.external_customer_id, options=options
+                )
+            except MultipleResultsFound as e:
+                raise AmbiguousExternalCustomerID(
+                    customer_create.external_customer_id
+                ) from e
 
         if customer is None:
             raise PolarRequestValidationError(

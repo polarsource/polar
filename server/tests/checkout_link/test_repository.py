@@ -26,9 +26,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-async def _archive_product(
-    sessionmaker: AsyncSessionMaker, product_id: UUID
-) -> None:
+async def _archive_product(sessionmaker: AsyncSessionMaker, product_id: UUID) -> None:
     async with sessionmaker() as session:
         repository = CheckoutLinkRepository.from_session(session)
         await repository.archive_product(product_id)
@@ -112,29 +110,20 @@ class TestArchiveProduct:
                 )
                 for index in range(3)
             ]
-            checkout_link = await create_checkout_link(
-                save_fixture, products=products
-            )
+            checkout_link = await create_checkout_link(save_fixture, products=products)
             await setup_session.commit()
 
         try:
             await asyncio.gather(
-                *(
-                    _archive_product(sessionmaker, product.id)
-                    for product in products
-                )
+                *(_archive_product(sessionmaker, product.id) for product in products)
             )
 
             async with sessionmaker() as verification_session:
-                repository = CheckoutLinkRepository.from_session(
-                    verification_session
-                )
+                repository = CheckoutLinkRepository.from_session(verification_session)
                 updated_checkout_link = await repository.get_by_id(
                     checkout_link.id,
                     include_deleted=True,
-                    options=(
-                        selectinload(CheckoutLink.checkout_link_products),
-                    ),
+                    options=(selectinload(CheckoutLink.checkout_link_products),),
                 )
 
             assert updated_checkout_link is not None
@@ -143,9 +132,7 @@ class TestArchiveProduct:
         finally:
             async with sessionmaker() as cleanup_session:
                 await cleanup_session.execute(
-                    delete(Organization).where(
-                        Organization.id == organization.id
-                    )
+                    delete(Organization).where(Organization.id == organization.id)
                 )
                 await cleanup_session.execute(
                     delete(Account).where(Account.id == account.id)

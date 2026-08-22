@@ -146,6 +146,8 @@ class CheckoutLinkRepository(
                 )
             )
             .options(selectinload(CheckoutLink.checkout_link_products))
+            .order_by(CheckoutLink.id)
+            .with_for_update(of=CheckoutLink)
         )
         checkout_links = await self.get_all(statement)
         for checkout_link in checkout_links:

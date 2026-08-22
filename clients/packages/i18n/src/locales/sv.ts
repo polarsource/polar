@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'Moms (ingår)',
       basePrice: 'Grundavgift',
+      dueToday: 'Att betala idag',
     },
     trial: {
       hero: {

@@ -94,6 +94,11 @@ export default {
         },
       },
       additionalMeteredUsage: 'Additional metered usage',
+      dueToday: {
+        value: 'Due today',
+        _llmContext:
+          'Total row label on free-trial checkouts where nothing is charged until the trial ends; shown next to a zero amount.',
+      },
       perSeat: 'per seat',
       basePrice: {
         value: 'Base price',

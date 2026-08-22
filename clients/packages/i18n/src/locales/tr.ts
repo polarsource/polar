@@ -94,6 +94,7 @@ export default {
         updateFailed: 'Koltuklar güncellenemedi',
       },
       basePrice: 'Temel fiyat',
+      dueToday: 'Bugün ödenecek',
     },
     trial: {
       hero: {

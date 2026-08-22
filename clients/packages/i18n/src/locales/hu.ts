@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'ÁFA (tartalmazza)',
       basePrice: 'Alapár',
+      dueToday: 'Fizetendő ma',
     },
     trial: {
       hero: {

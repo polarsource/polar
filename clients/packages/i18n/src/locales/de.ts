@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'MwSt. (inklusive)',
       basePrice: 'Grundpreis',
+      dueToday: 'Heute fällig',
     },
     trial: {
       hero: {

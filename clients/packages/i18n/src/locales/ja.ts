@@ -94,6 +94,7 @@ export default {
         until: '{date}まで',
       },
       basePrice: '基本料金',
+      dueToday: '本日のお支払い',
     },
     trial: {
       hero: {

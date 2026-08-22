@@ -1,0 +1,41 @@
+# Runs in the public polarsource/terraform-provider-polar repository when a
+# vX.Y.Z tag is pushed by the monorepo's terraform-provider-publish workflow.
+# Builds, signs, and uploads the release assets the Terraform Registry ingests.
+#
+# Required repository secrets:
+#   GPG_PRIVATE_KEY  - ASCII-armored RSA private key registered with the registry
+#   GPG_PASSPHRASE   - its passphrase
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        id: import_gpg
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          args: release --clean
+        env:
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

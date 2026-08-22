@@ -1,0 +1,210 @@
+# Acceptance tests for the Terraform provider: real terraform plan/apply/destroy
+# cycles against a Polar API booted from this checkout.
+#
+# terraform-provider-ci.yml compiles and unit-tests the provider with no network
+# at all; this workflow is the only place the provider talks to a real server, so
+# it is what catches drift between `sdk/terraform/internal/polarapi` and
+# `server/polar/{module}/`.
+#
+# The job is new and boots the whole backend, so it should be treated as
+# ADVISORY in branch protection until it has a few weeks of green nightlies —
+# make terraform-provider-ci.yml the required check, not this one.
+name: Terraform Provider Acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'sdk/terraform/**'
+      - '.github/workflows/terraform-provider-acceptance.yml'
+  schedule:
+    # 04:00 UTC nightly. Provider changes are rare; server changes are not, and
+    # the nightly is what surfaces a server-side change that broke the provider.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  acceptance:
+    name: 'Terraform Provider: Acceptance Tests 🌍'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # Generous: a cold uv sync, an emails build and a backend boot dominate the
+    # runtime, and the acceptance suite itself only takes a minute.
+    timeout-minutes: 45
+
+    env:
+      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+      POLAR_BASE_URL: http://127.0.0.1:8000
+
+    services:
+      postgres:
+        # Credentials must match what dev/setup-environment writes into
+        # server/.env.
+        image: postgres:15.1-bullseye
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7.4-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      minio:
+        image: bitnamilegacy/minio:2024.5.28
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+        options: >-
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: 💿 MinIO Setup
+        working-directory: ./server/.minio
+        env:
+          MINIO_HOST: 127.0.0.1
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+          ACCESS_KEY: polar-development
+          SECRET_ACCESS_KEY: polar123456789
+          BUCKET_NAME: polar-s3
+          PUBLIC_BUCKET_NAME: polar-s3-public
+          BUCKET_TESTING_NAME: testing-polar-s3
+          POLICY_FILE: policy.json
+        run: bash github.sh
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: server/emails/package.json
+
+      # The API refuses to start without the email renderer binary, so the
+      # emails package has to be built even though no email is ever sent here.
+      - name: 📬 Setup Node.js environment for server/emails
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: server/emails/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "server/emails/pnpm-lock.yaml"
+
+      - name: 📬 Build server/emails
+        working-directory: server/emails
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'sdk/terraform/go.mod'
+          cache: true
+          cache-dependency-path: 'sdk/terraform/go.sum'
+
+      # The same fresh-checkout sequence a developer runs: .env files, then the
+      # development JWKS the config validates at import time.
+      - name: 🔧 Generate environment files
+        run: ./dev/setup-environment
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: |
+          uv sync --frozen
+          uv run task generate_dev_jwks
+
+      - name: ⚗️ alembic migrate
+        working-directory: ./server
+        run: uv run task db_migrate
+
+      # server/init-readonly-user.sql normally does this from the compose
+      # stack's entrypoint; the service container has no hook for it, so the
+      # grants run here instead — after the migrations have created the tables
+      # the API's read connection selects from.
+      - name: 🔐 Grant the read-only role
+        env:
+          PGPASSWORD: polar
+        run: |
+          psql -h 127.0.0.1 -U polar -d polar <<'SQL'
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'polar_read') THEN
+              CREATE ROLE polar_read LOGIN PASSWORD 'polar';
+            END IF;
+          END $$;
+          GRANT CONNECT ON DATABASE polar TO polar_read;
+          GRANT USAGE ON SCHEMA public TO polar_read;
+          GRANT SELECT ON ALL TABLES IN SCHEMA public TO polar_read;
+          GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO polar_read;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO polar_read;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO polar_read;
+          SQL
+
+      - name: 🚀 Boot the API
+        working-directory: ./server
+        run: |
+          AUTHLIB_INSECURE_TRANSPORT=true nohup uv run uvicorn polar.app:app \
+            --host 127.0.0.1 --port 8000 --workers 1 > /tmp/polar-api.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/healthz > /dev/null; then
+              echo "API is healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "The API did not become healthy within 120s:"
+          cat /tmp/polar-api.log
+          exit 1
+
+      # Organization access tokens are only creatable from the dashboard, so the
+      # token is minted through the server's own services instead.
+      - name: 🔑 Mint an organization access token
+        working-directory: ./server
+        run: |
+          TOKEN=$(uv run python ../sdk/terraform/tools/mint_acceptance_token.py)
+          echo "::add-mask::$TOKEN"
+          echo "POLAR_ACCESS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          # terraform-exec drives the CLI directly and cannot parse the wrapper's
+          # output.
+          terraform_wrapper: false
+
+      - name: 🌍 Acceptance tests
+        working-directory: sdk/terraform
+        run: make testacc
+
+      - name: 📝 API log
+        if: failure()
+        run: cat /tmp/polar-api.log

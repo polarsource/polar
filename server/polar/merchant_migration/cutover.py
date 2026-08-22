@@ -29,15 +29,15 @@ from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 
+from . import pan_transfer
 from .adapters import SourceAdapter
 from .canonical import (
-    CanonicalPaymentMethod,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
     normalize_price_source_id,
 )
-from .cards import AmbiguousCopiedCard, link_payment_method
+from .cards import CopiedCardResolutionError, link_payment_method
 from .precheck import subscription_import_reason
 
 log: Logger = structlog.get_logger()
@@ -143,13 +143,14 @@ class SubscriptionCutover:
     async def run(self, record: MerchantMigrationRecord) -> CutoverOutcome:
         try:
             return await self._run(record)
-        except AmbiguousCopiedCard as e:
+        except CopiedCardResolutionError as e:
             # Recorded rather than raised: one customer must not stop the run.
             log.warning(
-                "merchant_migration.cutover.ambiguous_card",
+                "merchant_migration.cutover.card_resolution_error",
                 migration_id=self.migration.id,
                 record_id=record.id,
-                customer_id=e.customer_id,
+                subscription_id=record.target_id,
+                error=str(e),
             )
             return _fail(str(e))
         except stripe_lib.StripeError as e:
@@ -198,7 +199,7 @@ class SubscriptionCutover:
         # Behind the gate above because resolving writes: it upserts the copied
         # methods and may set the customer's default.
         payment_method = await self._resolve_payment_method(
-            subscription, customer, source.payment_method
+            subscription, customer, source
         )
         if already_stopped:
             # An unproven card beats no biller at all: a failed first renewal
@@ -340,16 +341,22 @@ class SubscriptionCutover:
         self,
         subscription: Subscription,
         customer: Customer,
-        source_method: CanonicalPaymentMethod | None,
+        source: CanonicalSubscription,
     ) -> PaymentMethod | None:
         """The card the first Polar renewal will charge. A card the `verify_cards`
         step linked wins; otherwise look again, because cards keep landing."""
+        source_method = source.payment_method
+        payment_method: PaymentMethod | None = None
         if subscription.payment_method_id is not None:
             payment_method = await PaymentMethodRepository.from_session(
                 self.session
             ).get_by_id(subscription.payment_method_id)
-            if payment_method is not None:
-                return payment_method
+        if payment_method is not None:
+            return payment_method
+        if pan_transfer.stripe_mapping_applied(
+            self.migration.pan_transfer_method, self.migration.pan_transfer_steps
+        ):
+            return None
         return await link_payment_method(
             self.session, customer, source_method=source_method
         )

@@ -7,11 +7,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
+from starlette.datastructures import UploadFile
 from tagflow import tag, text
 
 from polar.config import settings
 from polar.kit.pagination import PaginationParamsQuery
+from polar.merchant_migration.cards import PaymentMethodMappingCSVError
 from polar.merchant_migration.pan_transfer import (
+    STEP_STRIPE_COPY,
     PanStepOwner,
     PanStepStatus,
     PanTransferStep,
@@ -68,6 +71,7 @@ router = APIRouter()
 # A failed record needs reading, not scrolling: past this many, one page of
 # examples already tells us what broke.
 FAILED_RECORDS_LIMIT = 50
+PAYMENT_METHOD_MAPPING_MAX_BYTES = 20 * 1024 * 1024
 
 
 class View(StrEnum):
@@ -454,22 +458,43 @@ async def complete_step(
 ) -> HXRedirectResponse | None:
     migration = await _get_migration(session, id, for_update=request.method == "POST")
     step = _get_step(migration, key)
+    current = current_pan_step(migration)
     inputs = step_inputs(migration, key)
+    mapping_error: str | None = None
 
     if request.method == "POST":
         form_data = await request.form()
-        await merchant_migration_service.complete_pan_step_as_ops(
-            session,
-            migration,
-            key,
-            inputs={name: str(form_data.get(name, "")) for name, _ in inputs},
-        )
-        await add_toast(
-            request,
-            f"Completed “{PAN_STEP_LABELS.get(key, key)}”",
-            variant="success",
-        )
-        return _detail_redirect(request, id)
+        try:
+            if key == STEP_STRIPE_COPY and current is not None and current.key == key:
+                mapping_file = form_data.get("payment_method_mapping")
+                if not isinstance(mapping_file, UploadFile):
+                    raise PaymentMethodMappingCSVError(
+                        "Upload Stripe's payment method mapping CSV."
+                    )
+                contents = await mapping_file.read(PAYMENT_METHOD_MAPPING_MAX_BYTES + 1)
+                if len(contents) > PAYMENT_METHOD_MAPPING_MAX_BYTES:
+                    raise PaymentMethodMappingCSVError(
+                        "The payment method mapping CSV is larger than 20 MB."
+                    )
+                async with session.begin_nested():
+                    await merchant_migration_service.import_payment_method_mappings(
+                        session, migration, contents
+                    )
+            await merchant_migration_service.complete_pan_step_as_ops(
+                session,
+                migration,
+                key,
+                inputs={name: str(form_data.get(name, "")) for name, _ in inputs},
+            )
+        except PaymentMethodMappingCSVError as e:
+            mapping_error = str(e)
+        else:
+            await add_toast(
+                request,
+                f"Completed “{PAN_STEP_LABELS.get(key, key)}”",
+                variant="success",
+            )
+            return _detail_redirect(request, id)
 
     label = PAN_STEP_LABELS.get(key, key)
     with modal(f"Complete: {label}", open=True):
@@ -481,6 +506,7 @@ async def complete_step(
             ),
             hx_target="#modal",
             classes="flex flex-col gap-4",
+            enctype="multipart/form-data",
         ):
             with tag.p(classes="text-sm"):
                 text(
@@ -506,6 +532,30 @@ async def complete_step(
                         value=step.inputs.get(name, ""),
                     ):
                         pass
+            if key == STEP_STRIPE_COPY:
+                if mapping_error is not None:
+                    with alert("error", soft=True):
+                        text(mapping_error)
+                with tag.fieldset(classes="fieldset"):
+                    with tag.label(
+                        classes="label", **{"for": "payment_method_mapping"}
+                    ):
+                        text("Stripe payment method mapping")
+                    with tag.input(
+                        id="payment_method_mapping",
+                        name="payment_method_mapping",
+                        type="file",
+                        accept=".csv,text/csv",
+                        classes="file-input w-full",
+                        required=True,
+                    ):
+                        pass
+                    with tag.p(classes="text-xs text-base-content/60"):
+                        text(
+                            "Upload the CSV from Stripe Documents with "
+                            "customer_id_old, source_id_old, customer_id_new, and "
+                            "source_id_new columns."
+                        )
             with tag.div(classes="modal-action"):
                 with tag.form(method="dialog"):
                     with button(ghost=True):

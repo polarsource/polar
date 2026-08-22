@@ -94,10 +94,20 @@ _ACTOR_OWNERS: dict[PanStepActor, frozenset[PanStepOwner]] = {
 
 _ACTIONABLE = (PanStepStatus.pending, PanStepStatus.in_progress)
 
+STEP_STRIPE_COPY = "stripe_copy"
 STEP_VERIFY_CARDS = "verify_cards"
 STEP_RESOLVE_UNCOVERED = "resolve_uncovered"
 STEP_CUTOVER = "cutover"
 STEP_MOVE_SUBSCRIPTIONS = "move_subscriptions"
+
+
+def stripe_mapping_applied(
+    method: PanTransferMethod | None, steps: Sequence["PanTransferStep"]
+) -> bool:
+    return method == PanTransferMethod.pan_copy and any(
+        step.key == STEP_STRIPE_COPY and step.status == PanStepStatus.completed
+        for step in steps
+    )
 
 
 class PanTransferError(MerchantMigrationError): ...

@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from typing import Any
 from uuid import UUID
 
@@ -13,6 +13,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import (
+    Customer,
     MerchantMigration,
     MerchantMigrationRecord,
     PaymentMethod,
@@ -131,6 +132,27 @@ class MerchantMigrationRecordRepository(
             )
         )
         return await self.get_all(statement)
+
+    async def imported_customers_by_source_ids(
+        self, migration_id: UUID, source_ids: Sequence[str]
+    ) -> dict[str, Customer]:
+        if not source_ids:
+            return {}
+        statement = (
+            select(MerchantMigrationRecord.source_id, Customer)
+            .join(Customer, Customer.id == MerchantMigrationRecord.target_id)
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
+                MerchantMigrationRecord.status
+                == MerchantMigrationRecordStatus.imported,
+                MerchantMigrationRecord.source_id.in_(source_ids),
+                MerchantMigrationRecord.deleted_at.is_(None),
+                Customer.deleted_at.is_(None),
+            )
+        )
+        result = await self.session.execute(statement)
+        return {source_id: customer for source_id, customer in result.all()}
 
     async def count_by_type_and_status(
         self, migration_ids: Sequence[UUID]
@@ -288,6 +310,14 @@ class MerchantMigrationRecordRepository(
             .limit(limit)
         )
         return await self.get_all(statement)
+
+    async def stream_imported_subscriptions(
+        self, migration_id: UUID
+    ) -> AsyncIterator[MerchantMigrationRecord]:
+        async for record in self.stream(
+            self._imported_subscriptions_statement(migration_id)
+        ):
+            yield record
 
     def _selection_filter(
         self, selection: MerchantMigrationOperationSelection | None

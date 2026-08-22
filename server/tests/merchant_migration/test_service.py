@@ -31,7 +31,10 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
     serialize,
 )
-from polar.merchant_migration.cards import AmbiguousCopiedCard
+from polar.merchant_migration.cards import (
+    AmbiguousCopiedCard,
+    PaymentMethodMappingCSVError,
+)
 from polar.merchant_migration.cutover import CutoverOutcome
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
@@ -100,6 +103,7 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_subscription,
 )
+from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
@@ -1662,6 +1666,140 @@ async def _imported_subscription(
 
 
 @pytest.mark.asyncio
+class TestImportPaymentMethodMappings:
+    async def test_imports_and_assigns_the_exact_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="mapped@example.com",
+            stripe_customer_id="cus_old",
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_old",
+                target_id=customer.id,
+                canonical=serialize(
+                    CanonicalCustomer(
+                        source_id="cus_old",
+                        email="mapped@example.com",
+                        name=None,
+                        country=None,
+                    )
+                ),
+            )
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        canonical = _canonical_subscription(
+            source_id="sub_1",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_old",
+                type=CanonicalPaymentMethodType.card,
+            ),
+        )
+        canonical.customer_source_id = "cus_old"
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.subscription,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="sub_1",
+                target_id=subscription.id,
+                canonical=serialize(canonical),
+            )
+        )
+        guessed = await create_payment_method(
+            save_fixture, customer, processor_id="pm_guessed"
+        )
+        uncovered_subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=guessed,
+            status=SubscriptionStatus.paused,
+        )
+        uncovered_canonical = _canonical_subscription(
+            source_id="sub_uncovered",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_uncovered",
+                type=CanonicalPaymentMethodType.card,
+            ),
+        )
+        uncovered_canonical.customer_source_id = "cus_old"
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.subscription,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="sub_uncovered",
+                target_id=uncovered_subscription.id,
+                canonical=serialize(uncovered_canonical),
+            )
+        )
+        stripe_payment_method = build_stripe_payment_method(customer="cus_new")
+        stripe_payment_method.id = "pm_new"
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=stripe_payment_method),
+        )
+
+        count = await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_old,pm_old,cus_new,pm_new\n"
+            ),
+        )
+
+        assert count == 1
+        assert customer.stripe_customer_id == "cus_new"
+        assert subscription.payment_method_id is not None
+        payment_method = await session.get(
+            PaymentMethod, subscription.payment_method_id
+        )
+        assert payment_method is not None
+        assert payment_method.processor_id == "pm_new"
+        assert uncovered_subscription.payment_method_id is None
+
+    async def test_rejects_a_mapping_for_another_migration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+
+        with pytest.raises(PaymentMethodMappingCSVError):
+            await service.import_payment_method_mappings(
+                session,
+                migration,
+                (
+                    b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                    b"cus_unknown,pm_old,cus_new,pm_new\n"
+                ),
+            )
+
+
+@pytest.mark.asyncio
 class TestRunCardVerification:
     async def test_links_landed_cards_and_reports_the_shortfall(
         self,
@@ -1676,6 +1814,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         covered = await _imported_subscription(
             save_fixture,
@@ -1735,6 +1874,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         first = await _imported_subscription(
             save_fixture,
@@ -1819,6 +1959,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         charged = CanonicalPaymentMethod(
             source_id="pm_source",
@@ -1869,6 +2010,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         ambiguous = await _imported_subscription(
             save_fixture,
@@ -1937,6 +2079,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         first = await _imported_subscription(
             save_fixture,

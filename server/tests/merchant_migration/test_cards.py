@@ -12,7 +12,14 @@ from polar.merchant_migration.canonical import (
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
 )
-from polar.merchant_migration.cards import AmbiguousCopiedCard, link_payment_method
+from polar.merchant_migration.cards import (
+    AmbiguousCopiedCard,
+    InvalidCopiedCardMapping,
+    PaymentMethodMapping,
+    PaymentMethodMappingCSVError,
+    link_payment_method,
+    parse_payment_method_mapping_csv,
+)
 from polar.models import Customer, Organization, PaymentMethod
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -32,6 +39,60 @@ def _stripe_payment_method(
 
 def _card(last4: str) -> dict[str, Any]:
     return {"last4": last4, "brand": "visa", "exp_month": 4, "exp_year": 2030}
+
+
+MAPPING_CSV_HEADER = b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+
+
+class TestParsePaymentMethodMappingCSV:
+    def test_valid(self) -> None:
+        mappings = parse_payment_method_mapping_csv(
+            MAPPING_CSV_HEADER + b"cus_old,pm_old,cus_new,pm_new\n"
+        )
+
+        assert mappings == [
+            PaymentMethodMapping(
+                source_customer_id="cus_old",
+                source_payment_method_id="pm_old",
+                destination_customer_id="cus_new",
+                destination_payment_method_id="pm_new",
+            )
+        ]
+
+    def test_rejects_incorrect_headers(self) -> None:
+        with pytest.raises(PaymentMethodMappingCSVError):
+            parse_payment_method_mapping_csv(b"source_id_old,source_id_new\npm_1,pm_2")
+
+    def test_rejects_extra_values(self) -> None:
+        with pytest.raises(PaymentMethodMappingCSVError):
+            parse_payment_method_mapping_csv(
+                MAPPING_CSV_HEADER + b"cus_old,pm_old,cus_new,pm_new,unexpected\n"
+            )
+
+    def test_rejects_conflicting_source_mapping(self) -> None:
+        with pytest.raises(PaymentMethodMappingCSVError):
+            parse_payment_method_mapping_csv(
+                MAPPING_CSV_HEADER
+                + b"cus_old,pm_old,cus_new,pm_new\n"
+                + b"cus_old,pm_old,cus_new,pm_different\n"
+            )
+
+    def test_rejects_shared_destination_customer(self) -> None:
+        with pytest.raises(PaymentMethodMappingCSVError):
+            parse_payment_method_mapping_csv(
+                MAPPING_CSV_HEADER
+                + b"cus_old_1,pm_old_1,cus_new,pm_new_1\n"
+                + b"cus_old_2,pm_old_2,cus_new,pm_new_2\n"
+            )
+
+    def test_deduplicates_identical_rows(self) -> None:
+        mappings = parse_payment_method_mapping_csv(
+            MAPPING_CSV_HEADER
+            + b"cus_old,pm_old,cus_new,pm_new\n"
+            + b"cus_old,pm_old,cus_new,pm_new\n"
+        )
+
+        assert len(mappings) == 1
 
 
 def _listing(
@@ -126,6 +187,89 @@ class TestLinkPaymentMethod:
         assert payment_method is not None
         assert payment_method.processor_id == "pm_copied"
         assert imported_customer.default_payment_method_id == payment_method.id
+
+    async def test_uses_the_exact_mapped_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        mapped = _stripe_payment_method("pm_mapped", details=_card("1111"))
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=mapped),
+        )
+        list_payment_methods = mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.list_payment_methods"
+        )
+
+        payment_method = await link_payment_method(
+            session,
+            imported_customer,
+            mapping=PaymentMethodMapping(
+                source_customer_id="cus_source",
+                source_payment_method_id="pm_source",
+                destination_customer_id="cus_1",
+                destination_payment_method_id="pm_mapped",
+            ),
+        )
+
+        assert payment_method is not None
+        assert payment_method.processor_id == "pm_mapped"
+        assert imported_customer.default_payment_method_id is None
+        list_payment_methods.assert_not_called()
+
+    async def test_rejects_a_mapped_method_owned_by_another_customer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        mapped = _stripe_payment_method("pm_mapped", details=_card("1111"))
+        mapped.customer = "cus_other"
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=mapped),
+        )
+
+        with pytest.raises(InvalidCopiedCardMapping):
+            await link_payment_method(
+                session,
+                imported_customer,
+                mapping=PaymentMethodMapping(
+                    source_customer_id="cus_source",
+                    source_payment_method_id="pm_source",
+                    destination_customer_id="cus_1",
+                    destination_payment_method_id="pm_mapped",
+                ),
+            )
+
+    async def test_mapping_sets_a_missing_destination_customer_id(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        imported_customer.stripe_customer_id = None
+        mapped = _stripe_payment_method("pm_mapped", details=_card("1111"))
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=mapped),
+        )
+
+        payment_method = await link_payment_method(
+            session,
+            imported_customer,
+            mapping=PaymentMethodMapping(
+                source_customer_id="cus_source",
+                source_payment_method_id="pm_source",
+                destination_customer_id="cus_1",
+                destination_payment_method_id="pm_mapped",
+            ),
+        )
+
+        assert payment_method is not None
+        assert imported_customer.stripe_customer_id == "cus_1"
 
     async def test_prefers_a_card_over_a_bank_account(
         self,

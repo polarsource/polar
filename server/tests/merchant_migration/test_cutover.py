@@ -43,6 +43,7 @@ from tests.merchant_migration._helpers import (
     build_connected_migration,
     canonical_subscription,
     copied_cards,
+    pan_steps_until,
     stage_subscription_record,
 )
 
@@ -233,6 +234,57 @@ class TestRun:
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         assert paused_subscription.payment_method_id is not None
+
+    async def test_does_not_guess_when_a_mapping_was_uploaded(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        paused_subscription: Subscription,
+    ) -> None:
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        await save_fixture(migration)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        _assert_left_alone(adapter, paused_subscription)
+
+    async def test_reuses_the_exact_mapped_method_already_in_polar(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        copied_card: PaymentMethod,
+    ) -> None:
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        await save_fixture(migration)
+        get_payment_method = mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(
+                side_effect=stripe_lib.InvalidRequestError("unavailable", "id")
+            ),
+        )
+
+        outcome = await cutover(
+            _source(
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_source",
+                    type=CanonicalPaymentMethodType.card,
+                )
+            )
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        get_payment_method.assert_not_awaited()
 
     async def test_keeps_a_running_trial_running(
         self,

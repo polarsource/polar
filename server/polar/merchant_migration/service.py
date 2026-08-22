@@ -11,6 +11,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
@@ -50,7 +51,12 @@ from .canonical import (
     CanonicalSubscription,
     deserialize,
 )
-from .cards import AmbiguousCopiedCard, link_payment_method
+from .cards import (
+    CopiedCardResolutionError,
+    PaymentMethodMappingCSVError,
+    link_payment_method,
+    parse_payment_method_mapping_csv,
+)
 from .cutover import SubscriptionCutover
 from .errors import MerchantMigrationError
 from .importer import CatalogImporter
@@ -630,6 +636,107 @@ class MerchantMigrationService:
         await repository.update(migration, update_dict={"pan_transfer_steps": steps})
         return self._checklist(migration, steps)
 
+    async def import_payment_method_mappings(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        contents: bytes,
+    ) -> int:
+        mappings = parse_payment_method_mapping_csv(contents)
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        customers = await record_repository.imported_customers_by_source_ids(
+            migration.id,
+            [mapping.source_customer_id for mapping in mappings],
+        )
+        unknown_customer_ids = {
+            mapping.source_customer_id for mapping in mappings
+        } - customers.keys()
+        if unknown_customer_ids:
+            raise PaymentMethodMappingCSVError(
+                "These source customers were not imported by this migration: "
+                + ", ".join(sorted(unknown_customer_ids))
+                + "."
+            )
+
+        customer_repository = CustomerRepository.from_session(session)
+        destination_customer_ids = {
+            mapping.source_customer_id: mapping.destination_customer_id
+            for mapping in mappings
+        }
+        for source_customer_id, customer in customers.items():
+            destination_customer_id = destination_customer_ids[source_customer_id]
+            if customer.stripe_customer_id not in (
+                None,
+                source_customer_id,
+                destination_customer_id,
+            ):
+                raise PaymentMethodMappingCSVError(
+                    f"Imported customer {source_customer_id} is already linked to a "
+                    "different Stripe customer."
+                )
+        for source_customer_id, customer in customers.items():
+            destination_customer_id = destination_customer_ids[source_customer_id]
+            if customer.stripe_customer_id != destination_customer_id:
+                await customer_repository.update(
+                    customer,
+                    update_dict={"stripe_customer_id": destination_customer_id},
+                )
+
+        mappings_by_source = {
+            mapping.source_payment_method_id: mapping for mapping in mappings
+        }
+        payment_methods: dict[str, PaymentMethod] = {}
+        for mapping in mappings:
+            try:
+                payment_method = await link_payment_method(
+                    session,
+                    customers[mapping.source_customer_id],
+                    mapping=mapping,
+                )
+            except CopiedCardResolutionError as e:
+                raise PaymentMethodMappingCSVError(str(e)) from e
+            if payment_method is None:
+                raise PaymentMethodMappingCSVError(
+                    f"Copied payment method {mapping.destination_payment_method_id} "
+                    "does not exist on Polar's Stripe account."
+                )
+            payment_methods[mapping.source_payment_method_id] = payment_method
+
+        subscription_repository = SubscriptionRepository.from_session(session)
+        async for record in record_repository.stream_imported_subscriptions(
+            migration.id
+        ):
+            if record.target_id is None:
+                continue
+            staged = _staged_subscription(record)
+            source_method = _staged_payment_method(record)
+            record_mapping = (
+                mappings_by_source.get(source_method.source_id)
+                if source_method is not None
+                else None
+            )
+            payment_method = (
+                payment_methods[record_mapping.source_payment_method_id]
+                if record_mapping is not None
+                and staged is not None
+                and staged.customer_source_id == record_mapping.source_customer_id
+                else None
+            )
+            subscription = await subscription_repository.get_by_id(record.target_id)
+            if subscription is not None and (
+                subscription.payment_method_id
+                != (payment_method.id if payment_method is not None else None)
+            ):
+                await subscription_repository.update(
+                    subscription,
+                    update_dict={
+                        "payment_method_id": (
+                            payment_method.id if payment_method is not None else None
+                        )
+                    },
+                )
+        return len(mappings)
+
     async def run_card_verification(
         self, session: AsyncSession, migration_id: UUID, *, offset: int = 0
     ) -> None:
@@ -645,6 +752,9 @@ class MerchantMigrationService:
         records = await record_repository.list_imported_subscriptions(
             migration.id, offset=offset, limit=CARD_VERIFICATION_BATCH_SIZE
         )
+        mappings_applied = pan_transfer.stripe_mapping_applied(
+            migration.pan_transfer_method, migration.pan_transfer_steps
+        )
         subscription_repository = SubscriptionRepository.from_session(session)
         resolved: ResolvedCards = {}
         for record in records:
@@ -653,11 +763,17 @@ class MerchantMigrationService:
             subscription = await subscription_repository.get_by_id(
                 record.target_id, options=(joinedload(Subscription.customer),)
             )
-            # Already covered, or gone from Polar: nothing to link either way.
-            if subscription is None or subscription.payment_method_id is not None:
+            if subscription is None:
+                continue
+            if subscription.payment_method_id is not None:
+                continue
+            if mappings_applied:
                 continue
             payment_method = await self._resolve_card(
-                session, record, subscription, resolved
+                session,
+                record,
+                subscription,
+                resolved,
             )
             if payment_method is not None:
                 await subscription_repository.update(
@@ -692,14 +808,17 @@ class MerchantMigrationService:
         if key not in resolved:
             try:
                 resolved[key] = await link_payment_method(
-                    session, subscription.customer, source_method=source_method
+                    session,
+                    subscription.customer,
+                    source_method=source_method,
                 )
-            except AmbiguousCopiedCard as e:
+            except CopiedCardResolutionError as e:
                 log.error(
-                    "merchant_migration.verify_cards.ambiguous_card",
+                    "merchant_migration.verify_cards.card_resolution_error",
                     merchant_migration_id=record.merchant_migration_id,
                     record_id=record.id,
-                    customer_id=e.customer_id,
+                    customer_id=subscription.customer_id,
+                    error=str(e),
                 )
                 resolved[key] = None
         return resolved[key]

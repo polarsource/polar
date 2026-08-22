@@ -130,6 +130,29 @@ export default {
         },
         updateFailed: 'Failed to update seats',
       },
+      perUnit: {
+        value: 'per {unitLabel}',
+        _llmContext:
+          'Suffix after a unit-based price rate. {unitLabel} is the merchant-defined singular noun, or "unit" when unset. Displayed as: "$29 per device".',
+      },
+      units: {
+        label: {
+          value: '{unitLabelPlural}',
+          _llmContext:
+            'Heading on the compact checkout unit selector. {unitLabelPlural} is already title-cased by the client (e.g. "Units", "Devices").',
+        },
+        numberOfUnits: {
+          value: 'Number of {unitLabelPlural}',
+          _llmContext:
+            'Label above the unit quantity stepper. {unitLabelPlural} is the merchant-defined plural noun, or "units" when unset. Displayed as: "Number of devices".',
+        },
+        count: {
+          _mode: 'plural',
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+        },
+        updateFailed: 'Failed to update units',
+      },
       discount: {
         until: {
           value: 'Until {date}',

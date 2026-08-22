@@ -46,6 +46,29 @@ export const getSeatPrice = (
   )
 }
 
+export const getUnitPrice = (
+  checkout: schemas['CheckoutPublic'],
+): schemas['ProductPriceUnitBased'] | null => {
+  if (!checkout.product || !checkout.prices) {
+    return null
+  }
+
+  const prices = checkout.prices[checkout.product.id]
+
+  if (!prices) {
+    return null
+  }
+
+  return (
+    prices
+      .filter((price) => price.price_currency === checkout.currency)
+      .find(
+        (price): price is schemas['ProductPriceUnitBased'] =>
+          price.amount_type === 'unit_based',
+      ) ?? null
+  )
+}
+
 export const getFixedPrice = (
   checkout: schemas['CheckoutPublic'],
 ): schemas['ProductPriceFixed'] | null => {

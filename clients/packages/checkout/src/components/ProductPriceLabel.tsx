@@ -5,6 +5,7 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { isLegacyRecurringPrice } from '../utils/product'
+import { getBasePricePerUnit } from '../utils/units'
 import AmountLabel from './AmountLabel'
 import MeteredPriceLabel from './MeteredPriceLabel'
 
@@ -55,6 +56,18 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
     return (
       <AmountLabel
         amount={basePricePerSeat}
+        currency={price.price_currency}
+        interval={product.recurring_interval}
+        intervalCount={product.recurring_interval_count}
+        mode={mode}
+        locale={locale}
+      />
+    )
+  } else if (price.amount_type === 'unit_based') {
+    const basePricePerUnit = getBasePricePerUnit(price)
+    return (
+      <AmountLabel
+        amount={basePricePerUnit}
         currency={price.price_currency}
         interval={product.recurring_interval}
         intervalCount={product.recurring_interval_count}

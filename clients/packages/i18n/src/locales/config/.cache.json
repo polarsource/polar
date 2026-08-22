@@ -178,7 +178,16 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -359,7 +368,13 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -540,7 +555,13 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -721,7 +742,16 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -902,7 +932,16 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1075,7 +1114,13 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1248,7 +1293,16 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1421,7 +1475,13 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1594,7 +1654,13 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1767,7 +1833,13 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1940,7 +2012,16 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2113,7 +2194,16 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2286,6 +2376,15 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.perUnit": "per {unitLabel}",
+    "checkout.pricing.units.label": "{unitLabelPlural}",
+    "checkout.pricing.units.numberOfUnits": "Number of {unitLabelPlural}",
+    "checkout.pricing.units.count.=1": "# {unitLabel}",
+    "checkout.pricing.units.count.other": "# {unitLabelPlural}",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}",
+    "checkout.pricing.units.updateFailed": "Failed to update units"
   }
 }

@@ -94,6 +94,17 @@ export default {
       },
       inclTax: 'IVA (inclusa)',
       basePrice: 'Prezzo base',
+      perUnit: 'per {unitLabel}',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: 'Numero di {unitLabelPlural}',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        updateFailed: 'Impossibile aggiornare le unità',
+      },
     },
     trial: {
       hero: {

@@ -65,6 +65,23 @@ export function createSeatBasedPrice(
   }
 }
 
+export function createUnitBasedPrice(
+  overrides: Partial<schemas['ProductPriceUnitBased']> = {},
+): schemas['ProductPriceUnitBased'] {
+  return {
+    ...priceDefaults,
+    amount_type: 'unit_based',
+    tiers: {
+      type: 'volume',
+      tiers: [{ bound: null, unit_amount: '1000' }],
+    },
+    minimum_units: 1,
+    maximum_units: null,
+    unit_label: null,
+    ...overrides,
+  }
+}
+
 export function createMeteredPrice(
   overrides: Partial<schemas['ProductPriceMeteredUnit']> = {},
 ): schemas['ProductPriceMeteredUnit'] {

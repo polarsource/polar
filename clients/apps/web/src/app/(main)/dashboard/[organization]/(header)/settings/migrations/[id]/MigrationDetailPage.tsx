@@ -135,7 +135,12 @@ function StepContent({
       return (
         <Box flexDirection="column" rowGap="l">
           <StepHeading def={def} />
-          <PanTransferPanel migrationId={migration.id} />
+          <PanTransferPanel
+            migrationId={migration.id}
+            sourceStripeAccountId={
+              migration.source?.stripe_user_id as string | undefined
+            }
+          />
         </Box>
       )
     // The switch runs here, and stays reachable at cleanup so the merchant can

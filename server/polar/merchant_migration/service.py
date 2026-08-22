@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from datetime import datetime
 from typing import NamedTuple, TypedDict
 from uuid import UUID
@@ -492,6 +492,19 @@ class MerchantMigrationService:
         the client can show the method and the destination account up front."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
         return self._checklist(migration)
+
+    async def stream_imported_customer_source_ids(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> AsyncGenerator[str]:
+        """Authorize the migration, then return a stream of imported customer
+        source IDs for the Stripe Copy CSV. Auth runs before the generator is
+        returned so 403/404 cannot land mid-stream."""
+        await self._get_manageable(session, auth_subject, migration_id)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        return repository.stream_imported_customer_source_ids(migration_id)
 
     async def start_pan_transfer(
         self,

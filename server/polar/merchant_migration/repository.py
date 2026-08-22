@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.authz.repository import select_accessible_org_ids
+from polar.config import settings
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -131,6 +132,33 @@ class MerchantMigrationRecordRepository(
             )
         )
         return await self.get_all(statement)
+
+    async def stream_imported_customer_source_ids(
+        self, migration_id: UUID
+    ) -> AsyncGenerator[str]:
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(MerchantMigrationRecord.source_id)
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
+                MerchantMigrationRecord.status
+                == MerchantMigrationRecordStatus.imported,
+            )
+            .order_by(
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
+        )
+        results = await self.session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
+        try:
+            async for source_id in results:
+                yield source_id
+        finally:
+            await results.close()
 
     async def count_by_type_and_status(
         self, migration_ids: Sequence[UUID]

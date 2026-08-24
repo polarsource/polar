@@ -32376,7 +32376,7 @@ export interface components {
     /**
      * ProductPriceUnitBased
      * @description A unit-based price for a product: the buyer picks a quantity of units,
-     *     pays for it up-front, and changes are prorated.
+     *     pays for it up-front. On subscriptions, quantity changes are prorated.
      */
     ProductPriceUnitBased: {
       /**
@@ -32446,7 +32446,7 @@ export interface components {
     /**
      * ProductPriceUnitBasedCreate
      * @description Schema to create a unit-based price: the buyer picks a quantity of units,
-     *     pays for it up-front, and changes are prorated.
+     *     pays for it up-front. On subscriptions, quantity changes are prorated.
      */
     ProductPriceUnitBasedCreate: {
       /**

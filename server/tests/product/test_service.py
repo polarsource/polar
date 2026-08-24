@@ -1339,7 +1339,7 @@ class TestCreateUnitBasedPrice:
         assert price.calculate_amount(3) == 8700
 
     @pytest.mark.auth
-    async def test_one_time_product_rejected(
+    async def test_one_time_product(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
@@ -1347,16 +1347,22 @@ class TestCreateUnitBasedPrice:
         user_organization: UserOrganization,
         unit_based_pricing_enabled: None,
     ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(
-                session,
-                ProductCreateOneTime(
-                    name="Product",
-                    prices=[_unit_price_create()],
-                    organization_id=organization.id,
-                ),
-                auth_subject,
-            )
+        product = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Product",
+                prices=[_unit_price_create(minimum_units=5)],
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        assert product.recurring_interval is None
+        assert len(product.prices) == 1
+        price = product.prices[0]
+        assert is_unit_price(price)
+        assert price.minimum_units == 5
+        assert price.calculate_amount(5) == 14500
 
     @pytest.mark.auth
     async def test_two_unit_prices_rejected(

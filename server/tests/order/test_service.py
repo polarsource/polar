@@ -132,6 +132,7 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_product,
     create_product_fixed_and_seat,
+    create_product_unit_based,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
@@ -790,6 +791,50 @@ class TestCreateFromCheckoutOneTime:
         # Seat-based orders defer benefit grants until seats are claimed
         for c in enqueue_job_mock.call_args_list:
             assert c.args[0] != "benefit.enqueue_benefits_grants"
+
+    async def test_unit_based_grants_benefits_immediately(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            price_per_unit=1000,
+        )
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            units=4,
+        )
+
+        order = await order_service.create_from_checkout_one_time(session, checkout)
+
+        assert order.units == 4
+        assert order.seats is None
+        assert order.subtotal_amount == 4000
+        assert len(order.items) == 1
+        assert order.items[0].amount == 4000
+        assert order.items[0].label == "Product (4 units)"
+
+        # Unlike seats, unit purchases have nothing to claim: grant right away
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=order.id,
+        )
+
+        await session.refresh(customer)
+        assert customer.type == CustomerType.individual
 
     async def test_fixed_does_not_upgrade_customer_to_team(
         self,

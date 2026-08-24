@@ -1,11 +1,7 @@
 'use client'
 
 import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialConfigurationForm'
-import {
-  isLegacyRecurringPrice,
-  isMeteredPrice,
-  isUnitBasedPrice,
-} from '@/utils/product'
+import { isLegacyRecurringPrice, isMeteredPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
@@ -110,9 +106,7 @@ export const ProductPricingSection = ({
     const currentPrices = getValues('prices')
     if (!currentPrices) return
     const filteredPrices = currentPrices.filter(
-      (price) =>
-        !isMeteredPrice(price as ProductPrice) &&
-        !isUnitBasedPrice(price as ProductPrice),
+      (price) => !isMeteredPrice(price as ProductPrice),
     )
     if (filteredPrices.length !== currentPrices.length) {
       replace(filteredPrices)
@@ -476,7 +470,6 @@ export const ProductPricingSection = ({
 
   const canAddUnitPricing =
     onlyStaticAmountType === 'fixed' &&
-    recurringInterval !== null &&
     !!organization.feature_settings?.unit_based_pricing_enabled
 
   const canAddBasePrice =

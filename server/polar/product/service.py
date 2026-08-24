@@ -628,29 +628,20 @@ class ProductService:
                         }
                     )
                     continue
-                if isinstance(price_schema, ProductPriceUnitBasedCreate):
-                    if not organization.feature_settings.get(
-                        "unit_based_pricing_enabled", False
-                    ):
-                        errors.append(
-                            {
-                                "type": "value_error",
-                                "loc": (*error_prefix, index),
-                                "msg": "Unit-based pricing is not enabled for this organization.",
-                                "input": price_schema,
-                            }
-                        )
-                        continue
-                    if recurring_interval is None:
-                        errors.append(
-                            {
-                                "type": "value_error",
-                                "loc": (*error_prefix, index),
-                                "msg": "Unit-based pricing is not supported on one-time products.",
-                                "input": price_schema,
-                            }
-                        )
-                        continue
+                if isinstance(
+                    price_schema, ProductPriceUnitBasedCreate
+                ) and not organization.feature_settings.get(
+                    "unit_based_pricing_enabled", False
+                ):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": (*error_prefix, index),
+                            "msg": "Unit-based pricing is not enabled for this organization.",
+                            "input": price_schema,
+                        }
+                    )
+                    continue
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):

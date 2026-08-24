@@ -15,7 +15,12 @@ from polar.models.product_price import ProductPriceUnit
 from polar.postgres import AsyncSession
 from polar.product.tiers import Tiers, TierType
 from polar.subscription.repository import SubscriptionUpdateRepository
-from polar.subscription.service import SubscriptionUpdateContext
+from polar.subscription.service import (
+    AboveMaximumUnits,
+    BelowMinimumUnits,
+    NotAUnitBasedSubscription,
+    SubscriptionUpdateContext,
+)
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
@@ -277,7 +282,7 @@ class TestUpdateUnits:
                 proration_behavior=SubscriptionProrationBehavior.next_period,
             )
 
-        with pytest.raises(PolarRequestValidationError) as exc_info:
+        with pytest.raises(BelowMinimumUnits) as exc_info:
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -289,9 +294,9 @@ class TestUpdateUnits:
                     proration_behavior=SubscriptionProrationBehavior.prorate,
                 )
 
-        errors = exc_info.value.errors()
-        assert errors[0]["loc"] == ("body", "units")
-        assert "Minimum 10 units required" in errors[0]["msg"]
+        assert exc_info.value.minimum_units == 10
+        assert exc_info.value.requested_units == 5
+        assert exc_info.value.errors()[0]["loc"] == ("body", "units")
 
     async def test_same_units_is_noop(
         self,
@@ -348,7 +353,7 @@ class TestUpdateUnits:
             save_fixture, product=product, customer=customer, units=5
         )
 
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(BelowMinimumUnits):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -377,7 +382,7 @@ class TestUpdateUnits:
             save_fixture, product=product, customer=customer, units=5
         )
 
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(AboveMaximumUnits):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -397,7 +402,7 @@ class TestUpdateUnits:
             save_fixture, product=product, customer=customer
         )
 
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(NotAUnitBasedSubscription):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -520,7 +525,7 @@ class TestUnitProductChange:
             save_fixture, product=old_unit_product, customer=customer, units=3
         )
 
-        with pytest.raises(PolarRequestValidationError) as exc_info:
+        with pytest.raises(BelowMinimumUnits) as exc_info:
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -532,9 +537,9 @@ class TestUnitProductChange:
                     proration_behavior=SubscriptionProrationBehavior.invoice,
                 )
 
-        errors = exc_info.value.errors()
-        assert errors[0]["loc"] == ("body", "product_id")
-        assert "below the minimum of 5 units" in errors[0]["msg"]
+        assert exc_info.value.minimum_units == 5
+        assert exc_info.value.requested_units == 3
+        assert exc_info.value.errors()[0]["loc"] == ("body", "product_id")
 
     async def test_non_unit_to_unit_upgrade_rejects_next_period(
         self,

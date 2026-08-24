@@ -124,7 +124,7 @@ class TestPreviewChange:
 
         assert response.status_code == 422
         error = response.json()
-        assert error["error"] == "PolarRequestValidationError"
+        assert error["error"] == "NotASeatBasedSubscription"
         assert error["detail"][0]["loc"] == ["body", "seats"]
         assert error["detail"][0]["input"] == 5
 

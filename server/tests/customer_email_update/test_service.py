@@ -248,6 +248,50 @@ class TestVerify:
         result = await session.execute(stmt)
         assert result.scalars().first() is None
 
+    async def test_concurrent_email_taken_on_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """Simulate a race where the uniqueness pre-check passes but another
+        transaction commits the conflicting email before this one updates,
+        triggering an IntegrityError that must be translated into a 422."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="original@example.com",
+            stripe_customer_id="STRIPE_1",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="taken@example.com",
+            stripe_customer_id="STRIPE_2",
+        )
+
+        _record, token = await _create_verification(
+            save_fixture, customer, "taken@example.com"
+        )
+
+        mocker.patch(
+            "polar.customer_email_update.service.CustomerRepository."
+            "get_by_email_and_organization",
+            return_value=None,
+        )
+
+        service = CustomerEmailUpdateService()
+        with pytest.raises(PolarRequestValidationError):
+            await service.verify(session, token)
+
+        # Verification record should be deleted
+        stmt = select(CustomerEmailVerification).where(
+            CustomerEmailVerification.customer_id == customer.id
+        )
+        result = await session.execute(stmt)
+        assert result.scalars().first() is None
+
     async def test_happy_path(
         self,
         session: AsyncSession,

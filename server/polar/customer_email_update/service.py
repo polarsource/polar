@@ -1,6 +1,7 @@
 from math import ceil
 
 import structlog
+from sqlalchemy.exc import IntegrityError
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -154,9 +155,28 @@ class CustomerEmailUpdateService:
 
         old_email = customer.email
 
-        await customer_repository.update(
-            customer, update_dict={"email": record.email, "email_verified": True}
-        )
+        try:
+            await customer_repository.update(
+                customer,
+                update_dict={"email": record.email, "email_verified": True},
+                flush=True,
+            )
+        except IntegrityError as e:
+            error_str = str(e)
+            if "ix_customers_organization_id_email_not_null" in error_str:
+                await session.rollback()
+                await repository.delete_by_customer_id(customer.id)
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "token"),
+                            "msg": "This email address is already in use.",
+                            "input": record.email,
+                        }
+                    ]
+                ) from e
+            raise
 
         await member_service.sync_owner_email(session, customer)
 

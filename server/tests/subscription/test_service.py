@@ -83,18 +83,14 @@ from polar.subscription.schemas import (
     SubscriptionUpdateSeats,
 )
 from polar.subscription.service import (
-    AboveMaximumSeats,
     AlreadyCanceledSubscription,
-    BelowMinimumSeats,
     CannotPauseSubscription,
     CannotReinstateSubscription,
     MissingCheckoutCustomer,
     NoScheduledPause,
     NotARecurringProduct,
-    NotASeatBasedSubscription,
     NotBillableSubscription,
     NotPausedSubscription,
-    SeatsAlreadyAssigned,
     SubscriptionMeterCycleLag,
     SubscriptionUpdateContext,
 )
@@ -7438,7 +7434,7 @@ class TestUpdateSeats:
 
         # When: Try to decrease to 5 seats
         # Then: Raises error
-        with pytest.raises(SeatsAlreadyAssigned) as exc_info:
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -7446,8 +7442,9 @@ class TestUpdateSeats:
                     session, ctx, subscription, seats=5
                 )
 
-        assert exc_info.value.assigned_count == 7
-        assert exc_info.value.requested_seats == 5
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "7 seats are assigned" in errors[0]["msg"]
 
     async def test_seat_decrease_successful(
         self,
@@ -7536,7 +7533,7 @@ class TestUpdateSeats:
 
         # When: Try to set seats=0
         # Then: Raises error
-        with pytest.raises(BelowMinimumSeats) as exc_info:
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -7544,8 +7541,9 @@ class TestUpdateSeats:
                     session, ctx, subscription, seats=0
                 )
 
-        assert exc_info.value.minimum_seats == 1
-        assert exc_info.value.requested_seats == 0
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "Minimum 1 seats required" in errors[0]["msg"]
 
     async def test_below_custom_minimum_seats(
         self,
@@ -7582,7 +7580,7 @@ class TestUpdateSeats:
         )
 
         # When: Try to set seats below custom minimum
-        with pytest.raises(BelowMinimumSeats) as exc_info:
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -7590,8 +7588,9 @@ class TestUpdateSeats:
                     session, ctx, subscription, seats=2
                 )
 
-        assert exc_info.value.minimum_seats == 3
-        assert exc_info.value.requested_seats == 2
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "Minimum 3 seats required" in errors[0]["msg"]
 
     async def test_above_maximum_seats(
         self,
@@ -7628,7 +7627,7 @@ class TestUpdateSeats:
         )
 
         # When: Try to set seats above maximum
-        with pytest.raises(AboveMaximumSeats) as exc_info:
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -7636,8 +7635,9 @@ class TestUpdateSeats:
                     session, ctx, subscription, seats=15
                 )
 
-        assert exc_info.value.maximum_seats == 10
-        assert exc_info.value.requested_seats == 15
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "Maximum 10 seats allowed" in errors[0]["msg"]
 
     async def test_seats_within_custom_limits(
         self,
@@ -7702,7 +7702,7 @@ class TestUpdateSeats:
 
         # When: Try to update seats
         # Then: Raises error
-        with pytest.raises(NotASeatBasedSubscription):
+        with pytest.raises(PolarRequestValidationError):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:

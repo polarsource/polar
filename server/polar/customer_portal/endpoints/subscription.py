@@ -19,10 +19,7 @@ from polar.subscription.schemas import (
     SubscriptionChargePreview,
     SubscriptionID,
 )
-from polar.subscription.service import (
-    AlreadyCanceledSubscription,
-    NotASeatBasedSubscription,
-)
+from polar.subscription.service import AlreadyCanceledSubscription
 from polar.subscription.service import subscription as subscription_service
 
 from .. import auth
@@ -184,7 +181,6 @@ async def get_cancel_preview(
     summary="Preview Subscription Change",
     response_model=SubscriptionChargePreview,
     responses={
-        400: {"model": NotASeatBasedSubscription.schema()},
         403: {
             "description": "Previewing this change is not allowed.",
             "model": AlreadyCanceledSubscription.schema()

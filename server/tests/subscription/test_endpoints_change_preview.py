@@ -122,7 +122,7 @@ class TestPreviewChange:
             json={"seats": 5},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_rejects_both_product_and_seats(

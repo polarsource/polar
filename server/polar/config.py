@@ -446,8 +446,17 @@ class Settings(BaseSettings):
             and self.POLAR_ACCESS_TOKEN
         )
 
-    # Customer portal URL overrides per organization
-    CUSTOMER_PORTAL_URL_OVERRIDES: dict[str, str] = {}
+    # Customer portal URL overrides per organization: either a single URL for the
+    # whole organization, or a mapping of product ID to URL
+    CUSTOMER_PORTAL_URL_OVERRIDES: dict[str, str | dict[str, str]] = {}
+
+    def get_customer_portal_url_override(
+        self, organization_id: str, product_id: str | None
+    ) -> str | None:
+        override = self.CUSTOMER_PORTAL_URL_OVERRIDES.get(organization_id)
+        if isinstance(override, dict):
+            return override.get(product_id) if product_id is not None else None
+        return override
 
     # Invoices
     S3_CUSTOMER_INVOICES_BUCKET_NAME: str = "polar-customer-invoices"

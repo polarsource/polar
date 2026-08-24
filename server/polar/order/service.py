@@ -2521,8 +2521,8 @@ class OrderService:
                 )
                 for key, value in url_params.items()
             }
-            override_url = settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(
-                str(organization.id)
+            override_url = settings.get_customer_portal_url_override(
+                str(organization.id), str(product.id) if product is not None else None
             )
             if override_url is not None:
                 url = f"{override_url}?{urlencode({'email': recipient_email})}"

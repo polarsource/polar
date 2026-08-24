@@ -1843,7 +1843,7 @@ class SubscriptionService:
                 subscription, currency_prices, proration_behavior
             )
             self._promote_units_for_unit_transition(
-                subscription, currency_prices, proration_behavior
+                subscription, currency_prices, proration_behavior, product_id
             )
 
             subscription_update_repository = SubscriptionUpdateRepository.from_session(
@@ -3057,7 +3057,7 @@ class SubscriptionService:
                 subscription, currency_prices, proration_behavior
             )
             self._promote_units_for_unit_transition(
-                subscription, currency_prices, proration_behavior
+                subscription, currency_prices, proration_behavior, product_id
             )
             event = build_system_event(
                 SystemEvent.subscription_product_updated,
@@ -3208,6 +3208,7 @@ class SubscriptionService:
         subscription: Subscription,
         currency_prices: PriceSet,
         proration_behavior: SubscriptionProrationBehavior,
+        product_id: uuid.UUID,
     ) -> None:
         """Ensure `subscription.units` is valid for the target unit price before
         proration and `apply_update` run. Non-unit → unit promotes to the floor
@@ -3236,7 +3237,7 @@ class SubscriptionService:
                                 f"Current unit count of {units} is below the "
                                 f"minimum of {minimum_units} units for this product."
                             ),
-                            "input": unit_price.product_id,
+                            "input": product_id,
                         }
                     ]
                 )
@@ -3251,7 +3252,7 @@ class SubscriptionService:
                                 f"Current unit count of {units} is above the "
                                 f"maximum of {maximum_units} units for this product."
                             ),
-                            "input": unit_price.product_id,
+                            "input": product_id,
                         }
                     ]
                 )

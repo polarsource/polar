@@ -25,7 +25,7 @@ Polar then retries the charge on a fixed schedule, starting from the time of the
 | 3rd retry | 7 days  | 14 days |
 | 4th retry | 7 days  | 21 days |
 
-If any retry succeeds, the subscription returns to `active` and the cycle continues normally. If all four retries fail — or the payment's decline code indicates the method will never succeed (for example, `lost_card`) — Polar stops retrying and **revokes the subscription**. Its status moves to `canceled` and benefits are revoked (subject to the grace period below).
+If a retry succeeds, the failed order is paid. The subscription returns to `active` once all of its pending orders have been paid (past-due subscriptions keep cycling, so there can be more than one). If all four retries fail — or the payment's decline code indicates the method will never succeed (for example, `lost_card`) — Polar stops retrying and **revokes the subscription**. Its status moves to `canceled` and benefits are revoked (subject to the grace period below).
 
 ## Benefit revocation grace period
 

@@ -26,7 +26,9 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.order import OrderBillingReasonInternal
 from polar.models.subscription import SubscriptionStatus
+from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
@@ -41,6 +43,7 @@ from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_discount,
+    create_payment_method,
     create_product,
     create_product_fixed_and_seat,
     create_product_price_fixed,
@@ -1361,6 +1364,137 @@ class TestUpdateProductProrations:
             assert billing_entries[1].amount == expected_debit
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on
+
+    @pytest.mark.parametrize(
+        ("discount_type", "discount_value", "proration_behavior", "expected_subtotal"),
+        [
+            pytest.param(
+                DiscountType.percentage,
+                100_00,  # 100% discount
+                SubscriptionProrationBehavior.invoice,
+                # Credit: $100 fully discounted, prorated for 15/30 days = 0
+                # Debit: $1000 with no discount, prorated for 15/30 days = 500_00
+                500_00,
+                id="invoice-full-percentage-discount",
+            ),
+            pytest.param(
+                DiscountType.percentage,
+                25_00,  # 25% discount
+                SubscriptionProrationBehavior.invoice,
+                # Credit: $100 with 25% discount, prorated for 15/30 days = 37_50
+                # Debit: $1000 with no discount, prorated for 15/30 days = 500_00
+                462_50,
+                id="invoice-percentage-discount",
+            ),
+            pytest.param(
+                DiscountType.fixed,
+                25_00,  # $25 discount
+                SubscriptionProrationBehavior.invoice,
+                # Credit: $100 with $25 discount, prorated for 15/30 days = 37_50
+                # Debit: $1000 with no discount, prorated for 15/30 days = 500_00
+                462_50,
+                id="invoice-fixed-discount",
+            ),
+            pytest.param(
+                DiscountType.percentage,
+                100_00,  # 100% discount
+                SubscriptionProrationBehavior.reset,
+                # Reset bills the full new plan with no credit and no discount
+                1000_00,
+                id="reset-full-percentage-discount",
+            ),
+        ],
+    )
+    async def test_immediate_proration_with_discount_removal(
+        self,
+        discount_type: DiscountType,
+        discount_value: int,
+        proration_behavior: SubscriptionProrationBehavior,
+        expected_subtotal: int,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Changing product with an immediate proration behavior while clearing
+        the discount in the same request must charge the immediately generated
+        order without the removed discount."""
+        trigger_payment_mock = mocker.patch.object(
+            order_service, "trigger_payment", new_callable=AsyncMock
+        )
+
+        cycle_start = datetime(2025, 6, 1, tzinfo=UTC)
+        time_of_update = datetime(2025, 6, 16, tzinfo=UTC)
+
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "usd")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000_00, "usd")],
+        )
+
+        discount: Discount
+        if discount_type == DiscountType.percentage:
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.percentage,
+                basis_points=discount_value,
+                organization=organization,
+                duration=DiscountDuration.forever,
+            )
+        else:
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.fixed,
+                amounts={"usd": discount_value},
+                organization=organization,
+                duration=DiscountDuration.forever,
+            )
+
+        with freezegun.freeze_time(cycle_start) as frozen_time:
+            payment_method = await create_payment_method(save_fixture, customer)
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=old_product,
+                customer=customer,
+                discount=discount,
+                payment_method=payment_method,
+            )
+
+            frozen_time.move_to(time_of_update)
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    discount="unset",
+                    proration_behavior=proration_behavior,
+                )
+
+            assert updated_subscription.discount is None
+            await session.refresh(updated_subscription, ["discount_id"])
+            assert updated_subscription.discount_id is None
+
+            trigger_payment_mock.assert_awaited_once()
+            order = trigger_payment_mock.call_args.args[1]
+            assert (
+                order.billing_reason == OrderBillingReasonInternal.subscription_update
+            )
+            assert order.discount is None
+            assert order.discount_amount == 0
+            assert order.subtotal_amount == expected_subtotal
+            assert order.total_amount == expected_subtotal
 
 
 @pytest.mark.asyncio

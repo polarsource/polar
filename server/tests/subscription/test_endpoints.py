@@ -1,9 +1,11 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.enums import SubscriptionRecurringInterval
@@ -17,8 +19,10 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
+from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -27,7 +31,9 @@ from tests.fixtures.random_objects import (
     create_canceled_subscription,
     create_customer,
     create_customer_seat,
+    create_discount,
     create_order,
+    create_payment_method,
     create_product,
     create_subscription,
     create_subscription_with_seats,
@@ -547,6 +553,70 @@ class TestSubscriptionProductUpdate:
         assert response.status_code == 200
         updated_subscription = response.json()
         assert updated_subscription["product"]["id"] == str(product_second.id)
+
+    @pytest.mark.auth
+    async def test_invoice_proration_removing_discount(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Sending `discount_id: null` together with a product change billed
+        immediately must charge the update order without the removed discount."""
+        trigger_payment_mock = mocker.patch.object(
+            order_service, "trigger_payment", new_callable=AsyncMock
+        )
+
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "usd")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000_00, "usd")],
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=100_00,
+            organization=organization,
+            duration=DiscountDuration.forever,
+        )
+        payment_method = await create_payment_method(save_fixture, customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=old_product,
+            customer=customer,
+            discount=discount,
+            payment_method=payment_method,
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={
+                "product_id": str(new_product.id),
+                "discount_id": None,
+                "proration_behavior": "invoice",
+            },
+        )
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert updated_subscription["product"]["id"] == str(new_product.id)
+        assert updated_subscription["discount"] is None
+
+        # A stale 100% discount would zero the order and skip payment entirely
+        trigger_payment_mock.assert_awaited_once()
+        order = trigger_payment_mock.call_args.args[1]
+        assert order.discount is None
+        assert order.discount_amount == 0
+        assert order.subtotal_amount > 0
 
 
 @pytest.mark.asyncio

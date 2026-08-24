@@ -599,7 +599,7 @@ const BaseCheckoutForm = ({
                     name="is_business_customer"
                     render={({ field }) => (
                       <FormItem className="-mt-4">
-                        <div className="flex flex-row items-center space-y-0 space-x-2">
+                        <div className="flex flex-row items-center space-y-0 space-x-3">
                           <FormControl>
                             <Checkbox
                               className={cn(

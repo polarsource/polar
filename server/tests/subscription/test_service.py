@@ -7448,7 +7448,10 @@ class TestUpdateSeats:
 
         assert exc_info.value.assigned_count == 7
         assert exc_info.value.requested_seats == 5
-        assert exc_info.value.errors()[0]["loc"] == ("body", "seats")
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "7 seats are assigned" in errors[0]["msg"]
+        assert errors[0]["input"] == 5
 
     async def test_seat_decrease_successful(
         self,
@@ -7547,6 +7550,10 @@ class TestUpdateSeats:
 
         assert exc_info.value.minimum_seats == 1
         assert exc_info.value.requested_seats == 0
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "Minimum 1 seats required" in errors[0]["msg"]
+        assert errors[0]["input"] == 0
 
     async def test_below_custom_minimum_seats(
         self,
@@ -7593,6 +7600,10 @@ class TestUpdateSeats:
 
         assert exc_info.value.minimum_seats == 3
         assert exc_info.value.requested_seats == 2
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "Minimum 3 seats required" in errors[0]["msg"]
+        assert errors[0]["input"] == 2
 
     async def test_above_maximum_seats(
         self,
@@ -7639,6 +7650,10 @@ class TestUpdateSeats:
 
         assert exc_info.value.maximum_seats == 10
         assert exc_info.value.requested_seats == 15
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "Maximum 10 seats allowed" in errors[0]["msg"]
+        assert errors[0]["input"] == 15
 
     async def test_seats_within_custom_limits(
         self,

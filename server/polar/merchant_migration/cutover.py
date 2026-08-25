@@ -324,6 +324,11 @@ class SubscriptionCutover:
             if reason is not None:
                 return _skip(reason)
 
+        if await self.subscription_repository.exists_live_by_customer_and_product(
+            customer.id, product.id
+        ):
+            return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
+
         payment_method = await link_payment_method(
             self.session, customer, source_method=source.payment_method
         )
@@ -359,6 +364,8 @@ class SubscriptionCutover:
         )
         if customer is None or customer.is_deleted:
             return _skip(_CUSTOMER_DELETED)
+        # Re-check under the lock: another cutover may have created one while
+        # this worker resolved the payment method.
         if await self.subscription_repository.exists_live_by_customer_and_product(
             customer.id, product.id
         ):

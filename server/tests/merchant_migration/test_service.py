@@ -1519,11 +1519,14 @@ class TestSummarizeRecords:
         assert products.importable == 1
         assert products.skipped == 1
         assert products.imported == 1
+        assert products.pending == 1
+        assert products.action_required == 0
         assert products.selectable == 0
 
         customers = by_entity[PrecheckEntity.customers]
         assert customers.total == 1
         assert customers.imported == 1
+        assert customers.pending == 0
         assert customers.selectable == 0
 
         items, count = await service.list_records(
@@ -1536,6 +1539,7 @@ class TestSummarizeRecords:
             pagination=PaginationParams(page=1, limit=100),
         )
         assert summary.action_required == count
+        assert sum(entity.action_required for entity in summary.entities) == count
 
     @pytest.mark.auth
     async def test_summary_counts_what_is_still_selectable(
@@ -1556,8 +1560,11 @@ class TestSummarizeRecords:
         by_entity = {entry.entity: entry for entry in summary.entities}
         products = by_entity[PrecheckEntity.products]
         assert products.imported == 0
+        assert products.pending == 2
         assert products.selectable == 0
-        assert by_entity[PrecheckEntity.subscriptions].selectable == 1
+        subscriptions = by_entity[PrecheckEntity.subscriptions]
+        assert subscriptions.pending == 1
+        assert subscriptions.selectable == 1
 
 
 def _canonical_subscription(

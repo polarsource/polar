@@ -629,6 +629,72 @@ class TestListRecords:
         assert prod_1 is not None
         assert prod_1.id in {item.record_id for item in items}
 
+    @pytest.mark.auth
+    async def test_imported_customer_wins_duplicate_email_classification(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *_catalog(),
+                CanonicalCustomer(
+                    source_id="cus_current",
+                    email="shared@example.com",
+                    name="Current",
+                    country="US",
+                ),
+                canonical_subscription(
+                    customer_source_id="cus_reused",
+                    price_source_id="price_1",
+                ),
+            ],
+        )
+        earlier = await build_connected_migration(save_fixture, organization)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="shared@example.com",
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=earlier,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_reused",
+                target_id=customer.id,
+                canonical=serialize(
+                    CanonicalCustomer(
+                        source_id="cus_reused",
+                        email="shared@example.com",
+                        name="Reused",
+                        country="US",
+                    )
+                ),
+            )
+        )
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+
+        assert items[0].status == PrecheckRecordStatus.importable
+
 
 def _importable_catalog() -> list[CanonicalRecord]:
     """An importable recurring product, a one-time product that's skipped, and

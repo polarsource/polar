@@ -1216,7 +1216,7 @@ class MerchantMigrationService:
         for entity_type in entities:
             classified_from = records
             if entity_type == PrecheckEntity.subscriptions:
-                classified_from = [*records, *extra_canonicals]
+                classified_from = [*extra_canonicals, *records]
             entity_items = classify_records(
                 classified_from,
                 entity_type,

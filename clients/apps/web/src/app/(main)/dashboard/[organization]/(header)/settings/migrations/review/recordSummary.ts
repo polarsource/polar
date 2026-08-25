@@ -36,10 +36,7 @@ export const useRecordSummary = (id: string) => {
         products: counts.products.imported,
         customers: counts.customers.imported,
       },
-      selectableTotal: COUNT_ENTITIES.reduce(
-        (total, entity) => total + counts[entity].selectable,
-        0,
-      ),
+      selectableTotal: counts.subscriptions.selectable,
       attentionCount: query.data?.action_required ?? 0,
     }
   }, [query.data])

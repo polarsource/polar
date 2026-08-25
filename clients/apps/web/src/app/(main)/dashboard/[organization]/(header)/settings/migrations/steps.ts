@@ -35,7 +35,7 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     owner: 'polar',
     title: 'Assess & import your catalog',
     description:
-      'Polar checks what can move, then imports your products, customers and subscriptions.',
+      'Polar checks what can move, then imports the products and customers your subscriptions need.',
     steps: ['pre_check'],
   },
   {
@@ -56,7 +56,7 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     owner: 'polar',
     title: 'Switch billing to Polar',
     description:
-      'Polar starts billing the subscriptions you pick and stops them on Stripe.',
+      'Polar creates and activates the subscriptions you pick, then stops them on Stripe.',
     steps: ['activate_subscriptions'],
   },
 ]

@@ -7,14 +7,23 @@ from polar.merchant_migration.canonical import (
     CanonicalCustomer,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
+    CanonicalPrice,
+    CanonicalPricingScheme,
+    CanonicalProduct,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    serialize,
 )
 from polar.merchant_migration.repository import (
     MerchantMigrationRecordRepository,
     MerchantMigrationRepository,
 )
-from polar.models import MerchantMigration, Organization
+from polar.models import (
+    MerchantMigration,
+    MerchantMigrationRecord,
+    Organization,
+    Product,
+)
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
@@ -25,6 +34,8 @@ from polar.models.merchant_migration_record import (
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_customer, create_payment_method
+from tests.merchant_migration._helpers import canonical_subscription
 
 
 async def _create_migration(
@@ -248,3 +259,96 @@ class TestGetOpsById:
         repository = MerchantMigrationRepository.from_session(session)
 
         assert await repository.get_ops_by_id(MerchantMigration.generate_id()) is None
+
+
+@pytest.mark.asyncio
+class TestSwitchableSubscriptions:
+    async def test_pending_subscription_with_imported_dependencies_is_switchable(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        customer = await create_customer(
+            save_fixture, organization=organization, email="ready@example.com"
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_ready",
+                target_id=customer.id,
+                canonical={},
+            )
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.product,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="prod_1:month:1",
+                target_id=product.id,
+                canonical=serialize(
+                    CanonicalProduct(
+                        source_id="prod_1:month:1",
+                        product_source_id="prod_1",
+                        name="Product",
+                        recurring_interval="month",
+                        recurring_interval_count=1,
+                        prices=[
+                            CanonicalPrice(
+                                source_id="price_ready",
+                                currency="usd",
+                                amount=1000,
+                                pricing_scheme=CanonicalPricingScheme.fixed,
+                            )
+                        ],
+                    )
+                ),
+            )
+        )
+        ready = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_ready",
+            canonical=serialize(
+                canonical_subscription(
+                    source_id="sub_ready",
+                    customer_source_id="cus_ready",
+                    price_source_id="price_ready",
+                )
+            ),
+        )
+        unready = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_unready",
+            canonical=serialize(
+                canonical_subscription(
+                    source_id="sub_unready",
+                    customer_source_id="cus_missing",
+                    price_source_id="price_ready",
+                )
+            ),
+        )
+        await save_fixture(ready)
+        await save_fixture(unready)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+
+        records = await repository.list_imported_subscriptions(
+            migration.id, offset=0, limit=10
+        )
+
+        assert [record.id for record in records] == [ready.id]
+        assert await repository.payment_method_coverage(migration.id) == set()
+        await create_payment_method(save_fixture, customer, processor_id="pm_ready")
+        assert await repository.payment_method_coverage(migration.id) == {ready.id}

@@ -35,7 +35,6 @@ from .canonical import (
     CanonicalSubscriptionStatus,
     PriceKey,
     canonical_price_key,
-    legacy_price_keys,
     subscription_price_key,
 )
 from .schemas import (
@@ -678,6 +677,7 @@ def _item(
         cutover_error=None,
         renews_at=None,
         has_payment_method=None,
+        dependencies_imported=None,
     )
 
 
@@ -840,7 +840,6 @@ def _subscription_items(
     )
     email_by_source = {c.source_id: c.email for c in customers if c.email}
     price_by_key = _price_display_by_key(products)
-    legacy_keys = legacy_price_keys(products)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
         payment_method = subscription.payment_method
@@ -855,7 +854,7 @@ def _subscription_items(
         title = email_by_source.get(
             subscription.customer_source_id, subscription.customer_source_id
         )
-        key = subscription_price_key(subscription, legacy_keys)
+        key = subscription_price_key(subscription)
         items.append(
             _item(
                 PrecheckEntity.subscriptions,
@@ -1032,14 +1031,12 @@ def plan_subscription_imports(
         for source_id, skip in plan_customer_imports(customers).items()
         if skip is None
     }
-    legacy_keys = legacy_price_keys(products)
     plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
         skip = subscription_import_reason(subscription)
         if (
             skip is None
-            and subscription_price_key(subscription, legacy_keys)
-            not in importable_prices
+            and subscription_price_key(subscription) not in importable_prices
         ):
             skip = Reason(
                 "subscription_product_not_importable", _SUBSCRIPTION_PRODUCT_REASON

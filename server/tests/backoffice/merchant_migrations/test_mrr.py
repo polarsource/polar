@@ -63,7 +63,7 @@ def _subscription(
     quantity: int = 1,
     paused_collection: bool = False,
     migration_id: UUID = MIGRATION,
-    currency: str | None = None,
+    currency: str = "usd",
 ) -> CanonicalRow:
     subscription = CanonicalSubscription(
         source_id=source_id,
@@ -275,7 +275,12 @@ class TestMultipleCurrencies:
             _product("price_usd", 2900, currency="usd"),
             _product("price_eur", 2500, currency="eur"),
             _subscription("sub_1", "price_usd", MerchantMigrationRecordStatus.imported),
-            _subscription("sub_2", "price_eur", MerchantMigrationRecordStatus.imported),
+            _subscription(
+                "sub_2",
+                "price_eur",
+                MerchantMigrationRecordStatus.imported,
+                currency="eur",
+            ),
         ]
 
         result = _breakdown(rows)
@@ -303,20 +308,6 @@ class TestMultipleCurrencies:
         result = _breakdown(rows)
 
         assert result.on_polar.amounts == {"usd": 2900, "eur": 2500}
-
-    def test_legacy_suffixed_price_id_still_resolves(self) -> None:
-        rows = [
-            _product("price_1", 2500, currency="eur"),
-            _subscription(
-                "sub_1",
-                "price_1:eur",
-                MerchantMigrationRecordStatus.imported,
-            ),
-        ]
-
-        result = _breakdown(rows)
-
-        assert result.on_polar.amounts == {"eur": 2500}
 
     def test_by_size_puts_the_biggest_currency_first(self) -> None:
         amount = Money({"eur": 100, "usd": 900})

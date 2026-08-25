@@ -5,7 +5,6 @@ import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
-import { ReviewEntityTabs } from './ReviewEntityTabs'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import {
   EMPTY_MESSAGES,
@@ -20,13 +19,11 @@ import {
   selectedCount,
   SelectionState,
 } from '../selection'
-import { ReviewRow, ReviewScope } from './reviewRows'
+import { ReviewRow } from './reviewRows'
 
 const numberFormat = new Intl.NumberFormat('en-US')
 
 interface Props {
-  entity: ReviewScope
-  onEntityChange: (entity: ReviewScope) => void
   filter: ReviewFilter
   onFilterChange: (filter: ReviewFilter) => void
   counts: Record<CountEntity, EntityCount>
@@ -50,8 +47,6 @@ interface Props {
 }
 
 export function ReviewTableView({
-  entity,
-  onEntityChange,
   filter,
   onFilterChange,
   counts,
@@ -73,44 +68,35 @@ export function ReviewTableView({
   blockers = [],
   attentionCount,
 }: Props) {
-  const tabCounts: Record<CountEntity, number> = {
-    subscriptions: counts.subscriptions.total,
-    products: counts.products.total,
-    customers: counts.customers.total,
-  }
-  const sum = (field: 'total' | 'skipped' | 'selectable') =>
-    counts.subscriptions[field] +
-    counts.products[field] +
-    counts.customers[field]
-  const rowTotal = sum('total')
-  const skippedTotal = sum('skipped')
-  // Rows already in Polar stay `importable` forever, so the pre-check total
-  // can't serve as the selection ceiling.
-  const selectableTotal = sum('selectable')
+  const rowTotal = counts.subscriptions.total
+  const skippedTotal = counts.subscriptions.skipped
+  const selectableTotal = counts.subscriptions.selectable
 
   const importCount = selectedCount(selection, selectableTotal)
   const importLabel = importing
     ? 'Importing…'
     : importCount > 0
-      ? `Import ${numberFormat.format(importCount)} records`
-      : 'Import records'
+      ? `Import ${numberFormat.format(importCount)} ${
+          importCount === 1 ? 'subscription' : 'subscriptions'
+        }`
+      : 'Import subscriptions'
   const hasCatalog = rowTotal > 0
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
   const columns = useMemo(
     () =>
-      buildReviewColumns(entity, {
+      buildReviewColumns({
         isSelected: (id) => isRowSelected(selection, id),
         // The opt-out default reads as "all" even when no row can be picked,
         // which would show as ticked-but-disabled.
         headerState:
           selectableTotal > 0 ? headerCheckState(selection) : 'unchecked',
-        // It flips the whole catalog, not this page, so gate it on the same scope.
+        // It flips every subscription, not this page, so gate it on the same scope.
         canSelectAll: selectableTotal > 0,
         onToggle,
         onToggleAll,
       }),
-    [entity, selectableTotal, selection, onToggle, onToggleAll],
+    [selectableTotal, selection, onToggle, onToggleAll],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
@@ -139,8 +125,8 @@ export function ReviewTableView({
     )
   }
 
-  // Reaching this step means a scan already ran, so an empty ledger means
-  // Stripe had nothing we can migrate, not that the merchant still has to scan.
+  // Reaching this step means a scan already ran, so no subscription rows means
+  // Stripe had no subscriptions we can migrate.
   if (!hasCatalog) {
     return (
       <Box
@@ -160,8 +146,8 @@ export function ReviewTableView({
             Nothing to import
           </Text>
           <Text variant="caption" color="muted">
-            We found no products, customers or subscriptions in Stripe that can
-            move to Polar. If you have added some since, scan again.
+            We found no subscriptions in Stripe that can move to Polar. If you
+            have added some since, scan again.
           </Text>
         </Box>
         {onRerunPrecheck && (
@@ -208,13 +194,6 @@ export function ReviewTableView({
             />
           </Box>
           <Box alignItems="center" columnGap="s" rowGap="s" flexWrap="wrap">
-            <Box maxWidth="100%" overflowX="auto">
-              <ReviewEntityTabs
-                value={entity}
-                counts={tabCounts}
-                onChange={onEntityChange}
-              />
-            </Box>
             {onRerunPrecheck && (
               <Button
                 size="sm"
@@ -236,7 +215,8 @@ export function ReviewTableView({
         </Box>
 
         <Text variant="caption" color="muted">
-          Subscriptions arrive paused; nothing is billed until cutover.
+          Importing a subscription brings its customer and product to Polar.
+          Polar starts billing only when you switch.
         </Text>
 
         {rows.length === 0 ? (

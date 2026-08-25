@@ -57,6 +57,8 @@ class MerchantMigrationRepository(
     async def get_by_stripe_account_id(
         self, stripe_account_id: str
     ) -> MerchantMigration | None:
+        # Deleting our record cannot undo a Stripe PAN copy, so the source
+        # account remains reserved after soft deletion.
         statement = self.get_base_statement(include_deleted=True).where(
             MerchantMigration.source_platform == MerchantMigrationSourcePlatform.stripe,
             MerchantMigration.source_credentials["stripe_user_id"].astext

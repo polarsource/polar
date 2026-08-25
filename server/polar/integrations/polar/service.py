@@ -59,6 +59,7 @@ from .exceptions import (
     PolarSelfNotConfigured,
     PolarSelfNotPaidOrder,
     PolarSelfOrderNotFound,
+    PolarSelfPaidSubscriptionAlreadyExists,
     PolarSelfPlanNotFound,
     PolarSelfWebhookError,
     SupportBenefitError,
@@ -337,6 +338,11 @@ class PolarSelfService:
         existing = await client.get_active_subscription(
             external_customer_id=str(organization_id)
         )
+        if (
+            existing is not None
+            and self._product_fixed_price_amount(existing.product) != 0
+        ):
+            raise PolarSelfPaidSubscriptionAlreadyExists(organization_id)
         # Auto-apply the Startup Program discount when an eligible organization
         # checks out the Scale plan.
         discount_id = await startup_program_service.resolve_checkout_discount_id(

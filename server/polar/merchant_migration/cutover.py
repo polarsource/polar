@@ -324,18 +324,6 @@ class SubscriptionCutover:
             if reason is not None:
                 return _skip(reason)
 
-        try:
-            canonical_product = deserialize(
-                product_record.type, product_record.canonical
-            )
-        except KeyError, TypeError, ValueError:
-            return _skip(_NOT_IMPORTED)
-        if not isinstance(canonical_product, CanonicalProduct):
-            return _skip(_NOT_IMPORTED)
-        price = find_imported_price(product, canonical_product, staged)
-        if price is None:
-            return _skip(_NOT_IMPORTED)
-
         customer = await self.customer_repository.get_by_id(
             customer.id, include_deleted=True, for_update=True
         )
@@ -360,6 +348,18 @@ class SubscriptionCutover:
                 return _fail(_STRANDED)
         elif payment_method is None or payment_method.type != "card":
             return _skip(_NO_CARD)
+
+        try:
+            canonical_product = deserialize(
+                product_record.type, product_record.canonical
+            )
+        except KeyError, TypeError, ValueError:
+            return _skip(_NOT_IMPORTED)
+        if not isinstance(canonical_product, CanonicalProduct):
+            return _skip(_NOT_IMPORTED)
+        price = find_imported_price(product, canonical_product, staged)
+        if price is None:
+            return _skip(_NOT_IMPORTED)
 
         if already_stopped and self._period_is_lapsed(source, product):
             return _fail(_LAPSED)

@@ -43,7 +43,6 @@ from .canonical import (
     CanonicalSubscription,
     canonical_price_key,
     deserialize,
-    legacy_price_keys,
     subscription_price_key,
 )
 from .precheck import (
@@ -80,7 +79,7 @@ def find_imported_price(
     canonical_product: CanonicalProduct,
     subscription: CanonicalSubscription,
 ) -> ProductPriceFixed | None:
-    key = subscription_price_key(subscription, legacy_price_keys([canonical_product]))
+    key = subscription_price_key(subscription)
     if key is None:
         return None
     canonical_price = next(
@@ -242,7 +241,6 @@ class CatalogImporter:
             for product in products
             for price in product.prices
         }
-        legacy_keys = legacy_price_keys(products)
 
         product_source_ids: set[str] = set()
         customer_source_ids: set[str] = set()
@@ -256,7 +254,7 @@ class CatalogImporter:
             ):
                 continue
             customer_source_ids.add(subscription.customer_source_id)
-            key = subscription_price_key(subscription, legacy_keys)
+            key = subscription_price_key(subscription)
             product = product_by_price.get(key) if key is not None else None
             if product is not None:
                 product_source_ids.add(product.source_id)

@@ -120,17 +120,13 @@ def _monthly_amount(
 
 def _price_index(
     products: Sequence[CanonicalRow],
-) -> tuple[
-    dict[PriceKey, tuple[int, str, str | None, int]],
-    dict[str, PriceKey],
-]:
+) -> dict[PriceKey, tuple[int, str, str | None, int]]:
     """Map every source price and currency to its amount and interval.
 
     Built across all the products handed in, not just one migration's, so it
     also covers a subscription whose product was staged by an earlier run.
     """
     index: dict[PriceKey, tuple[int, str, str | None, int]] = {}
-    legacy_keys: dict[str, PriceKey] = {}
     for _, _, _, canonical in products:
         interval = canonical.get("recurring_interval")
         interval_count = canonical.get("recurring_interval_count") or 1
@@ -145,8 +141,7 @@ def _price_index(
                 interval,
                 interval_count,
             )
-            legacy_keys.setdefault(price["source_id"], key)
-    return index, legacy_keys
+    return index
 
 
 _BUCKETS = {
@@ -167,7 +162,7 @@ def breakdown(
     Amounts accumulate as plain ints and are wrapped into `Money` once per
     migration, so a large catalog doesn't allocate a frozen copy per row.
     """
-    prices, legacy_price_keys = _price_index(products)
+    prices = _price_index(products)
     buckets: dict[UUID, dict[str, dict[str, int]]] = {
         migration_id: {"on_polar": {}, "to_move": {}, "staying": {}}
         for migration_id in migration_ids
@@ -182,7 +177,6 @@ def breakdown(
         key = subscription_price_key_values(
             canonical.get("price_source_id", ""),
             canonical.get("currency"),
-            legacy_price_keys,
         )
         price = prices.get(key) if key is not None else None
         if price is None:

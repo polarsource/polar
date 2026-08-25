@@ -39,7 +39,6 @@ from .canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
-    normalize_price_source_id,
 )
 from .cards import AmbiguousCopiedCard, link_payment_method
 from .importer import (
@@ -461,9 +460,7 @@ class SubscriptionCutover:
             # Raising would stall the chain, so it stops at this record instead.
             return _UNREADABLE
         if isinstance(staged, CanonicalSubscription):
-            if normalize_price_source_id(
-                staged.price_source_id
-            ) != normalize_price_source_id(source.price_source_id):
+            if staged.price_source_id != source.price_source_id:
                 return _PLAN_CHANGED
             if (
                 source.currency is not None

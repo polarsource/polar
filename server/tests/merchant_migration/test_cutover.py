@@ -275,20 +275,6 @@ class TestRun:
         assert subscription.current_period_end == renewal
         assert subscription.payment_method_id is not None
 
-    async def test_legacy_suffixed_price_matches_explicit_currency(
-        self,
-        mocker: MockerFixture,
-        cutover: RunCutover,
-        pending_record: MerchantMigrationRecord,
-    ) -> None:
-        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
-        pending_record.canonical["price_source_id"] = "price_1:usd"
-        pending_record.canonical.pop("currency", None)
-
-        outcome = await cutover(_source(currency="usd"))
-
-        assert outcome.status == MerchantMigrationCutoverStatus.moved
-
     async def test_finishes_a_paused_polar_subscription_from_a_crashed_cutover(
         self,
         mocker: MockerFixture,

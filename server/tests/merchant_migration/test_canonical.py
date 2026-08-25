@@ -129,27 +129,3 @@ class TestDeserialize:
 
         assert isinstance(result, CanonicalSubscription)
         assert result.currency == "usd"
-
-    def test_legacy_subscription_without_currency(self) -> None:
-        canonical = serialize(
-            CanonicalSubscription(
-                source_id="sub_1",
-                customer_source_id="cus_1",
-                price_source_id="price_1:usd",
-                status=CanonicalSubscriptionStatus.active,
-                collection_method=CanonicalCollectionMethod.charge_automatically,
-                current_period_start=None,
-                current_period_end=None,
-                trialing=False,
-                paused_collection=False,
-                line_item_count=1,
-                quantity=1,
-                payment_method=None,
-            )
-        )
-        canonical.pop("currency")
-
-        result = deserialize(MerchantMigrationRecordType.subscription, canonical)
-
-        assert isinstance(result, CanonicalSubscription)
-        assert result.currency is None

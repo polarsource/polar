@@ -1450,7 +1450,6 @@ class TestImportCatalog:
             await service.import_catalog(session, auth_subject, migration.id)
 
     @pytest.mark.auth
-    @pytest.mark.parametrize("legacy_shape", [False, True], ids=["current", "legacy"])
     async def test_multi_currency_price_imports_every_currency(
         self,
         mocker: MockerFixture,
@@ -1459,17 +1458,8 @@ class TestImportCatalog:
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
-        legacy_shape: bool,
     ) -> None:
         records = _multi_currency_catalog()
-        if legacy_shape:
-            product = records[0]
-            canonical_subscription = records[-1]
-            assert isinstance(product, CanonicalProduct)
-            assert isinstance(canonical_subscription, CanonicalSubscription)
-            product.prices[1].source_id = "price_1:usd"
-            canonical_subscription.price_source_id = "price_1:usd"
-            canonical_subscription.currency = None
         migration = await _staged_migration(
             mocker,
             session,

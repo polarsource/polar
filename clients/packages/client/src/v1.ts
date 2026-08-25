@@ -33541,6 +33541,17 @@ export interface components {
        */
       users: components['schemas']['SlackWorkspaceUser'][]
     }
+    /** SourceAccountAlreadyMigrated */
+    SourceAccountAlreadyMigrated: {
+      /**
+       * Error
+       * @example SourceAccountAlreadyMigrated
+       * @constant
+       */
+      error: 'SourceAccountAlreadyMigrated'
+      /** Detail */
+      detail: string
+    }
     /** SourceAccountNotMigratable */
     SourceAccountNotMigratable: {
       /**
@@ -54361,6 +54372,15 @@ export interface operations {
           'application/json':
             | components['schemas']['NotPermitted']
             | components['schemas']['MerchantMigrationNotEnabled']
+        }
+      }
+      /** @description The Stripe account is already used by another migration. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourceAccountAlreadyMigrated']
         }
       }
       /** @description Validation Error */

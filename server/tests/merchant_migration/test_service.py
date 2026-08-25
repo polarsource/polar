@@ -680,6 +680,7 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
             line_item_count=1,
             quantity=1,
             payment_method=None,
+            currency="usd",
         ),
     ]
 
@@ -1087,6 +1088,7 @@ class TestImportCatalog:
                 line_item_count=1,
                 quantity=1,
                 payment_method=None,
+                currency="usd",
             )
         )
         migration = await _staged_migration(
@@ -1582,6 +1584,7 @@ def _canonical_subscription(
         cancel_at_period_end=False,
         trial_end=None,
         stopped_for_migration=False,
+        currency="usd",
     )
 
 

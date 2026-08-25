@@ -275,7 +275,12 @@ class TestMultipleCurrencies:
             _product("price_usd", 2900, currency="usd"),
             _product("price_eur", 2500, currency="eur"),
             _subscription("sub_1", "price_usd", MerchantMigrationRecordStatus.imported),
-            _subscription("sub_2", "price_eur", MerchantMigrationRecordStatus.imported),
+            _subscription(
+                "sub_2",
+                "price_eur",
+                MerchantMigrationRecordStatus.imported,
+                currency="eur",
+            ),
         ]
 
         result = _breakdown(rows)

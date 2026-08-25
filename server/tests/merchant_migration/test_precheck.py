@@ -126,7 +126,7 @@ def build_subscription(
     quantity: int = 1,
     payment_method: CanonicalPaymentMethod | None = None,
     has_discount: bool = False,
-    currency: str | None = None,
+    currency: str | None = "usd",
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
         source_id=source_id,

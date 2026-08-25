@@ -237,6 +237,7 @@ async def _stage_monthly_subscription(
             line_item_count=1,
             quantity=1,
             payment_method=None,
+            currency="usd",
         ),
     )
     await record_repository.update(

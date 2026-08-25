@@ -411,6 +411,7 @@ async def _catalog_with_customer_extract() -> AsyncIterator[CanonicalRecord]:
         line_item_count=1,
         quantity=1,
         payment_method=None,
+        currency="usd",
     )
 
 

@@ -24370,6 +24370,21 @@ export interface components {
        */
       subtitle: string | null
       /**
+       * Product Name
+       * @description The source product name for a subscription row. Null when the product wasn't in the staged catalog, and for non-subscription rows.
+       */
+      product_name: string | null
+      /**
+       * Customer Email
+       * @description The customer email for a subscription row. Null for non-subscription rows or when the source customer has none.
+       */
+      customer_email: string | null
+      /**
+       * Customer Country
+       * @description The customer billing country for a subscription row. Null when unknown or for non-subscription rows.
+       */
+      customer_country: string | null
+      /**
        * Amount
        * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
        */

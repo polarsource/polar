@@ -2,22 +2,15 @@
 
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ReactNode } from 'react'
 import {
-  entityLabelSingular,
   needsAttention,
   ReviewRow,
+  renewsLabel,
   rowAmount,
 } from './reviewRows'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
-
-// What `subtitle` carries depends on the entity it came from.
-const SUBTITLE_LABELS: Record<ReviewRow['entity'], string> = {
-  subscriptions: 'Stripe status',
-  customers: 'Country',
-  products: 'Billing',
-  prices: 'Price',
-}
 
 export function ReviewRecordModal({
   row,
@@ -27,12 +20,13 @@ export function ReviewRecordModal({
   onClose: () => void
 }) {
   const amount = rowAmount(row)
+  const renews = renewsLabel(row)
 
   return (
     <Box flexDirection="column" height="100%">
       <InlineModalHeader hide={onClose}>
         <Text variant="heading-xs" as="h2">
-          {row.title}
+          {row.customer_email || row.title}
         </Text>
       </InlineModalHeader>
 
@@ -57,12 +51,18 @@ export function ReviewRecordModal({
         )}
 
         <Box as="section" flexDirection="column" rowGap="m">
-          <Field label="Type">
-            <Text>{entityLabelSingular(row.entity)}</Text>
-          </Field>
           <Field label="Import">
             <ReviewStatusIndicator row={row} />
           </Field>
+          {row.product_name ? (
+            <Field label="Product">
+              <Text>{row.product_name}</Text>
+            </Field>
+          ) : row.reason_code === 'subscription_product_not_importable' ? (
+            <Field label="Product">
+              <Text color="muted">Not in Stripe catalog</Text>
+            </Field>
+          ) : null}
           {amount && (
             <Field label="Amount">
               <Text monospace tabularNums>
@@ -71,12 +71,33 @@ export function ReviewRecordModal({
               </Text>
             </Field>
           )}
+          {(row.customer_email || row.title) && (
+            <Field label="Customer">
+              <Text>{row.customer_email || row.title}</Text>
+            </Field>
+          )}
+          <Field label="Country">
+            <Text color={row.customer_country ? 'default' : 'muted'}>
+              {row.customer_country || 'No billing country'}
+            </Text>
+          </Field>
           {row.subtitle && (
-            <Field label={SUBTITLE_LABELS[row.entity]}>
+            <Field label="Stripe status">
               <Text>{row.subtitle}</Text>
             </Field>
           )}
-          {/* Only the failed case says something "Import" doesn't already. */}
+          {row.renews_at && (
+            <Field label="Renews">
+              <Box flexDirection="column" alignItems="end" rowGap="3xs">
+                <FormattedDateTime datetime={row.renews_at} />
+                {renews && (
+                  <Text variant="caption" color="muted">
+                    {renews}
+                  </Text>
+                )}
+              </Box>
+            </Field>
+          )}
           {row.import_status === 'failed' && (
             <Field label="Last run">
               <Text color="danger">Failed</Text>

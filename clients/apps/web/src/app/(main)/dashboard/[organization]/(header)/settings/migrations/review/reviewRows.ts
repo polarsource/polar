@@ -63,3 +63,30 @@ export function rowAmount(row: ReviewRow): RowAmount | null {
     : null
   return { money, interval }
 }
+
+const RELATIVE = new Intl.RelativeTimeFormat('en-US', { numeric: 'auto' })
+const MONTH_DAY = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+})
+const HOUR = 60 * 60 * 1000
+const DAY = 24 * HOUR
+
+/** Near renewals read relatively; further out, as a calendar day. */
+export function renewsLabel(
+  row: ReviewRow,
+  now: number = Date.now(),
+): string | null {
+  if (!row.renews_at) return null
+  const renews = new Date(row.renews_at).getTime()
+  if (Number.isNaN(renews)) return null
+  const delta = renews - now
+  const days = Math.round(delta / DAY)
+  if (Math.abs(days) < 30) {
+    if (Math.abs(delta) < DAY) {
+      return RELATIVE.format(Math.round(delta / HOUR), 'hour')
+    }
+    return RELATIVE.format(days, 'day')
+  }
+  return `on ${MONTH_DAY.format(new Date(row.renews_at))}`
+}

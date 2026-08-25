@@ -1190,7 +1190,10 @@ class MerchantMigrationService:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         staged = await record_repository.list_by_migration(migration.id)
         extra_dependencies: Sequence[MerchantMigrationRecord] = ()
-        if PrecheckEntity.subscriptions in entities:
+        if (
+            PrecheckEntity.subscriptions in entities
+            or PrecheckEntity.customers in entities
+        ):
             extra_dependencies = (
                 await record_repository.list_imported_catalog_dependencies(
                     migration.organization_id
@@ -1215,7 +1218,10 @@ class MerchantMigrationService:
         items: list[MerchantMigrationRecordItem] = []
         for entity_type in entities:
             classified_from = records
-            if entity_type == PrecheckEntity.subscriptions:
+            if entity_type in {
+                PrecheckEntity.customers,
+                PrecheckEntity.subscriptions,
+            }:
                 classified_from = [*extra_canonicals, *records]
             entity_items = classify_records(
                 classified_from,
@@ -1223,6 +1229,17 @@ class MerchantMigrationService:
                 organization.default_presentment_currency,
                 existing_product_names,
             )
+            if entity_type == PrecheckEntity.customers:
+                staged_customer_source_ids = {
+                    record.source_id
+                    for record in staged
+                    if record.type == MerchantMigrationRecordType.customer
+                }
+                entity_items = [
+                    item
+                    for item in entity_items
+                    if item.source_id in staged_customer_source_ids
+                ]
             self._attach_record_ids(
                 entity_items, staged, entity_type, extra_dependencies
             )

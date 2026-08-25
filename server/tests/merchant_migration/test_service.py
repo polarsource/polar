@@ -694,6 +694,18 @@ class TestListRecords:
         )
 
         assert items[0].status == PrecheckRecordStatus.importable
+        customer_items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.customers,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert len(customer_items) == 1
+        assert customer_items[0].source_id == "cus_current"
+        assert customer_items[0].status == PrecheckRecordStatus.skipped
+        assert customer_items[0].reason_code == "duplicate_customer_email"
 
 
 def _importable_catalog() -> list[CanonicalRecord]:

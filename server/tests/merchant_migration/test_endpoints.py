@@ -215,6 +215,27 @@ class TestCreate:
         assert stored is not None
         assert stored.source_credentials["api_key_encrypted"].startswith("v1.")
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_reused_stripe_account_returns_409(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        await build_connected_migration(save_fixture, organization_second)
+        _mock_stripe_adapter(mocker)
+
+        response = await client.post(
+            "/v1/merchant-migrations/", json=_body(organization)
+        )
+
+        assert response.status_code == 409
+        assert "already used by another merchant migration" in response.text
+
 
 @pytest.mark.asyncio
 class TestGet:

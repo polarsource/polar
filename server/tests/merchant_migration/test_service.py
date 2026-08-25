@@ -55,6 +55,7 @@ from polar.merchant_migration.service import (
     CutoverNotStarted,
     InvalidSourceCredentials,
     MissingStripeScopes,
+    SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
@@ -189,6 +190,33 @@ class TestCreate:
         assert credentials["livemode"] is False
         assert credentials["api_key_encrypted"].startswith("v1.")
         assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
+
+    @pytest.mark.auth
+    async def test_rejects_stripe_account_used_by_another_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        existing = await build_connected_migration(
+            save_fixture, organization_second
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id="acct_test"),
+        )
+
+        with pytest.raises(SourceAccountAlreadyMigrated):
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        await assert_no_migrations(session, organization)
+        repository = MerchantMigrationRepository.from_session(session)
+        assert await repository.get_by_id(existing.id) is not None
 
     @pytest.mark.auth
     async def test_missing_scopes_raises_and_persists_nothing(

@@ -19,6 +19,7 @@ from polar.models import (
     PaymentMethod,
     Subscription,
 )
+from polar.models.merchant_migration import MerchantMigrationSourcePlatform
 from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationSelection,
 )
@@ -46,6 +47,23 @@ class MerchantMigrationRepository(
     RepositoryBase[MerchantMigration],
 ):
     model = MerchantMigration
+
+    async def lock_stripe_account(self, stripe_account_id: str) -> None:
+        statement = select(
+            func.pg_advisory_xact_lock(func.hashtextextended(stripe_account_id, 0))
+        )
+        await self.session.execute(statement)
+
+    async def get_by_stripe_account_id(
+        self, stripe_account_id: str
+    ) -> MerchantMigration | None:
+        statement = self.get_base_statement(include_deleted=True).where(
+            MerchantMigration.source_platform
+            == MerchantMigrationSourcePlatform.stripe,
+            MerchantMigration.source_credentials["stripe_user_id"].astext
+            == stripe_account_id,
+        )
+        return await self.get_one_or_none(statement)
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

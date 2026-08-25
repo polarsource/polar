@@ -186,6 +186,14 @@ class SourceVerificationUnavailable(MerchantMigrationError):
         )
 
 
+class SourceAccountAlreadyMigrated(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This Stripe account is already used by another merchant migration.",
+            409,
+        )
+
+
 class CatalogImportNotReady(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
@@ -390,12 +398,20 @@ class MerchantMigrationService:
             source_platform=create_schema.source_platform,
             step=MerchantMigrationStep.source_setup,
         )
+        stripe_account_id = await adapter.get_account_id()
         migration.source_credentials = dict(
             await self._build_stripe_credentials(
-                migration, create_schema.api_key, adapter
+                migration, create_schema.api_key, stripe_account_id
             )
         )
         repository = MerchantMigrationRepository.from_session(session)
+        if stripe_account_id is not None:
+            await repository.lock_stripe_account(stripe_account_id)
+            if (
+                await repository.get_by_stripe_account_id(stripe_account_id)
+                is not None
+            ):
+                raise SourceAccountAlreadyMigrated()
         return await repository.create(migration, flush=True)
 
     async def run_precheck(
@@ -1293,7 +1309,7 @@ class MerchantMigrationService:
         self,
         migration: MerchantMigration,
         api_key: str,
-        adapter: StripeAdapter,
+        stripe_account_id: str | None,
     ) -> StripeSourceCredentials:
         encrypted = await EncryptedString.encrypt(
             api_key,
@@ -1301,7 +1317,7 @@ class MerchantMigrationService:
         )
         return StripeSourceCredentials(
             api_key_encrypted=encrypted.encrypted_value,
-            stripe_user_id=await adapter.get_account_id(),
+            stripe_user_id=stripe_account_id,
             livemode=_is_live_key(api_key),
         )
 

@@ -52,6 +52,7 @@ from .service import (
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
     MissingStripeScopes,
+    SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
@@ -109,6 +110,10 @@ async def list(
             "description": "Not allowed to manage this organization, or "
             "migrations aren't enabled for it.",
             "model": NotPermitted.schema() | MerchantMigrationNotEnabled.schema(),
+        },
+        409: {
+            "description": "The Stripe account is already used by another migration.",
+            "model": SourceAccountAlreadyMigrated.schema(),
         },
         502: {
             "description": "Couldn't reach Stripe to validate the key.",

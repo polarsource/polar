@@ -1,16 +1,12 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { Status, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import {
-  ownerLabel,
-  STEP_COPY,
-  StepInputField,
-  waitingLabel,
-} from './panTransferCopy'
-import { OpsUpdate, PanTransferStepBody } from './PanTransferStepBody'
+import { OpsUpdate } from './OpsUpdate'
+import { STEP_COPY, StepInputField } from './panTransferCopy'
+import { PanTransferStepBody } from './PanTransferStepBody'
 import { STATE_LABELS, StepMarker, StepState } from '../stepMarker'
 
 interface Props {
@@ -18,6 +14,7 @@ interface Props {
   current: boolean
   destinationAccountId: string | null
   migrationId: string
+  sourceStripeAccountId?: string
 }
 
 export function PanTransferStepItem({
@@ -25,6 +22,7 @@ export function PanTransferStepItem({
   current,
   destinationAccountId,
   migrationId,
+  sourceStripeAccountId,
 }: Props) {
   const copy = STEP_COPY[step.key]
   // Keep the row on an unknown key so the count and order still line up.
@@ -45,27 +43,9 @@ export function PanTransferStepItem({
       </Box>
 
       <Box flex={1} minWidth={0} flexDirection="column" rowGap="m">
-        <Box alignItems="center" columnGap="s" flexWrap="wrap">
-          <Text
-            variant={current ? 'label' : 'caption'}
-            color={current ? 'default' : 'muted'}
-          >
-            {title}
-          </Text>
-          {current ? (
-            <Status
-              status={waitingLabel(step.owner)}
-              color={step.owner === 'merchant' ? 'blue' : 'gray'}
-              size="small"
-            />
-          ) : (
-            !done && (
-              <Text variant="caption" color="muted">
-                {ownerLabel(step.owner)}
-              </Text>
-            )
-          )}
-        </Box>
+        <Text variant="caption" color={current ? 'default' : 'muted'}>
+          {title}
+        </Text>
 
         {done && <CompletedSummary step={step} fields={copy?.inputs ?? []} />}
 
@@ -80,6 +60,7 @@ export function PanTransferStepItem({
               copy={copy}
               destinationAccountId={destinationAccountId}
               migrationId={migrationId}
+              sourceStripeAccountId={sourceStripeAccountId}
             />
           ) : (
             <Text variant="caption" color="muted">

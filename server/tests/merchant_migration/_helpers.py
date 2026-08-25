@@ -17,6 +17,7 @@ from polar.merchant_migration.canonical import (
 from polar.merchant_migration.pan_transfer import (
     PanStepActor,
     PanStepOwner,
+    PanStepTemplate,
     PanTransferMethod,
     PanTransferStep,
 )
@@ -103,6 +104,13 @@ _STEP_ACTORS = {
 }
 
 
+def pan_step_required_inputs(template: PanStepTemplate) -> dict[str, str]:
+    return {
+        key: "migreq_test" if key == "stripe_migration_request_id" else "value"
+        for key in template.required_inputs
+    }
+
+
 def pan_steps_until(
     method: PanTransferMethod, target_key: str | None
 ) -> list[PanTransferStep]:
@@ -115,8 +123,13 @@ def pan_steps_until(
         current = pan_transfer.current(steps)
         if current is None or current.key == target_key:
             return steps
+        template = pan_transfer._template(method, current.key)
         steps = pan_transfer.complete(
-            method, steps, current.key, actor=_STEP_ACTORS[current.owner], inputs={}
+            method,
+            steps,
+            current.key,
+            actor=_STEP_ACTORS[current.owner],
+            inputs=pan_step_required_inputs(template),
         )
 
 

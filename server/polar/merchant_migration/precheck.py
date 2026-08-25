@@ -609,10 +609,18 @@ class PriceDisplay:
     amount: int | None = None
     currency: str | None = None
     recurring_interval: str | None = None
+    recurring_interval_count: int | None = None
 
     @classmethod
     def of(cls, product: CanonicalProduct, price: CanonicalPrice) -> "PriceDisplay":
-        return cls(price.amount, price.currency, product.recurring_interval)
+        return cls(
+            price.amount,
+            price.currency,
+            product.recurring_interval,
+            product.recurring_interval_count
+            if product.recurring_interval is not None
+            else None,
+        )
 
 
 def subscription_import_reason(
@@ -652,9 +660,13 @@ def _item(
     note: Reason | None = None,
     price: PriceDisplay | None = None,
     product_name: str | None = None,
+    product_source_id: str | None = None,
     customer_email: str | None = None,
+    customer_name: str | None = None,
+    customer_source_id: str | None = None,
     customer_country: str | None = None,
     renews_at: datetime | None = None,
+    automatic_tax: bool | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -670,11 +682,15 @@ def _item(
         title=title,
         subtitle=subtitle,
         product_name=product_name,
+        product_source_id=product_source_id,
         customer_email=customer_email,
+        customer_name=customer_name,
+        customer_source_id=customer_source_id,
         customer_country=customer_country,
         amount=price.amount,
         currency=price.currency,
         recurring_interval=price.recurring_interval,
+        recurring_interval_count=price.recurring_interval_count,
         status=(
             PrecheckRecordStatus.skipped if skip else PrecheckRecordStatus.importable
         ),
@@ -684,6 +700,7 @@ def _item(
         cutover_status=None,
         cutover_error=None,
         renews_at=renews_at,
+        automatic_tax=automatic_tax,
         has_payment_method=None,
         dependencies_imported=None,
     )
@@ -772,6 +789,8 @@ def _product_items(
                 skip=plan.skip,
                 note=note,
                 price=_representative_price(product, plan.importable_prices),
+                product_name=product.name,
+                product_source_id=product.product_source_id,
             )
         )
     return items
@@ -805,6 +824,8 @@ def _price_items(
                     subtitle,
                     skip=skip,
                     price=PriceDisplay.of(product, price),
+                    product_name=product.name,
+                    product_source_id=product.product_source_id,
                 )
             )
     return items
@@ -831,6 +852,10 @@ def _customer_items(
                 customer.country or "No billing country",
                 skip=plans[customer.source_id],
                 note=note,
+                customer_email=customer.email or None,
+                customer_name=customer.name,
+                customer_source_id=customer.source_id,
+                customer_country=customer.country,
             )
         )
     return items
@@ -881,9 +906,15 @@ def _subscription_items(
                 note=note,
                 price=price_by_key.get(key) if key is not None else None,
                 product_name=product.name if product is not None else None,
+                product_source_id=(
+                    product.product_source_id if product is not None else None
+                ),
                 customer_email=customer.email if customer is not None else None,
+                customer_name=customer.name if customer is not None else None,
+                customer_source_id=subscription.customer_source_id,
                 customer_country=customer.country if customer is not None else None,
                 renews_at=subscription.current_period_end,
+                automatic_tax=subscription.automatic_tax,
             )
         )
     return items
@@ -1114,9 +1145,7 @@ def plan_subscription_imports(
     customer it depends on won't import."""
     product_plans = plan_product_imports(products, default_currency)
     importable_prices = {
-        price
-        for plan in product_plans.values()
-        for price in plan.importable_prices
+        price for plan in product_plans.values() for price in plan.importable_prices
     }
     product_by_price = _product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)

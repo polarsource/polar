@@ -2,8 +2,8 @@
 
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ReactNode } from 'react'
+import { Field, FieldSection, FieldValue } from '../recordFields'
+import { renewalDate } from '../recordFormat'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
 import { needsAttention, SwitchRow } from './switchRows'
 
@@ -14,6 +14,8 @@ export function SwitchRecordModal({
   row: SwitchRow
   onClose: () => void
 }) {
+  const renewal = renewalDate(row)
+
   return (
     <Box flexDirection="column" height="100%">
       <InlineModalHeader hide={onClose}>
@@ -43,44 +45,31 @@ export function SwitchRecordModal({
           </Box>
         )}
 
-        <Box as="section" flexDirection="column" rowGap="m">
-          <Field label="Status">
+        <FieldSection title="Subscription">
+          <Field label="Switch">
             <SwitchStatusIndicator row={row} />
           </Field>
           {row.subtitle && (
-            <Field label="Stripe status">
-              <Text>{row.subtitle}</Text>
+            <Field label="Status">
+              <FieldValue>{row.subtitle}</FieldValue>
             </Field>
           )}
           <Field label="Payment method">
-            <Text color={row.has_payment_method ? 'default' : 'danger'}>
+            <FieldValue muted={!row.has_payment_method}>
               {row.has_payment_method ? 'Ready to charge' : 'None yet'}
-            </Text>
+            </FieldValue>
           </Field>
-          {row.renews_at && (
-            <Field label="Renews on Stripe">
-              <FormattedDateTime datetime={row.renews_at} />
+          {renewal && (
+            <Field label="Renewal on Stripe">
+              <FieldValue>{renewal}</FieldValue>
             </Field>
           )}
-          <Field label="Stripe ID">
-            <Text monospace variant="caption" color="muted">
+          <Field label="Stripe subscription ID">
+            <FieldValue monospace muted>
               {row.source_id}
-            </Text>
+            </FieldValue>
           </Field>
-        </Box>
-      </Box>
-    </Box>
-  )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <Box alignItems="baseline" columnGap="l" justifyContent="between">
-      <Text variant="caption" color="muted">
-        {label}
-      </Text>
-      <Box minWidth={0} justifyContent="end">
-        {children}
+        </FieldSection>
       </Box>
     </Box>
   )

@@ -97,20 +97,38 @@ class MerchantMigrationRecordItem(Schema):
     )
     product_name: str | None = Field(
         description=(
-            "The source product name for a subscription row. Null when the product "
-            "wasn't in the staged catalog, and for non-subscription rows."
+            "The source product name. Null for customer rows, and for a "
+            "subscription whose product wasn't in the staged catalog."
+        ),
+    )
+    product_source_id: str | None = Field(
+        description=(
+            "The source product identifier (e.g. Stripe `prod_…`). Null for "
+            "customer rows, and for a subscription whose product wasn't staged."
         ),
     )
     customer_email: str | None = Field(
         description=(
-            "The customer email for a subscription row. Null for non-subscription "
-            "rows or when the source customer has none."
+            "The customer email. Null for product and price rows, or when the "
+            "source customer has none."
+        ),
+    )
+    customer_name: str | None = Field(
+        description=(
+            "The customer name on the source. Null for product and price rows, or "
+            "when the source customer has none."
+        ),
+    )
+    customer_source_id: str | None = Field(
+        description=(
+            "The source customer identifier (e.g. Stripe `cus_…`). Null for "
+            "product and price rows."
         ),
     )
     customer_country: str | None = Field(
         description=(
-            "The customer billing country for a subscription row. Null when unknown "
-            "or for non-subscription rows."
+            "The customer billing country. Null for product and price rows, or "
+            "when the source customer has none."
         ),
     )
     amount: int | None = Field(
@@ -122,6 +140,18 @@ class MerchantMigrationRecordItem(Schema):
     currency: str | None = Field(description="ISO currency for `amount`.")
     recurring_interval: str | None = Field(
         description="Billing interval for `amount` (e.g. `month`, `year`).",
+    )
+    recurring_interval_count: int | None = Field(
+        description=(
+            "How many `recurring_interval` units each billing period spans, so a "
+            "quarterly price reads as 3 months. Null for rows without an interval."
+        ),
+    )
+    automatic_tax: bool | None = Field(
+        description=(
+            "Whether the source computed tax on this subscription. Null for "
+            "non-subscription rows, or when the source doesn't say."
+        ),
     )
     status: PrecheckRecordStatus = Field(
         description="Whether this record will be imported or stays on the source."

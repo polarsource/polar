@@ -739,6 +739,8 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "missing_default_currency_price"
+
+    def test_product_already_in_polar_is_annotated_not_skipped(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(product_source_id="prod_1", name="Pro")
         ]
@@ -975,6 +977,67 @@ class TestClassifyCascade:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].currency == "usd"
         assert items[0].amount == 1000
+
+    def test_subscription_carries_its_product_and_customer_detail(self) -> None:
+        # What the review panel shows about a row, so it can describe the
+        # subscription without a second round of lookups.
+        subscription = replace(build_subscription(), automatic_tax=True)
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=3,
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            subscription,
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].product_name == "Pro"
+        assert items[0].product_source_id == "prod_1"
+        assert items[0].recurring_interval == "month"
+        assert items[0].recurring_interval_count == 3
+        assert items[0].customer_name == "A"
+        assert items[0].customer_email == "a@example.com"
+        assert items[0].customer_source_id == "cus_1"
+        assert items[0].customer_country == "US"
+        assert items[0].automatic_tax is True
+
+    def test_subscription_keeps_its_customer_id_when_the_customer_is_missing(
+        self,
+    ) -> None:
+        # The source customer wasn't staged, but the id is the merchant's handle
+        # on it in Stripe, so the panel can still point at it.
+        records: list[CanonicalRecord] = [build_product(), build_subscription()]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].customer_source_id == "cus_1"
+        assert items[0].customer_name is None
+
+    def test_customer_row_carries_its_own_detail(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_customer(source_id="cus_1", email="a@example.com", country="FR")
+        ]
+
+        items = classify_records(records, PrecheckEntity.customers, "usd")
+
+        assert items[0].customer_source_id == "cus_1"
+        assert items[0].customer_name == "A"
+        assert items[0].customer_email == "a@example.com"
+        assert items[0].customer_country == "FR"
+
+    def test_product_row_carries_its_source_id(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(product_source_id="prod_1", name="Pro")
+        ]
+
+        items = classify_records(records, PrecheckEntity.products, "usd")
+
+        assert items[0].product_name == "Pro"
+        assert items[0].product_source_id == "prod_1"
 
 
 class TestPlanProductImports:

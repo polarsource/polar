@@ -11,6 +11,7 @@ something, `info` when there is nothing to fix.
 from collections import Counter
 from collections.abc import AsyncIterable, Iterable, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.currency import (
@@ -105,9 +106,9 @@ _DUPLICATE_CUSTOMER_EMAIL_REASON = (
 _MISSING_EMAIL_REASON = (
     "The source customer has no email, so it can't be imported into Polar."
 )
-_SUBSCRIPTION_PRODUCT_REASON = (
-    "The product or price for this subscription won't be imported, so it stays "
-    "on the source."
+_SUBSCRIPTION_PRODUCT_MISSING_REASON = (
+    "This subscription's price wasn't in the catalog Polar read from Stripe. "
+    "That usually means the price or its product is archived. It stays on the source."
 )
 _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."
@@ -650,6 +651,10 @@ def _item(
     skip: Reason | None,
     note: Reason | None = None,
     price: PriceDisplay | None = None,
+    product_name: str | None = None,
+    customer_email: str | None = None,
+    customer_country: str | None = None,
+    renews_at: datetime | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -664,6 +669,9 @@ def _item(
         source_id=source_id,
         title=title,
         subtitle=subtitle,
+        product_name=product_name,
+        customer_email=customer_email,
+        customer_country=customer_country,
         amount=price.amount,
         currency=price.currency,
         recurring_interval=price.recurring_interval,
@@ -675,7 +683,7 @@ def _item(
         reason_level=reason.level if reason else None,
         cutover_status=None,
         cutover_error=None,
-        renews_at=None,
+        renews_at=renews_at,
         has_payment_method=None,
         dependencies_imported=None,
     )
@@ -838,7 +846,9 @@ def _subscription_items(
     plans = plan_subscription_imports(
         subscriptions, products, customers, default_currency
     )
-    email_by_source = {c.source_id: c.email for c in customers if c.email}
+    customer_by_source = {c.source_id: c for c in customers}
+    product_by_price = _product_by_price_key(products)
+    product_by_price_id = _product_by_price_source_id(products)
     price_by_key = _price_display_by_key(products)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
@@ -851,8 +861,14 @@ def _subscription_items(
             if subscription.trialing
             else None,
         )
-        title = email_by_source.get(
-            subscription.customer_source_id, subscription.customer_source_id
+        customer = customer_by_source.get(subscription.customer_source_id)
+        product = _product_for_subscription(
+            subscription, product_by_price, product_by_price_id
+        )
+        title = (
+            (customer.email if customer and customer.email else None)
+            or (customer.name if customer and customer.name else None)
+            or subscription.customer_source_id
         )
         key = subscription_price_key(subscription)
         items.append(
@@ -864,9 +880,84 @@ def _subscription_items(
                 skip=plans[subscription.source_id],
                 note=note,
                 price=price_by_key.get(key) if key is not None else None,
+                product_name=product.name if product is not None else None,
+                customer_email=customer.email if customer is not None else None,
+                customer_country=customer.country if customer is not None else None,
+                renews_at=subscription.current_period_end,
             )
         )
     return items
+
+
+def _product_by_price_key(
+    products: Sequence[CanonicalProduct],
+) -> dict[PriceKey, CanonicalProduct]:
+    return {
+        canonical_price_key(price): product
+        for product in products
+        for price in product.prices
+    }
+
+
+def _product_by_price_source_id(
+    products: Sequence[CanonicalProduct],
+) -> dict[str, CanonicalProduct]:
+    return {
+        price.source_id: product for product in products for price in product.prices
+    }
+
+
+def _product_for_subscription(
+    subscription: CanonicalSubscription,
+    product_by_price: dict[PriceKey, CanonicalProduct],
+    product_by_price_id: dict[str, CanonicalProduct],
+) -> CanonicalProduct | None:
+    key = subscription_price_key(subscription)
+    if key is not None and key in product_by_price:
+        return product_by_price[key]
+    # Currency option rows share a price id across currencies; fall back so a
+    # subscription whose exact (price, currency) pair wasn't staged still finds
+    # its product for the skip reason.
+    return product_by_price_id.get(subscription.price_source_id)
+
+
+def _subscription_product_skip_reason(
+    subscription: CanonicalSubscription,
+    products: Sequence[CanonicalProduct],
+    product_plans: dict[str, ProductImportPlan],
+    product_by_price: dict[PriceKey, CanonicalProduct],
+    product_by_price_id: dict[str, CanonicalProduct],
+) -> Reason:
+    """Why this subscription's product/price can't come across.
+
+    Prefer the product or price's own skip reason so the review UI names the
+    real constraint. When the price was never staged (typically archived on
+    Stripe), say that explicitly instead of a vague dependency note.
+    """
+    product = _product_for_subscription(
+        subscription, product_by_price, product_by_price_id
+    )
+    if product is None:
+        return Reason(
+            "subscription_product_not_importable",
+            _SUBSCRIPTION_PRODUCT_MISSING_REASON,
+        )
+    plan = product_plans[product.source_id]
+    if plan.skip is not None:
+        return plan.skip
+    key = subscription_price_key(subscription)
+    for price in product.prices:
+        if key is not None and canonical_price_key(price) == key:
+            price_skip = _drop_reason(
+                precheck_engine._check_price(product, price), PRICE_DROP_CODES
+            )
+            if price_skip is not None:
+                return price_skip
+            break
+    return Reason(
+        "subscription_product_not_importable",
+        _SUBSCRIPTION_PRODUCT_MISSING_REASON,
+    )
 
 
 @dataclass(frozen=True)
@@ -1021,16 +1112,15 @@ def plan_subscription_imports(
     importable. Mirrors the review drawer's per-subscription classification: a
     subscription can't import if its own checks fail or the product/price or
     customer it depends on won't import."""
+    product_plans = plan_product_imports(products, default_currency)
     importable_prices = {
         price
-        for plan in plan_product_imports(products, default_currency).values()
+        for plan in product_plans.values()
         for price in plan.importable_prices
     }
-    importable_customers = {
-        source_id
-        for source_id, skip in plan_customer_imports(customers).items()
-        if skip is None
-    }
+    product_by_price = _product_by_price_key(products)
+    product_by_price_id = _product_by_price_source_id(products)
+    customer_plans = plan_customer_imports(customers)
     plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
         skip = subscription_import_reason(subscription)
@@ -1038,15 +1128,22 @@ def plan_subscription_imports(
             skip is None
             and subscription_price_key(subscription) not in importable_prices
         ):
-            skip = Reason(
-                "subscription_product_not_importable", _SUBSCRIPTION_PRODUCT_REASON
+            skip = _subscription_product_skip_reason(
+                subscription,
+                products,
+                product_plans,
+                product_by_price,
+                product_by_price_id,
             )
-        elif (
-            skip is None and subscription.customer_source_id not in importable_customers
-        ):
-            skip = Reason(
-                "subscription_customer_not_importable", _SUBSCRIPTION_CUSTOMER_REASON
-            )
+        elif skip is None:
+            customer_skip = customer_plans.get(subscription.customer_source_id)
+            if customer_skip is not None:
+                skip = customer_skip
+            elif subscription.customer_source_id not in customer_plans:
+                skip = Reason(
+                    "subscription_customer_not_importable",
+                    _SUBSCRIPTION_CUSTOMER_REASON,
+                )
         plans[subscription.source_id] = skip
     return plans
 

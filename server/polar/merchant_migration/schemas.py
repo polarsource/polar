@@ -95,6 +95,24 @@ class MerchantMigrationRecordItem(Schema):
     subtitle: str | None = Field(
         description="Secondary detail (lifecycle status, country)."
     )
+    product_name: str | None = Field(
+        description=(
+            "The source product name for a subscription row. Null when the product "
+            "wasn't in the staged catalog, and for non-subscription rows."
+        ),
+    )
+    customer_email: str | None = Field(
+        description=(
+            "The customer email for a subscription row. Null for non-subscription "
+            "rows or when the source customer has none."
+        ),
+    )
+    customer_country: str | None = Field(
+        description=(
+            "The customer billing country for a subscription row. Null when unknown "
+            "or for non-subscription rows."
+        ),
+    )
     amount: int | None = Field(
         description=(
             "Recurring price in the currency's smallest unit (cents for USD), for "

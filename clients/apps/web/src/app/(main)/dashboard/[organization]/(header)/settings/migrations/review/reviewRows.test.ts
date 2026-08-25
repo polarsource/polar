@@ -3,6 +3,7 @@ import {
   isImported,
   isSelectable,
   needsAttention,
+  renewsLabel,
   type ReviewRow,
 } from './reviewRows'
 
@@ -12,6 +13,9 @@ const baseRow = {
   source_id: 'sub_1',
   title: 'Subscription',
   subtitle: null,
+  product_name: null,
+  customer_email: null,
+  customer_country: null,
   amount: null,
   currency: null,
   recurring_interval: null,
@@ -19,6 +23,7 @@ const baseRow = {
   reason_code: null,
   reason_level: null,
   dependencies_imported: null,
+  renews_at: null,
 }
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {
@@ -135,5 +140,31 @@ describe('needsAttention', () => {
     expect(
       needsAttention(row({ import_status: 'pending', reason_level: 'info' })),
     ).toBe(false)
+  })
+})
+
+describe('renewsLabel', () => {
+  const now = Date.parse('2026-01-01T00:00:00Z')
+
+  it('is null without a renewal date', () => {
+    expect(renewsLabel(row({ renews_at: null }), now)).toBeNull()
+  })
+
+  it('reads in days when the renewal is within 30 days', () => {
+    expect(renewsLabel(row({ renews_at: '2026-01-13T00:00:00Z' }), now)).toBe(
+      'in 12 days',
+    )
+  })
+
+  it('reads in hours when the renewal is under a day away', () => {
+    expect(renewsLabel(row({ renews_at: '2026-01-01T03:00:00Z' }), now)).toBe(
+      'in 3 hours',
+    )
+  })
+
+  it('reads as a calendar day when the renewal is 30+ days out', () => {
+    expect(renewsLabel(row({ renews_at: '2026-03-15T00:00:00Z' }), now)).toBe(
+      'on Mar 15',
+    )
   })
 })

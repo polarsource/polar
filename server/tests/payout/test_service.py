@@ -18,6 +18,7 @@ from polar.locker import Locker
 from polar.models import Account, Organization, Payout, Transaction, User
 from polar.models.organization import OrganizationStatus, PayoutAccountNotReady
 from polar.models.payout import PayoutStatus
+from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.payout.repository import PayoutRepository
 from polar.payout.schemas import PayoutGenerateInvoice
@@ -30,6 +31,8 @@ from polar.payout.service import (
     PayoutHeld,
     PayoutIntervalLimitReached,
     PayoutNotCancelable,
+    PayoutNotManual,
+    PayoutNotPending,
     PayoutNotSucceeded,
 )
 from polar.payout.service import payout as payout_service
@@ -698,6 +701,86 @@ class TestTriggerStripePayout:
 
         stripe_service_mock.retrieve_balance.assert_not_called()
         stripe_service_mock.create_payout.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestMarkManualAsPaid:
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            account_amount=900,
+            account_currency="eur",
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+
+        attempt = await payout_service.mark_manual_as_paid(session, payout)
+
+        assert attempt.payout == payout
+        assert attempt.processor == PayoutAccountType.manual
+        assert attempt.status == PayoutAttemptStatus.succeeded
+        assert attempt.amount == 900
+        assert attempt.currency == "eur"
+        assert attempt.paid_at is not None
+
+        await session.refresh(payout, attribute_names=["status"])
+        assert payout.status == PayoutStatus.succeeded
+        assert payout.paid_at == attempt.paid_at
+
+    async def test_stripe_payout_raises(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+
+        with pytest.raises(PayoutNotManual):
+            await payout_service.mark_manual_as_paid(session, payout)
+
+    async def test_succeeded_payout_raises(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.succeeded,
+        )
+
+        with pytest.raises(PayoutNotPending):
+            await payout_service.mark_manual_as_paid(session, payout)
 
 
 @pytest.mark.asyncio

@@ -23,7 +23,7 @@ from polar.models import (
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.payout.repository import PayoutRepository
-from polar.payout.service import NoSyncableAttempt
+from polar.payout.service import NoSyncableAttempt, PayoutNotManual, PayoutNotPending
 from polar.payout.service import payout as payout_service
 from polar.payout.sorting import ListSorting, PayoutSortProperty
 from polar.postgres import AsyncSession, get_db_session
@@ -364,6 +364,18 @@ async def get(
 
                     with tag.div(classes="flex justify-end gap-2"):
                         if (
+                            payout.processor == PayoutAccountType.manual
+                            and payout.status == PayoutStatus.pending
+                        ):
+                            with tag.button(
+                                classes="btn btn-success",
+                                hx_get=str(
+                                    request.url_for("payouts:mark_paid", id=payout.id)
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Mark as Paid")
+                        if (
                             payout.latest_attempt is not None
                             and payout.latest_attempt.processor_id is not None
                         ):
@@ -533,6 +545,57 @@ async def retry(
                         variant="primary",
                     ):
                         text("Retry")
+
+
+@router.api_route("/{id}/mark-paid", name="payouts:mark_paid", methods=["GET", "POST"])
+async def mark_paid(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    repository = PayoutRepository.from_session(session)
+    if request.method == "POST":
+        payout = await repository.get_by_id(id, for_update=True)
+    else:
+        payout = await repository.get_by_id(id)
+
+    if payout is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        await payout_service.mark_manual_as_paid(session, payout)
+        await add_toast(
+            request, f"Payout {payout.id} marked as paid", variant="success"
+        )
+
+        with tag.div(hx_redirect=str(request.url_for("payouts:get", id=payout.id))):
+            pass
+        return
+
+    if payout.processor != PayoutAccountType.manual:
+        raise PayoutNotManual(payout)
+    if payout.status != PayoutStatus.pending:
+        raise PayoutNotPending(payout)
+
+    with modal(f"Mark Payout {payout.id} as Paid", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(f"Are you sure payout {payout.id} has been paid?")
+
+            with tag.p():
+                text("This will create a successful manual payout attempt.")
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Go back")
+                with button(
+                    type="button",
+                    variant="primary",
+                    hx_post=str(request.url_for("payouts:mark_paid", id=payout.id)),
+                    hx_target="#modal",
+                ):
+                    text("Mark as Paid")
 
 
 @router.api_route("/{id}/cancel", name="payouts:cancel", methods=["GET", "POST"])

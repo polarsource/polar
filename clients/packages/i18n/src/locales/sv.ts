@@ -44,6 +44,7 @@ export default {
       payWhatYouWant: 'Betala vad du vill',
       total: 'Totalt',
       additionalMeteredUsage: 'Ytterligare mätbaserad användning',
+      dueToday: 'Att betala idag',
       discount: {
         until: 'T.o.m. {date}',
       },

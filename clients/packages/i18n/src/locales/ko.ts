@@ -44,6 +44,7 @@ export default {
       payWhatYouWant: '원하는 금액 지불',
       total: '합계',
       additionalMeteredUsage: '추가 종량제 사용량',
+      dueToday: '오늘 결제 금액',
       discount: {
         until: '{date}까지',
       },

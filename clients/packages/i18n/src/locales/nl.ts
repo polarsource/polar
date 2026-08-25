@@ -44,6 +44,7 @@ export default {
       payWhatYouWant: 'Betaal wat je wilt',
       total: 'Totaal',
       additionalMeteredUsage: 'Extra verbruikskosten',
+      dueToday: 'Vandaag verschuldigd',
       discount: {
         until: 'Tot {date}',
       },

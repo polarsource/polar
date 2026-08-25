@@ -44,6 +44,7 @@ export default {
       payWhatYouWant: 'Zahle, was du möchtest',
       total: 'Gesamtbetrag',
       additionalMeteredUsage: 'Zusätzliche Nutzung',
+      dueToday: 'Heute fällig',
       discount: {
         until: 'Bis {date}',
       },

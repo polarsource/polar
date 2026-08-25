@@ -44,6 +44,7 @@ export default {
       payWhatYouWant: 'Választható ár',
       total: 'Végösszeg',
       additionalMeteredUsage: 'További mért használat',
+      dueToday: 'Ma fizetendő',
       discount: {
         until: '{date}-ig',
       },

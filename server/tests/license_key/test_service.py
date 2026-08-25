@@ -1,5 +1,6 @@
 import asyncio
 from typing import cast
+from unittest.mock import call
 from uuid import UUID
 
 import pytest
@@ -285,9 +286,10 @@ class TestUpdate:
         )
 
         assert license_key.status == status
-        enqueue_job_mock.assert_called_once_with(
-            "license_key.sync_benefit_grant", license_key_id=license_key.id
-        )
+        assert enqueue_job_mock.call_args_list == [
+            call("license_key.sync_benefit_grant", license_key_id=license_key.id),
+            call("benefit.update", benefit_grant_id=grant.id),
+        ]
 
     async def test_revoked_status_enqueues_sync(
         self,
@@ -300,7 +302,7 @@ class TestUpdate:
         customer: Customer,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
-        license_key, _ = await _license_key_and_grant(
+        license_key, grant = await _license_key_and_grant(
             session, redis, save_fixture, customer, organization, product
         )
 
@@ -311,11 +313,12 @@ class TestUpdate:
         )
 
         assert license_key.status == LicenseKeyStatus.revoked
-        enqueue_job_mock.assert_called_once_with(
-            "license_key.sync_benefit_grant", license_key_id=license_key.id
-        )
+        assert enqueue_job_mock.call_args_list == [
+            call("license_key.sync_benefit_grant", license_key_id=license_key.id),
+            call("benefit.update", benefit_grant_id=grant.id),
+        ]
 
-    async def test_status_already_matching_grant_does_not_enqueue(
+    async def test_status_already_matching_grant_skips_sync(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -326,7 +329,7 @@ class TestUpdate:
         customer: Customer,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
-        license_key, _ = await _license_key_and_grant(
+        license_key, grant = await _license_key_and_grant(
             session, redis, save_fixture, customer, organization, product
         )
 
@@ -337,9 +340,11 @@ class TestUpdate:
         )
 
         assert license_key.status == LicenseKeyStatus.disabled
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.update", benefit_grant_id=grant.id
+        )
 
-    async def test_update_without_status_does_not_enqueue(
+    async def test_update_without_status_enqueues_benefit_update(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -350,7 +355,7 @@ class TestUpdate:
         customer: Customer,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
-        license_key, _ = await _license_key_and_grant(
+        license_key, grant = await _license_key_and_grant(
             session, redis, save_fixture, customer, organization, product
         )
 
@@ -361,13 +366,16 @@ class TestUpdate:
         )
 
         assert license_key.limit_activations == 5
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.update", benefit_grant_id=grant.id
+        )
 
 
 @pytest.mark.asyncio
 class TestRotate:
     async def test_rotates_key_and_updates_grant_display_key(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
@@ -375,6 +383,7 @@ class TestRotate:
         product: Product,
         customer: Customer,
     ) -> None:
+        enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
         license_key, grant = await _license_key_and_grant(
             session, redis, save_fixture, customer, organization, product
         )
@@ -406,6 +415,10 @@ class TestRotate:
         properties = cast(BenefitGrantLicenseKeysProperties, grant.properties)
         assert properties["display_key"] == rotated.display_key
         assert properties["license_key_id"] == str(rotated.id)
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.update", benefit_grant_id=grant.id
+        )
 
     async def test_revoked_raises_bad_request(
         self,

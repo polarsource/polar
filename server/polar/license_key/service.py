@@ -18,6 +18,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
+    BenefitGrant,
     LicenseKey,
     LicenseKeyActivation,
     Organization,
@@ -181,6 +182,12 @@ class LicenseKeyService:
 
         session.add(license_key)
         await session.flush()
+
+        if update_dict:
+            grant = await self._get_grant(session, license_key)
+            if grant is not None:
+                enqueue_job("benefit.update", benefit_grant_id=grant.id)
+
         return license_key
 
     async def rotate(
@@ -199,13 +206,7 @@ class LicenseKeyService:
         prefix = cast(BenefitLicenseKeysProperties, license_key.benefit.properties).get(
             "prefix"
         )
-        grant_repository = BenefitGrantRepository.from_session(session)
-        grant = await grant_repository.get_by_property_and_organization(
-            license_key.organization_id,
-            "license_key_id",
-            str(license_key.id),
-            benefit_id=license_key.benefit_id,
-        )
+        grant = await self._get_grant(session, license_key)
 
         old_key = license_key.key
         license_key.key = LicenseKeyCreate.generate_key(prefix=prefix)
@@ -218,6 +219,9 @@ class LicenseKeyService:
             session.add(grant)
         await session.flush()
 
+        if grant is not None:
+            enqueue_job("benefit.update", benefit_grant_id=grant.id)
+
         log.info(
             "license_key.rotate",
             license_key_id=license_key.id,
@@ -228,19 +232,24 @@ class LicenseKeyService:
         )
         return license_key
 
+    async def _get_grant(
+        self, session: AsyncSession, license_key: LicenseKey
+    ) -> BenefitGrant | None:
+        grant_repository = BenefitGrantRepository.from_session(session)
+        return await grant_repository.get_by_property_and_organization(
+            license_key.organization_id,
+            "license_key_id",
+            str(license_key.id),
+            benefit_id=license_key.benefit_id,
+        )
+
     async def _enqueue_grant_lifecycle(
         self,
         session: AsyncSession,
         license_key: LicenseKey,
         status: LicenseKeyStatus,
     ) -> None:
-        grant_repository = BenefitGrantRepository.from_session(session)
-        grant = await grant_repository.get_by_property_and_organization(
-            license_key.organization_id,
-            "license_key_id",
-            str(license_key.id),
-            benefit_id=license_key.benefit_id,
-        )
+        grant = await self._get_grant(session, license_key)
         if grant is None:
             return
 

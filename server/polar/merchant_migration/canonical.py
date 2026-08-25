@@ -130,6 +130,10 @@ class CanonicalSubscription:
     # trusted for it: a 31st anchor reads as Feb 28 in a February period.
     anchor_day: int | None = None
     currency: str | None = None
+    # Whether the source computed tax on this subscription. None when the source
+    # doesn't say. Polar always computes its own, so a subscription that billed
+    # tax-free on the source will start being taxed after the switch.
+    automatic_tax: bool | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -242,6 +246,7 @@ def deserialize(
                 stopped_for_migration=data.get("stopped_for_migration", False),
                 anchor_day=data.get("anchor_day"),
                 currency=data.get("currency"),
+                automatic_tax=data.get("automatic_tax"),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

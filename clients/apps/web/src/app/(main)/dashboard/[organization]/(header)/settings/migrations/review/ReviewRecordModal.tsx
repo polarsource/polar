@@ -2,15 +2,14 @@
 
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ReactNode } from 'react'
-import {
-  needsAttention,
-  ReviewRow,
-  renewsLabel,
-  rowAmount,
-} from './reviewRows'
+import { Field, FieldSection, FieldValue } from '../recordFields'
+import { needsAttention, ReviewRow } from './reviewRows'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
+import {
+  CustomerFields,
+  ProductFields,
+  SubscriptionFields,
+} from './ReviewRecordFields'
 
 export function ReviewRecordModal({
   row,
@@ -19,8 +18,7 @@ export function ReviewRecordModal({
   row: ReviewRow
   onClose: () => void
 }) {
-  const amount = rowAmount(row)
-  const renews = renewsLabel(row)
+  const isSubscription = row.entity === 'subscriptions'
 
   return (
     <Box flexDirection="column" height="100%">
@@ -50,78 +48,22 @@ export function ReviewRecordModal({
           </Box>
         )}
 
-        <Box as="section" flexDirection="column" rowGap="m">
-          <Field label="Import">
-            <ReviewStatusIndicator row={row} />
-          </Field>
-          {row.product_name ? (
-            <Field label="Product">
-              <Text>{row.product_name}</Text>
+        {isSubscription ? (
+          <SubscriptionFields row={row} />
+        ) : (
+          <FieldSection title="Import">
+            <Field label="Import">
+              <ReviewStatusIndicator row={row} />
             </Field>
-          ) : row.reason_code === 'subscription_product_not_importable' ? (
-            <Field label="Product">
-              <Text color="muted">Not in Stripe catalog</Text>
+            <Field label="Stripe ID">
+              <FieldValue monospace muted>
+                {row.source_id}
+              </FieldValue>
             </Field>
-          ) : null}
-          {amount && (
-            <Field label="Amount">
-              <Text monospace tabularNums>
-                {amount.money}
-                {amount.interval ?? ''}
-              </Text>
-            </Field>
-          )}
-          {(row.customer_email || row.title) && (
-            <Field label="Customer">
-              <Text>{row.customer_email || row.title}</Text>
-            </Field>
-          )}
-          <Field label="Country">
-            <Text color={row.customer_country ? 'default' : 'muted'}>
-              {row.customer_country || 'No billing country'}
-            </Text>
-          </Field>
-          {row.subtitle && (
-            <Field label="Stripe status">
-              <Text>{row.subtitle}</Text>
-            </Field>
-          )}
-          {row.renews_at && (
-            <Field label="Renews">
-              <Box flexDirection="column" alignItems="end" rowGap="3xs">
-                <FormattedDateTime datetime={row.renews_at} />
-                {renews && (
-                  <Text variant="caption" color="muted">
-                    {renews}
-                  </Text>
-                )}
-              </Box>
-            </Field>
-          )}
-          {row.import_status === 'failed' && (
-            <Field label="Last run">
-              <Text color="danger">Failed</Text>
-            </Field>
-          )}
-          <Field label="Stripe ID">
-            <Text monospace variant="caption" color="muted">
-              {row.source_id}
-            </Text>
-          </Field>
-        </Box>
-      </Box>
-    </Box>
-  )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <Box alignItems="baseline" columnGap="l" justifyContent="between">
-      <Text variant="caption" color="muted">
-        {label}
-      </Text>
-      <Box minWidth={0} justifyContent="end">
-        {children}
+          </FieldSection>
+        )}
+        <ProductFields row={row} />
+        <CustomerFields row={row} />
       </Box>
     </Box>
   )

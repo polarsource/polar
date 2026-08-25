@@ -24371,17 +24371,32 @@ export interface components {
       subtitle: string | null
       /**
        * Product Name
-       * @description The source product name for a subscription row. Null when the product wasn't in the staged catalog, and for non-subscription rows.
+       * @description The source product name. Null for customer rows, and for a subscription whose product wasn't in the staged catalog.
        */
       product_name: string | null
       /**
+       * Product Source Id
+       * @description The source product identifier (e.g. Stripe `prod_…`). Null for customer rows, and for a subscription whose product wasn't staged.
+       */
+      product_source_id: string | null
+      /**
        * Customer Email
-       * @description The customer email for a subscription row. Null for non-subscription rows or when the source customer has none.
+       * @description The customer email. Null for product and price rows, or when the source customer has none.
        */
       customer_email: string | null
       /**
+       * Customer Name
+       * @description The customer name on the source. Null for product and price rows, or when the source customer has none.
+       */
+      customer_name: string | null
+      /**
+       * Customer Source Id
+       * @description The source customer identifier (e.g. Stripe `cus_…`). Null for product and price rows.
+       */
+      customer_source_id: string | null
+      /**
        * Customer Country
-       * @description The customer billing country for a subscription row. Null when unknown or for non-subscription rows.
+       * @description The customer billing country. Null for product and price rows, or when the source customer has none.
        */
       customer_country: string | null
       /**
@@ -24399,6 +24414,16 @@ export interface components {
        * @description Billing interval for `amount` (e.g. `month`, `year`).
        */
       recurring_interval: string | null
+      /**
+       * Recurring Interval Count
+       * @description How many `recurring_interval` units each billing period spans, so a quarterly price reads as 3 months. Null for rows without an interval.
+       */
+      recurring_interval_count: number | null
+      /**
+       * Automatic Tax
+       * @description Whether the source computed tax on this subscription. Null for non-subscription rows, or when the source doesn't say.
+       */
+      automatic_tax: boolean | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']
       /** @description The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product. */

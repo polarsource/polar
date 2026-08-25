@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 
 from polar.config import settings
+from polar.enums import PayoutAccountType
 from polar.exceptions import PolarError
 from polar.integrations.aws.s3 import S3Service
 from polar.kit.utils import utc_now
@@ -113,7 +114,14 @@ class InvoiceService:
         # Sanity check to make sure the amounts add up correctly
         assert payout.fees_amount == abs(current_payout_fees_amount)
         assert payout.amount == gross_amount + payout_fees_amount + payment_fees_amount
-        assert payout.paid_at is not None
+
+        # Manual payouts have no succeeded attempt, so `paid_at` is always None.
+        # Fall back to the payout's creation date in that case.
+        if payout.processor == PayoutAccountType.manual:
+            paid_at = payout.created_at
+        else:
+            assert payout.paid_at is not None
+            paid_at = payout.paid_at
 
         items = [
             InvoiceItem(
@@ -168,7 +176,7 @@ class InvoiceService:
                 "Payouts (reverse invoices) are therefore without taxes."
             ),
             extra_heading_items=[
-                InvoiceHeadingItem(label="Paid at", value=payout.paid_at),
+                InvoiceHeadingItem(label="Paid at", value=paid_at),
                 InvoiceHeadingItem(
                     label="Payout Method", value=payout.processor.get_display_name()
                 ),

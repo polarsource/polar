@@ -24444,7 +24444,7 @@ export interface components {
       entities: components['schemas']['MerchantMigrationRecordSummaryEntity'][]
       /**
        * Action Required
-       * @description How many records the pre-check flagged for the merchant to fix, across entities. Classification only, so a flagged record that has since been imported still counts.
+       * @description How many subscription records the pre-check flagged for the merchant to fix. Classification only, so a flagged record that has since been imported still counts.
        */
       action_required: number
     }

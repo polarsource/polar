@@ -1225,7 +1225,8 @@ class MerchantMigrationService:
             action_required=sum(
                 1
                 for item in items
-                if item.reason_level == PrecheckReasonLevel.action_required
+                if item.entity == PrecheckEntity.subscriptions
+                and item.reason_level == PrecheckReasonLevel.action_required
             ),
         )
 

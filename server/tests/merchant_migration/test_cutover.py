@@ -230,6 +230,24 @@ class TestRun:
         assert subscription.payment_method_id is not None
         assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
 
+    async def test_creates_and_activates_with_copied_bank_debit(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(
+            mocker,
+            build_stripe_payment_method(type="us_bank_account", customer="cus_1"),
+        )
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id is not None
+
     async def test_duplicate_pending_subscription_stays_on_source(
         self,
         session: AsyncSession,

@@ -350,5 +350,10 @@ class TestSwitchableSubscriptions:
 
         assert [record.id for record in records] == [ready.id]
         assert await repository.payment_method_coverage(migration.id) == set()
-        await create_payment_method(save_fixture, customer, processor_id="pm_ready")
+        await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="pm_ready",
+            type="us_bank_account",
+        )
         assert await repository.payment_method_coverage(migration.id) == {ready.id}

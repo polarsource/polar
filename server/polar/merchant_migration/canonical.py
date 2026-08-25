@@ -50,6 +50,17 @@ class CanonicalPaymentMethodType(StrEnum):
             CanonicalPaymentMethodType.other,
         }
 
+    @classmethod
+    def is_chargeable_type(cls, type: str) -> bool:
+        try:
+            return not cls(type).requires_reentry
+        except ValueError:
+            return False
+
+    @classmethod
+    def chargeable_values(cls) -> tuple[str, ...]:
+        return tuple(member.value for member in cls if not member.requires_reentry)
+
 
 @dataclass
 class CanonicalPaymentMethod:

@@ -28,7 +28,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 
-from .canonical import CanonicalRecord, serialize
+from .canonical import CanonicalPaymentMethodType, CanonicalRecord, serialize
 
 type RecordCounts = dict[
     tuple[UUID, MerchantMigrationRecordType, MerchantMigrationRecordStatus], int
@@ -459,7 +459,7 @@ class MerchantMigrationRecordRepository(
         return {status: count for status, count in result.all()}
 
     async def payment_method_coverage(self, migration_id: UUID) -> set[UUID]:
-        """Switchable subscription record ids whose Polar customer has a card."""
+        """Switchable records whose Polar customer has a chargeable method."""
         CustomerRecord = aliased(MerchantMigrationRecord)
         statement = (
             self._switchable_subscriptions_statement(migration_id)
@@ -490,7 +490,9 @@ class MerchantMigrationRecordRepository(
                 and_(
                     PaymentMethod.customer_id == Customer.id,
                     PaymentMethod.deleted_at.is_(None),
-                    PaymentMethod.type == "card",
+                    PaymentMethod.type.in_(
+                        CanonicalPaymentMethodType.chargeable_values()
+                    ),
                 ),
             )
             .with_only_columns(MerchantMigrationRecord.id)

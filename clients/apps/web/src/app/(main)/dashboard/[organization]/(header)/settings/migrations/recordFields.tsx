@@ -56,7 +56,6 @@ export function FieldValue({
       variant="caption"
       color={muted ? 'muted' : 'default'}
       monospace={monospace}
-      tabularNums
       truncate
     >
       {children}

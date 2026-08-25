@@ -230,6 +230,71 @@ class TestRun:
         assert subscription.payment_method_id is not None
         assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
 
+    async def test_creates_from_dependencies_imported_on_earlier_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        earlier = await build_connected_migration(save_fixture, organization)
+        current = await build_connected_migration(save_fixture, organization)
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=earlier,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_1",
+                target_id=imported_customer.id,
+                canonical={},
+            )
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=earlier,
+                organization=organization,
+                type=MerchantMigrationRecordType.product,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="prod_1:month:1",
+                target_id=product.id,
+                canonical=serialize(
+                    CanonicalProduct(
+                        source_id="prod_1:month:1",
+                        product_source_id="prod_1",
+                        name="Product",
+                        recurring_interval="month",
+                        recurring_interval_count=1,
+                        prices=[
+                            CanonicalPrice(
+                                source_id="price_1",
+                                currency="usd",
+                                amount=1000,
+                                pricing_scheme=CanonicalPricingScheme.fixed,
+                            )
+                        ],
+                    )
+                ),
+            )
+        )
+        pending = MerchantMigrationRecord(
+            merchant_migration=current,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_1",
+            canonical=serialize(canonical_subscription()),
+        )
+        await save_fixture(pending)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await SubscriptionCutover(session, current, _source()).run(pending)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert pending.target_id is not None
+
     async def test_duplicate_pending_subscription_stays_on_source(
         self,
         session: AsyncSession,

@@ -58,8 +58,7 @@ class MerchantMigrationRepository(
         self, stripe_account_id: str
     ) -> MerchantMigration | None:
         statement = self.get_base_statement(include_deleted=True).where(
-            MerchantMigration.source_platform
-            == MerchantMigrationSourcePlatform.stripe,
+            MerchantMigration.source_platform == MerchantMigrationSourcePlatform.stripe,
             MerchantMigration.source_credentials["stripe_user_id"].astext
             == stripe_account_id,
         )

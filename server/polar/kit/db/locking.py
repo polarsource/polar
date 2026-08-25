@@ -7,7 +7,7 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 
 
 async def pg_advisory_xact_lock(
-    session: AsyncSession | AsyncReadSession, namespace: str, key: uuid.UUID
+    session: AsyncSession | AsyncReadSession, namespace: str, key: str | uuid.UUID
 ) -> None:
     """
     Acquire a transaction-level exclusive advisory lock.

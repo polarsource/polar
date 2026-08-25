@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -49,10 +50,9 @@ class MerchantMigrationRepository(
     model = MerchantMigration
 
     async def lock_stripe_account(self, stripe_account_id: str) -> None:
-        statement = select(
-            func.pg_advisory_xact_lock(func.hashtextextended(stripe_account_id, 0))
+        await pg_advisory_xact_lock(
+            self.session, "merchant_migration.stripe_account", stripe_account_id
         )
-        await self.session.execute(statement)
 
     async def get_by_stripe_account_id(
         self, stripe_account_id: str

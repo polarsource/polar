@@ -324,16 +324,6 @@ class SubscriptionCutover:
             if reason is not None:
                 return _skip(reason)
 
-        customer = await self.customer_repository.get_by_id(
-            customer.id, include_deleted=True, for_update=True
-        )
-        if customer is None or customer.is_deleted:
-            return _skip(_CUSTOMER_DELETED)
-        if await self.subscription_repository.exists_live_by_customer_and_product(
-            customer.id, product.id
-        ):
-            return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
-
         payment_method = await link_payment_method(
             self.session, customer, source_method=source.payment_method
         )
@@ -363,6 +353,16 @@ class SubscriptionCutover:
 
         if already_stopped and self._period_is_lapsed(source, product):
             return _fail(_LAPSED)
+
+        customer = await self.customer_repository.get_by_id(
+            customer.id, include_deleted=True, for_update=True
+        )
+        if customer is None or customer.is_deleted:
+            return _skip(_CUSTOMER_DELETED)
+        if await self.subscription_repository.exists_live_by_customer_and_product(
+            customer.id, product.id
+        ):
+            return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
 
         subscription = await create_imported_subscription(
             self.session, staged, product, price, customer

@@ -262,6 +262,7 @@ class TestRun:
         migration: MerchantMigration,
         organization: Organization,
         pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
     ) -> None:
         second = MerchantMigrationRecord(
             merchant_migration=migration,
@@ -275,10 +276,14 @@ class TestRun:
         copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
         adapter = _source()
         cutover = SubscriptionCutover(session, migration, adapter)
+        get_customer = mocker.spy(cutover.customer_repository, "get_by_id")
 
         first = await cutover.run(pending_record)
         later = await cutover.run(second)
 
+        get_customer.assert_any_call(
+            imported_customer.id, include_deleted=True, for_update=True
+        )
         assert first.status == MerchantMigrationCutoverStatus.moved
         assert later.status == MerchantMigrationCutoverStatus.skipped
         assert "already has a live subscription" in (later.message or "")

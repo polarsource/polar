@@ -203,7 +203,10 @@ class TestCreate:
         user_organization: UserOrganization,
     ) -> None:
         await _enable_feature(save_fixture, organization)
-        existing = await build_connected_migration(save_fixture, organization_second)
+        existing = [
+            await build_connected_migration(save_fixture, organization_second),
+            await build_connected_migration(save_fixture, organization_second),
+        ]
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(account_id="acct_test"),
@@ -214,7 +217,29 @@ class TestCreate:
 
         await assert_no_migrations(session, organization)
         repository = MerchantMigrationRepository.from_session(session)
-        assert await repository.get_by_id(existing.id) is not None
+        for migration in existing:
+            assert await repository.get_by_id(migration.id) is not None
+
+    @pytest.mark.auth
+    async def test_rejects_source_without_stripe_account_id(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id=None),
+        )
+
+        with pytest.raises(SourceVerificationUnavailable):
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        await assert_no_migrations(session, organization)
 
     @pytest.mark.auth
     async def test_missing_scopes_raises_and_persists_nothing(

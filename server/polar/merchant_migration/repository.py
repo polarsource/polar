@@ -54,17 +54,20 @@ class MerchantMigrationRepository(
             self.session, "merchant_migration.stripe_account", stripe_account_id
         )
 
-    async def get_by_stripe_account_id(
-        self, stripe_account_id: str
-    ) -> MerchantMigration | None:
+    async def stripe_account_id_exists(self, stripe_account_id: str) -> bool:
         # Deleting our record cannot undo a Stripe PAN copy, so the source
         # account remains reserved after soft deletion.
-        statement = self.get_base_statement(include_deleted=True).where(
-            MerchantMigration.source_platform == MerchantMigrationSourcePlatform.stripe,
-            MerchantMigration.source_credentials["stripe_user_id"].astext
-            == stripe_account_id,
+        statement = select(
+            self.get_base_statement(include_deleted=True)
+            .where(
+                MerchantMigration.source_platform
+                == MerchantMigrationSourcePlatform.stripe,
+                MerchantMigration.source_credentials["stripe_user_id"].astext
+                == stripe_account_id,
+            )
+            .exists()
         )
-        return await self.get_one_or_none(statement)
+        return bool(await self.session.scalar(statement))
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

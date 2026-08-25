@@ -405,10 +405,11 @@ class MerchantMigrationService:
             )
         )
         repository = MerchantMigrationRepository.from_session(session)
-        if stripe_account_id is not None:
-            await repository.lock_stripe_account(stripe_account_id)
-            if await repository.get_by_stripe_account_id(stripe_account_id) is not None:
-                raise SourceAccountAlreadyMigrated()
+        if stripe_account_id is None:
+            raise SourceVerificationUnavailable()
+        await repository.lock_stripe_account(stripe_account_id)
+        if await repository.stripe_account_id_exists(stripe_account_id):
+            raise SourceAccountAlreadyMigrated()
         return await repository.create(migration, flush=True)
 
     async def run_precheck(

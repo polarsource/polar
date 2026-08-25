@@ -769,7 +769,7 @@ class TestSkips:
         assert "can't renew subscriptions" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)
 
-    async def test_no_card_landed_on_polar(
+    async def test_no_payment_method_landed_on_polar(
         self,
         mocker: MockerFixture,
         cutover: RunCutover,
@@ -781,7 +781,7 @@ class TestSkips:
         outcome = await cutover(adapter)
 
         assert outcome.status == MerchantMigrationCutoverStatus.skipped
-        assert "No copied card" in (outcome.message or "")
+        assert "No copied payment method" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)
 
     async def test_customer_deleted_on_polar(

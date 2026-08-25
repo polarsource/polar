@@ -203,9 +203,7 @@ class TestCreate:
         user_organization: UserOrganization,
     ) -> None:
         await _enable_feature(save_fixture, organization)
-        existing = await build_connected_migration(
-            save_fixture, organization_second
-        )
+        existing = await build_connected_migration(save_fixture, organization_second)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(account_id="acct_test"),

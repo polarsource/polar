@@ -407,10 +407,7 @@ class MerchantMigrationService:
         repository = MerchantMigrationRepository.from_session(session)
         if stripe_account_id is not None:
             await repository.lock_stripe_account(stripe_account_id)
-            if (
-                await repository.get_by_stripe_account_id(stripe_account_id)
-                is not None
-            ):
+            if await repository.get_by_stripe_account_id(stripe_account_id) is not None:
                 raise SourceAccountAlreadyMigrated()
         return await repository.create(migration, flush=True)
 

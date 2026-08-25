@@ -5235,6 +5235,7 @@ class TestTriggerPayment:
         "error_message",
         [
             "This PaymentMethod requires a mandate",
+            "You must provide a mandate for off-session card payments made with cards issued in India.",
             "The payment method has been detached from a customer",
             "The payment method does not belong to the customer",
         ],

@@ -1,5 +1,6 @@
 from typing import Any, Literal
 
+import pytest
 from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
 from sqlalchemy.engine import make_url
@@ -60,3 +61,48 @@ class TestBuildPostgresDsn:
         connect_args = get_connect_args(build_dsn("asyncpg", fallback_port=None))
 
         assert connect_args["port"] == [6432, 6432]
+
+
+class TestGetCustomerPortalUrlOverride:
+    def test_no_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "CUSTOMER_PORTAL_URL_OVERRIDES", {})
+
+        assert settings.get_customer_portal_url_override("org_id", "product_id") is None
+
+    def test_organization_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            settings,
+            "CUSTOMER_PORTAL_URL_OVERRIDES",
+            {"org_id": "https://example.com/portal"},
+        )
+
+        assert (
+            settings.get_customer_portal_url_override("org_id", "product_id")
+            == "https://example.com/portal"
+        )
+
+    def test_product_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            settings,
+            "CUSTOMER_PORTAL_URL_OVERRIDES",
+            {"org_id": {"product_id": "https://example.com/product-portal"}},
+        )
+
+        assert (
+            settings.get_customer_portal_url_override("org_id", "product_id")
+            == "https://example.com/product-portal"
+        )
+
+    def test_product_not_in_organization_override(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            settings,
+            "CUSTOMER_PORTAL_URL_OVERRIDES",
+            {"org_id": {"product_id": "https://example.com/product-portal"}},
+        )
+
+        assert (
+            settings.get_customer_portal_url_override("org_id", "other_product_id")
+            is None
+        )

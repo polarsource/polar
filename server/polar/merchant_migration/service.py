@@ -273,7 +273,14 @@ def _summarize_entities(
 ) -> list[MerchantMigrationRecordSummaryEntity]:
     """Tally every entity in one pass over the classified rows."""
     tallies = {
-        entity: {"total": 0, "importable": 0, "imported": 0, "selectable": 0}
+        entity: {
+            "total": 0,
+            "importable": 0,
+            "imported": 0,
+            "pending": 0,
+            "action_required": 0,
+            "selectable": 0,
+        }
         for entity in entities
     }
     for item in items:
@@ -283,6 +290,10 @@ def _summarize_entities(
         tally["total"] += 1
         if item.import_status == MerchantMigrationRecordStatus.imported:
             tally["imported"] += 1
+        if item.import_status == MerchantMigrationRecordStatus.pending:
+            tally["pending"] += 1
+        if item.reason_level == PrecheckReasonLevel.action_required:
+            tally["action_required"] += 1
         if item.status != PrecheckRecordStatus.importable:
             continue
         tally["importable"] += 1
@@ -300,6 +311,8 @@ def _summarize_entities(
             importable=tally["importable"],
             skipped=tally["total"] - tally["importable"],
             imported=tally["imported"],
+            pending=tally["pending"],
+            action_required=tally["action_required"],
             selectable=tally["selectable"],
         )
         for entity, tally in tallies.items()

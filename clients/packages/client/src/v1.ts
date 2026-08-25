@@ -24476,6 +24476,16 @@ export interface components {
        */
       imported: number
       /**
+       * Pending
+       * @description How many are waiting to be imported into Polar.
+       */
+      pending: number
+      /**
+       * Action Required
+       * @description How many require merchant action before they can be imported.
+       */
+      action_required: number
+      /**
        * Selectable
        * @description How many subscriptions an import would still prepare: importable by the pre-check, pending in the ledger, and not already backed by an imported customer and product. Zero for other entities.
        */

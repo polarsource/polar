@@ -161,6 +161,10 @@ class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
     """The pre-check's per-entity counts, plus where the ledger has got to."""
 
     imported: int = Field(description="How many are already in Polar.")
+    pending: int = Field(description="How many are waiting to be imported into Polar.")
+    action_required: int = Field(
+        description="How many require merchant action before they can be imported."
+    )
     selectable: int = Field(
         description="How many subscriptions an import would still prepare: "
         "importable by the pre-check, pending in the ledger, and not already backed "

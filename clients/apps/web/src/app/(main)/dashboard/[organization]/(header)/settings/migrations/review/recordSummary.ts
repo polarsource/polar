@@ -14,6 +14,8 @@ const empty = (entity: CountEntity): EntityCount => ({
   importable: 0,
   skipped: 0,
   imported: 0,
+  pending: 0,
+  action_required: 0,
   selectable: 0,
 })
 
@@ -37,7 +39,7 @@ export const useRecordSummary = (id: string) => {
         customers: counts.customers.imported,
       },
       selectableTotal: counts.subscriptions.selectable,
-      attentionCount: query.data?.action_required ?? 0,
+      attentionCount: counts.subscriptions.action_required,
     }
   }, [query.data])
 

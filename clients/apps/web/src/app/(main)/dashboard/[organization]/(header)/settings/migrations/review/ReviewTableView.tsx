@@ -186,9 +186,11 @@ export function ReviewTableView({
             <ReviewStatusTabs
               value={filter}
               counts={{
+                all: rowTotal,
+                imported: counts.subscriptions.imported,
+                pending: counts.subscriptions.pending,
                 attention: attentionCount,
                 skipped: skippedTotal,
-                all: rowTotal,
               }}
               onChange={onFilterChange}
             />

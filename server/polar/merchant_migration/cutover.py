@@ -526,13 +526,15 @@ class SubscriptionCutover:
     ) -> bool:
         end = source.current_period_end
         interval = product.recurring_interval
-        count = product.recurring_interval_count
-        if end is None or interval is None or count is None:
+        if end is None or interval is None:
             return False
         now = utc_now()
         if end > now:
             return False
-        return interval.get_next_period(end, source.anchor_day, count) <= now
+        next_end = interval.get_next_period(
+            end, source.anchor_day or end.day, product.recurring_interval_count or 1
+        )
+        return next_end <= now
 
     def _trial_end(self, source: CanonicalSubscription) -> datetime | None:
         """Keep a running trial running: Polar bills at its end, not today.

@@ -27,7 +27,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 
-from .canonical import CanonicalRecord, serialize
+from .canonical import CanonicalRecord, normalize_price_source_id, serialize
 
 type RecordCounts = dict[
     tuple[UUID, MerchantMigrationRecordType, MerchantMigrationRecordStatus], int
@@ -272,14 +272,20 @@ class MerchantMigrationRecordRepository(
     async def get_imported_product_dependency(
         self, migration_id: UUID, price_source_id: str
     ) -> MerchantMigrationRecord | None:
+        price_ids = {price_source_id, normalize_price_source_id(price_source_id)}
         statement = self.get_base_statement().where(
             MerchantMigrationRecord.merchant_migration_id == migration_id,
             MerchantMigrationRecord.type == MerchantMigrationRecordType.product,
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
             MerchantMigrationRecord.target_id.is_not(None),
-            MerchantMigrationRecord.canonical["prices"].op("@>")(
-                func.jsonb_build_array(
-                    func.jsonb_build_object("source_id", price_source_id)
+            or_(
+                *(
+                    MerchantMigrationRecord.canonical["prices"].op("@>")(
+                        func.jsonb_build_array(
+                            func.jsonb_build_object("source_id", price_id)
+                        )
+                    )
+                    for price_id in price_ids
                 )
             ),
         )

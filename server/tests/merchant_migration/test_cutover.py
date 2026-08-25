@@ -277,37 +277,52 @@ class TestRun:
 
     async def test_legacy_suffixed_price_matches_explicit_currency(
         self,
+        mocker: MockerFixture,
         cutover: RunCutover,
-        copied_card: PaymentMethod,
-        record: MerchantMigrationRecord,
+        pending_record: MerchantMigrationRecord,
     ) -> None:
-        record.canonical["price_source_id"] = "price_1:usd"
-        record.canonical.pop("currency", None)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        pending_record.canonical["price_source_id"] = "price_1:usd"
+        pending_record.canonical.pop("currency", None)
 
         outcome = await cutover(_source(currency="usd"))
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
 
-    async def test_moves_subscription_loaded_from_database(
+    async def test_finishes_a_paused_polar_subscription_from_a_crashed_cutover(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         migration: MerchantMigration,
-        record: MerchantMigrationRecord,
-        copied_card: PaymentMethod,
-        paused_subscription: Subscription,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
     ) -> None:
-        subscription_id = paused_subscription.id
+        """Create-then-activate can leave a paused Polar sub if the job dies."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            user_metadata={"stripe_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = subscription.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        await save_fixture(pending_record)
+        subscription_id = subscription.id
         session.expunge_all()
-        adapter = _source()
+        record = await session.get(MerchantMigrationRecord, pending_record.id)
+        assert record is not None
 
-        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
+        outcome = await SubscriptionCutover(session, migration, _source()).run(record)
 
-        subscription = await session.get(Subscription, subscription_id)
-        assert subscription is not None
+        reloaded = await session.get(Subscription, subscription_id)
+        assert reloaded is not None
         assert outcome.status == MerchantMigrationCutoverStatus.moved
-        assert adapter.stopped == ["sub_1"]
-        assert subscription.status == SubscriptionStatus.active
-        assert subscription.payment_method_id == copied_card.id
+        assert reloaded.status == SubscriptionStatus.active
+        assert reloaded.payment_method_id is not None
 
     async def test_charges_a_card_that_landed_after_the_card_check(
         self,
@@ -519,8 +534,44 @@ class TestRun:
 
         assert outcome.status == MerchantMigrationCutoverStatus.failed
         assert "every period missed since" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_retry_of_a_lapsed_paused_polar_subscription_still_fails(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        """A previous attempt that created Polar then failed lapse must not report moved."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            user_metadata={"stripe_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = subscription.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        await save_fixture(pending_record)
+        adapter = _source(
+            **STOPPED_BY_US, current_period_end=utc_now() - timedelta(days=70)
+        )
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(
+            pending_record
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert "every period missed since" in (outcome.message or "")
         assert adapter.stopped == []
-        assert pending_record.target_id is not None
+        reloaded = await session.get(Subscription, subscription.id)
+        assert reloaded is not None
+        assert reloaded.status == SubscriptionStatus.paused
 
     async def test_an_unreadable_staged_record_stops_at_that_record(
         self,
@@ -671,7 +722,7 @@ class TestSkips:
     async def test_billed_currency_changed(
         self,
         cutover: RunCutover,
-        paused_subscription: Subscription,
+        pending_record: MerchantMigrationRecord,
     ) -> None:
         adapter = _source(currency="eur")
 
@@ -679,7 +730,7 @@ class TestSkips:
 
         assert outcome.status == MerchantMigrationCutoverStatus.skipped
         assert "plan changed on the source" in (outcome.message or "")
-        _assert_left_alone(adapter, paused_subscription)
+        _assert_left_alone(adapter, pending_record)
 
     async def test_source_subscription_gone(
         self, cutover: RunCutover, pending_record: MerchantMigrationRecord

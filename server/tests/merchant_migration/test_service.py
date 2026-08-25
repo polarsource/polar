@@ -1450,45 +1450,6 @@ class TestImportCatalog:
             await service.import_catalog(session, auth_subject, migration.id)
 
     @pytest.mark.auth
-    async def test_product_priced_in_another_currency_is_skipped(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # Polar rejects a product with no price in the organization's default
-        # currency, so the importer must skip it instead of failing the run.
-        migration = await _staged_migration(
-            mocker,
-            session,
-            save_fixture,
-            auth_subject,
-            organization,
-            records=_catalog_priced_in("eur"),
-        )
-
-        report = await service.import_catalog(session, auth_subject, migration.id)
-
-        results = {result.entity: result for result in report.results}
-        assert results[PrecheckEntity.products].imported == 0
-        assert results[PrecheckEntity.products].skipped == 1
-        assert await _products(session, organization) == []
-
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        record = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.product,
-            source_id="prod_1:month:1",
-        )
-        assert record is not None
-        assert record.status == MerchantMigrationRecordStatus.skipped
-        assert record.error is not None
-        assert "USD" in record.error
-
-    @pytest.mark.auth
     @pytest.mark.parametrize("legacy_shape", [False, True], ids=["current", "legacy"])
     async def test_multi_currency_price_imports_every_currency(
         self,

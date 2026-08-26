@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
 
+permissions:
+  contents: read
+
 jobs:
   refresh:
     name: Refresh template database

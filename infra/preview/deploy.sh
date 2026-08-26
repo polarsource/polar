@@ -106,7 +106,7 @@ fi
 # True when the previous SHA is unknown, so an undiffable deploy rebuilds everything
 changed() {
     [[ "$CHANGED_FILES" == "UNKNOWN" ]] && return 0
-    echo "$CHANGED_FILES" | grep -qE "$1"
+    printf '%s\n' "$CHANGED_FILES" | grep -E "$1" >/dev/null
 }
 
 BACKEND_CHANGED=true

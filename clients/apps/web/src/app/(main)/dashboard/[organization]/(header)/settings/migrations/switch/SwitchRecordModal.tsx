@@ -1,8 +1,11 @@
 'use client'
 
+import {
+  DetailColumn,
+  type DetailColumnRow,
+} from '@/components/Orders/OrderSection'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Field, FieldSection, FieldValue } from '../recordFields'
 import { renewalDate } from '../recordFormat'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
 import { needsAttention, SwitchRow } from './switchRows'
@@ -14,7 +17,36 @@ export function SwitchRecordModal({
   row: SwitchRow
   onClose: () => void
 }) {
-  const renewal = renewalDate(row)
+  const items: DetailColumnRow[] = [
+    {
+      key: 'switch',
+      label: 'Switch',
+      value: <SwitchStatusIndicator row={row} />,
+    },
+  ]
+
+  if (row.subtitle) {
+    items.push({ key: 'status', label: 'Status', value: row.subtitle })
+  }
+  items.push({
+    key: 'payment_method',
+    label: 'Payment method',
+    value: row.has_payment_method ? 'Ready to charge' : null,
+  })
+  items.push({
+    key: 'renewal',
+    label: 'Renewal on Stripe',
+    value: renewalDate(row),
+  })
+  items.push({
+    key: 'source_id',
+    label: 'Stripe subscription ID',
+    value: (
+      <Text color="muted" monospace>
+        {row.source_id}
+      </Text>
+    ),
+  })
 
   return (
     <Box flexDirection="column" height="100%">
@@ -45,31 +77,7 @@ export function SwitchRecordModal({
           </Box>
         )}
 
-        <FieldSection title="Subscription">
-          <Field label="Switch">
-            <SwitchStatusIndicator row={row} />
-          </Field>
-          {row.subtitle && (
-            <Field label="Status">
-              <FieldValue>{row.subtitle}</FieldValue>
-            </Field>
-          )}
-          <Field label="Payment method">
-            <FieldValue muted={!row.has_payment_method}>
-              {row.has_payment_method ? 'Ready to charge' : 'None yet'}
-            </FieldValue>
-          </Field>
-          {renewal && (
-            <Field label="Renewal on Stripe">
-              <FieldValue>{renewal}</FieldValue>
-            </Field>
-          )}
-          <Field label="Stripe subscription ID">
-            <FieldValue monospace muted>
-              {row.source_id}
-            </FieldValue>
-          </Field>
-        </FieldSection>
+        <DetailColumn title="Subscription" items={items} />
       </Box>
     </Box>
   )

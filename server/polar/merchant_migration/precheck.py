@@ -891,8 +891,9 @@ def _subscription_items(
             subscription, product_by_price, product_by_price_id
         )
         title = (
-            (customer.email or customer.name if customer else None)
-            or subscription.customer_source_id
+            customer.email or customer.name or customer.source_id
+            if customer
+            else subscription.customer_source_id
         )
         key = subscription_price_key(subscription)
         items.append(
@@ -945,9 +946,6 @@ def _product_for_subscription(
     key = subscription_price_key(subscription)
     if key is not None and key in product_by_price:
         return product_by_price[key]
-    # Currency option rows share a price id across currencies; fall back so a
-    # subscription whose exact (price, currency) pair wasn't staged still finds
-    # its product for the skip reason.
     return product_by_price_id.get(subscription.price_source_id)
 
 

@@ -46,7 +46,7 @@ export function intervalLabel(row: MigrationRecord): string | null {
   return count === 1 ? `Every ${interval}` : `Every ${count} ${interval}s`
 }
 
-export function taxLabel(row: MigrationRecord): string | null {
+export function automaticTaxLabel(row: MigrationRecord): string | null {
   if (row.automatic_tax == null) return null
-  return row.automatic_tax ? 'Calculated by Stripe' : 'Not calculated by Stripe'
+  return row.automatic_tax ? 'Enabled' : 'Disabled'
 }

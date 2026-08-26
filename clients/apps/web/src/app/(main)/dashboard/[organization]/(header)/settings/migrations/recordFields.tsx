@@ -2,10 +2,6 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 
-// The detail panels read as one scale: every label and every value is caption
-// sized, and hierarchy comes from color and weight instead. Values used to be
-// body sized against caption labels, which made each row look misaligned.
-
 export function FieldSection({
   title,
   children,

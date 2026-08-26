@@ -4,11 +4,11 @@ import { formatCurrency } from '@polar-sh/currency'
 import { HeaderCheckState } from '../selection'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
+import { renewsLabel } from '../recordFormat'
 import {
   intervalAbbreviation,
   isSwitchable,
   isSwitched,
-  renewsLabel,
   SwitchRow,
 } from './switchRows'
 
@@ -105,7 +105,7 @@ function PlanCell({ row }: { row: SwitchRow }) {
 }
 
 function RenewsCell({ row }: { row: SwitchRow }) {
-  const label = renewsLabel(row)
+  const label = renewsLabel(row, { calendarAfterDays: null })
   if (!label) {
     return <Text color="muted">—</Text>
   }

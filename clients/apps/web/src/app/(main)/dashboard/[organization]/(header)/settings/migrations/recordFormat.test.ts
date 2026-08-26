@@ -1,6 +1,11 @@
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import { intervalLabel, renewalDate, taxLabel } from './recordFormat'
+import {
+  intervalLabel,
+  renewalDate,
+  renewsLabel,
+  taxLabel,
+} from './recordFormat'
 
 type MigrationRecord = schemas['MerchantMigrationRecordItem']
 
@@ -74,6 +79,41 @@ describe('intervalLabel', () => {
         row({ recurring_interval: 'year', recurring_interval_count: null }),
       ),
     ).toBe('Every year')
+  })
+})
+
+describe('renewsLabel', () => {
+  const now = Date.parse('2026-01-01T00:00:00Z')
+
+  it('is null without a renewal date', () => {
+    expect(renewsLabel(row({ renews_at: null }), { now })).toBeNull()
+  })
+
+  it('reads in days when the renewal is within 30 days', () => {
+    expect(
+      renewsLabel(row({ renews_at: '2026-01-13T00:00:00Z' }), { now }),
+    ).toBe('in 12 days')
+  })
+
+  it('reads in hours when the renewal is under a day away', () => {
+    expect(
+      renewsLabel(row({ renews_at: '2026-01-01T03:00:00Z' }), { now }),
+    ).toBe('in 3 hours')
+  })
+
+  it('reads as a calendar day when the renewal is 30+ days out', () => {
+    expect(
+      renewsLabel(row({ renews_at: '2026-03-15T00:00:00Z' }), { now }),
+    ).toBe('on Mar 15')
+  })
+
+  it('stays relative past 30 days when calendarAfterDays is null', () => {
+    expect(
+      renewsLabel(row({ renews_at: '2026-03-15T00:00:00Z' }), {
+        now,
+        calendarAfterDays: null,
+      }),
+    ).toBe('in 73 days')
   })
 })
 

@@ -768,7 +768,10 @@ class TestUpdateDisputeSettings:
 class TestInviteOrganization:
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.patch(f"/v1/organizations/{uuid.uuid4()}", json={})
+        response = await client.post(
+            f"/v1/organizations/{uuid.uuid4()}/members/invite",
+            json={"email": "test@polar.sh"},
+        )
 
         assert response.status_code == 404
 

@@ -242,30 +242,15 @@ jobs:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     runs-on:
-      size: 4x16
+      size: 32x128
       image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1
     timeout-minutes: 15
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+      POLAR_TEST_DATABASE_TEMPLATE: polar_test
 
     services:
-      postgres:
-        image: postgres:15.1-bullseye
-        env:
-          POSTGRES_USER: polar
-          POSTGRES_PASSWORD: polar
-          POSTGRES_DB: polar_test
-          POSTGRES_PORT: 5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 1s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 10s
-        ports:
-          - 5432:5432
-
       redis:
         image: redis:7.4-alpine
         options: >-
@@ -308,6 +293,24 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           clean: false
+
+      - name: 🐘 Start postgres
+        run: |
+          docker run -d --name postgres -p 5432:5432 \
+            -e POSTGRES_USER=polar -e POSTGRES_PASSWORD=polar -e POSTGRES_DB=polar_test \
+            postgres:15.1-bullseye \
+            -c max_connections=1000 \
+            -c shared_buffers=4GB \
+            -c fsync=off \
+            -c synchronous_commit=off \
+            -c full_page_writes=off
+          for _ in $(seq 1 150); do
+            docker exec postgres pg_isready -q && exit 0
+            sleep 0.2
+          done
+          echo "::error::postgres did not become ready"
+          docker logs postgres
+          exit 1
 
       - name: 💿 MinIO Setup
         working-directory: ./server/.minio
@@ -363,4 +366,4 @@ jobs:
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest -n logical --dist=loadgroup --no-cov --durations=0
+        run: uv run pytest -n 48 --dist=loadgroup --no-cov --durations=0

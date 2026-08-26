@@ -16,9 +16,11 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
     create_benefit,
+    create_checkout,
     create_checkout_link,
     create_customer,
     create_discount,
+    create_discount_redemption,
     create_event,
     create_order,
     create_organization,
@@ -656,21 +658,34 @@ class TestProductTransferService:
             code="STAY5",
         )
 
+        # `_analyze_discounts` categorizes by redemption, not by the
+        # discount's product association.
+        checkout_transfer = await create_checkout(
+            save_fixture, products=[product_transfer], product=product_transfer
+        )
+        checkout_stay = await create_checkout(
+            save_fixture, products=[product_stay], product=product_stay
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount_direct, checkout=checkout_transfer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount_split, checkout=checkout_transfer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount_split, checkout=checkout_stay
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount_stay, checkout=checkout_stay
+        )
+
         service = ProductTransferService(source_org.id, target_org.id)
         service.products = [product_transfer]
 
-        # Manually set up the discount analysis (simulating what analyze_affected_data does)
-        service.discounts_to_transfer = [discount_direct]
-        service.discounts_to_split = [discount_split]
-        # discount_stay should not be in either list (stays with source org)
+        await service._analyze_discounts(session)
 
-        # Verify categorization
-        assert len(service.discounts_to_transfer) == 1
-        assert discount_direct in service.discounts_to_transfer
-        assert len(service.discounts_to_split) == 1
-        assert discount_split in service.discounts_to_split
-        assert discount_stay not in service.discounts_to_transfer
-        assert discount_stay not in service.discounts_to_split
+        assert service.discounts_to_transfer == [discount_direct]
+        assert service.discounts_to_split == [discount_split]
 
     async def test_validate_transfer_success(
         self,

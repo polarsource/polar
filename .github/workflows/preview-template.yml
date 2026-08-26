@@ -72,12 +72,17 @@ jobs:
           set -euo pipefail
           eval "$(uv run python - <<'EOF'
           import os
-          from urllib.parse import urlsplit
+          from shlex import quote
+          from urllib.parse import unquote, urlsplit
+
           dsn = urlsplit(os.environ["POLAR_PREVIEW_POSTGRES_ADMIN_DSN"])
-          print(f"export POLAR_POSTGRES_HOST={dsn.hostname}")
-          print(f"export POLAR_POSTGRES_PORT={dsn.port or 5432}")
-          print(f"export POLAR_POSTGRES_USER={dsn.username}")
-          print(f"export POLAR_POSTGRES_PWD={dsn.password}")
+          for name, value in (
+              ("POLAR_POSTGRES_HOST", dsn.hostname or ""),
+              ("POLAR_POSTGRES_PORT", str(dsn.port or 5432)),
+              ("POLAR_POSTGRES_USER", unquote(dsn.username or "")),
+              ("POLAR_POSTGRES_PWD", unquote(dsn.password or "")),
+          ):
+              print(f"export {name}={quote(value)}")
           EOF
           )"
           export POLAR_POSTGRES_DATABASE="$TEMPLATE_DATABASE"

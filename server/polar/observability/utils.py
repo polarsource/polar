@@ -7,10 +7,10 @@ def get_path_template(scope: Scope) -> str | None:
     """
     Get the normalized path template for metrics labeling.
 
-    Primary: Uses scope["route"].path set by FastAPI after routing.
-    Fallback: Regex normalization for 404s/unmatched routes.
+    Uses scope["route"].path, set by FastAPI after routing.
 
-    Returns None for deny-listed paths or excluded apps (no metrics recorded).
+    Returns None — no metrics recorded — for excluded apps, deny-listed paths,
+    and requests that matched no route.
     """
     # Check if app is excluded (e.g., backoffice)
     app = scope.get("app")

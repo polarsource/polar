@@ -4,9 +4,9 @@ HTTP metrics middleware for SLI/SLO monitoring.
 This middleware tracks request count and duration for all HTTP endpoints
 (except those in METRICS_DENY_LIST) to enable availability and latency SLIs.
 
-Path normalization strategy:
-1. Primary: Use FastAPI's scope["route"].path (most reliable, zero maintenance)
-2. Fallback: Regex normalization for 404s and unmatched routes
+Endpoints are labelled with FastAPI's scope["route"].path. Requests matching
+no route are not recorded: labelling them by raw path would let bots create
+unbounded label values.
 """
 
 import time
@@ -50,7 +50,8 @@ class HttpMetricsMiddleware:
         finally:
             # Route is now populated by FastAPI (after routing completed)
             path_template = get_path_template(scope)
-            if path_template is not None:  # None means deny-listed
+            # None: excluded app, deny-listed path, or no route matched
+            if path_template is not None:
                 duration = time.perf_counter() - start_time
                 method = scope.get("method", "UNKNOWN")
 

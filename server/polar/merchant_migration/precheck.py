@@ -891,8 +891,7 @@ def _subscription_items(
             subscription, product_by_price, product_by_price_id
         )
         title = (
-            (customer.email if customer and customer.email else None)
-            or (customer.name if customer and customer.name else None)
+            (customer.email or customer.name if customer else None)
             or subscription.customer_source_id
         )
         key = subscription_price_key(subscription)
@@ -959,12 +958,7 @@ def _subscription_product_skip_reason(
     product_by_price: dict[PriceKey, CanonicalProduct],
     product_by_price_id: dict[str, CanonicalProduct],
 ) -> Reason:
-    """Why this subscription's product/price can't come across.
-
-    Prefer the product or price's own skip reason so the review UI names the
-    real constraint. When the price was never staged (typically archived on
-    Stripe), say that explicitly instead of a vague dependency note.
-    """
+    """Prefer the product or price skip reason when one is known."""
     product = _product_for_subscription(
         subscription, product_by_price, product_by_price_id
     )

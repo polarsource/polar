@@ -44,8 +44,6 @@ export function SubscriptionFields({ row }: { row: ReviewRow }) {
 export function ProductFields({ row }: { row: ReviewRow }) {
   const amount = rowAmount(row)
   const interval = intervalLabel(row)
-  // A subscription whose price was never staged has no product to describe, but
-  // saying so is the answer to "why won't this import?".
   const missing = row.reason_code === 'subscription_product_not_importable'
   if (!row.product_name && !missing) {
     return null
@@ -55,7 +53,7 @@ export function ProductFields({ row }: { row: ReviewRow }) {
     <FieldSection title="Product">
       <Field label="Name">
         <FieldValue muted={!row.product_name}>
-          {row.product_name ?? 'Not in Stripe catalog'}
+          {row.product_name ?? '—'}
         </FieldValue>
       </Field>
       {amount && (
@@ -98,7 +96,7 @@ export function CustomerFields({ row }: { row: ReviewRow }) {
       )}
       <Field label="Country">
         <FieldValue muted={!row.customer_country}>
-          {row.customer_country ?? 'No billing country'}
+          {row.customer_country ?? '—'}
         </FieldValue>
       </Field>
       {row.customer_source_id && (

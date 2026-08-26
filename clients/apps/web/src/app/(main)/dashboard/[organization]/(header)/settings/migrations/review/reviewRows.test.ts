@@ -12,9 +12,6 @@ const baseRow = {
   source_id: 'sub_1',
   title: 'Subscription',
   subtitle: null,
-  product_name: null,
-  customer_email: null,
-  customer_country: null,
   amount: null,
   currency: null,
   recurring_interval: null,
@@ -22,7 +19,6 @@ const baseRow = {
   reason_code: null,
   reason_level: null,
   dependencies_imported: null,
-  renews_at: null,
 }
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {

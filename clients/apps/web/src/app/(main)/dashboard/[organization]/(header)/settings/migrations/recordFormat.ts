@@ -1,14 +1,10 @@
 import { schemas } from '@polar-sh/client'
+import { formatDate } from '@polar-sh/i18n/formatters/date'
 
 type MigrationRecord = schemas['MerchantMigrationRecordItem']
 
 const RELATIVE = new Intl.RelativeTimeFormat('en-US', { numeric: 'auto' })
 const MONTH_DAY = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-})
-const FULL_DATE = new Intl.DateTimeFormat('en-US', {
-  year: 'numeric',
   month: 'short',
   day: 'numeric',
 })
@@ -19,7 +15,7 @@ export function renewalDate(row: MigrationRecord): string | null {
   if (!row.renews_at) return null
   const renews = new Date(row.renews_at)
   if (Number.isNaN(renews.getTime())) return null
-  return FULL_DATE.format(renews)
+  return formatDate(renews)
 }
 
 export function renewsLabel(

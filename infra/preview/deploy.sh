@@ -139,7 +139,7 @@ fi
 # type declarations, so skip the tsup DTS pass: it dominates the build.
 export POLAR_SKIP_DTS=1
 cd "${CHECKOUT}/clients"
-if changed '^clients/(pnpm-lock\.yaml|patches/|.*/package\.json)' || [[ ! -d node_modules ]]; then
+if changed '^clients/(pnpm-lock\.yaml|pnpm-workspace\.yaml|package\.json|patches/|.*/package\.json)' || [[ ! -d node_modules ]]; then
     log "Installing frontend dependencies"
     pnpm install --frozen-lockfile
 fi

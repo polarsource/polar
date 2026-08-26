@@ -61,7 +61,7 @@ export function ImportedStep({ migrationId }: { migrationId: string }) {
 
         {expanded && (
           <Box id={panelId} flexDirection="column">
-            <ReviewTable migrationId={migrationId} />
+            <ReviewTable migrationId={migrationId} defaultFilter="imported" />
           </Box>
         )}
       </Box>

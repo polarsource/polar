@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  DetailColumn,
-  type DetailColumnRow,
-} from '@/components/Orders/OrderSection'
+import { DetailCell } from '@/components/Orders/OrderSection'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { needsAttention, ReviewRow } from './reviewRows'
@@ -22,22 +19,6 @@ export function ReviewRecordModal({
   onClose: () => void
 }) {
   const isSubscription = row.entity === 'subscriptions'
-  const importItems: DetailColumnRow[] = [
-    {
-      key: 'status',
-      label: 'Status',
-      value: <ReviewStatusIndicator row={row} />,
-    },
-    {
-      key: 'source_id',
-      label: 'Stripe ID',
-      value: (
-        <Text color="muted" monospace>
-          {row.source_id}
-        </Text>
-      ),
-    },
-  ]
 
   return (
     <Box flexDirection="column" height="100%">
@@ -70,7 +51,18 @@ export function ReviewRecordModal({
         {isSubscription ? (
           <SubscriptionFields row={row} />
         ) : (
-          <DetailColumn title="Import" items={importItems} />
+          <Box flexDirection="column" rowGap="l" minWidth={0}>
+            <Text variant="body" as="h3">
+              Import
+            </Text>
+            <Box flexDirection="column" rowGap="m" minWidth={0}>
+              <DetailCell
+                label="Status"
+                value={<ReviewStatusIndicator row={row} />}
+              />
+              <DetailCell label="Stripe ID" value={row.source_id} monospace />
+            </Box>
+          </Box>
         )}
         <ProductFields row={row} />
         <CustomerFields row={row} />

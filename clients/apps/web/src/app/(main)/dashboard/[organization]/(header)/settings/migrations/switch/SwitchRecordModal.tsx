@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  DetailColumn,
-  type DetailColumnRow,
-} from '@/components/Orders/OrderSection'
+import { DetailCell } from '@/components/Orders/OrderSection'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { renewalDate } from '../recordFormat'
@@ -17,37 +14,6 @@ export function SwitchRecordModal({
   row: SwitchRow
   onClose: () => void
 }) {
-  const items: DetailColumnRow[] = [
-    {
-      key: 'switch',
-      label: 'Switch',
-      value: <SwitchStatusIndicator row={row} />,
-    },
-  ]
-
-  if (row.subtitle) {
-    items.push({ key: 'status', label: 'Status', value: row.subtitle })
-  }
-  items.push({
-    key: 'payment_method',
-    label: 'Payment method',
-    value: row.has_payment_method ? 'Ready to charge' : null,
-  })
-  items.push({
-    key: 'renewal',
-    label: 'Renewal on Stripe',
-    value: renewalDate(row),
-  })
-  items.push({
-    key: 'source_id',
-    label: 'Stripe subscription ID',
-    value: (
-      <Text color="muted" monospace>
-        {row.source_id}
-      </Text>
-    ),
-  })
-
   return (
     <Box flexDirection="column" height="100%">
       <InlineModalHeader hide={onClose}>
@@ -77,7 +43,30 @@ export function SwitchRecordModal({
           </Box>
         )}
 
-        <DetailColumn title="Subscription" items={items} />
+        <Box flexDirection="column" rowGap="l" minWidth={0}>
+          <Text variant="body" as="h3">
+            Subscription
+          </Text>
+          <Box flexDirection="column" rowGap="m" minWidth={0}>
+            <DetailCell
+              label="Switch"
+              value={<SwitchStatusIndicator row={row} />}
+            />
+            {row.subtitle ? (
+              <DetailCell label="Status" value={row.subtitle} />
+            ) : null}
+            <DetailCell
+              label="Payment method"
+              value={row.has_payment_method ? 'Ready to charge' : null}
+            />
+            <DetailCell label="Renewal on Stripe" value={renewalDate(row)} />
+            <DetailCell
+              label="Stripe subscription ID"
+              value={row.source_id}
+              monospace
+            />
+          </Box>
+        </Box>
       </Box>
     </Box>
   )

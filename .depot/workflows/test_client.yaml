@@ -1,0 +1,95 @@
+name: Client
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, edited]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: ./clients
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: depot-ubuntu-24.04-4
+    outputs:
+      clients: ${{ steps.filter.outputs.clients }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dorny/paths-filter@v4.0.3
+        id: filter
+        with:
+          filters: |
+            clients:
+              - 'clients/**'
+              - '.depot/workflows/test_client.yaml'
+
+  build:
+    name: "Client: Tests 🎨"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: depot-ubuntu-24.04-4
+
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VERCEL_ENV: "testing"
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: 📦 Install dependencies
+        run: pnpm install
+
+      - name: 💅 Format check
+        run: pnpm run format:check
+
+      - name: 💅 Lint
+        run: pnpm run lint
+
+      - name: 🌍 Validate i18n
+        run: pnpm --filter @polar-sh/i18n validate
+
+      - name: 👀 Typecheck
+        run: pnpm run typecheck
+
+      - name: "🧪 Test: App"
+        run: pnpm --filter @polar-sh/app test
+
+      - name: "🧪 Test: Web"
+        run: pnpm --filter web test
+
+      - name: "🧪 Test: @polar-sh/currency"
+        run: pnpm --filter @polar-sh/currency test
+
+      - name: "🧪 Test: @polar-sh/checkout"
+        run: pnpm --filter @polar-sh/checkout test
+
+      - name: "🧪 Test: @polar-sh/orbit"
+        run: pnpm --filter @polar-sh/orbit test
+
+      - name: 🛠️ Build
+        run: pnpm build

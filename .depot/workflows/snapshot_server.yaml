@@ -1,0 +1,86 @@
+# Depot CI snapshot image for the server test suite.
+#
+# Builds a sandbox image with the server dependencies pre-installed (uv cache +
+# venv, warmed mypy cache, pnpm store and built emails renderer, CJK fonts,
+# Tinybird CLI, service container images) and pushes it to the Depot registry.
+# Jobs in test_server.yaml boot from it, so their install steps become no-ops.
+#
+# Snapshots capture the filesystem only — not env vars or $GITHUB_PATH — so
+# consuming jobs still run the setup-* actions, and tools that must resolve
+# without them are symlinked onto the default PATH below.
+
+name: Server Snapshot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "server/uv.lock"
+      - "server/pyproject.toml"
+      - "server/emails/**"
+      - ".depot/workflows/snapshot_server.yaml"
+
+jobs:
+  snapshot:
+    name: "Build server CI snapshot 📦"
+    runs-on: depot-ubuntu-24.04-8
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: uv sync --dev --frozen
+
+      - name: 🛟 Warm mypy cache
+        working-directory: ./server
+        run: MYPY_CACHE_DIR="$HOME/.mypy_cache" uv run task lint_types
+
+      - name: Pull service container images
+        run: |
+          docker pull postgres:15.1-bullseye
+          docker pull redis:7.4-alpine
+          docker pull bitnamilegacy/minio:2024.5.28
+          docker pull tinybirdco/tinybird-local:latest
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: 📬 Setup Node.js environment for server/emails
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: server/emails/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "server/emails/pnpm-lock.yaml"
+
+      - name: 📬 Build server/emails
+        working-directory: server/emails
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Install CJK fonts
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+
+      - name: 🐦 Install Tinybird CLI
+        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Expose tools on default PATH
+        run: |
+          sudo ln -sf "$(command -v uv)" /usr/local/bin/uv
+          sudo ln -sf "$(command -v uvx)" /usr/local/bin/uvx
+          sudo ln -sf "$HOME/.local/bin/tb" /usr/local/bin/tb
+
+      - uses: depot/snapshot-action@v1
+        with:
+          image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1

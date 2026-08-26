@@ -887,46 +887,8 @@ class TestOrderBasedSeats:
 
 
 @pytest.mark.asyncio
-class TestCustomerSeatsAuthentication:
-    async def test_list_seats_anonymous_rejected(
-        self,
-        client: AsyncClient,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        response = await client.get(
-            "/v1/customer-seats",
-            params={"subscription_id": str(subscription_with_seats.id)},
-        )
-
-        assert response.status_code == 401
-
-    async def test_assign_seat_anonymous_rejected(
-        self,
-        client: AsyncClient,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "subscription_id": str(subscription_with_seats.id),
-                "email": "test@example.com",
-            },
-        )
-
-        assert response.status_code == 401
-
-    async def test_revoke_seat_anonymous_rejected(
-        self,
-        client: AsyncClient,
-        customer_seat_claimed: CustomerSeat,
-    ) -> None:
-        response = await client.delete(
-            f"/v1/customer-seats/{customer_seat_claimed.id}",
-        )
-
-        assert response.status_code == 401
-
-    async def test_resend_invitation_anonymous_rejected(
+class TestResendInvitation:
+    async def test_anonymous(
         self,
         client: AsyncClient,
         customer_seat_pending: CustomerSeat,

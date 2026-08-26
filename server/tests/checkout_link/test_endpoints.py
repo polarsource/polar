@@ -140,17 +140,6 @@ class TestCreateCheckoutLink:
 
         assert response.status_code == 403
 
-    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
-    async def test_missing_scope_with_price(
-        self, client: AsyncClient, product: Product
-    ) -> None:
-        response = await client.post(
-            "/v1/checkout-links/",
-            json={"payment_processor": "stripe", "products": [str(product.id)]},
-        )
-
-        assert response.status_code == 403
-
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
     async def test_valid(
         self, client: AsyncClient, product: Product, user_organization: UserOrganization

@@ -47,6 +47,15 @@ jobs:
           oauth-secret: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
           tags: ${{ vars.POLAR_PREVIEW_TAILSCALE_TAGS || 'tag:ci' }}
 
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: server/emails/.node-version
+
       - name: Build config artifacts
         working-directory: ./server
         run: |

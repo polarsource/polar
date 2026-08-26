@@ -3,7 +3,6 @@ import {
   isSwitchable,
   isSwitched,
   needsAttention,
-  renewsLabel,
   type SwitchRow,
 } from './switchRows'
 
@@ -80,25 +79,5 @@ describe('needsAttention', () => {
     expect(needsAttention(row({ cutover_status: 'failed' }))).toBe(true)
     expect(needsAttention(row({ cutover_status: 'moved' }))).toBe(false)
     expect(needsAttention(row({ cutover_status: null }))).toBe(false)
-  })
-})
-
-describe('renewsLabel', () => {
-  const now = Date.parse('2026-01-01T00:00:00Z')
-
-  it('is null without a renewal date', () => {
-    expect(renewsLabel(row({ renews_at: null }), now)).toBeNull()
-  })
-
-  it('reads in days when the renewal is more than a day out', () => {
-    expect(renewsLabel(row({ renews_at: '2026-01-13T00:00:00Z' }), now)).toBe(
-      'in 12 days',
-    )
-  })
-
-  it('reads in hours near the safety window', () => {
-    expect(renewsLabel(row({ renews_at: '2026-01-01T03:00:00Z' }), now)).toBe(
-      'in 3 hours',
-    )
   })
 })

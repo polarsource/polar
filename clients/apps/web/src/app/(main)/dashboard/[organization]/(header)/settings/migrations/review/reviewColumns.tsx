@@ -4,13 +4,8 @@ import { DataTableColumnDef } from '@polar-sh/orbit'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { HeaderCheckState } from '../selection'
-import {
-  isImported,
-  isSelectable,
-  renewsLabel,
-  ReviewRow,
-  rowAmount,
-} from './reviewRows'
+import { renewsLabel } from '../recordFormat'
+import { isImported, isSelectable, ReviewRow, rowAmount } from './reviewRows'
 
 interface ColumnContext {
   isSelected: (id: string) => boolean

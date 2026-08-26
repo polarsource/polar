@@ -1,5 +1,8 @@
 from unittest.mock import MagicMock
 
+import pytest
+from starlette.types import Scope
+
 from polar.observability.http_metrics import (
     METRICS_EXCLUDED_APPS,
     exclude_app_from_metrics,
@@ -8,12 +11,22 @@ from polar.observability.utils import get_path_template
 
 
 class TestGetPathTemplate:
-    def test_middleware_denies_healthz(self) -> None:
-        """Test that middleware denies /healthz."""
-
-        scope = {"path": "/healthz", "type": "http"}
-        result = get_path_template(scope)
-        assert result is None
+    @pytest.mark.parametrize(
+        "scope",
+        [
+            pytest.param({"path": "/healthz", "type": "http"}, id="healthz"),
+            pytest.param({"path": "/healthz/deep", "type": "http"}, id="denied_prefix"),
+            pytest.param({"path": "/readyz", "type": "http"}, id="readyz"),
+            pytest.param(
+                {"path": "/.well-known/jwks.json", "type": "http"}, id="well_known"
+            ),
+            pytest.param({"path": "/v1/unknown", "type": "http"}, id="unknown_route"),
+            pytest.param({"path": "", "type": "http"}, id="empty_path"),
+            pytest.param({"type": "http"}, id="missing_path"),
+        ],
+    )
+    def test_no_metrics(self, scope: Scope) -> None:
+        assert get_path_template(scope) is None
 
     def test_middleware_uses_route_path(self) -> None:
         """Test that middleware uses route.path when available."""
@@ -44,52 +57,6 @@ class TestGetPathTemplate:
 
         result = get_path_template(scope)
         # Should return None to skip metrics (prevents cardinality explosion)
-        assert result is None
-
-    def test_middleware_prefix_deny(self) -> None:
-        """Test that paths starting with denied prefixes are blocked."""
-
-        scope = {"path": "/healthz/deep", "type": "http"}
-        result = get_path_template(scope)
-        assert result is None  # Should be denied
-
-    def test_middleware_denies_readyz(self) -> None:
-        """Test that middleware denies /readyz."""
-
-        scope = {"path": "/readyz", "type": "http"}
-        result = get_path_template(scope)
-        assert result is None
-
-    def test_middleware_denies_well_known(self) -> None:
-        """Test that middleware denies /.well-known paths."""
-
-        scope = {"path": "/.well-known/jwks.json", "type": "http"}
-        result = get_path_template(scope)
-        assert result is None
-
-    def test_middleware_empty_path(self) -> None:
-        """Test middleware with empty path."""
-
-        scope = {"path": "", "type": "http"}
-        result = get_path_template(scope)
-        # No route matched, returns None to skip metrics
-        assert result is None
-
-    def test_middleware_missing_path(self) -> None:
-        """Test middleware when path is missing from scope."""
-
-        scope = {"type": "http"}  # No path key
-        result = get_path_template(scope)
-        # No route matched, returns None to skip metrics
-        assert result is None
-
-    def test_middleware_unknown_route_returns_none(self) -> None:
-        """Test that unknown routes return None (no metrics exported)."""
-
-        # Simulate an unknown route - no route object in scope
-        scope = {"path": "/v1/unknown", "type": "http"}
-        result = get_path_template(scope)
-        # Should return None to prevent cardinality explosion
         assert result is None
 
     def test_middleware_excludes_app(self) -> None:

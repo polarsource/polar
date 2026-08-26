@@ -73,13 +73,14 @@ export function ReviewTableView({
   const selectableTotal = counts.subscriptions.selectable
 
   const importCount = selectedCount(selection, selectableTotal)
-  const importLabel = importing
-    ? 'Importing…'
+  const prepareLabel = importing
+    ? 'Preparing…'
     : importCount > 0
-      ? `Import ${numberFormat.format(importCount)} ${
+      ? `Prepare ${numberFormat.format(importCount)} ${
           importCount === 1 ? 'subscription' : 'subscriptions'
         }`
-      : 'Import subscriptions'
+      : 'Prepare subscriptions'
+  const canPrepare = filter === 'all' || filter === 'pending'
   const hasCatalog = rowTotal > 0
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
@@ -169,7 +170,7 @@ export function ReviewTableView({
       {importError && (
         <Alert
           variant="danger"
-          title="We couldn't import the catalog"
+          title="We couldn't prepare these subscriptions"
           description={importError}
         />
       )}
@@ -206,18 +207,20 @@ export function ReviewTableView({
                 {rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
               </Button>
             )}
-            <Button
-              size="sm"
-              onClick={onImport}
-              disabled={importing || importCount <= 0}
-            >
-              {importLabel}
-            </Button>
+            {canPrepare ? (
+              <Button
+                size="sm"
+                onClick={onImport}
+                disabled={importing || importCount <= 0}
+              >
+                {prepareLabel}
+              </Button>
+            ) : null}
           </Box>
         </Box>
 
         <Text variant="caption" color="muted">
-          Importing a subscription brings its customer and product to Polar.
+          Preparing a subscription brings its customer and product to Polar.
           Polar starts billing only when you switch.
         </Text>
 

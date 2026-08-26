@@ -29,7 +29,7 @@
     "@yao-pkg/pkg": "^6.22.0",
     "eslint": "^10.8.1",
     "openapi-typescript": "^7.13.0",
-    "oxfmt": "^0.63.0",
+    "oxfmt": "^0.64.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.67.0"

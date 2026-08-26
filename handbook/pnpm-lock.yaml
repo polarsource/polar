@@ -13,14 +13,14 @@ importers:
         version: 4.2.810(@base-ui/react@1.7.0(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.13.3)(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(typescript@5.9.3)
     devDependencies:
       '@scalar/openapi-parser':
-        specifier: ^0.28.12
-        version: 0.28.12
+        specifier: ^0.28.14
+        version: 0.28.14
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.3
       js-yaml:
-        specifier: ^5.2.3
-        version: 5.2.3
+        specifier: ^5.3.0
+        version: 5.3.0
       openapi-sampler:
         specifier: ^1.7.4
         version: 1.7.4
@@ -639,12 +639,12 @@ packages:
     resolution: {integrity: sha512-IAfnpIZnXY6ni+zyFMwWHBa5b/7yr4mCSvoTGR84oS9q4Quy2wjgafnr7CyfL65ney3iilBZHigZYLYqdqCu3Q==}
     engines: {node: '>=22'}
 
-  '@scalar/json-magic@0.12.20':
-    resolution: {integrity: sha512-5JawJ1L3+ddDoKefkXsklKs6CmmTIcPDmkJPpAkbRi9QQiU9MUONQ4VSi2z3ij+8Ka4neNhsXBNG4itPjurBLg==}
+  '@scalar/json-magic@0.13.0':
+    resolution: {integrity: sha512-K25TprVh4fusvKJlh4qnqh+cb4rpixv2xPTC2bqanhO9DXHQIesq7pnE0XONsfQJn3y9VjDefICIXHEXFqY3Pw==}
     engines: {node: '>=22'}
 
-  '@scalar/openapi-parser@0.28.12':
-    resolution: {integrity: sha512-s9XgyuWOJ2hQuojulgVm86upBF6vG8IQ8XSCpZxemm6Z2qVncNw2qsZKZ3+6eJOqCQEgJLmvgHSlXpRKq1si9Q==}
+  '@scalar/openapi-parser@0.28.14':
+    resolution: {integrity: sha512-OECzu3Iu8fpkgFrtSmKJFwt9U6JWu9oYL0c9xWAzdAa+XQlmODiG6yw57AyOzetw6MKQUcgTEdxORuO37mWv6g==}
     engines: {node: '>=22'}
 
   '@scalar/openapi-types@0.9.4':
@@ -2195,8 +2195,8 @@ packages:
     resolution: {integrity: sha512-CY6crGq313MX8GkwvB7tzgp99vjQxY1++5y10/BKN/GUfHqWaOGQMNZkBvqSzsZKWk/ijwHlWzzkLulsGHhjWQ==}
     hasBin: true
 
-  js-yaml@5.2.3:
-    resolution: {integrity: sha512-n+mUVyUX5bVv7G/G2zyIHOhdxfuU1dY2NOFzTQUWiMUbFss8b57NFlgCCaggU78wSw5KVS9cllzeLyzyR+n5nw==}
+  js-yaml@5.3.0:
+    resolution: {integrity: sha512-muutsYr+e2+d3rTgUGslq5rxbBlUy3cJ61IsHag2QNDQV+7zXWjkUpmALIajhrlLlrgRUiymj6U3zUr/TMK84Q==}
     hasBin: true
 
   jsep@1.4.0:
@@ -2922,8 +2922,8 @@ packages:
     resolution: {integrity: sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA==}
     engines: {node: '>=0.10.0'}
 
-  read-cache@1.0.0:
-    resolution: {integrity: sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA==}
+  read-cache@1.0.1:
+    resolution: {integrity: sha512-vmdQ4JEAaAINu1pc2H9HdZIeL2+IQehMpelB7BMNiNIA+mFxA5/02ObFUhEHkNAtNZOBS7kFCZxziUr4ho1j7A==}
 
   readable-stream@3.6.2:
     resolution: {integrity: sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA==}
@@ -4487,16 +4487,16 @@ snapshots:
 
   '@scalar/helpers@0.10.0': {}
 
-  '@scalar/json-magic@0.12.20':
+  '@scalar/json-magic@0.13.0':
     dependencies:
       '@scalar/helpers': 0.10.0
       pathe: 2.0.3
       yaml: 2.9.0
 
-  '@scalar/openapi-parser@0.28.12':
+  '@scalar/openapi-parser@0.28.14':
     dependencies:
       '@scalar/helpers': 0.10.0
-      '@scalar/json-magic': 0.12.20
+      '@scalar/json-magic': 0.13.0
       '@scalar/openapi-types': 0.9.4
       '@scalar/openapi-upgrader': 0.2.13
       ajv: 8.20.0
@@ -6413,7 +6413,7 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  js-yaml@5.2.3:
+  js-yaml@5.3.0:
     dependencies:
       argparse: 2.0.1
 
@@ -7318,7 +7318,7 @@ snapshots:
     dependencies:
       postcss: 8.5.23
       postcss-value-parser: 4.2.0
-      read-cache: 1.0.0
+      read-cache: 1.0.1
       resolve: 1.22.12
 
   postcss-js@4.1.0(postcss@8.5.23):
@@ -7490,7 +7490,7 @@ snapshots:
 
   react@19.2.3: {}
 
-  read-cache@1.0.0:
+  read-cache@1.0.1:
     dependencies:
       pify: 2.3.0
 

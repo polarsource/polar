@@ -453,16 +453,16 @@ wheels = [
 
 [[package]]
 name = "boto3"
-version = "1.43.69"
+version = "1.43.74"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore" },
     { name = "jmespath" },
     { name = "s3transfer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/45/8f/315e908f5abaab5deb77196117f66c1badc9093b03dc152b0b8231b0112b/boto3-1.43.69.tar.gz", hash = "sha256:76297a0b415849c63575ae08a4f1661b2dc8ee0100f104b86f98aa69b47fa2c7", size = 112666, upload-time = "2026-08-11T19:24:26.281Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/02/3b/a8c14b2390a54189b0b14c03376e05150dcc4c1a875d18bff8f6594d7494/boto3-1.43.74.tar.gz", hash = "sha256:9d4d0dcf81c941cfe7d927486435521e0f3bf657cb68b10dfe445cfe311f8839", size = 112608, upload-time = "2026-08-18T21:20:33.506Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/57/67ebb743ab0556c14db656e91e49024f3e1b0585f1a15c2d025176fb3c1e/boto3-1.43.69-py3-none-any.whl", hash = "sha256:4eb494d05b2bd08a7eee61b8ac4c34745c99e9bbce435c91f8d15d372dd8c2db", size = 140024, upload-time = "2026-08-11T19:24:25.022Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/a1/61f89804cfa2f3517319bd92fffca12d35dfe90621f9d4f2ca95818eaa96/boto3-1.43.74-py3-none-any.whl", hash = "sha256:d7f6a921efbda61ed787b403df8b64a95bc66e66299e9772fc40c235c28a5bde", size = 140027, upload-time = "2026-08-18T21:20:31.615Z" },
 ]
 
 [[package]]
@@ -494,16 +494,16 @@ sqs = [
 
 [[package]]
 name = "botocore"
-version = "1.43.69"
+version = "1.43.74"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jmespath" },
     { name = "python-dateutil" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/84/da/726b23443ebc77078387fbf330ef7240bc6a96553e566e45a647cd8f714c/botocore-1.43.69.tar.gz", hash = "sha256:5caa46b740d9a886137146ffbb69edb691f702bfe74c64e85621947ae00181fd", size = 15911844, upload-time = "2026-08-11T19:24:20.778Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/fb/00969dfa9fee1d1e278a0e65109d07acacceae4acd177d9d9413479720ab/botocore-1.43.74.tar.gz", hash = "sha256:b127b24d49532b5d7b0851b4abb3d3b99f58a121f87f07c23dac7c4d88b25c72", size = 15964456, upload-time = "2026-08-18T21:20:28.088Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/ef/a1effbe4ffabadc38ea9425c54601262eaac8cbb5b6089f8f76536d3c8b1/botocore-1.43.69-py3-none-any.whl", hash = "sha256:b1f0e01c53d6b84ee9c184ebf3636c3b3aef85e0ae8498c74afb8734ff224f87", size = 15596589, upload-time = "2026-08-11T19:24:18.283Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/b0/d1446c501d8a59db3881b2bca136024e0ee4f381efb58122a0608a276a16/botocore-1.43.74-py3-none-any.whl", hash = "sha256:5793d9170b2b9f3194fb6f667feed8986eb81f767528d52ceaf45df2242d56e9", size = 15658675, upload-time = "2026-08-18T21:20:23.835Z" },
 ]
 
 [[package]]
@@ -1026,7 +1026,7 @@ wheels = [
 
 [[package]]
 name = "firecrawl-py"
-version = "4.34.0"
+version = "4.35.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1037,9 +1037,9 @@ dependencies = [
     { name = "requests" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8c/5b/91130667d62b7d83815180c576c07793ed0df4bbf59f9fa0da6c2dc0564f/firecrawl_py-4.34.0.tar.gz", hash = "sha256:5cef30b3024d03553fec021ef5710c1405d69c700d8c282496852e2e4b7bd73c", size = 204058, upload-time = "2026-07-31T12:36:58.662Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/86/c857d0575c0b892901f6ecd6796adcf4e284dbb922b433bc093fdf765a9e/firecrawl_py-4.35.1.tar.gz", hash = "sha256:e479e8510040b446bdd2412b56627f2f5b2a4bc8fec63e1176dbd3e72d43ce8e", size = 219399, upload-time = "2026-08-15T00:39:50.918Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/3f/367c399a8cbc4b80da570b1ba462015bdf29a2da2c1bbdff53a94d9b4a7a/firecrawl_py-4.34.0-py3-none-any.whl", hash = "sha256:e88b650c85f8e61b2911465994105a6b9459d70e8857f22041b22784c3a142e2", size = 254974, upload-time = "2026-07-31T12:36:57.343Z" },
+    { url = "https://files.pythonhosted.org/packages/56/ab/ffb0a8777cf1fa8474b29098e211f93e27e7ec542a7a07c3f1154f9524ae/firecrawl_py-4.35.1-py3-none-any.whl", hash = "sha256:787dbd3f3b890a2c8c43117fe248a57caf37f14df53d05c6751e88cea02b4e50", size = 269945, upload-time = "2026-08-15T00:39:49.344Z" },
 ]
 
 [[package]]
@@ -1188,15 +1188,15 @@ wheels = [
 
 [[package]]
 name = "genai-prices"
-version = "0.1.1"
+version = "0.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx2" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/83/9b/85e646305a90a2da18f1edf055498668391e71f9849d3e1754d66559a311/genai_prices-0.1.1.tar.gz", hash = "sha256:54a2237691e0aaefb057d10a0c3c20160accc9fc09521c64c03fcdb7a4a69f68", size = 91182, upload-time = "2026-08-01T09:02:49.552Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/09/14/a188df294f013ec9cd97fc6b145f5427f89067bfb2c260fc3fb5c8d1fb34/genai_prices-0.1.3.tar.gz", hash = "sha256:62c30cddd6c2d2199d878d1a70521c3e37347cd9394446d107dc774a78ed3780", size = 92638, upload-time = "2026-08-15T00:10:31.771Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/5e/cfe36dff790ffad6aeff8a069b6f36743987ac17053579035ee0a67635dd/genai_prices-0.1.1-py3-none-any.whl", hash = "sha256:de2e3d8ea3ca1d0d292025995c598da447a74e94f22cd3342df46941aeb5416b", size = 95300, upload-time = "2026-08-01T09:02:48.308Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/cd/d94b47c26d6367e0b949edfe2da5a47fb74037e799a0edd5b825e049f2b9/genai_prices-0.1.3-py3-none-any.whl", hash = "sha256:a2603841429c843da91c987d9ef598c73bd940caf44e844ab046d551791c04bb", size = 96892, upload-time = "2026-08-15T00:10:30.595Z" },
 ]
 
 [[package]]
@@ -1278,7 +1278,7 @@ wheels = [
 
 [[package]]
 name = "githubkit"
-version = "0.16.0"
+version = "0.16.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -1288,9 +1288,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/40/cc/13b08ec736f8d34f725ef7c008956b497070dc22159bd118edc7ac792ff5/githubkit-0.16.0.tar.gz", hash = "sha256:b0aa62a535ac99a5d958cf51a6fec66416247ddb5832be57c3f8c4995a34bcca", size = 33943, upload-time = "2026-06-14T09:48:42.346Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/45/a8/ebfcbddccb3e813837600f4cdb79fc462fd284c1db03abc1ad31072d0757/githubkit-0.16.1.tar.gz", hash = "sha256:f56ea4e796f169773d114c7f39089790f99443f1d05871d594d6bdca7928945c", size = 36999, upload-time = "2026-08-14T07:46:05.363Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c5/8c/32ca0146c373ce8e798c4edebcfc5901579ff06de0b6bc788bce3cb846f4/githubkit-0.16.0-py3-none-any.whl", hash = "sha256:b927f6bb1d4646ae64282a4373dd4a720e568c789d5b4ed1e8f06c562b642b26", size = 42898, upload-time = "2026-06-14T09:48:43.282Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/eb/ee6424e6d257433a8a62e86016cdbce6efdbd26d7db5735c5c099da85e44/githubkit-0.16.1-py3-none-any.whl", hash = "sha256:a791e0eb57ec80824a711321376c5816aa1cd204e6982e4ad5ddce6c87490863", size = 42935, upload-time = "2026-08-14T07:46:04.167Z" },
 ]
 
 [[package]]
@@ -2724,7 +2724,7 @@ requires-dist = [
     { name = "firecrawl-py", specifier = ">=4.31.0" },
     { name = "fpdf2", specifier = ">=2.8.3" },
     { name = "genai-prices", specifier = ">=0.0.67" },
-    { name = "githubkit", specifier = "==0.16.0" },
+    { name = "githubkit", specifier = "==0.16.1" },
     { name = "google-auth", extras = ["requests"], specifier = ">=2.38.0" },
     { name = "greenlet", specifier = ">=3.5.2" },
     { name = "httpx", specifier = ">=0.23.0" },
@@ -2736,7 +2736,7 @@ requires-dist = [
     { name = "makefun", specifier = ">=1.15.6" },
     { name = "markdown-it-py", specifier = ">=4.2.0" },
     { name = "plain-client", specifier = ">=0.0.3" },
-    { name = "polar-sdk", specifier = "==1.0.0a15" },
+    { name = "polar-sdk", specifier = "==1.0.0a16" },
     { name = "posthog", specifier = ">=7.21.1" },
     { name = "prometheus-client", specifier = ">=0.25.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.12" },
@@ -2803,21 +2803,21 @@ dev = [
 
 [[package]]
 name = "polar-sdk"
-version = "1.0.0a15"
+version = "1.0.0a16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adaptix" },
     { name = "httpx" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ee/59/7cf3c4099d735c452c848be4884e1f0e04c470a538815e1c2b8d5398a756/polar_sdk-1.0.0a15.tar.gz", hash = "sha256:073d84bc42babdeef00249b5f3d36d13fea2a8ac3dd199fe3ec7abaaf282376d", size = 112689, upload-time = "2026-07-22T13:26:45.917Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/4a/31b321808fdd1c898d092d139fe2538e402c0d61f6406f0d65a21c3276bb/polar_sdk-1.0.0a16.tar.gz", hash = "sha256:2ee1cac52f65ef656c31e180b3ade033de541088ddee92ec124239caee34c4d2", size = 119526, upload-time = "2026-07-27T07:57:53.082Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/fb/17beea261aa8bf6dcf9a5fa5a77ed61d6e0e5adce8d71a68bd758aacb7d1/polar_sdk-1.0.0a15-py3-none-any.whl", hash = "sha256:294e8f5537fdb075dc9304014f841f5f3574e598bc166fdc51df0809fbe8a7ff", size = 137408, upload-time = "2026-07-22T13:26:44.715Z" },
+    { url = "https://files.pythonhosted.org/packages/8d/44/5d2314c6a6f092a9e1632ec97f5b72471c7c60e44aee748d9d1662904555/polar_sdk-1.0.0a16-py3-none-any.whl", hash = "sha256:f93e437f70c93eea4680fb3c9cb466bd7a6e2fe845713fac96ac58725553b0b1", size = 147041, upload-time = "2026-07-27T07:57:51.931Z" },
 ]
 
 [[package]]
 name = "posthog"
-version = "7.38.4"
+version = "7.39.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -2825,9 +2825,9 @@ dependencies = [
     { name = "requests" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b1/c8/73ad89833953426b150462c3f3ea5ffda917f65e537acf47849ad61765e9/posthog-7.38.4.tar.gz", hash = "sha256:ec8f46255a7c30629e7fec6aef04ce79e157dbfff4e1d8ca0e0612e0abe16a68", size = 422782, upload-time = "2026-08-10T14:02:45.585Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4f/77/3737f60571995ba07677b058bb1523b7c26f28570806b8ffaf83a66df18c/posthog-7.39.1.tar.gz", hash = "sha256:0d184596e35057457fc1094883646fd23de2d6338db8b9c3ea770643fb55d8a2", size = 428586, upload-time = "2026-08-14T13:50:24.688Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/83/ca/6c312595f4b84d725bdb703796a21f36a4cc3474ce195ebb4a7756e851bb/posthog-7.38.4-py3-none-any.whl", hash = "sha256:1e9d7dd229542528110b516a83de2c6efbd0cd3b82f6c55fd55ac7ff57fd6f72", size = 497481, upload-time = "2026-08-10T14:02:43.802Z" },
+    { url = "https://files.pythonhosted.org/packages/88/79/ee5c01937bfb0c80415929e25aa1e8296c48e26fc9a10fe1d9f665f0f478/posthog-7.39.1-py3-none-any.whl", hash = "sha256:e76e82fe571314a0a9bc11d039fd1a1a8d210cd0f737899d41b31f61b73bf08c", size = 504259, upload-time = "2026-08-14T13:50:22.896Z" },
 ]
 
 [[package]]
@@ -3159,11 +3159,11 @@ wheels = [
 
 [[package]]
 name = "pypdf"
-version = "6.15.0"
+version = "6.16.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/17/17/ee75a92718ec7212de831e71454d702225aa5e474a805cce169806044453/pypdf-6.15.0.tar.gz", hash = "sha256:d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79", size = 6993794, upload-time = "2026-08-06T13:06:49.929Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/5a/df92d1c1ef8806ca28f20f978ee059894868d93de797a7e2edebe7fe1a43/pypdf-6.16.1.tar.gz", hash = "sha256:c4d1b43ddae921387321cf63936cd16a7743b91d2da92f165c149a195c972ba9", size = 7003737, upload-time = "2026-08-14T12:24:04.531Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/af/72/ce3067ac31e214a66388159f8462ddb8c13dd00170f24d555a1f1ae8ee91/pypdf-6.15.0-py3-none-any.whl", hash = "sha256:14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee", size = 378123, upload-time = "2026-08-06T13:06:47.709Z" },
+    { url = "https://files.pythonhosted.org/packages/33/a1/724b18d6757ab7253a8fecd3a430eb8d980ed26872ba16651e7b5ddfc63f/pypdf-6.16.1-py3-none-any.whl", hash = "sha256:63fec31c4092ae50b6729beedcb469055b60d20c834bde1c402df241f371f644", size = 382924, upload-time = "2026-08-14T12:24:02.854Z" },
 ]
 
 [[package]]

@@ -1,9 +1,13 @@
 # Depot CI snapshot image for the server test suite.
 #
 # Builds a sandbox image with the server dependencies pre-installed (uv cache +
-# venv, warmed mypy cache, pnpm store and built emails renderer, CJK fonts,
-# Tinybird CLI, service container images) and pushes it to the Depot registry.
-# Jobs in test_server.yaml boot from it, so their install steps become no-ops.
+# venv, warmed mypy cache, pnpm store, CJK fonts, Tinybird CLI, service
+# container images) and pushes it to the Depot registry. Jobs in
+# test_server.yaml boot from it, so their install steps become near-instant.
+#
+# Only cache-shaped state belongs here. Anything built from the checkout — the
+# emails renderer binary especially — must be rebuilt by the consuming job, or
+# it silently serves the source tree as of the last snapshot build.
 #
 # Snapshots capture the filesystem only — not env vars or $GITHUB_PATH — so
 # consuming jobs still run the setup-* actions, and tools that must resolve

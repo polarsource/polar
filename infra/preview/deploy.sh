@@ -129,7 +129,7 @@ if changed '^server/emails/' || [[ ! -x "${CHECKOUT}/server/emails/bin/react-ema
     uv run task emails
 fi
 
-if changed '^server/polar/backoffice/' || [[ ! -f "${CHECKOUT}/server/polar/backoffice/static/styles.css" ]]; then
+if changed '^server/polar/backoffice/' || [[ ! -f "${CHECKOUT}/server/polar/backoffice/static/styles.css" ]] || [[ ! -f "${CHECKOUT}/server/polar/backoffice/static/scripts.js" ]]; then
     log "Building backoffice assets"
     uv run task backoffice
 fi

@@ -56,6 +56,15 @@ class BenefitRepository(
         )
         return await self.get_all(statement)
 
+    async def list_by_organization_and_type(
+        self, organization_id: UUID, benefit_type: BenefitType
+    ) -> Sequence[Benefit]:
+        statement = self.get_base_statement().where(
+            Benefit.organization_id == organization_id,
+            Benefit.type == benefit_type,
+        )
+        return await self.get_all(statement)
+
     def get_eager_options(self) -> Options:
         return (joinedload(Benefit.organization),)
 

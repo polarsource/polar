@@ -61,20 +61,6 @@ class UserRepository(
             statement = statement.where(User.blocked_at.is_(None))
         return await self.get_all(statement)
 
-    async def get_by_stripe_customer_id(
-        self,
-        stripe_customer_id: str,
-        *,
-        include_deleted: bool = False,
-        included_blocked: bool = False,
-    ) -> User | None:
-        statement = self.get_base_statement(include_deleted=include_deleted).where(
-            User.stripe_customer_id == stripe_customer_id
-        )
-        if not included_blocked:
-            statement = statement.where(User.blocked_at.is_(None))
-        return await self.get_one_or_none(statement)
-
     async def get_by_oauth_account(
         self,
         platform: OAuthPlatform,

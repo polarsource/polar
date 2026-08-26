@@ -1631,15 +1631,6 @@ class TestCheckSlugAvailability:
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_available(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/organizations/check-slug", json={"slug": "brand-new-slug"}
-        )
-
-        assert response.status_code == 200
-        assert response.json() == {"available": True}
-
-    @pytest.mark.auth
     async def test_taken(self, client: AsyncClient, organization: Organization) -> None:
         response = await client.post(
             "/v1/organizations/check-slug", json={"slug": organization.slug}
@@ -1649,49 +1640,26 @@ class TestCheckSlugAvailability:
         assert response.json() == {"available": False}
 
     @pytest.mark.auth
-    async def test_too_short(self, client: AsyncClient) -> None:
+    @pytest.mark.parametrize(
+        ("slug", "available"),
+        [
+            pytest.param("brand-new-slug", True, id="available"),
+            pytest.param("ab", False, id="too_short"),
+            pytest.param("a" * 65, False, id="too_long"),
+            pytest.param("Invalid Slug!", False, id="invalid_format"),
+            pytest.param("dashboard", False, id="reserved"),
+            pytest.param("porn-shop", False, id="blocked_word"),
+        ],
+    )
+    async def test_slug_availability(
+        self, client: AsyncClient, slug: str, available: bool
+    ) -> None:
         response = await client.post(
-            "/v1/organizations/check-slug", json={"slug": "ab"}
+            "/v1/organizations/check-slug", json={"slug": slug}
         )
 
         assert response.status_code == 200
-        assert response.json() == {"available": False}
-
-    @pytest.mark.auth
-    async def test_too_long(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/organizations/check-slug", json={"slug": "a" * 65}
-        )
-
-        assert response.status_code == 200
-        assert response.json() == {"available": False}
-
-    @pytest.mark.auth
-    async def test_invalid_format(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/organizations/check-slug", json={"slug": "Invalid Slug!"}
-        )
-
-        assert response.status_code == 200
-        assert response.json() == {"available": False}
-
-    @pytest.mark.auth
-    async def test_reserved(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/organizations/check-slug", json={"slug": "dashboard"}
-        )
-
-        assert response.status_code == 200
-        assert response.json() == {"available": False}
-
-    @pytest.mark.auth
-    async def test_blocked_word(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/organizations/check-slug", json={"slug": "porn-shop"}
-        )
-
-        assert response.status_code == 200
-        assert response.json() == {"available": False}
+        assert response.json() == {"available": available}
 
 
 @pytest.mark.asyncio

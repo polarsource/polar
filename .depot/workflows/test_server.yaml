@@ -390,7 +390,7 @@ jobs:
           start_postgres > /tmp/setup-postgres.log 2>&1 & pids[0]=$!
           setup_minio    > /tmp/setup-minio.log    2>&1 & pids[1]=$!
           build_emails   > /tmp/setup-emails.log   2>&1 & pids[2]=$!
-          ( sync_venv && setup_tinybird ) > /tmp/setup-venv.log 2>&1 & pids[3]=$!
+          ( (sync_venv) && (setup_tinybird) ) > /tmp/setup-venv.log 2>&1 & pids[3]=$!
 
           status=0
           for i in 0 1 2 3; do

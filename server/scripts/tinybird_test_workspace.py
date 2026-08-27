@@ -2,6 +2,7 @@ import subprocess
 import time
 import uuid
 from pathlib import Path
+from typing import Any
 
 import httpx
 import typer
@@ -24,31 +25,47 @@ def get_tokens(host: str | None = None) -> dict[str, str] | None:
     return None
 
 
+def request(method: str, url: str, **kwargs: Any) -> httpx.Response:
+    """Tinybird answers /tokens before its API is up, so retry past gateway errors."""
+    for _ in range(60):
+        try:
+            response = httpx.request(method, url, **kwargs)
+        except httpx.RequestError:
+            time.sleep(1)
+            continue
+        if response.status_code >= 500:
+            time.sleep(1)
+            continue
+        response.raise_for_status()
+        return response
+    raise RuntimeError(f"Tinybird never served {url}")
+
+
 def create_workspace(host: str, tokens: dict[str, str]) -> tuple[str, str]:
     user_token = tokens["user_token"]
     admin_token = tokens["admin_token"]
     workspace_name = f"test_{uuid.uuid4().hex[:8]}"
 
-    organization_response = httpx.get(
+    organization_response = request(
+        "GET",
         f"{host}/v1/user/workspaces",
         params={"with_organization": "true", "token": admin_token},
     )
-    organization_response.raise_for_status()
     organization_id = organization_response.json()["organization_id"]
 
-    ws_response = httpx.post(
+    ws_response = request(
+        "POST",
         f"{host}/v1/workspaces",
         params={"name": workspace_name, "assign_to_organization_id": organization_id},
         headers={"Authorization": f"Bearer {user_token}"},
     )
-    ws_response.raise_for_status()
     workspace_id = ws_response.json()["id"]
 
-    workspaces_response = httpx.get(
+    workspaces_response = request(
+        "GET",
         f"{host}/v1/user/workspaces",
         params={"token": user_token},
     )
-    workspaces_response.raise_for_status()
     workspace_token = next(
         workspace["token"]
         for workspace in workspaces_response.json()["workspaces"]

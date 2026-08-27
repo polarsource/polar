@@ -1236,7 +1236,7 @@ class TestUpsertFromChargebackStop:
         assert dispute.order == order
         assert dispute.payment == payment
 
-    async def test_refunded_revokes_subscription(
+    async def test_prevented_cancels_subscription(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1281,7 +1281,7 @@ class TestUpsertFromChargebackStop:
         assert dispute.status == DisputeStatus.prevented
         assert subscription.status == "canceled"
 
-    async def test_refunded_revokes_order_benefits(
+    async def test_prevented_revokes_benefits(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,

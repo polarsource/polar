@@ -343,6 +343,7 @@ class RefundService:
 
             refund.dispute = dispute
             refund.reason = RefundReason.dispute_prevention
+            refund.revoke_benefits = True
 
         refund = await repository.create(refund, flush=True)
 

@@ -438,9 +438,14 @@ class DisputeService:
         dispute.dispute_alert_processor = DisputeAlertProcessor.chargeback_stop
         dispute.dispute_alert_processor_id = alert["id"]
 
-        # We refunded the transaction before the dispute could be escalated
-        if alert["transaction_refund_outcome"] == "REFUNDED":
+        # We refunded the transaction before the dispute could be escalated:
+        # the customer got their money back, so their access goes too.
+        if (
+            alert["transaction_refund_outcome"] == "REFUNDED"
+            and dispute.status != DisputeStatus.prevented
+        ):
             dispute.status = DisputeStatus.prevented
+            await self._revoke(session, dispute)
 
         return await repository.update(dispute)
 

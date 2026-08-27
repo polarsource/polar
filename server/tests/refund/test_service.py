@@ -635,6 +635,7 @@ class TestCreate(StripeRefund):
 
         assert refund.reason == RefundReason.dispute_prevention
         assert refund.dispute_id == dispute.id
+        assert refund.revoke_benefits is True
 
 
 @pytest.mark.asyncio

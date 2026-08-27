@@ -254,45 +254,6 @@ jobs:
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
       POLAR_TEST_DATABASE_TEMPLATE: polar_test
 
-    services:
-      redis:
-        image: redis:7.4-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 1s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 10s
-        ports:
-          - 6379:6379
-
-      minio:
-        image: bitnamilegacy/minio:2024.5.28
-        ports:
-          - 9000:9000
-          - 9001:9001
-        env:
-          MINIO_ROOT_USER: polar
-          MINIO_ROOT_PASSWORD: polarpolar
-        options: >-
-          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
-          --health-interval 1s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 20s
-
-      tinybird:
-        image: tinybirdco/tinybird-local:latest
-        ports:
-          - 7181:7181
-          - 7182:7182
-        options: >-
-          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
-          --health-interval 2s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 40s
-
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -326,7 +287,7 @@ jobs:
           path: server/emails/bin
           key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsup.config.js', 'server/emails/.node-version') }}
 
-      - name: 🚀 Prepare postgres, MinIO, emails and the venv
+      - name: 🚀 Start services and prepare dependencies
         env:
           EMAILS_CACHE_HIT: ${{ steps.emails.outputs.cache-hit }}
           MINIO_HOST: 127.0.0.1
@@ -340,7 +301,7 @@ jobs:
         run: |
           set -uo pipefail
 
-          start_postgres() {
+          start_containers() {
             docker run -d --name postgres -p 5432:5432 \
               -e POSTGRES_USER=polar -e POSTGRES_PASSWORD=polar -e POSTGRES_DB=polar_test \
               postgres:15.1-bullseye \
@@ -349,13 +310,32 @@ jobs:
               -c fsync=off \
               -c synchronous_commit=off \
               -c full_page_writes=off
-            for _ in $(seq 1 150); do
-              docker exec postgres pg_isready -q && return 0
-              sleep 0.2
+            docker run -d --name redis -p 6379:6379 redis:7.4-alpine
+            docker run -d --name minio -p 9000:9000 -p 9001:9001 \
+              -e MINIO_ROOT_USER="$MINIO_ROOT_USER" -e MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD" \
+              bitnamilegacy/minio:2024.5.28
+            docker run -d --name tinybird -p 7181:7181 -p 7182:7182 \
+              tinybirdco/tinybird-local:latest
+          }
+
+          await() {
+            local name=$1 tries=$2
+            shift 2
+            for _ in $(seq 1 "$tries"); do
+              if "$@" > /dev/null 2>&1; then
+                return 0
+              fi
+              sleep 0.5
             done
-            docker logs postgres
+            echo "::error::$name never became ready"
+            docker logs "$name" 2>&1 | tail -40
             return 1
           }
+
+          wait_postgres() { await postgres 200 docker exec postgres pg_isready -q; }
+          wait_redis()    { await redis 200 docker exec redis redis-cli ping; }
+          wait_minio()    { await minio 200 curl -sf http://127.0.0.1:9000/minio/health/live; }
+          wait_tinybird() { await tinybird 400 curl -sf http://127.0.0.1:7181/tokens; }
 
           setup_minio() {
             cd server/.minio
@@ -386,11 +366,13 @@ jobs:
             echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
           }
 
+          start_containers
+
           names=(postgres minio emails venv)
-          start_postgres > /tmp/setup-postgres.log 2>&1 & pids[0]=$!
-          setup_minio    > /tmp/setup-minio.log    2>&1 & pids[1]=$!
-          build_emails   > /tmp/setup-emails.log   2>&1 & pids[2]=$!
-          ( (sync_venv) && (setup_tinybird) ) > /tmp/setup-venv.log 2>&1 & pids[3]=$!
+          wait_postgres                                        > /tmp/setup-postgres.log 2>&1 & pids[0]=$!
+          ( (wait_minio) && (setup_minio) )                    > /tmp/setup-minio.log    2>&1 & pids[1]=$!
+          build_emails                                         > /tmp/setup-emails.log   2>&1 & pids[2]=$!
+          ( (sync_venv) && (wait_redis) && (wait_tinybird) && (setup_tinybird) ) > /tmp/setup-venv.log 2>&1 & pids[3]=$!
 
           status=0
           for i in 0 1 2 3; do

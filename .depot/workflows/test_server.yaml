@@ -238,11 +238,15 @@ jobs:
         run: exit 1
 
   test:
-    name: "Server: Tests 🐍"
+    name: "Server: Tests 🐍 (${{ matrix.shard }}/4)"
     needs: changes
     if: needs.changes.outputs.server == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     runs-on:
-      size: 32x128
+      size: 8x32
       image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1
     timeout-minutes: 15
     env:
@@ -366,4 +370,4 @@ jobs:
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest -n 48 --dist=loadgroup --no-cov --durations=0
+        run: uv run pytest --splits 4 --group ${{ matrix.shard }} -n 12 --dist=loadgroup --no-cov --durations=0

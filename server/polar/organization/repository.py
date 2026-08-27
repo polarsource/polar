@@ -124,16 +124,6 @@ class OrganizationRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_payout_account(
-        self, payout_account_id: UUID
-    ) -> Organization | None:
-        """Get the organization that uses the given payout account."""
-        statement = self.get_base_statement().where(
-            Organization.payout_account_id == payout_account_id,
-            Organization.status != OrganizationStatus.BLOCKED,
-        )
-        return await self.get_one_or_none(statement)
-
     async def get_by_id_with_payout_account(
         self,
         id: UUID,

@@ -7284,6 +7284,65 @@ class TestUpdatePaymentMethodFromRetry:
 
 
 @pytest.mark.asyncio
+class TestUpdatePaymentMethodFromNewDefault:
+    async def test_single_payable_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        old_payment_method = await create_payment_method(save_fixture, customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=old_payment_method,
+        )
+        canceled_subscription = await create_canceled_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_payment_method = await create_payment_method(save_fixture, customer)
+
+        await subscription_service.update_payment_method_from_new_default(
+            session, customer, new_payment_method
+        )
+
+        assert subscription.payment_method == new_payment_method
+        assert canceled_subscription.payment_method_id is None
+
+    async def test_multiple_payable_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        first_payment_method = await create_payment_method(save_fixture, customer)
+        second_payment_method = await create_payment_method(save_fixture, customer)
+        first_subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=first_payment_method,
+        )
+        second_subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=second_payment_method,
+        )
+        new_payment_method = await create_payment_method(save_fixture, customer)
+
+        await subscription_service.update_payment_method_from_new_default(
+            session, customer, new_payment_method
+        )
+
+        assert first_subscription.payment_method_id == first_payment_method.id
+        assert second_subscription.payment_method_id == second_payment_method.id
+
+
+@pytest.mark.asyncio
 class TestUpdateSeats:
     async def test_seat_increase_same_tier(
         self,

@@ -111,6 +111,20 @@ class SubscriptionRepository(
         )
         return await self.get_all(statement)
 
+    async def list_payable_by_customer(
+        self, customer_id: UUID, *, options: Options = ()
+    ) -> Sequence[Subscription]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.customer_id == customer_id,
+                Subscription.requires_payment_method,
+                Subscription.ended_at.is_(None),
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
     async def list_requiring_payment_method(
         self, payment_method_id: UUID, *, options: Options = ()
     ) -> Sequence[Subscription]:

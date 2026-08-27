@@ -4200,6 +4200,25 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         return await repository.update(subscription)
 
+    async def update_payment_method_from_new_default(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """
+        Point the customer's only payable subscription at their new default
+        payment method. With several payable subscriptions, each may
+        deliberately be billed by a different method, so the pins are left
+        untouched.
+        """
+        repository = SubscriptionRepository.from_session(session)
+        subscriptions = await repository.list_payable_by_customer(customer.id)
+        if len(subscriptions) == 1:
+            subscription = subscriptions[0]
+            subscription.payment_method = payment_method
+            await repository.update(subscription)
+
     async def _create_subscription_update_order(
         self, session: AsyncSession, subscription: Subscription
     ) -> Order:

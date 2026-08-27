@@ -16,6 +16,4 @@ onlyBuiltDependencies:
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
-  - '@oxlint/*@1.79.0'
   - '@polar-sh/sdk'
-  - oxlint@1.79.0

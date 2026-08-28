@@ -427,32 +427,23 @@ class MemberService:
     ) -> Member | None:
         """Get or create the member sitting on a seat.
 
-        The member lives under the buyer, with the seat holder's email, so
-        resolving the holder's own owner member would be the wrong identity.
-        Returns None when there is no email to build a member from.
+        The member lives under the buyer, not under the seat holder.
         """
         if seat.member_id is not None:
             return await MemberRepository.from_session(session).get_by_id(
                 seat.member_id
             )
 
-        email = seat.email
-        if email is None and seat.customer_id is not None:
-            holder = await CustomerRepository.from_session(session).get_by_id(
-                seat.customer_id
-            )
-            email = holder.email if holder is not None else None
-
         seat_repository = CustomerSeatRepository.from_session(session)
         buyer_customer_id = await seat_repository.get_buyer_customer_id(seat)
-        if email is None or buyer_customer_id is None:
+        if seat.email is None or buyer_customer_id is None:
             return None
 
         return await self.get_or_create_by_email(
             session,
             customer_id=buyer_customer_id,
             organization_id=organization.id,
-            email=email,
+            email=seat.email,
         )
 
     async def get_or_create_by_email(

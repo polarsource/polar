@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.repository import CustomerSeatRepository
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -96,7 +96,7 @@ async def _resolve_or_create_owner_member(
 ) -> Member | None:
     """Return the customer's owner member, creating it if it doesn't exist yet.
 
-    Returns None when the customer no longer exists.
+    Returns None when the customer is gone or has no email to build one from.
     """
     member_repository = MemberRepository.from_session(session)
     member = await member_repository.get_owner_by_customer_id(
@@ -105,9 +105,8 @@ async def _resolve_or_create_owner_member(
     if member is not None:
         return member
 
-    customer_repository = CustomerRepository.from_session(session)
-    customer = await customer_repository.get_by_id(customer_id)
-    if customer is None:
+    customer = await CustomerRepository.from_session(session).get_by_id(customer_id)
+    if customer is None or customer.email is None:
         return None
 
     return await member_service.create_owner_member(session, customer, organization)
@@ -132,8 +131,7 @@ async def resolve_member(
 
     if not member_model_enabled:
         if member_id is not None:
-            member = await member_repository.get_by_id(member_id)
-            return member  # may be None if member was deleted
+            return await member_repository.get_by_id(member_id)
         if is_seat_based:
             seat = await CustomerSeatRepository.from_session(
                 session
@@ -145,18 +143,9 @@ async def resolve_member(
                     session, seat, organization
                 )
         # Link now, so grants don't pile up for the backfill.
-        try:
-            return await _resolve_or_create_owner_member(
-                session, customer_id, organization, include_deleted=include_deleted
-            )
-        except PolarRequestValidationError:
-            # No email to build an owner member from. Grant it unlinked.
-            log.warning(
-                "Could not link benefit grant to an owner member",
-                customer_id=str(customer_id),
-                organization_id=str(organization.id),
-            )
-            return None
+        return await _resolve_or_create_owner_member(
+            session, customer_id, organization, include_deleted=include_deleted
+        )
 
     if member_id is not None:
         member = await member_repository.get_by_id(member_id)

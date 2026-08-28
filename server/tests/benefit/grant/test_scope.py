@@ -216,6 +216,7 @@ class TestResolveMember:
             subscription=subscription,
             customer=holder,
             status=SeatStatus.claimed,
+            email=holder.email,
         )
 
         result = await resolve_member(

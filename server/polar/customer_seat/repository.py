@@ -213,10 +213,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         subscription_id: UUID | None = None,
         order_id: UUID | None = None,
     ) -> CustomerSeat | None:
-        """The customer's active seat on this subscription or order.
-
-        The container is what tells a customer's seats apart.
-        """
+        """The customer's active seat on this subscription or order."""
         if subscription_id is None and order_id is None:
             return None
 
@@ -232,7 +229,6 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             statement = statement.where(CustomerSeat.subscription_id == subscription_id)
         else:
             statement = statement.where(CustomerSeat.order_id == order_id)
-
         return await self.get_one_or_none(statement.limit(1))
 
     async def get_buyer_customer_id(self, seat: CustomerSeat) -> UUID | None:

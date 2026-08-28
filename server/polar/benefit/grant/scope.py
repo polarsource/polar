@@ -135,8 +135,7 @@ async def resolve_member(
             member = await member_repository.get_by_id(member_id)
             return member  # may be None if member was deleted
         if is_seat_based:
-            # A seat holder's grant belongs to the member on their seat, which
-            # lives under the buyer rather than under the holder.
+            # The seat's member sits under the buyer, not the holder.
             seat_member_id = await CustomerSeatRepository.from_session(
                 session
             ).get_active_seat_member_id(
@@ -144,14 +143,13 @@ async def resolve_member(
             )
             if seat_member_id is not None:
                 return await member_repository.get_by_id(seat_member_id)
-        # Populate the member before the flag flips, so grants don't pile up
-        # needing a backfill. Best effort: a customer we can't build an owner
-        # member for still gets its grant.
+        # Link now, so grants don't pile up for the backfill.
         try:
             return await _resolve_or_create_owner_member(
                 session, customer_id, organization, include_deleted=include_deleted
             )
         except PolarRequestValidationError:
+            # No email to build an owner member from. Grant it unlinked.
             log.warning(
                 "Could not link benefit grant to an owner member",
                 customer_id=str(customer_id),

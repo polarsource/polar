@@ -9,6 +9,7 @@ from polar.benefit.grant.scope import (
     resolve_member,
 )
 from polar.enums import SubscriptionRecurringInterval
+from polar.member.repository import MemberRepository
 from polar.models import Account, Member
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import MemberRole
@@ -176,6 +177,59 @@ class TestResolveMember:
         assert result is not None
         assert result.id == seat_member.id
         assert result.customer_id == buyer.id
+
+    async def test_phase_1_unlinked_seat_returns_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Phase 1: a seat with no member yet leaves the grant unlinked.
+
+        Creating an owner member under the holder would attach the wrong
+        identity and hide the grant from the backfill.
+        """
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "member_model_enabled": False,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        buyer = await create_customer(
+            save_fixture, organization=organization, email="buyer@example.com"
+        )
+        holder = await create_customer(
+            save_fixture, organization=organization, email="holder@example.com"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=buyer
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            customer=holder,
+            status=SeatStatus.claimed,
+        )
+
+        result = await resolve_member(
+            session,
+            customer_id=holder.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=True,
+            subscription_id=subscription.id,
+        )
+
+        assert result is None
+        member_repository = MemberRepository.from_session(session)
+        assert await member_repository.get_owner_by_customer_id(holder.id) is None
 
     async def test_phase_1_two_seats_resolve_by_scope(
         self,

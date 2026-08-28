@@ -206,23 +206,24 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_all(statement)
 
-    async def get_active_seat_member_id(
+    async def list_active_seat_member_ids(
         self,
         customer_id: UUID,
         *,
         subscription_id: UUID | None = None,
         order_id: UUID | None = None,
-    ) -> UUID | None:
-        """Member on the customer's seat for this subscription or order.
+    ) -> Sequence[UUID | None]:
+        """Members on the customer's active seats for this subscription or order.
 
-        The container is what tells a customer's seats apart.
+        The container is what tells a customer's seats apart. An entry is None
+        when the seat has no member yet. More than one entry means the seat
+        can't be told apart from another one.
         """
         if subscription_id is None and order_id is None:
-            return None
+            return []
 
         statement = select(CustomerSeat.member_id).where(
             CustomerSeat.customer_id == customer_id,
-            CustomerSeat.member_id.is_not(None),
             CustomerSeat.status != SeatStatus.revoked,
         )
         if subscription_id is not None:
@@ -230,8 +231,8 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         else:
             statement = statement.where(CustomerSeat.order_id == order_id)
 
-        result = await self.session.execute(statement.limit(1))
-        return result.scalar_one_or_none()
+        result = await self.session.execute(statement.distinct().limit(2))
+        return result.scalars().all()
 
     async def list_active_by_member_id(
         self, member_id: UUID, *, options: Options = ()

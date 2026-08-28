@@ -239,6 +239,11 @@ resource "aws_lambda_function" "task" {
   }
 }
 
+resource "aws_lambda_function_recursion_config" "task" {
+  function_name  = aws_lambda_function.task.function_name
+  recursive_loop = "Allow"
+}
+
 resource "aws_lambda_event_source_mapping" "task" {
   event_source_arn        = aws_sqs_queue.task.arn
   function_name           = aws_lambda_function.task.arn

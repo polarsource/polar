@@ -26,8 +26,6 @@ does not exist), say so explicitly in your summary rather than silently dropping
 git diff --name-only main...HEAD
 ```
 
-Everything below keys off which areas changed.
-
 ## 2. Lint and type-check
 
 Run the applicable steps in parallel.

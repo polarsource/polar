@@ -63,10 +63,14 @@ Polar-specific review but do not replace it.
 The working tree should be clean by now, so cubic reviews the branch against its base:
 
 ```bash
-cubic review -b -j
+cubic review --base main --json
 ```
 
-If `cubic` is not installed, skip this step and say so. Do not install it silently.
+`--base` takes the branch name as a value, so `cubic review -b -j` silently reviews against
+a branch called `-j` and hangs.
+
+If `cubic` is not installed, or its API is unavailable, skip this step and say so. Do not
+install it silently.
 
 Present issues grouped by priority, highlighting P0 and P1. Fix real P0 and P1 issues;
 skip false positives with a one-line reason. **Do not open the PR while an unfixed, real

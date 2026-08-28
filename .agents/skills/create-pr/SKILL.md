@@ -53,7 +53,7 @@ files (ruff formatting, oxfmt), stage and commit them separately, e.g.
 
 ## 3. Review
 
-Always run the Polar code review. Read `.claude/commands/polar-code-review.md` and follow
+Always run the Polar code review. Read `.agents/commands/polar-code-review.md` and follow
 it exactly. The file is tracked in the repo, so this review is available in every agent
 environment even when `/polar-code-review` is not registered as a slash command.
 
@@ -100,30 +100,27 @@ refactor: extract payment validation into service layer
 
 ### Description
 
-**This is human communication. Do not be lazy.** Read the full diff and commit history,
-understand the change, and write the description yourself. Explain what changed and why
-in terms a reviewer can understand without reconstructing the work from the diff.
+Do not write the PR description. The human writes it. Paste this empty template as the
+body and stop. Do not fill any section, tick any box, or add extra text.
 
-Use `.github/pull_request_template.md` as a structural checklist, not a form to fill
-mechanically. Keep its section headers when they help the reader.
+```markdown
+## Summary
 
-- Include only sections that carry real information. A small fix may need just
-  `## Summary`; a feature may need `## Summary`, `## What`, and `## Why`.
-- Always keep `## Checklist`. Tick only what you actually verified in this run. Leave
-  tests unticked if you did not add any.
-- Omit `Related Issue: #<n>` unless an issue is genuinely referenced by the branch or
-  commits.
-- Do not restate the diff line by line or pad the description with generic text.
+This is human communication. Do not be lazy.
 
-Write it for readers who are not native English speakers: short sentences, one idea each,
-common words, bullets over paragraphs. A reviewer should finish the body in under a
-minute.
+**Related Issue**: #
 
-### This is a public repo
+## What
 
-- **No PII** — no names, emails, user IDs, API keys, tokens, internal URLs, or customer
-  data, even if they appear in commit messages or the diff.
-- **No business data** — no revenue figures, user counts, conversion rates, or other
-  internal metrics.
+## Why
 
-Describe what changed and why, without exposing sensitive details.
+## How
+
+## Checklist
+
+- [ ] This PR addresses a single concern (one bug fix, one feature, one refactor)
+- [ ] The diff is reasonably sized and easy to review
+- [ ] New functionality is covered by tests
+- [ ] Linting and type checking pass (`uv run task lint && uv run task lint_types`)
+- [ ] No unrelated changes or drive-by fixes are included
+```

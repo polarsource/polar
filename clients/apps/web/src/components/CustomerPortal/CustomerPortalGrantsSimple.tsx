@@ -26,7 +26,7 @@ export const CustomerPortalGrantsSimple = ({
               <BenefitGrant
                 api={api}
                 benefitGrant={benefitGrant}
-                allowLicenseKeyRotation
+                allowLicenseKeyRotation={true}
               />
             </ListItem>
           ))}

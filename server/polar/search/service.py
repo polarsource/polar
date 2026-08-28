@@ -223,7 +223,7 @@ class SearchService:
             .join(Customer, Order.customer_id == Customer.id)
             .join(Product, Order.product_id == Product.id)
             .where(
-                Customer.organization_id.in_(organization_subquery),
+                Order.organization_id.in_(organization_subquery),
                 ~Order.is_deleted,
             )
         )
@@ -273,7 +273,7 @@ class SearchService:
             .join(Customer, Subscription.customer_id == Customer.id)
             .join(Product, Subscription.product_id == Product.id)
             .where(
-                Customer.organization_id.in_(organization_subquery),
+                Subscription.organization_id.in_(organization_subquery),
                 ~Subscription.is_deleted,
             )
         )

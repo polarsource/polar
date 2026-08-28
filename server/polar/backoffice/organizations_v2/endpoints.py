@@ -384,7 +384,7 @@ async def count_test_sales(
     )
 
     test_sales_filter = (
-        Customer.organization_id == organization_id,
+        Order.organization_id == organization_id,
         func.lower(Customer.email).in_(team_member_emails_subquery),
         Order.net_amount > 0,
     )

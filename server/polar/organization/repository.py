@@ -347,7 +347,7 @@ class OrganizationRepository(
             select(func.count(Order.id))
             .join(Customer, Order.customer_id == Customer.id)
             .where(
-                Customer.organization_id == organization_id,
+                Order.organization_id == organization_id,
                 ~Customer.is_deleted,
                 Order.total_amount > 0,
             )
@@ -370,7 +370,7 @@ class OrganizationRepository(
             .join(Customer, Subscription.customer_id == Customer.id)
             .outerjoin(Discount, Subscription.discount_id == Discount.id)
             .where(
-                Customer.organization_id == organization_id,
+                Subscription.organization_id == organization_id,
                 ~Customer.is_deleted,
                 Subscription.status.in_(SubscriptionStatus.active_statuses()),
                 ~(

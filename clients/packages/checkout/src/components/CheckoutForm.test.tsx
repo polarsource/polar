@@ -735,5 +735,76 @@ describe('CheckoutForm', () => {
 
       expect(update).toHaveBeenCalledTimes(2)
     })
+
+    it('keeps server validation errors visible when update rejects', async () => {
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      const update = vi.fn(async () => {
+        form.setError('customer_email', {
+          type: 'validation_error',
+          message: 'Email is not deliverable',
+        })
+        throw new Error('validation failed')
+      })
+      render(
+        <FormWrapper
+          checkout={createCheckout()}
+          {...defaultProps}
+          update={update}
+          onForm={(f) => {
+            form = f
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        fill('Email', 'undeliverable@example.com')
+      })
+
+      expect(update).toHaveBeenCalledWith({
+        customer_email: 'undeliverable@example.com',
+      })
+      expect(screen.getByText('Email is not deliverable')).toBeInTheDocument()
+    })
+
+    it('clears a stale error and shows the new server error on retry', async () => {
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      const update = vi.fn(async () => {
+        form.setError('customer_email', {
+          type: 'validation_error',
+          message: 'This domain does not accept email',
+        })
+        throw new Error('validation failed')
+      })
+      render(
+        <FormWrapper
+          checkout={createCheckout()}
+          {...defaultProps}
+          update={update}
+          onForm={(f) => {
+            form = f
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      act(() =>
+        form.setError('customer_email', { message: 'Previous server error' }),
+      )
+      expect(screen.getByText('Previous server error')).toBeInTheDocument()
+
+      await act(async () => {
+        fill('Email', 'undeliverable@example.com')
+      })
+
+      expect(
+        screen.queryByText('Previous server error'),
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText('This domain does not accept email'),
+      ).toBeInTheDocument()
+    })
   })
 })

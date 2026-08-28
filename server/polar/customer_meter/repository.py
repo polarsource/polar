@@ -1,7 +1,9 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
 from polar.authz.types import AccessibleOrganizationID
@@ -84,6 +86,36 @@ class CustomerMeterRepository(
             .with_for_update(nowait=nowait, of=CustomerMeter)
         )
         return await self.get_one_or_none(statement)
+
+    async def get_or_create(
+        self,
+        customer: Customer,
+        meter: Meter,
+        *,
+        activated_at: datetime | None = None,
+    ) -> CustomerMeter:
+        customer_meter = await self.get_by_customer_and_meter_for_update(
+            customer.id, meter.id
+        )
+        if customer_meter is not None:
+            return customer_meter
+
+        customer_meter = CustomerMeter(
+            customer=customer, meter=meter, activated_at=activated_at
+        )
+        nested = await self.session.begin_nested()
+        try:
+            self.session.add(customer_meter)
+            await self.session.flush()
+        except IntegrityError:
+            await nested.rollback()
+            customer_meter = await self.get_by_customer_and_meter_for_update(
+                customer.id, meter.id
+            )
+            if customer_meter is not None:
+                return customer_meter
+            raise
+        return customer_meter
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

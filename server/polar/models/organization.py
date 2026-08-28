@@ -22,6 +22,7 @@ from sqlalchemy import (
     CheckConstraint,
     ColumnElement,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -29,6 +30,7 @@ from sqlalchemy import (
     Uuid,
     and_,
     or_,
+    text,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -516,6 +518,16 @@ class Organization(RateLimitGroupMixin, RecordModel):
         UniqueConstraint("slug"),
         CheckConstraint(
             "next_review_threshold >= 0", name="next_review_threshold_positive"
+        ),
+        # Serves the backoffice list default (status/priority) ordering: the
+        # column directions match `ORDER BY status DESC, status_updated_at ASC
+        # NULLS FIRST` so the planner walks the index and stops at the page
+        # limit instead of seq-scanning and sorting the whole table.
+        Index(
+            "ix_organizations_status_priority",
+            text("status DESC"),
+            text("status_updated_at ASC NULLS FIRST"),
+            postgresql_where=text("deleted_at IS NULL"),
         ),
     )
 

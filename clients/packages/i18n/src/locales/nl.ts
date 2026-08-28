@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'Btw (inbegrepen)',
       basePrice: 'Basisprijs',
+      upTo: 'tot {units}',
     },
     trial: {
       hero: {

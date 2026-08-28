@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'IVA (incluído)',
       basePrice: 'Preço base',
+      upTo: 'até {units}',
     },
     trial: {
       hero: {

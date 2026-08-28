@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'MwSt. (inklusive)',
       basePrice: 'Grundpreis',
+      upTo: 'bis zu {units}',
     },
     trial: {
       hero: {

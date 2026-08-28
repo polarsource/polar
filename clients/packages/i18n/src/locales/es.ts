@@ -94,6 +94,7 @@ export default {
       },
       inclTax: 'Impuestos (incluidos)',
       basePrice: 'Precio base',
+      upTo: 'hasta {units}',
     },
     trial: {
       hero: {

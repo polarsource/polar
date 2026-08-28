@@ -94,6 +94,7 @@ export default {
         updateFailed: 'Koltuklar güncellenemedi',
       },
       basePrice: 'Temel fiyat',
+      upTo: "{units}'e kadar",
     },
     trial: {
       hero: {

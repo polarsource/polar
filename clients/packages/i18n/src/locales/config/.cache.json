@@ -178,7 +178,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -359,7 +360,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -540,7 +542,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -721,7 +724,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -902,7 +906,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1075,7 +1080,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1248,7 +1254,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1421,7 +1428,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1594,7 +1602,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1767,7 +1776,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1940,7 +1950,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2113,7 +2124,8 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2286,6 +2298,7 @@
     "intervals.short.year.=1": "yr",
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
-    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase."
+    "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    "checkout.pricing.upTo": "up to {units}"
   }
 }

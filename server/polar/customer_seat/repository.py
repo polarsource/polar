@@ -213,10 +213,9 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         subscription_id: UUID | None = None,
         order_id: UUID | None = None,
     ) -> UUID | None:
-        """Member on the customer's seat for a given subscription or order.
+        """Member on the customer's seat for this subscription or order.
 
-        Scoping by the container is what tells two seats held by the same
-        customer apart.
+        The container is what tells a customer's seats apart.
         """
         if subscription_id is None and order_id is None:
             return None

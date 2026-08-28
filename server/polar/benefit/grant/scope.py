@@ -4,6 +4,7 @@ import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
@@ -131,8 +132,12 @@ async def resolve_member(
         if member_id is not None:
             member = await member_repository.get_by_id(member_id)
             return member  # may be None if member was deleted
-        if is_seat_based:
-            # Seat grants carry an explicit member_id, resolved from the seat.
+        if is_seat_based and await CustomerSeatRepository.from_session(
+            session
+        ).has_non_revoked_seat(customer_id):
+            # This customer holds a seat, so the grant belongs to the member on
+            # that seat. The seat flow passes it explicitly; leave it unset
+            # rather than guessing, so the backfill can still resolve it.
             return None
         # Phase 1 of the member model migration: link direct-purchase grants to
         # the owner member so `grant.member` is already populated before the

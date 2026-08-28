@@ -206,6 +206,19 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_all(statement)
 
+    async def has_non_revoked_seat(self, customer_id: UUID) -> bool:
+        """Whether the customer currently holds a pending or claimed seat."""
+        statement = (
+            select(CustomerSeat.id)
+            .where(
+                CustomerSeat.customer_id == customer_id,
+                CustomerSeat.status != SeatStatus.revoked,
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None
+
     async def list_active_by_member_id(
         self, member_id: UUID, *, options: Options = ()
     ) -> Sequence[CustomerSeat]:

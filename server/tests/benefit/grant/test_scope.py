@@ -8,11 +8,19 @@ from polar.benefit.grant.scope import (
     MemberNotFound,
     resolve_member,
 )
+from polar.enums import SubscriptionRecurringInterval
 from polar.models import Account, Member
+from polar.models.customer_seat import SeatStatus
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_organization
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_customer_seat,
+    create_organization,
+    create_product,
+    create_subscription,
+)
 
 
 @pytest.mark.asyncio
@@ -129,6 +137,57 @@ class TestResolveMember:
         assert result.customer_id == customer.id
         assert result.role == MemberRole.owner
 
+    async def test_phase_1_seat_holder_is_left_for_the_backfill(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Phase 1: a seat holder's grant belongs to the member on their seat.
+
+        The seat flow passes that member explicitly, so resolution is skipped
+        rather than guessing the holder's own owner member, which would hide the
+        row from the backfill.
+        """
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "member_model_enabled": False,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        buyer = await create_customer(
+            save_fixture, organization=organization, email="buyer@example.com"
+        )
+        holder = await create_customer(
+            save_fixture, organization=organization, email="holder@example.com"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=buyer
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            customer=holder,
+            status=SeatStatus.claimed,
+        )
+
+        result = await resolve_member(
+            session,
+            customer_id=holder.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=True,
+        )
+
+        assert result is None
+
     async def test_phase_1_customer_without_email_returns_none(
         self,
         session: AsyncSession,
@@ -163,13 +222,17 @@ class TestResolveMember:
 
         assert result is None
 
-    async def test_phase_1_seat_based_without_member_id_returns_none(
+    async def test_phase_1_seat_product_buyer_resolves_owner_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
     ) -> None:
-        """Phase 1: seat grants carry an explicit member_id, so nothing is resolved."""
+        """Phase 1: buying a seat-based product without holding a seat links the buyer.
+
+        The grant belongs to the buyer, so it resolves their owner member rather
+        than being left unlinked for the backfill to pick up later.
+        """
         organization = await create_organization(
             save_fixture,
             account,
@@ -188,7 +251,9 @@ class TestResolveMember:
             is_seat_based=True,
         )
 
-        assert result is None
+        assert result is not None
+        assert result.customer_id == customer.id
+        assert result.role == MemberRole.owner
 
     async def test_phase_1_reuses_existing_owner_member(
         self,

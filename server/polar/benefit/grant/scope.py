@@ -132,13 +132,18 @@ async def resolve_member(
         if member_id is not None:
             member = await member_repository.get_by_id(member_id)
             return member  # may be None if member was deleted
-        if is_seat_based and await CustomerSeatRepository.from_session(
-            session
-        ).has_non_revoked_seat(customer_id):
-            # This customer holds a seat, so the grant belongs to the member on
-            # that seat. The seat flow passes it explicitly; leave it unset
-            # rather than guessing, so the backfill can still resolve it.
-            return None
+        if is_seat_based:
+            seat_member_ids = await CustomerSeatRepository.from_session(
+                session
+            ).list_active_seat_member_ids(customer_id)
+            if seat_member_ids:
+                # A seat holder's grant belongs to the member on their seat, not
+                # to their own owner member. With more than one seat the right
+                # member needs the grant's scope, so leave it for the backfill
+                # rather than guessing.
+                if len(seat_member_ids) == 1 and seat_member_ids[0] is not None:
+                    return await member_repository.get_by_id(seat_member_ids[0])
+                return None
         # Phase 1 of the member model migration: link direct-purchase grants to
         # the owner member so `grant.member` is already populated before the
         # flag flips. Without this, every grant created during Phase 1 lands

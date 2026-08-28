@@ -280,14 +280,9 @@ if (event.type === 'customer_seat.claimed') {
 if (event.type === 'benefit_grant.created') {
   const grant = event.data;
 
-  if (grant.member) {
-    // Seat-based grant: the member is the seat holder.
-    // Direct purchase: the member is the buyer's owner member.
-    await grantAccess(grant.member.id, grant.member.email);
-  } else {
-    // No member (for example, a product without seat-based pricing).
-    await grantAccess(grant.customer_id);
-  }
+  // For a seat-based grant the member is the seat holder.
+  // For a direct purchase it is the buyer's own member.
+  await grantAccess(grant.member.id, grant.member.email);
 }
 ```
 

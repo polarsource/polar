@@ -206,18 +206,24 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_all(statement)
 
-    async def has_non_revoked_seat(self, customer_id: UUID) -> bool:
-        """Whether the customer currently holds a pending or claimed seat."""
+    async def list_active_seat_member_ids(
+        self, customer_id: UUID, *, limit: int = 2
+    ) -> Sequence[UUID | None]:
+        """Member ids on the customer's pending or claimed seats.
+
+        Empty when the customer holds no seat. Callers that need an unambiguous
+        answer should ask for two and treat anything else as ambiguous.
+        """
         statement = (
-            select(CustomerSeat.id)
+            select(CustomerSeat.member_id)
             .where(
                 CustomerSeat.customer_id == customer_id,
                 CustomerSeat.status != SeatStatus.revoked,
             )
-            .limit(1)
+            .limit(limit)
         )
         result = await self.session.execute(statement)
-        return result.scalar_one_or_none() is not None
+        return result.scalars().all()
 
     async def list_active_by_member_id(
         self, member_id: UUID, *, options: Options = ()

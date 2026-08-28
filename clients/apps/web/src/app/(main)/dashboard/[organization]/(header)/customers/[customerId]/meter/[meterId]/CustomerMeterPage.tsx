@@ -159,7 +159,15 @@ const CustomerMeterPage = ({
   }, [inViewport, hasNextPage, isFetching, fetchNextPage])
 
   const overages = useMemo(() => {
-    if (!unitPrice || !customerMeter || customerMeter.balance >= 0) return null
+    // unit_amount is null only for tiered metered prices, which can't be
+    // created until the metered-tiers feature ships. Temporary guard.
+    if (
+      !unitPrice ||
+      unitPrice.unit_amount === null ||
+      !customerMeter ||
+      customerMeter.balance >= 0
+    )
+      return null
     const cost =
       Math.abs(customerMeter.balance) * parseFloat(unitPrice.unit_amount)
     return {

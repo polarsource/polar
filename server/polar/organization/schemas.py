@@ -178,6 +178,10 @@ class OrganizationFeatureSettings(Schema):
     unit_based_pricing_enabled: bool = Field(
         False, description="If this organization has unit-based pricing enabled"
     )
+    metered_tiered_pricing_enabled: bool = Field(
+        False,
+        description="If this organization has tiered pricing for metered prices enabled",
+    )
     wallets_enabled: bool = Field(
         False, description="If this organization has Wallets enabled"
     )

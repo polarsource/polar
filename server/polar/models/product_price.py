@@ -293,11 +293,10 @@ class LegacyRecurringProductPriceCustom(
 class TieredPrice:
     """Mixin for prices billed from a shared list of tiers.
 
-    `get_tiered_amount` returns cents for a quantity. Bounds are whole
-    units, but the quantity need not be: metered usage is consumed rather
-    than purchased, and an inclusive bound places a fractional quantity
-    unambiguously. Subclasses interpret those units (seats, metered
-    usage, …).
+    `get_tiered_amount` returns the amount in the smallest currency unit
+    for a quantity. Tier bounds are whole units, but the quantity may be
+    fractional (metered usage is consumed, not purchased). Subclasses
+    decide what a unit means (seats, metered usage, …).
     """
 
     __abstract__ = True
@@ -350,7 +349,6 @@ class ProductPriceMeteredUnit(TieredPrice, NewProductPrice, ProductPrice):
     )
     unit_amount: Mapped[Decimal | None] = mapped_column(
         Numeric(17, 12),  # 12 decimal places, 17 digits total
-        # Polymorphic columns must be nullable, as they don't apply to other types
         # None for tiered prices: exactly one of unit_amount and tiers is set
         nullable=True,
     )

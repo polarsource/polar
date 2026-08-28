@@ -28135,6 +28135,12 @@ export interface components {
        */
       unit_based_pricing_enabled: boolean
       /**
+       * Metered Tiered Pricing Enabled
+       * @description If this organization has tiered pricing for metered prices enabled
+       * @default false
+       */
+      metered_tiered_pricing_enabled: boolean
+      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false

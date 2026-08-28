@@ -655,6 +655,22 @@ class ProductService:
                             }
                         )
                         continue
+                if (
+                    isinstance(price_schema, ProductPriceMeteredUnitCreate)
+                    and price_schema.tiers is not None
+                    and not organization.feature_settings.get(
+                        "metered_tiered_pricing_enabled", False
+                    )
+                ):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": (*error_prefix, index),
+                            "msg": "Tiered pricing for metered prices is not enabled for this organization.",
+                            "input": price_schema,
+                        }
+                    )
+                    continue
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):

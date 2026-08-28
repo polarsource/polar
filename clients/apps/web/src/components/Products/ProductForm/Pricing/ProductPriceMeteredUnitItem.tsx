@@ -154,7 +154,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
                       {...field}
                       name={field.name}
                       currency={currency}
-                      value={field.value}
+                      value={field.value ?? undefined}
                       onValueChange={(v) => {
                         field.onChange(v)
                         setValue(`prices.${index}.id`, '')

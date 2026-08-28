@@ -784,6 +784,9 @@ class TestCreate:
         user_organization: UserOrganization,
         meter: Meter,
     ) -> None:
+        organization.feature_settings = {"metered_tiered_pricing_enabled": True}
+        session.add(organization)
+        await session.flush()
         create_schema = ProductCreateRecurring(
             name="Recurring tiered metered",
             recurring_interval=SubscriptionRecurringInterval.month,

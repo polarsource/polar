@@ -26,7 +26,9 @@ export const CustomerMeter = ({
   )
 
   const overages = useMemo(() => {
-    if (!unitPrice) {
+    // unit_amount is null only for tiered metered prices, which can't be
+    // created until the metered-tiers feature ships. Temporary guard.
+    if (!unitPrice || unitPrice.unit_amount === null) {
       return null
     }
 

@@ -73,6 +73,7 @@ export function createMeteredPrice(
     id: 'price_metered_1',
     amount_type: 'metered_unit',
     unit_amount: '0.05',
+    tiers: null,
     cap_amount: null,
     meter_id: 'meter_1',
     meter: {

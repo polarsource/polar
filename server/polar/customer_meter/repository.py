@@ -94,18 +94,6 @@ class CustomerMeterRepository(
         *,
         activated_at: datetime | None = None,
     ) -> CustomerMeter:
-        """
-        Get an existing CustomerMeter for the given customer and meter, or create
-        it if it doesn't exist yet.
-
-        `SELECT ... FOR UPDATE` can't lock a row that doesn't exist, so two
-        concurrent executions may both observe no row and both try to insert one,
-        violating the ``customer_id, meter_id`` unique constraint. To handle that
-        race, the insert runs inside a SAVEPOINT: if the flush raises an
-        ``IntegrityError`` because a concurrent transaction won the race, the
-        savepoint is rolled back and the row (now committed by the other
-        transaction) is re-fetched with a lock and returned instead of raising.
-        """
         customer_meter = await self.get_by_customer_and_meter_for_update(
             customer.id, meter.id
         )

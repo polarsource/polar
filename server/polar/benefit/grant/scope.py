@@ -95,8 +95,7 @@ async def _resolve_or_create_owner_member(
 ) -> Member | None:
     """Return the customer's owner member, creating it if it doesn't exist yet.
 
-    Returns None when the customer is gone, or when `create_owner_member` opts
-    out because neither the member model nor seat-based pricing is enabled.
+    Returns None when the customer no longer exists.
     """
     member_repository = MemberRepository.from_session(session)
     member = await member_repository.get_owner_by_customer_id(

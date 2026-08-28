@@ -9,8 +9,6 @@ metadata:
 
 # Create PR (Polar)
 
-Take a branch from "the code is written" to "a draft PR a human can review".
-
 **This is the only way to open a pull request in this repo.** Do not create a PR from
 any other workflow — not `gh pr create`, not a PR tool, not at the end of an unrelated
 task. If the user has not asked for a PR in this conversation, stop after pushing the
@@ -54,8 +52,7 @@ files (ruff formatting, oxfmt), stage and commit them separately, e.g.
 ## 3. Review
 
 Always run the Polar code review. Read `.agents/commands/polar-code-review.md` and follow
-it exactly. The file is tracked in the repo, so this review is available in every agent
-environment even when `/polar-code-review` is not registered as a slash command.
+it exactly.
 
 Fix real issues, commit the fixes, then run the review again.
 
@@ -100,27 +97,14 @@ refactor: extract payment validation into service layer
 
 ### Description
 
-Do not write the PR description. The human writes it. Paste this empty template as the
-body and stop. Do not fill any section, tick any box, or add extra text.
+Do not write the PR description. The human writes it.
 
-```markdown
-## Summary
+Build the body from `.github/pull_request_template.md`: keep every section header and the
+checklist verbatim, drop the HTML comment placeholders, and leave each section empty.
+Under `## Summary`, put exactly one line:
 
-This is human communication. Do not be lazy.
-
-**Related Issue**: #
-
-## What
-
-## Why
-
-## How
-
-## Checklist
-
-- [ ] This PR addresses a single concern (one bug fix, one feature, one refactor)
-- [ ] The diff is reasonably sized and easy to review
-- [ ] New functionality is covered by tests
-- [ ] Linting and type checking pass (`uv run task lint && uv run task lint_types`)
-- [ ] No unrelated changes or drive-by fixes are included
 ```
+This is human communication. Do not be lazy.
+```
+
+Do not fill any other section, tick any box, or add extra text.

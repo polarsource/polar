@@ -22,9 +22,7 @@ Push the branch, tell the user its name, and stop there.
 When the user does ask, follow the `create-pr` skill (`.agents/skills/create-pr/SKILL.md`). It is
 the only sanctioned path: lint, type-check, review, cubic, then a **draft** PR.
 
-- Never reopen a closed PR, and never open a second PR for a branch that already has one.
-- Never mark a PR ready for review on your own.
-- If a human edited a PR title or body in the GitHub UI, preserve their wording.
+Never mark a PR ready for review on your own.
 
 ## Architecture
 

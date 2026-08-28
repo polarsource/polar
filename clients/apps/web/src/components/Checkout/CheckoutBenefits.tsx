@@ -66,6 +66,7 @@ const CheckoutBenefits = ({
               api={api}
               benefitGrant={benefitGrant}
               locale={locale}
+              allowLicenseKeyRotation={false}
             />
           </ListItem>
         ))}

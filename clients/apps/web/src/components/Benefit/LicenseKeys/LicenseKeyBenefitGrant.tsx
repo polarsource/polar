@@ -23,10 +23,12 @@ const LicenseKey = ({
   api,
   licenseKey,
   locale = DEFAULT_LOCALE,
+  allowRotation,
 }: {
   api: Client
   licenseKey: schemas['LicenseKeyWithActivations']
   locale?: AcceptedLocale
+  allowRotation: boolean
 }) => {
   const t = useTranslations(locale)
   const [showRotateConfirm, setShowRotateConfirm] = useState(false)
@@ -74,7 +76,7 @@ const LicenseKey = ({
         }}
       />
       <LicenseKeyDetails licenseKey={licenseKey} locale={locale} />
-      {canRotate ? (
+      {allowRotation && canRotate ? (
         <Button
           variant="secondary"
           onClick={() => setShowRotateConfirm(true)}
@@ -105,10 +107,12 @@ export const LicenseKeyBenefitGrant = ({
   api,
   benefitGrant,
   locale = DEFAULT_LOCALE,
+  allowRotation = true,
 }: {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrantLicenseKeys']
   locale?: AcceptedLocale
+  allowRotation?: boolean
 }) => {
   const t = useTranslations(locale)
   const { data: licenseKey, isLoading } = useCustomerLicenseKey(
@@ -126,7 +130,12 @@ export const LicenseKeyBenefitGrant = ({
 
   return (
     <div className="flex w-full flex-col gap-y-6">
-      <LicenseKey api={api} licenseKey={licenseKey} locale={locale} />
+      <LicenseKey
+        api={api}
+        licenseKey={licenseKey}
+        locale={locale}
+        allowRotation={allowRotation}
+      />
     </div>
   )
 }

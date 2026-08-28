@@ -6,25 +6,20 @@ import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@polar-sh/orbit'
 import { useMeters } from '@/hooks/queries/meters'
-import { formatCurrency } from '@polar-sh/currency'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
-import { getMeterUnitFormat } from '@polar-sh/ui/lib/meterUnit'
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
-import { InfoIcon, PlusIcon } from 'lucide-react'
-import React, { useCallback, useMemo } from 'react'
+import { PlusIcon } from 'lucide-react'
+import React, { useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
-import UnitAmountInput from '../UnitAmountInput'
+import { MeteredPricingFields } from './MeteredPricingFields'
 
 export interface ProductPriceMeteredUnitItemProps {
   organization: schemas['Organization']
@@ -35,33 +30,13 @@ export interface ProductPriceMeteredUnitItemProps {
 export const ProductPriceMeteredUnitItem: React.FC<
   ProductPriceMeteredUnitItemProps
 > = ({ organization, index, currency }) => {
-  const { control, setValue, watch } = useFormContext<ProductFormType>()
+  const { control, setValue } = useFormContext<ProductFormType>()
 
   const { data: meters } = useMeters(organization.id, {
     sorting: ['name'],
     limit: 30,
     is_archived: false,
   })
-
-  const meterId = watch(`prices.${index}.meter_id`)
-  const unitAmount = watch(`prices.${index}.unit_amount`)
-
-  const pricePreview = useMemo(() => {
-    const selectedMeter = meters?.items.find(
-      (m: schemas['Meter']) => m.id === meterId,
-    )
-    const { scale, label } = getMeterUnitFormat(
-      selectedMeter?.unit ?? 'scalar',
-      {
-        customLabel: selectedMeter?.custom_label,
-        customMultiplier: selectedMeter?.custom_multiplier,
-      },
-    )
-    const cents = Number.parseFloat(String(unitAmount || '0'))
-    const scaled = cents * scale
-    const formatted = formatCurrency('subcent')(scaled, currency)
-    return `${formatted} / ${label}`
-  }, [meterId, unitAmount, meters, currency])
 
   const {
     isShown: isCreateMeterModalShown,
@@ -138,72 +113,10 @@ export const ProductPriceMeteredUnitItem: React.FC<
               )
             }}
           />
-          <FormField
-            control={control}
-            name={`prices.${index}.unit_amount`}
-            rules={{
-              min: 0,
-              required: 'This field is required',
-            }}
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel>Amount per unit</FormLabel>
-                  <FormControl>
-                    <UnitAmountInput
-                      {...field}
-                      name={field.name}
-                      currency={currency}
-                      value={field.value ?? undefined}
-                      onValueChange={(v) => {
-                        field.onChange(v)
-                        setValue(`prices.${index}.id`, '')
-                      }}
-                    />
-                  </FormControl>
-                  <FormDescription>Displayed as {pricePreview}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-          <FormField
-            control={control}
-            name={`prices.${index}.cap_amount`}
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel>
-                    <span className="flex items-center gap-x-1.5">
-                      Cap amount
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <InfoIcon className="dark:text-polar-400 h-3.5 w-3.5 text-gray-400" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-3xs">
-                          Optional maximum amount that can be charged,
-                          regardless of the number of units consumed.
-                        </TooltipContent>
-                      </Tooltip>
-                    </span>
-                  </FormLabel>
-                  <FormControl>
-                    <MoneyInput
-                      {...field}
-                      name={field.name}
-                      currency={currency}
-                      value={field.value}
-                      onChange={(v) => {
-                        field.onChange(v)
-                        setValue(`prices.${index}.id`, '')
-                      }}
-                      placeholder={10000}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
+          <MeteredPricingFields
+            organization={organization}
+            index={index}
+            currency={currency}
           />
         </>
       )}

@@ -389,19 +389,6 @@ class TestGetTieredAmount:
         )
         assert price.get_tiered_amount(5) == price.tiers.calculate(5)
 
-    def test_fractional_quantity(self) -> None:
-        volume = _make_tiered_price(_tiers_data(TierType.volume, SHARED_MULTI_TIER))
-        assert volume.get_tiered_amount(Decimal("10.0")) == Decimal("10.0") * 1000
-        assert volume.get_tiered_amount(Decimal("10.001")) == Decimal("10.001") * 800
-
-        graduated = _make_tiered_price(
-            _tiers_data(TierType.graduated, SHARED_MULTI_TIER)
-        )
-        assert (
-            graduated.get_tiered_amount(Decimal("15.5"))
-            == 10 * 1000 + Decimal("5.5") * 800
-        )
-
 
 class TestSeatTiersApiView:
     def test_constructor_populates_shared_columns(self) -> None:

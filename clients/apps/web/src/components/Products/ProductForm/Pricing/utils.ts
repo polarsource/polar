@@ -74,3 +74,63 @@ export const getActiveCurrencies = (
   }
   return Array.from(currencies)
 }
+
+type MeteredTiers = NonNullable<schemas['ProductPriceMeteredUnit']['tiers']>
+
+const parseTiers = (tiers: MeteredTiers['tiers']) =>
+  tiers
+    .map((tier) => ({
+      bound: tier.bound ?? null,
+      unitAmount: Number.parseFloat(String(tier.unit_amount)),
+    }))
+    .sort(
+      (a, b) =>
+        Number(a.bound === null) - Number(b.bound === null) ||
+        (a.bound ?? 0) - (b.bound ?? 0),
+    )
+
+const tieredCost = (
+  { type: tierType, tiers }: MeteredTiers,
+  units: number,
+): number => {
+  const parsed = parseTiers(tiers)
+
+  if (tierType === 'volume') {
+    // A bounded last tier can't be created through the API, but if usage ever
+    // lands past every bound, the top rate is a better estimate than nothing.
+    const tier =
+      parsed.find((t) => t.bound === null || units <= t.bound) ??
+      parsed[parsed.length - 1]
+    return tier ? units * tier.unitAmount : 0
+  }
+
+  let total = 0
+  let remaining = units
+  let previousBound = 0
+  for (const { bound, unitAmount } of parsed) {
+    if (remaining <= 0) break
+    const capacity = bound === null ? null : bound - previousBound
+    const unitsInTier =
+      capacity === null ? remaining : Math.min(remaining, capacity)
+    total += unitsInTier * unitAmount
+    remaining -= unitsInTier
+    if (bound !== null) previousBound = bound
+  }
+  return total
+}
+
+export const estimateMeteredCost = (
+  price: schemas['ProductPriceMeteredUnit'],
+  units: number,
+): number => {
+  if (units <= 0) {
+    return 0
+  }
+  const cost = price.tiers
+    ? tieredCost(price.tiers, units)
+    : units * Number.parseFloat(price.unit_amount ?? '0')
+  if (price.cap_amount != null) {
+    return Math.min(cost, price.cap_amount)
+  }
+  return cost
+}

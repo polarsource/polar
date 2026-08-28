@@ -244,6 +244,16 @@ class TestProductPriceMeteredUnitCreateTiers:
                 )
             )
 
+    def test_tier_rate_exceeding_precision_limit_rejected(self) -> None:
+        with pytest.raises(ValidationError, match="no more than 12 decimal places"):
+            ProductPriceMeteredUnitCreate.model_validate(
+                _metered_tiers_payload(
+                    [
+                        {"bound": None, "unit_amount": "0.1234567890123"},
+                    ]
+                )
+            )
+
 
 class TestProductPriceFixedCurrencyMinimums:
     """Test currency-specific minimum price validation on ProductPriceFixedCreate."""

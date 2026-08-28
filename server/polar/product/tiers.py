@@ -25,7 +25,9 @@ class Tier(BaseModel):
     """
 
     bound: int | None = Field(default=None, gt=0)
-    unit_amount: Decimal = Field(ge=0, allow_inf_nan=False)
+    unit_amount: Decimal = Field(
+        ge=0, max_digits=17, decimal_places=12, allow_inf_nan=False
+    )
 
 
 class Tiers(BaseModel):

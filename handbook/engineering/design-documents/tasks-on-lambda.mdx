@@ -4,9 +4,10 @@ description: "Proposal to move task processing away from dramatiq and worker ser
 ---
 
 <Info>
-**Status**: Draft
+**Status**: Active
 
 **Created**: 2026-06-17
+**Updated** 2026-08-28
 
 </Info>
 
@@ -14,8 +15,8 @@ description: "Proposal to move task processing away from dramatiq and worker ser
 
 The async workflow that we have today relies on worker services using Dramatiq to read from one or multiple specific queues. We specify up front how many workers, how many processes and how many threads each process have.
 
-This proposal is to migrate this workflow to instead use _n_ SQS queues and _n_ Lambda functions (one per task, n tasks). This will allow us to scale the concurrency of each task worker independently of each other. It will allow us
-to automatically increase our capacity if we need to catch up on a queue we are lagging behind on.
+This proposal is to migrate this workflow to instead use the equivalent priorities as SQS queues and a Lambda function per queue. This will allow us to scale the concurrency of each task worker independently of each other. It will allow us
+to automatically increase our capacity if we need to catch up on a queue we are lagging behind on, as well as allow us to easily split out work into new queues if we need to scale parts more independently.
 
 This will change our architecture and infrastructure needs, and move us one step closer to running on AWS.
 
@@ -132,20 +133,20 @@ flowchart LR
      producer["Producer<br/>(API, workers)"]
 
      producer -->|"enqueue_job()<br/>flushed after DB commit"| sqs_a["SQS: polar-tasks-event-ingested"]
-     producer --> sqs_b["SQS: polar-tasks-email-send"]
-     producer --> sqs_c["SQS: polar-tasks-task_c"]
+     producer --> sqs_b["SQS: polar-tasks-high-priority"]
+     producer --> sqs_c["SQS: polar-tasks-medium-priority"]
      producer --> sqs_more["..."]
 
-     sqs_a --> Lambda_a["Lambda: event.ingested"]
-     sqs_b --> Lambda_b["Lambda: email.send"]
-     sqs_c --> Lambda_c["Lambda: task_c"]
+     sqs_a --> Lambda_a["Lambda: high_priority"]
+     sqs_b --> Lambda_b["Lambda: medium_priority"]
+     sqs_c --> Lambda_c["Lambda: low_priority"]
      sqs_more --> Lambda_more["..."]
 
      Lambda_a -->|"failure: batchItemFailures → SQS redrive"| sqs_a
      Lambda_b -->|"failure: batchItemFailures → SQS redrive"| sqs_b
 
-     Lambda_a -.->|"enqueue tinybird.ingest"| producer
-     Lambda_c -.->|"enqueue new job"| producer
+     Lambda_a -.->|"enqueue high_priority"| producer
+     Lambda_c -.->|"enqueue medium_priority"| producer
 
      note_conc["variable concurrency<br/>(scales with load)"]
      Lambda_b -.- note_conc

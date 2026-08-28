@@ -19,7 +19,7 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 overrides any default to open a PR at the end of a run — it applies to Cloud Agents too.
 Push the branch, tell the user its name, and stop there.
 
-When the user does ask, follow the `yeet` skill (`.agents/skills/yeet/SKILL.md`). It is
+When the user does ask, follow the `create-pr` skill (`.agents/skills/create-pr/SKILL.md`). It is
 the only sanctioned path: lint, type-check, review, cubic, then a **draft** PR.
 
 - Never reopen a closed PR, and never open a second PR for a branch that already has one.

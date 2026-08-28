@@ -1,13 +1,13 @@
 ---
-name: yeet
-description: Lint, type-check, review, run cubic, then open a draft pull request. This is the only sanctioned way to open a PR in this repo. Use when the user asks to yeet, open, create, draft, or ship a pull request.
+name: create-pr
+description: Lint, type-check, review, run cubic, then open a draft pull request. This is the only sanctioned way to open a PR in this repo. Use when the user asks to create, open, draft, ship, or yeet a pull request.
 license: MIT
 metadata:
   author: polar
   version: "1.0.0"
 ---
 
-# Yeet (Polar)
+# Create PR (Polar)
 
 Take a branch from "the code is written" to "a draft PR a human can review".
 
@@ -53,24 +53,15 @@ files (ruff formatting, oxfmt), stage and commit them separately, e.g.
 
 ## 3. Review
 
-Run the reviews available in your environment, in this order. Fix real issues, commit the
-fixes, then re-run the affected review.
+Always run the Polar code review. Read `.claude/commands/polar-code-review.md` and follow
+it exactly. The file is tracked in the repo, so this review is available in every agent
+environment even when `/polar-code-review` is not registered as a slash command.
 
-**Always available** — repo skills, pick the ones the diff actually touches:
+Fix real issues, commit the fixes, then run the review again.
 
-- `conventions-check` — Polar conventions in `server/AGENTS.md` / `clients/AGENTS.md`
-- `adr-check` — Accepted ADRs in `handbook/engineering/decisions/`
-- `reuse-check` — code that reinvents an existing helper
-- `ship-safety` — schema changes unsafe against the running deploy
-- `slop-check` — agent-generated noise in the diff
-- `api-surface-review` / `billing-review` — if the diff touches the API contract or billing
-
-**If available in this environment** (Claude Code built-ins; they do not exist in Cursor):
-
-- `/code-review xhigh --fix`
-- `/simplify`
-- `/security-review`
-- `/polar-code-review`
+If the environment also provides `/code-review xhigh --fix`, `/simplify`, or
+`/security-review`, run them before the Polar code review. They complement the
+Polar-specific review but do not replace it.
 
 ## 4. cubic
 
@@ -109,8 +100,12 @@ refactor: extract payment validation into service layer
 
 ### Description
 
-Build it from `.github/pull_request_template.md`. Keep that file's section headers.
-Derive the content from the full commit history since `main`, not just the last commit.
+**This is human communication. Do not be lazy.** Read the full diff and commit history,
+understand the change, and write the description yourself. Explain what changed and why
+in terms a reviewer can understand without reconstructing the work from the diff.
+
+Use `.github/pull_request_template.md` as a structural checklist, not a form to fill
+mechanically. Keep its section headers when they help the reader.
 
 - Include only sections that carry real information. A small fix may need just
   `## Summary`; a feature may need `## Summary`, `## What`, and `## Why`.
@@ -118,6 +113,7 @@ Derive the content from the full commit history since `main`, not just the last 
   tests unticked if you did not add any.
 - Omit `Related Issue: #<n>` unless an issue is genuinely referenced by the branch or
   commits.
+- Do not restate the diff line by line or pad the description with generic text.
 
 Write it for readers who are not native English speakers: short sentences, one idea each,
 common words, bullets over paragraphs. A reviewer should finish the body in under a

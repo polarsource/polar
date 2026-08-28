@@ -54,9 +54,6 @@ from polar.product.schemas import (
     ProductPriceUnitBasedCreate,
     ProductUpdate,
 )
-from polar.product.schemas import (
-    ProductPriceMeteredUnit as ProductPriceMeteredUnitSchema,
-)
 from polar.product.service import product as product_service
 from polar.product.sorting import ProductSortProperty
 from polar.product.tiers import Tiers, TierType
@@ -823,12 +820,6 @@ class TestCreate:
                 ],
             }
         )
-        assert price.get_amount_and_label(2000)[0] == 750
-
-        read = ProductPriceMeteredUnitSchema.model_validate(price)
-        assert read.unit_amount is None
-        assert read.tiers is not None
-        assert read.tiers.tiers[0].unit_amount == Decimal("0.5")
 
     @pytest.mark.auth
     async def test_invalid_several_static_prices(

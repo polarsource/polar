@@ -75,15 +75,18 @@ class TestGetPublicKey:
         get_app_client_mock = _mock_app_client(
             mocker, [{"key_identifier": "KID", "key": "KEY", "is_current": True}]
         )
-        mocker.patch.object(
-            settings, "GITHUB_SECRET_SCANNING_PUBLIC_KEYS_CACHE_TTL_SECONDS", 10
-        )
-        mocker.patch(
-            "polar.integrations.github.service.secret_scanning.time.monotonic",
-            side_effect=[0.0, 100.0, 100.0, 100.0],
-        )
 
         await secret_scanning_service._get_public_key("KID")
+
+        assert secret_scanning_module._public_keys_cache is not None
+        timestamp, public_keys = secret_scanning_module._public_keys_cache
+        expired = (
+            timestamp
+            - settings.GITHUB_SECRET_SCANNING_PUBLIC_KEYS_CACHE_TTL_SECONDS
+            - 1
+        )
+        secret_scanning_module._public_keys_cache = (expired, public_keys)
+
         await secret_scanning_service._get_public_key("KID")
 
         assert get_app_client_mock.call_count == 2

@@ -158,8 +158,8 @@ class CustomerMeterService:
             activated_at = (
                 utc_now() if (last_event is not None or activate_meter) else None
             )
-            customer_meter = await repository.create(
-                CustomerMeter(customer=customer, meter=meter, activated_at=activated_at)
+            customer_meter = await repository.get_or_create(
+                customer, meter, activated_at=activated_at
             )
 
         if last_event is None:

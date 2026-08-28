@@ -1,7 +1,9 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
 from polar.authz.types import AccessibleOrganizationID
@@ -84,6 +86,48 @@ class CustomerMeterRepository(
             .with_for_update(nowait=nowait, of=CustomerMeter)
         )
         return await self.get_one_or_none(statement)
+
+    async def get_or_create(
+        self,
+        customer: Customer,
+        meter: Meter,
+        *,
+        activated_at: datetime | None = None,
+    ) -> CustomerMeter:
+        """
+        Get an existing CustomerMeter for the given customer and meter, or create
+        it if it doesn't exist yet.
+
+        `SELECT ... FOR UPDATE` can't lock a row that doesn't exist, so two
+        concurrent executions may both observe no row and both try to insert one,
+        violating the ``customer_id, meter_id`` unique constraint. To handle that
+        race, the insert runs inside a SAVEPOINT: if the flush raises an
+        ``IntegrityError`` because a concurrent transaction won the race, the
+        savepoint is rolled back and the row (now committed by the other
+        transaction) is re-fetched with a lock and returned instead of raising.
+        """
+        customer_meter = await self.get_by_customer_and_meter_for_update(
+            customer.id, meter.id
+        )
+        if customer_meter is not None:
+            return customer_meter
+
+        customer_meter = CustomerMeter(
+            customer=customer, meter=meter, activated_at=activated_at
+        )
+        nested = await self.session.begin_nested()
+        try:
+            self.session.add(customer_meter)
+            await self.session.flush()
+        except IntegrityError:
+            await nested.rollback()
+            customer_meter = await self.get_by_customer_and_meter_for_update(
+                customer.id, meter.id
+            )
+            if customer_meter is not None:
+                return customer_meter
+            raise
+        return customer_meter
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

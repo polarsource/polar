@@ -1152,9 +1152,10 @@ class TestSubscriptionUpdateSeats:
         )
 
         # Then: Error response
-        assert response.status_code == 400
+        assert response.status_code == 422
         error = response.json()
-        assert "7 seats are assigned" in error["detail"]
+        assert error["detail"][0]["loc"] == ["body", "seats"]
+        assert "7 seats are assigned" in error["detail"][0]["msg"]
 
     @pytest.mark.auth
     async def test_not_seat_based_subscription(
@@ -1177,9 +1178,10 @@ class TestSubscriptionUpdateSeats:
         )
 
         # Then: Error response
-        assert response.status_code == 400
+        assert response.status_code == 422
         error = response.json()
-        assert "not support seat-based pricing" in error["detail"]
+        assert error["detail"][0]["loc"] == ["body", "seats"]
+        assert "not support seat-based pricing" in error["detail"][0]["msg"]
 
     @pytest.mark.auth
     async def test_trialing_subscription(

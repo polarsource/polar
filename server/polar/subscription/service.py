@@ -229,77 +229,165 @@ class CannotReinstateSubscription(SubscriptionError):
         super().__init__(message, 400)
 
 
-class NotASeatBasedSubscription(SubscriptionError):
-    def __init__(self, subscription: Subscription) -> None:
+class NotASeatBasedSubscription(PolarRequestValidationError):
+    def __init__(self, subscription: Subscription, requested_seats: int) -> None:
         self.subscription = subscription
-        message = "This subscription does not support seat-based pricing."
-        super().__init__(message, 400)
+        self.requested_seats = requested_seats
+        super().__init__(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("body", "seats"),
+                    "msg": "This subscription does not support seat-based pricing.",
+                    "input": requested_seats,
+                }
+            ]
+        )
 
 
-class SeatsAlreadyAssigned(SubscriptionError):
+class SeatsAlreadyAssigned(PolarRequestValidationError):
     def __init__(
         self, subscription: Subscription, assigned_count: int, requested_seats: int
     ) -> None:
         self.subscription = subscription
         self.assigned_count = assigned_count
         self.requested_seats = requested_seats
-        message = (
-            f"Cannot decrease seats to {requested_seats}. "
-            f"Currently {assigned_count} seats are assigned. "
-            f"Revoke seats first."
+        super().__init__(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("body", "seats"),
+                    "msg": (
+                        f"Cannot decrease seats to {requested_seats}. "
+                        f"Currently {assigned_count} seats are assigned. "
+                        f"Revoke seats first."
+                    ),
+                    "input": requested_seats,
+                }
+            ]
         )
-        super().__init__(message, 400)
 
 
-class BelowMinimumSeats(SubscriptionError):
+class BelowMinimumSeats(PolarRequestValidationError):
     def __init__(
         self, subscription: Subscription, minimum_seats: int, requested_seats: int
     ) -> None:
         self.subscription = subscription
         self.minimum_seats = minimum_seats
         self.requested_seats = requested_seats
-        message = f"Minimum {minimum_seats} seats required."
-        super().__init__(message, 400)
+        super().__init__(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("body", "seats"),
+                    "msg": f"Minimum {minimum_seats} seats required.",
+                    "input": requested_seats,
+                }
+            ]
+        )
 
 
-class AboveMaximumSeats(SubscriptionError):
+class AboveMaximumSeats(PolarRequestValidationError):
     def __init__(
         self, subscription: Subscription, maximum_seats: int, requested_seats: int
     ) -> None:
         self.subscription = subscription
         self.maximum_seats = maximum_seats
         self.requested_seats = requested_seats
-        message = f"Maximum {maximum_seats} seats allowed."
-        super().__init__(message, 400)
+        super().__init__(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("body", "seats"),
+                    "msg": f"Maximum {maximum_seats} seats allowed.",
+                    "input": requested_seats,
+                }
+            ]
+        )
 
 
-class NotAUnitBasedSubscription(SubscriptionError):
-    def __init__(self, subscription: Subscription) -> None:
+class NotAUnitBasedSubscription(PolarRequestValidationError):
+    def __init__(self, subscription: Subscription, requested_units: int) -> None:
         self.subscription = subscription
-        message = "This subscription does not support unit-based pricing."
-        super().__init__(message, 400)
+        self.requested_units = requested_units
+        super().__init__(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("body", "units"),
+                    "msg": "This subscription does not support unit-based pricing.",
+                    "input": requested_units,
+                }
+            ]
+        )
 
 
-class BelowMinimumUnits(SubscriptionError):
+class BelowMinimumUnits(PolarRequestValidationError):
     def __init__(
-        self, subscription: Subscription, minimum_units: int, requested_units: int
+        self,
+        subscription: Subscription,
+        minimum_units: int,
+        requested_units: int,
+        *,
+        product_id: uuid.UUID | None = None,
     ) -> None:
         self.subscription = subscription
         self.minimum_units = minimum_units
         self.requested_units = requested_units
-        message = f"Minimum {minimum_units} units required."
-        super().__init__(message, 400)
+        # A product change keeps the live unit count, so the offending input is
+        # the target product, not a submitted unit count.
+        error: ValidationError
+        if product_id is not None:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "product_id"),
+                "msg": (
+                    f"Current unit count of {requested_units} is below the "
+                    f"minimum of {minimum_units} units for this product."
+                ),
+                "input": product_id,
+            }
+        else:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "units"),
+                "msg": f"Minimum {minimum_units} units required.",
+                "input": requested_units,
+            }
+        super().__init__([error])
 
 
-class AboveMaximumUnits(SubscriptionError):
+class AboveMaximumUnits(PolarRequestValidationError):
     def __init__(
-        self, subscription: Subscription, maximum_units: int, requested_units: int
+        self,
+        subscription: Subscription,
+        maximum_units: int,
+        requested_units: int,
+        *,
+        product_id: uuid.UUID | None = None,
     ) -> None:
         self.subscription = subscription
         self.maximum_units = maximum_units
         self.requested_units = requested_units
-        message = f"Maximum {maximum_units} units allowed."
-        super().__init__(message, 400)
+        error: ValidationError
+        if product_id is not None:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "product_id"),
+                "msg": (
+                    f"Current unit count of {requested_units} is above the "
+                    f"maximum of {maximum_units} units for this product."
+                ),
+                "input": product_id,
+            }
+        else:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "units"),
+                "msg": f"Maximum {maximum_units} units allowed.",
+                "input": requested_units,
+            }
+        super().__init__([error])
 
 
 class SubscriptionMeterCycleLag(SubscriptionError):
@@ -1714,7 +1802,7 @@ class SubscriptionService:
 
         unit_price = subscription.get_price_by_type(ProductPriceUnit)
         if unit_price is None:
-            raise NotAUnitBasedSubscription(subscription)
+            raise NotAUnitBasedSubscription(subscription, units)
 
         self._validate_units_against_price(subscription, unit_price, units)
 
@@ -1767,7 +1855,7 @@ class SubscriptionService:
 
         seat_price = subscription.get_price_by_type(ProductPriceSeatUnit)
         if seat_price is None:
-            raise NotASeatBasedSubscription(subscription)
+            raise NotASeatBasedSubscription(subscription, seats)
 
         minimum_seats = seat_price.get_minimum_seats()
         if seats < minimum_seats:
@@ -1849,7 +1937,7 @@ class SubscriptionService:
                 subscription, currency_prices, proration_behavior
             )
             self._promote_units_for_unit_transition(
-                subscription, currency_prices, proration_behavior
+                subscription, currency_prices, proration_behavior, product_id
             )
 
             subscription_update_repository = SubscriptionUpdateRepository.from_session(
@@ -3063,7 +3151,7 @@ class SubscriptionService:
                 subscription, currency_prices, proration_behavior
             )
             self._promote_units_for_unit_transition(
-                subscription, currency_prices, proration_behavior
+                subscription, currency_prices, proration_behavior, product_id
             )
             event = build_system_event(
                 SystemEvent.subscription_product_updated,
@@ -3214,6 +3302,7 @@ class SubscriptionService:
         subscription: Subscription,
         currency_prices: PriceSet,
         proration_behavior: SubscriptionProrationBehavior,
+        product_id: uuid.UUID,
     ) -> None:
         """Ensure `subscription.units` is valid for the target unit price before
         proration and `apply_update` run. Non-unit → unit promotes to the floor
@@ -3233,10 +3322,14 @@ class SubscriptionService:
                 return
             minimum_units = unit_price.get_minimum_purchasable_units()
             if units < minimum_units:
-                raise BelowMinimumUnits(subscription, minimum_units, units)
+                raise BelowMinimumUnits(
+                    subscription, minimum_units, units, product_id=product_id
+                )
             maximum_units = unit_price.get_maximum_units()
             if maximum_units is not None and units > maximum_units:
-                raise AboveMaximumUnits(subscription, maximum_units, units)
+                raise AboveMaximumUnits(
+                    subscription, maximum_units, units, product_id=product_id
+                )
             return
 
         if proration_behavior == SubscriptionProrationBehavior.next_period:

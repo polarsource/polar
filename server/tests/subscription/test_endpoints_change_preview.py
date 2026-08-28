@@ -122,7 +122,11 @@ class TestPreviewChange:
             json={"seats": 5},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
+        error = response.json()
+        assert error["error"] == "NotASeatBasedSubscription"
+        assert error["detail"][0]["loc"] == ["body", "seats"]
+        assert error["detail"][0]["input"] == 5
 
     @pytest.mark.auth
     async def test_rejects_both_product_and_seats(

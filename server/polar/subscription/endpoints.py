@@ -50,7 +50,6 @@ from .schemas import (
 from .service import (
     AlreadyCanceledSubscription,
     InactiveSubscription,
-    NotASeatBasedSubscription,
     SubscriptionLocked,
     SubscriptionUpdateContext,
 )
@@ -324,7 +323,6 @@ async def get_cancel_preview(
     response_model=SubscriptionChargePreview,
     responses={
         403: {"model": AlreadyCanceledSubscription.schema()},
-        400: {"model": NotASeatBasedSubscription.schema()},
         404: SubscriptionNotFound,
     },
     tags=[APITag.private],

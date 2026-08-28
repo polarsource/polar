@@ -296,6 +296,10 @@ class TestUpdateUnits:
 
         assert exc_info.value.minimum_units == 10
         assert exc_info.value.requested_units == 5
+        errors = exc_info.value.errors()
+        assert errors[0]["loc"] == ("body", "units")
+        assert "Minimum 10 units required" in errors[0]["msg"]
+        assert errors[0]["input"] == 5
 
     async def test_same_units_is_noop(
         self,
@@ -538,6 +542,7 @@ class TestUnitProductChange:
 
         assert exc_info.value.minimum_units == 5
         assert exc_info.value.requested_units == 3
+        assert exc_info.value.errors()[0]["loc"] == ("body", "product_id")
 
     async def test_non_unit_to_unit_upgrade_rejects_next_period(
         self,

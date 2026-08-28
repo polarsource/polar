@@ -25409,17 +25409,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** NotASeatBasedSubscription */
-    NotASeatBasedSubscription: {
-      /**
-       * Error
-       * @example NotASeatBasedSubscription
-       * @constant
-       */
-      error: 'NotASeatBasedSubscription'
-      /** Detail */
-      detail: string
-    }
     /** NotOpenCheckout */
     NotOpenCheckout: {
       /**
@@ -42581,15 +42570,6 @@ export interface operations {
           'application/json': components['schemas']['SubscriptionChargePreview']
         }
       }
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['NotASeatBasedSubscription']
-        }
-      }
       /** @description Forbidden */
       403: {
         headers: {
@@ -53752,15 +53732,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
-        }
-      }
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['NotASeatBasedSubscription']
         }
       }
       /** @description Previewing this change is not allowed. */

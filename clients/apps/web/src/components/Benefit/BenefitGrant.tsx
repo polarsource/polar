@@ -31,6 +31,7 @@ interface BenefitGrantProps {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrant']
   locale?: AcceptedLocale
+  allowLicenseKeyRotation?: boolean
 }
 
 const benefitTypeTranslationKeys = {
@@ -502,6 +503,7 @@ export const BenefitGrant = ({
   api,
   benefitGrant,
   locale = DEFAULT_LOCALE,
+  allowLicenseKeyRotation = false,
 }: BenefitGrantProps) => {
   const t = useTranslations(locale)
   const { benefit } = benefitGrant
@@ -541,6 +543,7 @@ export const BenefitGrant = ({
             benefitGrant as schemas['CustomerBenefitGrantLicenseKeys']
           }
           locale={locale}
+          allowRotation={allowLicenseKeyRotation}
         />
       )}
       {benefit.type === 'github_repository' && (

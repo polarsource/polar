@@ -23,7 +23,11 @@ export const CustomerPortalGrantsSimple = ({
               key={benefitGrant.id}
               className="py-6 hover:bg-transparent dark:hover:bg-transparent"
             >
-              <BenefitGrant api={api} benefitGrant={benefitGrant} />
+              <BenefitGrant
+                api={api}
+                benefitGrant={benefitGrant}
+                allowLicenseKeyRotation={true}
+              />
             </ListItem>
           ))}
         </List>

@@ -206,24 +206,33 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_all(statement)
 
-    async def list_active_seat_member_ids(
-        self, customer_id: UUID, *, limit: int = 2
-    ) -> Sequence[UUID | None]:
-        """Member ids on the customer's pending or claimed seats.
+    async def get_active_seat_member_id(
+        self,
+        customer_id: UUID,
+        *,
+        subscription_id: UUID | None = None,
+        order_id: UUID | None = None,
+    ) -> UUID | None:
+        """Member on the customer's seat for a given subscription or order.
 
-        Empty when the customer holds no seat. Callers that need an unambiguous
-        answer should ask for two and treat anything else as ambiguous.
+        Scoping by the container is what tells two seats held by the same
+        customer apart.
         """
-        statement = (
-            select(CustomerSeat.member_id)
-            .where(
-                CustomerSeat.customer_id == customer_id,
-                CustomerSeat.status != SeatStatus.revoked,
-            )
-            .limit(limit)
+        if subscription_id is None and order_id is None:
+            return None
+
+        statement = select(CustomerSeat.member_id).where(
+            CustomerSeat.customer_id == customer_id,
+            CustomerSeat.member_id.is_not(None),
+            CustomerSeat.status != SeatStatus.revoked,
         )
-        result = await self.session.execute(statement)
-        return result.scalars().all()
+        if subscription_id is not None:
+            statement = statement.where(CustomerSeat.subscription_id == subscription_id)
+        else:
+            statement = statement.where(CustomerSeat.order_id == order_id)
+
+        result = await self.session.execute(statement.limit(1))
+        return result.scalar_one_or_none()
 
     async def list_active_by_member_id(
         self, member_id: UUID, *, options: Options = ()

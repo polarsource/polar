@@ -120,6 +120,8 @@ async def resolve_member(
     member_id: UUID | None,
     is_seat_based: bool,
     *,
+    subscription_id: UUID | None = None,
+    order_id: UUID | None = None,
     include_deleted: bool = False,
 ) -> Member | None:
     member_model_enabled = organization.feature_settings.get(
@@ -133,15 +135,15 @@ async def resolve_member(
             member = await member_repository.get_by_id(member_id)
             return member  # may be None if member was deleted
         if is_seat_based:
-            seat_member_ids = await CustomerSeatRepository.from_session(
+            # A seat holder's grant belongs to the member on their seat, which
+            # lives under the buyer rather than under the holder.
+            seat_member_id = await CustomerSeatRepository.from_session(
                 session
-            ).list_active_seat_member_ids(customer_id)
-            if seat_member_ids:
-                # The member is the one on the holder's seat. Several seats need
-                # the grant's scope to tell apart, so leave those to the backfill.
-                if len(seat_member_ids) == 1 and seat_member_ids[0] is not None:
-                    return await member_repository.get_by_id(seat_member_ids[0])
-                return None
+            ).get_active_seat_member_id(
+                customer_id, subscription_id=subscription_id, order_id=order_id
+            )
+            if seat_member_id is not None:
+                return await member_repository.get_by_id(seat_member_id)
         # Populate the member before the flag flips, so grants don't pile up
         # needing a backfill. Best effort: a customer we can't build an owner
         # member for still gets its grant.

@@ -7,6 +7,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
+from polar.kit.versioning import APIVersion, APIVersionType
+from polar.version import CURRENT_API_VERSION
 
 if TYPE_CHECKING:
     from .organization import Organization
@@ -79,6 +81,9 @@ class WebhookEndpoint(RecordModel):
     secret: Mapped[str] = mapped_column(String, nullable=False)
     events: Mapped[list[WebhookEventType]] = mapped_column(
         JSONB, nullable=False, default=[]
+    )
+    api_version: Mapped[APIVersion | None] = mapped_column(
+        APIVersionType, nullable=True, default=CURRENT_API_VERSION
     )
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 

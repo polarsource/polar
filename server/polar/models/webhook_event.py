@@ -7,6 +7,8 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
+from polar.kit.versioning import APIVersion, APIVersionType
+from polar.version import CURRENT_API_VERSION
 
 from .webhook_endpoint import WebhookEventType
 
@@ -44,6 +46,9 @@ class WebhookEvent(RecordModel):
         StringEnum(WebhookEventType), nullable=False, index=True
     )
     payload: Mapped[str | None] = mapped_column(String, nullable=True)
+    api_version: Mapped[APIVersion | None] = mapped_column(
+        APIVersionType, nullable=True, default=CURRENT_API_VERSION
+    )
 
     @hybrid_property
     def is_archived(self) -> bool:

@@ -18,6 +18,7 @@ from pydantic import Field, GetJsonSchemaHandler
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, PydanticOmit
+from sqlalchemy import CHAR, Dialect, TypeDecorator
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import JSONResponse
 from starlette.routing import BaseRoute, Match
@@ -62,6 +63,23 @@ class APIVersion:
         headers = Headers(scope=scope)
         raw_version = headers.get(VERSION_HEADER)
         return cls.parse(raw_version) if raw_version else default
+
+
+class APIVersionType(TypeDecorator[typing.Any]):
+    impl = CHAR(length=7)
+    cache_ok = True
+
+    def process_bind_param(self, value: typing.Any, dialect: Dialect) -> str:
+        if isinstance(value, APIVersion):
+            return str(value)
+        return value
+
+    def process_result_value(
+        self, value: str | None, dialect: Dialect
+    ) -> APIVersion | None:
+        if value is not None:
+            return APIVersion.parse(value)
+        return value
 
 
 _ACTIVE_API_VERSION = contextvars.ContextVar[APIVersion | None](

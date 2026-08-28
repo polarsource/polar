@@ -11,7 +11,6 @@ from polar.integrations.polar.service import PolarSelfService
 from polar.models import OrganizationSSOConnection, Product, User
 from polar.models.account import Account
 from polar.models.organization import (
-    EMBED_HOSTS_ENFORCED_FROM,
     Organization,
     OrganizationStatus,
 )
@@ -30,7 +29,6 @@ from polar.user_organization.service import (
 )
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.embed_hosts import BEFORE_EMBED_CUTOFF
 from tests.fixtures.random_objects import (
     create_account,
     create_appeal_case,
@@ -1034,47 +1032,18 @@ class TestGetEmbedStatus:
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_never_embedded(
+    async def test_no_embed_activity(
         self,
-        embed_hosts_not_enforced: None,
         client: AsyncClient,
-        save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.created_at = BEFORE_EMBED_CUTOFF
-        await save_fixture(organization)
-
         response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
 
         assert response.status_code == 200
         json = response.json()
-        assert json["has_embedded"] is False
         assert json["embed_hosts"] == []
-        assert json["embed_hosts_enforced"] is False
-
-    @pytest.mark.auth
-    async def test_embedded_without_hosts(
-        self,
-        embed_hosts_not_enforced: None,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.created_at = BEFORE_EMBED_CUTOFF
-        await save_fixture(organization)
-        checkout = await create_checkout(save_fixture, products=[product])
-        checkout.embed_origin = "https://example.com"
-        await save_fixture(checkout)
-
-        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["has_embedded"] is True
-        assert json["embed_hosts_enforced"] is False
+        assert json["uncovered_hosts"] == []
 
     @pytest.mark.auth
     async def test_uncovered_host_reported(
@@ -1120,13 +1089,11 @@ class TestGetEmbedStatus:
     @pytest.mark.auth
     async def test_hosts_configured(
         self,
-        embed_hosts_not_enforced: None,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.created_at = BEFORE_EMBED_CUTOFF
         organization.embed_hosts = ["example.com"]
         await save_fixture(organization)
 
@@ -1135,24 +1102,6 @@ class TestGetEmbedStatus:
         assert response.status_code == 200
         json = response.json()
         assert json["embed_hosts"] == ["example.com"]
-        assert json["embed_hosts_enforced"] is False
-
-    @pytest.mark.auth
-    async def test_organization_past_the_cutoff(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
-        await save_fixture(organization)
-
-        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["embed_hosts_enforced"] is True
 
 
 @pytest.mark.asyncio

@@ -77,7 +77,6 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.member import MemberRole
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import (
-    EMBED_HOSTS_ENFORCED_FROM,
     OrganizationStatus,
 )
 from polar.models.product_price import (
@@ -109,7 +108,6 @@ from polar.tax.tax_id import TaxIDFormat
 from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.embed_hosts import BEFORE_EMBED_CUTOFF
 from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -2620,13 +2618,12 @@ class TestCheckoutLinkCreate:
 
     async def test_normalized_embed_origin(
         self,
-        embed_hosts_not_enforced: None,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
         product_one_time: Product,
     ) -> None:
-        organization.created_at = BEFORE_EMBED_CUTOFF
+        organization.embed_hosts = ["example.com"]
         await save_fixture(organization)
         checkout_link = await create_checkout_link(
             save_fixture, products=[product_one_time]
@@ -2645,7 +2642,6 @@ class TestCheckoutLinkCreate:
         organization: Organization,
         product_one_time: Product,
     ) -> None:
-        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
         organization.embed_hosts = ["*.example.com"]
         await save_fixture(organization)
         checkout_link = await create_checkout_link(
@@ -2665,7 +2661,6 @@ class TestCheckoutLinkCreate:
         organization: Organization,
         product_one_time: Product,
     ) -> None:
-        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
         organization.embed_hosts = ["example.com"]
         await save_fixture(organization)
         checkout_link = await create_checkout_link(
@@ -2677,39 +2672,14 @@ class TestCheckoutLinkCreate:
                 session, checkout_link, embed_origin="https://evil.com"
             )
 
-    async def test_unlisted_embed_origin_before_the_cutoff(
-        self,
-        embed_hosts_not_enforced: None,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        product_one_time: Product,
-    ) -> None:
-        """Listing hosts doesn't enforce them: older organizations embed
-        unchecked until the cutoff applies to everyone."""
-        organization.created_at = BEFORE_EMBED_CUTOFF
-        organization.embed_hosts = ["example.com"]
-        await save_fixture(organization)
-        checkout_link = await create_checkout_link(
-            save_fixture, products=[product_one_time]
-        )
-
-        checkout = await checkout_service.checkout_link_create(
-            session, checkout_link, embed_origin="https://other.com"
-        )
-
-        assert checkout.embed_origin == "https://other.com"
-
-    async def test_refused_embed_origin_for_new_organization(
+    async def test_refused_embed_origin_without_hosts(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
         product_one_time: Product,
     ) -> None:
-        """An organization past the cutoff must configure a list before embedding."""
-        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
-        await save_fixture(organization)
+        """An organization must configure a list before it can embed."""
         checkout_link = await create_checkout_link(
             save_fixture, products=[product_one_time]
         )
@@ -2719,7 +2689,7 @@ class TestCheckoutLinkCreate:
                 session, checkout_link, embed_origin="https://example.com"
             )
 
-    async def test_dropped_embed_origin_when_enforced(
+    async def test_null_embed_origin_not_refused(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -2727,7 +2697,6 @@ class TestCheckoutLinkCreate:
         product_one_time: Product,
     ) -> None:
         """A value carrying no origin can't embed anyway, so it doesn't 403."""
-        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
         organization.embed_hosts = ["example.com"]
         await save_fixture(organization)
         checkout_link = await create_checkout_link(

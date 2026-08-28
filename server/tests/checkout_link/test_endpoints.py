@@ -17,7 +17,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.organization import EMBED_HOSTS_ENFORCED_FROM, OrganizationStatus
+from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -380,7 +380,6 @@ class TestRedirect:
         organization: Organization,
         checkout_link: CheckoutLink,
     ) -> None:
-        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
         organization.embed_hosts = ["example.com"]
         await save_fixture(organization)
 

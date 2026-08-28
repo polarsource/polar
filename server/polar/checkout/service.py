@@ -745,7 +745,7 @@ class CheckoutService:
             parsed_embed_origin = parse_origin(embed_origin)
             if parsed_embed_origin is None:
                 embed_origin = None
-            elif organization.embed_hosts_enforced:
+            else:
                 embed_origin = match_origin(
                     str(parsed_embed_origin), organization.embed_hosts
                 )
@@ -757,8 +757,6 @@ class CheckoutService:
                         embed_hosts=organization.embed_hosts,
                     )
                     raise EmbedHostNotAllowed(str(parsed_embed_origin))
-            else:
-                embed_origin = str(parsed_embed_origin)
 
         products: list[Product] = []
         for product in checkout_link.products:

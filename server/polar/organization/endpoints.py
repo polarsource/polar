@@ -288,9 +288,7 @@ async def get_embed_status(
         organization.id, since=utc_now() - EMBED_ORIGIN_WINDOW
     )
     return OrganizationEmbedStatus(
-        has_embedded=await repository.has_embedded(organization.id),
         embed_hosts=organization.embed_hosts,
-        embed_hosts_enforced=organization.embed_hosts_enforced,
         shared_hosts=[
             entry for entry in organization.embed_hosts if is_shared_host(entry)
         ],

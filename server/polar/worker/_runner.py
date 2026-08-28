@@ -132,7 +132,6 @@ def compute_retry_backoff(
 
 class RetryAction(enum.Enum):
     DEAD_LETTER = "dead_letter"
-    RE_ENQUEUE = "re_enqueue"
     SCHEDULE = "schedule"
     SET_VISIBILITY = "set_visibility"
 
@@ -144,19 +143,15 @@ def plan_retry(
     *,
     scheduler_available: bool,
 ) -> tuple[RetryAction, int]:
-    """Pick where a failed task waits out its backoff, and for how many seconds."""
-    retries_used = receive_count - 1
-    if retries_used >= get_actor_max_retries(actor_name):
+    """Decide how to redeliver a failed task and the delay (seconds) to apply."""
+    if receive_count - 1 >= get_actor_max_retries(actor_name):
         return RetryAction.DEAD_LETTER, 0
-
     backoff_seconds = compute_retry_backoff(actor_name, receive_count, exception)
-    if backoff_seconds <= _sqs.MAX_DELAY_SECONDS:
-        return RetryAction.RE_ENQUEUE, backoff_seconds
-    if not scheduler_available:
-        return RetryAction.SET_VISIBILITY, min(
-            backoff_seconds, _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
-        )
-    return RetryAction.SCHEDULE, backoff_seconds
+    if backoff_seconds > _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS and scheduler_available:
+        return RetryAction.SCHEDULE, backoff_seconds
+    return RetryAction.SET_VISIBILITY, min(
+        backoff_seconds, _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
+    )
 
 
 @contextlib.contextmanager

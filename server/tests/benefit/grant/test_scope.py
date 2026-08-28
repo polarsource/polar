@@ -88,11 +88,6 @@ class TestResolveMember:
         save_fixture: SaveFixture,
         account: Account,
     ) -> None:
-        """Phase 1: seat-based org, flag off, direct purchase resolves the owner member.
-
-        Keeps `grant.member` populated before the member model is enabled, so the
-        backlog of member_id NULL grants doesn't grow between prepare and flip.
-        """
         organization = await create_organization(
             save_fixture,
             account,
@@ -121,11 +116,6 @@ class TestResolveMember:
         save_fixture: SaveFixture,
         account: Account,
     ) -> None:
-        """Phase 1: a seat holder's grant resolves the member on their seat.
-
-        That member lives under the buyer, not under the holder's own customer,
-        so resolving the holder's owner member would attach the wrong identity.
-        """
         organization = await create_organization(
             save_fixture,
             account,

@@ -281,8 +281,6 @@ if (event.type === 'benefit_grant.created') {
   const grant = event.data;
 
   // For a seat-based grant the member is the seat holder.
-  // For a direct purchase it is the buyer's own member.
-  // In Phase 1 it can still be null, so keep the customer fallback.
   if (grant.member) {
     await grantAccess(grant.member.id, grant.member.email);
   } else {

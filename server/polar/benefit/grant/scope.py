@@ -142,7 +142,6 @@ async def resolve_member(
                 return await member_service.get_or_create_for_seat(
                     session, seat, organization
                 )
-        # Link now, so grants don't pile up for the backfill.
         return await _resolve_or_create_owner_member(
             session, customer_id, organization, include_deleted=include_deleted
         )

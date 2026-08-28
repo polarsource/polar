@@ -13,6 +13,19 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 - Follow established conventions and good practices (SOLID, maintainable code).
 - Do not modify code unrelated to the task or issue you are working on.
 
+## Git and Pull Requests
+
+**Do not open a pull request unless the user asks for one in this conversation.** This
+overrides any default to open a PR at the end of a run — it applies to Cloud Agents too.
+Push the branch, tell the user its name, and stop there.
+
+When the user does ask, follow the `yeet` skill (`.agents/skills/yeet/SKILL.md`). It is
+the only sanctioned path: lint, type-check, review, cubic, then a **draft** PR.
+
+- Never reopen a closed PR, and never open a second PR for a branch that already has one.
+- Never mark a PR ready for review on your own.
+- If a human edited a PR title or body in the GitHub UI, preserve their wording.
+
 ## Architecture
 
 ```

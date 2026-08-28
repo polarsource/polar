@@ -178,13 +178,13 @@ class TestResolveMember:
         assert result.id == seat_member.id
         assert result.customer_id == buyer.id
 
-    async def test_phase_1_unlinked_seat_returns_none(
+    async def test_phase_1_unlinked_seat_creates_the_member_under_the_buyer(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
     ) -> None:
-        """Phase 1: a seat with no member yet leaves the grant unlinked.
+        """Phase 1: a seat with no member yet gets one under the buyer.
 
         Creating an owner member under the holder would attach the wrong
         identity and hide the grant from the backfill.
@@ -227,7 +227,9 @@ class TestResolveMember:
             subscription_id=subscription.id,
         )
 
-        assert result is None
+        assert result is not None
+        assert result.customer_id == buyer.id
+        assert result.email == holder.email
         member_repository = MemberRepository.from_session(session)
         assert await member_repository.get_owner_by_customer_id(holder.id) is None
 

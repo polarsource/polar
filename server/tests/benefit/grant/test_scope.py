@@ -107,6 +107,40 @@ class TestResolveMember:
         assert result.customer_id == customer.id
         assert result.role == MemberRole.owner
 
+    async def test_phase_1_customer_without_email_returns_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Phase 1 linking is best effort: an email-less customer still gets its grant.
+
+        `create_owner_member` can't build an owner member without an email, and
+        the member model isn't active yet, so the grant is created with a null
+        member instead of failing.
+        """
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "member_model_enabled": False,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+        customer.email = None
+        await save_fixture(customer)
+
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+        )
+
+        assert result is None
+
     async def test_phase_1_seat_based_without_member_id_returns_none(
         self,
         session: AsyncSession,

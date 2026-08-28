@@ -4,7 +4,7 @@ import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -138,11 +138,21 @@ async def resolve_member(
         # Phase 1 of the member model migration: link direct-purchase grants to
         # the owner member so `grant.member` is already populated before the
         # flag flips. Without this, every grant created during Phase 1 lands
-        # with member_id NULL and has to be backfilled later. Best effort: the
-        # member model isn't active yet, so a failure must not block the grant.
-        return await _resolve_or_create_owner_member(
-            session, customer_id, organization, include_deleted=include_deleted
-        )
+        # with member_id NULL and has to be backfilled later.
+        try:
+            return await _resolve_or_create_owner_member(
+                session, customer_id, organization, include_deleted=include_deleted
+            )
+        except PolarRequestValidationError:
+            # The member model isn't active yet, so linking is best effort: a
+            # customer we can't build an owner member for (no email, for
+            # instance) still gets its grant, with a null member as before.
+            log.warning(
+                "Could not link benefit grant to an owner member",
+                customer_id=str(customer_id),
+                organization_id=str(organization.id),
+            )
+            return None
 
     if member_id is not None:
         member = await member_repository.get_by_id(member_id)

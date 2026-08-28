@@ -85,8 +85,9 @@ as the base branch.
 Set the command execution timeout to 10 minutes. If it produces no output, terminate it
 and retry once with the same timeout plus `--print-logs --log-level INFO`. If the logs
 show repeated HTTP 5xx responses, terminate the retry immediately: the API is unavailable.
-Record the skipped review in the final handoff. Do not install cubic or change its
-authentication.
+When terminating, stop the `cubic review` child process too — not only its shell wrapper —
+and confirm no review process remains. Record the skipped review in the final handoff. Do
+not install cubic or change its authentication.
 
 Present issues grouped by priority, highlighting P0 and P1. Fix real P0 and P1 issues;
 skip false positives with a one-line reason. **Do not open the PR while an unfixed, real

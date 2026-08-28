@@ -1,0 +1,27 @@
+server/tests/benefit/grant/test_scope.py
+  s_c63c99b2b1efc5::t_d700dcc3aa78a9 11
+  s_c63c99b2b1efc5::t_79bc12079563b5 13,17-23,118-143,149-167
+  s_c63c99b2b1efc5::t_25f572675da924 203,209-213,232-234
+  s_c63c99b2b1efc5::t_0f96d5d2085eca 144-148
+  s_c63c99b2b1efc5::t_26c4b925e87116 168
+server/polar/benefit/grant/scope.py
+  s_c63c99b2b1efc5::t_9e989b26d7aa59 7,135-140
+server/polar/customer_seat/repository.py
+  s_c63c99b2b1efc5::t_9e989b26d7aa59 209-221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "a7ffef968d3b4cb1e125b2b0b29399eec10687ae",
+  "prompts": {},
+  "sessions": {
+    "s_c63c99b2b1efc5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c8671948-e8fa-4692-8c71-21e158292daf",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

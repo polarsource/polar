@@ -1,0 +1,21 @@
+server/polar/benefit/grant/scope.py
+  s_c63c99b2b1efc5::t_ecfe418c40952f 98
+docs/guides/migrate-seat-based-to-member-model.mdx
+  s_c63c99b2b1efc5::t_ecfe418c40952f 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "942a5df95ce463cdae031c0cae7bbea17926afcb",
+  "prompts": {},
+  "sessions": {
+    "s_c63c99b2b1efc5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c8671948-e8fa-4692-8c71-21e158292daf",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

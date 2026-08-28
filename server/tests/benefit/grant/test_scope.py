@@ -170,11 +170,77 @@ class TestResolveMember:
             organization=organization,
             member_id=None,
             is_seat_based=True,
+            subscription_id=subscription.id,
         )
 
         assert result is not None
         assert result.id == seat_member.id
         assert result.customer_id == buyer.id
+
+    async def test_phase_1_two_seats_resolve_by_scope(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """A holder with two seats resolves the member for the grant's own scope."""
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "member_model_enabled": False,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        holder = await create_customer(
+            save_fixture, organization=organization, email="holder@example.com"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        members = []
+        subscriptions = []
+        for index in range(2):
+            buyer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email=f"buyer{index}@example.com",
+            )
+            member = Member(
+                customer_id=buyer.id,
+                organization_id=organization.id,
+                email=holder.email,
+                name="Seat holder",
+                role=MemberRole.member,
+            )
+            await save_fixture(member)
+            subscription = await create_subscription(
+                save_fixture, product=product, customer=buyer
+            )
+            await create_customer_seat(
+                save_fixture,
+                subscription=subscription,
+                customer=holder,
+                status=SeatStatus.claimed,
+                member_id=member.id,
+            )
+            members.append(member)
+            subscriptions.append(subscription)
+
+        for member, subscription in zip(members, subscriptions, strict=True):
+            result = await resolve_member(
+                session,
+                customer_id=holder.id,
+                organization=organization,
+                member_id=None,
+                is_seat_based=True,
+                subscription_id=subscription.id,
+            )
+            assert result is not None
+            assert result.id == member.id
 
     async def test_phase_1_customer_without_email_returns_none(
         self,

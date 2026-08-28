@@ -57,12 +57,11 @@ class EventTypeRepository(
             return existing
 
         event_type = EventType(name=name, label=name, organization_id=organization_id)
-        nested = await self.session.begin_nested()
         try:
-            self.session.add(event_type)
-            await self.session.flush()
+            async with self.session.begin_nested():
+                self.session.add(event_type)
+                await self.session.flush()
         except IntegrityError:
-            await nested.rollback()
             existing = await self.get_by_name_and_organization(name, organization_id)
             if existing:
                 return existing

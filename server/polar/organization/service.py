@@ -394,18 +394,17 @@ class OrganizationService:
             }
             create_data["status_updated_at"] = datetime.now(UTC)
 
-        nested = await session.begin_nested()
         try:
-            organization = await repository.create(
-                Organization(
-                    **create_data,
-                    customer_invoice_prefix=create_schema.slug.upper(),
+            async with session.begin_nested():
+                organization = await repository.create(
+                    Organization(
+                        **create_data,
+                        customer_invoice_prefix=create_schema.slug.upper(),
+                    )
                 )
-            )
-            organization.account = await account_service.create(session)
-            await session.flush()
+                organization.account = await account_service.create(session)
+                await session.flush()
         except IntegrityError as e:
-            await nested.rollback()
             raise PolarRequestValidationError(
                 [
                     {
@@ -948,19 +947,19 @@ class OrganizationService:
         polar_self_member_delay: int | None = None,
         enqueue_polar_self_member: bool = True,
     ) -> None:
-        nested = await session.begin_nested()
         try:
-            relation = UserOrganization(
-                user_id=user.id, organization_id=organization.id, role=role
-            )
-            session.add(relation)
-            await session.flush()
-            log.info(
-                "organization.member.added",
-                user_id=user.id,
-                organization_id=organization.id,
-                role=role,
-            )
+            async with session.begin_nested():
+                relation = UserOrganization(
+                    user_id=user.id, organization_id=organization.id, role=role
+                )
+                session.add(relation)
+                await session.flush()
+                log.info(
+                    "organization.member.added",
+                    user_id=user.id,
+                    organization_id=organization.id,
+                    role=role,
+                )
         except IntegrityError:
             # TODO: Currently, we treat this as success since the connection
             # exists. However, once we use status to distinguish active/inactive
@@ -971,7 +970,6 @@ class OrganizationService:
                 user_id=user.id,
                 role=role,
             )
-            await nested.rollback()
             # Update
             stmt = (
                 sql.Update(UserOrganization)

@@ -11,12 +11,13 @@ This is only a router. Every lens is a skill you can also run on its own.
 ## 1. Diff
 
 ```bash
+git status --short
 git diff main...HEAD --stat
 git diff main...HEAD
 ```
 
-If that fails use `git diff HEAD~1`, or ask for the base. Keep the full diff — every agent
-gets it, not just file names.
+Require a clean working tree. Keep the full diff — every lens reviews changed lines, not
+just file names.
 
 ## 2. Route
 
@@ -34,21 +35,17 @@ Run the first four always. Add the rest only when the trigger matches.
 
 ## 3. Launch
 
-One message, one `Agent` call per selected skill, `subagent_type: "general-purpose"`. They are
-independent and must not wait on each other. Same prompt for every lens:
+Launch all selected lenses concurrently in one message using the environment's subagent
+tool. Do not serialize independent reviews. Each lens gets this task:
 
 ```
-description: "<skill name>"
-subagent_type: "general-purpose"
-prompt: |
-  Read `.agents/skills/<skill name>/SKILL.md` and follow it exactly.
+Read `.agents/skills/<skill name>/SKILL.md` and follow it exactly.
 
-  Review this diff. Only changed lines are in scope — never the rest of the repo.
+From the repository root, run `git diff main...HEAD` to get the complete diff.
+Only changed lines are in scope — never the rest of the repo.
 
-  [INSERT FULL DIFF]
-
-  Use the output format the skill defines. High-confidence findings only. If you are unsure
-  whether something is a defect, put it under Question instead of asserting it.
+Use the output format the skill defines. High-confidence findings only. If you are unsure
+whether something is a defect, put it under Question instead of asserting it.
 ```
 
 Each skill declares what it does **not** own, so the lenses do not overlap by construction.
@@ -63,6 +60,7 @@ list of ADR id, `file:line`, what breaks, and the fix. Map its findings to 🔴.
   `conventions-check` → `reuse-check` → `slop-check`.
 - **Surface conflicts.** If two lenses disagree, say so rather than picking silently.
 - **Cut the padding.** A short report that is all true beats a long one that is half true.
+- **Re-review precisely.** After fixes, run only the lenses that raised findings.
 
 ## 5. Report
 
@@ -91,5 +89,4 @@ Ran: <...>. Skipped: <...> (no matching paths).
 ✅ APPROVED  |  ❌ CHANGES REQUESTED — n blocking, n should-fix
 ```
 
-Any 🔴 means CHANGES REQUESTED. 🟠 alone is a judgement call: say which way you lean and why.
-The 🟡 section is expected to have content — Polar reviews are mostly questions.
+Any unresolved 🔴 or 🟠 means CHANGES REQUESTED. 🟡 questions do not block the PR.

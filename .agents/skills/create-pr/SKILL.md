@@ -20,11 +20,21 @@ Run every step. Skip a step only when the condition attached to it says so — n
 save time. If a step cannot run in this environment (a tool is missing, a review command
 does not exist), say so explicitly in your summary rather than silently dropping it.
 
-## 1. Get the diff
+## 1. Prepare the branch
 
 ```bash
+git status --short
 git diff --name-only main...HEAD
+git diff --name-only
+git diff --cached --name-only
 ```
+
+Use the union of these outputs to decide which checks apply. `main...HEAD` does not include
+unstaged or untracked files.
+
+Inspect every staged, unstaged, and untracked file before committing. Exclude unrelated
+files and anything that may contain secrets. Commit the intended changes, then require a
+clean working tree before review.
 
 ## 2. Lint and type-check
 
@@ -41,36 +51,42 @@ If any file under `clients/` changed:
 
 ```bash
 cd clients && pnpm lint
+cd clients && pnpm typecheck
 ```
 
 If a step fails, fix it and re-run only that step until it passes. If lint auto-fixed
 files (ruff formatting, oxfmt), stage and commit them separately, e.g.
 `lint: auto-fix formatting`.
 
+Commit check fixes before review and confirm `git status --short` is empty.
+
 ## 3. Review
-
-Always run the Polar code review. Read `.agents/commands/polar-code-review.md` and follow
-it exactly.
-
-Fix real issues, commit the fixes, then run the review again.
 
 If the environment also provides `/code-review xhigh --fix`, `/simplify`, or
 `/security-review`, run them before the Polar code review. They complement the
 Polar-specific review but do not replace it.
 
-## 4. cubic
+Always run the Polar code review. Read `.agents/commands/polar-code-review.md` and follow
+it exactly.
 
-The working tree should be clean by now, so cubic reviews the branch against its base:
+Fix real findings, commit the fixes, then re-run only the lenses that raised them. Do not
+continue while a real blocking or should-fix finding remains. Questions do not block PR
+creation.
+
+## 4. cubic
 
 ```bash
 cubic review --base main --json
 ```
 
-`--base` takes the branch name as a value, so `cubic review -b -j` silently reviews against
-a branch called `-j` and hangs.
+`--base` requires a value. Never abbreviate this as `cubic review -b -j`; that treats `-j`
+as the base branch.
 
-If `cubic` is not installed, or its API is unavailable, skip this step and say so. Do not
-install it silently.
+Set the command execution timeout to 10 minutes. If it produces no output, terminate it
+and retry once with the same timeout plus `--print-logs --log-level INFO`. If the logs
+show repeated HTTP 5xx responses, terminate the retry immediately: the API is unavailable.
+Record the skipped review in the final handoff. Do not install cubic or change its
+authentication.
 
 Present issues grouped by priority, highlighting P0 and P1. Fix real P0 and P1 issues;
 skip false positives with a one-line reason. **Do not open the PR while an unfixed, real
@@ -78,12 +94,15 @@ P0 or P1 remains.**
 
 ## 5. Open the PR as a draft
 
-Use whatever PR mechanism the environment provides — `gh pr create --draft` locally, or
-the built-in PR tool in Cloud. It must be a **draft** either way.
+Before pushing or creating anything, check for open and closed PRs from the current branch.
 
-Never reopen a closed PR, and never open a second PR for a branch that already has one.
-If the branch already has a PR, update that PR instead — and leave the title and body
-alone if a human has edited them.
+- If an open PR exists, push the branch, report that PR, and stop this workflow. Do not
+  create another one, change its draft state, or modify its title or body.
+- If a closed PR exists, do not reopen it or create another one. Stop and ask the user.
+- Otherwise, push the branch and create a **draft** PR using the available PR mechanism.
+
+Verify the resulting PR targets `main` and is a draft. Never mark it ready for review.
+The Title and Description instructions below apply only when creating a new PR.
 
 ### Title
 

@@ -151,7 +151,7 @@ class TestResolveMember:
             subscription=subscription,
             customer=holder,
             status=SeatStatus.claimed,
-            member_id=seat_member.id,
+            member=seat_member,
         )
 
         result = await resolve_member(

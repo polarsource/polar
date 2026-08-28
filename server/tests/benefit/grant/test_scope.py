@@ -115,17 +115,16 @@ class TestResolveMember:
         assert result.customer_id == customer.id
         assert result.role == MemberRole.owner
 
-    async def test_phase_1_seat_holder_is_left_for_the_backfill(
+    async def test_phase_1_seat_holder_resolves_the_seat_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
     ) -> None:
-        """Phase 1: a seat holder's grant belongs to the member on their seat.
+        """Phase 1: a seat holder's grant resolves the member on their seat.
 
-        The seat flow passes that member explicitly, so resolution is skipped
-        rather than guessing the holder's own owner member, which would hide the
-        row from the backfill.
+        That member lives under the buyer, not under the holder's own customer,
+        so resolving the holder's owner member would attach the wrong identity.
         """
         organization = await create_organization(
             save_fixture,
@@ -141,6 +140,14 @@ class TestResolveMember:
         holder = await create_customer(
             save_fixture, organization=organization, email="holder@example.com"
         )
+        seat_member = Member(
+            customer_id=buyer.id,
+            organization_id=organization.id,
+            email=holder.email,
+            name="Seat holder",
+            role=MemberRole.member,
+        )
+        await save_fixture(seat_member)
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -154,6 +161,7 @@ class TestResolveMember:
             subscription=subscription,
             customer=holder,
             status=SeatStatus.claimed,
+            member_id=seat_member.id,
         )
 
         result = await resolve_member(
@@ -164,7 +172,9 @@ class TestResolveMember:
             is_seat_based=True,
         )
 
-        assert result is None
+        assert result is not None
+        assert result.id == seat_member.id
+        assert result.customer_id == buyer.id
 
     async def test_phase_1_customer_without_email_returns_none(
         self,

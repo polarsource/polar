@@ -145,6 +145,9 @@ class CheckoutLinkRepository(
                     )
                 )
             )
+            # Ordered to avoid deadlocks between concurrent archives
+            .order_by(CheckoutLink.id)
+            .with_for_update(of=CheckoutLink)
             .options(selectinload(CheckoutLink.checkout_link_products))
         )
         checkout_links = await self.get_all(statement)

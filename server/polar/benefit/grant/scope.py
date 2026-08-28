@@ -136,13 +136,17 @@ async def resolve_member(
             return member  # may be None if member was deleted
         if is_seat_based:
             # The seat's member sits under the buyer, not the holder.
-            seat_member_id = await CustomerSeatRepository.from_session(
+            seat_member_ids = await CustomerSeatRepository.from_session(
                 session
-            ).get_active_seat_member_id(
+            ).list_active_seat_member_ids(
                 customer_id, subscription_id=subscription_id, order_id=order_id
             )
-            if seat_member_id is not None:
-                return await member_repository.get_by_id(seat_member_id)
+            if seat_member_ids:
+                if len(seat_member_ids) == 1 and seat_member_ids[0] is not None:
+                    return await member_repository.get_by_id(seat_member_ids[0])
+                # Leave the grant for the backfill rather than linking it to the
+                # seat holder's own owner member.
+                return None
         # Link now, so grants don't pile up for the backfill.
         try:
             return await _resolve_or_create_owner_member(

@@ -13,10 +13,10 @@ locals {
   )
 
   service_control_policies = {
-    workloads_baseline = {
-      name        = "WorkloadsBaseline"
-      description = "Baseline guardrails for all workload accounts."
-      target_ids  = [aws_organizations_organizational_unit.workloads.id]
+    member_root_access = {
+      name        = "MemberRootAccess"
+      description = "Deny long-term root user actions in member accounts while allowing privileged root sessions."
+      target_ids  = [local.root_id]
       content = {
         Version = "2012-10-17"
         Statement = [
@@ -26,11 +26,25 @@ locals {
             Action   = "*"
             Resource = "*"
             Condition = {
-              StringLike = {
+              ArnLike = {
                 "aws:PrincipalArn" = "arn:aws:iam::*:root"
+              }
+              Null = {
+                "aws:AssumedRoot" = "true"
               }
             }
           },
+        ]
+      }
+    }
+
+    workloads_baseline = {
+      name        = "WorkloadsBaseline"
+      description = "Baseline guardrails for all workload accounts."
+      target_ids  = [aws_organizations_organizational_unit.workloads.id]
+      content = {
+        Version = "2012-10-17"
+        Statement = [
           {
             Sid    = "DenyLeavingOrganization"
             Effect = "Deny"

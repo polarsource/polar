@@ -30,13 +30,18 @@ Application workloads live under the `Workloads` OU:
 - `Test` contains the staging/test environment.
 
 The `Security` OU holds the `identity` account (IAM Identity Center delegated administrator) and
-the `security` account (GuardDuty delegated administrator, managed from `terraform/security`).
+the `security` account (IAM root access and GuardDuty delegated administrator, managed from
+`terraform/security`).
 
 ## Guardrails
 
 - Attach guardrails that apply to every application account to `Workloads`.
 - Attach production-class guardrails to both `Production` and `Sandbox`.
 - Attach test/staging-specific guardrails to `Test`.
+
+The `MemberRootAccess` SCP is attached to the organization root. It denies actions made with
+long-term root credentials in every member account while allowing task-scoped privileged sessions
+created by `sts:AssumeRoot`.
 
 ## Terraform Ownership
 
@@ -58,6 +63,17 @@ test account       -> test workspace
 
 The HCP Terraform workspace variables that point each workspace at its AWS role are managed from
 `terraform/global`.
+
+## Centralized root access
+
+IAM trusted access is enabled for the organization, with both root credential management and
+privileged root sessions enabled. The `security` account is the delegated administrator for these
+features.
+
+Enabling root credential management does not remove existing member account root credentials.
+Audit each member account and remove its credentials through a privileged session scoped by the
+`IAMDeleteRootUserCredentials` AWS managed root-task policy. The management account is not covered
+by centralized root access and must retain its separately secured root credentials.
 
 ## Staff access (IAM Identity Center)
 

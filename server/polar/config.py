@@ -238,6 +238,10 @@ class Settings(BaseSettings):
     GITHUB_REPOSITORY_BENEFITS_CLIENT_ID: str = ""
     GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET: str = ""
 
+    # GitHub secret scanning public keys are rarely rotated, so cache the fetched
+    # list in-process to avoid refetching on every webhook delivery.
+    GITHUB_SECRET_SCANNING_PUBLIC_KEYS_CACHE_TTL_SECONDS: int = 60 * 60 * 24
+
     # Discord
     DISCORD_CLIENT_ID: str = ""
     DISCORD_CLIENT_SECRET: str = ""

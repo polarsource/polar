@@ -11,7 +11,6 @@ from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import Member, Organization
 from polar.models.benefit_grant import BenefitGrantScope, BenefitGrantScopeArgs
-from polar.models.customer_seat import CustomerSeat
 from polar.models.order import Order
 from polar.models.subscription import Subscription
 from polar.order.repository import OrderRepository
@@ -114,50 +113,6 @@ async def _resolve_or_create_owner_member(
     return await member_service.create_owner_member(session, customer, organization)
 
 
-async def _get_seat_buyer_customer_id(
-    session: AsyncSession, seat: CustomerSeat
-) -> UUID | None:
-    if seat.subscription_id is not None:
-        subscription = await SubscriptionRepository.from_session(session).get_by_id(
-            seat.subscription_id
-        )
-        return subscription.customer_id if subscription is not None else None
-    if seat.order_id is not None:
-        order = await OrderRepository.from_session(session).get_by_id(seat.order_id)
-        return order.customer_id if order is not None else None
-    return None
-
-
-async def _resolve_or_create_seat_member(
-    session: AsyncSession, seat: CustomerSeat, organization: Organization
-) -> Member | None:
-    """Return the member on the seat, creating it if it doesn't exist yet.
-
-    The seat's member lives under the buyer, with the holder's email. Resolving
-    the holder's own owner member instead would attach the wrong identity.
-    """
-    if seat.member_id is not None:
-        return await MemberRepository.from_session(session).get_by_id(seat.member_id)
-
-    email = seat.email
-    if email is None and seat.customer_id is not None:
-        holder = await CustomerRepository.from_session(session).get_by_id(
-            seat.customer_id
-        )
-        email = holder.email if holder is not None else None
-
-    buyer_customer_id = await _get_seat_buyer_customer_id(session, seat)
-    if buyer_customer_id is None or email is None:
-        return None
-
-    return await member_service.get_or_create_by_email(
-        session,
-        customer_id=buyer_customer_id,
-        organization_id=organization.id,
-        email=email,
-    )
-
-
 async def resolve_member(
     session: AsyncSession,
     customer_id: UUID,
@@ -186,7 +141,9 @@ async def resolve_member(
                 customer_id, subscription_id=subscription_id, order_id=order_id
             )
             if seat is not None:
-                return await _resolve_or_create_seat_member(session, seat, organization)
+                return await member_service.get_or_create_for_seat(
+                    session, seat, organization
+                )
         # Link now, so grants don't pile up for the backfill.
         try:
             return await _resolve_or_create_owner_member(

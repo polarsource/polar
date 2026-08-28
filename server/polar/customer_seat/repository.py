@@ -235,6 +235,18 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
         return await self.get_one_or_none(statement.limit(1))
 
+    async def get_buyer_customer_id(self, seat: CustomerSeat) -> UUID | None:
+        """The customer who bought the seat, which is not the seat holder."""
+        if seat.subscription_id is not None:
+            statement = select(Subscription.customer_id).where(
+                Subscription.id == seat.subscription_id
+            )
+        elif seat.order_id is not None:
+            statement = select(Order.customer_id).where(Order.id == seat.order_id)
+        else:
+            return None
+        return await self.session.scalar(statement)
+
     async def list_active_by_member_id(
         self, member_id: UUID, *, options: Options = ()
     ) -> Sequence[CustomerSeat]:

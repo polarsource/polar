@@ -12,6 +12,7 @@ resource "aws_organizations_organization" "current" {
   aws_service_access_principals = [
     "account.amazonaws.com",
     "guardduty.amazonaws.com",
+    "iam.amazonaws.com",
     "malware-protection.guardduty.amazonaws.com",
     "sso.amazonaws.com",
   ]

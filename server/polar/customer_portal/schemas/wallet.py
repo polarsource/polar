@@ -7,5 +7,3 @@ class CustomerWallet(WalletBase):
 
     You can top-up your wallet and use the balance to pay for usage.
     """
-
-    pass

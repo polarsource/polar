@@ -28,6 +28,11 @@ variable "queue_name" {
   type        = string
 }
 
+variable "queue_prefix" {
+  description = "Shared prefix of all task queues in this environment. Grants the worker SendMessage on every sibling queue for cross-queue sub-enqueues; the pattern also matches sibling DLQs, which is accepted."
+  type        = string
+}
+
 variable "image_uri" {
   description = "Container image URI the worker Lambda runs."
   type        = string
@@ -43,18 +48,31 @@ variable "timeout_seconds" {
   description = "Lambda function timeout. Must stay below the queue visibility timeout."
   type        = number
   default     = 120
+  nullable    = false
 }
 
 variable "memory_size" {
   description = "Lambda memory in MB."
   type        = number
   default     = 2048
+  nullable    = false
 }
 
 variable "reserved_concurrency" {
-  description = "null leaves the function unreserved (-1). Bounds warm containers, and therefore DB connections."
+  description = "Dedicated concurrency slots: a guaranteed floor that is also a hard ceiling. null leaves the function unreserved. Mutually exclusive with max_concurrency."
   type        = number
-  default     = 5
+  default     = null
+}
+
+variable "max_concurrency" {
+  description = "Caps concurrent invocations at the SQS poller without reserving from the account pool. null leaves consumption uncapped. Mutually exclusive with reserved_concurrency."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.max_concurrency == null || try(var.max_concurrency >= 2, false)
+    error_message = "AWS requires maximum_concurrency to be at least 2."
+  }
 }
 
 variable "max_retries" {
@@ -68,6 +86,7 @@ variable "enabled" {
   description = "Event source mapping toggle. false provisions the worker dormant."
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "subnet_ids" {
@@ -88,11 +107,22 @@ variable "environment_variables" {
   default     = {}
 }
 
-variable "secret_environment_variables" {
-  description = "Secret environment variables for the task Lambda."
-  type        = map(string)
-  default     = {}
-  sensitive   = true
+variable "secrets_arn" {
+  description = "Secrets Manager secret holding a JSON map of env vars, exported by the image bootstrap at cold start."
+  type        = string
+  default     = null
+}
+
+variable "secrets_version_id" {
+  description = "Version ID of the secret. Exposed as an env var so rotations replace warm Lambda environments."
+  type        = string
+  default     = null
+}
+
+variable "kms_key_arn" {
+  description = "KMS key the app uses for envelope encryption of stored secrets."
+  type        = string
+  default     = null
 }
 
 variable "log_retention_days" {

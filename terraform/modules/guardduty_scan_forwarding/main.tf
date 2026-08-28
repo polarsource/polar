@@ -40,7 +40,7 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  destination_bus_arn = "arn:aws:events:${data.aws_region.current.name}:${var.destination_account_id}:event-bus/polar-${var.environment}-guardduty-scan-results"
+  destination_bus_arn = "arn:aws:events:${data.aws_region.current.region}:${var.destination_account_id}:event-bus/polar-${var.environment}-guardduty-scan-results"
 }
 
 resource "aws_iam_role" "forward" {

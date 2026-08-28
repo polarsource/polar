@@ -1,16 +1,15 @@
-import { isLegacyRecurringPrice } from '@/utils/product'
+import {
+  getUnitLabels,
+  isLegacyRecurringPrice,
+  isSeatBasedPrice,
+  isUnitBasedPrice,
+} from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
   product: schemas['Product'] | schemas['CheckoutProduct']
   currency: string
-}
-
-function isSeatBasedPrice(
-  price: schemas['ProductPrice'],
-): price is schemas['ProductPriceSeatBased'] {
-  return price.amount_type === 'seat_based'
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
@@ -20,7 +19,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   const staticPrice = product.prices.find(
     ({ amount_type, price_currency }) =>
       price_currency === currency &&
-      ['fixed', 'custom', 'seat_based'].includes(amount_type),
+      ['fixed', 'custom', 'seat_based', 'unit_based'].includes(amount_type),
   )
 
   if (!staticPrice) {
@@ -62,6 +61,32 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
           />
           <span className="dark:text-polar-500 text-xs text-gray-500">
             / seat
+          </span>
+        </span>
+      )
+    }
+    return null
+  } else if (isUnitBasedPrice(staticPrice)) {
+    const tiers = staticPrice.tiers.tiers
+
+    if (tiers.length > 0) {
+      const firstTier = tiers[0]
+      const hasMultipleTiers = tiers.length > 1
+
+      return (
+        <span className="inline-flex items-baseline gap-1.5">
+          {hasMultipleTiers && (
+            <span className="dark:text-polar-500 text-xs text-gray-500">
+              From
+            </span>
+          )}
+          <AmountLabel
+            amount={Number(firstTier.unit_amount)}
+            currency={staticPrice.price_currency}
+            interval={product.recurring_interval || undefined}
+          />
+          <span className="dark:text-polar-500 text-xs text-gray-500">
+            / {getUnitLabels(staticPrice).unitLabel}
           </span>
         </span>
       )

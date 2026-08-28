@@ -21,6 +21,7 @@ from fastapi.responses import HTMLResponse
 
 router = APIRouter(prefix="/backoffice/resources", tags=["backoffice"])
 
+
 @router.get("/", response_class=HTMLResponse)
 async def list_page(
     request: Request,
@@ -136,6 +137,7 @@ with accordion():
 ```python
 from polar.backoffice.components import datatable
 
+
 class ResourceDatatable(datatable.Datatable[Resource, ResourceSortProperty]):
     def columns(self) -> list[datatable.DatatableColumn]:
         return [
@@ -143,6 +145,7 @@ class ResourceDatatable(datatable.Datatable[Resource, ResourceSortProperty]):
             ResourceStatusColumn(),
             datatable.DatatableDateColumn("created_at", "Created"),
         ]
+
 
 class ResourceStatusColumn(datatable.DatatableColumn[Resource, ResourceSortProperty]):
     def render(self, request: Request, item: Resource) -> Generator[None] | None:
@@ -174,9 +177,11 @@ with description_list():
 from pydantic import BaseModel
 from polar.backoffice.components.input import text_input, select_input, textarea_input
 
+
 class UpdateResourceForm(BaseModel):
     name: str
     status: str
+
 
 @router.post("/{id}/update", response_class=HTMLResponse)
 async def update_resource(

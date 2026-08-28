@@ -53,7 +53,8 @@ class OrganizationPermission(StrEnum):
     # `analytics:read` / `analytics:manage`.
     events_ingest = "events:ingest"
 
-    # Finance — admin-only.
+    # Finance — read access is also granted to the finance role; management is
+    # reserved for admins and owners.
     finance_read = "finance:read"
     finance_manage = "finance:manage"
 
@@ -80,10 +81,21 @@ _MEMBER_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.events_ingest,
 }
 
+_FINANCE_PERMISSIONS: set[OrganizationPermission] = {
+    OrganizationPermission.sales_read,
+    OrganizationPermission.sales_manage,
+    OrganizationPermission.finance_read,
+    OrganizationPermission.customers_read,
+    OrganizationPermission.products_read,
+    OrganizationPermission.custom_fields_read,
+    OrganizationPermission.analytics_read,
+}
+
 ROLE_PERMISSIONS: dict[OrganizationRole, set[OrganizationPermission]] = {
     OrganizationRole.member: _MEMBER_PERMISSIONS,
     OrganizationRole.admin: _MEMBER_PERMISSIONS | _ADMIN_ONLY,
     OrganizationRole.owner: _MEMBER_PERMISSIONS | _ADMIN_ONLY,
+    OrganizationRole.finance: _FINANCE_PERMISSIONS,
 }
 
 

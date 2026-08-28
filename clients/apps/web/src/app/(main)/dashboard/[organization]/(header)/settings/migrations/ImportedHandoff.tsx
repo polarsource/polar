@@ -19,16 +19,14 @@ interface Props {
   onReviewRecords: () => void
 }
 
-const PAUSED_NOTE = 'Subscriptions are paused. Nothing is billed until cutover.'
 const UNCOUNTED = 'Your catalog is now in Polar.'
 const CARDS_AT_STRIPE =
   "Your customers' cards are still at Stripe. Moving them lets Polar charge " +
   'them. This is a checklist. You can leave and come back.'
 const NOTHING_TO_MOVE =
-  'There is nothing to move yet. Import your catalog first, then come back to ' +
-  "move your customers' saved cards."
+  'There is nothing to move yet. Prepare your subscriptions first, then come ' +
+  "back to move your customers' saved cards."
 
-// The paused note is only true when a subscription actually landed.
 function receipt(outcome: ImportOutcome, nothingLanded: boolean): string {
   if (outcome.isLoading || outcome.isError) {
     return UNCOUNTED
@@ -41,10 +39,7 @@ function receipt(outcome: ImportOutcome, nothingLanded: boolean): string {
       : UNCOUNTED
   }
   const verb = total === 1 ? 'is' : 'are'
-  const landed = `${importedCountsText(outcome.imported)} ${verb} now in Polar.`
-  return outcome.imported.subscriptions > 0
-    ? `${landed} ${PAUSED_NOTE}`
-    : landed
+  return `${importedCountsText(outcome.imported)} ${verb} now in Polar.`
 }
 
 // The import receipt and the handoff to card movement in one panel, so the
@@ -55,7 +50,7 @@ export function ImportedHandoff({
   onReviewRecords,
 }: Props) {
   const start = useStartPanTransfer(migrationId)
-  const remaining = plural(outcome.selectableTotal, 'record')
+  const remaining = plural(outcome.selectableTotal, 'subscription')
   const nothingLanded = nothingImported(outcome)
 
   return (
@@ -120,7 +115,7 @@ export function ImportedHandoff({
       {remaining && !nothingLanded && (
         <Text variant="caption" color="muted">
           {remaining} {outcome.selectableTotal === 1 ? 'was' : 'were'} not
-          imported. You can still import{' '}
+          prepared. You can still prepare{' '}
           {outcome.selectableTotal === 1 ? 'it' : 'them'} before you start.
         </Text>
       )}

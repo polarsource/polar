@@ -57,7 +57,6 @@ async def mark_read(
     await notifications.set_user_last_read(
         session, auth_subject.subject.id, read.notification_id
     )
-    return None
 
 
 @router.post(

@@ -4,8 +4,6 @@ Used by both the AI review agent (prompts) and the backoffice UI
 to ensure consistent evaluation criteria.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Literal
 

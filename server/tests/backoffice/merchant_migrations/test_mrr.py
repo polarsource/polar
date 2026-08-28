@@ -63,6 +63,7 @@ def _subscription(
     quantity: int = 1,
     paused_collection: bool = False,
     migration_id: UUID = MIGRATION,
+    currency: str = "usd",
 ) -> CanonicalRow:
     subscription = CanonicalSubscription(
         source_id=source_id,
@@ -77,6 +78,7 @@ def _subscription(
         line_item_count=1,
         quantity=quantity,
         payment_method=None,
+        currency=currency,
     )
     return (
         migration_id,
@@ -273,7 +275,34 @@ class TestMultipleCurrencies:
             _product("price_usd", 2900, currency="usd"),
             _product("price_eur", 2500, currency="eur"),
             _subscription("sub_1", "price_usd", MerchantMigrationRecordStatus.imported),
-            _subscription("sub_2", "price_eur", MerchantMigrationRecordStatus.imported),
+            _subscription(
+                "sub_2",
+                "price_eur",
+                MerchantMigrationRecordStatus.imported,
+                currency="eur",
+            ),
+        ]
+
+        result = _breakdown(rows)
+
+        assert result.on_polar.amounts == {"usd": 2900, "eur": 2500}
+
+    def test_one_source_price_keeps_currency_options_apart(self) -> None:
+        rows = [
+            _product("price_1", 2900, currency="usd"),
+            _product("price_1", 2500, currency="eur"),
+            _subscription(
+                "sub_1",
+                "price_1",
+                MerchantMigrationRecordStatus.imported,
+                currency="usd",
+            ),
+            _subscription(
+                "sub_2",
+                "price_1",
+                MerchantMigrationRecordStatus.imported,
+                currency="eur",
+            ),
         ]
 
         result = _breakdown(rows)

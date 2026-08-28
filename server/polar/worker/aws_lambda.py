@@ -20,6 +20,7 @@ from ._sqs import (
     get_consumer_sqs_client,
     parse_envelope,
     schedule_delayed_message,
+    send_delayed_message,
     send_to_dlq,
     set_message_visibility,
 )
@@ -35,10 +36,12 @@ log: Logger = structlog.get_logger()
 # must run on the same loop (a fresh asyncio.run() per record would break it).
 _loop = asyncio.new_event_loop()
 asyncio.set_event_loop(_loop)
-bootstrap()
+bootstrap(pool_pre_ping=True)
 
 consumer_sqs_client = get_consumer_sqs_client()
 consumer_scheduler_client = get_consumer_scheduler_client()
+
+_REMAINING_TIME_MARGIN_SECONDS = 5
 
 
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
@@ -47,16 +50,24 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         for record in event.get("Records", []):
             message_id = record["messageId"]
             try:
-                actor, args, kwargs, correlation_id, attempt = parse_envelope(
-                    record["body"]
-                )
+                envelope = parse_envelope(record["body"])
                 _loop.run_until_complete(
                     run_task(
-                        actor,
-                        args,
-                        kwargs,
-                        receive_count=_effective_receive_count(record, attempt),
-                        source_correlation_id=correlation_id,
+                        envelope.actor,
+                        envelope.args,
+                        envelope.kwargs,
+                        receive_count=_effective_receive_count(
+                            record, envelope.attempt
+                        ),
+                        source_correlation_id=envelope.correlation_id,
+                        remaining_time_seconds=(
+                            context.get_remaining_time_in_millis() / 1000
+                            - _REMAINING_TIME_MARGIN_SECONDS
+                        ),
+                        message_timestamp=envelope.message_timestamp,
+                        message_id=envelope.message_id,
+                        debounce_key=envelope.debounce_key,
+                        message_options=envelope.message_options,
                     )
                 )
             except Retry as exc:
@@ -64,10 +75,9 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                     batch_item_failures.append({"itemIdentifier": message_id})
             except Exception as exc:
                 sentry_sdk.capture_exception(exc)
-                log.error(
+                log.exception(
                     "polar.worker.sqs_task_failed",
                     message_id=message_id,
-                    exc_info=True,
                 )
                 if _apply_retry_backoff(record, exc):
                     batch_item_failures.append({"itemIdentifier": message_id})
@@ -87,13 +97,13 @@ def _effective_receive_count(record: dict[str, Any], attempt: int) -> int:
 def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bool:
     """Schedule the failed message's next retry. Returns True if SQS should redeliver it."""
     try:
-        actor, args, kwargs, correlation_id, attempt = parse_envelope(record["body"])
+        envelope = parse_envelope(record["body"])
         queue_arn = record["eventSourceARN"]
-        receive_count = _effective_receive_count(record, attempt)
+        receive_count = _effective_receive_count(record, envelope.attempt)
         scheduler_role_arn = settings.WORKER_SQS_SCHEDULER_ROLE_ARN
 
         action, delay_seconds = plan_retry(
-            actor,
+            envelope.actor,
             receive_count,
             exception,
             scheduler_available=scheduler_role_arn is not None,
@@ -103,8 +113,32 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
             send_to_dlq(consumer_sqs_client, queue_arn, record["body"])
             log.info(
                 "polar.worker.sqs_retry_exhausted",
-                actor=actor,
+                actor=envelope.actor,
                 receive_count=receive_count,
+            )
+            return False
+
+        retry_body = build_envelope(
+            envelope.actor,
+            tuple(envelope.args),
+            envelope.kwargs,
+            envelope.correlation_id,
+            receive_count + 1,
+            envelope.message_timestamp,
+            message_id=envelope.message_id,
+            debounce_key=envelope.debounce_key,
+            message_options=envelope.message_options,
+        )
+
+        if action is RetryAction.RE_ENQUEUE:
+            send_delayed_message(
+                consumer_sqs_client, queue_arn, retry_body, delay_seconds
+            )
+            log.info(
+                "polar.worker.sqs_retry_reenqueued",
+                actor=envelope.actor,
+                receive_count=receive_count,
+                backoff_seconds=delay_seconds,
             )
             return False
 
@@ -114,15 +148,15 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
                 consumer_scheduler_client,
                 queue_arn,
                 scheduler_role_arn,
-                build_envelope(
-                    actor, tuple(args), kwargs, correlation_id, receive_count + 1
-                ),
+                retry_body,
                 delay_seconds,
-                build_retry_schedule_name(queue_arn, record["messageId"], attempt),
+                build_retry_schedule_name(
+                    queue_arn, record["messageId"], envelope.attempt
+                ),
             )
             log.info(
                 "polar.worker.sqs_retry_scheduled_eventbridge",
-                actor=actor,
+                actor=envelope.actor,
                 receive_count=receive_count,
                 backoff_seconds=delay_seconds,
             )
@@ -136,12 +170,12 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
         )
         log.info(
             "polar.worker.sqs_retry_scheduled",
-            actor=actor,
+            actor=envelope.actor,
             receive_count=receive_count,
             backoff_seconds=delay_seconds,
         )
         return True
     except Exception as exc:
         sentry_sdk.capture_exception(exc)
-        log.error("polar.worker.sqs_backoff_failed", exc_info=True)
+        log.exception("polar.worker.sqs_backoff_failed")
         return True

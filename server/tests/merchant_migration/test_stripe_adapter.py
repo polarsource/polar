@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import Any
 
@@ -12,6 +13,8 @@ from polar.merchant_migration.adapters.stripe import (
 from polar.merchant_migration.canonical import (
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
+    CanonicalPricingScheme,
+    CanonicalProduct,
     CanonicalSubscriptionStatus,
 )
 
@@ -208,7 +211,9 @@ def _stripe_subscription(
     status: str = "active",
     cancel_at_period_end: bool = False,
     trial_end: int | None = None,
+    billing_cycle_anchor: int | None = 1_700_000_000,
     cancellation_comment: str | None = None,
+    currency: str = "usd",
     items: list[dict[str, Any]] | None = None,
     payment_method: dict[str, Any] | None = None,
 ) -> stripe_lib.Subscription:
@@ -216,11 +221,13 @@ def _stripe_subscription(
         {
             "id": "sub_1",
             "customer": "cus_1",
+            "currency": currency,
             "status": status,
             "collection_method": "charge_automatically",
             "cancel_at_period_end": cancel_at_period_end,
             "pause_collection": None,
             "trial_end": trial_end,
+            "billing_cycle_anchor": billing_cycle_anchor,
             "default_payment_method": payment_method,
             "discounts": [],
             "cancellation_details": (
@@ -231,7 +238,7 @@ def _stripe_subscription(
                 if items is not None
                 else [
                     {
-                        "price": {"id": "price_1"},
+                        "price": {"id": "price_1", "currency": "usd"},
                         "quantity": 1,
                         "current_period_start": 1_700_000_000,
                         "current_period_end": 1_702_000_000,
@@ -241,6 +248,126 @@ def _stripe_subscription(
         },
         None,
     )
+
+
+def _stripe_price(
+    *,
+    currency: str = "usd",
+    unit_amount: int | None = 1000,
+    currency_options: dict[str, Any] | None = None,
+) -> stripe_lib.Price:
+    price: dict[str, Any] = {
+        "id": "price_1",
+        "object": "price",
+        "currency": currency,
+        "unit_amount": unit_amount,
+        "billing_scheme": "per_unit",
+        "recurring": {
+            "interval": "month",
+            "interval_count": 1,
+            "usage_type": "licensed",
+        },
+        "product": {
+            "id": "prod_1",
+            "object": "product",
+            "active": True,
+            "name": "Pro",
+        },
+    }
+    if currency_options is not None:
+        price["currency_options"] = currency_options
+    return stripe_lib.Price.construct_from(price, None)
+
+
+def _listed_prices(
+    mocker: MockerFixture, client: Any, *prices: stripe_lib.Price
+) -> None:
+    async def paging() -> AsyncIterator[stripe_lib.Price]:
+        for price in prices:
+            yield price
+
+    listing = mocker.MagicMock()
+    listing.auto_paging_iter = paging
+    client.v1.prices.list_async = mocker.AsyncMock(return_value=listing)
+
+
+async def _extracted_products(adapter: StripeAdapter) -> list[CanonicalProduct]:
+    return [product async for product in adapter._extract_products()]
+
+
+@pytest.mark.asyncio
+class TestExtractProducts:
+    async def test_single_currency_price_keeps_the_source_id(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(mocker, client, _stripe_price())
+
+        products = await _extracted_products(adapter)
+
+        assert len(products) == 1
+        price = products[0].prices[0]
+        assert (price.source_id, price.currency, price.amount) == (
+            "price_1",
+            "usd",
+            1000,
+        )
+        assert price.pricing_scheme == CanonicalPricingScheme.fixed
+
+    async def test_multi_currency_price_yields_one_price_per_currency(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(
+            mocker,
+            client,
+            _stripe_price(
+                currency="eur",
+                unit_amount=900,
+                currency_options={
+                    "eur": {"unit_amount": 900},
+                    "usd": {"unit_amount": 1000},
+                },
+            ),
+        )
+
+        products = await _extracted_products(adapter)
+
+        assert len(products) == 1
+        assert [
+            (price.source_id, price.currency, price.amount)
+            for price in products[0].prices
+        ] == [("price_1", "eur", 900), ("price_1", "usd", 1000)]
+
+    async def test_only_maps_configured_currency_options(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(
+            mocker,
+            client,
+            _stripe_price(
+                currency="eur",
+                unit_amount=900,
+                currency_options={
+                    "eur": {"unit_amount": 900},
+                    "gbp": {"unit_amount": 800},
+                },
+            ),
+        )
+
+        products = await _extracted_products(adapter)
+
+        assert {price.currency for price in products[0].prices} == {"eur", "gbp"}
+
+    async def test_currency_options_are_expanded(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(mocker, client)
+
+        await _extracted_products(adapter)
+
+        _, kwargs = client.v1.prices.list_async.call_args
+        assert "data.currency_options" in kwargs["params"]["expand"]
 
 
 @pytest.mark.asyncio
@@ -257,6 +384,42 @@ class TestGetSubscription:
         assert subscription.status == CanonicalSubscriptionStatus.active
         assert subscription.cancel_at_period_end is True
         assert subscription.current_period_end is not None
+
+    async def test_reads_the_price_it_is_billed_in(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                currency="usd",
+                items=[
+                    {
+                        "price": {"id": "price_1", "currency": "eur"},
+                        "quantity": 1,
+                        "current_period_start": 1_700_000_000,
+                        "current_period_end": 1_702_000_000,
+                    }
+                ],
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.price_source_id == "price_1"
+        assert subscription.currency == "usd"
+
+    async def test_default_currency_keeps_the_bare_price_id(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(currency="usd")
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.price_source_id == "price_1"
+        assert subscription.currency == "usd"
 
     async def test_carries_the_card_details_the_copy_keeps(
         self, mocker: MockerFixture

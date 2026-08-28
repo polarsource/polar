@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -14,12 +19,16 @@ class OrganizationsSync(SyncServiceBase):
     def get(
         self,
         slug: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrganizationData:
         """
         Get a customer portal's organization by slug.
 
         Args:
             slug: The organization slug.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Organization not found.
@@ -35,6 +44,7 @@ class OrganizationsSync(SyncServiceBase):
                 "slug": slug,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -48,12 +58,16 @@ class OrganizationsAsync(AsyncServiceBase):
     async def get(
         self,
         slug: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerOrganizationData:
         """
         Get a customer portal's organization by slug.
 
         Args:
             slug: The organization slug.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Organization not found.
@@ -69,6 +83,7 @@ class OrganizationsAsync(AsyncServiceBase):
                 "slug": slug,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {

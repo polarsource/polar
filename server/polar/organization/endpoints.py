@@ -29,6 +29,7 @@ from polar.exceptions import (
     ResourceNotFound,
 )
 from polar.integrations.polar.exceptions import (
+    PolarSelfPaidSubscriptionAlreadyExists,
     PolarSelfPaymentMethodInUse,
 )
 from polar.integrations.polar.schemas import (
@@ -710,9 +711,9 @@ async def set_member_role(
 ) -> UserOrganization:
     """Change a member's role on an organization.
 
-    Only `admin` and `member` are accepted; ownership transfers go through
-    a separate flow (today the backoffice `change_owner` endpoint, which
-    calls `user_organization_service.transfer_ownership`).
+    `admin`, `finance`, and `member` are accepted; ownership transfers go
+    through a separate flow (today the backoffice `change_owner` endpoint,
+    which calls `user_organization_service.transfer_ownership`).
     """
     try:
         return await user_organization_service.set_role(
@@ -1005,6 +1006,7 @@ async def get_subscription(
     summary="Start Subscription Checkout",
     responses={
         201: {"description": "Checkout session created."},
+        409: {"model": PolarSelfPaidSubscriptionAlreadyExists.schema()},
         404: OrganizationNotFound,
     },
     tags=[APITag.private],

@@ -98,7 +98,16 @@ export interface ClientOptions {
   baseUrl: string;
   version: string;
   accessToken: string;
+  /** Default request timeout, in seconds. */
+  timeout?: number;
 }
+
+export interface RequestOptions {
+  /** Request timeout override, in seconds. */
+  timeout?: number;
+}
+
+const MAX_ABORT_SIGNAL_TIMEOUT_MS = 2_147_483_647;
 
 export const resolveBaseUrl = (
   servers: Record<string, string>,
@@ -121,7 +130,10 @@ export class ClientBase {
   protected readonly options: ClientOptions;
 
   constructor(options: ClientOptions) {
-    this.options = options;
+    this.options = {
+      timeout: 5.0,
+      ...options,
+    };
   }
 
   public buildRequest(
@@ -147,10 +159,32 @@ export class ClientBase {
     ];
   }
 
-  public async sendRequest(request: [string, RequestInit]): Promise<Response> {
+  public async sendRequest(
+    request: [string, RequestInit],
+    requestOptions?: RequestOptions,
+  ): Promise<Response> {
     const [fullUrl, requestInit] = request;
+    const timeout = requestOptions?.timeout ?? this.options.timeout;
+    let signal = requestInit.signal;
+    if (timeout !== undefined) {
+      const timeoutMilliseconds = Math.ceil(timeout * 1000);
+      if (
+        !Number.isFinite(timeout) ||
+        timeout < 0 ||
+        timeoutMilliseconds > MAX_ABORT_SIGNAL_TIMEOUT_MS
+      ) {
+        throw new RangeError(
+          `Timeout must be a finite, non-negative number no greater than ${MAX_ABORT_SIGNAL_TIMEOUT_MS / 1000} seconds`,
+        );
+      }
+      const timeoutSignal = AbortSignal.timeout(timeoutMilliseconds);
+      signal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+    }
     try {
-      return await fetch(fullUrl, requestInit);
+      return await fetch(fullUrl, {
+        ...requestInit,
+        ...(signal ? { signal } : {}),
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new PolarNetworkError(errorMessage);

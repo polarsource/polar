@@ -1,12 +1,13 @@
 'use client'
 
-import { LicenseKeyDetails } from '@/components/Benefit/LicenseKeys/LicenseKeyDetails'
+import { LicenseKeyModal } from '@/components/Benefit/LicenseKeys/LicenseKeyModal'
 import LicenseKeyStatusSelect from '@/components/Benefit/LicenseKeys/LicenseKeyStatusSelect'
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useLicenseKey,
-  useLicenseKeyUpdate,
+  useLicenseKeyRotate,
   useOrganizationLicenseKeys,
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -18,16 +19,17 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
-import { Button } from '@polar-sh/orbit'
-import { Text } from '@polar-sh/orbit'
+import {
+  InlineModal,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Text,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState } from 'react'
-import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
-import { useModal } from '../Modal/useModal'
 import { BenefitPage } from './BenefitPage'
 
 export const LicenseKeysPage = ({
@@ -43,10 +45,12 @@ export const LicenseKeysPage = ({
   const status = searchParams['status'] ?? 'any'
   const deepLinkedLicenseKeyId = searchParams['license_key_id']
 
-  const [statusLoading, setStatusLoading] = useState(false)
   const [selectedLicenseKeyId, setSelectedLicenseKeyId] = useState<
     string | null
   >(deepLinkedLicenseKeyId ?? null)
+  const [licenseKeyModalView, setLicenseKeyModalView] = useState<
+    'details' | 'rotate' | null
+  >(deepLinkedLicenseKeyId ? 'details' : null)
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organization_id: organization.id,
@@ -76,11 +80,7 @@ export const LicenseKeysPage = ({
     return params
   }
 
-  const {
-    isShown: isLicenseKeyModalShown,
-    show: showLicenseKeyModal,
-    hide: hideLicenseKeyModal,
-  } = useModal(!!deepLinkedLicenseKeyId)
+  const rotateLicenseKey = useLicenseKeyRotate(organization.id)
 
   const router = useRouter()
 
@@ -150,122 +150,45 @@ export const LicenseKeysPage = ({
     )
   }
 
-  const updateLicenseKey = useLicenseKeyUpdate(organization.id)
-
-  const handleToggleLicenseKeyStatus = useCallback(
-    async (status: 'granted' | 'disabled' | 'revoked') => {
-      if (selectedLicenseKey) {
-        setStatusLoading(true)
-
-        await updateLicenseKey
-          .mutateAsync(
-            {
-              id: selectedLicenseKey.id,
-              body: {
-                status,
-                usage: selectedLicenseKey.usage,
-              },
-            },
-            {
-              onSettled: () => {
-                setStatusLoading(false)
-              },
-            },
-          )
-          .then(({ error }) => {
-            if (error) {
-              toast({
-                title: 'License Key Status Update Failed',
-                description: `Error updating license key status to ${status}: ${extractApiErrorMessage(error)}`,
-              })
-              return
-            }
-            toast({
-              title: 'License Key Status Updated',
-              description: `License key ending in ${selectedLicenseKey.display_key} updated to ${status}`,
-            })
-          })
-      }
-    },
-    [updateLicenseKey, selectedLicenseKey, setStatusLoading],
-  )
-
   const closeLicenseKeyModal = useCallback(() => {
-    hideLicenseKeyModal()
+    setLicenseKeyModalView(null)
     setSelectedLicenseKeyId(null)
     setDeepLinkParam(null)
-  }, [hideLicenseKeyModal, setSelectedLicenseKeyId, setDeepLinkParam])
+  }, [setLicenseKeyModalView, setSelectedLicenseKeyId, setDeepLinkParam])
 
-  const LicenseKeyContextView = selectedLicenseKey ? (
-    <Box flexDirection="column" overflowY="auto">
-      <InlineModalHeader hide={closeLicenseKeyModal}>
-        <Text variant="heading-xxs" as="h1">
-          License Key
-        </Text>
-      </InlineModalHeader>
-      <Box
-        flexDirection="column"
-        rowGap="2xl"
-        paddingHorizontal="2xl"
-        paddingBottom="2xl"
-      >
-        <Box alignItems="center" columnGap="m">
-          <Avatar
-            className="h-10 w-10"
-            avatar_url={selectedLicenseKey.customer.avatar_url}
-            name={
-              selectedLicenseKey.customer.email ??
-              selectedLicenseKey.customer.name ??
-              '—'
-            }
-          />
-          <Box flexDirection="column">
-            <Text>{selectedLicenseKey.customer.email ?? '—'}</Text>
-          </Box>
-        </Box>
-        <Box flexDirection="column" rowGap="xl">
-          <CopyToClipboardInput
-            value={selectedLicenseKey.key}
-            onCopy={() => {
-              toast({
-                title: 'Copied To Clipboard',
-                description: `License Key was copied to clipboard`,
-              })
-            }}
-          />
-          <LicenseKeyDetails licenseKey={selectedLicenseKey} />
-        </Box>
-        <Box columnGap="l">
-          {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
-            <Button
-              onClick={() => handleToggleLicenseKeyStatus('granted')}
-              loading={statusLoading}
-            >
-              Enable
-            </Button>
-          )}
-          {selectedLicenseKey.status === 'granted' && (
-            <Button
-              onClick={() => handleToggleLicenseKeyStatus('disabled')}
-              variant="secondary"
-              loading={statusLoading}
-            >
-              Disable
-            </Button>
-          )}
-          {selectedLicenseKey.status === 'granted' && (
-            <Button
-              onClick={() => handleToggleLicenseKeyStatus('revoked')}
-              loading={statusLoading}
-              variant="destructive"
-            >
-              Revoke
-            </Button>
-          )}
-        </Box>
-      </Box>
-    </Box>
-  ) : undefined
+  const openRotateConfirm = useCallback(() => {
+    if (rotateLicenseKey.isPending) {
+      return
+    }
+    setLicenseKeyModalView('rotate')
+  }, [rotateLicenseKey.isPending, setLicenseKeyModalView])
+
+  const closeRotateConfirm = useCallback(() => {
+    setLicenseKeyModalView((currentView) =>
+      currentView === 'rotate' ? 'details' : currentView,
+    )
+  }, [setLicenseKeyModalView])
+
+  const handleRotate = useCallback(async () => {
+    if (!selectedLicenseKeyId || rotateLicenseKey.isPending) {
+      return
+    }
+
+    const { error } = await rotateLicenseKey.mutateAsync(selectedLicenseKeyId)
+    if (error) {
+      toast({
+        title: 'License Key Rotation Failed',
+        description: extractApiErrorMessage(error),
+      })
+      return
+    }
+
+    toast({
+      title: 'License Key Rotated',
+      description:
+        'The previous key no longer validates. Copy the new key and share it with your customer.',
+    })
+  }, [rotateLicenseKey, selectedLicenseKeyId])
 
   return (
     <Tabs defaultValue="license-keys">
@@ -297,16 +220,40 @@ export const LicenseKeysPage = ({
             setPagination={setPagination}
             setSorting={setSorting}
             onSelectLicenseKey={(licenseKey) => {
+              if (
+                rotateLicenseKey.isPending ||
+                licenseKeyModalView === 'rotate'
+              ) {
+                return
+              }
               setSelectedLicenseKeyId(licenseKey.id)
               setDeepLinkParam(licenseKey.id)
-              showLicenseKeyModal()
+              setLicenseKeyModalView('details')
             }}
             selectedLicenseKeyId={selectedLicenseKeyId}
           />
           <InlineModal
-            modalContent={LicenseKeyContextView ?? null}
-            isShown={isLicenseKeyModalShown}
+            modalContent={
+              selectedLicenseKey ? (
+                <LicenseKeyModal
+                  organization={organization}
+                  licenseKey={selectedLicenseKey}
+                  onClose={closeLicenseKeyModal}
+                  onRotate={openRotateConfirm}
+                />
+              ) : null
+            }
+            isShown={licenseKeyModalView === 'details'}
             hide={closeLicenseKeyModal}
+          />
+          <ConfirmModal
+            isShown={licenseKeyModalView === 'rotate'}
+            hide={closeRotateConfirm}
+            title="Rotate this license key?"
+            description="A new key will be generated for this customer. The previous key stops validating immediately. Share the new key with your customer, or have them copy it from the customer portal."
+            destructive
+            destructiveText="Rotate"
+            onConfirm={handleRotate}
           />
         </Box>
       </TabsContent>

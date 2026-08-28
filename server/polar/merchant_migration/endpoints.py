@@ -1,13 +1,18 @@
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Depends, Query
 from pydantic import UUID4
 
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
+from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import MerchantMigration
-from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
+from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
+    MerchantMigrationRecordStatus,
+)
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session, get_db_session
@@ -26,6 +31,8 @@ from .pan_transfer import (
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationCutoverReport,
+    MerchantMigrationCutoverRequest,
     MerchantMigrationImportReport,
     MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
@@ -40,6 +47,7 @@ from .schemas import (
 from .service import (
     CatalogImportBlocked,
     CatalogImportNotReady,
+    CutoverNotStarted,
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
@@ -201,6 +209,45 @@ async def import_catalog(
 
 
 @router.get(
+    "/{id}/customer-ids.csv",
+    summary="Export Merchant Migration Customer IDs",
+    response_class=CSVStreamingResponse,
+    responses={
+        401: {
+            "description": "Authentication required.",
+            "model": Unauthorized.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def export_customer_ids(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    # The primary: this CSV is downloaded right after import, and replica lag
+    # would omit customer IDs the import receipt already counted.
+    session: AsyncSession = Depends(get_db_session),
+) -> CSVStreamingResponse:
+    """One imported Stripe customer ID per row, no header — for Stripe Copy upload."""
+    source_ids = await merchant_migration_service.stream_imported_customer_source_ids(
+        session, auth_subject, id
+    )
+
+    async def create_csv() -> AsyncGenerator[str]:
+        csv_writer = IterableCSVWriter(dialect="excel")
+        async for source_id in source_ids:
+            yield csv_writer.getrow((source_id,))
+
+    return CSVStreamingResponse(create_csv(), "stripe-customer-ids.csv")
+
+
+@router.get(
     "/{id}/pan-transfer",
     response_model=PanTransferChecklist,
     summary="Get Merchant Migration Card Transfer",
@@ -293,6 +340,67 @@ async def complete_pan_transfer_step(
 
 
 @router.get(
+    "/{id}/cutover",
+    response_model=MerchantMigrationCutoverReport,
+    summary="Get Merchant Migration Switch",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def get_cutover(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    # The primary: the client polls this as the switch runs, and replica lag
+    # would report subscriptions as still pending after they've moved.
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationCutoverReport:
+    return await merchant_migration_service.get_cutover_report(
+        session, auth_subject, id
+    )
+
+
+@router.post(
+    "/{id}/cutover",
+    response_model=MerchantMigrationCutoverReport,
+    summary="Switch Merchant Migration Subscriptions",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The card transfer hasn't reached the switch step yet.",
+            "model": CutoverNotStarted.schema(),
+        },
+    },
+)
+async def start_cutover(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    body: MerchantMigrationCutoverRequest | None = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationCutoverReport:
+    return await merchant_migration_service.start_cutover(
+        session,
+        auth_subject,
+        id,
+        record_ids=body.record_ids if body is not None else None,
+        exclude_record_ids=body.exclude_record_ids if body is not None else None,
+    )
+
+
+@router.get(
     "/{id}/records/summary",
     response_model=MerchantMigrationRecordSummary,
     summary="Summarize Merchant Migration Records",
@@ -349,6 +457,7 @@ async def records(
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
     reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
     import_status: Annotated[MerchantMigrationRecordStatus | None, Query()] = None,
+    cutover_status: Annotated[MerchantMigrationCutoverStatus | None, Query()] = None,
     # The primary, like the summary above: it supplies the selection ceiling
     # and these rows supply the checkboxes, so a split would let replica lag
     # show a tickable row the count doesn't include.
@@ -362,6 +471,7 @@ async def records(
         status=status,
         reason_level=reason_level,
         import_status=import_status,
+        cutover_status=cutover_status,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)

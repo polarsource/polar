@@ -123,10 +123,12 @@ class UserService:
     ) -> User:
         update_dict = update_schema.model_dump(exclude_unset=True)
 
-        if update_dict.pop("accepted_terms_of_service", None) is True:
-            if not user.accepted_terms_of_service:
-                update_dict["accepted_terms_of_service_at"] = datetime.now(UTC)
-                update_dict["accepted_terms_of_service_ip"] = ip_address
+        if (
+            update_dict.pop("accepted_terms_of_service", None) is True
+            and not user.accepted_terms_of_service
+        ):
+            update_dict["accepted_terms_of_service_at"] = datetime.now(UTC)
+            update_dict["accepted_terms_of_service_ip"] = ip_address
 
         previous_full_name = user.full_name
         repository = UserRepository.from_session(session)

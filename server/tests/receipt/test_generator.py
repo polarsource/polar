@@ -188,6 +188,26 @@ class TestReceiptPayment:
         )
         assert payment.display_method == "Card"
 
+    def test_kr_card_with_brand_and_last4(self) -> None:
+        payment = ReceiptPayment(
+            date=utc_now(),
+            method="kr_card",
+            method_metadata={"brand": "kookmin", "last4": "1234"},
+            amount=10000,
+            currency="krw",
+        )
+        assert payment.display_method == "Kookmin — 1234"
+
+    def test_kr_card_without_brand(self) -> None:
+        payment = ReceiptPayment(
+            date=utc_now(),
+            method="kr_card",
+            method_metadata={"brand": None, "last4": "1234"},
+            amount=10000,
+            currency="krw",
+        )
+        assert payment.display_method == "Kr Card — 1234"
+
     def test_non_card_method(self) -> None:
         payment = ReceiptPayment(
             date=utc_now(),

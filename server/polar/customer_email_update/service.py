@@ -95,7 +95,7 @@ class CustomerEmailUpdateService:
         organization: Organization,
     ) -> None:
         delta = record.expires_at - utc_now()
-        token_lifetime_minutes = int(ceil(delta.total_seconds() / 60))
+        token_lifetime_minutes = ceil(delta.total_seconds() / 60)
 
         url = (
             f"{settings.FRONTEND_BASE_URL}"

@@ -1,7 +1,11 @@
 'use client'
 
 import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialConfigurationForm'
-import { isLegacyRecurringPrice, isMeteredPrice } from '@/utils/product'
+import {
+  isLegacyRecurringPrice,
+  isMeteredPrice,
+  isUnitBasedPrice,
+} from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
@@ -29,6 +33,7 @@ import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Section } from '../../Layout/Section'
 import { CurrencyTabs } from './Pricing/CurrencyTabs'
+import { MeterCycleField } from './Pricing/MeterCycleField'
 import { ProductPriceItem } from './Pricing/ProductPriceItem'
 import { useAutoSwitchToErroredPriceTab } from './Pricing/useAutoSwitchToErroredPriceTab'
 import {
@@ -37,6 +42,7 @@ import {
   hasPriceCurrency,
   ProductPrice,
   ProductPriceCreate,
+  shouldShowMeterCycle,
 } from './Pricing/utils'
 import { ProductFormType } from './ProductForm'
 
@@ -45,6 +51,7 @@ export interface ProductPricingSectionProps {
   className?: string
   update?: boolean
   compact?: boolean
+  hasMeterCreditBenefit?: boolean
 }
 
 export const ProductPricingSection = ({
@@ -52,6 +59,7 @@ export const ProductPricingSection = ({
   className,
   update,
   compact,
+  hasMeterCreditBenefit,
 }: ProductPricingSectionProps) => {
   const { control, setValue, watch, getValues } =
     useFormContext<ProductFormType>()
@@ -102,7 +110,9 @@ export const ProductPricingSection = ({
     const currentPrices = getValues('prices')
     if (!currentPrices) return
     const filteredPrices = currentPrices.filter(
-      (price) => !isMeteredPrice(price as ProductPrice),
+      (price) =>
+        !isMeteredPrice(price as ProductPrice) &&
+        !isUnitBasedPrice(price as ProductPrice),
     )
     if (filteredPrices.length !== currentPrices.length) {
       replace(filteredPrices)
@@ -142,6 +152,28 @@ export const ProductPricingSection = ({
     [pricesByCurrency, validatedSelectedCurrency],
   )
 
+  const watchedPrices = watch('prices')
+  const meterInterval = watch('meter_interval')
+
+  const showMeterCycle = shouldShowMeterCycle({
+    isEnabledForOrganization:
+      organization.feature_settings?.meter_cycling_enabled ?? false,
+    isRecurring: productType === 'recurring',
+    hasMeteredPrice: (watchedPrices ?? []).some((price) =>
+      isMeteredPrice(price as ProductPrice),
+    ),
+    hasMeterCreditBenefit: !!hasMeterCreditBenefit,
+    hasSavedMeterCycle: !!update && !!meterInterval,
+  })
+
+  // Covers the one-time switch too: a one-time product never shows the meter cycle.
+  useEffect(() => {
+    if (!showMeterCycle && meterInterval) {
+      setValue('meter_interval', null)
+      setValue('meter_interval_count', null)
+    }
+  }, [showMeterCycle, meterInterval, setValue])
+
   const handleAmountTypeChange = useCallback(
     (
       changedIndex: number,
@@ -177,6 +209,16 @@ export const ProductPricingSection = ({
               seat_tier_type: 'volume',
               tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
             },
+          }
+        } else if (newAmountType === 'unit_based') {
+          return {
+            ...base,
+            amount_type: 'unit_based',
+            tiers: {
+              type: 'volume',
+              tiers: [{ bound: null, unit_amount: 0 }],
+            },
+            unit_label: null,
           }
         } else if (newAmountType === 'metered_unit') {
           return {
@@ -254,6 +296,30 @@ export const ProductPricingSection = ({
             amount_type: 'seat_based',
             seat_tiers: { seat_tier_type: 'volume', tiers: seatTiers },
           }
+        } else if (price.amount_type === 'unit_based') {
+          const sourceTiers =
+            'tiers' in price && price.tiers?.tiers ? price.tiers.tiers : []
+          const unitTiers = sourceTiers.map((t) => ({
+            bound: 'bound' in t ? (t.bound ?? null) : null,
+            unit_amount: 0,
+          }))
+          if (unitTiers.length === 0) {
+            unitTiers.push({ bound: null, unit_amount: 0 })
+          }
+          newPrice = {
+            ...baseCurrency,
+            amount_type: 'unit_based',
+            minimum_units:
+              'minimum_units' in price ? (price.minimum_units ?? null) : null,
+            tiers: {
+              type:
+                'tiers' in price && price.tiers && 'type' in price.tiers
+                  ? price.tiers.type
+                  : 'volume',
+              tiers: unitTiers,
+            },
+            unit_label: 'unit_label' in price ? price.unit_label : null,
+          }
         } else if (price.amount_type === 'metered_unit') {
           const meterId = 'meter_id' in price ? price.meter_id : ''
           newPrice = {
@@ -313,6 +379,21 @@ export const ProductPricingSection = ({
           seat_tier_type: 'volume',
           tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
         },
+      }),
+    )
+    append(newPrices)
+  }, [activeCurrencies, append])
+
+  const handleAddUnitPrice = useCallback(() => {
+    const newPrices: ProductPriceCreate[] = activeCurrencies.map(
+      (currency) => ({
+        price_currency: currency as schemas['PresentmentCurrency'],
+        amount_type: 'unit_based',
+        tiers: {
+          type: 'volume',
+          tiers: [{ bound: null, unit_amount: 0 }],
+        },
+        unit_label: null,
       }),
     )
     append(newPrices)
@@ -393,7 +474,14 @@ export const ProductPricingSection = ({
     onlyStaticAmountType === 'fixed' &&
     !!organization.feature_settings?.seat_based_pricing_enabled
 
-  const canAddBasePrice = onlyStaticAmountType === 'seat_based'
+  const canAddUnitPricing =
+    onlyStaticAmountType === 'fixed' &&
+    recurringInterval !== null &&
+    !!organization.feature_settings?.unit_based_pricing_enabled
+
+  const canAddBasePrice =
+    onlyStaticAmountType === 'seat_based' ||
+    onlyStaticAmountType === 'unit_based'
 
   if (isLegacyRecurringProduct) {
     return (
@@ -570,6 +658,16 @@ export const ProductPricingSection = ({
                   Add seat pricing
                 </Button>
               )}
+              {canAddUnitPricing && (
+                <Button
+                  className="self-start"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleAddUnitPrice}
+                >
+                  Add unit pricing
+                </Button>
+              )}
               {canAddBasePrice && (
                 <Button
                   className="self-start"
@@ -624,6 +722,12 @@ export const ProductPricingSection = ({
             )
           })}
         </div>
+
+        {showMeterCycle && (
+          <div className="flex flex-col py-6">
+            <MeterCycleField disabled={update} />
+          </div>
+        )}
 
         {recurringInterval && (
           <div className="flex flex-col py-6">

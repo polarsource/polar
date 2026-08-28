@@ -51,6 +51,13 @@ Customers can:
 * See expiration date (if applicable)
 * See usage left (if applicable)
 * Deactivate activations (if enabled)
+* Rotate their license key if it is exposed or compromised
+
+### Rotate License Keys
+
+If a key is exposed or compromised, merchants can rotate it from the benefit license keys page in the dashboard, or via `POST /v1/license-keys/{id}/rotate`. Customers can rotate their own key from the customer portal, or via `POST /v1/customer-portal/license-keys/{id}/rotate`. Only keys in `granted` or `disabled` status can be rotated; rotating a revoked key returns a `400` error.
+
+Rotation generates a new key string on the same license key record. The previous key stops validating immediately. Status, usage, limits, expiry, and activations are preserved. After rotating, copy the new key from the customer portal or share it from the dashboard.
 
 Integrate API
 --------------------

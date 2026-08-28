@@ -9,269 +9,14 @@ import os
 import tempfile
 from collections.abc import Generator
 from typing import Any, cast
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from starlette.types import Receive, Scope, Send
 
 
-class TestPathNormalizationDirect:
-    """Test path normalization logic directly without full middleware setup."""
-
-    def test_normalize_uuid(self) -> None:
-        """Test that UUIDs are normalized to {id}."""
-        import re
-
-        # UUID pattern from the middleware
-        uuid_pattern = (
-            r"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-        )
-
-        path = "/v1/checkouts/550e8400-e29b-41d4-a716-446655440000"
-        result = re.sub(uuid_pattern, "/{id}", path)
-        assert result == "/v1/checkouts/{id}"
-
-    def test_normalize_numeric_id(self) -> None:
-        """Test that numeric IDs are normalized to {id}."""
-        import re
-
-        path = "/v1/orders/12345"
-        result = re.sub(r"/\d+(?=/|$)", "/{id}", path)
-        assert result == "/v1/orders/{id}"
-
-    def test_normalize_long_token(self) -> None:
-        """Test that long alphanumeric tokens are normalized to {token}."""
-        import re
-
-        path = "/v1/checkouts/client/cs_test_abc123XYZ_longsecret/confirm"
-        result = re.sub(r"/[A-Za-z0-9_-]{20,}(?=/|$)", "/{token}", path)
-        assert result == "/v1/checkouts/client/{token}/confirm"
-
-    def test_normalize_multiple_ids(self) -> None:
-        """Test normalization of paths with multiple IDs."""
-        import re
-
-        uuid_pattern = (
-            r"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-        )
-
-        path = "/v1/orgs/550e8400-e29b-41d4-a716-446655440000/products/12345"
-        result = re.sub(uuid_pattern, "/{id}", path)
-        result = re.sub(r"/\d+(?=/|$)", "/{id}", result)
-        assert result == "/v1/orgs/{id}/products/{id}"
-
-    def test_no_normalization_for_short_segments(self) -> None:
-        """Test that short path segments are not normalized."""
-        import re
-
-        path = "/v1/checkouts/list"
-        # Apply all normalizations
-        uuid_pattern = (
-            r"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-        )
-        result = re.sub(uuid_pattern, "/{id}", path)
-        result = re.sub(r"/\d+(?=/|$)", "/{id}", result)
-        result = re.sub(r"/[A-Za-z0-9_-]{20,}(?=/|$)", "/{token}", result)
-        assert result == "/v1/checkouts/list"
-
-    def test_uppercase_uuid(self) -> None:
-        """Test that uppercase UUIDs are also normalized."""
-        import re
-
-        uuid_pattern = (
-            r"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-        )
-
-        path = "/v1/checkouts/550E8400-E29B-41D4-A716-446655440000"
-        result = re.sub(uuid_pattern, "/{id}", path)
-        assert result == "/v1/checkouts/{id}"
-
-    def test_token_at_end_of_path(self) -> None:
-        """Test that tokens at end of path are normalized."""
-        import re
-
-        path = "/v1/checkout/cs_test_abc123XYZ_longsecret"
-        result = re.sub(r"/[A-Za-z0-9_-]{20,}(?=/|$)", "/{token}", path)
-        assert result == "/v1/checkout/{token}"
-
-    def test_mixed_id_types(self) -> None:
-        """Test path with UUID, numeric ID, and token together."""
-        import re
-
-        uuid_pattern = (
-            r"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-        )
-
-        path = "/v1/orgs/550e8400-e29b-41d4-a716-446655440000/orders/12345/token/abcdefghij1234567890"
-        result = re.sub(uuid_pattern, "/{id}", path)
-        result = re.sub(r"/\d+(?=/|$)", "/{id}", result)
-        result = re.sub(r"/[A-Za-z0-9_-]{20,}(?=/|$)", "/{token}", result)
-        assert result == "/v1/orgs/{id}/orders/{id}/token/{token}"
-
-    def test_numeric_id_not_normalized_in_middle_of_segment(self) -> None:
-        """Test that numbers within path segments are not normalized."""
-        import re
-
-        path = "/v1/api2/users"
-        result = re.sub(r"/\d+(?=/|$)", "/{id}", path)
-        assert result == "/v1/api2/users"  # api2 should NOT become api{id}
-
-    def test_token_with_hyphens(self) -> None:
-        """Test that tokens with hyphens are normalized."""
-        import re
-
-        path = "/v1/checkout/cs-test-abc-123-xyz-longsecret"
-        result = re.sub(r"/[A-Za-z0-9_-]{20,}(?=/|$)", "/{token}", path)
-        assert result == "/v1/checkout/{token}"
-
-    def test_empty_path(self) -> None:
-        """Test empty path handling."""
-        import re
-
-        uuid_pattern = (
-            r"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-        )
-
-        path = ""
-        result = re.sub(uuid_pattern, "/{id}", path)
-        result = re.sub(r"/\d+(?=/|$)", "/{id}", result)
-        result = re.sub(r"/[A-Za-z0-9_-]{20,}(?=/|$)", "/{token}", result)
-        assert result == ""
-
-    def test_root_path(self) -> None:
-        """Test root path handling."""
-        import re
-
-        path = "/"
-        result = re.sub(r"/\d+(?=/|$)", "/{id}", path)
-        assert result == "/"
-
-
-class TestDenyListLogic:
-    """Test deny list logic without importing polar modules."""
-
-    def test_healthz_in_deny_list(self) -> None:
-        """Test that /healthz would be denied."""
-        deny_list = {
-            "/healthz",
-            "/readyz",
-            "/.well-known/openid-configuration",
-            "/.well-known/jwks.json",
-        }
-
-        path = "/healthz"
-        assert path in deny_list
-
-    def test_well_known_in_deny_list(self) -> None:
-        """Test that /.well-known paths would be denied."""
-        deny_list = {
-            "/healthz",
-            "/readyz",
-            "/.well-known/openid-configuration",
-            "/.well-known/jwks.json",
-        }
-
-        path = "/.well-known/openid-configuration"
-        assert path in deny_list
-
-    def test_regular_path_not_in_deny_list(self) -> None:
-        """Test that regular API paths are not denied."""
-        deny_list = {
-            "/healthz",
-            "/readyz",
-            "/.well-known/openid-configuration",
-            "/.well-known/jwks.json",
-        }
-
-        path = "/v1/checkouts/"
-        assert path not in deny_list
-
-    def test_prefix_matching_logic(self) -> None:
-        """Test that prefix matching works correctly."""
-        deny_list = {
-            "/healthz",
-            "/readyz",
-            "/.well-known/openid-configuration",
-            "/.well-known/jwks.json",
-        }
-
-        # This path is NOT in deny_list exact match but could be prefix matched
-        # The middleware checks startswith for prefix matching
-        path = "/healthz/deep"
-
-        # Exact match fails
-        assert path not in deny_list
-
-        # But prefix match would work
-        for denied in deny_list:
-            if path.startswith(denied):
-                matched = True
-                break
-        else:
-            matched = False
-
-        # Note: /healthz/deep starts with /healthz
-        assert matched is True
-
-    def test_readyz_in_deny_list(self) -> None:
-        """Test that /readyz is in deny list."""
-        deny_list = {
-            "/healthz",
-            "/readyz",
-            "/.well-known/openid-configuration",
-            "/.well-known/jwks.json",
-        }
-
-        assert "/readyz" in deny_list
-
-
-class TestRouteTemplateLogic:
-    """Test route template extraction logic."""
-
-    def test_uses_route_path_when_available(self) -> None:
-        """Test that route.path is used when available in scope."""
-        mock_route = MagicMock()
-        mock_route.path = "/v1/checkouts/{id}"
-
-        scope = {
-            "path": "/v1/checkouts/550e8400-e29b-41d4-a716-446655440000",
-            "route": mock_route,
-        }
-
-        # Logic from middleware
-        route = scope.get("route")
-        if route and hasattr(route, "path"):
-            result = route.path
-        else:
-            result = scope.get("path")
-
-        assert result == "/v1/checkouts/{id}"
-
-    def test_falls_back_to_path_when_no_route(self) -> None:
-        """Test fallback to scope path when no route available."""
-        scope = {
-            "path": "/v1/checkouts/550e8400-e29b-41d4-a716-446655440000",
-        }
-
-        # Logic from middleware
-        route = scope.get("route")
-        if route and hasattr(route, "path"):
-            result = route.path
-        else:
-            result = scope.get("path")
-
-        # Would need normalization, but raw value is the path
-        assert result == "/v1/checkouts/550e8400-e29b-41d4-a716-446655440000"
-
-
 @pytest.fixture(scope="module")
-def prometheus_tmpdir() -> Generator[str, None, None]:
+def prometheus_tmpdir() -> Generator[str]:
     """Create a temporary prometheus directory for module tests."""
     with tempfile.TemporaryDirectory() as tmpdir:
         os.environ["PROMETHEUS_MULTIPROC_DIR"] = tmpdir
@@ -282,7 +27,7 @@ class TestMiddlewareASGIBehavior:
     """Test ASGI middleware behavior including async calls."""
 
     @pytest.fixture(scope="class")
-    def prometheus_tmpdir(self) -> Generator[str, None, None]:
+    def prometheus_tmpdir(self) -> Generator[str]:
         """Create a temporary prometheus directory for class tests."""
         with tempfile.TemporaryDirectory() as tmpdir:
             os.environ["PROMETHEUS_MULTIPROC_DIR"] = tmpdir
@@ -507,8 +252,7 @@ class TestMiddlewareASGIBehavior:
 
             captured: list[dict[str, Any]] = []
 
-            async def mock_send(message: dict[str, Any]) -> None:
-                captured.append(message)
+            mock_send = AsyncMock(side_effect=captured.append)
 
             asyncio.get_event_loop().run_until_complete(
                 middleware(scope, cast(Receive, None), cast(Send, mock_send))

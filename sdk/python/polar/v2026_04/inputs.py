@@ -3610,6 +3610,19 @@ conversation, i.e support."""
 
 
 class SubscriptionUpdateBase(typing.TypedDict):
+    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
+    """Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**."""
+
     product_id: typing.NotRequired[str | None]
     """Update subscription to another product."""
 

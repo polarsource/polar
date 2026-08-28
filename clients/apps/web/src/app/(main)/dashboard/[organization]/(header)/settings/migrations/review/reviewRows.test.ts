@@ -18,6 +18,7 @@ const baseRow = {
   reason: null,
   reason_code: null,
   reason_level: null,
+  dependencies_imported: null,
 }
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {
@@ -58,6 +59,18 @@ describe('isSelectable', () => {
   it('does not select an imported row', () => {
     expect(
       isSelectable(row({ status: 'importable', import_status: 'imported' })),
+    ).toBe(false)
+  })
+
+  it('does not select a subscription whose dependencies are already imported', () => {
+    expect(
+      isSelectable(
+        row({
+          status: 'importable',
+          import_status: 'pending',
+          dependencies_imported: true,
+        }),
+      ),
     ).toBe(false)
   })
 

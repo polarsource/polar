@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any
 
@@ -43,7 +41,7 @@ class FilterOperator(StrEnum):
 
 def _strip_metadata_prefix(value: str) -> str:
     prefix = "metadata."
-    return value[len(prefix) :] if value.startswith(prefix) else value
+    return value.removeprefix(prefix)
 
 
 class FilterClause(BaseModel):

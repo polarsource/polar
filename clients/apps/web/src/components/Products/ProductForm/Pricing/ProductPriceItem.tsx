@@ -23,6 +23,7 @@ import { ProductPriceCustomItem } from './ProductPriceCustomItem'
 import { ProductPriceFixedItem } from './ProductPriceFixedItem'
 import { ProductPriceMeteredUnitItem } from './ProductPriceMeteredUnitItem'
 import { ProductPriceSeatBasedItem } from './ProductPriceSeatBasedItem'
+import { ProductPriceUnitBasedItem } from './ProductPriceUnitBasedItem'
 import { ProductPriceCreate } from './utils'
 
 const AMOUNT_TYPE_LABELS: Record<string, string> = {
@@ -30,6 +31,7 @@ const AMOUNT_TYPE_LABELS: Record<string, string> = {
   custom: 'Pay what you want',
   free: 'Free',
   seat_based: 'Seats',
+  unit_based: 'Units',
   metered_unit: 'Metered price',
 }
 
@@ -120,6 +122,13 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                             {AMOUNT_TYPE_LABELS.seat_based}
                           </SelectItem>
                         )}
+                        {organization.feature_settings
+                          ?.unit_based_pricing_enabled &&
+                          recurringInterval !== null && (
+                            <SelectItem value="unit_based">
+                              {AMOUNT_TYPE_LABELS.unit_based}
+                            </SelectItem>
+                          )}
                         {recurringInterval !== null && (
                           <SelectItem value="metered_unit">
                             {AMOUNT_TYPE_LABELS.metered_unit}
@@ -157,6 +166,9 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
           )}
           {amountType === 'seat_based' && (
             <ProductPriceSeatBasedItem index={index} currency={currency} />
+          )}
+          {amountType === 'unit_based' && (
+            <ProductPriceUnitBasedItem index={index} currency={currency} />
           )}
           {amountType === 'metered_unit' && (
             <ProductPriceMeteredUnitItem

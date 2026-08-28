@@ -180,7 +180,7 @@ const CustomFieldCheckboxInput: React.FC<CustomFieldCheckboxInputProps> = ({
 }) => {
   return (
     <FormItem>
-      <div className="flex flex-row items-center space-y-0 space-x-3">
+      <div className="flex flex-row items-center space-y-0 space-x-2">
         <FormControl>
           <Checkbox
             defaultChecked={field.value}

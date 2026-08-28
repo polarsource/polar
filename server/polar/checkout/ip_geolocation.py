@@ -42,8 +42,7 @@ def _download_database(access_token: str) -> None:
                 "GET", DOWNLOAD_PATH.format(token=access_token), follow_redirects=True
             ) as response:
                 response.raise_for_status()
-                for chunk in response.iter_bytes():
-                    db_file.write(chunk)
+                db_file.writelines(response.iter_bytes())
 
 
 def get_client() -> IPGeolocationClient:

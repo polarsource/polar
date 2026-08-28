@@ -24,8 +24,10 @@ resource "aws_service_discovery_service" "this" {
     }
   }
 
-  health_check_custom_config {
-    failure_threshold = 1
+  health_check_custom_config {}
+
+  lifecycle {
+    ignore_changes = [health_check_custom_config]
   }
 }
 
@@ -61,6 +63,7 @@ module "service" {
   subnet_ids               = var.subnet_ids
   security_group_ids       = [aws_security_group.this.id]
   permissions_boundary_arn = var.permissions_boundary_arn
+  logfire                  = var.logfire
 
   service_registry = {
     arn = aws_service_discovery_service.this.arn
@@ -78,6 +81,6 @@ module "service" {
   }
 
   secrets = {
-    DB_PASSWORD = aws_secretsmanager_secret_version.database_password.arn
+    DB_PASSWORD = aws_secretsmanager_secret.database_password.arn
   }
 }

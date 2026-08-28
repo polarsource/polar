@@ -1,7 +1,5 @@
 """Eval task: wraps ReviewAnalyzer to produce a verdict from an EvalInput."""
 
-from __future__ import annotations
-
 from typing import Any
 
 from polar.organization_review.analyzer import ReviewAnalyzer

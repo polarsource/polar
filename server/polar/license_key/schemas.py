@@ -216,7 +216,7 @@ class LicenseKeyCreate(LicenseKeyUpdate):
                     return now + relativedelta(months=ttl)
                 case _:
                     return now + relativedelta(days=ttl)
-        except (ValueError, OverflowError):
+        except ValueError, OverflowError:
             raise ValueError(
                 f"Expiration date overflows: ttl={ttl} with timeframe='{timeframe}' "
                 f"produces a date beyond year 9999."

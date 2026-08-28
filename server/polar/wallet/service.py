@@ -61,9 +61,9 @@ class WalletService:
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[WalletSortProperty]] = [
-            (WalletSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[WalletSortProperty]] = (
+            (WalletSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Wallet], int]:
         repository = WalletRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)

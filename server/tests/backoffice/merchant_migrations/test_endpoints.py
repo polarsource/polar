@@ -35,12 +35,13 @@ from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from tests.fixtures.database import SaveFixture
+from tests.merchant_migration._helpers import pan_step_required_inputs
 
 
 @pytest_asyncio.fixture
 async def backoffice_client(
     session: AsyncSession, user: User
-) -> AsyncGenerator[httpx.AsyncClient, None]:
+) -> AsyncGenerator[httpx.AsyncClient]:
     user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
@@ -86,8 +87,13 @@ def _advance_to(key: str) -> list[PanTransferStep]:
             if current.owner == PanStepOwner.polar_app
             else PanStepActor.ops
         )
+        template = pan_transfer._template(PanTransferMethod.pan_copy, current.key)
         steps = pan_transfer.complete(
-            PanTransferMethod.pan_copy, steps, current.key, actor=actor, inputs={}
+            PanTransferMethod.pan_copy,
+            steps,
+            current.key,
+            actor=actor,
+            inputs=pan_step_required_inputs(template),
         )
 
 
@@ -237,6 +243,7 @@ async def _stage_monthly_subscription(
             line_item_count=1,
             quantity=1,
             payment_method=None,
+            currency="usd",
         ),
     )
     await record_repository.update(
@@ -439,14 +446,14 @@ class TestCompleteStep:
         await _post_action(
             backoffice_client,
             f"/merchant-migrations/{migration.id}/steps/start_copy/complete",
-            {"stripe_migration_request_id": "mig_123"},
+            {"stripe_migration_request_id": "migreq_123"},
         )
 
         await _reload(session, migration)
         step = next(
             step for step in migration.pan_transfer_steps if step.key == "start_copy"
         )
-        assert step.inputs == {"stripe_migration_request_id": "mig_123"}
+        assert step.inputs == {"stripe_migration_request_id": "migreq_123"}
 
     async def test_warns_when_completing_on_the_merchants_behalf(
         self,

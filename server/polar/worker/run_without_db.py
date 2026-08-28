@@ -12,11 +12,11 @@ broker = get_broker(database=False)
 dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder(broker))
 
-from polar import tasks  # noqa: E402
-from polar.logfire import configure_logfire  # noqa: E402
-from polar.logging import configure as configure_logging  # noqa: E402
-from polar.posthog import configure_posthog  # noqa: E402
-from polar.sentry import configure_sentry  # noqa: E402
+from polar import tasks
+from polar.logfire import configure_logfire
+from polar.logging import configure as configure_logging
+from polar.posthog import configure_posthog
+from polar.sentry import configure_sentry
 
 configure_sentry()
 configure_logfire("worker")

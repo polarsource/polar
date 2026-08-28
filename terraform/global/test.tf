@@ -12,6 +12,11 @@ resource "tfe_variable_set" "test" {
   parent_project_id = data.tfe_project.test.id
 }
 
+resource "tfe_project_variable_set" "global_test" {
+  variable_set_id = tfe_variable_set.global.id
+  project_id      = data.tfe_project.test.id
+}
+
 resource "tfe_variable" "google_client_id_test" {
   key             = "google_client_id"
   category        = "terraform"
@@ -493,23 +498,11 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
 }
 
 resource "tfe_variable" "worker_sqs_actors_test" {
-  key         = "worker_sqs_actors"
-  category    = "terraform"
-  description = "JSON array of Dramatiq actor names routed to the SQS execution engine for test"
-  sensitive   = false
-  value = jsonencode([
-    "dummy",
-    "observability.invariants.enqueue",
-    "observability.invariants.check",
-    "checkout.expire_open_checkouts",
-    "customer.state_changed",
-    "email.send",
-    "external_event.prune",
-    "oauth2_token.delete_expired",
-    "webhook_event.publish",
-    "webhook_event.send",
-    "license_key.sync_benefit_grant",
-  ])
+  key             = "worker_sqs_actors"
+  category        = "terraform"
+  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for test, or [\"*\"] for all of them"
+  sensitive       = false
+  value           = jsonencode(["*"])
   variable_set_id = tfe_variable_set.test.id
 }
 

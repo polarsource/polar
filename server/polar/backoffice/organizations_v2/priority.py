@@ -5,8 +5,6 @@ constant below documents its own component. ``compute`` is pure over
 primitives, so fetching and JSONB parsing stay in the caller.
 """
 
-from __future__ import annotations
-
 import math
 from dataclasses import dataclass
 from datetime import UTC, datetime

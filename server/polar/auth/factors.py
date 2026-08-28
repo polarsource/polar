@@ -135,7 +135,7 @@ class EmailOTPFactor(EmailOTPFactorBase):
             await self.update(email_otp)
 
         delta = email_otp.expires_at - int(utc_now().timestamp())
-        code_lifetime_minutes = int(ceil(delta / 60))
+        code_lifetime_minutes = ceil(delta / 60)
 
         domain = settings.frontend_hostname
         subject = "Sign up to Polar" if signup else "Sign in to Polar"

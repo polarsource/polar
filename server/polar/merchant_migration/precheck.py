@@ -33,6 +33,9 @@ from .canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    PriceKey,
+    canonical_price_key,
+    subscription_price_key,
 )
 from .schemas import (
     MerchantMigrationRecordItem,
@@ -670,26 +673,35 @@ def _item(
         reason=reason.message if reason else None,
         reason_code=reason.code if reason else None,
         reason_level=reason.level if reason else None,
+        cutover_status=None,
+        cutover_error=None,
+        renews_at=None,
+        has_payment_method=None,
+        dependencies_imported=None,
     )
 
 
-def _price_display_by_source_id(
+def _price_display_by_key(
     products: Sequence[CanonicalProduct],
-) -> dict[str, PriceDisplay]:
+) -> dict[PriceKey, PriceDisplay]:
     return {
-        price.source_id: PriceDisplay.of(product, price)
+        canonical_price_key(price): PriceDisplay.of(product, price)
         for product in products
         for price in product.prices
     }
 
 
 def _representative_price(
-    product: CanonicalProduct, importable_price_ids: set[str]
+    product: CanonicalProduct, importable_prices: set[PriceKey]
 ) -> PriceDisplay:
     """The price to show on a product row: one that will actually be imported,
     falling back to the first when the product is skipped."""
     price = next(
-        (price for price in product.prices if price.source_id in importable_price_ids),
+        (
+            price
+            for price in product.prices
+            if canonical_price_key(price) in importable_prices
+        ),
         product.prices[0] if product.prices else None,
     )
     return PriceDisplay.of(product, price) if price else PriceDisplay()
@@ -751,7 +763,7 @@ def _product_items(
                 _interval_label(product),
                 skip=plan.skip,
                 note=note,
-                price=_representative_price(product, plan.importable_price_ids),
+                price=_representative_price(product, plan.importable_prices),
             )
         )
     return items
@@ -827,7 +839,7 @@ def _subscription_items(
         subscriptions, products, customers, default_currency
     )
     email_by_source = {c.source_id: c.email for c in customers if c.email}
-    price_by_source = _price_display_by_source_id(products)
+    price_by_key = _price_display_by_key(products)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
         payment_method = subscription.payment_method
@@ -842,6 +854,7 @@ def _subscription_items(
         title = email_by_source.get(
             subscription.customer_source_id, subscription.customer_source_id
         )
+        key = subscription_price_key(subscription)
         items.append(
             _item(
                 PrecheckEntity.subscriptions,
@@ -850,7 +863,7 @@ def _subscription_items(
                 _humanize_subscription_status(subscription.status),
                 skip=plans[subscription.source_id],
                 note=note,
-                price=price_by_source.get(subscription.price_source_id),
+                price=price_by_key.get(key) if key is not None else None,
             )
         )
     return items
@@ -925,11 +938,11 @@ def classify_records(
 class ProductImportPlan:
     """The importer's decision for one canonical product (keyed by its
     ``source_id``, the ``(product, interval)`` composite). Either a skip with a
-    reason, or the set of price ``source_id``s to create under the Polar product.
+    reason, or the set of ``(source_id, currency)`` prices to create.
     """
 
     skip: Reason | None
-    importable_price_ids: set[str]
+    importable_prices: set[PriceKey]
 
     @property
     def importable(self) -> bool:
@@ -958,20 +971,20 @@ def plan_product_imports(
         if skip is not None:
             plans[product.source_id] = ProductImportPlan(skip, set())
             continue
-        price_ids = {
-            price.source_id
+        prices = {
+            canonical_price_key(price)
             for price in product.prices
             if _drop_reason(
                 precheck_engine._check_price(product, price), PRICE_DROP_CODES
             )
             is None
         }
-        if not price_ids:
+        if not prices:
             plans[product.source_id] = ProductImportPlan(
                 Reason("no_importable_price", _NO_IMPORTABLE_PRICE_REASON), set()
             )
         else:
-            plans[product.source_id] = ProductImportPlan(None, price_ids)
+            plans[product.source_id] = ProductImportPlan(None, prices)
     return plans
 
 
@@ -1009,9 +1022,9 @@ def plan_subscription_imports(
     subscription can't import if its own checks fail or the product/price or
     customer it depends on won't import."""
     importable_prices = {
-        price_id
+        price
         for plan in plan_product_imports(products, default_currency).values()
-        for price_id in plan.importable_price_ids
+        for price in plan.importable_prices
     }
     importable_customers = {
         source_id
@@ -1021,7 +1034,10 @@ def plan_subscription_imports(
     plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
         skip = subscription_import_reason(subscription)
-        if skip is None and subscription.price_source_id not in importable_prices:
+        if (
+            skip is None
+            and subscription_price_key(subscription) not in importable_prices
+        ):
             skip = Reason(
                 "subscription_product_not_importable", _SUBSCRIPTION_PRODUCT_REASON
             )

@@ -3,21 +3,22 @@ import random
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from enum import StrEnum
 from pathlib import Path
 from time import monotonic
 from typing import Any, Literal, NotRequired, TypedDict
-from uuid import UUID
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 import dramatiq
 import typer
+from sqlalchemy import delete, func, select
 from sqlalchemy import event as sqlalchemy_event
-from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
 import polar.tasks  # noqa: F401
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
-from polar.benefit.service import benefit as benefit_service
+from polar.benefit.schemas import BenefitCreate
 from polar.benefit.strategies.custom.schemas import BenefitCustomCreate
 from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesCreate
 from polar.benefit.strategies.feature_flag.schemas import (
@@ -27,17 +28,10 @@ from polar.benefit.strategies.feature_flag.schemas import (
 
 # Import tasks to register all dramatiq actors
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
-from polar.checkout_link.schemas import CheckoutLinkCreateProducts
-from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.config import settings
-from polar.customer.schemas.customer import (
-    CustomerIndividualCreate,
-    CustomerTeamCreate,
-)
+from polar.customer.schemas.customer import CustomerIndividualCreate
 from polar.customer.service import customer as customer_service
 from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
-from polar.discount.schemas import DiscountPercentageCreate
-from polar.discount.service import discount as discount_service
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.enums import (
     PaymentProcessor,
@@ -48,29 +42,32 @@ from polar.enums import (
     TaxBehaviorOption,
 )
 from polar.event.repository import EventRepository
+from polar.event.service import event as event_service
 from polar.event.system import SystemEvent as SystemEventEnum
 from polar.event_type.repository import EventTypeRepository
+from polar.integrations.tinybird.client import client as tinybird_client
+from polar.integrations.tinybird.service import DATASOURCE_EVENTS
 from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
 from polar.kit.crypto import generate_token, generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import generate_uuid, utc_now
 from polar.kit.visibility import Visibility
-from polar.member.schemas import MemberOwnerCreate
 from polar.meter.aggregation import CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
-from polar.meter.schemas import MeterCreate
-from polar.meter.service import meter as meter_service
-from polar.models.benefit import BenefitType
+from polar.models.benefit import Benefit, BenefitType
 from polar.models.checkout import Checkout, CheckoutStatus
+from polar.models.checkout_link import CheckoutLink
+from polar.models.checkout_link_product import CheckoutLinkProduct
 from polar.models.checkout_product import CheckoutProduct
-from polar.models.customer import Customer
+from polar.models.customer import Customer, CustomerType
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.customer_session import CustomerSession
-from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.discount import DiscountDuration, DiscountPercentage
 from polar.models.event import Event as EventModel
 from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
+from polar.models.meter import Meter
 from polar.models.order import Order
 from polar.models.organization import (
     Organization,
@@ -86,6 +83,7 @@ from polar.models.organization_sso_connection import (
 )
 from polar.models.payout_account import PayoutAccount
 from polar.models.product import Product
+from polar.models.product_benefit import ProductBenefit
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
@@ -94,8 +92,11 @@ from polar.models.product_price import (
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.models.support_case import (
+    SupportCase,
     SupportCaseAudience,
+    SupportCaseMessage,
     SupportCaseMessageAuthorKind,
+    SupportCaseType,
 )
 from polar.models.user import IdentityVerificationStatus, User
 from polar.models.user_organization import UserOrganization
@@ -142,6 +143,35 @@ cli = typer.Typer(invoke_without_command=True)
 
 # Chosen to stay well under Tinybird's 10MB payload limit at ~2KB/event.
 TINYBIRD_FLUSH_CHUNK = 2500
+SEED_RANDOM_SEED = 20250814
+SIMPLE_COMPLEMENT_SEED_VERSION = "v1"
+SIMPLE_COMPLEMENT_EVENT_NAMESPACE = "polar_seed_simple_complement:"
+SIMPLE_COMPLEMENT_EVENT_PREFIX = (
+    f"{SIMPLE_COMPLEMENT_EVENT_NAMESPACE}{SIMPLE_COMPLEMENT_SEED_VERSION}:"
+)
+SEEDED_APPEAL_MESSAGE = (
+    "Sure — https://example.com. We sell developer tooling subscriptions."
+)
+SEEDED_DISPUTE_MESSAGE = (
+    "This was a legitimate purchase — receipt and delivery attached."
+)
+EXPECTED_ORGANIZATION_SLUGS = {
+    "acme-corp",
+    "admin-org",
+    "coldmail",
+    "example-news-inc",
+    "melted-sql",
+    "polar",
+    "seatbased-members-corp",
+    "seatbased-only-corp",
+    "widget-industries",
+}
+
+
+class SeedPhase(StrEnum):
+    all = "all"
+    simple = "simple"
+    simple_complement = "simple-complement"
 
 
 async def _flush_tinybird_events(
@@ -284,6 +314,75 @@ async def create_fake_payout_account(
     return payout_account
 
 
+def _create_seed_customer(
+    session: AsyncSession,
+    organization: Organization,
+    *,
+    email: str | None,
+    name: str,
+    customer_type: CustomerType = CustomerType.individual,
+    external_id: str | None = None,
+    owner_email: str | None = None,
+    owner_name: str | None = None,
+    owner_external_id: str | None = None,
+    created_at: datetime | None = None,
+) -> Customer:
+    customer = Customer(
+        id=generate_uuid(),
+        email=email,
+        name=name,
+        external_id=external_id,
+        organization=organization,
+        _type=customer_type,
+    )
+    if created_at is not None:
+        customer.created_at = created_at
+    session.add(customer)
+
+    if organization.feature_settings.get(
+        "member_model_enabled", False
+    ) or organization.feature_settings.get("seat_based_pricing_enabled", False):
+        member_email = owner_email or email
+        if member_email is None:
+            raise ValueError("Seed customers with members require an owner email")
+        customer.members = [
+            Member(
+                id=generate_uuid(),
+                customer_id=customer.id,
+                organization_id=organization.id,
+                email=member_email,
+                name=owner_name or name,
+                external_id=owner_external_id or external_id,
+                role=MemberRole.owner,
+                created_at=customer.created_at,
+            )
+        ]
+
+    return customer
+
+
+def _create_seed_benefit(
+    session: AsyncSession,
+    organization: Organization,
+    schema: BenefitCreate,
+) -> Benefit:
+    is_tax_applicable = getattr(
+        schema, "is_tax_applicable", schema.type.is_tax_applicable()
+    )
+    benefit = Benefit(
+        id=generate_uuid(),
+        type=schema.type,
+        description=schema.description,
+        organization=organization,
+        is_tax_applicable=is_tax_applicable,
+        properties=schema.properties.model_dump(mode="json", by_alias=True),
+        visibility=schema.type.resolve_visibility(schema.visibility),
+        user_metadata=schema.metadata,
+    )
+    session.add(benefit)
+    return benefit
+
+
 async def _stamp_event_type_ids(
     session: AsyncSession, events: list[dict[str, Any]]
 ) -> None:
@@ -322,12 +421,17 @@ def _normalize_seed_event_batch(events: list[dict[str, Any]]) -> None:
         event.setdefault("parent_id", None)
 
 
+def _generate_seed_uuid(rng: random.Random) -> UUID:
+    return UUID(int=rng.getrandbits(128), version=4)
+
+
 def _build_customer_timeline_events(
     organization_id: Any,
     customer_id: Any,
     customer_email: str,
     customer_name: str,
     products: list[Product],
+    rng: random.Random | None = None,
 ) -> list[dict[str, Any]]:
     """Generate a realistic timeline of system events for a customer.
 
@@ -335,9 +439,10 @@ def _build_customer_timeline_events(
     recurring cycles with order payments → possible cancellation/refund.
     """
     events: list[dict[str, Any]] = []
+    rng = rng or random.Random()
     now = datetime.now(UTC)
 
-    days_ago = random.randint(90, 540)
+    days_ago = rng.randint(90, 540)
     timeline_start = now - timedelta(days=days_ago)
 
     def _evt(
@@ -372,10 +477,10 @@ def _build_customer_timeline_events(
     onetime_products = [p for p in products if p.recurring_interval is None]
 
     # 2. Checkout created
-    t += timedelta(minutes=random.randint(1, 30))
-    chosen_product = random.choice(recurring_products) if recurring_products else None
+    t += timedelta(minutes=rng.randint(1, 30))
+    chosen_product = rng.choice(recurring_products) if recurring_products else None
     if chosen_product:
-        fake_checkout_id = str(generate_uuid())
+        fake_checkout_id = str(_generate_seed_uuid(rng))
         events.append(
             _evt(
                 SystemEventEnum.checkout_created,
@@ -389,8 +494,8 @@ def _build_customer_timeline_events(
         )
 
         # 3. Subscription created
-        t += timedelta(minutes=random.randint(1, 5))
-        fake_sub_id = str(generate_uuid())
+        t += timedelta(minutes=rng.randint(1, 5))
+        fake_sub_id = str(_generate_seed_uuid(rng))
         price_amount = 2900
         for p in chosen_product.all_prices:
             pa = getattr(p, "price_amount", None)
@@ -415,8 +520,8 @@ def _build_customer_timeline_events(
         )
 
         # 4. Initial order paid
-        t += timedelta(seconds=random.randint(1, 30))
-        fake_order_id = str(generate_uuid())
+        t += timedelta(seconds=rng.randint(1, 30))
+        fake_order_id = str(_generate_seed_uuid(rng))
         events.append(
             _evt(
                 SystemEventEnum.order_paid,
@@ -436,9 +541,9 @@ def _build_customer_timeline_events(
         )
 
         # 5. Benefit granted (if product has benefits)
-        t += timedelta(seconds=random.randint(1, 10))
-        fake_benefit_id = str(generate_uuid())
-        fake_grant_id = str(generate_uuid())
+        t += timedelta(seconds=rng.randint(1, 10))
+        fake_benefit_id = str(_generate_seed_uuid(rng))
+        fake_grant_id = str(_generate_seed_uuid(rng))
         events.append(
             _evt(
                 SystemEventEnum.benefit_granted,
@@ -475,11 +580,11 @@ def _build_customer_timeline_events(
             )
 
             # Order paid for the cycle
-            cycle_order_id = str(generate_uuid())
+            cycle_order_id = str(_generate_seed_uuid(rng))
             events.append(
                 _evt(
                     SystemEventEnum.order_paid,
-                    cycle_time + timedelta(seconds=random.randint(1, 60)),
+                    cycle_time + timedelta(seconds=rng.randint(1, 60)),
                     {
                         "order_id": cycle_order_id,
                         "product_id": str(chosen_product.id),
@@ -498,7 +603,7 @@ def _build_customer_timeline_events(
             events.append(
                 _evt(
                     SystemEventEnum.benefit_cycled,
-                    cycle_time + timedelta(seconds=random.randint(1, 60)),
+                    cycle_time + timedelta(seconds=rng.randint(1, 60)),
                     {
                         "benefit_id": fake_benefit_id,
                         "benefit_grant_id": fake_grant_id,
@@ -511,10 +616,10 @@ def _build_customer_timeline_events(
             cycle_count += 1
 
         # 7. Some customers get interesting lifecycle events
-        roll = random.random()
+        roll = rng.random()
         if roll < 0.15:
             # ~15% cancel then uncanceled
-            cancel_time = t + timedelta(days=random.randint(10, days_ago - 5))
+            cancel_time = t + timedelta(days=rng.randint(10, days_ago - 5))
             if cancel_time < now:
                 events.append(
                     _evt(
@@ -534,7 +639,7 @@ def _build_customer_timeline_events(
                     )
                 )
                 # Then uncanceled a few days later
-                uncancel_time = cancel_time + timedelta(days=random.randint(1, 5))
+                uncancel_time = cancel_time + timedelta(days=rng.randint(1, 5))
                 if uncancel_time < now:
                     events.append(
                         _evt(
@@ -553,12 +658,10 @@ def _build_customer_timeline_events(
         elif roll < 0.30:
             # ~15% upgraded to a different product
             if len(recurring_products) > 1:
-                other = random.choice(
+                other = rng.choice(
                     [p for p in recurring_products if p.id != chosen_product.id]
                 )
-                upgrade_time = t + timedelta(
-                    days=random.randint(7, min(60, days_ago - 5))
-                )
+                upgrade_time = t + timedelta(days=rng.randint(7, min(60, days_ago - 5)))
                 if upgrade_time < now:
                     events.append(
                         _evt(
@@ -573,7 +676,7 @@ def _build_customer_timeline_events(
                     )
         elif roll < 0.40:
             # ~10% got a refund on one order
-            refund_time = t + timedelta(days=random.randint(5, min(30, days_ago - 5)))
+            refund_time = t + timedelta(days=rng.randint(5, min(30, days_ago - 5)))
             if refund_time < now:
                 events.append(
                     _evt(
@@ -588,7 +691,7 @@ def _build_customer_timeline_events(
                 )
         elif roll < 0.50:
             # ~10% canceled for real
-            cancel_time = t + timedelta(days=random.randint(15, days_ago - 2))
+            cancel_time = t + timedelta(days=rng.randint(15, days_ago - 2))
             if cancel_time < now:
                 events.append(
                     _evt(
@@ -610,11 +713,9 @@ def _build_customer_timeline_events(
                 )
 
     # 8. Some customers also make one-time purchases
-    if onetime_products and random.random() < 0.4:
-        otp = random.choice(onetime_products)
-        otp_time = timeline_start + timedelta(
-            days=random.randint(1, max(1, days_ago - 5))
-        )
+    if onetime_products and rng.random() < 0.4:
+        otp = rng.choice(onetime_products)
+        otp_time = timeline_start + timedelta(days=rng.randint(1, max(1, days_ago - 5)))
         if otp_time < now:
             otp_price = 4900
             for p in otp.all_prices:
@@ -622,13 +723,13 @@ def _build_customer_timeline_events(
                 if pa is not None:
                     otp_price = pa
                     break
-            otp_order_id = str(generate_uuid())
+            otp_order_id = str(_generate_seed_uuid(rng))
             events.append(
                 _evt(
                     SystemEventEnum.checkout_created,
                     otp_time,
                     {
-                        "checkout_id": str(generate_uuid()),
+                        "checkout_id": str(_generate_seed_uuid(rng)),
                         "checkout_status": "succeeded",
                         "product_id": str(otp.id),
                     },
@@ -637,7 +738,7 @@ def _build_customer_timeline_events(
             events.append(
                 _evt(
                     SystemEventEnum.order_paid,
-                    otp_time + timedelta(minutes=random.randint(1, 5)),
+                    otp_time + timedelta(minutes=rng.randint(1, 5)),
                     {
                         "order_id": otp_order_id,
                         "product_id": str(otp.id),
@@ -650,9 +751,9 @@ def _build_customer_timeline_events(
             )
 
     # 9. Customer updated (some customers update their info)
-    if random.random() < 0.3:
+    if rng.random() < 0.3:
         update_time = timeline_start + timedelta(
-            days=random.randint(2, max(2, days_ago - 2))
+            days=rng.randint(2, max(2, days_ago - 2))
         )
         if update_time < now:
             events.append(
@@ -676,6 +777,7 @@ def _build_user_cost_span_events(
     organization_id: Any,
     customer_id: Any,
     days_back: int = 90,
+    rng: random.Random | None = None,
 ) -> list[dict[str, Any]]:
     """Generate user-event span hierarchies with _cost and _llm metadata.
 
@@ -684,6 +786,7 @@ def _build_user_cost_span_events(
     - Document flow: document_upload → document_process, s3_upload
     """
     events: list[dict[str, Any]] = []
+    rng = rng or random.Random()
     now = datetime.now(UTC)
 
     llm_vendors = [
@@ -810,25 +913,25 @@ def _build_user_cost_span_events(
         }
 
     # Spread events across the past N days
-    num_spans = random.randint(10, 40)
+    num_spans = rng.randint(10, 40)
     for _ in range(num_spans):
-        offset_seconds = random.randint(0, days_back * 86400)
+        offset_seconds = rng.randint(0, days_back * 86400)
         span_start = now - timedelta(seconds=offset_seconds)
-        vendor = random.choice(llm_vendors)
-        span_type = random.choice(["support", "document"])
+        vendor = rng.choice(llm_vendors)
+        span_type = rng.choice(["support", "document"])
 
         if span_type == "support":
             # Support request span:
             # support_request (root) → sentiment_analysis, draft_generated, email_sent, support_request_completed
-            span_id = generate_uuid()
+            span_id = _generate_seed_uuid(rng)
             events.append(
                 _root_event(
                     "support_request",
                     span_id,
                     span_start,
                     {
-                        "ticket_id": str(generate_uuid()),
-                        "channel": random.choice(["email", "chat", "api"]),
+                        "ticket_id": str(_generate_seed_uuid(rng)),
+                        "channel": rng.choice(["email", "chat", "api"]),
                     },
                 )
             )
@@ -836,9 +939,9 @@ def _build_user_cost_span_events(
             t = span_start
 
             # sentiment_analysis child
-            t += timedelta(seconds=random.randint(1, 5))
-            input_tokens = random.randint(200, 1500)
-            output_tokens = random.randint(50, 300)
+            t += timedelta(seconds=rng.randint(1, 5))
+            input_tokens = rng.randint(200, 1500)
+            output_tokens = rng.randint(50, 300)
             events.append(
                 _llm_child_event(
                     "sentiment_analysis",
@@ -848,7 +951,7 @@ def _build_user_cost_span_events(
                     output_tokens,
                     vendor,
                     {
-                        "sentiment": random.choice(
+                        "sentiment": rng.choice(
                             ["positive", "neutral", "negative", "frustrated"]
                         )
                     },
@@ -856,9 +959,9 @@ def _build_user_cost_span_events(
             )
 
             # draft_generated child
-            t += timedelta(seconds=random.randint(1, 10))
-            input_tokens = random.randint(500, 3000)
-            output_tokens = random.randint(200, 800)
+            t += timedelta(seconds=rng.randint(1, 10))
+            input_tokens = rng.randint(500, 3000)
+            output_tokens = rng.randint(200, 800)
             events.append(
                 _llm_child_event(
                     "draft_generated",
@@ -871,7 +974,7 @@ def _build_user_cost_span_events(
             )
 
             # email_sent child (infra cost)
-            t += timedelta(seconds=random.randint(1, 3))
+            t += timedelta(seconds=rng.randint(1, 3))
             events.append(
                 _infra_child_event(
                     "email_sent",
@@ -883,21 +986,21 @@ def _build_user_cost_span_events(
             )
 
             # support_request_completed child (no cost)
-            t += timedelta(seconds=random.randint(60, 3600))
+            t += timedelta(seconds=rng.randint(60, 3600))
             events.append(
                 _no_cost_child_event(
                     "support_request_completed",
                     span_id,
                     t,
-                    {"resolution": random.choice(["resolved", "escalated", "closed"])},
+                    {"resolution": rng.choice(["resolved", "escalated", "closed"])},
                 )
             )
 
         else:
             # Document processing span:
             # document_upload (root) → document_process, s3_upload
-            span_id = generate_uuid()
-            doc_id = str(generate_uuid())
+            span_id = _generate_seed_uuid(rng)
+            doc_id = str(_generate_seed_uuid(rng))
             events.append(
                 _root_event(
                     "document_upload",
@@ -905,10 +1008,10 @@ def _build_user_cost_span_events(
                     span_start,
                     {
                         "document_id": doc_id,
-                        "filename": random.choice(
+                        "filename": rng.choice(
                             ["report.pdf", "contract.docx", "data.csv", "spec.txt"]
                         ),
-                        "size_bytes": random.randint(5_000, 5_000_000),
+                        "size_bytes": rng.randint(5_000, 5_000_000),
                     },
                 )
             )
@@ -916,9 +1019,9 @@ def _build_user_cost_span_events(
             t = span_start
 
             # document_process child (LLM)
-            t += timedelta(seconds=random.randint(1, 10))
-            input_tokens = random.randint(1000, 8000)
-            output_tokens = random.randint(300, 2000)
+            t += timedelta(seconds=rng.randint(1, 10))
+            input_tokens = rng.randint(1000, 8000)
+            output_tokens = rng.randint(300, 2000)
             events.append(
                 _llm_child_event(
                     "document_process",
@@ -929,7 +1032,7 @@ def _build_user_cost_span_events(
                     vendor,
                     {
                         "document_id": doc_id,
-                        "task": random.choice(
+                        "task": rng.choice(
                             ["summarize", "extract", "classify", "translate"]
                         ),
                     },
@@ -937,8 +1040,8 @@ def _build_user_cost_span_events(
             )
 
             # s3_upload child (infra cost)
-            t += timedelta(seconds=random.randint(1, 5))
-            size_gb = random.uniform(0.001, 0.05)
+            t += timedelta(seconds=rng.randint(1, 5))
+            size_gb = rng.uniform(0.001, 0.05)
             events.append(
                 _infra_child_event(
                     "s3_upload",
@@ -957,32 +1060,26 @@ def _build_user_cost_span_events(
 
 async def _seed_polar_self_billing_catalog(
     session: AsyncSession,
-    redis: Redis,
     organization: Organization,
     auth_subject: AuthSubject[User],
 ) -> None:
-    """Materialize the Polar self-billing benefits and tier products in the DB.
-
-    Mirrors ``scripts.seed_polar_for_polar`` but writes directly via the service layer
-    instead of going through the public HTTP API.
-    """
-    benefits_by_description: dict[str, Any] = {}
+    """Materialize the Polar self-billing benefits and tier products in the DB."""
+    benefits_by_description: dict[str, Benefit] = {}
     for benefit_data in POLAR_SELF_BENEFITS:
         description = benefit_data["description"]
         metadata = benefit_data["metadata"]
         assert isinstance(description, str)
         assert isinstance(metadata, dict)
-        benefit = await benefit_service.user_create(
-            session=session,
-            redis=redis,
-            create_schema=BenefitFeatureFlagCreate(
+        benefit = _create_seed_benefit(
+            session,
+            organization,
+            BenefitFeatureFlagCreate(
                 type=BenefitType.feature_flag,
                 description=description,
                 organization_id=organization.id,
                 metadata=metadata,
                 properties=BenefitFeatureFlagCreateProperties(),
             ),
-            auth_subject=auth_subject,
         )
         benefits_by_description[description] = benefit
 
@@ -1024,18 +1121,15 @@ async def _seed_polar_self_billing_catalog(
                 visibility=visibility,
             ),
             auth_subject=auth_subject,
+            notify=False,
         )
 
-        benefit_ids = [
-            benefits_by_description[desc].id for desc in benefit_descriptions
-        ]
-        if benefit_ids:
-            await product_service.update_benefits(
-                session=session,
-                product=product,
-                benefits=benefit_ids,
-                auth_subject=auth_subject,
+        product.product_benefits = [
+            ProductBenefit(
+                benefit=benefits_by_description[benefit_description], order=order
             )
+            for order, benefit_description in enumerate(benefit_descriptions)
+        ]
 
 
 async def _subscribe_seeded_orgs_to_polar_self(
@@ -1070,10 +1164,6 @@ async def _subscribe_seeded_orgs_to_polar_self(
         .all()
     )
 
-    auth_subject: AuthSubject[Organization] = AuthSubject(
-        subject=polar_self_org, scopes=set(), session=None
-    )
-
     subscribed = 0
     for organization in other_orgs:
         owner_row = (
@@ -1096,20 +1186,16 @@ async def _subscribe_seeded_orgs_to_polar_self(
             continue
         owner = owner_row[0]
 
-        await customer_service.create(
+        _create_seed_customer(
             session,
-            CustomerTeamCreate.model_construct(
-                type="team",
-                email=None,
-                name=organization.name,
-                external_id=str(organization.id),
-                owner=MemberOwnerCreate.model_construct(
-                    email=owner.email,
-                    name=owner.public_name,
-                    external_id=str(owner.id),
-                ),
-            ),
-            auth_subject,
+            polar_self_org,
+            email=None,
+            name=organization.name,
+            customer_type=CustomerType.team,
+            external_id=str(organization.id),
+            owner_email=owner.email,
+            owner_name=owner.public_name,
+            owner_external_id=str(owner.id),
             created_at=organization.created_at,
         )
         subscribed += 1
@@ -1129,15 +1215,22 @@ async def create_support_cases_seed(session: AsyncSession) -> None:
     # -- Review appeal case --------------------------------------------------
     # Deny a seeded org and open a human-review appeal case, as if the AI had
     # rejected the appeal and the merchant escalated to a human.
-    appeal_org = (
-        (
-            await session.execute(
-                select(Organization).where(Organization.slug == "widget-industries")
-            )
+    appeal_case_exists = await session.scalar(
+        select(SupportCase.id)
+        .join(Organization, Organization.id == SupportCase.organization_id)
+        .join(SupportCaseMessage, SupportCaseMessage.case_id == SupportCase.id)
+        .where(
+            SupportCase.type == SupportCaseType.review_appeal,
+            Organization.slug == "widget-industries",
+            SupportCaseMessage.body == SEEDED_APPEAL_MESSAGE,
         )
-        .unique()
-        .scalar_one_or_none()
+        .limit(1)
     )
+    appeal_org = None
+    if appeal_case_exists is None:
+        appeal_org = await session.scalar(
+            select(Organization).where(Organization.slug == "widget-industries")
+        )
     appeal_user = None
     if appeal_org is not None:
         appeal_user = (
@@ -1205,7 +1298,7 @@ async def create_support_cases_seed(session: AsyncSession) -> None:
                 appeal_case,
                 author_kind=SupportCaseMessageAuthorKind.merchant,
                 author_user=appeal_user,
-                body="Sure — https://example.com. We sell developer tooling subscriptions.",
+                body=SEEDED_APPEAL_MESSAGE,
                 audience=[SupportCaseAudience.merchant],
             )
             print(f"Seeded review-appeal case on org '{appeal_org.slug}'")
@@ -1213,21 +1306,46 @@ async def create_support_cases_seed(session: AsyncSession) -> None:
     # -- Dispute case --------------------------------------------------------
     # Mint an order/payment/dispute from a seeded customer + product, then open
     # a dispute case awaiting the merchant's response.
-    row = (
-        (
-            await session.execute(
-                select(Customer, Product)
-                .join(Product, Product.organization_id == Customer.organization_id)
-                .options(
-                    joinedload(Customer.organization),
-                    selectinload(Product.all_prices),
-                )
-                .limit(1)
-            )
+    dispute_case_exists = await session.scalar(
+        select(SupportCase.id)
+        .join(Organization, Organization.id == SupportCase.organization_id)
+        .join(SupportCaseMessage, SupportCaseMessage.case_id == SupportCase.id)
+        .where(
+            SupportCase.type == SupportCaseType.dispute,
+            Organization.slug.in_(EXPECTED_ORGANIZATION_SLUGS),
+            SupportCaseMessage.body == SEEDED_DISPUTE_MESSAGE,
         )
-        .unique()
-        .first()
+        .limit(1)
     )
+    row = None
+    if dispute_case_exists is None:
+        row = (
+            (
+                await session.execute(
+                    select(Customer, Product)
+                    .join(Product, Product.organization_id == Customer.organization_id)
+                    .join(Organization, Organization.id == Customer.organization_id)
+                    .where(
+                        Organization.slug == "acme-corp",
+                        Customer.deleted_at.is_(None),
+                        Product.deleted_at.is_(None),
+                    )
+                    .options(
+                        joinedload(Customer.organization),
+                        selectinload(Product.all_prices),
+                    )
+                    .order_by(
+                        Customer.created_at,
+                        Customer.id,
+                        Product.created_at,
+                        Product.id,
+                    )
+                    .limit(1)
+                )
+            )
+            .unique()
+            .first()
+        )
     if row is not None:
         customer, product = row
         dispute_org = customer.organization
@@ -1241,7 +1359,7 @@ async def create_support_cases_seed(session: AsyncSession) -> None:
             session,
             dispute_case,
             author_kind=SupportCaseMessageAuthorKind.merchant,
-            body="This was a legitimate purchase — receipt and delivery attached.",
+            body=SEEDED_DISPUTE_MESSAGE,
             audience=[SupportCaseAudience.merchant],
         )
         await support_case_service.post_message(
@@ -1255,20 +1373,9 @@ async def create_support_cases_seed(session: AsyncSession) -> None:
         print(f"Seeded dispute case on org '{dispute_org.slug}'")
 
 
-async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
+async def _create_simple_fixture_graph(session: AsyncSession) -> None:
     """Create sample data for development and testing."""
-
-    # Check if seed data already exists
-    existing = (
-        await session.execute(
-            select(Organization).where(Organization.slug == "acme-corp")
-        )
-    ).scalar_one_or_none()
-    if existing:
-        raise typer.Exit(2)
-
-    seed_started_at = monotonic()
-    print("seed.load status=pending")
+    seed_rng = random.Random(SEED_RANDOM_SEED)
 
     # Organizations data
     orgs_data: list[OrganizationDict] = [
@@ -1739,7 +1846,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
     # Create organizations with users and sample data
     for org_data in orgs_data:
-        organization_started_at = monotonic()
         # Get or create user (allows multiple orgs to share the same user)
         user, _created = await user_service.get_by_email_or_create(
             session=session,
@@ -1828,6 +1934,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 file_ids = []
                 for file_data in benefit_data["properties"]["files"]:
                     instance = File(
+                        id=generate_uuid(),
                         organization=organization,
                         name=file_data["name"],
                         path=file_data["path"],
@@ -1840,24 +1947,22 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                         is_uploaded=True,
                     )
                     session.add(instance)
-                    await session.flush()
 
                     file_ids.append(instance.id)
                 benefit_schema_dict["properties"]["files"] = file_ids
 
-            schema = create_benefit_schema(benefit_schema_dict)
-            benefit = await benefit_service.user_create(
-                session=session,
-                redis=redis,
-                create_schema=schema,
-                auth_subject=auth_subject,
+            benefit = _create_seed_benefit(
+                session,
+                organization,
+                create_benefit_schema(benefit_schema_dict),
             )
             org_benefits[key] = benefit
 
         # Create meter for ColdMail organization
         coldmail_meter = None
         if org_data["slug"] == "coldmail":
-            meter_create = MeterCreate(
+            coldmail_meter = Meter(
+                id=generate_uuid(),
                 name="Email Sends",
                 filter=Filter(
                     conjunction=FilterConjunction.and_,
@@ -1870,40 +1975,33 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     ],
                 ),
                 aggregation=CountAggregation(),
-                organization_id=organization.id,
+                organization=organization,
             )
-            coldmail_meter = await meter_service.create(
-                session=session,
-                meter_create=meter_create,
-                auth_subject=auth_subject,
-            )
+            session.add(coldmail_meter)
 
         # Create meter for Polar organization
         if org_data["slug"] == "polar":
-            meter_create = MeterCreate(
-                name="Events Ingested",
-                filter=Filter(
-                    conjunction=FilterConjunction.and_,
-                    clauses=[
-                        FilterClause(
-                            property="name",
-                            operator=FilterOperator.eq,
-                            value="events_ingested",
-                        )
-                    ],
+            session.add(
+                Meter(
+                    id=generate_uuid(),
+                    name="Events Ingested",
+                    filter=Filter(
+                        conjunction=FilterConjunction.and_,
+                        clauses=[
+                            FilterClause(
+                                property="name",
+                                operator=FilterOperator.eq,
+                                value="events_ingested",
+                            )
+                        ],
+                    ),
+                    aggregation=CountAggregation(),
+                    organization=organization,
                 ),
-                aggregation=CountAggregation(),
-                organization_id=organization.id,
-            )
-            await meter_service.create(
-                session=session,
-                meter_create=meter_create,
-                auth_subject=auth_subject,
             )
 
             await _seed_polar_self_billing_catalog(
                 session=session,
-                redis=redis,
                 organization=organization,
                 auth_subject=auth_subject,
             )
@@ -1981,13 +2079,13 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 session=session,
                 create_schema=product_create,
                 auth_subject=auth_subject,
+                notify=False,
             )
             org_products.append(product)
 
             # Track seat-based product for later subscription creation
             if product_data.get("seat_based", False):
                 seat_based_product = product
-                # Get the seat-based price from the freshly created product
                 await session.refresh(product, ["all_prices"])
                 for price in product.all_prices:
                     if isinstance(price, ProductPriceSeatUnit):
@@ -1995,155 +2093,70 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                         break
 
             selected_benefits = product_data.get("benefits", [])
-            for benefit_key in selected_benefits:
-                await product_service.update_benefits(
-                    session=session,
-                    product=product,
-                    benefits=[org_benefits[key].id for key in selected_benefits],
-                    auth_subject=auth_subject,
-                )
+            if selected_benefits:
+                product.product_benefits = [
+                    ProductBenefit(benefit=org_benefits[key], order=order)
+                    for order, key in enumerate(selected_benefits)
+                ]
 
         # Create CheckoutLink with all products
         if org_products:
-            checkout_link_create = CheckoutLinkCreateProducts(
-                payment_processor=PaymentProcessor.stripe,
-                products=[product.id for product in org_products],
-                label=f"{org_data['name']} store",
-                allow_discount_codes=True,
-            )
-            await checkout_link_service.create(
-                session=session,
-                checkout_link_create=checkout_link_create,
-                auth_subject=auth_subject,
-            )
+            checkout_links = [
+                CheckoutLink(
+                    payment_processor=PaymentProcessor.stripe,
+                    client_secret=generate_token(prefix="polar_cl_"),
+                    organization=organization,
+                    label=f"{org_data['name']} store",
+                    allow_discount_codes=True,
+                    checkout_link_products=[
+                        CheckoutLinkProduct(product=product, order=order)
+                        for order, product in enumerate(org_products)
+                    ],
+                )
+            ]
 
             if org_data["slug"] == "acme-corp":
-                e2e_checkout_link = await checkout_link_service.create(
-                    session=session,
-                    checkout_link_create=CheckoutLinkCreateProducts(
+                checkout_links.append(
+                    CheckoutLink(
                         payment_processor=PaymentProcessor.stripe,
-                        products=[product.id for product in org_products],
+                        client_secret="polar_cl_e2e_seed_checkout_link_subscription",
+                        organization=organization,
                         label="E2E test checkout",
                         allow_discount_codes=True,
-                    ),
-                    auth_subject=auth_subject,
+                        checkout_link_products=[
+                            CheckoutLinkProduct(product=product, order=order)
+                            for order, product in enumerate(org_products)
+                        ],
+                    )
                 )
-                e2e_checkout_link.client_secret = (
-                    "polar_cl_e2e_seed_checkout_link_subscription"
-                )
-                session.add(e2e_checkout_link)
-                await session.flush()
+            session.add_all(checkout_links)
 
         if org_products:
-            await discount_service.create(
-                session=session,
-                discount_create=DiscountPercentageCreate(
+            session.add(
+                DiscountPercentage(
                     name="Free",
                     code="free",
-                    type=DiscountType.percentage,
                     basis_points=10000,
                     duration=DiscountDuration.once,
-                    organization_id=organization.id,
-                ),
-                auth_subject=auth_subject,
+                    organization=organization,
+                )
             )
 
         # Create customers for organization (skip if seat_based_customers are defined)
-        # Pre-load product prices for timeline event generation
-        for p in org_products:
-            await session.refresh(p, ["all_prices"])
-
-        # Accumulate events across all customers in this org, then flush to
-        # Tinybird in a single batched call at the end. The per-customer
-        # synchronous ingest (with wait=true) used to dominate seed runtime.
-        pending_events: list[dict[str, Any]] = []
-
         num_customers = (
-            random.randint(3, 8) if not org_data.get("seat_based_customers") else 0
+            seed_rng.randint(3, 8) if not org_data.get("seat_based_customers") else 0
         )
         seeded_customers = []
         for i in range(num_customers):
             # customer_email = f"customer_{org_data['slug']}_{i + 1}@example.com"
             customer_email = f"customer_{org_data['slug']}_{i + 1}@polar.sh"
-            customer = await customer_service.create(
-                session=session,
-                customer_create=CustomerIndividualCreate(
-                    email=customer_email,
-                    name=f"Customer {i + 1}",
-                    organization_id=organization.id,
-                ),
-                auth_subject=auth_subject,
+            customer = _create_seed_customer(
+                session,
+                organization,
+                email=customer_email,
+                name=f"Customer {i + 1}",
             )
             seeded_customers.append(customer)
-
-            timeline_events = _build_customer_timeline_events(
-                organization_id=organization.id,
-                customer_id=customer.id,
-                customer_email=customer_email,
-                customer_name=f"Customer {i + 1}",
-                products=org_products,
-            )
-
-            # Create meter events for ColdMail customers
-            if org_data["slug"] == "coldmail" and coldmail_meter and i == 0:
-                # Create events for the first customer showing usage over time
-                meter_events: list[dict[str, Any]] = []
-
-                # Create 150 email send events over the past 30 days
-                base_time = datetime.now(UTC) - timedelta(days=30)
-
-                for day in range(30):
-                    # Variable number of emails per day (between 1 and 10)
-                    num_emails = random.randint(1, 10)
-                    for _ in range(num_emails):
-                        event_time = base_time + timedelta(
-                            days=day,
-                            hours=random.randint(0, 23),
-                            minutes=random.randint(0, 59),
-                        )
-                        meter_events.append(
-                            {
-                                "name": "email_sent",
-                                "source": "user",
-                                "timestamp": event_time,
-                                "organization_id": organization.id,
-                                "customer_id": customer.id,
-                                "user_metadata": {
-                                    "type": "email_sent",
-                                    "recipient": f"user{random.randint(1, 100)}@example.com",
-                                    "subject": f"Email subject {random.randint(1, 1000)}",
-                                },
-                            }
-                        )
-
-                timeline_events.extend(meter_events)
-
-            # Add user-event cost spans (LLM / infra) for all customers
-            cost_spans = _build_user_cost_span_events(
-                organization_id=organization.id,
-                customer_id=customer.id,
-            )
-            timeline_events.extend(cost_spans)
-
-            pending_events.extend(timeline_events)
-
-        inserted_event_count = 0
-        if pending_events:
-            event_repository = EventRepository.from_session(session)
-            _normalize_seed_event_batch(pending_events)
-            await _stamp_event_type_ids(session, pending_events)
-            event_ids, _ = await event_repository.insert_batch(
-                pending_events, render_nulls=True
-            )
-            inserted_event_count = len(event_ids)
-            if event_ids:
-                inserted = await event_repository.get_all(
-                    select(EventModel).where(EventModel.id.in_(event_ids))
-                )
-                ancestors_by_event = await event_repository.get_ancestors_batch(
-                    event_ids
-                )
-                await _flush_tinybird_events(inserted, ancestors_by_event)
 
         # Create real Subscription rows for acme-corp customers so that PG-based
         # metrics (MRR, Trial MRR, Active Subscriptions) have data to display.
@@ -2176,6 +2189,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     )
 
                     subscription = Subscription(
+                        id=generate_uuid(),
                         amount=fixed_price.price_amount,
                         net_amount=fixed_price.price_amount,
                         currency=fixed_price.price_currency,
@@ -2195,7 +2209,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                         anchor_day=now.day,
                     )
                     session.add(subscription)
-                    await session.flush()
 
                     spp = SubscriptionProductPrice(
                         subscription_id=subscription.id,
@@ -2206,172 +2219,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
                 await session.flush()
 
-                # Compass insight scenario: the subscriptions above all start
-                # "now", so 30 days ago there was $0 MRR and every Compass
-                # detector has no baseline to compare against. Seed a set of
-                # backdated cohorts so each registered detector sees a real,
-                # material month-over-month move and emits an insight:
-                #   - base + growth: a base live a month ago plus recent adds
-                #     drives MRR growth and subscriber growth; the base being
-                #     higher-priced than the growth adds drags average revenue
-                #     per subscriber down (the ARPU detector).
-                #   - churn: subscriptions live a month ago that ended inside the
-                #     last 30 days feed the churn detector.
-                #   - trial: subscriptions still in trial carry trialing MRR the
-                #     trial-conversion detector reads.
-                # Metrics gate the historical window on `started_at`/`ended_at`,
-                # so backdating those is what places a subscription in the
-                # 30-day-ago baseline and the trailing churn window.
-                compass_product = recurring_products[0]
-                compass_price = next(
-                    (
-                        price
-                        for price in compass_product.all_prices
-                        if isinstance(price, ProductPriceFixed)
-                    ),
-                    None,
-                )
-                if compass_price is not None:
-                    base_amount = compass_price.price_amount
-                    growth_amount = base_amount // 2
-                    compass_cohorts: list[dict[str, Any]] = [
-                        {
-                            "label": "base",
-                            "count": 6,
-                            "started_ago": 45,
-                            "status": SubscriptionStatus.active,
-                            "amount": base_amount,
-                        },
-                        {
-                            "label": "growth",
-                            "count": 4,
-                            "started_ago": 10,
-                            "status": SubscriptionStatus.active,
-                            "amount": growth_amount,
-                        },
-                        {
-                            "label": "churn",
-                            "count": 3,
-                            "started_ago": 65,
-                            "ended_ago": 12,
-                            "status": SubscriptionStatus.canceled,
-                            "amount": base_amount,
-                        },
-                        {
-                            "label": "trial",
-                            "count": 5,
-                            "started_ago": 4,
-                            "trial_ends_in": 10,
-                            "status": SubscriptionStatus.trialing,
-                            "amount": base_amount,
-                        },
-                    ]
-                    compass_seq = 0
-                    for cohort in compass_cohorts:
-                        started = now - timedelta(days=cohort["started_ago"])
-                        ended_at = (
-                            now - timedelta(days=cohort["ended_ago"])
-                            if "ended_ago" in cohort
-                            else None
-                        )
-                        trial_end = (
-                            now + timedelta(days=cohort["trial_ends_in"])
-                            if "trial_ends_in" in cohort
-                            else None
-                        )
-                        amount = cohort["amount"]
-                        for _ in range(cohort["count"]):
-                            compass_seq += 1
-                            cohort_customer = await customer_service.create(
-                                session=session,
-                                customer_create=CustomerIndividualCreate(
-                                    email=f"compass_{compass_seq}@acme-corp.com",
-                                    name=f"Compass Customer {compass_seq}",
-                                    organization_id=organization.id,
-                                ),
-                                auth_subject=auth_subject,
-                            )
-                            cohort_subscription = Subscription(
-                                amount=amount,
-                                net_amount=amount,
-                                currency=compass_price.price_currency,
-                                tax_behavior=TaxBehavior.exclusive,
-                                recurring_interval=compass_product.recurring_interval,
-                                recurring_interval_count=1,
-                                status=cohort["status"],
-                                current_period_start=started,
-                                current_period_end=ended_at or now + timedelta(days=30),
-                                cancel_at_period_end=False,
-                                started_at=started,
-                                ended_at=ended_at,
-                                ends_at=ended_at,
-                                canceled_at=ended_at,
-                                trial_end=trial_end,
-                                customer_id=cohort_customer.id,
-                                organization_id=compass_product.organization_id,
-                                product_id=compass_product.id,
-                                anchor_day=started.day,
-                            )
-                            session.add(cohort_subscription)
-                            await session.flush()
-
-                            session.add(
-                                SubscriptionProductPrice(
-                                    subscription_id=cohort_subscription.id,
-                                    product_price_id=compass_price.id,
-                                    amount=amount,
-                                )
-                            )
-
-                    await session.flush()
-
-                    # Checkout history for the Compass conversion detector, which
-                    # compares the trailing 30-day checkout conversion rate against
-                    # the prior 30 days. Seed two windows with a deliberate drop —
-                    # 80% a month ago down to 55% now — so the detector fires.
-                    # Post-cutoff checkouts are counted by `opened_at`, so each row
-                    # carries it in `analytics_metadata`.
-                    # (window label, days-ago range, total, succeeded):
-                    checkout_windows = (
-                        ("prior", range(35, 55), 20, 16),
-                        ("recent", range(3, 23), 20, 11),
-                    )
-                    for _label, day_range, total, succeeded in checkout_windows:
-                        offsets = list(day_range)
-                        for index in range(total):
-                            opened = now - timedelta(days=offsets[index % len(offsets)])
-                            converted = index < succeeded
-                            checkout = Checkout(
-                                payment_processor=PaymentProcessor.stripe,
-                                status=(
-                                    CheckoutStatus.succeeded
-                                    if converted
-                                    else CheckoutStatus.expired
-                                ),
-                                client_secret=generate_token(prefix="polar_c_"),
-                                expires_at=opened + timedelta(days=1),
-                                created_at=opened,
-                                allow_discount_codes=True,
-                                require_billing_address=False,
-                                is_business_customer=False,
-                                amount=compass_price.price_amount,
-                                net_amount=compass_price.price_amount,
-                                currency=compass_price.price_currency,
-                                organization_id=organization.id,
-                                analytics_metadata={"opened_at": opened.isoformat()},
-                            )
-                            session.add(checkout)
-                            await session.flush()
-                            session.add(
-                                CheckoutProduct(
-                                    checkout_id=checkout.id,
-                                    product_id=compass_product.id,
-                                    order=0,
-                                )
-                            )
-
-                    await session.flush()
-
         # Create seat-based customers with subscriptions and seats
         seat_based_customers = org_data.get("seat_based_customers", [])
         if seat_based_customers and seat_based_product and seat_based_price:
@@ -2381,14 +2228,11 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
             for customer_data in seat_based_customers:
                 # Create the customer
-                seat_customer = await customer_service.create(
-                    session=session,
-                    customer_create=CustomerIndividualCreate(
-                        email=customer_data["email"],
-                        name=customer_data["name"],
-                        organization_id=organization.id,
-                    ),
-                    auth_subject=auth_subject,
+                seat_customer = _create_seed_customer(
+                    session,
+                    organization,
+                    email=customer_data["email"],
+                    name=customer_data["name"],
                 )
 
                 seats_purchased = customer_data["seats_purchased"]
@@ -2429,17 +2273,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 # Create members if member_model_enabled
                 members_for_seats = []
                 if member_model_enabled:
-                    # The customer_service.create() already created the owner member
-                    # when member_model_enabled is True. Fetch it from the database.
-                    owner_result = await session.execute(
-                        select(Member).where(
-                            Member.customer_id == seat_customer.id,
-                            Member.role == MemberRole.owner,
-                        )
-                    )
-                    owner_member = owner_result.scalar_one_or_none()
-                    if owner_member:
-                        members_for_seats.append(owner_member)
+                    members_for_seats.append(seat_customer.members[0])
 
                     # Create additional members for allocated seats (beyond the owner)
                     for i in range(1, seats_allocated):
@@ -2473,14 +2307,11 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                             seat_holder_email = (
                                 f"seat{i + 1}@{customer_data['email'].split('@')[1]}"
                             )
-                            seat_holder_customer = await customer_service.create(
-                                session=session,
-                                customer_create=CustomerIndividualCreate(
-                                    email=seat_holder_email,
-                                    name=f"Seat Holder {i + 1}",
-                                    organization_id=organization.id,
-                                ),
-                                auth_subject=auth_subject,
+                            seat_holder_customer = _create_seed_customer(
+                                session,
+                                organization,
+                                email=seat_holder_email,
+                                name=f"Seat Holder {i + 1}",
                             )
                             seat = CustomerSeat(
                                 subscription=subscription,
@@ -2506,54 +2337,484 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             user,
             update_dict={"is_admin": user.is_admin or org_data.get("is_admin", False)},
         )
-        print(
-            "seed.organization status=processed "
-            f"slug={organization.slug} events={inserted_event_count} "
-            f"event_insert_batches={int(bool(pending_events))} "
-            f"elapsed_seconds={monotonic() - organization_started_at:.2f}"
-        )
 
     subscribed = await _subscribe_seeded_orgs_to_polar_self(session)
     if subscribed:
         print(f"Subscribed {subscribed} organization(s) to the Polar self free plan")
 
-    await create_support_cases_seed(session)
 
-    await session.commit()
-    print(
-        "seed.load status=success "
-        f"organizations={len(orgs_data)} "
-        f"elapsed_seconds={monotonic() - seed_started_at:.2f}"
+async def _get_seeded_organizations(
+    session: AsyncSession,
+) -> dict[str, Organization]:
+    organizations = (
+        (
+            await session.execute(
+                select(Organization).where(
+                    Organization.slug.in_(EXPECTED_ORGANIZATION_SLUGS)
+                )
+            )
+        )
+        .scalars()
+        .all()
     )
-    print("✅ Sample data created successfully!")
+    return {organization.slug: organization for organization in organizations}
+
+
+async def _simple_seed_is_complete(session: AsyncSession) -> bool:
+    organizations = await _get_seeded_organizations(session)
+    if not organizations:
+        return False
+    if set(organizations) != EXPECTED_ORGANIZATION_SLUGS:
+        raise RuntimeError("Simple seed found a partial organization fixture set")
+
+    acme = organizations["acme-corp"]
+    sentinel_customer_id = await session.scalar(
+        select(Customer.id).where(
+            Customer.organization_id == acme.id,
+            Customer.email == "customer_acme-corp_1@polar.sh",
+            Customer.deleted_at.is_(None),
+        )
+    )
+    if sentinel_customer_id is None:
+        raise RuntimeError("Simple seed found an incomplete Acme fixture set")
+    return True
+
+
+async def create_simple_seed_data(session: AsyncSession, redis: Redis) -> bool:
+    if await _simple_seed_is_complete(session):
+        print(
+            "seed.phase.simple status=complete action=skip "
+            f"organizations={len(EXPECTED_ORGANIZATION_SLUGS)}"
+        )
+        return False
+
+    started_at = monotonic()
+    print("seed.phase.simple status=pending")
+    try:
+        await _create_simple_fixture_graph(session)
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        print(
+            "seed.phase.simple status=failure "
+            f"elapsed_seconds={monotonic() - started_at:.2f}"
+        )
+        raise
     print(
-        f"Created {len(orgs_data)} organizations with users, products, benefits, and customers"
+        "seed.phase.simple status=success "
+        f"organizations={len(EXPECTED_ORGANIZATION_SLUGS)} "
+        f"elapsed_seconds={monotonic() - started_at:.2f}"
+    )
+    return True
+
+
+def _namespace_simple_complement_events(
+    events: list[dict[str, Any]], organization: Organization, customer: Customer
+) -> None:
+    id_mapping: dict[UUID, UUID] = {}
+    for index, event in enumerate(events):
+        event_id = uuid5(
+            NAMESPACE_URL,
+            f"{SIMPLE_COMPLEMENT_EVENT_PREFIX}{organization.slug}:{customer.id}:{index}",
+        )
+        previous_id = event.get("id")
+        if isinstance(previous_id, UUID):
+            id_mapping[previous_id] = event_id
+        event["id"] = event_id
+        event["external_id"] = (
+            f"{SIMPLE_COMPLEMENT_EVENT_PREFIX}{organization.slug}:{customer.id}:{index}"
+        )
+
+    for event in events:
+        parent_id = event.get("parent_id")
+        if isinstance(parent_id, UUID) and parent_id in id_mapping:
+            event["parent_id"] = id_mapping[parent_id]
+
+
+async def _delete_simple_complement_tinybird_events() -> int:
+    if settings.TINYBIRD_API_TOKEN is None:
+        return 0
+
+    result = await tinybird_client.delete(
+        DATASOURCE_EVENTS,
+        f"startsWith(external_id, '{SIMPLE_COMPLEMENT_EVENT_NAMESPACE}')",
+    )
+    job_id = result.get("job_id")
+    if job_id is None:
+        return int(result.get("rows_affected", 0))
+
+    deadline = monotonic() + 300
+    while monotonic() < deadline:
+        job = await tinybird_client.get_job(str(job_id))
+        status = job.get("status")
+        if status == "done":
+            return int(job.get("rows_affected", 0))
+        if status == "error":
+            raise RuntimeError(
+                f"Tinybird seed cleanup failed: {job.get('error', 'unknown error')}"
+            )
+        await asyncio.sleep(0.25)
+    raise TimeoutError("Timed out waiting for Tinybird seed cleanup")
+
+
+async def _simple_complement_seed_is_complete(session: AsyncSession) -> bool:
+    # The phase commits its events and deferred PostgreSQL fixtures together,
+    # after Tinybird ingestion succeeds.
+    namespaced_event_id = await session.scalar(
+        select(EventModel.id)
+        .where(
+            EventModel.external_id.startswith(
+                SIMPLE_COMPLEMENT_EVENT_PREFIX, autoescape=True
+            )
+        )
+        .limit(1)
+    )
+    if namespaced_event_id is not None:
+        return True
+    if SIMPLE_COMPLEMENT_SEED_VERSION != "v1":
+        return False
+
+    acme = await session.scalar(
+        select(Organization).where(Organization.slug == "acme-corp")
+    )
+    if acme is None:
+        return False
+
+    legacy_compass_customer_count = await session.scalar(
+        select(func.count(Customer.id)).where(
+            Customer.organization_id == acme.id,
+            Customer.email.like(r"compass\_%@acme-corp.com", escape="\\"),
+            Customer.deleted_at.is_(None),
+        )
+    )
+    return legacy_compass_customer_count == 18
+
+
+async def _create_simple_complement_event_history(
+    session: AsyncSession, organizations: Sequence[Organization]
+) -> int:
+    organization_ids = {organization.id for organization in organizations}
+    products = (
+        (
+            await session.execute(
+                select(Product)
+                .where(Product.organization_id.in_(organization_ids))
+                .options(selectinload(Product.all_prices))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    products_by_organization: dict[UUID, list[Product]] = {}
+    for product in sorted(
+        products,
+        key=lambda item: (
+            str(item.organization_id),
+            item.name,
+            item.recurring_interval or "",
+            str(item.id),
+        ),
+    ):
+        products_by_organization.setdefault(product.organization_id, []).append(product)
+
+    customers = (
+        (
+            await session.execute(
+                select(Customer).where(
+                    Customer.organization_id.in_(organization_ids),
+                    Customer.email.like(r"customer\_%@polar.sh", escape="\\"),
+                    Customer.deleted_at.is_(None),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    customers_by_organization: dict[UUID, list[Customer]] = {}
+    for customer in customers:
+        customers_by_organization.setdefault(customer.organization_id, []).append(
+            customer
+        )
+
+    event_repository = EventRepository.from_session(session)
+    event_count = 0
+    seed_rng = random.Random(SEED_RANDOM_SEED)
+    for organization in sorted(organizations, key=lambda item: item.slug):
+        pending_events: list[dict[str, Any]] = []
+        organization_products = products_by_organization.get(organization.id, [])
+        organization_customers = sorted(
+            customers_by_organization.get(organization.id, []),
+            key=lambda item: item.email or "",
+        )
+        for customer_index, customer in enumerate(organization_customers):
+            assert customer.email is not None
+            customer_events = _build_customer_timeline_events(
+                organization_id=organization.id,
+                customer_id=customer.id,
+                customer_email=customer.email,
+                customer_name=customer.name or customer.email,
+                products=organization_products,
+                rng=seed_rng,
+            )
+            if organization.slug == "coldmail" and customer_index == 0:
+                base_time = datetime.now(UTC) - timedelta(days=30)
+                for day in range(30):
+                    for _ in range(seed_rng.randint(1, 10)):
+                        customer_events.append(
+                            {
+                                "name": "email_sent",
+                                "source": "user",
+                                "timestamp": base_time
+                                + timedelta(
+                                    days=day,
+                                    hours=seed_rng.randint(0, 23),
+                                    minutes=seed_rng.randint(0, 59),
+                                ),
+                                "organization_id": organization.id,
+                                "customer_id": customer.id,
+                                "user_metadata": {
+                                    "type": "email_sent",
+                                    "recipient": f"user{seed_rng.randint(1, 100)}@example.com",
+                                    "subject": f"Email subject {seed_rng.randint(1, 1000)}",
+                                },
+                            }
+                        )
+            customer_events.extend(
+                _build_user_cost_span_events(
+                    organization_id=organization.id,
+                    customer_id=customer.id,
+                    rng=seed_rng,
+                )
+            )
+            _namespace_simple_complement_events(customer_events, organization, customer)
+            pending_events.extend(customer_events)
+
+        if not pending_events:
+            continue
+        _normalize_seed_event_batch(pending_events)
+        await _stamp_event_type_ids(session, pending_events)
+        event_ids, _ = await event_repository.insert_batch(
+            pending_events, render_nulls=True
+        )
+        inserted = await event_repository.get_all(
+            select(EventModel).where(EventModel.id.in_(event_ids))
+        )
+        await event_service._create_meter_events(session, inserted)
+        ancestors_by_event = await event_repository.get_ancestors_batch(event_ids)
+        await _flush_tinybird_events(inserted, ancestors_by_event)
+        event_count += len(event_ids)
+
+    return event_count
+
+
+async def _create_compass_seed(session: AsyncSession, acme: Organization) -> None:
+    existing_customer_count = await session.scalar(
+        select(func.count(Customer.id)).where(
+            Customer.organization_id == acme.id,
+            Customer.email.like(r"compass\_%@acme-corp.com", escape="\\"),
+            Customer.deleted_at.is_(None),
+        )
+    )
+    if existing_customer_count == 18:
+        return
+    if existing_customer_count:
+        raise RuntimeError("Simple-complement seed found a partial Compass fixture set")
+
+    product = await session.scalar(
+        select(Product)
+        .where(
+            Product.organization_id == acme.id,
+            Product.name == "Premium Business Suite",
+            Product.deleted_at.is_(None),
+        )
+        .options(selectinload(Product.all_prices))
+    )
+    if product is None:
+        raise RuntimeError("Compass seed requires the Premium Business Suite product")
+    price = next(
+        (price for price in product.all_prices if isinstance(price, ProductPriceFixed)),
+        None,
+    )
+    if price is None:
+        raise RuntimeError("Compass seed requires a fixed product price")
+
+    auth_subject = AuthSubject(subject=acme, scopes=set(), session=None)
+    now = utc_now()
+    cohorts: tuple[tuple[str, int, int, SubscriptionStatus, int | None], ...] = (
+        ("base", 6, 45, SubscriptionStatus.active, None),
+        ("growth", 4, 10, SubscriptionStatus.active, None),
+        ("churn", 3, 65, SubscriptionStatus.canceled, 12),
+        ("trial", 5, 4, SubscriptionStatus.trialing, None),
+    )
+    sequence = 0
+    for label, count, started_ago, status, ended_ago in cohorts:
+        for _ in range(count):
+            sequence += 1
+            started_at = now - timedelta(days=started_ago)
+            ended_at = now - timedelta(days=ended_ago) if ended_ago else None
+            amount = (
+                price.price_amount // 2 if label == "growth" else price.price_amount
+            )
+            customer = await customer_service.create(
+                session=session,
+                customer_create=CustomerIndividualCreate(
+                    email=f"compass_{sequence}@acme-corp.com",
+                    name=f"Compass Customer {sequence}",
+                    organization_id=None,
+                ),
+                auth_subject=auth_subject,
+            )
+            subscription = Subscription(
+                id=generate_uuid(),
+                amount=amount,
+                net_amount=amount,
+                currency=price.price_currency,
+                tax_behavior=TaxBehavior.exclusive,
+                recurring_interval=product.recurring_interval,
+                recurring_interval_count=1,
+                status=status,
+                current_period_start=started_at,
+                current_period_end=ended_at or now + timedelta(days=30),
+                cancel_at_period_end=False,
+                started_at=started_at,
+                ended_at=ended_at,
+                ends_at=ended_at,
+                canceled_at=ended_at,
+                trial_end=(now + timedelta(days=10) if label == "trial" else None),
+                customer=customer,
+                organization=acme,
+                product=product,
+                anchor_day=started_at.day,
+                subscription_product_prices=[
+                    SubscriptionProductPrice(
+                        product_price=price,
+                        amount=amount,
+                    )
+                ],
+            )
+            session.add(subscription)
+
+    for label, day_range, total, succeeded in (
+        ("prior", range(35, 55), 20, 16),
+        ("recent", range(3, 23), 20, 11),
+    ):
+        offsets = list(day_range)
+        for index in range(total):
+            opened_at = now - timedelta(days=offsets[index % len(offsets)])
+            session.add(
+                Checkout(
+                    id=generate_uuid(),
+                    payment_processor=PaymentProcessor.stripe,
+                    status=(
+                        CheckoutStatus.succeeded
+                        if index < succeeded
+                        else CheckoutStatus.expired
+                    ),
+                    client_secret=generate_token(prefix="polar_c_"),
+                    expires_at=opened_at + timedelta(days=1),
+                    created_at=opened_at,
+                    allow_discount_codes=True,
+                    require_billing_address=False,
+                    is_business_customer=False,
+                    amount=price.price_amount,
+                    net_amount=price.price_amount,
+                    currency=price.price_currency,
+                    organization=acme,
+                    analytics_metadata={
+                        "opened_at": opened_at.isoformat(),
+                        "seed": (f"compass:{SIMPLE_COMPLEMENT_SEED_VERSION}:{label}"),
+                    },
+                    checkout_products=[CheckoutProduct(product=product, order=0)],
+                )
+            )
+
+
+async def create_simple_complement_seed_data(session: AsyncSession) -> bool:
+    if not await _simple_seed_is_complete(session):
+        raise RuntimeError("Simple-complement seed requires the simple seed phase")
+    if await _simple_complement_seed_is_complete(session):
+        print(
+            "seed.phase.simple_complement status=complete action=skip "
+            f"version={SIMPLE_COMPLEMENT_SEED_VERSION}"
+        )
+        return False
+
+    started_at = monotonic()
+    print(
+        "seed.phase.simple_complement status=pending "
+        f"version={SIMPLE_COMPLEMENT_SEED_VERSION}"
+    )
+    try:
+        tinybird_deleted = await _delete_simple_complement_tinybird_events()
+        result = await session.execute(
+            delete(EventModel).where(
+                EventModel.external_id.startswith(
+                    SIMPLE_COMPLEMENT_EVENT_NAMESPACE, autoescape=True
+                )
+            )
+        )
+        postgres_deleted = max(getattr(result, "rowcount", 0) or 0, 0)
+        organizations = await _get_seeded_organizations(session)
+        acme = organizations["acme-corp"]
+        event_count = await _create_simple_complement_event_history(
+            session, list(organizations.values())
+        )
+        await _create_compass_seed(session, acme)
+        await create_support_cases_seed(session)
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        print(
+            "seed.phase.simple_complement status=failure "
+            f"version={SIMPLE_COMPLEMENT_SEED_VERSION} "
+            f"elapsed_seconds={monotonic() - started_at:.2f}"
+        )
+        raise
+
+    print(
+        "seed.phase.simple_complement status=success "
+        f"version={SIMPLE_COMPLEMENT_SEED_VERSION} "
+        f"elapsed_seconds={monotonic() - started_at:.2f} "
+        f"events={event_count} postgres_deleted={postgres_deleted} "
+        f"tinybird_deleted={tinybird_deleted}"
+    )
+    return True
+
+
+async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
+    started_at = monotonic()
+    print("seed.phase.all status=pending")
+    simple_created = await create_simple_seed_data(session, redis)
+    simple_complement_created = await create_simple_complement_seed_data(session)
+    if not simple_created and not simple_complement_created:
+        raise typer.Exit(2)
+    print(
+        f"seed.phase.all status=success elapsed_seconds={monotonic() - started_at:.2f}"
     )
 
 
 POLAR_ORG_SLUG = "polar"
 TOKEN_COMMENT = "Polar self-integration (dev seed)"
-TOKEN_SCOPES = " ".join(
-    [
-        Scope.customers_read,
-        Scope.customers_write,
-        Scope.customer_sessions_write,
-        Scope.subscriptions_write,
-        Scope.events_write,
-        Scope.members_read,
-        Scope.members_write,
-        Scope.products_read,
-        Scope.checkouts_write,
-        Scope.benefits_read,
-        # Startup Program: claim flow creates/reads the per-customer
-        # discount via SDK and reads/updates the resulting subscription's
-        # discount + matching orders.
-        Scope.discounts_read,
-        Scope.discounts_write,
-        Scope.orders_read,
-        Scope.orders_write,
-    ]
+TOKEN_SCOPE_VALUES = (
+    Scope.customers_read,
+    Scope.customers_write,
+    Scope.customer_sessions_write,
+    Scope.subscriptions_write,
+    Scope.events_write,
+    Scope.members_read,
+    Scope.members_write,
+    Scope.products_read,
+    Scope.checkouts_write,
+    Scope.benefits_read,
+    # Startup Program: claim flow creates/reads the per-customer
+    # discount via SDK and reads/updates the resulting subscription's
+    # discount + matching orders.
+    Scope.discounts_read,
+    Scope.discounts_write,
+    Scope.orders_read,
+    Scope.orders_write,
 )
+TOKEN_SCOPES = " ".join(TOKEN_SCOPE_VALUES)
 
 WEBHOOK_NAME = "Polar self-integration (dev seed)"
 WEBHOOK_URL = "http://127.0.0.1:8000/v1/integrations/polar/webhook"
@@ -2763,10 +3024,17 @@ def seeds_load(
         "--new-org",
         help="Create a single new organization with this slug, with products, customers, and timeline events.",
     ),
+    phase: SeedPhase = typer.Option(
+        SeedPhase.all,
+        "--phase",
+        help="Seed all data, readiness-critical fixtures only, or deferred demo data.",
+    ),
 ) -> None:
     """Load sample/test data into the database."""
     if ctx.invoked_subcommand is not None:
         return
+    if new_org is not None and phase is not SeedPhase.all:
+        raise typer.BadParameter("--new-org cannot be combined with --phase")
 
     async def run() -> None:
         redis = create_redis("app")
@@ -2786,6 +3054,10 @@ def seeds_load(
                 async with sessionmaker() as session:
                     if new_org:
                         await create_single_org_seed(session, redis, new_org)
+                    elif phase is SeedPhase.simple:
+                        await create_simple_seed_data(session, redis)
+                    elif phase is SeedPhase.simple_complement:
+                        await create_simple_complement_seed_data(session)
                     else:
                         await create_seed_data(session, redis)
             finally:

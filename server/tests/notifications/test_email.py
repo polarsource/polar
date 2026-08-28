@@ -1,5 +1,7 @@
+import asyncio
 import inspect
 import os
+from pathlib import Path
 
 import pytest
 
@@ -20,17 +22,16 @@ async def check_diff(notification: NotificationPayloadBase) -> None:
     expected = f"{subject}\n<hr>\n{body}"
 
     # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
-    record = os.environ.get("POLAR_TEST_RECORD", False) == "1"
+    record = os.environ.get("POLAR_TEST_RECORD") == "1"
 
     name = inspect.stack()[1].function
+    testdata_path = Path(f"./tests/notifications/testdata/{name}.html")
 
     if record:
-        with open(f"./tests/notifications/testdata/{name}.html", "w") as f:
-            f.write(expected)
-            return
+        await asyncio.to_thread(testdata_path.write_text, expected, encoding="utf-8")
+        return
     else:
-        with open(f"./tests/notifications/testdata/{name}.html") as f:
-            content = f.read()
+        content = await asyncio.to_thread(testdata_path.read_text, encoding="utf-8")
 
     assert content == expected
 

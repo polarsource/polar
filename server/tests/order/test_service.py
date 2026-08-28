@@ -3654,6 +3654,68 @@ class TestHandlePayment:
         )
         assert updated_order.tax_processor == TaxProcessor.numeral
 
+    async def test_past_due_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+
+        result = await order_service.handle_payment(session, order, None)
+
+        assert result is order
+        assert result.status == OrderStatus.paid
+        assert subscription.status == SubscriptionStatus.active
+
+    async def test_past_due_subscription_other_dunning(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+        )
+        _past_order_dunning = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now() + timedelta(days=1),
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+
+        result = await order_service.handle_payment(session, order, None)
+
+        assert result is order
+        assert result.status == OrderStatus.paid
+        assert subscription.status == SubscriptionStatus.past_due
+
 
 @pytest.mark.asyncio
 class TestHandlePaymentFailure:
@@ -5173,6 +5235,7 @@ class TestTriggerPayment:
         "error_message",
         [
             "This PaymentMethod requires a mandate",
+            "You must provide a mandate for off-session card payments made with cards issued in India.",
             "The payment method has been detached from a customer",
             "The payment method does not belong to the customer",
         ],

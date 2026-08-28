@@ -20,6 +20,11 @@ locals {
   cpu    = var.profile != null ? local.profiles[var.profile].cpu : var.cpu
   memory = var.profile != null ? local.profiles[var.profile].memory : var.memory
 
+  secret_arns = concat(
+    values(var.secrets),
+    var.logfire == null ? [] : [aws_secretsmanager_secret.logfire_header[0].arn],
+  )
+
   fargate_memory_by_cpu = {
     "256"   = [512, 1024, 2048]
     "512"   = range(1024, 4097, 1024)
@@ -76,17 +81,29 @@ resource "aws_iam_role_policy" "repository_credentials" {
   policy = data.aws_iam_policy_document.repository_credentials[0].json
 }
 
+resource "aws_secretsmanager_secret" "logfire_header" {
+  count = var.logfire == null ? 0 : 1
+  name  = "${local.full_name}-logfire-header"
+  tags  = var.tags
+}
+
+resource "aws_secretsmanager_secret_version" "logfire_header" {
+  count         = var.logfire == null ? 0 : 1
+  secret_id     = aws_secretsmanager_secret.logfire_header[0].id
+  secret_string = "Authorization ${var.logfire.token}"
+}
+
 data "aws_iam_policy_document" "secrets" {
-  count = length(var.secrets) == 0 ? 0 : 1
+  count = length(local.secret_arns) == 0 ? 0 : 1
 
   statement {
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = values(var.secrets)
+    resources = local.secret_arns
   }
 }
 
 resource "aws_iam_role_policy" "secrets" {
-  count  = length(var.secrets) == 0 ? 0 : 1
+  count  = length(local.secret_arns) == 0 ? 0 : 1
   name   = "secrets"
   role   = aws_iam_role.execution.id
   policy = data.aws_iam_policy_document.secrets[0].json
@@ -102,38 +119,80 @@ resource "aws_ecs_task_definition" "this" {
   task_role_arn            = var.task_role_arn
   tags                     = var.tags
 
-  container_definitions = jsonencode([
-    merge(
+  container_definitions = jsonencode(concat(
+    [
+      merge(
+        {
+          name      = local.full_name
+          image     = var.image
+          essential = true
+          command   = var.command
+          environment = [
+            for key, value in var.environment_variables : { name = key, value = value }
+          ]
+          portMappings = var.container_port == null ? [] : [
+            { containerPort = var.container_port, protocol = "tcp" }
+          ]
+          logConfiguration = merge(
+            {
+              logDriver = var.logfire == null ? "awslogs" : "awsfirelens"
+              options = var.logfire == null ? {
+                "awslogs-group"         = aws_cloudwatch_log_group.this.name
+                "awslogs-region"        = data.aws_region.current.region
+                "awslogs-stream-prefix" = local.full_name
+                } : {
+                Name                     = "opentelemetry"
+                host                     = var.logfire.host
+                port                     = "443"
+                tls                      = "on"
+                "tls.verify"             = "on"
+                logs_uri                 = "/v1/logs"
+                compress                 = "gzip"
+                logs_body_key            = "log"
+                logs_body_key_attributes = "true"
+              }
+            },
+            var.logfire == null ? {} : {
+              secretOptions = [
+                { name = "header", valueFrom = aws_secretsmanager_secret.logfire_header[0].arn }
+              ]
+            },
+          )
+        },
+        var.repository_credentials == null ? {} : {
+          repositoryCredentials = { credentialsParameter = var.repository_credentials.arn }
+        },
+        length(var.secrets) == 0 ? {} : {
+          secrets = [for name, arn in var.secrets : { name = name, valueFrom = arn }]
+        },
+      )
+    ],
+    var.logfire == null ? [] : [
       {
-        name      = local.full_name
-        image     = var.image
-        essential = true
-        command   = var.command
-        environment = [
-          for key, value in var.environment_variables : { name = key, value = value }
-        ]
-        portMappings = var.container_port == null ? [] : [
-          { containerPort = var.container_port, protocol = "tcp" }
-        ]
+        name              = "log-router"
+        image             = var.logfire.router_image
+        essential         = true
+        memoryReservation = 51
+        user              = "0"
+        firelensConfiguration = {
+          type    = "fluentbit"
+          options = { "enable-ecs-log-metadata" = "true" }
+        }
         logConfiguration = {
           logDriver = "awslogs"
           options = {
             "awslogs-group"         = aws_cloudwatch_log_group.this.name
-            "awslogs-region"        = data.aws_region.current.name
-            "awslogs-stream-prefix" = local.full_name
+            "awslogs-region"        = data.aws_region.current.region
+            "awslogs-stream-prefix" = "firelens"
           }
         }
-      },
-      var.repository_credentials == null ? {} : {
-        repositoryCredentials = { credentialsParameter = var.repository_credentials.arn }
-      },
-      length(var.secrets) == 0 ? {} : {
-        secrets = [for name, arn in var.secrets : { name = name, valueFrom = arn }]
-      },
-    )
-  ])
+      }
+    ],
+  ))
 
   lifecycle {
+    replace_triggered_by = [aws_secretsmanager_secret_version.logfire_header]
+
     precondition {
       condition     = alltrue([for n in local.aws_names : length(n.value) <= n.max])
       error_message = "Name over its AWS length limit: ${join(", ", [for key, n in local.aws_names : "${key} \"${n.value}\" (${length(n.value)} > ${n.max})" if length(n.value) > n.max])}."

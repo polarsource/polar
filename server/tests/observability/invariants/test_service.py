@@ -1,3 +1,6 @@
+import uuid
+from decimal import Decimal
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -19,6 +22,17 @@ class _ProductionOnlyInvariant(Invariant):
 
     async def check(self) -> None:
         raise InvariantError(type(self), "always fails")
+
+
+class _DecimalContextInvariant(Invariant):
+    ENVIRONMENTS = None
+
+    async def check(self) -> None:
+        raise InvariantError(
+            type(self),
+            "always fails",
+            {"differences": [Decimal(1234)], "ids": [uuid.uuid4()]},
+        )
 
 
 @pytest.mark.asyncio
@@ -57,3 +71,20 @@ async def test_runs_invariant_with_no_environment_restriction(
     await invariant_service.check(session, _AllEnvironmentsInvariant)
 
     check_spy.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_notifies_when_context_is_not_natively_serializable(
+    session: AsyncSession, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(settings, "ENV", Environment.sandbox)
+    mocker.patch.object(settings, "SLACK_BOT_TOKEN", "token")
+    mocker.patch.object(settings, "SLACK_CHANNEL", "channel")
+    post_message_mock = mocker.patch.object(
+        invariant_service._slack, "chat_post_message"
+    )
+
+    await invariant_service.check(session, _DecimalContextInvariant)
+
+    post_message_mock.assert_called_once()
+    assert "1234" in str(post_message_mock.call_args.kwargs["blocks"])

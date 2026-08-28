@@ -111,7 +111,7 @@ async def orders_import(
     file: UploadFile,
     *,
     invoice_number_prefix: str = "IMPORTED_",
-) -> AsyncGenerator[tuple[int, int], None]:
+) -> AsyncGenerator[tuple[int, int]]:
     customer_repository = CustomerRepository.from_session(session)
     product_repository = ProductRepository.from_session(session)
     order_repository = OrderRepository.from_session(session)
@@ -375,7 +375,7 @@ async def orders_import_sse(
     file: UploadFile,
     *,
     invoice_number_prefix: str = "IMPORTED_",
-) -> AsyncGenerator[ServerSentEvent, None]:
+) -> AsyncGenerator[ServerSentEvent]:
     """Same as orders_import but yields progress for SSE."""
     try:
         async for progress in orders_import(

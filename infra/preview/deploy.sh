@@ -13,6 +13,8 @@ set -euo pipefail
 CHECKOUT="/srv/polar"
 API_PORT=10000
 FRONTEND_PORT=3000
+SEED_COMPLEMENT_UNIT=polar-seed-simple-complement
+SEED_COMPLEMENT_LOCK=/run/lock/polar-seed-simple-complement.lock
 
 # Read arguments from stdin JSON to avoid shell injection via branch names
 INPUT=$(cat)
@@ -73,6 +75,12 @@ BASE_URL="https://${PREVIEW_HOST}"
 
 log "Deploying branch=${BRANCH} sha=${SHA}"
 
+exec 9>"$SEED_COMPLEMENT_LOCK"
+if ! flock --timeout 900 9; then
+    log "Simple-complement seed did not finish within 15 minutes"
+    exit 1
+fi
+
 PREV_SHA=""
 if [[ -f "${CHECKOUT}/.deployed_sha" ]]; then
     PREV_SHA=$(cat "${CHECKOUT}/.deployed_sha")
@@ -81,6 +89,10 @@ fi
 # --- Git checkout ---
 if ! git -C "$CHECKOUT" fetch origin "$BRANCH" 2>/dev/null; then
     log "Branch no longer exists on remote (PR likely merged), skipping deploy"
+    exit 0
+fi
+if [[ "$(git -C "$CHECKOUT" rev-parse FETCH_HEAD 2>/dev/null || true)" != "$SHA" ]]; then
+    log "Commit ${SHA} is gone from the remote (branch force-pushed), skipping superseded deploy"
     exit 0
 fi
 git -C "$CHECKOUT" checkout -f "$SHA"
@@ -182,19 +194,18 @@ systemctl start redis-server
 log "Running database migrations"
 uv run alembic upgrade head
 
-# --- Seed data (first deploy only) ---
-SEED_MARKER="${CHECKOUT}/server/.seeds_loaded"
-if [[ ! -f "$SEED_MARKER" ]] || [[ "$(cat "${SEED_MARKER}" 2>/dev/null)" != "$(hostname)" ]]; then
-    log "Loading seed data (first deploy)"
-    uv run task seeds_load
-    hostname > "$SEED_MARKER"
-else
-    log "Seed data already loaded, skipping"
-fi
+# --- Readiness-critical seed data ---
+log "Loading readiness-critical seed data"
+uv run task seeds_load --phase simple
 
 # --- Restart services ---
 log "Restarting services"
 systemctl restart polar-backend polar-frontend
+
+# --- Deferred demo and analytics data ---
+systemctl reset-failed "$SEED_COMPLEMENT_UNIT"
+systemctl restart --no-block "$SEED_COMPLEMENT_UNIT"
+log "Simple-complement seed started; status at ${BASE_URL}/_logs/seed"
 
 echo "$SHA" > "${CHECKOUT}/.deployed_sha"
 log "Deployed at ${BASE_URL}"

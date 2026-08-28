@@ -35,7 +35,7 @@ class SearchService:
     def _try_parse_uuid(self, query: str) -> uuid.UUID | None:
         try:
             return uuid.UUID(query.strip())
-        except (ValueError, AttributeError):
+        except ValueError, AttributeError:
             return None
 
     def _has_products_scope(self, auth_subject: AuthSubject[User]) -> bool:

@@ -82,8 +82,7 @@ def _preferred(
     customer: Customer,
     source_method: CanonicalPaymentMethod | None,
 ) -> PaymentMethod:
-    """Ordered by how much each candidate says about what to charge. Any stored
-    method beats nothing: ACH and SEPA migrate too, per `requires_reentry`."""
+    """Prefer the source method's copy, else the customer's default, else the first stored method."""
     if source_method is not None:
         copies = [
             payment_method

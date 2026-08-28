@@ -70,6 +70,32 @@ async def test_get_users_me_embeds_member_permissions_without_admin_scopes(
 
 @pytest.mark.asyncio
 @pytest.mark.auth
+async def test_get_users_me_embeds_finance_permissions(
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+    user_organization: UserOrganization,
+) -> None:
+    user_organization.role = OrganizationRole.finance
+    await save_fixture(user_organization)
+
+    response = await client.get("/v1/users/me")
+
+    assert response.status_code == 200
+    organization = response.json()["organizations"][0]
+    assert organization["role"] == OrganizationRole.finance
+    assert set(organization["permissions"]) == {
+        OrganizationPermission.sales_read,
+        OrganizationPermission.sales_manage,
+        OrganizationPermission.finance_read,
+        OrganizationPermission.customers_read,
+        OrganizationPermission.products_read,
+        OrganizationPermission.custom_fields_read,
+        OrganizationPermission.analytics_read,
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
 async def test_get_users_me_excludes_blocked_organizations(
     client: AsyncClient,
     save_fixture: SaveFixture,

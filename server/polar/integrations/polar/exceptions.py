@@ -32,6 +32,16 @@ class PolarSelfNoActiveSubscription(PolarError):
         self.organization_id = organization_id
 
 
+class PolarSelfPaidSubscriptionAlreadyExists(PolarError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        super().__init__(
+            "This organization already has an active paid subscription. "
+            "Refresh the page to change plans.",
+            status_code=409,
+        )
+        self.organization_id = organization_id
+
+
 class PolarSelfOrderNotFound(PolarError):
     def __init__(self, order_id: str) -> None:
         super().__init__(f"Order {order_id!r} not found.", status_code=404)

@@ -204,8 +204,7 @@ async def benefit_revoke(
                 2025, 2, 23, 11, 0, 0, tzinfo=datetime.UTC
             ):
                 log.info(
-                    "Old task message encountered for non-existent benefit; skipping.",
-                    "Should not happen after 2025-02-23",
+                    "Old task message encountered for non-existent benefit; skipping. Should not happen after 2025-02-23",
                     benefit_id=str(benefit_id),
                 )
                 return

@@ -587,38 +587,6 @@ class TestExportOrders:
 
 
 @pytest.mark.asyncio
-class TesGetOrdersStatistics:
-    async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get("/v1/orders/statistics")
-
-        assert response.status_code == 401
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.orders_read}),
-    )
-    async def test_user_valid(
-        self, client: AsyncClient, user_organization: UserOrganization
-    ) -> None:
-        response = await client.get("/v1/orders/statistics")
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert len(json["periods"]) == 12
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.orders_read}),
-    )
-    async def test_organization(self, client: AsyncClient) -> None:
-        response = await client.get("/v1/orders/statistics")
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert len(json["periods"]) == 12
-
-
-@pytest.mark.asyncio
 class TestUpdateOrder:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/orders/{uuid.uuid4()}")

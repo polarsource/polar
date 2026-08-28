@@ -23,6 +23,7 @@ from polar.license_key.schemas import (
     UnauthorizedResponse,
     ValidatedLicenseKey,
 )
+from polar.license_key.service import ROTATABLE_STATUSES, RotateNotPermitted
 from polar.license_key.service import license_key as license_key_service
 from polar.models import LicenseKey, LicenseKeyActivation
 from polar.openapi import APITag
@@ -32,6 +33,14 @@ from polar.routing import APIRouter
 from .. import auth
 
 router = APIRouter(prefix="/license-keys", tags=["license_keys", APITag.public])
+
+RotateNotPermittedResponse = {
+    "description": (
+        "License key cannot be rotated in its current status. "
+        f"Allowed statuses: {', '.join(sorted(s.value for s in ROTATABLE_STATUSES))}."
+    ),
+    "model": RotateNotPermitted.schema(),
+}
 
 ACTIVATE_LICENSE_KEY_MINTLIFY_CONTENT = dedent(
     """
@@ -98,6 +107,34 @@ async def get(
         ret.activations = []
 
     return ret
+
+
+@router.post(
+    "/{id}/rotate",
+    summary="Rotate License Key",
+    response_model=LicenseKeyRead,
+    responses={
+        400: RotateNotPermittedResponse,
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
+    },
+)
+async def rotate(
+    auth_subject: auth.CustomerPortalUnionWrite,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> LicenseKey:
+    """Rotate a license key.
+
+    Generates a new key string for the same license key record. The previous
+    key string immediately stops validating. Status, usage, limits, expiry,
+    and activations are preserved.
+    """
+    lk = await license_key_service.get_customer_license_key(session, auth_subject, id)
+    if not lk:
+        raise ResourceNotFound()
+
+    return await license_key_service.rotate(session, license_key=lk)
 
 
 @router.post(

@@ -1,9 +1,15 @@
 'use client'
 
+import { BulkActionBar } from '@/components/BulkActions/BulkActionBar'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
+import {
+  BulkArchiveAction,
+  BulkArchiveProductsModal,
+} from '@/components/Products/BulkArchiveProductsModal'
 import { ProductListItem } from '@/components/Products/ProductListItem'
 import { useProducts } from '@/hooks/queries/products'
+import { useSelection } from '@/hooks/useSelection'
 import { useDebouncedCallback } from '@/hooks/utils'
 import {
   DataTablePaginationState,
@@ -25,11 +31,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 export default function ClientPage({
   organization: org,
@@ -131,74 +138,138 @@ export default function ClientPage({
     is_archived: show === 'all' ? null : show === 'active' ? false : true,
   })
 
+  const items = useMemo(
+    () =>
+      [...(products.data?.items ?? [])].sort(
+        (a, b) => Number(a.is_archived) - Number(b.is_archived),
+      ),
+    [products.data],
+  )
+
+  const selection = useSelection({
+    items,
+    getId: (product) => product.id,
+    resetKey: `${query ?? ''}|${show}`,
+  })
+
+  const activeSelected = selection.selected.filter(
+    (product) => !product.is_archived,
+  )
+  const archivedSelected = selection.selected.filter(
+    (product) => product.is_archived,
+  )
+
+  const [confirmingAction, setConfirmingAction] =
+    useState<BulkArchiveAction | null>(null)
+
+  const isMixedSelection =
+    activeSelected.length > 0 && archivedSelected.length > 0
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-8">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <Input
-              className="w-full md:max-w-64"
-              preSlot={<Search fontSize="small" />}
-              placeholder="Search Products"
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-            />
-            <Select value={show} onValueChange={setShow}>
-              <SelectTrigger className="w-full md:max-w-fit">
-                <SelectValue placeholder="Show archived products" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={currentSortingValue} onValueChange={onSortingChange}>
-              <SelectTrigger className="w-full md:max-w-fit">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">Name A-Z</SelectItem>
-                <SelectItem value="-name">Name Z-A</SelectItem>
-                <SelectItem value="-created_at">Newest</SelectItem>
-                <SelectItem value="created_at">Oldest</SelectItem>
-                <SelectItem value="price_amount">Price: Low to High</SelectItem>
-                <SelectItem value="-price_amount">
-                  Price: High to Low
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {(products.data?.pagination.total_count ?? 0) > 20 && (
+        {selection.count > 0 ? (
+          <BulkActionBar
+            stretch
+            count={selection.count}
+            pageSelectedCount={selection.pageSelectedCount}
+            pageSize={selection.pageSize}
+            onPageSelectedChange={selection.setPageSelected}
+            onClear={selection.clear}
+          >
+            <Box alignItems="center" columnGap="s">
+              {activeSelected.length > 0 && (
+                <Button
+                  variant="destructive"
+                  onClick={() => setConfirmingAction('archive')}
+                >
+                  Archive
+                  {isMixedSelection ? ` (${activeSelected.length})` : ''}
+                </Button>
+              )}
+              {archivedSelected.length > 0 && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setConfirmingAction('unarchive')}
+                >
+                  Unarchive
+                  {isMixedSelection ? ` (${archivedSelected.length})` : ''}
+                </Button>
+              )}
+            </Box>
+          </BulkActionBar>
+        ) : (
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <Input
+                className="w-full md:max-w-64"
+                preSlot={<Search fontSize="small" />}
+                placeholder="Search Products"
+                value={query}
+                onChange={(e) => onQueryChange(e.target.value)}
+              />
+              <Select value={show} onValueChange={setShow}>
+                <SelectTrigger className="w-full md:max-w-fit">
+                  <SelectValue placeholder="Show archived products" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
               <Select
-                value={pagination.pageSize.toString()}
-                onValueChange={onLimitChange}
+                value={currentSortingValue}
+                onValueChange={onSortingChange}
               >
                 <SelectTrigger className="w-full md:max-w-fit">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="20">Show 20</SelectItem>
-                  <SelectItem value="50">Show 50</SelectItem>
-                  <SelectItem value="100">Show 100</SelectItem>
+                  <SelectItem value="name">Name A-Z</SelectItem>
+                  <SelectItem value="-name">Name Z-A</SelectItem>
+                  <SelectItem value="-created_at">Newest</SelectItem>
+                  <SelectItem value="created_at">Oldest</SelectItem>
+                  <SelectItem value="price_amount">
+                    Price: Low to High
+                  </SelectItem>
+                  <SelectItem value="-price_amount">
+                    Price: High to Low
+                  </SelectItem>
                 </SelectContent>
               </Select>
-            )}
-          </div>
-          <Link
-            href={`/dashboard/${org.slug}/products/new`}
-            className="w-full md:w-fit"
-          >
-            <Button
-              role="link"
-              wrapperClassNames="gap-x-2 md:w-fit"
-              className="w-full"
+              {(products.data?.pagination.total_count ?? 0) > 20 && (
+                <Select
+                  value={pagination.pageSize.toString()}
+                  onValueChange={onLimitChange}
+                >
+                  <SelectTrigger className="w-full md:max-w-fit">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="20">Show 20</SelectItem>
+                    <SelectItem value="50">Show 50</SelectItem>
+                    <SelectItem value="100">Show 100</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <Link
+              href={`/dashboard/${org.slug}/products/new`}
+              className="w-full md:w-fit"
             >
-              <AddOutlined className="h-4 w-4" />
-              <span>New Product</span>
-            </Button>
-          </Link>
-        </div>
-        {products.data && products.data.items.length > 0 ? (
+              <Button
+                role="link"
+                wrapperClassNames="gap-x-2 md:w-fit"
+                className="w-full"
+              >
+                <AddOutlined className="h-4 w-4" />
+                <span>New Product</span>
+              </Button>
+            </Link>
+          </div>
+        )}
+        {items.length > 0 ? (
           <Pagination
             currentPage={pagination.pageIndex + 1}
             pageSize={pagination.pageSize}
@@ -207,19 +278,19 @@ export default function ClientPage({
             onPageChange={onPageChange}
           >
             <List size="small">
-              {products.data.items
-                .sort((a, b) => {
-                  if (a.is_archived === b.is_archived) return 0
-                  return a.is_archived ? 1 : -1
-                })
-                .map((product) => (
-                  <ProductListItem
-                    key={product.id}
-                    organization={org}
-                    product={product}
-                    currency={org.default_presentment_currency}
-                  />
-                ))}
+              {items.map((product) => (
+                <ProductListItem
+                  key={product.id}
+                  organization={org}
+                  product={product}
+                  currency={org.default_presentment_currency}
+                  checked={selection.isSelected(product)}
+                  onCheckedChange={(_, event) =>
+                    selection.toggle(product, { shiftKey: event.shiftKey })
+                  }
+                  checkboxVisible={selection.count > 0}
+                />
+              ))}
             </List>
           </Pagination>
         ) : (
@@ -244,6 +315,16 @@ export default function ClientPage({
           </ShadowBoxOnMd>
         )}
       </div>
+      {confirmingAction ? (
+        <BulkArchiveProductsModal
+          action={confirmingAction}
+          products={
+            confirmingAction === 'archive' ? activeSelected : archivedSelected
+          }
+          hide={() => setConfirmingAction(null)}
+          onComplete={selection.clear}
+        />
+      ) : null}
     </DashboardBody>
   )
 }

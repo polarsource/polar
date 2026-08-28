@@ -66,6 +66,7 @@
             "pages": [
               "engineering/backend-development/authorization",
               "engineering/backend-development/rest-api-guidelines",
+              "engineering/backend-development/api-versioning",
               "engineering/backend-development/task-debouncer",
               "engineering/backend-development/operational-errors",
               "engineering/backend-development/metadata",
@@ -90,7 +91,8 @@
               "engineering/design-documents/api-versioning",
               "engineering/design-documents/payout-reviews",
               "engineering/design-documents/secrets-encryption",
-              "engineering/design-documents/merchant-migrations"
+              "engineering/design-documents/merchant-migrations",
+              "engineering/design-documents/tasks-on–lambda"
             ]
           },
           {

@@ -34,7 +34,6 @@ from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.http import get_ip_address, get_safe_return_url
-from polar.models import UserSession as UserSession
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -332,7 +331,6 @@ async def totp_enable(
         raise PolarAuthError("TOTP factor already enabled", 409) from e
     except InvalidTOTPCodeException as e:
         raise PolarAuthError("Invalid TOTP code", 403) from e
-    return None
 
 
 @router.delete(
@@ -355,8 +353,6 @@ async def totp_delete(
     backup_codes_enrollment = await backup_codes_factor.get_enrollment(user.id)
     if backup_codes_enrollment is not None:
         await backup_codes_factor.delete(backup_codes_enrollment)
-
-    return None
 
 
 @router.post("/totp/verify")

@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+)
 from polar.v2026_04.errors import (
     HTTPValidationError,
 )
@@ -19,17 +24,23 @@ class CustomerSessionsSync(SyncServiceBase):
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSessionCustomerIDCreate],
     ) -> CustomerSession: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSessionCustomerExternalIDCreate],
     ) -> CustomerSession: ...
 
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> CustomerSession:
         """
@@ -41,6 +52,8 @@ class CustomerSessionsSync(SyncServiceBase):
         **Scopes**: `customer_sessions:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -54,6 +67,7 @@ class CustomerSessionsSync(SyncServiceBase):
             url="/v1/customer-sessions/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -67,17 +81,23 @@ class CustomerSessionsAsync(AsyncServiceBase):
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSessionCustomerIDCreate],
     ) -> CustomerSession: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSessionCustomerExternalIDCreate],
     ) -> CustomerSession: ...
 
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> CustomerSession:
         """
@@ -89,6 +109,8 @@ class CustomerSessionsAsync(AsyncServiceBase):
         **Scopes**: `customer_sessions:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -102,6 +124,7 @@ class CustomerSessionsAsync(AsyncServiceBase):
             url="/v1/customer-sessions/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

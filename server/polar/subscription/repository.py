@@ -111,6 +111,20 @@ class SubscriptionRepository(
         )
         return await self.get_all(statement)
 
+    async def list_payable_by_customer(
+        self, customer_id: UUID, *, options: Options = ()
+    ) -> Sequence[Subscription]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.customer_id == customer_id,
+                Subscription.requires_payment_method,
+                Subscription.ended_at.is_(None),
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
     async def list_requiring_payment_method(
         self, payment_method_id: UUID, *, options: Options = ()
     ) -> Sequence[Subscription]:
@@ -801,6 +815,8 @@ class SubscriptionUpdateRepository(
             existing.new_cycle_end = object.new_cycle_end
         if object.seats is not None:
             existing.seats = object.seats
+        if object.units is not None:
+            existing.units = object.units
         if object.discount is not None or object.discount_unset:
             existing.discount_unset = object.discount_unset
             existing.discount = object.discount

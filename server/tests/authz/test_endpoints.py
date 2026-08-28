@@ -69,6 +69,23 @@ class TestPolicyGuardGetAccount:
         assert response.status_code == 200
 
     @pytest.mark.auth
+    async def test_finance_returns_200(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        user_organization.role = OrganizationRole.finance
+        organization.account = await create_account(save_fixture, user=user)
+        await save_fixture(user_organization)
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
+        assert response.status_code == 200
+
+    @pytest.mark.auth
     async def test_blocked_org_returns_404(
         self,
         client: AsyncClient,

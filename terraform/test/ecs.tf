@@ -41,7 +41,11 @@ module "pgbouncer_aws" {
 
   client_security_group_ids  = [aws_security_group.lambda[0].id]
   permissions_boundary_arn   = data.aws_iam_policy.permission_boundary.arn
-  repository_credentials_arn = aws_secretsmanager_secret_version.ghcr_pull[0].arn
+  repository_credentials_arn = aws_secretsmanager_secret.ghcr_pull[0].arn
+
+  logfire = {
+    token = var.logfire_token
+  }
 
   database = {
     host     = local.db_external_host
@@ -49,4 +53,6 @@ module "pgbouncer_aws" {
     user     = local.db_user
     password = local.db_password
   }
+
+  depends_on = [aws_secretsmanager_secret_version.ghcr_pull]
 }

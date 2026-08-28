@@ -14,7 +14,11 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.customer import CustomerType
-from polar.payment_method.schemas import PaymentMethodCard, PaymentMethodGeneric
+from polar.payment_method.schemas import (
+    PaymentMethodCard,
+    PaymentMethodGeneric,
+    PaymentMethodKrCard,
+)
 from polar.tax.tax_id import TaxID
 
 
@@ -44,7 +48,7 @@ class CustomerPortalCustomerUpdate(Schema):
 
 
 CustomerPaymentMethod = Annotated[
-    PaymentMethodCard | PaymentMethodGeneric,
+    PaymentMethodCard | PaymentMethodKrCard | PaymentMethodGeneric,
     SetSchemaReference("CustomerPaymentMethod"),
     MergeJSONSchema({"title": "CustomerPaymentMethod"}),
     ClassName("CustomerPaymentMethod"),

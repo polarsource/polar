@@ -1,18 +1,19 @@
-import { Column } from '@tanstack/react-table'
+import { RowData } from '@tanstack/react-table'
 
 import { MoveDown, MoveUp } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import { Button } from '../Button'
+import { DataTableColumn } from './features'
 
 interface DataTableColumnHeaderProps<
-  TData,
+  TData extends RowData,
   TValue,
 > extends React.HTMLAttributes<HTMLDivElement> {
-  column: Column<TData, TValue>
+  column: DataTableColumn<TData, TValue>
   title: string
 }
 
-export function DataTableColumnHeader<TData, TValue>({
+export function DataTableColumnHeader<TData extends RowData, TValue>({
   column,
   title,
   className,

@@ -1,0 +1,21 @@
+[Unit]
+Description=Polar Preview Simple-Complement Seed
+After=network.target redis-server.service tailscaled.service
+Wants=redis-server.service tailscaled.service
+ConditionPathExists=/srv/polar/server/.env
+StartLimitIntervalSec=infinity
+StartLimitBurst=4
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/polar/server
+EnvironmentFile=/srv/polar/server/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/flock --exclusive --no-fork /run/lock/polar-seed-simple-complement.lock /usr/local/bin/uv run task seeds_load --phase simple-complement
+Restart=on-failure
+RestartSec=15
+TimeoutStartSec=15min
+RemainAfterExit=yes
+
+MemoryMax=2G
+CPUQuota=200%

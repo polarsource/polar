@@ -23,6 +23,9 @@ from .base import BaseTransactionService, BaseTransactionServiceError
 log: Logger = structlog.get_logger()
 
 
+INTERNATIONAL_CARD_PAYMENT_METHOD_TYPES: frozenset[str] = frozenset({"kr_card"})
+
+
 class PlatformFeeTransactionError(BaseTransactionServiceError): ...
 
 
@@ -175,8 +178,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
         account = await account_repository.get_by_id(incoming.account_id)
         assert account is not None
 
-        if incoming.payment_transaction_id is None:
-            raise
+        assert incoming.payment_transaction_id is not None
 
         payment_transaction = await self.get(session, incoming.payment_transaction_id)
         assert payment_transaction is not None
@@ -198,20 +200,19 @@ class PlatformFeeTransactionService(BaseTransactionService):
             fees_balances.append(fee_balances)
 
         # International fee
-        if account.processor_fees_applicable:
-            if await self._is_international_payment_transaction(payment_transaction):
-                international_fee_amount = get_stripe_international_fee(total_amount)
-                fee_balances = (
-                    await balance_transaction_service.create_reversal_balance(
-                        session,
-                        balance_transactions=balance_transactions,
-                        amount=international_fee_amount,
-                        platform_fee_type=PlatformFeeType.international_payment,
-                        outgoing_incurred_by=incoming,
-                        incoming_incurred_by=outgoing,
-                    )
-                )
-                fees_balances.append(fee_balances)
+        if account.processor_fees_applicable and (
+            await self._is_international_payment_transaction(payment_transaction)
+        ):
+            international_fee_amount = get_stripe_international_fee(total_amount)
+            fee_balances = await balance_transaction_service.create_reversal_balance(
+                session,
+                balance_transactions=balance_transactions,
+                amount=international_fee_amount,
+                platform_fee_type=PlatformFeeType.international_payment,
+                outgoing_incurred_by=incoming,
+                incoming_incurred_by=outgoing,
+            )
+            fees_balances.append(fee_balances)
 
         # Subscription fee
         if incoming.order_id is not None:
@@ -290,10 +291,13 @@ class PlatformFeeTransactionService(BaseTransactionService):
         self, payment_transaction: Transaction
     ) -> bool:
         """
-        Check if the payment transaction is an international payment.
+        Check if the payment transaction is an international payment, i.e.
+        paid with a card issued outside the US.
 
-        Currently, we only check if the payment was made using Stripe
-        and the card is not from the US.
+        For Stripe card and Link payments, we check the card's country. Card
+        methods that only exist outside the US, like South Korean cards, are
+        always international. Non-card methods are never international: the
+        fee only applies to cards.
         """
         if payment_transaction.processor != Processor.stripe:
             return False
@@ -318,7 +322,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
         ):
             return payment_method_details.link.country != "US"
 
-        return False
+        return payment_method_details.type in INTERNATIONAL_CARD_PAYMENT_METHOD_TYPES
 
     async def _get_last_payout(
         self, session: AsyncSession, account: Account

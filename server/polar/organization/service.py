@@ -287,9 +287,9 @@ class OrganizationService:
         *,
         slug: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[OrganizationSortProperty]] = [
-            (OrganizationSortProperty.created_at, False)
-        ],
+        sorting: Sequence[Sorting[OrganizationSortProperty]] = (
+            (OrganizationSortProperty.created_at, False),
+        ),
     ) -> tuple[Sequence[Organization], int]:
         repository = OrganizationRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
@@ -1243,14 +1243,11 @@ class OrganizationService:
 
         organization_repository = OrganizationRepository.from_session(session)
         owner_user = await organization_repository.get_owner_user(organization)
-        if (
+        return not (
             owner_user is None
             or owner_user.identity_verification_status
             != IdentityVerificationStatus.verified
-        ):
-            return False
-
-        return True
+        )
 
     async def maybe_activate(
         self, session: AsyncSession, organization: Organization

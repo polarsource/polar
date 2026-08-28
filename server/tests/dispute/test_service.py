@@ -1236,6 +1236,145 @@ class TestUpsertFromChargebackStop:
         assert dispute.order == order
         assert dispute.payment == payment
 
+    async def test_prevented_cancels_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            subtotal_amount=1000,
+            tax_amount=200,
+        )
+        charge_id = "STRIPE_CHARGE_ID"
+        payment_intent_id = "STRIPE_PAYMENT_INTENT_ID"
+        await create_payment(
+            save_fixture, organization, amount=1200, order=order, processor_id=charge_id
+        )
+        payment_intent = build_stripe_payment_intent(
+            id=payment_intent_id, latest_charge=charge_id
+        )
+        mocker.patch(
+            "polar.dispute.service.stripe_service.get_payment_intent",
+            return_value=payment_intent,
+        )
+
+        alert = build_chargeback_stop_alert(
+            integration_transaction_id=payment_intent_id,
+            transaction_refund_outcome="REFUNDED",
+            transaction_amount_in_cents=1200,
+            transaction_currency_code="USD",
+        )
+
+        dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+
+        assert dispute.status == DisputeStatus.prevented
+        assert subscription.status == "canceled"
+
+    async def test_prevented_revokes_benefits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        product_one_time: Product,
+        benefit_grant_service_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time,
+            subtotal_amount=1000,
+            tax_amount=200,
+        )
+        charge_id = "STRIPE_CHARGE_ID"
+        payment_intent_id = "STRIPE_PAYMENT_INTENT_ID"
+        await create_payment(
+            save_fixture, organization, amount=1200, order=order, processor_id=charge_id
+        )
+        payment_intent = build_stripe_payment_intent(
+            id=payment_intent_id, latest_charge=charge_id
+        )
+        mocker.patch(
+            "polar.dispute.service.stripe_service.get_payment_intent",
+            return_value=payment_intent,
+        )
+
+        alert = build_chargeback_stop_alert(
+            integration_transaction_id=payment_intent_id,
+            transaction_refund_outcome="REFUNDED",
+            transaction_amount_in_cents=1200,
+            transaction_currency_code="USD",
+        )
+
+        dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+
+        assert dispute.status == DisputeStatus.prevented
+        benefit_grant_service_mock.enqueue_benefits_grants.assert_awaited_once_with(
+            session,
+            task="revoke",
+            customer=customer,
+            product=product_one_time,
+            order=order,
+        )
+
+    async def test_already_prevented_does_not_revoke_again(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        payment_intent_id = "STRIPE_PAYMENT_INTENT_ID"
+        payment = await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            status=DisputeStatus.prevented,
+            alert_processor=DisputeAlertProcessor.chargeback_stop,
+            alert_processor_id="CHARGEBACK_STOP_ALERT_ID",
+        )
+        payment_intent = build_stripe_payment_intent(
+            id=payment_intent_id, latest_charge=charge_id
+        )
+        mocker.patch(
+            "polar.dispute.service.stripe_service.get_payment_intent",
+            return_value=payment_intent,
+        )
+        revoke_mock = mocker.patch.object(
+            dispute_service, "_revoke", new_callable=AsyncMock
+        )
+
+        alert = build_chargeback_stop_alert(
+            id="CHARGEBACK_STOP_ALERT_ID",
+            integration_transaction_id=payment_intent_id,
+            transaction_refund_outcome="REFUNDED",
+        )
+
+        updated_dispute = await dispute_service.upsert_from_chargeback_stop(
+            session, alert
+        )
+
+        assert updated_dispute.status == DisputeStatus.prevented
+        revoke_mock.assert_not_awaited()
+
     async def test_update_existing_dispute(
         self,
         save_fixture: SaveFixture,

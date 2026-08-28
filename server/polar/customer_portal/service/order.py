@@ -73,9 +73,9 @@ class CustomerOrderService:
         subscription_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerOrderSortProperty]] = [
-            (CustomerOrderSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[CustomerOrderSortProperty]] = (
+            (CustomerOrderSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Order], int]:
         repository = CustomerOrderRepository.from_session(session)
         statement = (

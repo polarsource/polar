@@ -35,7 +35,7 @@ from tests.e2e.infra import (
     TaskDrain,
 )
 from tests.e2e.infra.email_capture import create_email_sender_mock
-from tests.e2e.infra.external_mocks import *  # noqa: F403 — autouse mock fixtures
+from tests.e2e.infra.external_mocks import *
 from tests.e2e.infra.task_drain import build_actor_registry
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture

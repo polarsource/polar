@@ -152,7 +152,7 @@ class StripeAdapter:
             params={
                 "active": True,
                 "limit": PAGE_SIZE,
-                "expand": ["data.product"],
+                "expand": ["data.product", "data.currency_options"],
             }
         )
         async for price in prices.auto_paging_iter():
@@ -176,7 +176,7 @@ class StripeAdapter:
                     prices=[],
                 )
                 grouped[key] = canonical
-            canonical.prices.append(self._map_price(price))
+            canonical.prices.extend(self._map_prices(price))
         for canonical in grouped.values():
             yield canonical
 
@@ -243,13 +243,20 @@ class StripeAdapter:
             return e.code == "resource_missing"
         return subscription.status == "canceled"
 
-    def _map_price(self, price: stripe_lib.Price) -> CanonicalPrice:
-        return CanonicalPrice(
-            source_id=price.id,
-            currency=price.currency,
-            amount=price.unit_amount,
-            pricing_scheme=self._map_pricing_scheme(price),
-        )
+    def _map_prices(self, price: stripe_lib.Price) -> list[CanonicalPrice]:
+        pricing_scheme = self._map_pricing_scheme(price)
+        amounts: dict[str, int | None] = {price.currency: price.unit_amount}
+        for currency, option in (price.get("currency_options") or {}).items():
+            amounts[currency] = option.get("unit_amount")
+        return [
+            CanonicalPrice(
+                source_id=price.id,
+                currency=currency,
+                amount=amount,
+                pricing_scheme=pricing_scheme,
+            )
+            for currency, amount in amounts.items()
+        ]
 
     def _map_pricing_scheme(self, price: stripe_lib.Price) -> CanonicalPricingScheme:
         if price.billing_scheme == "tiered":
@@ -286,7 +293,13 @@ class StripeAdapter:
             cancel_at_period_end=bool(subscription.cancel_at_period_end),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
+            anchor_day=self._anchor_day(subscription),
+            currency=subscription.currency,
         )
+
+    def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
+        anchor = self._to_datetime(subscription.billing_cycle_anchor)
+        return anchor.day if anchor is not None else None
 
     def _stopped_for_migration(self, subscription: stripe_lib.Subscription) -> bool:
         """Prefix, not the full reference: missing our own cancellation strands a

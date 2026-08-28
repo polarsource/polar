@@ -12,6 +12,11 @@ resource "tfe_variable_set" "sandbox" {
   parent_project_id = data.tfe_project.sandbox.id
 }
 
+resource "tfe_project_variable_set" "global_sandbox" {
+  variable_set_id = tfe_variable_set.global.id
+  project_id      = data.tfe_project.sandbox.id
+}
+
 resource "tfe_variable" "google_client_id_sandbox" {
   key             = "google_client_id_sandbox"
   category        = "terraform"
@@ -507,23 +512,11 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
 }
 
 resource "tfe_variable" "worker_sqs_actors_sandbox" {
-  key         = "worker_sqs_actors"
-  category    = "terraform"
-  description = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox"
-  sensitive   = false
-  value = jsonencode([
-    "dummy",
-    "observability.invariants.enqueue",
-    "observability.invariants.check",
-    "checkout.expire_open_checkouts",
-    "customer.state_changed",
-    "email.send",
-    "external_event.prune",
-    "oauth2_token.delete_expired",
-    "webhook_event.publish",
-    "webhook_event.send",
-    "license_key.sync_benefit_grant",
-  ])
+  key             = "worker_sqs_actors"
+  category        = "terraform"
+  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox, or [\"*\"] for all of them"
+  sensitive       = false
+  value           = jsonencode(["*"])
   variable_set_id = tfe_variable_set.sandbox.id
 }
 
@@ -556,5 +549,13 @@ resource "tfe_variable" "grafana_cloud_aws_external_id_sandbox" {
   value           = "2341705"
   category        = "terraform"
   description     = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "merchant_migration_destination_stripe_account_id_sandbox" {
+  key             = "merchant_migration_destination_stripe_account_id"
+  category        = "terraform"
+  description     = "Stripe account ID merchants copy or import saved cards into for sandbox"
+  sensitive       = false
   variable_set_id = tfe_variable_set.sandbox.id
 }

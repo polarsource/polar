@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import asyncio
 import logging.config
 from functools import wraps
@@ -109,7 +111,7 @@ async def batch_orders_refund(
                             # Commit and flush now since Stripe refund is now processed
                             await session.commit()
                             await job_queue_manager.flush(dramatiq.get_broker(), redis)
-                    except (RefundedAlready, RefundDisputedPayment):
+                    except RefundedAlready, RefundDisputedPayment:
                         pass
                     progress.advance(task)
                 progress.remove_task(task)

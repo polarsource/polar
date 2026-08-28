@@ -7,10 +7,12 @@ from polar.models import Product, ProductPrice
 from .guard import (
     CustomPrice,
     SeatPrice,
+    UnitPrice,
     is_custom_price,
     is_fixed_price,
     is_seat_price,
     is_static_price,
+    is_unit_price,
 )
 
 
@@ -110,6 +112,13 @@ class PriceSet:
                 return price
         return None
 
+    def get_unit_price(self) -> UnitPrice | None:
+        """Return the lone unit-based price in the set, if any."""
+        for price in self.prices:
+            if is_unit_price(price):
+                return price
+        return None
+
     def get_custom_price(self) -> CustomPrice | None:
         """Return the lone custom (pay-what-you-want) price in the set, if any."""
         for price in self.prices:
@@ -123,6 +132,7 @@ def calculate_upfront_amount(
     *,
     custom_amount: int | None,
     seats: int | None,
+    units: int | None = None,
 ) -> int:
     """Sum the upfront amount charged for a checkout across a set of prices.
 
@@ -131,6 +141,7 @@ def calculate_upfront_amount(
     - custom: the buyer-provided ``custom_amount`` (``0`` is honored), falling
       back to the price's preset or minimum when ``None``
     - seat: the amount for ``seats`` seats
+    - unit: the amount for ``units`` units
     - free / metered: nothing upfront
     """
     amount = 0
@@ -150,6 +161,10 @@ def calculate_upfront_amount(
             if seats is None:
                 raise ValueError("seats must be provided to price a seat-based price")
             amount += price.calculate_amount(seats)
+        elif is_unit_price(price):
+            if units is None:
+                raise ValueError("units must be provided to price a unit-based price")
+            amount += price.calculate_amount(units)
     return amount
 
 

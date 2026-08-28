@@ -89,7 +89,7 @@ async def test_for_update_eager_loading(
     assert fetched_checkout.id == checkout.id
     assert fetched_checkout.product is not None
     assert fetched_checkout.product.attached_custom_fields == []
-    for product in fetched_checkout.products:
-        assert product.product_medias == []
+    for fetched_product in fetched_checkout.products:
+        assert fetched_product.product_medias == []
     assert fetched_checkout.discount is not None
     assert fetched_checkout.discount.products == [product]

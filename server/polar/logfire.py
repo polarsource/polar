@@ -74,9 +74,7 @@ def _healthz_matcher(name: str, attributes: "Attributes | None") -> bool:
 
 def _worker_health_matcher(name: str, attributes: "Attributes | None") -> bool:
     lower_name = name.lower()
-    return lower_name.startswith("recording health:") or lower_name.startswith(
-        "health check successful"
-    )
+    return lower_name.startswith(("recording health:", "health check successful"))
 
 
 class LevelSampler(Sampler):
@@ -143,18 +141,28 @@ class PidSpanProcessor(SpanProcessor):
         return True
 
 
+def _detect_platform() -> str | None:
+    if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        return "aws"
+    if os.environ.get("RENDER") or os.environ.get("RENDER_SERVICE_NAME"):
+        return "render"
+    if settings.is_vercel():
+        return "vercel"
+    return None
+
+
 def configure_logfire(service_name: Literal["server", "worker"]) -> None:
     resolved_service_name = os.environ.get(
         "SERVICE_NAME", os.environ.get("RENDER_SERVICE_NAME", service_name)
     )
 
+    resource_attributes: dict[str, str] = {}
+    platform = _detect_platform()
+    if platform is not None:
+        resource_attributes["deployment.platform"] = platform
     render_instance_id = os.environ.get("RENDER_INSTANCE_ID")
     if render_instance_id:
-        existing = os.environ.get("OTEL_RESOURCE_ATTRIBUTES", "")
-        attr = f"service.instance.id={render_instance_id}"
-        os.environ["OTEL_RESOURCE_ATTRIBUTES"] = (
-            f"{existing},{attr}" if existing else attr
-        )
+        resource_attributes["service.instance.id"] = render_instance_id
 
     additional_span_processors: list[SpanProcessor] = [PidSpanProcessor()]
     if settings.S3_LOGS_BUCKET_NAME is not None:
@@ -191,6 +199,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         environment=settings.ENV,
         service_name=resolved_service_name,
         service_version=os.environ.get("RELEASE_VERSION", "development"),
+        resource_attributes=resource_attributes or None,
         inspect_arguments=False,
         code_source=logfire.CodeSource(
             repository="https://github.com/polarsource/polar",

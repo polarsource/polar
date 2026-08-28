@@ -48,13 +48,13 @@ class S3SpanExporter(SpanExporter):
         )
 
     def _scrub_dict(self, d: dict[str, Any]) -> None:
-        for key in d:
+        for key, value in d.items():
             if self._scrub_re and self._scrub_re.search(key):
                 d[key] = REDACTED
-            elif isinstance(d[key], dict):
-                self._scrub_dict(d[key])
-            elif isinstance(d[key], list):
-                for item in d[key]:
+            elif isinstance(value, dict):
+                self._scrub_dict(value)
+            elif isinstance(value, list):
+                for item in value:
                     if isinstance(item, dict):
                         self._scrub_dict(item)
 

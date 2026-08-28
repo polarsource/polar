@@ -12,6 +12,11 @@ resource "tfe_variable_set" "production" {
   parent_project_id = data.tfe_project.production.id
 }
 
+resource "tfe_project_variable_set" "global_production" {
+  variable_set_id = tfe_variable_set.global.id
+  project_id      = data.tfe_project.production.id
+}
+
 resource "tfe_variable" "google_client_id_production" {
   key             = "google_client_id_production"
   category        = "terraform"
@@ -634,5 +639,41 @@ resource "tfe_variable" "grafana_cloud_aws_external_id_production" {
   value           = "2341705"
   category        = "terraform"
   description     = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "grafana_cloud_prometheus_query_key_production" {
+  key             = "grafana_cloud_prometheus_query_key"
+  category        = "terraform"
+  description     = "Grafana Cloud Prometheus Query API Key (read-only)"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "slo_report_slack_bot_token_production" {
+  key             = "slo_report_slack_bot_token"
+  category        = "terraform"
+  description     = "Slack Bot Token for SLO weekly reports"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "slo_report_slack_channel_production" {
+  key             = "slo_report_slack_channel"
+  category        = "terraform"
+  description     = "Slack channel ID for SLO weekly reports"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "merchant_migration_destination_stripe_account_id_production" {
+  key             = "merchant_migration_destination_stripe_account_id"
+  category        = "terraform"
+  description     = "Stripe account ID merchants copy or import saved cards into for production"
+  sensitive       = false
   variable_set_id = tfe_variable_set.production.id
 }

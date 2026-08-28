@@ -197,7 +197,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
                     user_id=str(auth_subject.subject.id),
                     organization_ids=[str(value) for value in result],
                 )
-                result = [sorted(result, key=str)[0]]
+                result = [min(result, key=str)]
 
         return result
 

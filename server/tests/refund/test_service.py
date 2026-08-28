@@ -135,8 +135,10 @@ class StripeRefund:
         order: Order,
         payment: Transaction,
         create_schema: RefundCreate,
-        expected: dict[str, Any] = {},
+        expected: dict[str, Any] | None = None,
     ) -> Response:
+        if expected is None:
+            expected = {}
         response = await self.calculate_and_create(
             client,
             stripe_service_mock,
@@ -633,6 +635,7 @@ class TestCreate(StripeRefund):
 
         assert refund.reason == RefundReason.dispute_prevention
         assert refund.dispute_id == dispute.id
+        assert refund.revoke_benefits is True
 
 
 @pytest.mark.asyncio

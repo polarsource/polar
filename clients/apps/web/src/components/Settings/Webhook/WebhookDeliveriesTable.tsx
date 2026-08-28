@@ -20,11 +20,11 @@ import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {
   DataTable,
+  DataTableCellContext,
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { CellContext } from '@tanstack/react-table'
 import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -233,7 +233,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
 
 export default DeliveriesTable
 
-const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
+const ExpandedRow = (props: DataTableCellContext<DeliveryRow, unknown>) => {
   const { row } = props
 
   const { original: delivery } = row

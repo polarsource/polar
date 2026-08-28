@@ -88,11 +88,11 @@ from polar.subscription.service import (
     BelowMinimumSeats,
     CannotPauseSubscription,
     CannotReinstateSubscription,
-    InactiveSubscription,
     MissingCheckoutCustomer,
     NoScheduledPause,
     NotARecurringProduct,
     NotASeatBasedSubscription,
+    NotBillableSubscription,
     NotPausedSubscription,
     SeatsAlreadyAssigned,
     SubscriptionMeterCycleLag,
@@ -117,6 +117,7 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_product,
     create_product_fixed_and_seat,
+    create_product_unit_based,
     create_subscription,
     create_subscription_with_seats,
     create_trialing_subscription,
@@ -243,7 +244,7 @@ def webhook_service_send_mock(mocker: MockerFixture) -> AsyncMock:
 
 
 @pytest.fixture
-def frozen_time() -> Generator[datetime, None]:
+def frozen_time() -> Generator[datetime]:
     frozen_time = utc_now()
     with freezegun.freeze_time(frozen_time):
         yield frozen_time
@@ -663,6 +664,42 @@ class TestCreateOrUpdateFromCheckout:
                 session, checkout, None
             )
 
+    async def test_new_unit_based(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=2900
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            units=10,
+        )
+
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert created is True
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.units == 10
+        assert subscription.seats is None
+        assert subscription.amount == 10 * 2900
+
+        enqueue_benefits_grants_mock.assert_called_once()
+
     async def test_new_fixed(
         self,
         enqueue_benefits_grants_mock: MagicMock,
@@ -924,6 +961,54 @@ class TestCreateOrUpdateFromCheckout:
             updated_subscription.anchor_day
             == updated_subscription.current_period_start.day
         )
+
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, updated_subscription
+        )
+
+    async def test_upgrade_to_unit_product(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_free_price: Product,
+        organization: Organization,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        unit_product = await create_product_unit_based(
+            save_fixture, organization=organization
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_free_price,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[unit_product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            subscription=subscription,
+            units=3,
+        )
+
+        (
+            updated_subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert created is False
+        assert updated_subscription.product == unit_product
+        assert updated_subscription.units == 3
+        assert updated_subscription.seats is None
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -1288,7 +1373,7 @@ class TestCycle:
             session, updated_subscription, reset_at=cycle_at
         )
 
-    async def test_inactive(
+    async def test_not_billable(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1299,7 +1384,7 @@ class TestCycle:
             save_fixture, product=product, customer=customer
         )
 
-        with pytest.raises(InactiveSubscription):
+        with pytest.raises(NotBillableSubscription):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1491,6 +1576,38 @@ class TestCycle:
         assert second_month_billing_entry.discount == discount
         assert third_month_billing_entry.discount == discount
         assert fourth_month_billing_entry.discount is None
+
+    async def test_past_due_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+            status=SubscriptionStatus.past_due,
+        )
+
+        previous_current_period_end = subscription.current_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.past_due
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
+        assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
 
     @freeze_time("2024-01-15")
     async def test_nth_month_cycle(
@@ -3821,6 +3938,116 @@ class TestResume:
         assert cycle_entries[0].discount is None
 
 
+@pytest.mark.asyncio
+class TestActivateImported:
+    async def test_takes_over_the_cycle_without_charging(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """The customer already paid the old provider for this period."""
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = frozen_time - timedelta(days=10)
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+        period_start = frozen_time - timedelta(days=10)
+        period_end = frozen_time + timedelta(days=20)
+
+        updated = await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=period_start,
+            current_period_end=period_end,
+            trial_end=None,
+            payment_method=payment_method,
+        )
+
+        assert updated.status == SubscriptionStatus.active
+        assert updated.paused_at is None
+        assert updated.current_period_start == period_start
+        assert updated.current_period_end == period_end
+        assert updated.payment_method_id == payment_method.id
+        enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
+        # No order: they already paid for this period.
+        enqueued = [call.args[0] for call in enqueue_job_mock.call_args_list]
+        assert "order.create_subscription_order" not in enqueued
+
+    async def test_does_not_tell_the_customer_anything_resumed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """Nothing paused for them, so a resumed email is the first they'd hear
+        of a migration they shouldn't notice."""
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        reset_hooks(subscription_hooks)
+
+        await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=utc_now(),
+            current_period_end=utc_now() + timedelta(days=30),
+            trial_end=None,
+            payment_method=payment_method,
+        )
+
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
+    async def test_keeps_the_billing_anchor_the_import_captured(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """A month-end schedule reports a clamped period start."""
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.anchor_day = 31
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+
+        updated = await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=datetime(2026, 2, 28, tzinfo=UTC),
+            current_period_end=datetime(2026, 3, 31, tzinfo=UTC),
+            trial_end=None,
+            payment_method=payment_method,
+        )
+
+        assert updated.anchor_day == 31
+
+
 async def create_event_billing_entry(
     save_fixture: SaveFixture,
     *,
@@ -4272,8 +4499,8 @@ class TestList:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         # then
@@ -4300,8 +4527,8 @@ class TestList:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         # then
@@ -4328,8 +4555,8 @@ class TestList:
             save_fixture,
             product=product,
             customer=customer,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            ended_at=datetime(2023, 6, 15, tzinfo=UTC),
         )
 
         # then
@@ -7054,6 +7281,65 @@ class TestUpdatePaymentMethodFromRetry:
 
         # And: Local subscription record is updated
         assert updated_subscription.payment_method == new_payment_method
+
+
+@pytest.mark.asyncio
+class TestUpdatePaymentMethodFromNewDefault:
+    async def test_single_payable_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        old_payment_method = await create_payment_method(save_fixture, customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=old_payment_method,
+        )
+        canceled_subscription = await create_canceled_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_payment_method = await create_payment_method(save_fixture, customer)
+
+        await subscription_service.update_payment_method_from_new_default(
+            session, customer, new_payment_method
+        )
+
+        assert subscription.payment_method == new_payment_method
+        assert canceled_subscription.payment_method_id is None
+
+    async def test_multiple_payable_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        first_payment_method = await create_payment_method(save_fixture, customer)
+        second_payment_method = await create_payment_method(save_fixture, customer)
+        first_subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=first_payment_method,
+        )
+        second_subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=second_payment_method,
+        )
+        new_payment_method = await create_payment_method(save_fixture, customer)
+
+        await subscription_service.update_payment_method_from_new_default(
+            session, customer, new_payment_method
+        )
+
+        assert first_subscription.payment_method_id == first_payment_method.id
+        assert second_subscription.payment_method_id == second_payment_method.id
 
 
 @pytest.mark.asyncio

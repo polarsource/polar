@@ -58,7 +58,7 @@ class FormField:
         required: bool = False,
         description: str | None = None,
         value: Any | None = None,
-        errors: list[ErrorDetails] = [],
+        errors: list[ErrorDetails] | None = None,
     ) -> Generator[None]:
         """Render the form field as HTML.
 
@@ -92,8 +92,6 @@ class SkipField:
         ...     internal_id: Annotated[str, SkipField()]
     """
 
-    ...
-
 
 class InputField(FormField):
     """A standard HTML input field with configurable type and attributes.
@@ -120,7 +118,7 @@ class InputField(FormField):
         required: bool = False,
         description: str | None = None,
         value: Any | None = None,
-        errors: list[ErrorDetails] = [],
+        errors: list[ErrorDetails] | None = None,
     ) -> Generator[None]:
         """Render the input field with label and error handling.
 
@@ -138,6 +136,8 @@ class InputField(FormField):
         Yields:
             None: Context manager yields control for the input field.
         """
+        if errors is None:
+            errors = []
         with tag.label(classes="label", **{"for": id}):
             text(label)
             if required:
@@ -188,7 +188,7 @@ class TextAreaField(FormField):
         required: bool = False,
         description: str | None = None,
         value: Any | None = None,
-        errors: list[ErrorDetails] = [],
+        errors: list[ErrorDetails] | None = None,
     ) -> Generator[None]:
         """Render the textarea field with label and error handling.
 
@@ -206,6 +206,8 @@ class TextAreaField(FormField):
         Yields:
             None: Context manager yields control for the textarea field.
         """
+        if errors is None:
+            errors = []
         with tag.label(classes="label", **{"for": id}):
             text(label)
             if required:
@@ -255,7 +257,7 @@ class CheckboxField(FormField):
         required: bool = False,
         description: str | None = None,
         value: Any | None = None,
-        errors: list[ErrorDetails] = [],
+        errors: list[ErrorDetails] | None = None,
     ) -> Generator[None]:
         """Render the checkbox field with label and error handling.
 
@@ -272,6 +274,8 @@ class CheckboxField(FormField):
         Yields:
             None: Context manager yields control for the checkbox field.
         """
+        if errors is None:
+            errors = []
         with tag.label(classes="label", **{"for": id}):
             with tag.input(
                 id=id,
@@ -317,7 +321,7 @@ class CurrencyField(InputField):
         required: bool = False,
         description: str | None = None,
         value: int | None = None,
-        errors: list[ErrorDetails] = [],
+        errors: list[ErrorDetails] | None = None,
     ) -> Generator[None]:
         """Render the currency field with automatic cent-to-decimal conversion.
 
@@ -334,6 +338,8 @@ class CurrencyField(InputField):
         Yields:
             None: Context manager yields control for the currency field.
         """
+        if errors is None:
+            errors = []
         formatted_value = value / 100 if value is not None else None
         with super().render(
             id,
@@ -382,7 +388,7 @@ class SelectField(FormField):
         required: bool = False,
         description: str | None = None,
         value: str | None = None,
-        errors: list[ErrorDetails] = [],
+        errors: list[ErrorDetails] | None = None,
     ) -> Generator[None]:
         """Render the select field with options and error handling.
 
@@ -400,6 +406,8 @@ class SelectField(FormField):
         Yields:
             None: Context manager yields control for the select field.
         """
+        if errors is None:
+            errors = []
         with tag.legend(classes="label", **{"for": id}):
             text(label)
             if required:
@@ -450,7 +458,7 @@ class SubFormField(FormField):
         required: bool = False,
         description: str | None = None,
         value: Any | None = None,
-        errors: list[ErrorDetails] = [],
+        errors: list[ErrorDetails] | None = None,
     ) -> Generator[None]:
         """Render the sub-form inline with its own fields and validation.
 
@@ -464,6 +472,8 @@ class SubFormField(FormField):
         Yields:
             None: Context manager yields control for the sub-form rendering.
         """
+        if errors is None:
+            errors = []
         with tag.fieldset(classes="fieldset border-base-300 rounded-box border p-4"):
             with tag.legend(classes="fieldset-legend"):
                 text(label)

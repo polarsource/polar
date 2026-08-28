@@ -946,9 +946,9 @@ export interface paths {
      * Set Member Role
      * @description Change a member's role on an organization.
      *
-     *     Only `admin` and `member` are accepted; ownership transfers go through
-     *     a separate flow (today the backoffice `change_owner` endpoint, which
-     *     calls `user_organization_service.transfer_ownership`).
+     *     `admin`, `finance`, and `member` are accepted; ownership transfers go
+     *     through a separate flow (today the backoffice `change_owner` endpoint,
+     *     which calls `user_organization_service.transfer_ownership`).
      *
      *     **Scopes**: `members:write`
      */
@@ -1659,6 +1659,28 @@ export interface paths {
      * @description **Scopes**: `transactions:read`
      */
     get: operations['transactions:search_transactions']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/transactions/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Export Transactions
+     * @description Export transactions as a CSV file.
+     *
+     *     **Scopes**: `transactions:read`
+     */
+    get: operations['transactions:export']
     put?: never
     post?: never
     delete?: never
@@ -3318,6 +3340,32 @@ export interface paths {
     patch: operations['license_keys:update']
     trace?: never
   }
+  '/v1/license-keys/{id}/rotate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Rotate License Key
+     * @description Rotate a license key.
+     *
+     *     Generates a new key string for the same license key record. The previous
+     *     key string immediately stops validating. Status, usage, limits, expiry,
+     *     and activations are preserved.
+     *
+     *     **Scopes**: `license_keys:write`
+     */
+    post: operations['license_keys:rotate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/license-keys/{id}/activations/{activation_id}': {
     parameters: {
       query?: never
@@ -4602,6 +4650,32 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/license-keys/{id}/rotate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Rotate License Key
+     * @description Rotate a license key.
+     *
+     *     Generates a new key string for the same license key record. The previous
+     *     key string immediately stops validating. Status, usage, limits, expiry,
+     *     and activations are preserved.
+     *
+     *     **Scopes**: `customer_portal:write`
+     */
+    post: operations['customer_portal:license_keys:rotate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/license-keys/validate': {
     parameters: {
       query?: never
@@ -5294,6 +5368,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/customer-ids.csv': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Export Merchant Migration Customer IDs
+     * @description One imported Stripe customer ID per row, no header — for Stripe Copy upload.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:export_customer_ids']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/pan-transfer': {
     parameters: {
       query?: never
@@ -5332,6 +5428,30 @@ export interface paths {
      * @description **Scopes**: `organizations:write`
      */
     post: operations['merchant-migrations:complete_pan_transfer_step']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}/cutover': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Merchant Migration Switch
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:get_cutover']
+    put?: never
+    /**
+     * Switch Merchant Migration Subscriptions
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:start_cutover']
     delete?: never
     options?: never
     head?: never
@@ -6192,7 +6312,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * checkout.created
+     * checkout_created
      * @description Sent when a new checkout is created.
      *
      *     **Discord & Slack support:** Basic
@@ -6214,7 +6334,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * checkout.updated
+     * checkout_updated
      * @description Sent when a checkout is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -6236,7 +6356,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * checkout.expired
+     * checkout_expired
      * @description Sent when a checkout expires.
      *
      *     This event fires when a checkout reaches its expiration time without being completed.
@@ -6261,7 +6381,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer.created
+     * customer_created
      * @description Sent when a new customer is created.
      *
      *     A customer can be created:
@@ -6288,7 +6408,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer.updated
+     * customer_updated
      * @description Sent when a customer is updated.
      *
      *     This event is fired when the customer details are updated.
@@ -6314,7 +6434,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer.deleted
+     * customer_deleted
      * @description Sent when a customer is deleted.
      *
      *     **Discord & Slack support:** Basic
@@ -6336,7 +6456,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer.state_changed
+     * customer_state_changed
      * @description Sent when a customer state has changed.
      *
      *     It's triggered when:
@@ -6364,7 +6484,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer_seat.assigned
+     * customer_seat_assigned
      * @description Sent when a new customer seat is assigned.
      *
      *     This event is triggered when a seat is assigned to a customer by the organization.
@@ -6387,7 +6507,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer_seat.claimed
+     * customer_seat_claimed
      * @description Sent when a customer seat is claimed.
      *
      *     This event is triggered when a customer accepts the seat invitation and claims their access.
@@ -6409,7 +6529,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * customer_seat.revoked
+     * customer_seat_revoked
      * @description Sent when a customer seat is revoked.
      *
      *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
@@ -6431,7 +6551,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * member.created
+     * member_created
      * @description Sent when a new member is created.
      *
      *     A member represents an individual within a customer (team).
@@ -6458,7 +6578,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * member.updated
+     * member_updated
      * @description Sent when a member is updated.
      *
      *     This event is triggered when member details are updated,
@@ -6483,7 +6603,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * member.deleted
+     * member_deleted
      * @description Sent when a member is deleted.
      *
      *     This event is triggered when a member is removed from a customer.
@@ -6508,7 +6628,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * order.created
+     * order_created
      * @description Sent when a new order is created.
      *
      *     A new order is created when:
@@ -6540,7 +6660,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * order.updated
+     * order_updated
      * @description Sent when an order is updated.
      *
      *     An order is updated when:
@@ -6567,7 +6687,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * order.paid
+     * order_paid
      * @description Sent when an order is paid.
      *
      *     When you receive this event, the order is fully processed and payment has been received.
@@ -6591,7 +6711,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * order.refunded
+     * order_refunded
      * @description Sent when an order is fully or partially refunded.
      *
      *     **Discord & Slack support:** Full
@@ -6613,7 +6733,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.created
+     * subscription_created
      * @description Sent when a new subscription is created.
      *
      *     When this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.
@@ -6637,7 +6757,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.updated
+     * subscription_updated
      * @description Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.
      *
      *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
@@ -6663,7 +6783,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.active
+     * subscription_active
      * @description Sent when a subscription becomes active,
      *     whether because it's a new paid subscription or because payment was recovered.
      *
@@ -6686,7 +6806,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.canceled
+     * subscription_canceled
      * @description Sent when a subscription is canceled.
      *     Customers might still have access until the end of the current period.
      *
@@ -6709,7 +6829,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.uncanceled
+     * subscription_uncanceled
      * @description Sent when a customer revokes a pending cancellation.
      *
      *     When a customer cancels with "at period end", they retain access until the
@@ -6735,7 +6855,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.cycled
+     * subscription_cycled
      * @description Sent when a subscription enters a new billing period.
      *
      *     The payload carries the new `current_period_start` and `current_period_end`.
@@ -6765,7 +6885,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.revoked
+     * subscription_revoked
      * @description Sent when a subscription is revoked and the user loses access immediately.
      *     Happens when the subscription is canceled or payment retries are exhausted (status becomes `unpaid`).
      *
@@ -6790,7 +6910,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.past_due
+     * subscription_past_due
      * @description Sent when a subscription payment fails and the subscription enters `past_due` status.
      *
      *     This is a recoverable state - the customer can update their payment method to restore the subscription.
@@ -6817,7 +6937,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.paused
+     * subscription_paused
      * @description Sent when a subscription is paused and the customer temporarily loses access.
      *
      *     No order is created while paused. The subscription resumes either on its
@@ -6842,7 +6962,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription.resumed
+     * subscription_resumed
      * @description Sent when a paused subscription resumes, restoring the customer's access.
      *
      *     Resuming starts a new billing period and charges the customer immediately.
@@ -6866,7 +6986,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * refund.created
+     * refund_created
      * @description Sent when a refund is created regardless of status.
      *
      *     **Discord & Slack support:** Full
@@ -6888,7 +7008,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * refund.updated
+     * refund_updated
      * @description Sent when a refund is updated.
      *
      *     **Discord & Slack support:** Full
@@ -6910,7 +7030,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * product.created
+     * product_created
      * @description Sent when a new product is created.
      *
      *     **Discord & Slack support:** Basic
@@ -6932,7 +7052,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * product.updated
+     * product_updated
      * @description Sent when a product is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -6954,7 +7074,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * discount.created
+     * discount_created
      * @description Sent when a new discount is created.
      *
      *     **Discord & Slack support:** Basic
@@ -6976,7 +7096,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * discount.updated
+     * discount_updated
      * @description Sent when a discount is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -6998,7 +7118,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * discount.deleted
+     * discount_deleted
      * @description Sent when a discount is deleted.
      *
      *     **Discord & Slack support:** Basic
@@ -7020,7 +7140,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * organization.updated
+     * organization_updated
      * @description Sent when a organization is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -7042,7 +7162,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit.created
+     * benefit_created
      * @description Sent when a new benefit is created.
      *
      *     **Discord & Slack support:** Basic
@@ -7064,7 +7184,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit.updated
+     * benefit_updated
      * @description Sent when a benefit is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -7086,7 +7206,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit_grant.created
+     * benefit_grant_created
      * @description Sent when a new benefit grant is created.
      *
      *     **Discord & Slack support:** Basic
@@ -7108,7 +7228,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit_grant.updated
+     * benefit_grant_updated
      * @description Sent when a benefit grant is updated.
      *
      *     **Discord & Slack support:** Basic
@@ -7130,7 +7250,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit_grant.cycled
+     * benefit_grant_cycled
      * @description Sent when a benefit grant is cycled,
      *     meaning the related subscription has been renewed for another period.
      *
@@ -7153,7 +7273,7 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * benefit_grant.revoked
+     * benefit_grant_revoked
      * @description Sent when a benefit grant is revoked.
      *
      *     **Discord & Slack support:** Basic
@@ -12121,7 +12241,7 @@ export interface components {
       amount: number
       /**
        * Currency
-       * @description The payment currency. Currently, only `usd` is supported.
+       * @description The payment currency
        * @example usd
        */
       currency: string
@@ -12380,6 +12500,21 @@ export interface components {
        */
       max_seats?: number | null
       /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units: number | null
+      /**
        * Discount Amount
        * @description Discount amount in cents.
        */
@@ -12617,6 +12752,11 @@ export interface components {
        * @description Number of seats for seat-based pricing.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description Number of units for unit-based pricing.
+       */
+      units?: number | null
       /** Is Business Customer */
       is_business_customer?: boolean | null
       /** Customer Name */
@@ -12951,6 +13091,11 @@ export interface components {
        */
       seats: number | null
       /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units: number | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
@@ -13040,6 +13185,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units?: number | null
+      /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
@@ -13120,6 +13270,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units?: number | null
+      /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
@@ -13197,6 +13352,11 @@ export interface components {
        * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units?: number | null
       /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
@@ -13374,6 +13534,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      units?: number | null
+      /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
@@ -13501,6 +13666,21 @@ export interface components {
        * @description Maximum number of seats (works with seat-based pricing only)
        */
       max_seats?: number | null
+      /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units?: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units?: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units?: number | null
       /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
@@ -13746,6 +13926,21 @@ export interface components {
        */
       max_seats?: number | null
       /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units?: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units?: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units?: number | null
+      /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        * @default true
@@ -13900,6 +14095,21 @@ export interface components {
        */
       max_seats?: number | null
       /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units?: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units?: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units?: number | null
+      /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        * @default true
@@ -13986,6 +14196,7 @@ export interface components {
           | components['schemas']['ProductPriceFixedCreate']
           | components['schemas']['ProductPriceCustomCreate']
           | components['schemas']['ProductPriceSeatBasedCreate']
+          | components['schemas']['ProductPriceUnitBasedCreate']
           | components['schemas']['ProductPriceMeteredUnitCreate']
         )[]
       } | null
@@ -14082,6 +14293,21 @@ export interface components {
        * @description Maximum number of seats (works with seat-based pricing only)
        */
       max_seats?: number | null
+      /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units: number | null
       /**
        * Discount Amount
        * @description Discount amount in cents.
@@ -14354,6 +14580,21 @@ export interface components {
        */
       max_seats?: number | null
       /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units: number | null
+      /**
        * Discount Amount
        * @description Discount amount in cents.
        */
@@ -14582,6 +14823,11 @@ export interface components {
        * @description Number of seats for seat-based pricing.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description Number of units for unit-based pricing.
+       */
+      units?: number | null
       /** Is Business Customer */
       is_business_customer?: boolean | null
       /** Customer Name */
@@ -14705,6 +14951,11 @@ export interface components {
        * @description Number of seats for seat-based pricing.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description Number of units for unit-based pricing.
+       */
+      units?: number | null
       /** Is Business Customer */
       is_business_customer?: boolean | null
       /** Customer Name */
@@ -17293,6 +17544,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Number of units purchased (for unit-based pricing).
+       */
+      units: number | null
+      /**
        * Customer Id
        * Format: uuid4
        */
@@ -17666,6 +17922,11 @@ export interface components {
        * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -17760,6 +18021,7 @@ export interface components {
     }
     CustomerPaymentMethod:
       | components['schemas']['PaymentMethodCard']
+      | components['schemas']['PaymentMethodKrCard']
       | components['schemas']['PaymentMethodGeneric']
     /** CustomerPaymentMethodCard */
     CustomerPaymentMethodCard: {
@@ -17865,6 +18127,44 @@ export interface components {
       customer_id: string
       /** Type */
       type: string
+      /**
+       * Is Default
+       * @description Whether this payment method is the customer's default payment method.
+       * @example false
+       */
+      is_default: boolean
+    }
+    /** CustomerPaymentMethodKrCard */
+    CustomerPaymentMethodKrCard: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /**
+       * Type
+       * @constant
+       */
+      type: 'kr_card'
+      method_metadata: components['schemas']['PaymentMethodKrCardMetadata']
       /**
        * Is Default
        * @description Whether this payment method is the customer's default payment method.
@@ -19134,6 +19434,11 @@ export interface components {
        * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -19830,6 +20135,17 @@ export interface components {
       | '-created_at'
       | 'balance'
       | '-balance'
+    /** CutoverNotStarted */
+    CutoverNotStarted: {
+      /**
+       * Error
+       * @example CutoverNotStarted
+       * @constant
+       */
+      error: 'CutoverNotStarted'
+      /** Detail */
+      detail: string
+    }
     /**
      * DataTableBlock
      * @description Tabular entities (orders, subscriptions, customers, ...).
@@ -22047,7 +22363,7 @@ export interface components {
       amount: number
       /**
        * Currency
-       * @description The payment currency. Currently, only `usd` is supported.
+       * @description The payment currency
        * @example usd
        */
       currency: string
@@ -22330,6 +22646,122 @@ export interface components {
       error: 'InvalidSourceCredentials'
       /** Detail */
       detail: string
+    }
+    /**
+     * KrCardPayment
+     * @description Schema of a payment with a South Korean card payment method.
+     */
+    KrCardPayment: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description The payment processor.
+       * @example stripe
+       */
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * @description The payment status.
+       * @example succeeded
+       */
+      status: components['schemas']['PaymentStatus']
+      /**
+       * Amount
+       * @description The payment amount in cents.
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Currency
+       * @description The payment currency
+       * @example usd
+       */
+      currency: string
+      /**
+       * Method
+       * @description The payment method used.
+       * @example kr_card
+       * @constant
+       */
+      method: 'kr_card'
+      /**
+       * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+       * @example subscription_cycle
+       */
+      trigger: components['schemas']['PaymentTrigger'] | null
+      /**
+       * Decline Reason
+       * @description Error code, if the payment was declined.
+       * @example insufficient_funds
+       */
+      decline_reason: string | null
+      /**
+       * Decline Message
+       * @description Human-readable error message, if the payment was declined.
+       * @example Your card has insufficient funds.
+       */
+      decline_message: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization that owns the payment.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Checkout Id
+       * @description The ID of the checkout session associated with this payment.
+       * @example e4b478fa-cd25-4253-9f1f-8a41e6370ede
+       */
+      checkout_id: string | null
+      /**
+       * Order Id
+       * @description The ID of the order associated with this payment.
+       * @example e4b478fa-cd25-4253-9f1f-8a41e6370ede
+       */
+      order_id: string | null
+      /**
+       * Processor Metadata
+       * @description Additional metadata from the payment processor for internal use.
+       */
+      processor_metadata?: {
+        [key: string]: unknown
+      }
+      /** @description Additional metadata for the South Korean card payment method. */
+      method_metadata: components['schemas']['KrCardPaymentMetadata']
+    }
+    /**
+     * KrCardPaymentMetadata
+     * @description Additional metadata for a South Korean card payment method.
+     */
+    KrCardPaymentMetadata: {
+      /**
+       * Brand
+       * @description The local South Korean card brand used for the payment.
+       * @example kookmin
+       * @example shinhan
+       */
+      brand: string | null
+      /**
+       * Last4
+       * @description The last 4 digits of the card number.
+       * @example 4242
+       */
+      last4: string | null
     }
     /** LLMMetadata */
     LLMMetadata: {
@@ -23784,6 +24216,75 @@ export interface components {
        */
       api_key: string
     }
+    /**
+     * MerchantMigrationCutoverReport
+     * @description Where the switch has got to, for the imported subscriptions.
+     */
+    MerchantMigrationCutoverReport: {
+      /**
+       * Started
+       * @description Whether the merchant has confirmed the switch.
+       */
+      started: boolean
+      /**
+       * Running
+       * @description Whether a switch run is in progress.
+       */
+      running: boolean
+      /**
+       * Completed
+       * @description Whether the last switch run has finished.
+       */
+      completed: boolean
+      /**
+       * Total
+       * @description Subscriptions whose customer and product are in Polar.
+       */
+      total: number
+      /**
+       * Pending
+       * @description Not switched yet.
+       */
+      pending: number
+      /**
+       * Moved
+       * @description Now billed by Polar.
+       */
+      moved: number
+      /**
+       * Skipped
+       * @description Left on the source.
+       */
+      skipped: number
+      /**
+       * Failed
+       * @description Hit an unexpected error.
+       */
+      failed: number
+    }
+    /** MerchantMigrationCutoverRequest */
+    MerchantMigrationCutoverRequest: {
+      /**
+       * Record Ids
+       * @description Subscription ledger record ids to switch (from the records listing). When omitted, every subscription whose customer and product are in Polar is switched (subject to `exclude_record_ids`).
+       */
+      record_ids?: string[] | null
+      /**
+       * Exclude Record Ids
+       * @description Switch every subscription whose customer and product are in Polar except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
+       */
+      exclude_record_ids?: string[] | null
+    }
+    /**
+     * MerchantMigrationCutoverStatus
+     * @description What the cutover did with an imported subscription.
+     *
+     *     Only subscription records ever carry one, and only once the cutover has
+     *     looked at them: ``None`` means "not attempted", which is also what every
+     *     other record type keeps forever.
+     * @enum {string}
+     */
+    MerchantMigrationCutoverStatus: 'moved' | 'skipped' | 'failed'
     /** MerchantMigrationImportReport */
     MerchantMigrationImportReport: {
       /** @description The migration step after the import. */
@@ -23798,12 +24299,12 @@ export interface components {
     MerchantMigrationImportRequest: {
       /**
        * Record Ids
-       * @description The ledger record ids to import (from the records listing). When omitted, every importable record is imported (subject to `exclude_record_ids`). Records not selected stay pending.
+       * @description Subscription ledger record ids to prepare (from the records listing). Their customers and products are imported automatically. When omitted, every importable subscription is prepared (subject to `exclude_record_ids`). Polar subscriptions are created at cutover.
        */
       record_ids?: string[] | null
       /**
        * Exclude Record Ids
-       * @description Import every importable record except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
+       * @description Prepare every importable subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
     }
@@ -23848,7 +24349,7 @@ export interface components {
     MerchantMigrationRecordItem: {
       /**
        * Record Id
-       * @description The ledger record id, used to select this row for import. Null for price rows, which are imported together with their product.
+       * @description The ledger record id. For subscriptions this is what the merchant selects for import. Null for price rows, which import with their product.
        */
       record_id: string | null
       /** @description The source entity type. */
@@ -23901,6 +24402,30 @@ export interface components {
       reason_code: string | null
       /** @description How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason. */
       reason_level: components['schemas']['PrecheckReasonLevel'] | null
+      /** @description What the switch did with this subscription: `moved` (Polar bills it now), `skipped` (left on the source, see `cutover_error`) or `failed` (retryable). Null when the switch hasn't reached it, and for every entity other than subscriptions. */
+      cutover_status:
+        | components['schemas']['MerchantMigrationCutoverStatus']
+        | null
+      /**
+       * Cutover Error
+       * @description Why the switch skipped or failed this subscription.
+       */
+      cutover_error: string | null
+      /**
+       * Renews At
+       * @description When the subscription next renews on the source, as staged at import. Null for non-subscription rows or when the source reported none.
+       */
+      renews_at: string | null
+      /**
+       * Has Payment Method
+       * @description Whether Polar already has a card to charge for this subscription's customer. Null for non-subscription rows.
+       */
+      has_payment_method: boolean | null
+      /**
+       * Dependencies Imported
+       * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
+       */
+      dependencies_imported: boolean | null
     }
     /**
      * MerchantMigrationRecordStatus
@@ -23952,7 +24477,7 @@ export interface components {
       imported: number
       /**
        * Selectable
-       * @description How many an import would actually move: importable by the pre-check and still pending in the ledger.
+       * @description How many subscriptions an import would still prepare: importable by the pre-check, pending in the ledger, and not already backed by an imported customer and product. Zero for other entities.
        */
       selectable: number
     }
@@ -25405,6 +25930,11 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Units
+       * @description Number of units purchased (for unit-based pricing).
+       */
+      units: number | null
+      /**
        * Customer Id
        * Format: uuid4
        */
@@ -26233,6 +26763,11 @@ export interface components {
        * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -27605,6 +28140,12 @@ export interface components {
        */
       seat_based_pricing_enabled: boolean
       /**
+       * Unit Based Pricing Enabled
+       * @description If this organization has unit-based pricing enabled
+       * @default false
+       */
+      unit_based_pricing_enabled: boolean
+      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false
@@ -28134,7 +28675,7 @@ export interface components {
        * @description The role to assign. `owner` is rejected — ownership transfers go through a separate flow.
        * @enum {string}
        */
-      role: 'admin' | 'member'
+      role: 'admin' | 'finance' | 'member'
     }
     /** OrganizationNotReadyForPayments */
     OrganizationNotReadyForPayments: {
@@ -28485,7 +29026,7 @@ export interface components {
      * OrganizationRole
      * @enum {string}
      */
-    OrganizationRole: 'owner' | 'admin' | 'member'
+    OrganizationRole: 'owner' | 'admin' | 'finance' | 'member'
     /**
      * OrganizationRoleDefinition
      * @description A role available in an organization and the permissions it grants.
@@ -29763,6 +30304,7 @@ export interface components {
     }
     Payment:
       | components['schemas']['CardPayment']
+      | components['schemas']['KrCardPayment']
       | components['schemas']['GenericPayment']
     /** PaymentActionRequired */
     PaymentActionRequired: {
@@ -29821,6 +30363,7 @@ export interface components {
     }
     PaymentMethod:
       | components['schemas']['CustomerPaymentMethodCard']
+      | components['schemas']['CustomerPaymentMethodKrCard']
       | components['schemas']['CustomerPaymentMethodGeneric']
     /** PaymentMethodCard */
     PaymentMethodCard: {
@@ -29905,6 +30448,45 @@ export interface components {
       error: 'PaymentMethodInUseByActiveSubscription'
       /** Detail */
       detail: string
+    }
+    /** PaymentMethodKrCard */
+    PaymentMethodKrCard: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /**
+       * Type
+       * @constant
+       */
+      type: 'kr_card'
+      method_metadata: components['schemas']['PaymentMethodKrCardMetadata']
+    }
+    /** PaymentMethodKrCardMetadata */
+    PaymentMethodKrCardMetadata: {
+      /** Brand */
+      brand: string | null
+      /** Last4 */
+      last4: string | null
     }
     /** PaymentMethodRequired */
     PaymentMethodRequired: {
@@ -30263,6 +30845,11 @@ export interface components {
        * @description Number of seats to apply to the subscription. If `null`, the number of seats won't be changed.
        */
       seats: number | null
+      /**
+       * Units
+       * @description Number of units to apply to the subscription. If `null`, the number of units won't be changed.
+       */
+      units: number | null
     }
     /** PersonalAccessToken */
     PersonalAccessToken: {
@@ -30327,6 +30914,17 @@ export interface components {
        * @constant
        */
       error: 'PolarAuthError'
+      /** Detail */
+      detail: string
+    }
+    /** PolarSelfPaidSubscriptionAlreadyExists */
+    PolarSelfPaidSubscriptionAlreadyExists: {
+      /**
+       * Error
+       * @example PolarSelfPaidSubscriptionAlreadyExists
+       * @constant
+       */
+      error: 'PolarSelfPaidSubscriptionAlreadyExists'
       /** Detail */
       detail: string
     }
@@ -30734,6 +31332,7 @@ export interface components {
         | components['schemas']['ProductPriceFixedCreate']
         | components['schemas']['ProductPriceCustomCreate']
         | components['schemas']['ProductPriceSeatBasedCreate']
+        | components['schemas']['ProductPriceUnitBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
       )[]
       /**
@@ -30804,6 +31403,7 @@ export interface components {
         | components['schemas']['ProductPriceFixedCreate']
         | components['schemas']['ProductPriceCustomCreate']
         | components['schemas']['ProductPriceSeatBasedCreate']
+        | components['schemas']['ProductPriceUnitBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
       )[]
       /**
@@ -30931,6 +31531,7 @@ export interface components {
       | components['schemas']['ProductPriceFixed']
       | components['schemas']['ProductPriceCustom']
       | components['schemas']['ProductPriceSeatBased']
+      | components['schemas']['ProductPriceUnitBased']
       | components['schemas']['ProductPriceMeteredUnit']
     /**
      * ProductPriceCustom
@@ -31784,6 +32385,111 @@ export interface components {
      */
     ProductPriceType: 'one_time' | 'recurring'
     /**
+     * ProductPriceUnitBased
+     * @description A unit-based price for a product: the buyer picks a quantity of units,
+     *     pays for it up-front, and changes are prorated.
+     */
+    ProductPriceUnitBased: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /** @description Tiered pricing based on the purchased unit quantity. */
+      tiers: components['schemas']['Tiers-Output']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable quantity (inclusive).
+       */
+      minimum_units: number | null
+      /**
+       * Unit Label
+       * @description Per-locale unit nouns shown at checkout and on invoices. `null` defaults to "unit"/"units".
+       */
+      unit_label: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
+      /**
+       * Maximum Units
+       * @description The maximum purchasable quantity, from the last tier's bound. `null` for unlimited.
+       */
+      readonly maximum_units: number | null
+    }
+    /**
+     * ProductPriceUnitBasedCreate
+     * @description Schema to create a unit-based price: the buyer picks a quantity of units,
+     *     pays for it up-front, and changes are prorated.
+     */
+    ProductPriceUnitBasedCreate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased unit quantity. */
+      tiers: components['schemas']['Tiers-Input']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable quantity (inclusive). Defaults to 1 when not set.
+       */
+      minimum_units?: number | null
+      /**
+       * Unit Label
+       * @description Per-locale unit nouns shown at checkout and on invoices. `{"en": {"=1": "device", "other": "devices"}}`. Defaults to "unit"/"units" when unset.
+       */
+      unit_label?: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
+    }
+    /**
      * ProductSortProperty
      * @enum {string}
      */
@@ -31857,6 +32563,7 @@ export interface components {
                 | components['schemas']['ProductPriceFixedCreate']
                 | components['schemas']['ProductPriceCustomCreate']
                 | components['schemas']['ProductPriceSeatBasedCreate']
+                | components['schemas']['ProductPriceUnitBasedCreate']
                 | components['schemas']['ProductPriceMeteredUnitCreate']
               )
           )[]
@@ -32214,6 +32921,17 @@ export interface components {
     }
     /** RevokeTokenResponse */
     RevokeTokenResponse: Record<string, never>
+    /** RotateNotPermitted */
+    RotateNotPermitted: {
+      /**
+       * Error
+       * @example RotateNotPermitted
+       * @constant
+       */
+      error: 'RotateNotPermitted'
+      /** Detail */
+      detail: string
+    }
     /** S3DownloadURL */
     S3DownloadURL: {
       /** Url */
@@ -33152,6 +33870,11 @@ export interface components {
        * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       */
+      units: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -33440,6 +34163,7 @@ export interface components {
     SubscriptionChangePreview:
       | components['schemas']['SubscriptionChangePreviewProduct']
       | components['schemas']['SubscriptionChangePreviewSeats']
+      | components['schemas']['SubscriptionChangePreviewUnits']
     /** SubscriptionChangePreviewProduct */
     SubscriptionChangePreviewProduct: {
       /**
@@ -33461,6 +34185,18 @@ export interface components {
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
+    /** SubscriptionChangePreviewUnits */
+    SubscriptionChangePreviewUnits: {
+      /**
+       * Units
+       * @description Preview a change of the subscription to this number of units.
+       */
+      units: number
       /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
@@ -34897,9 +35633,96 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count: number
     }
+    /**
+     * SubscriptionUnitsUpdatedEvent
+     * @description An event created by Polar when the units on a subscription are changed.
+     */
+    SubscriptionUnitsUpdatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.units_updated'
+      metadata: components['schemas']['SubscriptionUnitsUpdatedMetadata']
+    }
+    /** SubscriptionUnitsUpdatedMetadata */
+    SubscriptionUnitsUpdatedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Old Units */
+      old_units: number
+      /** New Units */
+      new_units: number
+      /** Proration Behavior */
+      proration_behavior: string
+    }
     SubscriptionUpdate:
       | components['schemas']['SubscriptionUpdateBase']
       | components['schemas']['SubscriptionUpdateSeats']
+      | components['schemas']['SubscriptionUpdateUnits']
       | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
@@ -35057,6 +35880,18 @@ export interface components {
         | components['schemas']['SubscriptionProrationBehavior']
         | null
     }
+    /** SubscriptionUpdateUnits */
+    SubscriptionUpdateUnits: {
+      /**
+       * Units
+       * @description Update the number of units for this subscription.
+       */
+      units: number
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
     /**
      * SubscriptionUpdatedEvent
      * @description An event created by Polar when a subscription is updated.
@@ -35143,6 +35978,8 @@ export interface components {
       trial_end?: string
       /** Seats */
       seats?: number
+      /** Units */
+      units?: number
       /** Billing Period End */
       billing_period_end?: string
       /** Subscription Id */
@@ -35401,6 +36238,7 @@ export interface components {
       | components['schemas']['SubscriptionUncanceledEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['SubscriptionSeatsUpdatedEvent']
+      | components['schemas']['SubscriptionUnitsUpdatedEvent']
       | components['schemas']['SubscriptionBillingPeriodUpdatedEvent']
       | components['schemas']['SubscriptionUpdateClearedEvent']
       | components['schemas']['OrderPaidEvent']
@@ -35639,6 +36477,61 @@ export interface components {
       text: string
     }
     /**
+     * Tier
+     * @description A per-unit rate up to and including `bound`.
+     *
+     *     Each tier starts where the previous one ended. The first starts at
+     *     zero. `bound` is None on the last tier if it's unbounded. Rates are
+     *     in cents and may be fractional.
+     */
+    'Tier-Input': {
+      /** Bound */
+      bound?: number | null
+      /** Unit Amount */
+      unit_amount: number | string
+    }
+    /**
+     * Tier
+     * @description A per-unit rate up to and including `bound`.
+     *
+     *     Each tier starts where the previous one ended. The first starts at
+     *     zero. `bound` is None on the last tier if it's unbounded. Rates are
+     *     in cents and may be fractional.
+     */
+    'Tier-Output': {
+      /** Bound */
+      bound?: number | null
+      /** Unit Amount */
+      unit_amount: string
+    }
+    /**
+     * TierType
+     * @enum {string}
+     */
+    TierType: 'volume' | 'graduated'
+    /**
+     * Tiers
+     * @description The structure of the shared tiers JSONB column, used by every tiered
+     *     price type. Purchasable quantity bounds live in the `minimum_units` and
+     *     `maximum_units` columns, not here.
+     */
+    'Tiers-Input': {
+      type: components['schemas']['TierType']
+      /** Tiers */
+      tiers: components['schemas']['Tier-Input'][]
+    }
+    /**
+     * Tiers
+     * @description The structure of the shared tiers JSONB column, used by every tiered
+     *     price type. Purchasable quantity bounds live in the `minimum_units` and
+     *     `maximum_units` columns, not here.
+     */
+    'Tiers-Output': {
+      type: components['schemas']['TierType']
+      /** Tiers */
+      tiers: components['schemas']['Tier-Output'][]
+    }
+    /**
      * TimeInterval
      * @enum {string}
      */
@@ -35812,6 +36705,23 @@ export interface components {
       /** Incurred By Transaction Id */
       incurred_by_transaction_id: string | null
     }
+    /**
+     * TransactionExportColumn
+     * @enum {string}
+     */
+    TransactionExportColumn:
+      | 'created_at'
+      | 'type'
+      | 'product'
+      | 'gross_amount'
+      | 'tax_amount'
+      | 'fees'
+      | 'net_amount'
+      | 'currency'
+      | 'status'
+      | 'paid_out_at'
+      | 'invoice_number'
+      | 'order_id'
     /** TransactionIssueReward */
     TransactionIssueReward: {
       /**
@@ -40383,6 +41293,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PolarSelfPaidSubscriptionAlreadyExists']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -41729,6 +42648,648 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Transaction_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'transactions:export': {
+    parameters: {
+      query: {
+        account_id: string
+        type?: components['schemas']['TransactionType'] | null
+        exclude_platform_fees?: boolean
+        /** @description Only include transactions created after this date. Must include a UTC offset. */
+        created_after?: string | null
+        /** @description Only include transactions created before this date. Must include a UTC offset. */
+        created_before?: string | null
+        /** @description Time zone used to render dates in the CSV. */
+        timezone?:
+          | 'Africa/Abidjan'
+          | 'Africa/Accra'
+          | 'Africa/Addis_Ababa'
+          | 'Africa/Algiers'
+          | 'Africa/Asmara'
+          | 'Africa/Asmera'
+          | 'Africa/Bamako'
+          | 'Africa/Bangui'
+          | 'Africa/Banjul'
+          | 'Africa/Bissau'
+          | 'Africa/Blantyre'
+          | 'Africa/Brazzaville'
+          | 'Africa/Bujumbura'
+          | 'Africa/Cairo'
+          | 'Africa/Casablanca'
+          | 'Africa/Ceuta'
+          | 'Africa/Conakry'
+          | 'Africa/Dakar'
+          | 'Africa/Dar_es_Salaam'
+          | 'Africa/Djibouti'
+          | 'Africa/Douala'
+          | 'Africa/El_Aaiun'
+          | 'Africa/Freetown'
+          | 'Africa/Gaborone'
+          | 'Africa/Harare'
+          | 'Africa/Johannesburg'
+          | 'Africa/Juba'
+          | 'Africa/Kampala'
+          | 'Africa/Khartoum'
+          | 'Africa/Kigali'
+          | 'Africa/Kinshasa'
+          | 'Africa/Lagos'
+          | 'Africa/Libreville'
+          | 'Africa/Lome'
+          | 'Africa/Luanda'
+          | 'Africa/Lubumbashi'
+          | 'Africa/Lusaka'
+          | 'Africa/Malabo'
+          | 'Africa/Maputo'
+          | 'Africa/Maseru'
+          | 'Africa/Mbabane'
+          | 'Africa/Mogadishu'
+          | 'Africa/Monrovia'
+          | 'Africa/Nairobi'
+          | 'Africa/Ndjamena'
+          | 'Africa/Niamey'
+          | 'Africa/Nouakchott'
+          | 'Africa/Ouagadougou'
+          | 'Africa/Porto-Novo'
+          | 'Africa/Sao_Tome'
+          | 'Africa/Timbuktu'
+          | 'Africa/Tripoli'
+          | 'Africa/Tunis'
+          | 'Africa/Windhoek'
+          | 'America/Adak'
+          | 'America/Anchorage'
+          | 'America/Anguilla'
+          | 'America/Antigua'
+          | 'America/Araguaina'
+          | 'America/Argentina/Buenos_Aires'
+          | 'America/Argentina/Catamarca'
+          | 'America/Argentina/ComodRivadavia'
+          | 'America/Argentina/Cordoba'
+          | 'America/Argentina/Jujuy'
+          | 'America/Argentina/La_Rioja'
+          | 'America/Argentina/Mendoza'
+          | 'America/Argentina/Rio_Gallegos'
+          | 'America/Argentina/Salta'
+          | 'America/Argentina/San_Juan'
+          | 'America/Argentina/San_Luis'
+          | 'America/Argentina/Tucuman'
+          | 'America/Argentina/Ushuaia'
+          | 'America/Aruba'
+          | 'America/Asuncion'
+          | 'America/Atikokan'
+          | 'America/Atka'
+          | 'America/Bahia'
+          | 'America/Bahia_Banderas'
+          | 'America/Barbados'
+          | 'America/Belem'
+          | 'America/Belize'
+          | 'America/Blanc-Sablon'
+          | 'America/Boa_Vista'
+          | 'America/Bogota'
+          | 'America/Boise'
+          | 'America/Buenos_Aires'
+          | 'America/Cambridge_Bay'
+          | 'America/Campo_Grande'
+          | 'America/Cancun'
+          | 'America/Caracas'
+          | 'America/Catamarca'
+          | 'America/Cayenne'
+          | 'America/Cayman'
+          | 'America/Chicago'
+          | 'America/Chihuahua'
+          | 'America/Ciudad_Juarez'
+          | 'America/Coral_Harbour'
+          | 'America/Cordoba'
+          | 'America/Costa_Rica'
+          | 'America/Coyhaique'
+          | 'America/Creston'
+          | 'America/Cuiaba'
+          | 'America/Curacao'
+          | 'America/Danmarkshavn'
+          | 'America/Dawson'
+          | 'America/Dawson_Creek'
+          | 'America/Denver'
+          | 'America/Detroit'
+          | 'America/Dominica'
+          | 'America/Edmonton'
+          | 'America/Eirunepe'
+          | 'America/El_Salvador'
+          | 'America/Ensenada'
+          | 'America/Fort_Nelson'
+          | 'America/Fort_Wayne'
+          | 'America/Fortaleza'
+          | 'America/Glace_Bay'
+          | 'America/Godthab'
+          | 'America/Goose_Bay'
+          | 'America/Grand_Turk'
+          | 'America/Grenada'
+          | 'America/Guadeloupe'
+          | 'America/Guatemala'
+          | 'America/Guayaquil'
+          | 'America/Guyana'
+          | 'America/Halifax'
+          | 'America/Havana'
+          | 'America/Hermosillo'
+          | 'America/Indiana/Indianapolis'
+          | 'America/Indiana/Knox'
+          | 'America/Indiana/Marengo'
+          | 'America/Indiana/Petersburg'
+          | 'America/Indiana/Tell_City'
+          | 'America/Indiana/Vevay'
+          | 'America/Indiana/Vincennes'
+          | 'America/Indiana/Winamac'
+          | 'America/Indianapolis'
+          | 'America/Inuvik'
+          | 'America/Iqaluit'
+          | 'America/Jamaica'
+          | 'America/Jujuy'
+          | 'America/Juneau'
+          | 'America/Kentucky/Louisville'
+          | 'America/Kentucky/Monticello'
+          | 'America/Knox_IN'
+          | 'America/Kralendijk'
+          | 'America/La_Paz'
+          | 'America/Lima'
+          | 'America/Los_Angeles'
+          | 'America/Louisville'
+          | 'America/Lower_Princes'
+          | 'America/Maceio'
+          | 'America/Managua'
+          | 'America/Manaus'
+          | 'America/Marigot'
+          | 'America/Martinique'
+          | 'America/Matamoros'
+          | 'America/Mazatlan'
+          | 'America/Mendoza'
+          | 'America/Menominee'
+          | 'America/Merida'
+          | 'America/Metlakatla'
+          | 'America/Mexico_City'
+          | 'America/Miquelon'
+          | 'America/Moncton'
+          | 'America/Monterrey'
+          | 'America/Montevideo'
+          | 'America/Montreal'
+          | 'America/Montserrat'
+          | 'America/Nassau'
+          | 'America/New_York'
+          | 'America/Nipigon'
+          | 'America/Nome'
+          | 'America/Noronha'
+          | 'America/North_Dakota/Beulah'
+          | 'America/North_Dakota/Center'
+          | 'America/North_Dakota/New_Salem'
+          | 'America/Nuuk'
+          | 'America/Ojinaga'
+          | 'America/Panama'
+          | 'America/Pangnirtung'
+          | 'America/Paramaribo'
+          | 'America/Phoenix'
+          | 'America/Port-au-Prince'
+          | 'America/Port_of_Spain'
+          | 'America/Porto_Acre'
+          | 'America/Porto_Velho'
+          | 'America/Puerto_Rico'
+          | 'America/Punta_Arenas'
+          | 'America/Rainy_River'
+          | 'America/Rankin_Inlet'
+          | 'America/Recife'
+          | 'America/Regina'
+          | 'America/Resolute'
+          | 'America/Rio_Branco'
+          | 'America/Rosario'
+          | 'America/Santa_Isabel'
+          | 'America/Santarem'
+          | 'America/Santiago'
+          | 'America/Santo_Domingo'
+          | 'America/Sao_Paulo'
+          | 'America/Scoresbysund'
+          | 'America/Shiprock'
+          | 'America/Sitka'
+          | 'America/St_Barthelemy'
+          | 'America/St_Johns'
+          | 'America/St_Kitts'
+          | 'America/St_Lucia'
+          | 'America/St_Thomas'
+          | 'America/St_Vincent'
+          | 'America/Swift_Current'
+          | 'America/Tegucigalpa'
+          | 'America/Thule'
+          | 'America/Thunder_Bay'
+          | 'America/Tijuana'
+          | 'America/Toronto'
+          | 'America/Tortola'
+          | 'America/Vancouver'
+          | 'America/Virgin'
+          | 'America/Whitehorse'
+          | 'America/Winnipeg'
+          | 'America/Yakutat'
+          | 'America/Yellowknife'
+          | 'Antarctica/Casey'
+          | 'Antarctica/Davis'
+          | 'Antarctica/DumontDUrville'
+          | 'Antarctica/Macquarie'
+          | 'Antarctica/Mawson'
+          | 'Antarctica/McMurdo'
+          | 'Antarctica/Palmer'
+          | 'Antarctica/Rothera'
+          | 'Antarctica/South_Pole'
+          | 'Antarctica/Syowa'
+          | 'Antarctica/Troll'
+          | 'Antarctica/Vostok'
+          | 'Arctic/Longyearbyen'
+          | 'Asia/Aden'
+          | 'Asia/Almaty'
+          | 'Asia/Amman'
+          | 'Asia/Anadyr'
+          | 'Asia/Aqtau'
+          | 'Asia/Aqtobe'
+          | 'Asia/Ashgabat'
+          | 'Asia/Ashkhabad'
+          | 'Asia/Atyrau'
+          | 'Asia/Baghdad'
+          | 'Asia/Bahrain'
+          | 'Asia/Baku'
+          | 'Asia/Bangkok'
+          | 'Asia/Barnaul'
+          | 'Asia/Beirut'
+          | 'Asia/Bishkek'
+          | 'Asia/Brunei'
+          | 'Asia/Calcutta'
+          | 'Asia/Chita'
+          | 'Asia/Choibalsan'
+          | 'Asia/Chongqing'
+          | 'Asia/Chungking'
+          | 'Asia/Colombo'
+          | 'Asia/Dacca'
+          | 'Asia/Damascus'
+          | 'Asia/Dhaka'
+          | 'Asia/Dili'
+          | 'Asia/Dubai'
+          | 'Asia/Dushanbe'
+          | 'Asia/Famagusta'
+          | 'Asia/Gaza'
+          | 'Asia/Harbin'
+          | 'Asia/Hebron'
+          | 'Asia/Ho_Chi_Minh'
+          | 'Asia/Hong_Kong'
+          | 'Asia/Hovd'
+          | 'Asia/Irkutsk'
+          | 'Asia/Istanbul'
+          | 'Asia/Jakarta'
+          | 'Asia/Jayapura'
+          | 'Asia/Jerusalem'
+          | 'Asia/Kabul'
+          | 'Asia/Kamchatka'
+          | 'Asia/Karachi'
+          | 'Asia/Kashgar'
+          | 'Asia/Kathmandu'
+          | 'Asia/Katmandu'
+          | 'Asia/Khandyga'
+          | 'Asia/Kolkata'
+          | 'Asia/Krasnoyarsk'
+          | 'Asia/Kuala_Lumpur'
+          | 'Asia/Kuching'
+          | 'Asia/Kuwait'
+          | 'Asia/Macao'
+          | 'Asia/Macau'
+          | 'Asia/Magadan'
+          | 'Asia/Makassar'
+          | 'Asia/Manila'
+          | 'Asia/Muscat'
+          | 'Asia/Nicosia'
+          | 'Asia/Novokuznetsk'
+          | 'Asia/Novosibirsk'
+          | 'Asia/Omsk'
+          | 'Asia/Oral'
+          | 'Asia/Phnom_Penh'
+          | 'Asia/Pontianak'
+          | 'Asia/Pyongyang'
+          | 'Asia/Qatar'
+          | 'Asia/Qostanay'
+          | 'Asia/Qyzylorda'
+          | 'Asia/Rangoon'
+          | 'Asia/Riyadh'
+          | 'Asia/Saigon'
+          | 'Asia/Sakhalin'
+          | 'Asia/Samarkand'
+          | 'Asia/Seoul'
+          | 'Asia/Shanghai'
+          | 'Asia/Singapore'
+          | 'Asia/Srednekolymsk'
+          | 'Asia/Taipei'
+          | 'Asia/Tashkent'
+          | 'Asia/Tbilisi'
+          | 'Asia/Tehran'
+          | 'Asia/Tel_Aviv'
+          | 'Asia/Thimbu'
+          | 'Asia/Thimphu'
+          | 'Asia/Tokyo'
+          | 'Asia/Tomsk'
+          | 'Asia/Ujung_Pandang'
+          | 'Asia/Ulaanbaatar'
+          | 'Asia/Ulan_Bator'
+          | 'Asia/Urumqi'
+          | 'Asia/Ust-Nera'
+          | 'Asia/Vientiane'
+          | 'Asia/Vladivostok'
+          | 'Asia/Yakutsk'
+          | 'Asia/Yangon'
+          | 'Asia/Yekaterinburg'
+          | 'Asia/Yerevan'
+          | 'Atlantic/Azores'
+          | 'Atlantic/Bermuda'
+          | 'Atlantic/Canary'
+          | 'Atlantic/Cape_Verde'
+          | 'Atlantic/Faeroe'
+          | 'Atlantic/Faroe'
+          | 'Atlantic/Jan_Mayen'
+          | 'Atlantic/Madeira'
+          | 'Atlantic/Reykjavik'
+          | 'Atlantic/South_Georgia'
+          | 'Atlantic/St_Helena'
+          | 'Atlantic/Stanley'
+          | 'Australia/ACT'
+          | 'Australia/Adelaide'
+          | 'Australia/Brisbane'
+          | 'Australia/Broken_Hill'
+          | 'Australia/Canberra'
+          | 'Australia/Currie'
+          | 'Australia/Darwin'
+          | 'Australia/Eucla'
+          | 'Australia/Hobart'
+          | 'Australia/LHI'
+          | 'Australia/Lindeman'
+          | 'Australia/Lord_Howe'
+          | 'Australia/Melbourne'
+          | 'Australia/NSW'
+          | 'Australia/North'
+          | 'Australia/Perth'
+          | 'Australia/Queensland'
+          | 'Australia/South'
+          | 'Australia/Sydney'
+          | 'Australia/Tasmania'
+          | 'Australia/Victoria'
+          | 'Australia/West'
+          | 'Australia/Yancowinna'
+          | 'Brazil/Acre'
+          | 'Brazil/DeNoronha'
+          | 'Brazil/East'
+          | 'Brazil/West'
+          | 'CET'
+          | 'CST6CDT'
+          | 'Canada/Atlantic'
+          | 'Canada/Central'
+          | 'Canada/Eastern'
+          | 'Canada/Mountain'
+          | 'Canada/Newfoundland'
+          | 'Canada/Pacific'
+          | 'Canada/Saskatchewan'
+          | 'Canada/Yukon'
+          | 'Chile/Continental'
+          | 'Chile/EasterIsland'
+          | 'Cuba'
+          | 'EET'
+          | 'EST'
+          | 'EST5EDT'
+          | 'Egypt'
+          | 'Eire'
+          | 'Etc/GMT'
+          | 'Etc/GMT+0'
+          | 'Etc/GMT+1'
+          | 'Etc/GMT+10'
+          | 'Etc/GMT+11'
+          | 'Etc/GMT+12'
+          | 'Etc/GMT+2'
+          | 'Etc/GMT+3'
+          | 'Etc/GMT+4'
+          | 'Etc/GMT+5'
+          | 'Etc/GMT+6'
+          | 'Etc/GMT+7'
+          | 'Etc/GMT+8'
+          | 'Etc/GMT+9'
+          | 'Etc/GMT-0'
+          | 'Etc/GMT-1'
+          | 'Etc/GMT-10'
+          | 'Etc/GMT-11'
+          | 'Etc/GMT-12'
+          | 'Etc/GMT-13'
+          | 'Etc/GMT-14'
+          | 'Etc/GMT-2'
+          | 'Etc/GMT-3'
+          | 'Etc/GMT-4'
+          | 'Etc/GMT-5'
+          | 'Etc/GMT-6'
+          | 'Etc/GMT-7'
+          | 'Etc/GMT-8'
+          | 'Etc/GMT-9'
+          | 'Etc/GMT0'
+          | 'Etc/Greenwich'
+          | 'Etc/UCT'
+          | 'Etc/UTC'
+          | 'Etc/Universal'
+          | 'Etc/Zulu'
+          | 'Europe/Amsterdam'
+          | 'Europe/Andorra'
+          | 'Europe/Astrakhan'
+          | 'Europe/Athens'
+          | 'Europe/Belfast'
+          | 'Europe/Belgrade'
+          | 'Europe/Berlin'
+          | 'Europe/Bratislava'
+          | 'Europe/Brussels'
+          | 'Europe/Bucharest'
+          | 'Europe/Budapest'
+          | 'Europe/Busingen'
+          | 'Europe/Chisinau'
+          | 'Europe/Copenhagen'
+          | 'Europe/Dublin'
+          | 'Europe/Gibraltar'
+          | 'Europe/Guernsey'
+          | 'Europe/Helsinki'
+          | 'Europe/Isle_of_Man'
+          | 'Europe/Istanbul'
+          | 'Europe/Jersey'
+          | 'Europe/Kaliningrad'
+          | 'Europe/Kiev'
+          | 'Europe/Kirov'
+          | 'Europe/Kyiv'
+          | 'Europe/Lisbon'
+          | 'Europe/Ljubljana'
+          | 'Europe/London'
+          | 'Europe/Luxembourg'
+          | 'Europe/Madrid'
+          | 'Europe/Malta'
+          | 'Europe/Mariehamn'
+          | 'Europe/Minsk'
+          | 'Europe/Monaco'
+          | 'Europe/Moscow'
+          | 'Europe/Nicosia'
+          | 'Europe/Oslo'
+          | 'Europe/Paris'
+          | 'Europe/Podgorica'
+          | 'Europe/Prague'
+          | 'Europe/Riga'
+          | 'Europe/Rome'
+          | 'Europe/Samara'
+          | 'Europe/San_Marino'
+          | 'Europe/Sarajevo'
+          | 'Europe/Saratov'
+          | 'Europe/Simferopol'
+          | 'Europe/Skopje'
+          | 'Europe/Sofia'
+          | 'Europe/Stockholm'
+          | 'Europe/Tallinn'
+          | 'Europe/Tirane'
+          | 'Europe/Tiraspol'
+          | 'Europe/Ulyanovsk'
+          | 'Europe/Uzhgorod'
+          | 'Europe/Vaduz'
+          | 'Europe/Vatican'
+          | 'Europe/Vienna'
+          | 'Europe/Vilnius'
+          | 'Europe/Volgograd'
+          | 'Europe/Warsaw'
+          | 'Europe/Zagreb'
+          | 'Europe/Zaporozhye'
+          | 'Europe/Zurich'
+          | 'Factory'
+          | 'GB'
+          | 'GB-Eire'
+          | 'GMT'
+          | 'GMT+0'
+          | 'GMT-0'
+          | 'GMT0'
+          | 'Greenwich'
+          | 'HST'
+          | 'Hongkong'
+          | 'Iceland'
+          | 'Indian/Antananarivo'
+          | 'Indian/Chagos'
+          | 'Indian/Christmas'
+          | 'Indian/Cocos'
+          | 'Indian/Comoro'
+          | 'Indian/Kerguelen'
+          | 'Indian/Mahe'
+          | 'Indian/Maldives'
+          | 'Indian/Mauritius'
+          | 'Indian/Mayotte'
+          | 'Indian/Reunion'
+          | 'Iran'
+          | 'Israel'
+          | 'Jamaica'
+          | 'Japan'
+          | 'Kwajalein'
+          | 'Libya'
+          | 'MET'
+          | 'MST'
+          | 'MST7MDT'
+          | 'Mexico/BajaNorte'
+          | 'Mexico/BajaSur'
+          | 'Mexico/General'
+          | 'NZ'
+          | 'NZ-CHAT'
+          | 'Navajo'
+          | 'PRC'
+          | 'PST8PDT'
+          | 'Pacific/Apia'
+          | 'Pacific/Auckland'
+          | 'Pacific/Bougainville'
+          | 'Pacific/Chatham'
+          | 'Pacific/Chuuk'
+          | 'Pacific/Easter'
+          | 'Pacific/Efate'
+          | 'Pacific/Enderbury'
+          | 'Pacific/Fakaofo'
+          | 'Pacific/Fiji'
+          | 'Pacific/Funafuti'
+          | 'Pacific/Galapagos'
+          | 'Pacific/Gambier'
+          | 'Pacific/Guadalcanal'
+          | 'Pacific/Guam'
+          | 'Pacific/Honolulu'
+          | 'Pacific/Johnston'
+          | 'Pacific/Kanton'
+          | 'Pacific/Kiritimati'
+          | 'Pacific/Kosrae'
+          | 'Pacific/Kwajalein'
+          | 'Pacific/Majuro'
+          | 'Pacific/Marquesas'
+          | 'Pacific/Midway'
+          | 'Pacific/Nauru'
+          | 'Pacific/Niue'
+          | 'Pacific/Norfolk'
+          | 'Pacific/Noumea'
+          | 'Pacific/Pago_Pago'
+          | 'Pacific/Palau'
+          | 'Pacific/Pitcairn'
+          | 'Pacific/Pohnpei'
+          | 'Pacific/Ponape'
+          | 'Pacific/Port_Moresby'
+          | 'Pacific/Rarotonga'
+          | 'Pacific/Saipan'
+          | 'Pacific/Samoa'
+          | 'Pacific/Tahiti'
+          | 'Pacific/Tarawa'
+          | 'Pacific/Tongatapu'
+          | 'Pacific/Truk'
+          | 'Pacific/Wake'
+          | 'Pacific/Wallis'
+          | 'Pacific/Yap'
+          | 'Poland'
+          | 'Portugal'
+          | 'ROC'
+          | 'ROK'
+          | 'Singapore'
+          | 'Turkey'
+          | 'UCT'
+          | 'US/Alaska'
+          | 'US/Aleutian'
+          | 'US/Arizona'
+          | 'US/Central'
+          | 'US/East-Indiana'
+          | 'US/Eastern'
+          | 'US/Hawaii'
+          | 'US/Indiana-Starke'
+          | 'US/Michigan'
+          | 'US/Mountain'
+          | 'US/Pacific'
+          | 'US/Samoa'
+          | 'UTC'
+          | 'Universal'
+          | 'W-SU'
+          | 'WET'
+          | 'Zulu'
+        /** @description Columns to include in the CSV, in order. Defaults to created_at, type, product, gross_amount, fees, tax_amount, net_amount, currency, status and paid_out_at. */
+        columns?:
+          | components['schemas']['TransactionExportColumn']
+          | components['schemas']['TransactionExportColumn'][]
+          | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': string
         }
       }
       /** @description Validation Error */
@@ -47610,6 +49171,64 @@ export interface operations {
       }
     }
   }
+  'license_keys:rotate': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LicenseKeyRead']
+        }
+      }
+      /** @description License key cannot be rotated in its current status. Allowed statuses: disabled, granted. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RotateNotPermitted']
+        }
+      }
+      /** @description Not authorized to manage license key. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description License key not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'license_keys:get_activation': {
     parameters: {
       query?: never
@@ -50087,7 +51706,7 @@ export interface operations {
         }
       }
       /** @description Customer is not ready to confirm a payment method. */
-      400: {
+      403: {
         headers: {
           [name: string]: unknown
         }
@@ -50902,6 +52521,64 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['LicenseKeyWithActivations']
+        }
+      }
+      /** @description License key not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:license_keys:rotate': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LicenseKeyRead']
+        }
+      }
+      /** @description License key cannot be rotated in its current status. Allowed statuses: disabled, granted. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RotateNotPermitted']
+        }
+      }
+      /** @description Not authorized to manage license key. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
         }
       }
       /** @description License key not found. */
@@ -52861,6 +54538,64 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:export_customer_ids': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': string
+        }
+      }
+      /** @description Authentication required. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:pan_transfer': {
     parameters: {
       query?: never
@@ -53042,6 +54777,119 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:get_cutover': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationCutoverReport']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:start_cutover': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json':
+          | components['schemas']['MerchantMigrationCutoverRequest']
+          | null
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationCutoverReport']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description The card transfer hasn't reached the switch step yet. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CutoverNotStarted']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:records_summary': {
     parameters: {
       query?: never
@@ -53110,6 +54958,9 @@ export interface operations {
         reason_level?: components['schemas']['PrecheckReasonLevel'] | null
         import_status?:
           | components['schemas']['MerchantMigrationRecordStatus']
+          | null
+        cutover_status?:
+          | components['schemas']['MerchantMigrationCutoverStatus']
           | null
         /** @description Page number, defaults to 1. */
         page?: number
@@ -59367,6 +61218,608 @@ type FlattenedDeepRequired<T> = {
 type ReadonlyArray<T> = [Exclude<T, undefined>] extends [unknown[]]
   ? Readonly<Exclude<T, undefined>>
   : Readonly<Exclude<T, undefined>[]>
+export const pathsV1TransactionsExportGetParametersQueryTimezoneValues: ReadonlyArray<
+  FlattenedDeepRequired<paths>['/v1/transactions/export']['get']['parameters']['query']['timezone']
+> = [
+  'Africa/Abidjan',
+  'Africa/Accra',
+  'Africa/Addis_Ababa',
+  'Africa/Algiers',
+  'Africa/Asmara',
+  'Africa/Asmera',
+  'Africa/Bamako',
+  'Africa/Bangui',
+  'Africa/Banjul',
+  'Africa/Bissau',
+  'Africa/Blantyre',
+  'Africa/Brazzaville',
+  'Africa/Bujumbura',
+  'Africa/Cairo',
+  'Africa/Casablanca',
+  'Africa/Ceuta',
+  'Africa/Conakry',
+  'Africa/Dakar',
+  'Africa/Dar_es_Salaam',
+  'Africa/Djibouti',
+  'Africa/Douala',
+  'Africa/El_Aaiun',
+  'Africa/Freetown',
+  'Africa/Gaborone',
+  'Africa/Harare',
+  'Africa/Johannesburg',
+  'Africa/Juba',
+  'Africa/Kampala',
+  'Africa/Khartoum',
+  'Africa/Kigali',
+  'Africa/Kinshasa',
+  'Africa/Lagos',
+  'Africa/Libreville',
+  'Africa/Lome',
+  'Africa/Luanda',
+  'Africa/Lubumbashi',
+  'Africa/Lusaka',
+  'Africa/Malabo',
+  'Africa/Maputo',
+  'Africa/Maseru',
+  'Africa/Mbabane',
+  'Africa/Mogadishu',
+  'Africa/Monrovia',
+  'Africa/Nairobi',
+  'Africa/Ndjamena',
+  'Africa/Niamey',
+  'Africa/Nouakchott',
+  'Africa/Ouagadougou',
+  'Africa/Porto-Novo',
+  'Africa/Sao_Tome',
+  'Africa/Timbuktu',
+  'Africa/Tripoli',
+  'Africa/Tunis',
+  'Africa/Windhoek',
+  'America/Adak',
+  'America/Anchorage',
+  'America/Anguilla',
+  'America/Antigua',
+  'America/Araguaina',
+  'America/Argentina/Buenos_Aires',
+  'America/Argentina/Catamarca',
+  'America/Argentina/ComodRivadavia',
+  'America/Argentina/Cordoba',
+  'America/Argentina/Jujuy',
+  'America/Argentina/La_Rioja',
+  'America/Argentina/Mendoza',
+  'America/Argentina/Rio_Gallegos',
+  'America/Argentina/Salta',
+  'America/Argentina/San_Juan',
+  'America/Argentina/San_Luis',
+  'America/Argentina/Tucuman',
+  'America/Argentina/Ushuaia',
+  'America/Aruba',
+  'America/Asuncion',
+  'America/Atikokan',
+  'America/Atka',
+  'America/Bahia',
+  'America/Bahia_Banderas',
+  'America/Barbados',
+  'America/Belem',
+  'America/Belize',
+  'America/Blanc-Sablon',
+  'America/Boa_Vista',
+  'America/Bogota',
+  'America/Boise',
+  'America/Buenos_Aires',
+  'America/Cambridge_Bay',
+  'America/Campo_Grande',
+  'America/Cancun',
+  'America/Caracas',
+  'America/Catamarca',
+  'America/Cayenne',
+  'America/Cayman',
+  'America/Chicago',
+  'America/Chihuahua',
+  'America/Ciudad_Juarez',
+  'America/Coral_Harbour',
+  'America/Cordoba',
+  'America/Costa_Rica',
+  'America/Coyhaique',
+  'America/Creston',
+  'America/Cuiaba',
+  'America/Curacao',
+  'America/Danmarkshavn',
+  'America/Dawson',
+  'America/Dawson_Creek',
+  'America/Denver',
+  'America/Detroit',
+  'America/Dominica',
+  'America/Edmonton',
+  'America/Eirunepe',
+  'America/El_Salvador',
+  'America/Ensenada',
+  'America/Fort_Nelson',
+  'America/Fort_Wayne',
+  'America/Fortaleza',
+  'America/Glace_Bay',
+  'America/Godthab',
+  'America/Goose_Bay',
+  'America/Grand_Turk',
+  'America/Grenada',
+  'America/Guadeloupe',
+  'America/Guatemala',
+  'America/Guayaquil',
+  'America/Guyana',
+  'America/Halifax',
+  'America/Havana',
+  'America/Hermosillo',
+  'America/Indiana/Indianapolis',
+  'America/Indiana/Knox',
+  'America/Indiana/Marengo',
+  'America/Indiana/Petersburg',
+  'America/Indiana/Tell_City',
+  'America/Indiana/Vevay',
+  'America/Indiana/Vincennes',
+  'America/Indiana/Winamac',
+  'America/Indianapolis',
+  'America/Inuvik',
+  'America/Iqaluit',
+  'America/Jamaica',
+  'America/Jujuy',
+  'America/Juneau',
+  'America/Kentucky/Louisville',
+  'America/Kentucky/Monticello',
+  'America/Knox_IN',
+  'America/Kralendijk',
+  'America/La_Paz',
+  'America/Lima',
+  'America/Los_Angeles',
+  'America/Louisville',
+  'America/Lower_Princes',
+  'America/Maceio',
+  'America/Managua',
+  'America/Manaus',
+  'America/Marigot',
+  'America/Martinique',
+  'America/Matamoros',
+  'America/Mazatlan',
+  'America/Mendoza',
+  'America/Menominee',
+  'America/Merida',
+  'America/Metlakatla',
+  'America/Mexico_City',
+  'America/Miquelon',
+  'America/Moncton',
+  'America/Monterrey',
+  'America/Montevideo',
+  'America/Montreal',
+  'America/Montserrat',
+  'America/Nassau',
+  'America/New_York',
+  'America/Nipigon',
+  'America/Nome',
+  'America/Noronha',
+  'America/North_Dakota/Beulah',
+  'America/North_Dakota/Center',
+  'America/North_Dakota/New_Salem',
+  'America/Nuuk',
+  'America/Ojinaga',
+  'America/Panama',
+  'America/Pangnirtung',
+  'America/Paramaribo',
+  'America/Phoenix',
+  'America/Port-au-Prince',
+  'America/Port_of_Spain',
+  'America/Porto_Acre',
+  'America/Porto_Velho',
+  'America/Puerto_Rico',
+  'America/Punta_Arenas',
+  'America/Rainy_River',
+  'America/Rankin_Inlet',
+  'America/Recife',
+  'America/Regina',
+  'America/Resolute',
+  'America/Rio_Branco',
+  'America/Rosario',
+  'America/Santa_Isabel',
+  'America/Santarem',
+  'America/Santiago',
+  'America/Santo_Domingo',
+  'America/Sao_Paulo',
+  'America/Scoresbysund',
+  'America/Shiprock',
+  'America/Sitka',
+  'America/St_Barthelemy',
+  'America/St_Johns',
+  'America/St_Kitts',
+  'America/St_Lucia',
+  'America/St_Thomas',
+  'America/St_Vincent',
+  'America/Swift_Current',
+  'America/Tegucigalpa',
+  'America/Thule',
+  'America/Thunder_Bay',
+  'America/Tijuana',
+  'America/Toronto',
+  'America/Tortola',
+  'America/Vancouver',
+  'America/Virgin',
+  'America/Whitehorse',
+  'America/Winnipeg',
+  'America/Yakutat',
+  'America/Yellowknife',
+  'Antarctica/Casey',
+  'Antarctica/Davis',
+  'Antarctica/DumontDUrville',
+  'Antarctica/Macquarie',
+  'Antarctica/Mawson',
+  'Antarctica/McMurdo',
+  'Antarctica/Palmer',
+  'Antarctica/Rothera',
+  'Antarctica/South_Pole',
+  'Antarctica/Syowa',
+  'Antarctica/Troll',
+  'Antarctica/Vostok',
+  'Arctic/Longyearbyen',
+  'Asia/Aden',
+  'Asia/Almaty',
+  'Asia/Amman',
+  'Asia/Anadyr',
+  'Asia/Aqtau',
+  'Asia/Aqtobe',
+  'Asia/Ashgabat',
+  'Asia/Ashkhabad',
+  'Asia/Atyrau',
+  'Asia/Baghdad',
+  'Asia/Bahrain',
+  'Asia/Baku',
+  'Asia/Bangkok',
+  'Asia/Barnaul',
+  'Asia/Beirut',
+  'Asia/Bishkek',
+  'Asia/Brunei',
+  'Asia/Calcutta',
+  'Asia/Chita',
+  'Asia/Choibalsan',
+  'Asia/Chongqing',
+  'Asia/Chungking',
+  'Asia/Colombo',
+  'Asia/Dacca',
+  'Asia/Damascus',
+  'Asia/Dhaka',
+  'Asia/Dili',
+  'Asia/Dubai',
+  'Asia/Dushanbe',
+  'Asia/Famagusta',
+  'Asia/Gaza',
+  'Asia/Harbin',
+  'Asia/Hebron',
+  'Asia/Ho_Chi_Minh',
+  'Asia/Hong_Kong',
+  'Asia/Hovd',
+  'Asia/Irkutsk',
+  'Asia/Istanbul',
+  'Asia/Jakarta',
+  'Asia/Jayapura',
+  'Asia/Jerusalem',
+  'Asia/Kabul',
+  'Asia/Kamchatka',
+  'Asia/Karachi',
+  'Asia/Kashgar',
+  'Asia/Kathmandu',
+  'Asia/Katmandu',
+  'Asia/Khandyga',
+  'Asia/Kolkata',
+  'Asia/Krasnoyarsk',
+  'Asia/Kuala_Lumpur',
+  'Asia/Kuching',
+  'Asia/Kuwait',
+  'Asia/Macao',
+  'Asia/Macau',
+  'Asia/Magadan',
+  'Asia/Makassar',
+  'Asia/Manila',
+  'Asia/Muscat',
+  'Asia/Nicosia',
+  'Asia/Novokuznetsk',
+  'Asia/Novosibirsk',
+  'Asia/Omsk',
+  'Asia/Oral',
+  'Asia/Phnom_Penh',
+  'Asia/Pontianak',
+  'Asia/Pyongyang',
+  'Asia/Qatar',
+  'Asia/Qostanay',
+  'Asia/Qyzylorda',
+  'Asia/Rangoon',
+  'Asia/Riyadh',
+  'Asia/Saigon',
+  'Asia/Sakhalin',
+  'Asia/Samarkand',
+  'Asia/Seoul',
+  'Asia/Shanghai',
+  'Asia/Singapore',
+  'Asia/Srednekolymsk',
+  'Asia/Taipei',
+  'Asia/Tashkent',
+  'Asia/Tbilisi',
+  'Asia/Tehran',
+  'Asia/Tel_Aviv',
+  'Asia/Thimbu',
+  'Asia/Thimphu',
+  'Asia/Tokyo',
+  'Asia/Tomsk',
+  'Asia/Ujung_Pandang',
+  'Asia/Ulaanbaatar',
+  'Asia/Ulan_Bator',
+  'Asia/Urumqi',
+  'Asia/Ust-Nera',
+  'Asia/Vientiane',
+  'Asia/Vladivostok',
+  'Asia/Yakutsk',
+  'Asia/Yangon',
+  'Asia/Yekaterinburg',
+  'Asia/Yerevan',
+  'Atlantic/Azores',
+  'Atlantic/Bermuda',
+  'Atlantic/Canary',
+  'Atlantic/Cape_Verde',
+  'Atlantic/Faeroe',
+  'Atlantic/Faroe',
+  'Atlantic/Jan_Mayen',
+  'Atlantic/Madeira',
+  'Atlantic/Reykjavik',
+  'Atlantic/South_Georgia',
+  'Atlantic/St_Helena',
+  'Atlantic/Stanley',
+  'Australia/ACT',
+  'Australia/Adelaide',
+  'Australia/Brisbane',
+  'Australia/Broken_Hill',
+  'Australia/Canberra',
+  'Australia/Currie',
+  'Australia/Darwin',
+  'Australia/Eucla',
+  'Australia/Hobart',
+  'Australia/LHI',
+  'Australia/Lindeman',
+  'Australia/Lord_Howe',
+  'Australia/Melbourne',
+  'Australia/NSW',
+  'Australia/North',
+  'Australia/Perth',
+  'Australia/Queensland',
+  'Australia/South',
+  'Australia/Sydney',
+  'Australia/Tasmania',
+  'Australia/Victoria',
+  'Australia/West',
+  'Australia/Yancowinna',
+  'Brazil/Acre',
+  'Brazil/DeNoronha',
+  'Brazil/East',
+  'Brazil/West',
+  'CET',
+  'CST6CDT',
+  'Canada/Atlantic',
+  'Canada/Central',
+  'Canada/Eastern',
+  'Canada/Mountain',
+  'Canada/Newfoundland',
+  'Canada/Pacific',
+  'Canada/Saskatchewan',
+  'Canada/Yukon',
+  'Chile/Continental',
+  'Chile/EasterIsland',
+  'Cuba',
+  'EET',
+  'EST',
+  'EST5EDT',
+  'Egypt',
+  'Eire',
+  'Etc/GMT',
+  'Etc/GMT+0',
+  'Etc/GMT+1',
+  'Etc/GMT+10',
+  'Etc/GMT+11',
+  'Etc/GMT+12',
+  'Etc/GMT+2',
+  'Etc/GMT+3',
+  'Etc/GMT+4',
+  'Etc/GMT+5',
+  'Etc/GMT+6',
+  'Etc/GMT+7',
+  'Etc/GMT+8',
+  'Etc/GMT+9',
+  'Etc/GMT-0',
+  'Etc/GMT-1',
+  'Etc/GMT-10',
+  'Etc/GMT-11',
+  'Etc/GMT-12',
+  'Etc/GMT-13',
+  'Etc/GMT-14',
+  'Etc/GMT-2',
+  'Etc/GMT-3',
+  'Etc/GMT-4',
+  'Etc/GMT-5',
+  'Etc/GMT-6',
+  'Etc/GMT-7',
+  'Etc/GMT-8',
+  'Etc/GMT-9',
+  'Etc/GMT0',
+  'Etc/Greenwich',
+  'Etc/UCT',
+  'Etc/UTC',
+  'Etc/Universal',
+  'Etc/Zulu',
+  'Europe/Amsterdam',
+  'Europe/Andorra',
+  'Europe/Astrakhan',
+  'Europe/Athens',
+  'Europe/Belfast',
+  'Europe/Belgrade',
+  'Europe/Berlin',
+  'Europe/Bratislava',
+  'Europe/Brussels',
+  'Europe/Bucharest',
+  'Europe/Budapest',
+  'Europe/Busingen',
+  'Europe/Chisinau',
+  'Europe/Copenhagen',
+  'Europe/Dublin',
+  'Europe/Gibraltar',
+  'Europe/Guernsey',
+  'Europe/Helsinki',
+  'Europe/Isle_of_Man',
+  'Europe/Istanbul',
+  'Europe/Jersey',
+  'Europe/Kaliningrad',
+  'Europe/Kiev',
+  'Europe/Kirov',
+  'Europe/Kyiv',
+  'Europe/Lisbon',
+  'Europe/Ljubljana',
+  'Europe/London',
+  'Europe/Luxembourg',
+  'Europe/Madrid',
+  'Europe/Malta',
+  'Europe/Mariehamn',
+  'Europe/Minsk',
+  'Europe/Monaco',
+  'Europe/Moscow',
+  'Europe/Nicosia',
+  'Europe/Oslo',
+  'Europe/Paris',
+  'Europe/Podgorica',
+  'Europe/Prague',
+  'Europe/Riga',
+  'Europe/Rome',
+  'Europe/Samara',
+  'Europe/San_Marino',
+  'Europe/Sarajevo',
+  'Europe/Saratov',
+  'Europe/Simferopol',
+  'Europe/Skopje',
+  'Europe/Sofia',
+  'Europe/Stockholm',
+  'Europe/Tallinn',
+  'Europe/Tirane',
+  'Europe/Tiraspol',
+  'Europe/Ulyanovsk',
+  'Europe/Uzhgorod',
+  'Europe/Vaduz',
+  'Europe/Vatican',
+  'Europe/Vienna',
+  'Europe/Vilnius',
+  'Europe/Volgograd',
+  'Europe/Warsaw',
+  'Europe/Zagreb',
+  'Europe/Zaporozhye',
+  'Europe/Zurich',
+  'Factory',
+  'GB',
+  'GB-Eire',
+  'GMT',
+  'GMT+0',
+  'GMT-0',
+  'GMT0',
+  'Greenwich',
+  'HST',
+  'Hongkong',
+  'Iceland',
+  'Indian/Antananarivo',
+  'Indian/Chagos',
+  'Indian/Christmas',
+  'Indian/Cocos',
+  'Indian/Comoro',
+  'Indian/Kerguelen',
+  'Indian/Mahe',
+  'Indian/Maldives',
+  'Indian/Mauritius',
+  'Indian/Mayotte',
+  'Indian/Reunion',
+  'Iran',
+  'Israel',
+  'Jamaica',
+  'Japan',
+  'Kwajalein',
+  'Libya',
+  'MET',
+  'MST',
+  'MST7MDT',
+  'Mexico/BajaNorte',
+  'Mexico/BajaSur',
+  'Mexico/General',
+  'NZ',
+  'NZ-CHAT',
+  'Navajo',
+  'PRC',
+  'PST8PDT',
+  'Pacific/Apia',
+  'Pacific/Auckland',
+  'Pacific/Bougainville',
+  'Pacific/Chatham',
+  'Pacific/Chuuk',
+  'Pacific/Easter',
+  'Pacific/Efate',
+  'Pacific/Enderbury',
+  'Pacific/Fakaofo',
+  'Pacific/Fiji',
+  'Pacific/Funafuti',
+  'Pacific/Galapagos',
+  'Pacific/Gambier',
+  'Pacific/Guadalcanal',
+  'Pacific/Guam',
+  'Pacific/Honolulu',
+  'Pacific/Johnston',
+  'Pacific/Kanton',
+  'Pacific/Kiritimati',
+  'Pacific/Kosrae',
+  'Pacific/Kwajalein',
+  'Pacific/Majuro',
+  'Pacific/Marquesas',
+  'Pacific/Midway',
+  'Pacific/Nauru',
+  'Pacific/Niue',
+  'Pacific/Norfolk',
+  'Pacific/Noumea',
+  'Pacific/Pago_Pago',
+  'Pacific/Palau',
+  'Pacific/Pitcairn',
+  'Pacific/Pohnpei',
+  'Pacific/Ponape',
+  'Pacific/Port_Moresby',
+  'Pacific/Rarotonga',
+  'Pacific/Saipan',
+  'Pacific/Samoa',
+  'Pacific/Tahiti',
+  'Pacific/Tarawa',
+  'Pacific/Tongatapu',
+  'Pacific/Truk',
+  'Pacific/Wake',
+  'Pacific/Wallis',
+  'Pacific/Yap',
+  'Poland',
+  'Portugal',
+  'ROC',
+  'ROK',
+  'Singapore',
+  'Turkey',
+  'UCT',
+  'US/Alaska',
+  'US/Aleutian',
+  'US/Arizona',
+  'US/Central',
+  'US/East-Indiana',
+  'US/Eastern',
+  'US/Hawaii',
+  'US/Indiana-Starke',
+  'US/Michigan',
+  'US/Mountain',
+  'US/Pacific',
+  'US/Samoa',
+  'UTC',
+  'Universal',
+  'W-SU',
+  'WET',
+  'Zulu',
+]
 export const pathsV1WebhooksDeliveriesGetParametersQueryHttp_code_classAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/webhooks/deliveries']['get']['parameters']['query']['http_code_class']
 > = ['2xx', '3xx', '4xx', '5xx']
@@ -65858,6 +68311,9 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationCutoverStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
+> = ['moved', 'skipped', 'failed']
 export const merchantMigrationRecordStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationRecordStatus']
 > = ['pending', 'imported', 'skipped', 'failed']
@@ -66789,7 +69245,7 @@ export const organizationKYCCountryAnyOf0Values: ReadonlyArray<
 ]
 export const organizationMemberRoleUpdateRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationMemberRoleUpdate']['role']
-> = ['admin', 'member']
+> = ['admin', 'finance', 'member']
 export const organizationPermissionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationPermission']
 > = [
@@ -66856,7 +69312,7 @@ export const organizationReviewSubCheckKeyValues: ReadonlyArray<
 ]
 export const organizationRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationRole']
-> = ['owner', 'admin', 'member']
+> = ['owner', 'admin', 'finance', 'member']
 export const organizationSSOConnectionTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSSOConnectionType']
 > = ['oidc']
@@ -67682,6 +70138,12 @@ export const productPriceSourceValues: ReadonlyArray<
 export const productPriceTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceType']
 > = ['one_time', 'recurring']
+export const productPriceUnitBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductPriceUnitBased']['amount_type']
+> = ['unit_based']
+export const productPriceUnitBasedCreateAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductPriceUnitBasedCreate']['amount_type']
+> = ['unit_based']
 export const productSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductSortProperty']
 > = [
@@ -68052,6 +70514,9 @@ export const subscriptionStatusValues: ReadonlyArray<
 export const subscriptionUncanceledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUncanceledEvent']['name']
 > = ['subscription.uncanceled']
+export const subscriptionUnitsUpdatedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionUnitsUpdatedEvent']['name']
+> = ['subscription.units_updated']
 export const subscriptionUpdateClearedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUpdateClearedEvent']['name']
 > = ['subscription.update_cleared']
@@ -68192,9 +70657,28 @@ export const taxJurisdictionSortPropertyValues: ReadonlyArray<
 export const textBlockTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TextBlock']['type']
 > = ['text']
+export const tierTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TierType']
+> = ['volume', 'graduated']
 export const timeIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TimeInterval']
 > = ['year', 'month', 'week', 'day', 'hour']
+export const transactionExportColumnValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TransactionExportColumn']
+> = [
+  'created_at',
+  'type',
+  'product',
+  'gross_amount',
+  'tax_amount',
+  'fees',
+  'net_amount',
+  'currency',
+  'status',
+  'paid_out_at',
+  'invoice_number',
+  'order_id',
+]
 export const transactionSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TransactionSortProperty']
 > = ['created_at', '-created_at', 'amount', '-amount']

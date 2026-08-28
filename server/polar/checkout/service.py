@@ -99,6 +99,7 @@ from polar.product.custom_price import validate_custom_price_amount
 from polar.product.guard import (
     CustomPrice,
     SeatPrice,
+    UnitPrice,
     is_custom_price,
     is_discount_applicable,
     is_seat_price,
@@ -289,9 +290,9 @@ class CheckoutService:
         created_after: datetime | None = None,
         created_before: datetime | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CheckoutSortProperty]] = [
-            (CheckoutSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[CheckoutSortProperty]] = (
+            (CheckoutSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Checkout], int]:
         repository = CheckoutRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -514,6 +515,37 @@ class CheckoutService:
                 ]
             )
 
+        # Validate units for unit-based pricing
+        min_units = checkout_create.min_units
+        max_units = checkout_create.max_units
+        unit_price = price_set.get_unit_price()
+        self._validate_checkout_unit_constraints(unit_price, min_units, max_units)
+
+        if unit_price is not None:
+            if checkout_create.units is None:
+                checkout_create.units = (
+                    min_units
+                    if min_units is not None
+                    else unit_price.get_minimum_purchasable_units()
+                )
+            self._validate_unit_limits(
+                unit_price,
+                checkout_create.units,
+                checkout_min_units=min_units,
+                checkout_max_units=max_units,
+            )
+        elif checkout_create.units is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "units"),
+                        "msg": "Units can only be set for unit-based pricing.",
+                        "input": checkout_create.units,
+                    }
+                ]
+            )
+
         product = await self._eager_load_product(session, product)
 
         subscription: Subscription | None = None
@@ -549,6 +581,7 @@ class CheckoutService:
             price_set.get_static_prices(),
             custom_amount=checkout_create.amount,
             seats=checkout_create.seats,
+            units=checkout_create.units,
         )
 
         custom_field_data = validate_custom_field_data(
@@ -797,6 +830,25 @@ class CheckoutService:
                     min_seats = checkout_link.seats
                     max_seats = checkout_link.seats
 
+        unit_price = currency_prices.get_unit_price()
+        units = None
+        min_units: int | None = None
+        max_units: int | None = None
+        if unit_price is not None:
+            units = unit_price.get_minimum_purchasable_units()
+            # Honor a unit lock preconfigured on the checkout link, but only if it
+            # still fits the product's current bounds. On drift, fall back to the
+            # minimum so the customer is never blocked.
+            if checkout_link.units is not None:
+                price_minimum = unit_price.get_minimum_purchasable_units()
+                price_maximum = unit_price.get_maximum_units()
+                if checkout_link.units >= price_minimum and (
+                    price_maximum is None or checkout_link.units <= price_maximum
+                ):
+                    units = checkout_link.units
+                    min_units = checkout_link.units
+                    max_units = checkout_link.units
+
         custom_price = currency_prices.get_custom_price()
         custom_amount: int | None = None
         if custom_price is not None:
@@ -810,7 +862,7 @@ class CheckoutService:
                         custom_price, query_amount_int, currency
                     )
                     custom_amount = query_amount_int
-                except (ValueError, TypeError, PolarRequestValidationError):
+                except ValueError, TypeError, PolarRequestValidationError:
                     pass
 
         amount = calculate_upfront_amount(
@@ -819,6 +871,7 @@ class CheckoutService:
             # `None` falls back to the preset/minimum.
             custom_amount=custom_amount,
             seats=seats,
+            units=units,
         )
 
         discount: Discount | None = None
@@ -843,6 +896,9 @@ class CheckoutService:
             seats=seats,
             min_seats=min_seats,
             max_seats=max_seats,
+            units=units,
+            min_units=min_units,
+            max_units=max_units,
             trial_interval=checkout_link.trial_interval,
             trial_interval_count=checkout_link.trial_interval_count,
             allow_discount_codes=checkout_link.allow_discount_codes,
@@ -1120,19 +1176,18 @@ class CheckoutService:
                     }
                 )
 
-        if checkout.is_billing_address_required:
-            if (
-                checkout.customer_billing_address is None
-                or not checkout.customer_billing_address.has_address()
-            ):
-                errors.append(
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "customer_billing_address"),
-                        "msg": "Full billing address is required.",
-                        "input": checkout.customer_billing_address,
-                    }
-                )
+        if checkout.is_billing_address_required and (
+            checkout.customer_billing_address is None
+            or not checkout.customer_billing_address.has_address()
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "customer_billing_address"),
+                    "msg": "Full billing address is required.",
+                    "input": checkout.customer_billing_address,
+                }
+            )
 
         if (
             checkout.is_payment_form_required
@@ -2142,6 +2197,7 @@ class CheckoutService:
         # Resolve the checkout's current price set once, then drive the amount /
         # seat logic off it rather than the single `product_price` FK.
         seat_price: SeatPrice | None = None
+        unit_price: UnitPrice | None = None
         custom_price: CustomPrice | None = None
         static_prices: list[ProductPrice] = []
         if has_product_checkout(checkout):
@@ -2149,6 +2205,7 @@ class CheckoutService:
                 checkout.prices[checkout.product.id], checkout.currency
             )
             seat_price = price_set.get_seat_price()
+            unit_price = price_set.get_unit_price()
             custom_price = price_set.get_custom_price()
             static_prices = price_set.get_static_prices()
 
@@ -2181,6 +2238,34 @@ class CheckoutService:
                         "loc": ("body", "seats"),
                         "msg": "Seats can only be set for seat-based pricing.",
                         "input": checkout_update.seats,
+                    }
+                ]
+            )
+
+        # Handle unit updates for unit-based pricing
+        if unit_price is not None and checkout_update.units is not None:
+            self._validate_unit_limits(
+                unit_price,
+                checkout_update.units,
+                checkout_min_units=checkout.min_units,
+                checkout_max_units=checkout.max_units,
+            )
+            checkout.units = checkout_update.units
+            checkout.amount = calculate_upfront_amount(
+                static_prices,
+                custom_amount=None,
+                seats=checkout.seats,
+                units=checkout_update.units,
+            )
+        elif checkout_update.units is not None:
+            # Units provided for non-unit-based pricing
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "units"),
+                        "msg": "Units can only be set for unit-based pricing.",
+                        "input": checkout_update.units,
                     }
                 ]
             )
@@ -2373,8 +2458,15 @@ class CheckoutService:
             seats = checkout_update.seats or seat_price.get_minimum_seats()
             self._validate_seat_limits(seat_price, seats)
             checkout.seats = seats
+        checkout.units = None
+        unit_price = price_set.get_unit_price()
+        units: int | None = None
+        if unit_price is not None:
+            units = checkout_update.units or unit_price.get_minimum_purchasable_units()
+            self._validate_unit_limits(unit_price, units)
+            checkout.units = units
         checkout.amount = calculate_upfront_amount(
-            price_set.get_static_prices(), custom_amount=None, seats=seats
+            price_set.get_static_prices(), custom_amount=None, seats=seats, units=units
         )
 
         return checkout
@@ -2464,9 +2556,11 @@ class CheckoutService:
 
         currencies: list[str] = []
 
-        if ip_country is not None:
-            if (country_currency := get_presentment_currency(ip_country)) is not None:
-                currencies.append(country_currency)
+        if (
+            ip_country is not None
+            and (country_currency := get_presentment_currency(ip_country)) is not None
+        ):
+            currencies.append(country_currency)
 
         currencies.append(organization.default_presentment_currency)
         return currencies
@@ -2658,19 +2752,138 @@ class CheckoutService:
                 ]
             )
 
-        if tier_maximum is not None:
-            if max_seats is not None and max_seats > tier_maximum:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "less_than_equal",
-                            "loc": ("body", "max_seats"),
-                            "msg": f"max_seats must be at most {tier_maximum}.",
-                            "input": max_seats,
-                            "ctx": {"le": tier_maximum},
-                        }
-                    ]
+        if (
+            tier_maximum is not None
+            and max_seats is not None
+            and max_seats > tier_maximum
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": ("body", "max_seats"),
+                        "msg": f"max_seats must be at most {tier_maximum}.",
+                        "input": max_seats,
+                        "ctx": {"le": tier_maximum},
+                    }
+                ]
+            )
+
+    def _validate_unit_limits(
+        self,
+        price: UnitPrice | None,
+        units: int,
+        loc: tuple[str, ...] = ("body", "units"),
+        *,
+        checkout_min_units: int | None = None,
+        checkout_max_units: int | None = None,
+    ) -> None:
+        """Validate that a unit count is within the min/max bounds for a unit-based price."""
+        if price is None:
+            return
+
+        minimum_units = price.get_minimum_purchasable_units()
+        maximum_units = price.get_maximum_units()
+
+        # Narrow the effective range with checkout-level constraints
+        if checkout_min_units is not None:
+            minimum_units = max(minimum_units, checkout_min_units)
+        if checkout_max_units is not None:
+            if maximum_units is not None:
+                maximum_units = min(maximum_units, checkout_max_units)
+            else:
+                maximum_units = checkout_max_units
+
+        if units < minimum_units:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "greater_than_equal",
+                        "loc": loc,
+                        "msg": f"Minimum {minimum_units} units required.",
+                        "input": units,
+                        "ctx": {"ge": minimum_units},
+                    }
+                ]
+            )
+
+        if maximum_units is not None and units > maximum_units:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": loc,
+                        "msg": f"Maximum {maximum_units} units allowed.",
+                        "input": units,
+                        "ctx": {"le": maximum_units},
+                    }
+                ]
+            )
+
+    def _validate_checkout_unit_constraints(
+        self,
+        price: UnitPrice | None,
+        min_units: int | None,
+        max_units: int | None,
+    ) -> None:
+        """Validate min_units/max_units against the price's bounds."""
+        if min_units is None and max_units is None:
+            return
+
+        if price is None:
+            fields: list[ValidationError] = []
+            if min_units is not None:
+                fields.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "min_units"),
+                        "msg": "min_units can only be set for unit-based pricing.",
+                        "input": min_units,
+                    }
                 )
+            if max_units is not None:
+                fields.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "max_units"),
+                        "msg": "max_units can only be set for unit-based pricing.",
+                        "input": max_units,
+                    }
+                )
+            raise PolarRequestValidationError(fields)
+
+        price_minimum = price.get_minimum_purchasable_units()
+        price_maximum = price.get_maximum_units()
+
+        if min_units is not None and min_units < price_minimum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "greater_than_equal",
+                        "loc": ("body", "min_units"),
+                        "msg": f"min_units must be at least {price_minimum}.",
+                        "input": min_units,
+                        "ctx": {"ge": price_minimum},
+                    }
+                ]
+            )
+
+        if (
+            price_maximum is not None
+            and max_units is not None
+            and max_units > price_maximum
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": ("body", "max_units"),
+                        "msg": f"max_units must be at most {price_maximum}.",
+                        "input": max_units,
+                        "ctx": {"le": price_maximum},
+                    }
+                ]
+            )
 
     def _get_required_confirm_fields(self, checkout: Checkout) -> set[tuple[str, ...]]:
         fields: set[tuple[str, ...]] = set()

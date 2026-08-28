@@ -39,8 +39,7 @@ def _verify_webhook(raw_body: bytes, headers: dict[str, str]) -> Any:
         raise HTTPException(status_code=500)
 
     # Resend secrets use whsec_ prefix; StandardWebhook expects raw base64
-    if secret.startswith("whsec_"):
-        secret = secret[6:]
+    secret = secret.removeprefix("whsec_")
 
     try:
         wh = StandardWebhook(secret)

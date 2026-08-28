@@ -44,7 +44,7 @@ class Locker:
         blocking_timeout: float,
         sleep: float = 0.1,
         thread_local: bool = True,
-    ) -> AsyncGenerator[Lock, None]:
+    ) -> AsyncGenerator[Lock]:
         """
         Acquire a distributed lock on the Redis server.
 

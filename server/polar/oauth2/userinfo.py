@@ -14,18 +14,12 @@ def generate_user_info(sub: SubTypeValue, scope: str) -> UserInfo:
 
     if is_sub_user(sub):
         _, user = sub
-        if scopes:
-            if Scope.openid in scopes:
-                pass
-            if Scope.email in scopes:
-                claims.update(
-                    {"email": user.email, "email_verified": user.email_verified}
-                )
+        if scopes and Scope.email in scopes:
+            claims.update({"email": user.email, "email_verified": user.email_verified})
     elif is_sub_organization(sub):
         _, organization = sub
-        if scopes:
-            if Scope.openid in scopes:
-                claims.update({"name": organization.slug})
+        if scopes and Scope.openid in scopes:
+            claims.update({"name": organization.slug})
     else:
         raise NotImplementedError()
 

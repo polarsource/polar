@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, Literal
 
 from posthog import Posthog
@@ -60,7 +58,6 @@ class Service:
         self.client = Posthog(settings.POSTHOG_PROJECT_API_KEY)
         self.client.disabled = settings.is_testing()
         self.client.debug = settings.POSTHOG_DEBUG
-        self.client.feature_enabled
 
     def has_feature_flag(self, auth_subject: AuthSubject[Subject], flag: str) -> bool:
         if not self.client:

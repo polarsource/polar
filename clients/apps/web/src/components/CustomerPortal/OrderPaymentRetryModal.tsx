@@ -38,7 +38,8 @@ export const OrderPaymentRetryModal = ({
 
   const { data: paymentMethodsData } = useCustomerPaymentMethods(api)
   const cardPaymentMethods = (paymentMethodsData?.items || []).filter(
-    (pm): pm is schemas['PaymentMethodCard'] => pm.type === 'card',
+    (pm): pm is schemas['PaymentMethodCard'] | schemas['PaymentMethodKrCard'] =>
+      pm.type === 'card' || (pm.type === 'kr_card' && order.currency === 'krw'),
   )
 
   const stripePromise = useMemo(() => loadPolarStripe(), [])

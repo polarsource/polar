@@ -90,7 +90,10 @@ export function PrecheckRecordsDrawer({
         ) : (
           <Box as="ul" flexDirection="column">
             {items.map((item) => (
-              <RecordRow key={item.source_id} item={item} />
+              <RecordRow
+                key={`${item.source_id}:${item.currency}`}
+                item={item}
+              />
             ))}
           </Box>
         )}

@@ -1,19 +1,24 @@
 'use client'
 
+import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
+import { toast } from '@/components/Toast/use-toast'
 import { MetricDashboardEditorContent } from '@/components/DashboardOverview/MetricSelectorModal'
 import {
   useDeleteMetricDashboard,
   useMetricDashboards,
   useUpdateMetricDashboard,
 } from '@/hooks/queries/metrics'
+import { useHasPermission } from '@/hooks/permissions'
 import { getServerURL } from '@/utils/api'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -157,7 +162,7 @@ export function DashboardViewActions({
       ) : (
         <ExportMenu onExport={handleExport} />
       )}
-      {currentDashboard && (
+      {currentDashboard ? (
         <Modal
           title="Edit Dashboard"
           isShown={isEditShown}
@@ -170,7 +175,7 @@ export function DashboardViewActions({
             />
           }
         />
-      )}
+      ) : null}
     </div>
   )
 }
@@ -204,6 +209,10 @@ function DashboardDotMenu({
   onExport: () => void
 }) {
   const router = useRouter()
+  const canManageAnalytics = useHasPermission(
+    organization.id,
+    'analytics:manage',
+  )
   const deleteMutation = useDeleteMetricDashboard(dashboard.id, organization.id)
   const {
     isShown: isDeleteShown,
@@ -230,7 +239,20 @@ function DashboardDotMenu({
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem destructive onClick={showDelete}>
+          <DropdownMenuItem
+            destructive
+            onClick={() => {
+              if (!canManageAnalytics) {
+                toast({
+                  title: 'Restricted access',
+                  description: permissionDeniedMessage('analytics:manage'),
+                })
+                return
+              }
+
+              showDelete()
+            }}
+          >
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -259,6 +281,10 @@ function EditDashboardContent({
   dashboard: schemas['MetricDashboardSchema']
   onClose: () => void
 }) {
+  const canManageAnalytics = useHasPermission(
+    organization.id,
+    'analytics:manage',
+  )
   const updateMutation = useUpdateMetricDashboard(dashboard.id, organization.id)
 
   const handleSave = useCallback(
@@ -268,6 +294,16 @@ function EditDashboardContent({
     },
     [updateMutation, onClose],
   )
+
+  if (!canManageAnalytics) {
+    return (
+      <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+        <AccessRestricted
+          message={permissionDeniedMessage('analytics:manage')}
+        />
+      </Box>
+    )
+  }
 
   return (
     <MetricDashboardEditorContent

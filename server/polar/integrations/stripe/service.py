@@ -6,6 +6,18 @@ from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
+from stripe.params._customer_create_params import (
+    CustomerCreateParams,
+    CustomerCreateParamsTaxIdDatum,
+)
+from stripe.params._customer_modify_params import CustomerModifyParams
+from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
+from stripe.params._payment_intent_modify_params import PaymentIntentModifyParams
+from stripe.params._setup_intent_confirm_params import SetupIntentConfirmParams
+from stripe.params._setup_intent_create_params import SetupIntentCreateParams
+from stripe.params._setup_intent_modify_params import SetupIntentModifyParams
+from stripe.params._setup_intent_retrieve_params import SetupIntentRetrieveParams
+from stripe.params.tax._calculation_create_params import CalculationCreateParams
 
 from polar.config import settings
 from polar.exceptions import PolarError
@@ -18,23 +30,11 @@ if TYPE_CHECKING:
     from stripe.params._balance_transaction_list_params import (
         BalanceTransactionListParams,
     )
-    from stripe.params._customer_create_params import (
-        CustomerCreateParams,
-        CustomerCreateParamsTaxIdDatum,
-    )
-    from stripe.params._customer_modify_params import CustomerModifyParams
-    from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
-    from stripe.params._payment_intent_modify_params import PaymentIntentModifyParams
-    from stripe.params._setup_intent_confirm_params import SetupIntentConfirmParams
-    from stripe.params._setup_intent_create_params import SetupIntentCreateParams
-    from stripe.params._setup_intent_modify_params import SetupIntentModifyParams
-    from stripe.params._setup_intent_retrieve_params import SetupIntentRetrieveParams
     from stripe.params._transfer_create_params import TransferCreateParams
     from stripe.params._transfer_create_reversal_params import (
         TransferCreateReversalParams,
     )
     from stripe.params._transfer_modify_params import TransferModifyParams
-    from stripe.params.tax._calculation_create_params import CalculationCreateParams
     from stripe.params.tax._transaction_create_reversal_params import (
         TransactionCreateReversalParams,
     )
@@ -128,7 +128,7 @@ class StripeService:
         try:
             account = await stripe_lib.Account.retrieve_async(id)
             return bool(account)
-        except (stripe_lib.PermissionError, stripe_lib.InvalidRequestError):
+        except stripe_lib.PermissionError, stripe_lib.InvalidRequestError:
             # No access, or the account was deleted / never existed.
             return False
 

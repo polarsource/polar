@@ -283,7 +283,7 @@ class TestSyncStripeFees:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
     ) -> None:
-        now_timestamp = int(datetime.datetime.now().timestamp())
+        now_timestamp = int(datetime.datetime.now(datetime.UTC).timestamp())
         balance_transactions = [
             stripe_lib.BalanceTransaction.construct_from(
                 {

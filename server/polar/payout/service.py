@@ -234,6 +234,20 @@ class PayoutHeld(PayoutError):
         super().__init__(message, 400)
 
 
+class PayoutNotManual(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = f"Payout {payout.id} is not a manual payout."
+        super().__init__(message, 400)
+
+
+class PayoutNotPending(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = f"Payout {payout.id} is not pending."
+        super().__init__(message, 409)
+
+
 class PayoutNotCancelable(PayoutError):
     def __init__(self, payout: Payout) -> None:
         self.payout = payout
@@ -261,9 +275,9 @@ class PayoutService:
         account_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[PayoutStatus] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[PayoutSortProperty]] = [
-            (PayoutSortProperty.created_at, False)
-        ],
+        sorting: Sequence[Sorting[PayoutSortProperty]] = (
+            (PayoutSortProperty.created_at, False),
+        ),
     ) -> tuple[Sequence[Payout], int]:
         repository = PayoutRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -740,6 +754,27 @@ class PayoutService:
         return await attempt_repository.update(
             attempt,
             update_dict={"processor_id": stripe_payout.id},
+        )
+
+    async def mark_manual_as_paid(
+        self, session: AsyncSession, payout: Payout
+    ) -> PayoutAttempt:
+        if payout.processor != PayoutAccountType.manual:
+            raise PayoutNotManual(payout)
+        if payout.status != PayoutStatus.pending:
+            raise PayoutNotPending(payout)
+
+        attempt_repository = PayoutAttemptRepository.from_session(session)
+        return await attempt_repository.create(
+            PayoutAttempt(
+                payout=payout,
+                processor=PayoutAccountType.manual,
+                status=PayoutAttemptStatus.succeeded,
+                amount=payout.account_amount,
+                currency=payout.account_currency,
+                paid_at=utc_now(),
+            ),
+            flush=True,
         )
 
     async def cancel(self, session: AsyncSession, payout: Payout) -> Payout:

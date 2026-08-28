@@ -84,6 +84,7 @@ from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceSeatUnit,
+    ProductPriceUnit,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
@@ -96,6 +97,7 @@ from polar.product.guard import (
     is_seat_price,
 )
 from polar.product.schemas import ProductPriceFixedCreate
+from polar.product.tiers import Tiers, TierType
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
     TaxabilityReason,
@@ -123,6 +125,7 @@ from tests.fixtures.random_objects import (
     create_product_fixed_and_seat,
     create_product_price_fixed,
     create_product_price_seat_unit,
+    create_product_unit_based,
     create_subscription,
     create_trial_redemption,
 )
@@ -404,6 +407,34 @@ async def product_fixed_seat(
         organization=organization,
         fixed_amount=99900,
         price_per_seat=2000,
+    )
+
+
+@pytest_asyncio.fixture
+async def product_unit_based(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """$29/unit flat, monthly."""
+    return await create_product_unit_based(
+        save_fixture, organization=organization, price_per_unit=2900
+    )
+
+
+@pytest_asyncio.fixture
+async def product_unit_based_with_min(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """$29/unit flat, monthly, minimum 5 units, capped at 100."""
+    return await create_product_unit_based(
+        save_fixture,
+        organization=organization,
+        minimum_units=5,
+        tiers=Tiers.model_validate(
+            {
+                "type": TierType.volume,
+                "tiers": [{"bound": 100, "unit_amount": "2900"}],
+            }
+        ),
     )
 
 
@@ -7392,3 +7423,190 @@ async def test_send_expiration_events(
     args = mock_send.call_args
     assert args[0][2] == WebhookEventType.checkout_expired
     assert args[0][3].id == checkout.id
+
+
+@pytest.mark.asyncio
+class TestCreateUnitBasedCheckout:
+    @pytest.mark.auth
+    async def test_with_units(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based: Product,
+    ) -> None:
+        price = product_unit_based.prices[0]
+        assert isinstance(price, ProductPriceUnit)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(product_id=product_unit_based.id, units=10),
+            auth_subject,
+        )
+
+        assert checkout.units == 10
+        assert checkout.seats is None
+        assert checkout.amount == price.calculate_amount(10) == 29000
+        assert checkout.currency == price.price_currency
+
+    @pytest.mark.auth
+    async def test_without_units_defaults_to_one(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(product_id=product_unit_based.id),
+            auth_subject,
+        )
+
+        assert checkout.units == 1
+        assert checkout.amount == 2900
+
+    @pytest.mark.auth
+    async def test_without_units_defaults_to_minimum(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based_with_min: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(product_id=product_unit_based_with_min.id),
+            auth_subject,
+        )
+
+        assert checkout.units == 5
+        assert checkout.amount == 5 * 2900
+
+    @pytest.mark.auth
+    async def test_units_below_minimum_rejected(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based_with_min: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductCreate(
+                    product_id=product_unit_based_with_min.id, units=4
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_units_above_cap_rejected(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based_with_min: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductCreate(
+                    product_id=product_unit_based_with_min.id, units=101
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_units_on_non_unit_product_rejected(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductCreate(product_id=product.id, units=3),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_min_units_sets_default_and_narrows(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(
+                product_id=product_unit_based.id, min_units=20, max_units=50
+            ),
+            auth_subject,
+        )
+        assert checkout.units == 20
+        assert checkout.min_units == 20
+        assert checkout.max_units == 50
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(session, checkout, CheckoutUpdate(units=51))
+
+    @pytest.mark.auth
+    async def test_min_units_on_non_unit_product_rejected(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductCreate(product_id=product.id, min_units=2),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_update_units_recomputes_amount(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_unit_based: Product,
+    ) -> None:
+        price = product_unit_based.prices[0]
+        assert isinstance(price, ProductPriceUnit)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(product_id=product_unit_based.id, units=3),
+            auth_subject,
+        )
+        assert checkout.amount == price.calculate_amount(3)
+
+        updated = await checkout_service.update(
+            session, checkout, CheckoutUpdate(units=7)
+        )
+
+        assert updated.units == 7
+        assert updated.amount == price.calculate_amount(7) == 7 * 2900
+
+    @pytest.mark.auth
+    async def test_update_units_on_non_unit_product_rejected(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(product_id=product.id),
+            auth_subject,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(session, checkout, CheckoutUpdate(units=3))

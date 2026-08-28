@@ -19,28 +19,6 @@ from tests.fixtures.random_objects import create_customer, create_organization
 class TestResolveMember:
     """Tests for resolve_member() function in scope.py"""
 
-    async def test_feature_flag_disabled_returns_none(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        account: Account,
-    ) -> None:
-        """When member_model_enabled is False, should return None regardless of inputs."""
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"member_model_enabled": False}
-        )
-        customer = await create_customer(save_fixture, organization=organization)
-
-        result = await resolve_member(
-            session,
-            customer_id=customer.id,
-            organization=organization,
-            member_id=None,
-            is_seat_based=False,
-        )
-
-        assert result is None
-
     async def test_feature_flag_disabled_uses_explicit_member_id(
         self,
         session: AsyncSession,

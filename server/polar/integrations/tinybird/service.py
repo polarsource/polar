@@ -1,6 +1,6 @@
 import json
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from functools import partial
@@ -39,6 +39,7 @@ from polar.meter.aggregation import Aggregation, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event
 from polar.models.event import EventSource
+from polar.worker import MAX_JOB_PAYLOAD_BYTES
 
 from .client import client
 from .schemas import TinybirdEvent
@@ -229,7 +230,7 @@ def _truncate_datetime_to_millis(dt_str: str | None) -> str | None:
     try:
         dt = datetime.fromisoformat(dt_str)
         return dt.isoformat(timespec="milliseconds")
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return dt_str
 
 
@@ -326,6 +327,24 @@ def events_to_tinybird(
     ancestors_by_event: Mapping[UUID, Sequence[str]] | None = None,
 ) -> list[TinybirdEvent]:
     return [_event_to_tinybird(e, (ancestors_by_event or {}).get(e.id)) for e in events]
+
+
+def chunk_tinybird_events(
+    events: Sequence[TinybirdEvent],
+) -> Iterator[list[TinybirdEvent]]:
+    """Split events into groups that each fit in a single job payload."""
+    chunk: list[TinybirdEvent] = []
+    chunk_bytes = 0
+    for event in events:
+        event_bytes = len(json.dumps(event).encode("utf-8"))
+        if chunk and chunk_bytes + event_bytes > MAX_JOB_PAYLOAD_BYTES:
+            yield chunk
+            chunk = []
+            chunk_bytes = 0
+        chunk.append(event)
+        chunk_bytes += event_bytes
+    if chunk:
+        yield chunk
 
 
 async def ingest_events(
@@ -480,7 +499,7 @@ def _finite(value: Any, default: float = 0.0) -> float:
     """Convert a value to float, returning default for NaN/Infinity."""
     try:
         result = float(value or 0)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
     return result if math.isfinite(result) else default
 
@@ -499,7 +518,7 @@ def _parse_datetime(value: datetime | date | str) -> datetime:
         return value
     if isinstance(value, date):
         return datetime(value.year, value.month, value.day, tzinfo=UTC)
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return datetime.fromisoformat(value)
 
 
 def _parse_uuid(value: UUID | str) -> UUID:
@@ -731,9 +750,10 @@ class TinybirdEventsQuery:
             return self._ch_comparison(col, clause)
 
         parts = clause.property.split(".")
-        if clause.operator in (FilterOperator.like, FilterOperator.not_like):
-            attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
-        elif isinstance(clause.value, str):
+        if clause.operator in (
+            FilterOperator.like,
+            FilterOperator.not_like,
+        ) or isinstance(clause.value, str):
             attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
         else:
             attr = func.JSONExtractFloat(events_table.c.user_metadata, *parts)
@@ -1088,7 +1108,7 @@ class TinybirdEventsQuery:
                 TinybirdTimeseriesStats(
                     organization_id=row["organization_id"],
                     name=row["name"],
-                    bucket=datetime.min,
+                    bucket=datetime.min.replace(tzinfo=UTC),
                     occurrences=row["occurrences"],
                     customers=row["customers"],
                     totals=totals,
@@ -1146,7 +1166,7 @@ class TinybirdEventsQuery:
 
         base_filter = self._get_organization_filter()
 
-        ids_str = ", ".join(f"'{str(aid)}'" for aid in ancestor_ids)
+        ids_str = ", ".join(f"'{aid!s}'" for aid in ancestor_ids)
         ids_array: ColumnClause[str] = literal_column(f"[{ids_str}]")
 
         matched_ancestor = func.arrayJoin(

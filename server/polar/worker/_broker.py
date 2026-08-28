@@ -37,6 +37,8 @@ from ._sqlalchemy import SQLAlchemyMiddleware
 
 log: Logger = structlog.get_logger()
 
+TASK_TIME_LIMIT_DEFAULT_MS = 60_000
+
 
 class OperationalErrorMiddleware(dramatiq.Middleware):
     """Middleware to detect and handle operational errors during message processing."""
@@ -195,12 +197,17 @@ class RoutingRedisBroker(RedisBroker):
         if should_route_to_sqs(message.actor_name):
             _sqs.send_jobs_sync(
                 [
-                    (
+                    _sqs.Job(
                         message.actor_name,
                         message.args,
                         message.kwargs,
                         delay,
                         CorrelationID.get(),
+                        message.message_id,
+                        message.options.get("debounce_key"),
+                        message_options=_sqs.extract_group_completion_options(
+                            message.options
+                        ),
                     )
                 ]
             )
@@ -271,7 +278,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
             min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
         ),
         middleware.AgeLimit(),
-        middleware.TimeLimit(time_limit=60_000),
+        middleware.TimeLimit(time_limit=TASK_TIME_LIMIT_DEFAULT_MS),
         middleware.CurrentMessage(),
     ]
 
@@ -286,6 +293,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
 
 
 __all__ = [
+    "TASK_TIME_LIMIT_DEFAULT_MS",
     "get_broker",
     "scheduler_middleware",
 ]

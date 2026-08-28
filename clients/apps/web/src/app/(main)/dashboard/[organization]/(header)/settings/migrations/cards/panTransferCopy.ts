@@ -1,5 +1,3 @@
-import { schemas } from '@polar-sh/client'
-
 // The backend checklist stores state only. All wording lives here, keyed by
 // step key, so we can reword a step without a data migration.
 
@@ -7,6 +5,7 @@ export interface StepInputField {
   name: string
   label: string
   placeholder?: string
+  hint?: string
   required: boolean
 }
 
@@ -17,7 +16,38 @@ export interface StepCopy {
   warning?: string
   inputs?: StepInputField[]
   action?: string
-  showsDestinationAccount?: boolean
+}
+
+export const STRIPE_MIGRATION_ID_FIELD = 'stripe_migration_request_id'
+
+export const stripeCopyStatusUrl = (sourceAccountId?: string): string =>
+  sourceAccountId
+    ? `https://dashboard.stripe.com/${sourceAccountId}/copy-status/shared`
+    : 'https://dashboard.stripe.com/copy-status/shared'
+
+const STRIPE_MIGRATION_ID_RE = /^migreq_[A-Za-z0-9_]+$/
+
+export function isValidStripeMigrationId(value: string): boolean {
+  return STRIPE_MIGRATION_ID_RE.test(value)
+}
+
+export function stripeMigrationIdError(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+  if (!isValidStripeMigrationId(trimmed)) {
+    return 'Must start with migreq_ followed by letters, numbers, or underscores.'
+  }
+  return null
+}
+
+const STRIPE_MIGRATION_ID_INPUT: StepInputField = {
+  name: STRIPE_MIGRATION_ID_FIELD,
+  label: 'Stripe migration ID',
+  placeholder: 'migreq_…',
+  hint: 'Starts with migreq_. Find it on the Stripe copy status page.',
+  required: true,
 }
 
 export const STEP_COPY: Record<string, StepCopy> = {
@@ -28,25 +58,15 @@ export const STEP_COPY: Record<string, StepCopy> = {
   },
   start_copy: {
     title: 'Start the copy in Stripe',
-    description: 'Ask Stripe to copy your saved cards over to Polar.',
-    guidance: [
-      'Open your Stripe Dashboard and go to Customers.',
-      'Click Copy customers, then pick a copy method.',
-      'Paste the Polar account ID above as the recipient.',
-      'Confirm the copy.',
-    ],
-    warning:
-      'Only the account owner can start a copy. Wallet cards, Bacs and old SEPA mandates do not copy.',
+    description: 'Copy saved cards from your Stripe account to Polar.',
+    warning: 'Only the account owner can start a copy.',
     inputs: [
       {
-        name: 'stripe_migration_request_id',
-        label: 'Stripe request ID',
-        placeholder: 'From the Stripe copy status page',
-        required: false,
+        ...STRIPE_MIGRATION_ID_INPUT,
+        hint: 'After starting the copy, paste it from Stripe copy status. Starts with migreq_.',
       },
     ],
-    action: 'I started the copy',
-    showsDestinationAccount: true,
+    action: 'Mark copy started',
   },
   authorize_copy: {
     title: 'Polar accepts the copy',
@@ -64,13 +84,7 @@ export const STEP_COPY: Record<string, StepCopy> = {
       'We open a migration request with Stripe and share our PCI documents.',
     // Ops fills this in, but the merchant is the one who has to quote it to
     // their provider on the next step, so it has to stay readable afterwards.
-    inputs: [
-      {
-        name: 'stripe_migration_request_id',
-        label: 'Stripe request ID',
-        required: true,
-      },
-    ],
+    inputs: [STRIPE_MIGRATION_ID_INPUT],
   },
   request_provider_export: {
     title: 'Ask your provider for the card export',
@@ -135,43 +149,15 @@ export const STEP_COPY: Record<string, StepCopy> = {
     action: 'I handled these customers',
   },
   cutover: {
-    title: 'Cut over billing',
+    title: 'Switch billing to Polar',
     description:
-      'Polar takes over billing. Stop billing these subscriptions on your old provider first.',
+      'Pick the subscriptions to switch. Polar starts billing them and stops them on Stripe.',
     warning: 'You cannot undo this. Charges start on Polar from now on.',
-    action: 'Cut over billing',
+    action: 'Switch subscriptions',
   },
   move_subscriptions: {
-    title: 'Polar moves your subscriptions',
+    title: 'Polar switches your subscriptions',
     description:
-      'We activate the imported subscriptions. They are charged on their next renewal date.',
+      'We start billing the subscriptions you picked. They are charged on their next renewal date.',
   },
 }
-
-type Owner = schemas['PanStepOwner']
-
-// Polar Ops and the Polar app are the same party to a merchant. The split only
-// matters to us.
-const OWNER_LABEL: Record<Owner, string> = {
-  merchant: 'You',
-  polar_ops: 'Polar',
-  polar_app: 'Polar',
-  stripe: 'Stripe',
-  provider: 'Your provider',
-}
-
-const WAITING_LABEL: Record<Owner, string> = {
-  merchant: 'Your turn',
-  polar_ops: 'With Polar',
-  polar_app: 'With Polar',
-  stripe: 'With Stripe',
-  provider: 'With your provider',
-}
-
-// An owner the backend added but this build doesn't know yet still has to read
-// as something, the same way an unknown step key does.
-export const ownerLabel = (owner: Owner): string =>
-  OWNER_LABEL[owner] ?? 'Polar'
-
-export const waitingLabel = (owner: Owner): string =>
-  WAITING_LABEL[owner] ?? 'In progress'

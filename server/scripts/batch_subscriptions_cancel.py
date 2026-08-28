@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import asyncio
 import logging.config
 from functools import wraps

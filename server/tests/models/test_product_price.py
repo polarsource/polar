@@ -7,8 +7,10 @@ from sqlalchemy import select
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Meter, Product
 from polar.models.product_price import (
+    ProductPriceAmountType,
     ProductPriceFixed,
     ProductPriceSeatUnit,
+    ProductPriceUnit,
     TieredPrice,
 )
 from polar.product.tiers import (
@@ -173,44 +175,50 @@ class TestVolumePricing:
 
 class TestCalculateAmountIntegralityGuard:
     def test_fractional_stored_rate_raises(self) -> None:
-        price = _make_seat_price(
-            [{"min_seats": 1, "max_seats": None, "price_per_seat": 500.5}],
-            SeatTierType.volume,
-        )
-        with pytest.raises(ValueError, match="non-integral amount"):
-            price.calculate_amount(3)
+        with pytest.raises(ValueError, match="smallest currency unit"):
+            _make_seat_price(
+                [{"min_seats": 1, "max_seats": None, "price_per_seat": 500.5}],
+                SeatTierType.volume,
+            )
 
 
-def _clear_shared_tier_columns(price: ProductPriceSeatUnit) -> ProductPriceSeatUnit:
-    price.tiers = None  # type: ignore[assignment]
-    price.minimum_units = None
-    price.maximum_units = None
-    return price
+class TestSeatBillingReadsSharedTiers:
+    """Billing and bounds come from the shared columns, not `_seat_tiers`."""
 
-
-class TestSeatBillingReadsSeatTiers:
-    """Billing must not depend on the dual-written `tiers` columns yet."""
-
-    def test_amount_with_empty_shared_columns(self) -> None:
-        price = _clear_shared_tier_columns(_make_seat_price(MULTI_TIER))
+    def test_amount_ignores_legacy_column(self) -> None:
+        price = _make_seat_price(MULTI_TIER)
+        price._seat_tiers = {
+            "seat_tier_type": SeatTierType.volume,
+            "tiers": [{"min_seats": 1, "max_seats": None, "price_per_seat": 1}],
+        }
         assert price.calculate_amount(10) == 10_000
         assert price.calculate_amount(11) == 11 * 800
 
-    def test_bounds_with_empty_shared_columns(self) -> None:
-        price = _clear_shared_tier_columns(
-            _make_seat_price(
-                [{"min_seats": 5, "max_seats": 20, "price_per_seat": 250}],
-            )
+    def test_bounds_from_shared_columns(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 5, "max_seats": 20, "price_per_seat": 250}],
         )
         assert price.get_minimum_seats() == 5
         assert price.get_maximum_seats() == 20
 
-    def test_is_free_with_empty_shared_columns(self) -> None:
-        price = _clear_shared_tier_columns(
-            _make_seat_price(
-                [{"min_seats": 1, "max_seats": None, "price_per_seat": 0}],
-            )
+    def test_maximum_seats_falls_back_to_last_tier_bound(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": 20, "price_per_seat": 250}],
         )
+        price.maximum_units = None
+        assert price.get_maximum_seats() == 20
+
+    def test_is_free_from_shared_tiers(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 0}],
+        )
+        assert price.is_free is True
+
+    def test_is_free_without_tiers(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 250}],
+        )
+        price.tiers = None  # type: ignore[assignment]
         assert price.is_free is True
 
 
@@ -326,14 +334,15 @@ class TestGetTieredAmount:
         assert price.get_tiered_amount(5) == price.tiers.calculate(5)
 
 
-class TestSeatTiersDualWrite:
-    def test_constructor_populates_tiers(self) -> None:
+class TestSeatTiersApiView:
+    def test_constructor_populates_shared_columns(self) -> None:
         price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
         assert price.tiers == seat_tiers_to_tiers(price.seat_tiers)
         assert price.minimum_units == 1
         assert price.maximum_units is None
+        assert price._seat_tiers is None
 
-    def test_updating_seat_tiers_updates_tiers(self) -> None:
+    def test_updating_seat_tiers_updates_shared_columns(self) -> None:
         price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
         price.seat_tiers = {
             "seat_tier_type": SeatTierType.volume,
@@ -345,6 +354,10 @@ class TestSeatTiersDualWrite:
         )
         assert price.minimum_units == 5
         assert price.maximum_units == 20
+        assert price.seat_tiers["tiers"] == [
+            {"min_seats": 5, "max_seats": 20, "price_per_seat": 250}
+        ]
+        assert price._seat_tiers is None
 
     @pytest.mark.asyncio
     async def test_database_round_trip_returns_tiers_model(
@@ -360,21 +373,28 @@ class TestSeatTiersDualWrite:
             seat_tier_type=SeatTierType.graduated,
         )
 
-        tiers = (
-            await session.execute(
-                select(ProductPriceSeatUnit.tiers).where(
-                    ProductPriceSeatUnit.id == price.id
+        result = (
+            (
+                await session.execute(
+                    select(
+                        ProductPriceSeatUnit.tiers,
+                        ProductPriceSeatUnit._seat_tiers,
+                    ).where(ProductPriceSeatUnit.id == price.id)
                 )
             )
-        ).scalar_one()
+            .tuples()
+            .one()
+        )
+        tiers, legacy_seat_tiers = result
 
         assert isinstance(tiers, Tiers)
         assert tiers.type == TierType.graduated
         assert [tier.unit_amount for tier in tiers.tiers] == [
-            Decimal("1000"),
-            Decimal("800"),
-            Decimal("600"),
+            Decimal(1000),
+            Decimal(800),
+            Decimal(600),
         ]
+        assert legacy_seat_tiers is None
 
 
 class TestMinimumMaximumUnits:
@@ -409,3 +429,84 @@ class TestMinimumMaximumUnits:
     def test_maximum_units_unbounded(self) -> None:
         price = _make_tiered_price(_tiers_data(TierType.volume, SHARED_MULTI_TIER))
         assert price.get_maximum_units() is None
+
+
+def _make_unit_price(tiers: list[dict[str, Any]]) -> ProductPriceUnit:
+    return ProductPriceUnit(
+        tiers=_tiers_data(TierType.volume, tiers),
+        price_currency="usd",
+    )
+
+
+class TestUnitBasedPrice:
+    def test_identity(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        assert price.amount_type == ProductPriceAmountType.unit_based
+        assert price.is_static is True
+        assert price.is_metered is False
+        assert price.is_free is False
+
+    def test_non_integral_amount_raises(self) -> None:
+        price = _make_unit_price([{"bound": None, "unit_amount": "10.5"}])
+        with pytest.raises(ValueError, match="non-integral"):
+            price.calculate_amount(3)
+
+    def test_is_free(self) -> None:
+        price = _make_unit_price([{"bound": None, "unit_amount": "0"}])
+        assert price.is_free is True
+
+    def test_is_free_without_tiers(self) -> None:
+        price = _make_unit_price([{"bound": None, "unit_amount": "100"}])
+        price.tiers = None  # type: ignore[assignment]
+        assert price.is_free is True
+
+    def test_unit_noun_defaults(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        assert price.get_unit_noun(1) == "unit"
+        assert price.get_unit_noun(3) == "units"
+
+    def test_unit_noun_custom_label(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"en": {"=1": "device", "other": "devices"}}
+        assert price.get_unit_noun(1) == "device"
+        assert price.get_unit_noun(3) == "devices"
+
+    def test_unit_noun_falls_back_to_other(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"en": {"other": "seats"}}
+        assert price.get_unit_noun(1) == "seats"
+        assert price.get_unit_noun(2) == "seats"
+
+    def test_unit_noun_requested_locale(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {
+            "en": {"=1": "device", "other": "devices"},
+            "fr": {"=1": "appareil", "other": "appareils"},
+        }
+        assert price.get_unit_noun(1, "fr") == "appareil"
+        assert price.get_unit_noun(12, "fr") == "appareils"
+
+    def test_unit_noun_regional_locale_falls_back_to_language(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"fr": {"=1": "appareil", "other": "appareils"}}
+        assert price.get_unit_noun(2, "fr-CA") == "appareils"
+
+    def test_unit_noun_exact_locale_wins_over_language(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {
+            "en": {"=1": "seat", "other": "seats"},
+            "en-GB": {"=1": "place", "other": "places"},
+        }
+        assert price.get_unit_noun(1, "en-GB") == "place"
+        assert price.get_unit_noun(1, "en-US") == "seat"
+
+    def test_unit_noun_missing_locale_falls_back_to_english(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"en": {"=1": "device", "other": "devices"}}
+        assert price.get_unit_noun(1, "fr") == "device"
+
+    def test_unit_noun_non_english_only_label(self) -> None:
+        price = _make_unit_price(SHARED_MULTI_TIER)
+        price.unit_label = {"fr": {"=1": "siège", "other": "sièges"}}
+        assert price.get_unit_noun(1) == "siège"
+        assert price.get_unit_noun(2, "de") == "sièges"

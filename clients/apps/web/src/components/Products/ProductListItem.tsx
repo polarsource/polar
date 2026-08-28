@@ -8,6 +8,7 @@ import {
   hasLegacyRecurringPrices,
   isMeteredPrice,
   isSeatBasedPrice,
+  isUnitBasedPrice,
 } from '@/utils/product'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
@@ -31,12 +32,18 @@ interface ProductListItemProps {
   product: schemas['Product'] | schemas['CheckoutProduct']
   organization: schemas['Organization']
   currency: string
+  checked?: boolean
+  onCheckedChange?: (checked: boolean, event: React.MouseEvent) => void
+  checkboxVisible?: boolean
 }
 
 export const ProductListItem = ({
   product,
   organization,
   currency,
+  checked,
+  onCheckedChange,
+  checkboxVisible,
 }: ProductListItemProps) => {
   const router = useRouter()
   const {
@@ -85,10 +92,20 @@ export const ProductListItem = ({
     isSeatBasedPrice(price),
   )
 
+  const isUnitBasedProduct = product.prices.some((price) =>
+    isUnitBasedPrice(price),
+  )
+
   return (
     <>
       <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
-        <ListItem className="flex flex-row items-center justify-between gap-x-6 pr-3">
+        <ListItem
+          className="flex flex-row items-center justify-between gap-x-6 pr-3"
+          checked={checked}
+          onCheckedChange={onCheckedChange}
+          checkboxVisible={checkboxVisible}
+          checkboxLabel={`Select ${product.name}`}
+        >
           <div className="flex min-w-0 grow flex-row items-center gap-x-4 text-sm">
             <div className="flex min-w-0 flex-row items-center gap-x-2">
               <span className="truncate">{product.name}</span>
@@ -125,6 +142,14 @@ export const ProductListItem = ({
                     className="hidden px-3 py-1 text-xs md:block"
                   >
                     Seat Pricing
+                  </Pill>
+                )}
+                {isUnitBasedProduct && (
+                  <Pill
+                    color="purple"
+                    className="hidden px-3 py-1 text-xs md:block"
+                  >
+                    Unit Pricing
                   </Pill>
                 )}
                 <span className="text-sm leading-snug">
@@ -193,7 +218,6 @@ export const ProductListItem = ({
                         Edit Product
                       </DropdownMenuItem>
                     )}
-
                     <DropdownMenuItem
                       onClick={handleContextMenuCallback(() => {
                         router.push(

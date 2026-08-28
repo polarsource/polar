@@ -265,22 +265,20 @@ class GitHubRepositoryBenefitUserService:
                 ):
                     plan = org_response.parsed_data.plan
             except GitHubException as e:
-                log.error(
+                log.exception(
                     "failed to get github org plan",
                     installation_id=installation.id,
                     organization=installation.account.login,
                     error_type=type(e).__name__,
                     error_message=str(e),
-                    exc_info=True,
                 )
             except Exception as e:
-                log.error(
+                log.exception(
                     "unexpected error getting github org plan",
                     installation_id=installation.id,
                     organization=installation.account.login,
                     error_type=type(e).__name__,
                     error_message=str(e),
-                    exc_info=True,
                 )
 
         plan_name = plan.name if plan else ""

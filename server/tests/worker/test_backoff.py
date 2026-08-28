@@ -1,5 +1,6 @@
 import json
 import math
+import time
 
 import pytest
 from botocore.exceptions import ClientError
@@ -91,25 +92,69 @@ class TestSetMessageVisibility:
 
 class TestEnvelopeAttempt:
     def test_round_trips(self) -> None:
-        body = _sqs.build_envelope("dummy", (1, "x"), {"k": 2}, "corr", 7)
-        actor, args, kwargs, correlation_id, attempt = _sqs.parse_envelope(body)
-        assert actor == "dummy"
-        assert args == [1, "x"]
-        assert kwargs == {"k": 2}
-        assert correlation_id == "corr"
-        assert attempt == 7
+        message_options = {
+            "group_completion_uuid": "group-1",
+            "group_completion_callbacks": [
+                {
+                    "queue_name": "low_priority",
+                    "actor_name": "dummy",
+                    "args": [],
+                    "kwargs": {"redis_key": "callback"},
+                    "options": {},
+                    "message_id": "callback-1",
+                    "message_timestamp": 1234567890000,
+                }
+            ],
+        }
+
+        body = _sqs.build_envelope(
+            "dummy",
+            (1, "x"),
+            {"k": 2},
+            "corr",
+            7,
+            1234567890000,
+            message_id="msg-1",
+            debounce_key="debounce:test",
+            message_options=message_options,
+        )
+
+        envelope = _sqs.parse_envelope(body)
+        assert envelope.actor == "dummy"
+        assert envelope.args == [1, "x"]
+        assert envelope.kwargs == {"k": 2}
+        assert envelope.correlation_id == "corr"
+        assert envelope.attempt == 7
+        assert envelope.message_timestamp == 1234567890000
+        assert envelope.message_id == "msg-1"
+        assert envelope.debounce_key == "debounce:test"
+        assert envelope.message_options == message_options
 
     def test_defaults_to_one(self) -> None:
         body = _sqs.build_envelope("dummy", (), {}, None)
-        *_, attempt = _sqs.parse_envelope(body)
-        assert attempt == 1
+        envelope = _sqs.parse_envelope(body)
+        assert envelope.attempt == 1
+        assert envelope.message_id is None
+        assert envelope.debounce_key is None
+
+    def test_stamps_current_timestamp_by_default(self) -> None:
+        before = int(time.time() * 1000)
+        body = _sqs.build_envelope("dummy", (), {}, None)
+        after = int(time.time() * 1000)
+        envelope = _sqs.parse_envelope(body)
+        assert envelope.message_timestamp is not None
+        assert before <= envelope.message_timestamp <= after
 
     def test_legacy_body_without_attempt(self) -> None:
         body = json.dumps(
             {"actor": "dummy", "args": [], "kwargs": {}, "correlation_id": None}
         )
-        *_, attempt = _sqs.parse_envelope(body)
-        assert attempt == 1
+        envelope = _sqs.parse_envelope(body)
+        assert envelope.attempt == 1
+        assert envelope.message_timestamp is None
+        assert envelope.message_id is None
+        assert envelope.debounce_key is None
+        assert envelope.message_options == {}
 
 
 class TestPlanRetry:
@@ -123,10 +168,22 @@ class TestPlanRetry:
         action, _ = plan_retry("dummy", max_retries, None, scheduler_available=True)
         assert action is not RetryAction.DEAD_LETTER
 
-    def test_sets_visibility_for_short_backoff(self) -> None:
+    def test_re_enqueues_for_short_backoff(self) -> None:
         action, delay = plan_retry("dummy", 1, None, scheduler_available=True)
+        assert action is RetryAction.RE_ENQUEUE
+        assert delay <= _sqs.MAX_DELAY_SECONDS
+
+    def test_schedules_when_backoff_exceeds_delay_cap(self) -> None:
+        long_delay = Retry(delay=2 * _sqs.MAX_DELAY_SECONDS * 1000)
+        action, delay = plan_retry("dummy", 1, long_delay, scheduler_available=True)
+        assert action is RetryAction.SCHEDULE
+        assert delay == 2 * _sqs.MAX_DELAY_SECONDS
+
+    def test_falls_back_to_visibility_without_scheduler(self) -> None:
+        long_delay = Retry(delay=2 * _sqs.MAX_DELAY_SECONDS * 1000)
+        action, delay = plan_retry("dummy", 1, long_delay, scheduler_available=False)
         assert action is RetryAction.SET_VISIBILITY
-        assert delay <= _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
+        assert delay == 2 * _sqs.MAX_DELAY_SECONDS
 
     def test_schedules_when_backoff_exceeds_visibility(self) -> None:
         long_delay = Retry(delay=2 * _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS * 1000)
@@ -139,6 +196,41 @@ class TestPlanRetry:
         action, delay = plan_retry("dummy", 1, long_delay, scheduler_available=False)
         assert action is RetryAction.SET_VISIBILITY
         assert delay == _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
+
+
+class TestSendDelayedMessage:
+    def test_re_enqueues_with_delay(self, mocker: MockerFixture) -> None:
+        client = mocker.MagicMock()
+        client.get_queue_url.return_value = {"QueueUrl": "https://sqs/queue"}
+        _sqs._queue_url_cache.clear()
+
+        _sqs.send_delayed_message(
+            client,
+            "arn:aws:sqs:us-east-2:123456789012:polar-sandbox-tasks-dummy",
+            '{"actor":"dummy"}',
+            60,
+        )
+
+        client.get_queue_url.assert_called_once_with(
+            QueueName="polar-sandbox-tasks-dummy"
+        )
+        client.send_message.assert_called_once_with(
+            QueueUrl="https://sqs/queue",
+            MessageBody='{"actor":"dummy"}',
+            DelaySeconds=60,
+        )
+
+    def test_caps_delay_at_sqs_limit(self, mocker: MockerFixture) -> None:
+        client = mocker.MagicMock()
+        client.get_queue_url.return_value = {"QueueUrl": "https://sqs/queue"}
+        _sqs._queue_url_cache.clear()
+
+        _sqs.send_delayed_message(client, "arn:q", "{}", _sqs.MAX_DELAY_SECONDS * 2)
+
+        assert (
+            client.send_message.call_args.kwargs["DelaySeconds"]
+            == _sqs.MAX_DELAY_SECONDS
+        )
 
 
 class TestBuildRetryScheduleName:

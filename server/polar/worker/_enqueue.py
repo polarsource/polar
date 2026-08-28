@@ -39,9 +39,25 @@ _job_queue_manager: contextvars.ContextVar["JobQueueManager | None"] = (
 
 FLUSH_BATCH_SIZE = 50
 
+UUID_JSON_BYTES = 40
+EVENT_INGESTED_CHUNK_SIZE = _sqs.MAX_JOB_PAYLOAD_BYTES // UUID_JSON_BYTES
+
+
+SQS_ACTORS_WILDCARD = "*"
+
+
+def resolve_sqs_actors() -> set[str]:
+    """Expand the allowlist, resolving the wildcard to every declared actor."""
+    if settings.WORKER_SQS_ACTORS == {SQS_ACTORS_WILDCARD}:
+        return dramatiq.get_broker().get_declared_actors()
+    return settings.WORKER_SQS_ACTORS
+
 
 def should_route_to_sqs(actor_name: str) -> bool:
-    return settings.WORKER_SQS_ENABLED and actor_name in settings.WORKER_SQS_ACTORS
+    if not settings.WORKER_SQS_ENABLED:
+        return False
+    actors = settings.WORKER_SQS_ACTORS
+    return actors == {SQS_ACTORS_WILDCARD} or actor_name in actors
 
 
 class JobQueueManager:
@@ -72,8 +88,10 @@ class JobQueueManager:
         self._ingested_events.extend(event_ids)
 
     async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
-        if len(self._ingested_events) > 0:
-            self.enqueue_job("event.ingested", self._ingested_events)
+        for chunk in itertools.batched(
+            self._ingested_events, EVENT_INGESTED_CHUNK_SIZE
+        ):
+            self.enqueue_job("event.ingested", list(chunk))
 
         if not self._enqueued_jobs:
             self.reset()
@@ -144,12 +162,29 @@ class JobQueueManager:
         # Send SQS last so an SQS failure can't drop the Redis jobs above.
         if sqs_jobs:
             correlation_id = CorrelationID.get()
-            await _sqs.send_jobs(
-                [
-                    (actor_name, args, kwargs, delay, correlation_id)
-                    for actor_name, args, kwargs, delay in sqs_jobs
-                ]
-            )
+            prepared_sqs_jobs: list[_sqs.Job] = []
+            for actor_name, args, kwargs, delay in sqs_jobs:
+                fn = broker.get_actor(actor_name)
+                message_id = str(uuid.uuid4())
+                debounce_key: str | None = None
+
+                debounce = await set_debounce_key(redis, fn, message_id, args, kwargs)
+                if debounce is not None:
+                    debounce_key, debounce_delay = debounce
+                    delay = max(delay or 0, debounce_delay)
+
+                prepared_sqs_jobs.append(
+                    _sqs.Job(
+                        actor_name,
+                        args,
+                        kwargs,
+                        delay,
+                        correlation_id,
+                        message_id,
+                        debounce_key,
+                    )
+                )
+            await _sqs.send_jobs(prepared_sqs_jobs)
 
         self.reset()
 

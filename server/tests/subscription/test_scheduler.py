@@ -1,12 +1,72 @@
+from datetime import timedelta
+
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
+from polar.models import Customer, Product, Subscription
+from polar.models.subscription import SubscriptionStatus
 from polar.subscription.scheduler import (
     SubscriptionJobStore,
     SubscriptionResumeJobStore,
+    _next_run_time,
     _SubscriptionScheduleJobStore,
 )
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_subscription
+
+
+@pytest.mark.asyncio
+async def test_cycle_scheduler_only_selects_due_billable_subscriptions(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    product: Product,
+    customer: Customer,
+) -> None:
+    now = utc_now()
+    past_period_end = now - timedelta(days=1)
+    future_period_end = now + timedelta(days=1)
+
+    active_due = await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.active,
+        current_period_start=past_period_end - timedelta(days=30),
+        current_period_end=past_period_end,
+    )
+    past_due = await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.past_due,
+        current_period_start=past_period_end - timedelta(days=30),
+        current_period_end=past_period_end,
+    )
+    await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.active,
+        current_period_end=future_period_end,
+    )
+    await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.canceled,
+        current_period_start=past_period_end - timedelta(days=30),
+        current_period_end=past_period_end,
+    )
+
+    statement = (
+        SubscriptionJobStore.scheduling_statement()
+        .where(_next_run_time() <= now)
+        .with_only_columns(Subscription.id)
+    )
+    result = await session.execute(statement)
+    assert set(result.scalars()) == {active_due.id, past_due.id}
 
 
 @pytest.mark.asyncio

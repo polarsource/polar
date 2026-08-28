@@ -1,3 +1,4 @@
+import dataclasses
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Never
@@ -76,6 +77,93 @@ async def set_debounce_key(
     log.debug("Set debounce key", key=key, delay=delay)
 
     return key, delay
+
+
+@dataclasses.dataclass
+class DebounceContext:
+    debounce_key: str
+    enqueue_timestamp: int | None
+    max_threshold_execution: bool = False
+
+
+async def check_debounce(
+    redis: RedisAsyncIO,
+    actor: dramatiq.Actor[Any, Any],
+    message_id: str,
+    debounce_key: str,
+) -> DebounceContext | None:
+    log.debug("Checking debounce key", debounce_key=debounce_key)
+
+    debounce_data = await redis.hgetall(debounce_key)
+    if not debounce_data:
+        return DebounceContext(debounce_key=debounce_key, enqueue_timestamp=None)
+
+    if int(debounce_data.get("executed", 0)):
+        log.debug("Debounce key already executed, skipping", debounce_key=debounce_key)
+        TASK_DEBOUNCED.labels(queue=actor.queue_name, task_name=actor.actor_name).inc()
+        return None
+
+    message_owner = debounce_data["message_id"]
+    enqueue_timestamp = int(debounce_data["enqueue_timestamp"])
+
+    if message_owner == message_id:
+        return DebounceContext(
+            debounce_key=debounce_key, enqueue_timestamp=enqueue_timestamp
+        )
+
+    max_threshold: int = actor.options.get(
+        "debounce_max_threshold",
+        int(settings.WORKER_DEFAULT_DEBOUNCE_MAX_THRESHOLD.total_seconds()),
+    )
+    if enqueue_timestamp + max_threshold < now_timestamp():
+        log.info(
+            "Max debounce threshold reached, executing",
+            debounce_key=debounce_key,
+            owner_message_id=message_owner,
+        )
+        return DebounceContext(
+            debounce_key=debounce_key,
+            enqueue_timestamp=enqueue_timestamp,
+            max_threshold_execution=True,
+        )
+
+    log.info(
+        "Debounce owned by another message, skipping",
+        debounce_key=debounce_key,
+        owner_message_id=message_owner,
+    )
+    TASK_DEBOUNCED.labels(queue=actor.queue_name, task_name=actor.actor_name).inc()
+    return None
+
+
+async def finalize_debounce(
+    redis: RedisAsyncIO,
+    actor: dramatiq.Actor[Any, Any],
+    context: DebounceContext,
+    exception: BaseException | None,
+) -> None:
+    debounce_key = context.debounce_key
+    if context.enqueue_timestamp is not None:
+        delay = now_timestamp() - context.enqueue_timestamp
+        TASK_DEBOUNCE_DELAY.labels(
+            queue=actor.queue_name, task_name=actor.actor_name
+        ).observe(delay)
+
+    if context.max_threshold_execution:
+        log.debug(
+            "Bumping debounce key enqueue timestamp after max threshold execution",
+            debounce_key=debounce_key,
+        )
+        async with redis.pipeline(transaction=True) as pipe:
+            await pipe.hset(debounce_key, "enqueue_timestamp", now_timestamp())
+            await pipe.expire(debounce_key, DEBOUNCE_KEY_TTL)
+            await pipe.execute()
+    elif exception is None and context.enqueue_timestamp is not None:
+        log.debug("Marking debounce key as executed", debounce_key=debounce_key)
+        async with redis.pipeline(transaction=True) as pipe:
+            await pipe.hset(debounce_key, "executed", 1)
+            await pipe.hdel(debounce_key, "enqueue_timestamp")
+            await pipe.execute()
 
 
 class DebounceMiddleware(dramatiq.Middleware):
@@ -203,4 +291,10 @@ class DebounceMiddleware(dramatiq.Middleware):
         raise dramatiq.middleware.SkipMessage()
 
 
-__all__ = ["DebounceMiddleware", "set_debounce_key"]
+__all__ = [
+    "DebounceContext",
+    "DebounceMiddleware",
+    "check_debounce",
+    "finalize_debounce",
+    "set_debounce_key",
+]

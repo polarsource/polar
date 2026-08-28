@@ -5,6 +5,7 @@ import typing
 
 from polar.base import (
     AsyncServiceBase,
+    RequestTimeout,
     SyncServiceBase,
     parse_response_json,
     parse_response_none,
@@ -53,6 +54,7 @@ class CustomersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomer:
         """
         List customers.
@@ -68,6 +70,8 @@ class CustomersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -89,6 +93,7 @@ class CustomersSync(SyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -107,6 +112,7 @@ class CustomersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[Customer, None, None]:
         """
         List customers.
@@ -122,6 +128,8 @@ class CustomersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type Customer.
@@ -142,6 +150,7 @@ class CustomersSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -151,17 +160,23 @@ class CustomersSync(SyncServiceBase):
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerIndividualCreate],
     ) -> Customer: ...
 
     @typing.overload
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerTeamCreate],
     ) -> Customer: ...
 
     def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Customer:
         """
@@ -170,6 +185,8 @@ class CustomersSync(SyncServiceBase):
         **Scopes**: `customers:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -183,6 +200,7 @@ class CustomersSync(SyncServiceBase):
             url="/v1/customers/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -195,6 +213,7 @@ class CustomersSync(SyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> str:
         """
         Export customers as a CSV file.
@@ -203,6 +222,8 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -217,6 +238,7 @@ class CustomersSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -227,6 +249,8 @@ class CustomersSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Customer:
         """
         Get a customer by ID.
@@ -235,6 +259,8 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             id: The customer ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -250,6 +276,7 @@ class CustomersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -263,6 +290,7 @@ class CustomersSync(SyncServiceBase):
         id: str,
         *,
         anonymize: bool = False,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a customer.
@@ -286,6 +314,8 @@ class CustomersSync(SyncServiceBase):
         Args:
             id: The customer ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -303,6 +333,7 @@ class CustomersSync(SyncServiceBase):
             query_params={
                 "anonymize": anonymize,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -314,6 +345,8 @@ class CustomersSync(SyncServiceBase):
     def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerUpdate],
     ) -> Customer:
         """
@@ -323,6 +356,8 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             id: The customer ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -339,6 +374,7 @@ class CustomersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -351,6 +387,8 @@ class CustomersSync(SyncServiceBase):
     def get_external(
         self,
         external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Customer:
         """
         Get a customer by external ID.
@@ -359,6 +397,8 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             external_id: The customer external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -374,6 +414,7 @@ class CustomersSync(SyncServiceBase):
                 "external_id": external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -387,6 +428,7 @@ class CustomersSync(SyncServiceBase):
         external_id: str,
         *,
         anonymize: bool = False,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a customer by external ID.
@@ -400,6 +442,8 @@ class CustomersSync(SyncServiceBase):
         Args:
             external_id: The customer external ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -417,6 +461,7 @@ class CustomersSync(SyncServiceBase):
             query_params={
                 "anonymize": anonymize,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -428,6 +473,8 @@ class CustomersSync(SyncServiceBase):
     def update_external(
         self,
         external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerUpdateExternalID],
     ) -> Customer:
         """
@@ -437,6 +484,8 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             external_id: The customer external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -453,6 +502,7 @@ class CustomersSync(SyncServiceBase):
                 "external_id": external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -465,6 +515,8 @@ class CustomersSync(SyncServiceBase):
     def get_state(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerState:
         """
         Get a customer state by ID.
@@ -479,6 +531,8 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             id: The customer ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -494,6 +548,7 @@ class CustomersSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -505,6 +560,8 @@ class CustomersSync(SyncServiceBase):
     def get_state_external(
         self,
         external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerState:
         """
         Get a customer state by external ID.
@@ -519,6 +576,8 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             external_id: The customer external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -534,6 +593,7 @@ class CustomersSync(SyncServiceBase):
                 "external_id": external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -548,6 +608,7 @@ class CustomersSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourcePaymentMethod:
         """
         Get saved payment methods of a customer.
@@ -558,6 +619,8 @@ class CustomersSync(SyncServiceBase):
             id: The customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -576,6 +639,7 @@ class CustomersSync(SyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -590,6 +654,7 @@ class CustomersSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[PaymentMethod, None, None]:
         """
         Get saved payment methods of a customer.
@@ -600,6 +665,8 @@ class CustomersSync(SyncServiceBase):
             id: The customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type PaymentMethod.
@@ -616,6 +683,7 @@ class CustomersSync(SyncServiceBase):
                 id=id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -628,6 +696,7 @@ class CustomersSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourcePaymentMethod:
         """
         Get saved payment methods of a customer by external ID.
@@ -638,6 +707,8 @@ class CustomersSync(SyncServiceBase):
             external_id: The customer external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -656,6 +727,7 @@ class CustomersSync(SyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -670,6 +742,7 @@ class CustomersSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[PaymentMethod, None, None]:
         """
         Get saved payment methods of a customer by external ID.
@@ -680,6 +753,8 @@ class CustomersSync(SyncServiceBase):
             external_id: The customer external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type PaymentMethod.
@@ -696,6 +771,7 @@ class CustomersSync(SyncServiceBase):
                 external_id=external_id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -721,6 +797,7 @@ class CustomersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceCustomer:
         """
         List customers.
@@ -736,6 +813,8 @@ class CustomersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -757,6 +836,7 @@ class CustomersAsync(AsyncServiceBase):
                 "sorting": sorting,
                 "metadata": metadata,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -775,6 +855,7 @@ class CustomersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[Customer, None]:
         """
         List customers.
@@ -790,6 +871,8 @@ class CustomersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type Customer.
@@ -810,6 +893,7 @@ class CustomersAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 metadata=metadata,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -820,17 +904,23 @@ class CustomersAsync(AsyncServiceBase):
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerIndividualCreate],
     ) -> Customer: ...
 
     @typing.overload
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerTeamCreate],
     ) -> Customer: ...
 
     async def create(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Any,
     ) -> Customer:
         """
@@ -839,6 +929,8 @@ class CustomersAsync(AsyncServiceBase):
         **Scopes**: `customers:write`
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -852,6 +944,7 @@ class CustomersAsync(AsyncServiceBase):
             url="/v1/customers/",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -864,6 +957,7 @@ class CustomersAsync(AsyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        request_timeout: RequestTimeout | None = None,
     ) -> str:
         """
         Export customers as a CSV file.
@@ -872,6 +966,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             HTTPValidationError: Validation Error
@@ -886,6 +982,7 @@ class CustomersAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -896,6 +993,8 @@ class CustomersAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Customer:
         """
         Get a customer by ID.
@@ -904,6 +1003,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             id: The customer ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -919,6 +1020,7 @@ class CustomersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -932,6 +1034,7 @@ class CustomersAsync(AsyncServiceBase):
         id: str,
         *,
         anonymize: bool = False,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a customer.
@@ -955,6 +1058,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             id: The customer ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -972,6 +1077,7 @@ class CustomersAsync(AsyncServiceBase):
             query_params={
                 "anonymize": anonymize,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -983,6 +1089,8 @@ class CustomersAsync(AsyncServiceBase):
     async def update(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerUpdate],
     ) -> Customer:
         """
@@ -992,6 +1100,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             id: The customer ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -1008,6 +1118,7 @@ class CustomersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -1020,6 +1131,8 @@ class CustomersAsync(AsyncServiceBase):
     async def get_external(
         self,
         external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> Customer:
         """
         Get a customer by external ID.
@@ -1028,6 +1141,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             external_id: The customer external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -1043,6 +1158,7 @@ class CustomersAsync(AsyncServiceBase):
                 "external_id": external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1056,6 +1172,7 @@ class CustomersAsync(AsyncServiceBase):
         external_id: str,
         *,
         anonymize: bool = False,
+        request_timeout: RequestTimeout | None = None,
     ) -> None:
         """
         Delete a customer by external ID.
@@ -1069,6 +1186,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             external_id: The customer external ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -1086,6 +1205,7 @@ class CustomersAsync(AsyncServiceBase):
             query_params={
                 "anonymize": anonymize,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1097,6 +1217,8 @@ class CustomersAsync(AsyncServiceBase):
     async def update_external(
         self,
         external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerUpdateExternalID],
     ) -> Customer:
         """
@@ -1106,6 +1228,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             external_id: The customer external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -1122,6 +1246,7 @@ class CustomersAsync(AsyncServiceBase):
                 "external_id": external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -1134,6 +1259,8 @@ class CustomersAsync(AsyncServiceBase):
     async def get_state(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerState:
         """
         Get a customer state by ID.
@@ -1148,6 +1275,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             id: The customer ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -1163,6 +1292,7 @@ class CustomersAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1174,6 +1304,8 @@ class CustomersAsync(AsyncServiceBase):
     async def get_state_external(
         self,
         external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> CustomerState:
         """
         Get a customer state by external ID.
@@ -1188,6 +1320,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             external_id: The customer external ID.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -1203,6 +1337,7 @@ class CustomersAsync(AsyncServiceBase):
                 "external_id": external_id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1217,6 +1352,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourcePaymentMethod:
         """
         Get saved payment methods of a customer.
@@ -1227,6 +1363,8 @@ class CustomersAsync(AsyncServiceBase):
             id: The customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -1245,6 +1383,7 @@ class CustomersAsync(AsyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1259,6 +1398,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[PaymentMethod, None]:
         """
         Get saved payment methods of a customer.
@@ -1269,6 +1409,8 @@ class CustomersAsync(AsyncServiceBase):
             id: The customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type PaymentMethod.
@@ -1285,6 +1427,7 @@ class CustomersAsync(AsyncServiceBase):
                 id=id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -1298,6 +1441,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourcePaymentMethod:
         """
         Get saved payment methods of a customer by external ID.
@@ -1308,6 +1452,8 @@ class CustomersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -1326,6 +1472,7 @@ class CustomersAsync(AsyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1340,6 +1487,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[PaymentMethod, None]:
         """
         Get saved payment methods of a customer by external ID.
@@ -1350,6 +1498,8 @@ class CustomersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type PaymentMethod.
@@ -1366,6 +1516,7 @@ class CustomersAsync(AsyncServiceBase):
                 external_id=external_id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item

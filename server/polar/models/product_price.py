@@ -26,7 +26,6 @@ from sqlalchemy.orm import (
     object_mapper,
     relationship,
 )
-from sqlalchemy.orm.attributes import Event
 
 from polar.enums import (
     SubscriptionRecurringInterval,
@@ -38,10 +37,12 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.math import polar_round
 from polar.product.tiers import (
     SeatTiersData,
+    SeatTierType,
     Tiers,
     TiersType,
     seat_tiers_to_tiers,
     seat_tiers_unit_bounds,
+    tiers_to_seat_tiers,
 )
 
 if TYPE_CHECKING:
@@ -61,6 +62,7 @@ class ProductPriceAmountType(StrEnum):
     custom = "custom"
     metered_unit = "metered_unit"
     seat_based = "seat_based"
+    unit_based = "unit_based"
 
 
 class ProductPriceSource(StrEnum):
@@ -142,6 +144,7 @@ class ProductPrice(RecordModel):
             ProductPriceAmountType.fixed,
             ProductPriceAmountType.custom,
             ProductPriceAmountType.seat_based,
+            ProductPriceAmountType.unit_based,
         }
 
     @is_static.inplace.expression
@@ -152,6 +155,7 @@ class ProductPrice(RecordModel):
                 ProductPriceAmountType.fixed,
                 ProductPriceAmountType.custom,
                 ProductPriceAmountType.seat_based,
+                ProductPriceAmountType.unit_based,
             )
         )
 
@@ -205,10 +209,10 @@ class LegacyRecurringProductPrice:
 class NewProductPrice:
     __abstract__ = True
 
-    type: Mapped[Literal[None]] = mapped_column(
+    type: Mapped[None] = mapped_column(
         use_existing_column=True, nullable=True, default=None
     )
-    recurring_interval: Mapped[Literal[None]] = mapped_column(
+    recurring_interval: Mapped[None] = mapped_column(
         use_existing_column=True, nullable=True, default=None
     )
 
@@ -362,6 +366,13 @@ class TieredPrice:
         default=None,
     )
 
+    @property
+    def is_free(self) -> bool:
+        """A price with no tiers yet has nothing to charge, so it reads as free."""
+        if self.tiers is None:
+            return True
+        return all(tier.unit_amount == 0 for tier in self.tiers.tiers)
+
     def get_tiered_amount(self, quantity: int) -> Decimal:
         return self.tiers.calculate(quantity)
 
@@ -379,40 +390,52 @@ class TieredPrice:
 
 
 class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
-    """Seat-based price. Billing still reads `seat_tiers`. That column is
-    dual-written into the shared `tiers` columns so they can become the
-    billing source after backfill.
+    """Seat-based price billed from the shared `tiers` columns.
+
+    The public `seat_tiers` attribute is the HTTP payload reconstructed
+    from those columns. `_seat_tiers` keeps the unused DB column mapped
+    so Alembic does not try to drop it.
     """
 
     amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.seat_based
     )
-    seat_tiers: Mapped[SeatTiersData] = mapped_column(
+    _seat_tiers: Mapped[SeatTiersData | None] = mapped_column(
+        "seat_tiers",
         postgresql.JSONB,
         nullable=True,
+        default=None,
     )
 
+    @property
+    def seat_tiers(self) -> SeatTiersData:
+        if self.tiers is None:
+            return {"seat_tier_type": SeatTierType.volume, "tiers": []}
+        return tiers_to_seat_tiers(self.tiers, self.minimum_units, self.maximum_units)
+
+    @seat_tiers.setter
+    def seat_tiers(self, value: SeatTiersData | None) -> None:
+        if value is None:
+            self.tiers = None  # type: ignore[assignment]
+            self.minimum_units = None
+            self.maximum_units = None
+            return
+        self.tiers = seat_tiers_to_tiers(value)
+        self.minimum_units, self.maximum_units = seat_tiers_unit_bounds(value)
+
     def calculate_amount(self, seats: int) -> int:
-        amount = seat_tiers_to_tiers(self.seat_tiers).calculate(seats)
-        # Seat rates are whole cents, so any fraction means corrupt data.
+        amount = self.get_tiered_amount(seats)
+        # Seat rates are in the smallest currency unit, so any fraction
+        # means corrupt data.
         if amount != amount.to_integral_value():
             raise ValueError(f"Seat price produced non-integral amount {amount}")
         return int(amount)
 
     def get_minimum_seats(self) -> int:
-        minimum, _ = seat_tiers_unit_bounds(self.seat_tiers)
-        return minimum if minimum is not None else 1
+        return self.minimum_units if self.minimum_units is not None else 1
 
     def get_maximum_seats(self) -> int | None:
-        _, maximum = seat_tiers_unit_bounds(self.seat_tiers)
-        return maximum
-
-    @property
-    def is_free(self) -> bool:
-        tiers = self.seat_tiers.get("tiers", [])
-        if not tiers:
-            return True
-        return all(tier["price_per_seat"] == 0 for tier in tiers)
+        return self.get_maximum_units()
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,
@@ -420,22 +443,57 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
     }
 
 
-@event.listens_for(ProductPriceSeatUnit.seat_tiers, "set")
-def _write_tiers_from_seat_tiers(
-    target: ProductPriceSeatUnit,
-    value: SeatTiersData | None,
-    oldvalue: SeatTiersData | None,
-    initiator: Event,
-) -> None:
-    """Dual-write to the shared `tiers`, `minimum_units` and `maximum_units`
-    columns. Delete when `seat_tiers` is dropped."""
-    if value is None:
-        target.tiers = None  # type: ignore[assignment]
-        target.minimum_units = None
-        target.maximum_units = None
-    else:
-        target.tiers = seat_tiers_to_tiers(value)
-        target.minimum_units, target.maximum_units = seat_tiers_unit_bounds(value)
+class ProductPriceUnit(TieredPrice, NewProductPrice, ProductPrice):
+    """A price for a quantity of units the buyer declares up-front.
+
+    Priced exactly like a seat price, the buyer pays for the declared
+    quantity immediately, and changes are prorated but without seat
+    management. Reads tiers natively from the shared columns.
+    """
+
+    amount_type: Mapped[Literal[ProductPriceAmountType.unit_based]] = mapped_column(
+        use_existing_column=True, default=ProductPriceAmountType.unit_based
+    )
+    unit_label: Mapped[dict[str, dict[str, str]] | None] = mapped_column(
+        postgresql.JSONB(none_as_null=True), nullable=True, default=None
+    )
+
+    def get_unit_noun(self, count: int, locale: str | None = None) -> str:
+        forms = self._unit_label_forms(locale)
+        noun = forms.get(f"={count}") or forms.get("other")
+        if noun:
+            return noun
+        return "unit" if count == 1 else "units"
+
+    def _unit_label_forms(self, locale: str | None) -> dict[str, str]:
+        labels = {
+            key.replace("_", "-").lower(): forms
+            for key, forms in (self.unit_label or {}).items()
+        }
+        if locale:
+            requested = locale.replace("_", "-").lower()
+            language = requested.split("-", 1)[0]
+            if forms := labels.get(requested) or labels.get(language):
+                return forms
+        if forms := labels.get("en"):
+            return forms
+        return next(iter(labels.values()), {})
+
+    def calculate_amount(self, units: int) -> int:
+        amount = self.get_tiered_amount(units)
+        # Unit rates are the smallest currency unit, so any fraction means corrupt data.
+        if amount != amount.to_integral_value():
+            raise ValueError(f"Unit price produced non-integral amount {amount}")
+        return int(amount)
+
+    def get_minimum_purchasable_units(self) -> int:
+        """The smallest purchasable quantity, never below one unit."""
+        return max(1, self.get_minimum_units())
+
+    __mapper_args__ = {
+        "polymorphic_identity": ProductPriceAmountType.unit_based,
+        "polymorphic_load": "inline",
+    }
 
 
 @event.listens_for(ProductPrice, "init", propagate=True)

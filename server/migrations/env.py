@@ -11,11 +11,11 @@ from polar.models import Model
 
 def include_object(object, name, type_, reflected, compare_to):
     # Exclude tables/indexes marked with skip_autogenerate
-    if type_ in ("table", "index") and hasattr(object, "info"):
-        if object.info.get("skip_autogenerate"):
-            return False
-
-    return True
+    return not (
+        type_ in ("table", "index")
+        and hasattr(object, "info")
+        and object.info.get("skip_autogenerate")
+    )
 
 
 # this is the Alembic Config object, which provides

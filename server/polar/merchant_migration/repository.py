@@ -1,19 +1,29 @@
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, func, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy import ColumnElement, Select, and_, exists, func, or_, select
+from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.authz.repository import select_accessible_org_ids
+from polar.config import settings
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import MerchantMigration, MerchantMigrationRecord
+from polar.models import (
+    Customer,
+    MerchantMigration,
+    MerchantMigrationRecord,
+    PaymentMethod,
+)
+from polar.models.merchant_migration_operation import (
+    MerchantMigrationOperationSelection,
+)
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
@@ -122,6 +132,33 @@ class MerchantMigrationRecordRepository(
             )
         )
         return await self.get_all(statement)
+
+    async def stream_imported_customer_source_ids(
+        self, migration_id: UUID
+    ) -> AsyncGenerator[str]:
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(MerchantMigrationRecord.source_id)
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
+                MerchantMigrationRecord.status
+                == MerchantMigrationRecordStatus.imported,
+            )
+            .order_by(
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
+        )
+        results = await self.session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
+        try:
+            async for source_id in results:
+                yield source_id
+        finally:
+            await results.close()
 
     async def count_by_type_and_status(
         self, migration_ids: Sequence[UUID]
@@ -248,21 +285,85 @@ class MerchantMigrationRecordRepository(
         )
         return await self.get_all(statement)
 
-    def _imported_subscriptions_statement(
+    async def get_imported_customer_dependency(
+        self, migration_id: UUID, customer_source_id: str
+    ) -> MerchantMigrationRecord | None:
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.merchant_migration_id == migration_id,
+            MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.target_id.is_not(None),
+            MerchantMigrationRecord.source_id == customer_source_id,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_imported_product_dependency(
+        self, migration_id: UUID, price_source_id: str
+    ) -> MerchantMigrationRecord | None:
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.merchant_migration_id == migration_id,
+            MerchantMigrationRecord.type == MerchantMigrationRecordType.product,
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.target_id.is_not(None),
+            MerchantMigrationRecord.canonical["prices"].op("@>")(
+                func.jsonb_build_array(
+                    func.jsonb_build_object("source_id", price_source_id)
+                )
+            ),
+        )
+        return await self.get_one_or_none(statement)
+
+    def _switchable_subscriptions_statement(
         self, migration_id: UUID
     ) -> Select[tuple[MerchantMigrationRecord]]:
-        """Subscriptions that made it into Polar: what the card check reads.
+        """Subscriptions whose dependencies are ready for card checks and cutover.
 
         Ordered so a batched pass and a chained one see the same sequence.
         """
+        CustomerRecord = aliased(MerchantMigrationRecord)
+        ProductRecord = aliased(MerchantMigrationRecord)
+        pending_ready = and_(
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+            exists().where(
+                CustomerRecord.merchant_migration_id
+                == MerchantMigrationRecord.merchant_migration_id,
+                CustomerRecord.type == MerchantMigrationRecordType.customer,
+                CustomerRecord.status == MerchantMigrationRecordStatus.imported,
+                CustomerRecord.target_id.is_not(None),
+                CustomerRecord.source_id
+                == MerchantMigrationRecord.canonical.op("->>")("customer_source_id"),
+                CustomerRecord.deleted_at.is_(None),
+            ),
+            exists().where(
+                ProductRecord.merchant_migration_id
+                == MerchantMigrationRecord.merchant_migration_id,
+                ProductRecord.type == MerchantMigrationRecordType.product,
+                ProductRecord.status == MerchantMigrationRecordStatus.imported,
+                ProductRecord.target_id.is_not(None),
+                ProductRecord.canonical["prices"].op("@>")(
+                    func.jsonb_build_array(
+                        func.jsonb_build_object(
+                            "source_id",
+                            MerchantMigrationRecord.canonical.op("->>")(
+                                "price_source_id"
+                            ),
+                        )
+                    )
+                ),
+                ProductRecord.deleted_at.is_(None),
+            ),
+        )
         return (
             self.get_base_statement()
             .where(
                 MerchantMigrationRecord.merchant_migration_id == migration_id,
                 MerchantMigrationRecord.type
                 == MerchantMigrationRecordType.subscription,
-                MerchantMigrationRecord.status
-                == MerchantMigrationRecordStatus.imported,
+                or_(
+                    MerchantMigrationRecord.status
+                    == MerchantMigrationRecordStatus.imported,
+                    pending_ready,
+                ),
             )
             .order_by(
                 MerchantMigrationRecord.created_at,
@@ -274,11 +375,154 @@ class MerchantMigrationRecordRepository(
         self, migration_id: UUID, *, offset: int, limit: int
     ) -> Sequence[MerchantMigrationRecord]:
         statement = (
-            self._imported_subscriptions_statement(migration_id)
+            self._switchable_subscriptions_statement(migration_id)
             .offset(offset)
             .limit(limit)
         )
         return await self.get_all(statement)
+
+    def _selection_filter(
+        self, selection: MerchantMigrationOperationSelection | None
+    ) -> list[ColumnElement[bool]]:
+        """Narrow the imported subscriptions to the ones the merchant picked.
+
+        Empty (or absent) selection means every imported subscription, matching
+        the opt-out shape the import already uses.
+        """
+        if selection is None:
+            return []
+        if selection.record_ids is not None:
+            return [MerchantMigrationRecord.id.in_(selection.record_ids)]
+        if selection.exclude_record_ids is not None:
+            return [MerchantMigrationRecord.id.not_in(selection.exclude_record_ids)]
+        return []
+
+    async def get_next_cutover_candidate(
+        self,
+        migration_id: UUID,
+        selection: MerchantMigrationOperationSelection | None = None,
+    ) -> MerchantMigrationRecord | None:
+        """Claim the next subscription the cutover hasn't settled yet.
+
+        Locked and skipping locked rows, so a second run started by an impatient
+        merchant works alongside the first instead of moving the same
+        subscription twice.
+        """
+        statement = (
+            self._switchable_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.cutover_status.is_(None),
+                *self._selection_filter(selection),
+            )
+            .limit(1)
+            .with_for_update(of=MerchantMigrationRecord, skip_locked=True)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def has_pending_cutover_candidates(
+        self,
+        migration_id: UUID,
+        selection: MerchantMigrationOperationSelection | None = None,
+    ) -> bool:
+        """Whether any subscription in the selection still awaits cutover.
+
+        Unlike ``get_next_cutover_candidate``, this does not skip locked rows —
+        used to tell an empty claim from work another worker is holding."""
+        statement = (
+            self._switchable_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.cutover_status.is_(None),
+                *self._selection_filter(selection),
+            )
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement) is not None
+
+    async def count_cutover_statuses(
+        self,
+        migration_id: UUID,
+        selection: MerchantMigrationOperationSelection | None = None,
+    ) -> dict[MerchantMigrationCutoverStatus | None, int]:
+        """How the cutover has settled the imported subscriptions so far, with
+        ``None`` counting the ones it hasn't reached."""
+        statement = (
+            self._switchable_subscriptions_statement(migration_id)
+            .where(*self._selection_filter(selection))
+            .with_only_columns(
+                MerchantMigrationRecord.cutover_status,
+                func.count(MerchantMigrationRecord.id),
+            )
+            .order_by(None)
+            .group_by(MerchantMigrationRecord.cutover_status)
+        )
+        result = await self.session.execute(statement)
+        return {status: count for status, count in result.all()}
+
+    async def payment_method_coverage(self, migration_id: UUID) -> set[UUID]:
+        """Switchable subscription record ids whose Polar customer has a card."""
+        CustomerRecord = aliased(MerchantMigrationRecord)
+        statement = (
+            self._switchable_subscriptions_statement(migration_id)
+            .join(
+                CustomerRecord,
+                and_(
+                    CustomerRecord.merchant_migration_id
+                    == MerchantMigrationRecord.merchant_migration_id,
+                    CustomerRecord.type == MerchantMigrationRecordType.customer,
+                    CustomerRecord.status == MerchantMigrationRecordStatus.imported,
+                    CustomerRecord.target_id.is_not(None),
+                    CustomerRecord.source_id
+                    == MerchantMigrationRecord.canonical.op("->>")(
+                        "customer_source_id"
+                    ),
+                    CustomerRecord.deleted_at.is_(None),
+                ),
+            )
+            .join(
+                Customer,
+                and_(
+                    Customer.id == CustomerRecord.target_id,
+                    Customer.deleted_at.is_(None),
+                ),
+            )
+            .join(
+                PaymentMethod,
+                and_(
+                    PaymentMethod.customer_id == Customer.id,
+                    PaymentMethod.deleted_at.is_(None),
+                    PaymentMethod.type == "card",
+                ),
+            )
+            .with_only_columns(MerchantMigrationRecord.id)
+            .order_by(None)
+        )
+        result = await self.session.execute(statement)
+        return {row[0] for row in result.all()}
+
+    async def reset_cutover(
+        self,
+        migration_id: UUID,
+        selection: MerchantMigrationOperationSelection | None = None,
+    ) -> None:
+        """Clear the settled-but-not-moved outcomes in the selection so a retry
+        looks at them again. What moved stays moved."""
+        statement = (
+            self._switchable_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.cutover_status.in_(
+                    (
+                        MerchantMigrationCutoverStatus.skipped,
+                        MerchantMigrationCutoverStatus.failed,
+                    )
+                ),
+                *self._selection_filter(selection),
+            )
+            .order_by(None)
+        )
+        for record in await self.get_all(statement):
+            await self.update(
+                record, update_dict={"cutover_status": None, "cutover_error": None}
+            )
 
     async def upsert(
         self,

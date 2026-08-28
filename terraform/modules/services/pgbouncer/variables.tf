@@ -52,6 +52,17 @@ variable "image" {
   default     = "ghcr.io/polarsource/polar-pgbouncer:latest"
 }
 
+variable "logfire" {
+  description = "Logfire log shipping configuration, forwarded to the ECS service module."
+  type = object({
+    token        = string
+    host         = optional(string)
+    router_image = optional(string)
+  })
+  default   = null
+  sensitive = true
+}
+
 variable "database" {
   description = "Postgres endpoint PgBouncer proxies to."
   type = object({

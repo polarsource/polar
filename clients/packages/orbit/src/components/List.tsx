@@ -62,7 +62,7 @@ export const ListItem = ({
         selected ? selectedClassName : inactiveClassName,
         onSelect && 'cursor-pointer',
         size === 'default' ? 'py-4' : 'py-2',
-        hasCheckbox ? 'pr-6 pl-4' : size === 'default' ? 'px-6' : 'px-4',
+        hasCheckbox ? 'pr-6' : size === 'default' ? 'px-6' : 'px-4',
         !hasCheckbox && 'gap-x-6',
         className,
       )}
@@ -70,7 +70,10 @@ export const ListItem = ({
     >
       {onCheckedChange && (
         <div
-          className="flex shrink-0 cursor-pointer items-center pr-4"
+          className={twMerge(
+            'flex shrink-0 cursor-pointer items-center pl-4 pr-1',
+            size === 'default' ? '-my-4 py-4' : '-my-2 py-2',
+          )}
           onClick={(event) => {
             event.preventDefault()
             event.stopPropagation()

@@ -4,6 +4,7 @@ import typing
 
 from polar.base import (
     AsyncServiceBase,
+    RequestTimeout,
     SyncServiceBase,
     parse_response_json,
     parse_response_none,
@@ -35,6 +36,7 @@ class LicenseKeysSync(SyncServiceBase):
         benefit_id: str | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceLicenseKeyRead:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -43,6 +45,8 @@ class LicenseKeysSync(SyncServiceBase):
             benefit_id: Filter by a specific benefit
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             Unauthorized: Not authorized to manage license key.
@@ -61,6 +65,7 @@ class LicenseKeysSync(SyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -76,6 +81,7 @@ class LicenseKeysSync(SyncServiceBase):
         benefit_id: str | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.Generator[LicenseKeyRead, None, None]:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -84,6 +90,8 @@ class LicenseKeysSync(SyncServiceBase):
             benefit_id: Filter by a specific benefit
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             A generator that yields items of type LicenseKeyRead.
@@ -101,6 +109,7 @@ class LicenseKeysSync(SyncServiceBase):
                 benefit_id=benefit_id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -110,6 +119,8 @@ class LicenseKeysSync(SyncServiceBase):
     def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> LicenseKeyWithActivations:
         """
         Get a license key.
@@ -118,6 +129,8 @@ class LicenseKeysSync(SyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: License key not found.
@@ -133,6 +146,7 @@ class LicenseKeysSync(SyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -143,6 +157,8 @@ class LicenseKeysSync(SyncServiceBase):
 
     def validate(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[LicenseKeyValidate],
     ) -> ValidatedLicenseKey:
         """
@@ -154,6 +170,8 @@ class LicenseKeysSync(SyncServiceBase):
         > endpoint instead.
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -168,6 +186,7 @@ class LicenseKeysSync(SyncServiceBase):
             url="/v1/customer-portal/license-keys/validate",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -179,6 +198,8 @@ class LicenseKeysSync(SyncServiceBase):
 
     def activate(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[LicenseKeyActivate],
     ) -> LicenseKeyActivationRead:
         """
@@ -190,6 +211,8 @@ class LicenseKeysSync(SyncServiceBase):
         > endpoint instead.
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -205,6 +228,7 @@ class LicenseKeysSync(SyncServiceBase):
             url="/v1/customer-portal/license-keys/activate",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -217,6 +241,8 @@ class LicenseKeysSync(SyncServiceBase):
 
     def deactivate(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[LicenseKeyDeactivate],
     ) -> None:
         """
@@ -228,6 +254,8 @@ class LicenseKeysSync(SyncServiceBase):
         > endpoint instead.
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -242,6 +270,7 @@ class LicenseKeysSync(SyncServiceBase):
             url="/v1/customer-portal/license-keys/deactivate",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -259,6 +288,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         benefit_id: str | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> ListResourceLicenseKeyRead:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -267,6 +297,8 @@ class LicenseKeysAsync(AsyncServiceBase):
             benefit_id: Filter by a specific benefit
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             Unauthorized: Not authorized to manage license key.
@@ -285,6 +317,7 @@ class LicenseKeysAsync(AsyncServiceBase):
                 "page": page,
                 "limit": limit,
             },
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -300,6 +333,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         benefit_id: str | None = None,
         page: int = 1,
         limit: int = 10,
+        request_timeout: RequestTimeout | None = None,
     ) -> typing.AsyncGenerator[LicenseKeyRead, None]:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -308,6 +342,8 @@ class LicenseKeysAsync(AsyncServiceBase):
             benefit_id: Filter by a specific benefit
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
 
         Returns:
             An async generator that yields items of type LicenseKeyRead.
@@ -325,6 +361,7 @@ class LicenseKeysAsync(AsyncServiceBase):
                 benefit_id=benefit_id,
                 page=page,
                 limit=limit,
+                request_timeout=request_timeout,
             )
             for item in response.items:
                 yield item
@@ -335,6 +372,8 @@ class LicenseKeysAsync(AsyncServiceBase):
     async def get(
         self,
         id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
     ) -> LicenseKeyWithActivations:
         """
         Get a license key.
@@ -343,6 +382,8 @@ class LicenseKeysAsync(AsyncServiceBase):
 
         Args:
             id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
 
         Raises:
             ResourceNotFound: License key not found.
@@ -358,6 +399,7 @@ class LicenseKeysAsync(AsyncServiceBase):
                 "id": id,
             },
             query_params={},
+            request_timeout=request_timeout,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -368,6 +410,8 @@ class LicenseKeysAsync(AsyncServiceBase):
 
     async def validate(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[LicenseKeyValidate],
     ) -> ValidatedLicenseKey:
         """
@@ -379,6 +423,8 @@ class LicenseKeysAsync(AsyncServiceBase):
         > endpoint instead.
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -393,6 +439,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             url="/v1/customer-portal/license-keys/validate",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -404,6 +451,8 @@ class LicenseKeysAsync(AsyncServiceBase):
 
     async def activate(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[LicenseKeyActivate],
     ) -> LicenseKeyActivationRead:
         """
@@ -415,6 +464,8 @@ class LicenseKeysAsync(AsyncServiceBase):
         > endpoint instead.
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -430,6 +481,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             url="/v1/customer-portal/license-keys/activate",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -442,6 +494,8 @@ class LicenseKeysAsync(AsyncServiceBase):
 
     async def deactivate(
         self,
+        *,
+        request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[LicenseKeyDeactivate],
     ) -> None:
         """
@@ -453,6 +507,8 @@ class LicenseKeysAsync(AsyncServiceBase):
         > endpoint instead.
 
         Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
             **kwargs: Request body parameters
 
         Raises:
@@ -467,6 +523,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             url="/v1/customer-portal/license-keys/deactivate",
             path_params={},
             query_params={},
+            request_timeout=request_timeout,
             body=kwargs,
         )
         response = await self.client.send_request(request)

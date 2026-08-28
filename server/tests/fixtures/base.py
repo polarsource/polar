@@ -58,7 +58,7 @@ async def app(
 @pytest_asyncio.fixture
 async def client(
     app: FastAPI, session: AsyncSession, request: pytest.FixtureRequest
-) -> AsyncGenerator[httpx.AsyncClient, None]:
+) -> AsyncGenerator[httpx.AsyncClient]:
     # Check if test wants to keep session state (opt-out)
     keep_state = request.node.get_closest_marker("keep_session_state") is not None
     auto_expunge = not keep_state

@@ -9,6 +9,8 @@ export interface BulkActionBarProps {
   pageSize: number
   onPageSelectedChange: (selected: boolean) => void
   onClear: () => void
+  // Stretch the bar to fill its container, pushing the actions to the far end.
+  stretch?: boolean
   children: React.ReactNode
 }
 
@@ -18,6 +20,7 @@ export const BulkActionBar = ({
   pageSize,
   onPageSelectedChange,
   onClear,
+  stretch,
   children,
 }: BulkActionBarProps) => {
   if (count === 0) {
@@ -31,6 +34,8 @@ export const BulkActionBar = ({
       alignItems="center"
       columnGap="s"
       height={40}
+      flexGrow={stretch ? 1 : undefined}
+      justifyContent={stretch ? 'between' : undefined}
     >
       <BulkSelectionMenu
         count={count}

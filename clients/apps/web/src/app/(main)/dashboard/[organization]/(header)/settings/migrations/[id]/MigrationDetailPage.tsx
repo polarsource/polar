@@ -13,6 +13,7 @@ import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
 import { currentStepDef, MigrationStepDef, OWNER_LABELS } from '../steps'
+import { SwitchPanel } from '../switch/SwitchPanel'
 import { StripeMark } from '../StripeMark'
 
 interface Props {
@@ -134,7 +135,22 @@ function StepContent({
       return (
         <Box flexDirection="column" rowGap="l">
           <StepHeading def={def} />
-          <PanTransferPanel migrationId={migration.id} />
+          <PanTransferPanel
+            migrationId={migration.id}
+            sourceStripeAccountId={
+              migration.source?.stripe_user_id as string | undefined
+            }
+          />
+        </Box>
+      )
+    // The switch runs here, and stays reachable at cleanup so the merchant can
+    // switch the ones an earlier run left on Stripe.
+    case 'activate_subscriptions':
+    case 'cleanup':
+      return (
+        <Box flexDirection="column" rowGap="l">
+          {def && <StepHeading def={def} />}
+          <SwitchPanel migrationId={migration.id} />
         </Box>
       )
   }

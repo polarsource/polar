@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import contextlib
 import os
 import sys
 import threading
@@ -66,12 +67,10 @@ class _EventLoopWatchdog(threading.Thread):
 
             if not self._heartbeat_event.wait(timeout=self.heartbeat_timeout):
                 self._consecutive_misses += 1
-                try:
+                # Diagnostics are best effort. A failure here must never
+                # skip the exit below, or a stuck worker stays stuck.
+                with contextlib.suppress(Exception):
                     self._dump_stacks()
-                except Exception:
-                    # Diagnostics are best effort. A failure here must never
-                    # skip the exit below, or a stuck worker stays stuck.
-                    pass
                 if self.max_misses > 0 and self._consecutive_misses >= self.max_misses:
                     self._exit_process()
             else:
@@ -110,7 +109,7 @@ class _EventLoopWatchdog(threading.Thread):
         for stream in (sys.stdout, sys.stderr):
             try:
                 stream.flush()
-            except (OSError, ValueError):
+            except OSError, ValueError:
                 pass
         os._exit(1)
 
@@ -191,7 +190,7 @@ class _EventLoopWatchdog(threading.Thread):
         try:
             sys.stderr.write(f"{thread_stacks}\n")
             sys.stderr.flush()
-        except (OSError, ValueError):
+        except OSError, ValueError:
             pass
 
 

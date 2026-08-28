@@ -41,6 +41,7 @@ from .schemas import (
     SubscriptionCancelPreview,
     SubscriptionChangePreview,
     SubscriptionChangePreviewSeats,
+    SubscriptionChangePreviewUnits,
     SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionID,
@@ -284,10 +285,10 @@ async def get_charge_preview(
         raise ResourceNotFound()
 
     # If subscription will end (cancel_at_period_end or ends_at), ensure there's still a charge coming
-    if subscription.cancel_at_period_end or subscription.ends_at:
-        # Only show preview if we haven't reached the end date yet
-        if subscription.ended_at:
-            raise ResourceNotFound()
+    if (
+        subscription.cancel_at_period_end or subscription.ends_at
+    ) and subscription.ended_at:
+        raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
 
@@ -356,6 +357,14 @@ async def preview_change(
             session,
             subscription,
             seats=change.seats,
+            proration_behavior=change.proration_behavior,
+        )
+
+    if isinstance(change, SubscriptionChangePreviewUnits):
+        return await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            units=change.units,
             proration_behavior=change.proration_behavior,
         )
 

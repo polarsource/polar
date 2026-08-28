@@ -82,7 +82,7 @@ SUBSCRIPTION_EXPORT_DEFAULT_COLUMNS: list[SubscriptionExportColumn] = [
 def _validate_timezone(value: str) -> str:
     try:
         ZoneInfo(value)
-    except (ValueError, ZoneInfoNotFoundError):
+    except ValueError, ZoneInfoNotFoundError:
         raise ValueError(f"{value!r} is not a valid IANA time zone") from None
     return value
 
@@ -167,7 +167,7 @@ async def generate_csv(
     started_before: datetime | None,
     timezone: ZoneInfo,
     columns: Sequence[SubscriptionExportColumn] | None,
-) -> AsyncGenerator[str, None]:
+) -> AsyncGenerator[str]:
     export_columns = columns or SUBSCRIPTION_EXPORT_DEFAULT_COLUMNS
 
     csv_writer = IterableCSVWriter(dialect="excel")

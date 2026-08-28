@@ -9,7 +9,6 @@ import {
   isImported,
   isSelectable,
   ReviewRow,
-  ReviewScope,
   rowAmount,
 } from './reviewRows'
 
@@ -21,23 +20,13 @@ interface ColumnContext {
   onToggleAll: () => void
 }
 
-const NAME_HEADER: Record<ReviewScope, string> = {
-  all: 'Name',
-  subscriptions: 'Customer',
-  customers: 'Customer',
-  products: 'Product',
-}
-
-export function buildReviewColumns(
-  entity: ReviewScope,
-  {
-    isSelected,
-    headerState,
-    canSelectAll,
-    onToggle,
-    onToggleAll,
-  }: ColumnContext,
-): DataTableColumnDef<ReviewRow>[] {
+export function buildReviewColumns({
+  isSelected,
+  headerState,
+  canSelectAll,
+  onToggle,
+  onToggleAll,
+}: ColumnContext): DataTableColumnDef<ReviewRow>[] {
   const columns: DataTableColumnDef<ReviewRow>[] = [
     {
       id: 'select',
@@ -60,7 +49,7 @@ export function buildReviewColumns(
     {
       id: 'name',
       size: 420,
-      header: NAME_HEADER[entity],
+      header: 'Customer',
       cell: ({ row }) => <NameCell row={row.original} />,
     },
   ]

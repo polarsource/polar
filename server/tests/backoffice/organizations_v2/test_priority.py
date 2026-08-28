@@ -4,8 +4,6 @@ These tests build synthetic Organization objects in memory and pass
 ``PaymentMetrics`` directly — no DB session, no JSONB, no fixtures.
 """
 
-from __future__ import annotations
-
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock

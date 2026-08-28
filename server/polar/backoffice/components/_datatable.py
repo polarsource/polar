@@ -119,7 +119,6 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
             href_route_name: Route name to generate internal links (uses item.id as parameter).
             sorting: The sorting field identifier for this column.
         """
-        ...
 
     @typing.overload
     def __init__(
@@ -139,7 +138,6 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
             external_href: Function to generate external links from request and item.
             sorting: The sorting field identifier for this column.
         """
-        ...
 
     @typing.overload
     def __init__(

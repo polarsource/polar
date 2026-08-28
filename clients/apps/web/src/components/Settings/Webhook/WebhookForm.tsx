@@ -188,7 +188,7 @@ export const FieldEvents = () => {
               renderOptionSuffix={(event) => (
                 <a
                   className="text-xs text-blue-400"
-                  href={`https://polar.sh/docs/api-reference/webhooks/${event}`}
+                  href={`https://polar.sh/docs/api-reference/current/${event.replaceAll('.', '_')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

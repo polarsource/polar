@@ -4,8 +4,6 @@ Used by the AI review agent to avoid false-positive flags on legitimate
 third-party webhook and checkout URL domains.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Literal
 

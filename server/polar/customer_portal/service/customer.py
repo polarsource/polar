@@ -17,6 +17,7 @@ from polar.order.service import order as order_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
+from polar.subscription.service import subscription as subscription_service
 from polar.tax.tax_id import (
     IncompatibleTaxIDFormat,
     InvalidTaxID,
@@ -227,6 +228,9 @@ class CustomerService:
             )
 
         if new_default_payment_method is not None:
+            await subscription_service.update_payment_method_from_new_default(
+                session, customer, new_default_payment_method
+            )
             await order_service.schedule_retry_for_past_due_orders(
                 session, customer, new_default_payment_method
             )
@@ -425,6 +429,9 @@ class CustomerService:
             repository = CustomerRepository.from_session(session)
             customer = await repository.update(
                 customer, update_dict={"default_payment_method": payment_method}
+            )
+            await subscription_service.update_payment_method_from_new_default(
+                session, customer, payment_method
             )
             await order_service.schedule_retry_for_past_due_orders(
                 session, customer, payment_method

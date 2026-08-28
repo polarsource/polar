@@ -8,6 +8,7 @@ import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.custom_field.schemas import AttachedCustomFieldCreate
 from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.currency import PresentmentCurrency
@@ -36,6 +37,7 @@ from polar.product.guard import (
     is_metered_price,
     is_seat_price,
     is_static_price,
+    is_unit_price,
 )
 from polar.product.schemas import (
     ExistingProductPrice,
@@ -48,10 +50,12 @@ from polar.product.schemas import (
     ProductPriceSeatBasedCreate,
     ProductPriceSeatTier,
     ProductPriceSeatTiers,
+    ProductPriceUnitBasedCreate,
     ProductUpdate,
 )
 from polar.product.service import product as product_service
 from polar.product.sorting import ProductSortProperty
+from polar.product.tiers import Tiers, TierType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -571,6 +575,62 @@ class TestCreate:
             await product_service.create(session, create_schema, auth_subject)
 
     @pytest.mark.auth
+    async def test_multiple_not_existing_medias(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        create_schema = ProductCreateRecurring(
+            name="Product",
+            organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=1000,
+                    price_currency=PresentmentCurrency.usd,
+                )
+            ],
+            medias=[uuid.uuid4(), uuid.uuid4()],
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(session, create_schema, auth_subject)
+
+    @pytest.mark.auth
+    async def test_invalid_media_and_attached_custom_field(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        create_schema = ProductCreateRecurring(
+            name="Product",
+            organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=1000,
+                    price_currency=PresentmentCurrency.usd,
+                )
+            ],
+            medias=[uuid.uuid4()],
+            attached_custom_fields=[
+                AttachedCustomFieldCreate(
+                    custom_field_id=uuid.uuid4(),
+                    required=False,
+                )
+            ],
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(session, create_schema, auth_subject)
+
+    @pytest.mark.auth
     @pytest.mark.parametrize(
         "file_kwargs",
         [
@@ -630,16 +690,14 @@ class TestCreate:
         user_organization: UserOrganization,
     ) -> None:
         file = ProductMediaFile(
-            **{
-                "organization": organization,
-                "name": "Product Cover",
-                "path": "/product-cover.jpg",
-                "mime_type": "image/jpeg",
-                "size": 1024,
-                "service": FileServiceTypes.product_media,
-                "is_enabled": True,
-                "is_uploaded": True,
-            }
+            organization=organization,
+            name="Product Cover",
+            path="/product-cover.jpg",
+            mime_type="image/jpeg",
+            size=1024,
+            service=FileServiceTypes.product_media,
+            is_enabled=True,
+            is_uploaded=True,
         )
         await save_fixture(file)
 
@@ -1187,6 +1245,227 @@ def _seat_price_create(
             ]
         ),
     )
+
+
+def _unit_price_create(
+    *,
+    price_per_unit: int = 2900,
+    minimum_units: int | None = None,
+    currency: PresentmentCurrency = PresentmentCurrency.usd,
+    tax_behavior: TaxBehaviorOption | None = None,
+    unit_label: dict[str, dict[str, str]] | None = None,
+) -> ProductPriceUnitBasedCreate:
+    return ProductPriceUnitBasedCreate(
+        amount_type=ProductPriceAmountType.unit_based,
+        price_currency=currency,
+        tax_behavior=tax_behavior,
+        minimum_units=minimum_units,
+        tiers=Tiers.model_validate(
+            {
+                "type": TierType.volume,
+                "tiers": [{"bound": None, "unit_amount": str(price_per_unit)}],
+            }
+        ),
+        unit_label=unit_label,
+    )
+
+
+@pytest.mark.asyncio
+class TestCreateUnitBasedPrice:
+    @pytest_asyncio.fixture
+    async def unit_based_pricing_enabled(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        organization.feature_settings = {"unit_based_pricing_enabled": True}
+        session.add(organization)
+        await session.flush()
+
+    @pytest.mark.auth
+    async def test_feature_disabled(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[_unit_price_create()],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        unit_based_pricing_enabled: None,
+    ) -> None:
+        product = await product_service.create(
+            session,
+            ProductCreateRecurring(
+                name="Product",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[
+                    _unit_price_create(
+                        minimum_units=5,
+                        unit_label={"en": {"=1": "device", "other": "devices"}},
+                    )
+                ],
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        assert len(product.prices) == 1
+        price = product.prices[0]
+        assert is_unit_price(price)
+        assert price.tiers == Tiers.model_validate(
+            {
+                "type": TierType.volume,
+                "tiers": [{"bound": None, "unit_amount": "2900"}],
+            }
+        )
+        assert price.minimum_units == 5
+        assert price.unit_label == {"en": {"=1": "device", "other": "devices"}}
+        assert price.calculate_amount(3) == 8700
+
+    @pytest.mark.auth
+    async def test_one_time_product_rejected(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        unit_based_pricing_enabled: None,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateOneTime(
+                    name="Product",
+                    prices=[_unit_price_create()],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_two_unit_prices_rejected(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        unit_based_pricing_enabled: None,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[_unit_price_create(), _unit_price_create()],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_seat_and_unit_rejected(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        unit_based_pricing_enabled: None,
+    ) -> None:
+        organization.feature_settings = {
+            "unit_based_pricing_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        session.add(organization)
+        await session.flush()
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[_seat_price_create(), _unit_price_create()],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_custom_and_unit_rejected(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        unit_based_pricing_enabled: None,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[
+                        ProductPriceCustomCreate(
+                            amount_type=ProductPriceAmountType.custom,
+                            price_currency=PresentmentCurrency.usd,
+                        ),
+                        _unit_price_create(),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_fixed_and_unit_and_metered_allowed(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+        unit_based_pricing_enabled: None,
+    ) -> None:
+        product = await product_service.create(
+            session,
+            ProductCreateRecurring(
+                name="Product",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[
+                    _fixed_price_create(),
+                    _unit_price_create(),
+                    ProductPriceMeteredUnitCreate(
+                        amount_type=ProductPriceAmountType.metered_unit,
+                        price_currency=PresentmentCurrency.usd,
+                        unit_amount=Decimal(100),
+                        meter_id=meter.id,
+                    ),
+                ],
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        assert len(product.prices) == 3
+        assert len([p for p in product.prices if is_unit_price(p)]) == 1
 
 
 @pytest.mark.asyncio
@@ -1875,16 +2154,14 @@ class TestUpdate:
         user_organization: UserOrganization,
     ) -> None:
         file = ProductMediaFile(
-            **{
-                "organization": organization,
-                "name": "Product Cover",
-                "path": "/product-cover.jpg",
-                "mime_type": "image/jpeg",
-                "size": 1024,
-                "service": FileServiceTypes.product_media,
-                "is_enabled": True,
-                "is_uploaded": True,
-            }
+            organization=organization,
+            name="Product Cover",
+            path="/product-cover.jpg",
+            mime_type="image/jpeg",
+            size=1024,
+            service=FileServiceTypes.product_media,
+            is_enabled=True,
+            is_uploaded=True,
         )
         await save_fixture(file)
 

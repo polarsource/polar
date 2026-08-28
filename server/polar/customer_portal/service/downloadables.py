@@ -175,12 +175,12 @@ class DownloadableService(
             last_downloaded_at = downloadable.last_downloaded_at.timestamp()
 
         token = token_serializer.dumps(
-            dict(
-                id=str(downloadable.id),
+            {
+                "id": str(downloadable.id),
                 # Not used initially, but good for future rate limiting
-                downloaded=downloadable.downloaded,
-                last_downloaded_at=last_downloaded_at,
-            )
+                "downloaded": downloadable.downloaded,
+                "last_downloaded_at": last_downloaded_at,
+            }
         )
         redirect_to = f"{settings.BASE_URL}/v1/customer-portal/downloadables/{token}"
         return DownloadableURL(url=redirect_to, expires_at=expires_at)

@@ -1,16 +1,12 @@
 'use client'
 
 import {
-  Cell,
-  ColumnDef,
   OnChangeFn,
   PaginationState,
-  Row,
+  RowData,
   SortingState,
   flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  useReactTable,
+  useTable,
 } from '@tanstack/react-table'
 
 import {
@@ -30,6 +26,12 @@ import {
   SELECTION_COLUMN_ID,
   SELECTION_COLUMN_WIDTH,
 } from './DataTableSelectionColumn'
+import {
+  dataTableFeatures,
+  DataTableCell,
+  DataTableColumnDef,
+  DataTableRow,
+} from './features'
 
 export interface ReactQueryLoading {
   isFetching: boolean
@@ -39,8 +41,8 @@ export interface ReactQueryLoading {
   fetchStatus: string
 }
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
+interface DataTableProps<TData extends RowData> {
+  columns: DataTableColumnDef<TData>[]
   data: TData[]
   rowCount?: number
   pageCount?: number
@@ -53,17 +55,16 @@ interface DataTableProps<TData, TValue> {
   wrapperClassName?: string
   headerClassName?: string
   isLoading: boolean | ReactQueryLoading
-  getCellColSpan?: (cell: Cell<TData, unknown>) => number
-  getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
+  getCellColSpan?: (cell: DataTableCell<TData, unknown>) => number
+  getRowId?: (
+    originalRow: TData,
+    index: number,
+    parent?: DataTableRow<TData>,
+  ) => string
   selection?: DataTableSelection<TData>
-  onRowClick?: (row: Row<TData>) => void
-  isRowActive?: (row: Row<TData>) => boolean
+  onRowClick?: (row: DataTableRow<TData>) => void
+  isRowActive?: (row: DataTableRow<TData>) => boolean
 }
-
-export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
-  TData,
-  TValue
->
 
 export type DataTablePaginationState = PaginationState
 export type DataTableSortingState = SortingState
@@ -75,7 +76,7 @@ const queryIsDisabled = (s: ReactQueryLoading): boolean => {
   return false
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   rowCount,
@@ -94,23 +95,17 @@ export function DataTable<TData, TValue>({
   selection,
   onRowClick,
   isRowActive,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   const allColumns = React.useMemo(
     () =>
-      selection
-        ? [
-            createSelectionColumn(selection) as ColumnDef<TData, TValue>,
-            ...columns,
-          ]
-        : columns,
+      selection ? [createSelectionColumn(selection), ...columns] : columns,
     [selection, columns],
   )
 
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
+  const table = useTable({
+    features: dataTableFeatures,
     data,
     columns: allColumns,
-    getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     manualSorting: true,
     rowCount,
@@ -118,7 +113,6 @@ export function DataTable<TData, TValue>({
     onPaginationChange,
     onSortingChange,
     getSubRows,
-    getExpandedRowModel: getExpandedRowModel(),
     getRowId,
     state: {
       pagination,

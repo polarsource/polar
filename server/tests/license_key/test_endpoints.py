@@ -26,7 +26,7 @@ from polar.models import (
 from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
-from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
 
@@ -161,6 +161,125 @@ class TestLicenseKeyEndpoints:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_rotate(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+            ),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+        old_key = lk.key
+
+        response = await client.post(f"/v1/license-keys/{lk.id}/rotate")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == str(lk.id)
+        assert data["key"] != old_key
+        assert data["key"].startswith("TESTING-")
+        assert data["status"] == "granted"
+        assert data["benefit_id"] == str(benefit.id)
+
+        refreshed = await repository.get_by_id(lk.id)
+        assert refreshed is not None
+        assert refreshed.key == data["key"]
+        assert (
+            await repository.get_by_organization_and_key(organization.id, old_key)
+            is None
+        )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_rotate_revoked_400(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+            ),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+        lk.status = LicenseKeyStatus.revoked
+        await save_fixture(lk)
+
+        response = await client.post(f"/v1/license-keys/{lk.id}/rotate")
+        assert response.status_code == 400
+        assert response.json() == {
+            "error": "RotateNotPermitted",
+            "detail": (
+                "License key cannot be rotated in its current status. "
+                "Current status: revoked. "
+                "Allowed statuses: disabled, granted."
+            ),
+        }
+
+    async def test_rotate_unauthorized_401(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+            ),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        response = await client.post(f"/v1/license-keys/{lk.id}/rotate")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_list(
         self,
         session: AsyncSession,
@@ -204,7 +323,7 @@ class TestLicenseKeyEndpoints:
         assert count >= 2
 
         response = await client.get(
-            f"/v1/license-keys/?organization_id={str(organization.id)}",
+            f"/v1/license-keys/?organization_id={organization.id!s}",
         )
         assert response.status_code == 200
         data = response.json()
@@ -252,7 +371,7 @@ class TestLicenseKeyEndpoints:
         await session.flush()
 
         response = await client.get(
-            f"/v1/license-keys/?organization_id={str(organization.id)}"
+            f"/v1/license-keys/?organization_id={organization.id!s}"
             f"&status={LicenseKeyStatus.granted.value}",
         )
         assert response.status_code == 200
@@ -262,7 +381,7 @@ class TestLicenseKeyEndpoints:
         assert granted_b["license_key_id"] not in ids
 
         response = await client.get(
-            f"/v1/license-keys/?organization_id={str(organization.id)}"
+            f"/v1/license-keys/?organization_id={organization.id!s}"
             f"&status={LicenseKeyStatus.revoked.value}",
         )
         assert response.status_code == 200
@@ -272,7 +391,7 @@ class TestLicenseKeyEndpoints:
         assert granted_a["license_key_id"] not in ids
 
         response = await client.get(
-            f"/v1/license-keys/?organization_id={str(organization.id)}"
+            f"/v1/license-keys/?organization_id={organization.id!s}"
             f"&status={LicenseKeyStatus.granted.value}"
             f"&status={LicenseKeyStatus.revoked.value}",
         )
@@ -699,6 +818,27 @@ class TestUpdateLicenseKey:
 
 
 @pytest.mark.asyncio
+class TestRotateLicenseKey:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(f"/v1/license-keys/{uuid.uuid4()}/rotate")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_license_key(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_organization_second: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            f"/v1/license-keys/{license_key_organization_second.id}/rotate"
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 class TestGetActivation:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -854,4 +994,125 @@ class TestDeactivateLicenseKey:
             },
         )
 
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestCustomerPortalRotateLicenseKey:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"/v1/customer-portal/license-keys/{uuid.uuid4()}/rotate"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_rotate(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+            ),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+        old_key = lk.key
+
+        response = await client.post(f"/v1/customer-portal/license-keys/{lk.id}/rotate")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == str(lk.id)
+        assert data["key"] != old_key
+        assert data["key"].startswith("TESTING-")
+        assert data["status"] == "granted"
+        assert data["benefit_id"] == str(benefit.id)
+
+        refreshed = await repository.get_by_id(lk.id)
+        assert refreshed is not None
+        assert refreshed.key == data["key"]
+        assert (
+            await repository.get_by_organization_and_key(organization.id, old_key)
+            is None
+        )
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_rotate_revoked_400(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+            ),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+        lk.status = LicenseKeyStatus.revoked
+        await save_fixture(lk)
+
+        response = await client.post(f"/v1/customer-portal/license-keys/{lk.id}/rotate")
+        assert response.status_code == 400
+        assert response.json() == {
+            "error": "RotateNotPermitted",
+            "detail": (
+                "License key cannot be rotated in its current status. "
+                "Current status: revoked. "
+                "Allowed statuses: disabled, granted."
+            ),
+        }
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_cannot_rotate_other_customer_license_key(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer_second: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer_second,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+            ),
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/license-keys/{granted['license_key_id']}/rotate"
+        )
         assert response.status_code == 404

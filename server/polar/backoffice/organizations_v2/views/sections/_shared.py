@@ -1,7 +1,5 @@
 """Shared constants and helpers for organization review sections."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from tagflow import tag, text

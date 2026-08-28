@@ -1,54 +1,65 @@
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from datetime import datetime
 from typing import NamedTuple, TypedDict
 from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
+    Customer,
     MerchantMigration,
     MerchantMigrationRecord,
     PaymentMethod,
-    Subscription,
 )
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_operation import (
+    MerchantMigrationOperation,
+    MerchantMigrationOperationSelection,
+    MerchantMigrationOperationStatus,
+)
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
-from polar.subscription.repository import SubscriptionRepository
 from polar.worker import enqueue_job
 
 from . import pan_transfer
 from .adapters import SourceAdapter, StripeAdapter
 from .canonical import (
     CanonicalPaymentMethod,
+    CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
     deserialize,
 )
 from .cards import AmbiguousCopiedCard, link_payment_method
+from .cutover import SubscriptionCutover
 from .errors import MerchantMigrationError
 from .importer import CatalogImporter
 from .pan_transfer import (
+    STEP_CUTOVER,
+    STEP_MOVE_SUBSCRIPTIONS,
     STEP_VERIFY_CARDS,
     PanStepActor,
+    PanStepStatus,
     PanTransferAlreadyStarted,
     PanTransferNotReady,
     PanTransferNotStarted,
@@ -67,6 +78,7 @@ from .repository import (
 )
 from .schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
@@ -86,8 +98,8 @@ IMPORTABLE_STEPS = {
     MerchantMigrationStep.create_catalog,
 }
 
-# Entities whose records map 1:1 to a ledger row, so a listing item can carry its
-# record id for selection. Prices live inside a product record and are excluded.
+# Entities whose records map 1:1 to a ledger row. Prices live inside a product
+# record and are excluded.
 _ENTITY_RECORD_TYPE = {
     PrecheckEntity.products: MerchantMigrationRecordType.product,
     PrecheckEntity.customers: MerchantMigrationRecordType.customer,
@@ -99,7 +111,14 @@ SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "column": "source_credentials",
 }
 
-_STEP_TASKS = {STEP_VERIFY_CARDS: "merchant_migration.verify_cards"}
+_STEP_TASKS = {
+    STEP_VERIFY_CARDS: "merchant_migration.verify_cards",
+    STEP_MOVE_SUBSCRIPTIONS: "merchant_migration.cutover",
+}
+
+_MIGRATION_STEP_BY_PAN_STEP = {
+    STEP_MOVE_SUBSCRIPTIONS: MerchantMigrationStep.activate_subscriptions,
+}
 
 # One Stripe round trip per customer, so a whole catalog can't be one job.
 CARD_VERIFICATION_BATCH_SIZE = 25
@@ -175,6 +194,15 @@ class CatalogImportNotReady(MerchantMigrationError):
         )
 
 
+class CutoverNotStarted(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Reach the switch step in the card transfer before switching "
+            "subscriptions over.",
+            409,
+        )
+
+
 class BlockedByPrecheck(MerchantMigrationError):
     """Precheck blockers as an API error: the codes stay machine-readable while
     the merchant reads the joined messages."""
@@ -219,18 +247,25 @@ class _CardLookup(NamedTuple):
 type ResolvedCards = dict[_CardLookup, PaymentMethod | None]
 
 
+def _staged_subscription(
+    record: MerchantMigrationRecord,
+) -> CanonicalSubscription | None:
+    """The canonical subscription staged for a record, or None when the record
+    isn't a subscription or its blob can't be read."""
+    try:
+        staged = deserialize(record.type, record.canonical)
+    except KeyError, TypeError, ValueError:
+        return None
+    return staged if isinstance(staged, CanonicalSubscription) else None
+
+
 def _staged_payment_method(
     record: MerchantMigrationRecord,
 ) -> CanonicalPaymentMethod | None:
     """What the source subscription was charging, so the right copy is picked
     when a customer has more than one."""
-    try:
-        staged = deserialize(record.type, record.canonical)
-    except (KeyError, TypeError, ValueError):
-        return None
-    if isinstance(staged, CanonicalSubscription):
-        return staged.payment_method
-    return None
+    staged = _staged_subscription(record)
+    return staged.payment_method if staged is not None else None
 
 
 def _summarize_entities(
@@ -251,8 +286,11 @@ def _summarize_entities(
         if item.status != PrecheckRecordStatus.importable:
             continue
         tally["importable"] += 1
-        # Only pending rows move; the importer skips every other ledger status.
-        if item.import_status == MerchantMigrationRecordStatus.pending:
+        if (
+            item.entity == PrecheckEntity.subscriptions
+            and item.import_status == MerchantMigrationRecordStatus.pending
+            and not item.dependencies_imported
+        ):
             tally["selectable"] += 1
 
     return [
@@ -458,6 +496,19 @@ class MerchantMigrationService:
         migration = await self._get_manageable(session, auth_subject, migration_id)
         return self._checklist(migration)
 
+    async def stream_imported_customer_source_ids(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> AsyncGenerator[str]:
+        """Authorize the migration, then return a stream of imported customer
+        source IDs for the Stripe Copy CSV. Auth runs before the generator is
+        returned so 403/404 cannot land mid-stream."""
+        await self._get_manageable(session, auth_subject, migration_id)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        return repository.stream_imported_customer_source_ids(migration_id)
+
     async def start_pan_transfer(
         self,
         session: AsyncSession,
@@ -553,14 +604,16 @@ class MerchantMigrationService:
         migration: MerchantMigration,
         steps: Sequence[PanTransferStep],
     ) -> None:
-        """Persist the checklist and schedule the job for a step Polar
-        performs itself."""
-        repository = MerchantMigrationRepository.from_session(session)
-        await repository.update(
-            migration, update_dict={"pan_transfer_steps": list(steps)}
-        )
-
+        """Persist progress and start work for the current Polar-managed step."""
         current = pan_transfer.current(steps)
+        update_dict: dict[str, object] = {"pan_transfer_steps": list(steps)}
+        if current is not None:
+            migration_step = _MIGRATION_STEP_BY_PAN_STEP.get(current.key)
+            if migration_step is not None:
+                update_dict["step"] = migration_step
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(migration, update_dict=update_dict)
+
         task = _STEP_TASKS.get(current.key) if current else None
         if task is not None:
             enqueue_job(task, merchant_migration_id=migration.id)
@@ -608,24 +661,21 @@ class MerchantMigrationService:
         records = await record_repository.list_imported_subscriptions(
             migration.id, offset=offset, limit=CARD_VERIFICATION_BATCH_SIZE
         )
-        subscription_repository = SubscriptionRepository.from_session(session)
+        customer_repository = CustomerRepository.from_session(session)
         resolved: ResolvedCards = {}
         for record in records:
-            if record.target_id is None:
+            staged = _staged_subscription(record)
+            if staged is None:
                 continue
-            subscription = await subscription_repository.get_by_id(
-                record.target_id, options=(joinedload(Subscription.customer),)
+            customer_record = await record_repository.get_imported_customer_dependency(
+                migration.id, staged.customer_source_id
             )
-            # Already covered, or gone from Polar: nothing to link either way.
-            if subscription is None or subscription.payment_method_id is not None:
+            if customer_record is None or customer_record.target_id is None:
                 continue
-            payment_method = await self._resolve_card(
-                session, record, subscription, resolved
-            )
-            if payment_method is not None:
-                await subscription_repository.update(
-                    subscription, update_dict={"payment_method_id": payment_method.id}
-                )
+            customer = await customer_repository.get_by_id(customer_record.target_id)
+            if customer is None:
+                continue
+            await self._resolve_card(session, record, customer, resolved)
 
         if len(records) == CARD_VERIFICATION_BATCH_SIZE:
             enqueue_job(
@@ -642,20 +692,20 @@ class MerchantMigrationService:
         self,
         session: AsyncSession,
         record: MerchantMigrationRecord,
-        subscription: Subscription,
+        customer: Customer,
         resolved: ResolvedCards,
     ) -> PaymentMethod | None:
         """The method to charge, resolved once per customer and source method
         rather than once per subscription they hold."""
         source_method = _staged_payment_method(record)
         key = _CardLookup(
-            customer_id=subscription.customer_id,
+            customer_id=customer.id,
             source_method_id=source_method.source_id if source_method else None,
         )
         if key not in resolved:
             try:
                 resolved[key] = await link_payment_method(
-                    session, subscription.customer, source_method=source_method
+                    session, customer, source_method=source_method
                 )
             except AmbiguousCopiedCard as e:
                 log.error(
@@ -683,6 +733,330 @@ class MerchantMigrationService:
             inputs={},
         )
         await self._advance_checklist(session, migration, steps)
+
+    async def get_cutover_report(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigrationCutoverReport:
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        await self._fail_stalled_cutover(session, migration)
+        return await self._cutover_report(session, migration)
+
+    async def start_cutover(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        *,
+        record_ids: Sequence[UUID] | None = None,
+        exclude_record_ids: Sequence[UUID] | None = None,
+    ) -> MerchantMigrationCutoverReport:
+        """Switch the picked imported subscriptions over to Polar.
+
+        Serves both the first confirmation and every retry: records the
+        selection, re-opens skipped/failed rows, and kicks the worker. Only
+        reachable once the card checklist has advanced to the switch step.
+        """
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if not self._cutover_reachable(migration):
+            raise CutoverNotStarted()
+
+        selection = self._build_selection(record_ids, exclude_record_ids)
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await record_repository.reset_cutover(migration.id, selection)
+
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration,
+            update_dict={
+                "operation": MerchantMigrationOperation(
+                    status=MerchantMigrationOperationStatus.running,
+                    selection=selection,
+                    last_progress_at=utc_now(),
+                )
+            },
+        )
+
+        current = pan_transfer.current(migration.pan_transfer_steps)
+        if current is not None and current.key == STEP_CUTOVER:
+            await self._complete_pan_step(
+                session,
+                migration,
+                STEP_CUTOVER,
+                actor=PanStepActor.merchant,
+                inputs={},
+            )
+        else:
+            enqueue_job(
+                "merchant_migration.cutover", merchant_migration_id=migration.id
+            )
+        return await self._cutover_report(session, migration)
+
+    async def run_cutover(self, session: AsyncSession, migration_id: UUID) -> None:
+        """Switch one subscription over, then hand off to the next run.
+
+        One subscription per run, each in its own transaction: the irreversible
+        half is a cancellation on the merchant's provider, so a batch that dies
+        halfway must not replay cancellations it already committed.
+        """
+        migration = await self._load(session, migration_id)
+        if migration is None:
+            return
+        operation = migration.operation
+        if operation is not None and not operation.is_active:
+            return
+        if not self._cutover_started(migration):
+            log.warning(
+                "merchant_migration.cutover.not_confirmed",
+                merchant_migration_id=migration.id,
+            )
+            return
+        organization = await self._get_organization(session, migration)
+        if not organization.can_renew_subscriptions:
+            log.warning(
+                "merchant_migration.cutover.renewals_disabled",
+                merchant_migration_id=migration.id,
+                organization_id=organization.id,
+            )
+            await self._fail_cutover(
+                session,
+                migration,
+                "Organization renewals are disabled; subscriptions stay on the source.",
+            )
+            return
+
+        selection = (
+            migration.operation.selection if migration.operation is not None else None
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        record = await record_repository.get_next_cutover_candidate(
+            migration.id, selection
+        )
+        if record is None:
+            if await record_repository.has_pending_cutover_candidates(
+                migration.id, selection
+            ):
+                return
+            await self._finish_cutover(session, migration)
+            return
+
+        outcome = await SubscriptionCutover(
+            session, migration, await self._build_adapter(migration)
+        ).run(record)
+        await record_repository.update(
+            record,
+            update_dict={
+                "cutover_status": outcome.status,
+                "cutover_error": outcome.message,
+            },
+        )
+        await self._bump_operation(session, migration)
+        enqueue_job("merchant_migration.cutover", merchant_migration_id=migration.id)
+
+    async def _finish_cutover(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> None:
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        selection = (
+            migration.operation.selection if migration.operation is not None else None
+        )
+        counts = await record_repository.count_cutover_statuses(migration.id, selection)
+        completed_steps = self._complete_polar_app_step(
+            migration, STEP_MOVE_SUBSCRIPTIONS
+        )
+        update_dict: dict[str, object] = {
+            "operation": self._done_operation(migration),
+            "step": MerchantMigrationStep.cleanup,
+        }
+        if completed_steps is not None:
+            # `annotate` refuses a completed step, so the receipt note goes on
+            # the step object directly before the completion is persisted.
+            steps = list(completed_steps)
+            note = self._cutover_note(counts)
+            for step in steps:
+                if step.key == STEP_MOVE_SUBSCRIPTIONS:
+                    step.note = note
+            update_dict["pan_transfer_steps"] = steps
+        await MerchantMigrationRepository.from_session(session).update(
+            migration, update_dict=update_dict
+        )
+
+    async def _fail_cutover(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        error: str,
+    ) -> None:
+        await MerchantMigrationRepository.from_session(session).update(
+            migration,
+            update_dict={"operation": self._failed_operation(migration, error)},
+        )
+
+    async def _fail_stalled_cutover(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> None:
+        operation = migration.operation
+        if operation is None or not operation.is_stalled():
+            return
+        await self._fail_cutover(
+            session,
+            migration,
+            "Switch stalled with no progress; start it again to resume.",
+        )
+
+    def _complete_polar_app_step(
+        self,
+        migration: MerchantMigration,
+        key: str,
+        # `Sequence`, not `list`: this class defines a `list` method, which would
+        # shadow the builtin in an annotation evaluated in the class body.
+    ) -> Sequence[PanTransferStep] | None:
+        """Mark a step Polar performs as done, or None when it isn't ours to move
+        — the work already finished once, or the merchant restarted."""
+        current = pan_transfer.current(migration.pan_transfer_steps)
+        if current is None or current.key != key:
+            return None
+        return pan_transfer.complete(
+            migration.pan_transfer_method,
+            list(migration.pan_transfer_steps),
+            key,
+            actor=PanStepActor.system,
+            inputs={},
+        )
+
+    async def _bump_operation(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> None:
+        """Refresh ``last_progress_at`` so a hang past ``STALL_THRESHOLD`` is
+        detectable on the next report poll."""
+        operation = migration.operation
+        if operation is None:
+            return
+        updated = operation.model_copy(update={"last_progress_at": utc_now()})
+        await MerchantMigrationRepository.from_session(session).update(
+            migration, update_dict={"operation": updated}
+        )
+
+    def _done_operation(
+        self, migration: MerchantMigration
+    ) -> MerchantMigrationOperation:
+        operation = migration.operation
+        if operation is None:
+            return MerchantMigrationOperation(
+                status=MerchantMigrationOperationStatus.done,
+                last_progress_at=utc_now(),
+            )
+        return operation.model_copy(
+            update={
+                "status": MerchantMigrationOperationStatus.done,
+                "last_progress_at": utc_now(),
+            }
+        )
+
+    def _failed_operation(
+        self, migration: MerchantMigration, error: str
+    ) -> MerchantMigrationOperation:
+        operation = migration.operation
+        if operation is None:
+            return MerchantMigrationOperation(
+                status=MerchantMigrationOperationStatus.failed,
+                error=error,
+                last_progress_at=utc_now(),
+            )
+        return operation.model_copy(
+            update={
+                "status": MerchantMigrationOperationStatus.failed,
+                "error": error,
+                "last_progress_at": utc_now(),
+            }
+        )
+
+    def _cutover_note(
+        self, counts: dict[MerchantMigrationCutoverStatus | None, int]
+    ) -> str:
+        moved = counts.get(MerchantMigrationCutoverStatus.moved, 0)
+        left = counts.get(MerchantMigrationCutoverStatus.skipped, 0) + counts.get(
+            MerchantMigrationCutoverStatus.failed, 0
+        )
+        note = (
+            f"Polar now bills {moved} subscription(s), and stopped them on your source."
+        )
+        if left:
+            note += (
+                f" {left} stayed on your source; open the subscriptions list to "
+                "see why, and switch them again once they're sorted."
+            )
+        return note
+
+    async def _cutover_report(
+        self, session: AsyncReadSession, migration: MerchantMigration
+    ) -> MerchantMigrationCutoverReport:
+        # Catalog-wide counts so the switch table tabs match every imported row,
+        # even when the active run only covers a selection. The finish note still
+        # scopes to the selection via `_finish_cutover`.
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        counts = await record_repository.count_cutover_statuses(migration.id)
+        operation = migration.operation
+        return MerchantMigrationCutoverReport(
+            started=self._cutover_started(migration),
+            running=operation.is_active if operation is not None else False,
+            completed=operation.is_terminal if operation is not None else False,
+            total=sum(counts.values()),
+            pending=counts.get(None, 0),
+            moved=counts.get(MerchantMigrationCutoverStatus.moved, 0),
+            skipped=counts.get(MerchantMigrationCutoverStatus.skipped, 0),
+            failed=counts.get(MerchantMigrationCutoverStatus.failed, 0),
+        )
+
+    def _build_selection(
+        self,
+        record_ids: Sequence[UUID] | None,
+        exclude_record_ids: Sequence[UUID] | None,
+    ) -> MerchantMigrationOperationSelection | None:
+        if record_ids is not None:
+            return MerchantMigrationOperationSelection(record_ids=list(record_ids))
+        if exclude_record_ids is not None:
+            return MerchantMigrationOperationSelection(
+                exclude_record_ids=list(exclude_record_ids)
+            )
+        return None
+
+    def _cutover_reachable(self, migration: MerchantMigration) -> bool:
+        """The merchant may switch once the card checklist has reached the switch
+        step — either it's the one to act on now, or it was confirmed already."""
+        current = pan_transfer.current(migration.pan_transfer_steps)
+        if current is not None and current.key == STEP_CUTOVER:
+            return True
+        return self._cutover_started(migration)
+
+    def _cutover_started(self, migration: MerchantMigration) -> bool:
+        """The merchant has confirmed the switch step, so Polar is allowed to
+        stop subscriptions on their source."""
+        return self._step_completed(migration, STEP_CUTOVER)
+
+    def _step_completed(self, migration: MerchantMigration, key: str) -> bool:
+        return any(
+            step.key == key and step.status == PanStepStatus.completed
+            for step in migration.pan_transfer_steps
+        )
+
+    async def _load(
+        self, session: AsyncReadSession, migration_id: UUID
+    ) -> MerchantMigration | None:
+        """Load a migration outside a request, for the background work. A
+        migration deleted mid-run just stops the run."""
+        migration = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration_id
+        )
+        if migration is None:
+            log.warning(
+                "merchant_migration.missing", merchant_migration_id=migration_id
+            )
+        return migration
 
     def _checklist(
         self,
@@ -752,6 +1126,7 @@ class MerchantMigrationService:
         status: PrecheckRecordStatus | None,
         reason_level: PrecheckReasonLevel | None = None,
         import_status: MerchantMigrationRecordStatus | None = None,
+        cutover_status: MerchantMigrationCutoverStatus | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
         """Return staged records classified importable/skipped and paginated in
@@ -760,10 +1135,13 @@ class MerchantMigrationService:
         ``reason_level`` filters to rows the merchant has to act on
         (`action_required`) or only needs to know about (`info`);
         ``import_status`` filters on the ledger outcome, which excludes price rows
-        since they have none. Reads what ``run_precheck`` persisted."""
+        since they have none; ``cutover_status`` narrows to what the switch did
+        with a subscription, which is how the merchant finds the ones it left on
+        the source. Reads what ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
         entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
         items = await self._classify_staged(session, migration, entities)
+        await self._attach_cutover_coverage(session, migration, items)
 
         if status is not None:
             items = [item for item in items if item.status == status]
@@ -771,9 +1149,29 @@ class MerchantMigrationService:
             items = [item for item in items if item.reason_level == reason_level]
         if import_status is not None:
             items = [item for item in items if item.import_status == import_status]
+        if cutover_status is not None:
+            items = [item for item in items if item.cutover_status == cutover_status]
 
         start = (pagination.page - 1) * pagination.limit
         return items[start : start + pagination.limit], len(items)
+
+    async def _attach_cutover_coverage(
+        self,
+        session: AsyncReadSession,
+        migration: MerchantMigration,
+        items: Sequence[MerchantMigrationRecordItem],
+    ) -> None:
+        """Flag which imported subscriptions already have a payment method to
+        charge, so the switch table can hint readiness before the merchant picks.
+        """
+        if not any(item.entity == PrecheckEntity.subscriptions for item in items):
+            return
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        covered = await record_repository.payment_method_coverage(migration.id)
+        for item in items:
+            if item.entity != PrecheckEntity.subscriptions or item.record_id is None:
+                continue
+            item.has_payment_method = item.record_id in covered
 
     async def _classify_staged(
         self,
@@ -837,10 +1235,10 @@ class MerchantMigrationService:
         staged: Sequence[MerchantMigrationRecord],
         entity: PrecheckEntity,
     ) -> None:
-        """Give each item its ledger record id, so a row can be selected for
-        import. The 1:1 entities (products/customers/subscriptions) map to their
-        staged records in order — both derive from the same `staged` fetch. Prices
-        aren't their own record (they live in a product), so they keep a null id.
+        """Give each item its ledger record id. The 1:1 entities
+        (products/customers/subscriptions) map to their staged records in order —
+        both derive from the same `staged` fetch. Prices aren't their own record
+        (they live in a product), so they keep a null id.
         """
         record_type = _ENTITY_RECORD_TYPE.get(entity)
         if record_type is None:
@@ -848,9 +1246,52 @@ class MerchantMigrationService:
         staged_of_type = [record for record in staged if record.type == record_type]
         if len(staged_of_type) != len(items):
             return
+        imported_customer_source_ids: set[str] = set()
+        imported_product_price_source_ids: set[str] = set()
+        if entity == PrecheckEntity.subscriptions:
+            imported_customer_source_ids = {
+                record.source_id
+                for record in staged
+                if record.type == MerchantMigrationRecordType.customer
+                and record.status == MerchantMigrationRecordStatus.imported
+                and record.target_id is not None
+            }
+            for product_record in staged:
+                if (
+                    product_record.type != MerchantMigrationRecordType.product
+                    or product_record.status != MerchantMigrationRecordStatus.imported
+                    or product_record.target_id is None
+                ):
+                    continue
+                product = deserialize(product_record.type, product_record.canonical)
+                if isinstance(product, CanonicalProduct):
+                    imported_product_price_source_ids.update(
+                        price.source_id for price in product.prices
+                    )
         for item, record in zip(items, staged_of_type, strict=True):
             item.record_id = record.id
             item.import_status = record.status
+            if entity == PrecheckEntity.subscriptions:
+                item.cutover_status = record.cutover_status
+                item.cutover_error = record.cutover_error
+                item.renews_at = self._staged_renews_at(record)
+                subscription = _staged_subscription(record)
+                item.dependencies_imported = (
+                    record.status == MerchantMigrationRecordStatus.imported
+                    and record.target_id is not None
+                ) or (
+                    record.status == MerchantMigrationRecordStatus.pending
+                    and subscription is not None
+                    and subscription.customer_source_id in imported_customer_source_ids
+                    and subscription.price_source_id
+                    in imported_product_price_source_ids
+                )
+
+    def _staged_renews_at(self, record: MerchantMigrationRecord) -> datetime | None:
+        """When the source subscription renews, as captured at import. Best-effort:
+        an unreadable blob just leaves the column blank."""
+        staged = _staged_subscription(record)
+        return staged.current_period_end if staged is not None else None
 
     async def _stage_records(
         self,

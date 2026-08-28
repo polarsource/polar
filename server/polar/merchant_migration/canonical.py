@@ -34,6 +34,7 @@ class CanonicalCollectionMethod(StrEnum):
 
 class CanonicalPaymentMethodType(StrEnum):
     card = "card"
+    kr_card = "kr_card"
     us_bank_account = "us_bank_account"
     sepa_debit = "sepa_debit"
     bacs_debit = "bacs_debit"
@@ -43,6 +44,7 @@ class CanonicalPaymentMethodType(StrEnum):
     @property
     def requires_reentry(self) -> bool:
         return self in {
+            CanonicalPaymentMethodType.kr_card,
             CanonicalPaymentMethodType.bacs_debit,
             CanonicalPaymentMethodType.link,
             CanonicalPaymentMethodType.other,
@@ -124,6 +126,10 @@ class CanonicalSubscription:
     # cutover, so a retry after a crash finishes the move instead of reading its
     # own cancellation as the customer having churned.
     stopped_for_migration: bool = False
+    # The renewal day before any month-end clamping. A period boundary can't be
+    # trusted for it: a 31st anchor reads as Feb 28 in a February period.
+    anchor_day: int | None = None
+    currency: str | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -139,6 +145,30 @@ class CanonicalAccount:
 
 
 CanonicalRecord = CanonicalProduct | CanonicalCustomer | CanonicalSubscription
+PriceKey = tuple[str, str]
+
+
+def price_key(source_id: str, currency: str) -> PriceKey:
+    return source_id, currency.lower()
+
+
+def canonical_price_key(price: CanonicalPrice) -> PriceKey:
+    return price_key(price.source_id, price.currency)
+
+
+def subscription_price_key(subscription: CanonicalSubscription) -> PriceKey | None:
+    return subscription_price_key_values(
+        subscription.price_source_id, subscription.currency
+    )
+
+
+def subscription_price_key_values(
+    source_id: str,
+    currency: str | None,
+) -> PriceKey | None:
+    if currency is None:
+        return None
+    return price_key(source_id, currency)
 
 
 def serialize(record: CanonicalRecord) -> dict[str, Any]:
@@ -210,6 +240,8 @@ def deserialize(
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
+                anchor_day=data.get("anchor_day"),
+                currency=data.get("currency"),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

@@ -52,6 +52,7 @@ from polar.product.guard import (
     is_metered_price,
     is_seat_price,
     is_static_price,
+    is_unit_price,
 )
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
@@ -63,6 +64,7 @@ from .schemas import (
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
     ProductPriceSeatBasedCreate,
+    ProductPriceUnitBasedCreate,
     ProductUpdate,
 )
 from .sorting import ProductSortProperty
@@ -83,9 +85,9 @@ class ProductService:
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[ProductSortProperty]] = [
-            (ProductSortProperty.created_at, True)
-        ],
+        sorting: Sequence[Sorting[ProductSortProperty]] = (
+            (ProductSortProperty.created_at, True),
+        ),
     ) -> tuple[Sequence[Product], int]:
         repository = ProductRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -247,6 +249,7 @@ class ProductService:
                             "input": file_id,
                         }
                     )
+                    continue
                 product.product_medias.append(ProductMedia(file=file, order=order))
 
         for order, attached_custom_field in enumerate(
@@ -266,6 +269,7 @@ class ProductService:
                         "input": attached_custom_field.custom_field_id,
                     }
                 )
+                continue
             product.attached_custom_fields.append(
                 ProductCustomField(
                     custom_field=custom_field,
@@ -599,17 +603,50 @@ class ProductService:
                 existing_prices.add(price)
             else:
                 model_class = price_schema.get_model_class()
-                price_kwargs = price_schema.model_dump()
-                price = model_class(product=product, source=source, **price_kwargs)
-                if isinstance(price_schema, ProductPriceSeatBasedCreate):
+                if isinstance(price_schema, ProductPriceUnitBasedCreate):
+                    price = model_class(
+                        product=product,
+                        source=source,
+                        **price_schema.model_dump(exclude={"tiers"}),
+                        tiers=price_schema.tiers,
+                    )
+                else:
+                    price = model_class(
+                        product=product, source=source, **price_schema.model_dump()
+                    )
+                if isinstance(
+                    price_schema, ProductPriceSeatBasedCreate
+                ) and not organization.feature_settings.get(
+                    "seat_based_pricing_enabled", False
+                ):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": (*error_prefix, index),
+                            "msg": "Seat-based pricing is not enabled for this organization.",
+                            "input": price_schema,
+                        }
+                    )
+                    continue
+                if isinstance(price_schema, ProductPriceUnitBasedCreate):
                     if not organization.feature_settings.get(
-                        "seat_based_pricing_enabled", False
+                        "unit_based_pricing_enabled", False
                     ):
                         errors.append(
                             {
                                 "type": "value_error",
                                 "loc": (*error_prefix, index),
-                                "msg": "Seat-based pricing is not enabled for this organization.",
+                                "msg": "Unit-based pricing is not enabled for this organization.",
+                                "input": price_schema,
+                            }
+                        )
+                        continue
+                    if recurring_interval is None:
+                        errors.append(
+                            {
+                                "type": "value_error",
+                                "loc": (*error_prefix, index),
+                                "msg": "Unit-based pricing is not supported on one-time products.",
                                 "input": price_schema,
                             }
                         )
@@ -656,7 +693,7 @@ class ProductService:
             )
 
         # Track price structure per currency for cross-currency validation
-        price_structure_per_currency: dict[str, tuple[bool, bool, bool, int]] = {}
+        price_structure_per_currency: dict[str, tuple[bool, bool, bool, bool, int]] = {}
 
         for currency, currency_prices in prices_per_currency.items():
             # Classify the static prices in this currency. A product may compose
@@ -666,6 +703,7 @@ class ProductService:
             fixed_prices = [p for p in static_prices if is_fixed_price(p)]
             custom_prices = [p for p in static_prices if is_custom_price(p)]
             seat_prices = [p for p in static_prices if is_seat_price(p)]
+            unit_prices = [p for p in static_prices if is_unit_price(p)]
 
             # Bypass these rules for legacy recurring products, which predate the
             # static-composition model and may carry one static price per interval.
@@ -697,14 +735,35 @@ class ProductService:
                             "input": prices_schema,
                         }
                     )
-                if custom_prices and (fixed_prices or seat_prices):
+                if len(unit_prices) > 1:
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": error_prefix,
+                            "msg": "Only one unit-based price is allowed.",
+                            "input": prices_schema,
+                        }
+                    )
+                if seat_prices and unit_prices:
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": error_prefix,
+                            "msg": (
+                                "A seat-based price cannot be combined with "
+                                "a unit-based price."
+                            ),
+                            "input": prices_schema,
+                        }
+                    )
+                if custom_prices and (fixed_prices or seat_prices or unit_prices):
                     errors.append(
                         {
                             "type": "value_error",
                             "loc": error_prefix,
                             "msg": (
                                 "A custom price cannot be combined with "
-                                "a fixed or seat-based price."
+                                "a fixed, seat-based or unit-based price."
                             ),
                             "input": prices_schema,
                         }
@@ -740,10 +799,11 @@ class ProductService:
                 )
 
             # Record the structure:
-            # (has_fixed, has_seat, has_custom, metered_count)
+            # (has_fixed, has_seat, has_unit, has_custom, metered_count)
             price_structure_per_currency[currency] = (
                 len(fixed_prices) > 0,
                 len(seat_prices) > 0,
+                len(unit_prices) > 0,
                 len(custom_prices) > 0,
                 len(currency_meters),
             )

@@ -1,13 +1,11 @@
 """Imports the staged catalog into Polar (the `create_catalog` step).
-Idempotent; migrated subscriptions arrive paused so nothing bills until cutover.
+Idempotent; subscriptions are created later, during cutover.
 """
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TypeVar
 from uuid import UUID
-
-from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
@@ -31,21 +29,21 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 from polar.models.product_price import ProductPriceAmountType, ProductPriceFixed
-from polar.product.repository import ProductRepository
 from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCreate,
     ProductPriceFixedCreate,
 )
 from polar.product.service import product as product_service
-from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 
 from .canonical import (
     CanonicalCustomer,
     CanonicalProduct,
     CanonicalSubscription,
+    canonical_price_key,
     deserialize,
+    subscription_price_key,
 )
 from .precheck import (
     ProductImportPlan,
@@ -64,14 +62,6 @@ from .schemas import (
 _CanonicalT = TypeVar("_CanonicalT")
 
 _DEPENDENCY_CODE = "subscription_dependency_not_imported"
-_CUSTOMER_NOT_IMPORTED = Reason(
-    _DEPENDENCY_CODE,
-    "Its customer wasn't imported, so this subscription stays on the source.",
-)
-_PRODUCT_NOT_IMPORTED = Reason(
-    _DEPENDENCY_CODE,
-    "Its product wasn't imported, so this subscription stays on the source.",
-)
 _CUSTOMER_ALREADY_SUBSCRIBED = Reason(
     _DEPENDENCY_CODE,
     "This customer already has a live subscription to the product on Polar, so a "
@@ -82,6 +72,54 @@ _CUSTOMER_STRIPE_ID_CONFLICT = Reason(
     "A Polar customer with this email already has a different Stripe id. Reconcile "
     "them manually; this customer stays on the source.",
 )
+
+
+def find_imported_price(
+    product: Product,
+    canonical_product: CanonicalProduct,
+    subscription: CanonicalSubscription,
+) -> ProductPriceFixed | None:
+    key = subscription_price_key(subscription)
+    if key is None:
+        return None
+    canonical_price = next(
+        (
+            price
+            for price in canonical_product.prices
+            if canonical_price_key(price) == key
+        ),
+        None,
+    )
+    if canonical_price is None:
+        return None
+    currency = canonical_price.currency.lower()
+    return next(
+        (
+            price
+            for price in product.prices
+            if isinstance(price, ProductPriceFixed) and price.price_currency == currency
+        ),
+        None,
+    )
+
+
+async def create_imported_subscription(
+    session: AsyncSession,
+    subscription: CanonicalSubscription,
+    product: Product,
+    price: ProductPriceFixed,
+    customer: Customer,
+) -> Subscription:
+    return await subscription_service.create_imported(
+        session,
+        product=product,
+        price=price,
+        customer=customer,
+        current_period_start=subscription.current_period_start,
+        current_period_end=subscription.current_period_end,
+        anchor_day=subscription.anchor_day,
+        user_metadata={"stripe_subscription_id": subscription.source_id},
+    )
 
 
 @dataclass
@@ -105,15 +143,6 @@ class ImportedCustomer:
     skip: Reason | None = None
 
 
-@dataclass(frozen=True)
-class ImportedSubscription:
-    """The created subscription, or why the record is skipped. Both unset means
-    an unexpected miss, which leaves the record pending."""
-
-    subscription: Subscription | None = None
-    skip: Reason | None = None
-
-
 class CatalogImporter:
     def __init__(
         self,
@@ -134,11 +163,7 @@ class CatalogImporter:
         self.record_ids = record_ids
         self.exclude_record_ids = exclude_record_ids
         self.record_repository = MerchantMigrationRecordRepository.from_session(session)
-        self.product_repository = ProductRepository.from_session(session)
         self.customer_repository = CustomerRepository.from_session(session)
-        self.subscription_repository = SubscriptionRepository.from_session(session)
-        self._product_cache: dict[UUID, Product] = {}
-        self._customer_cache: dict[UUID, Customer] = {}
 
     async def run(self) -> MerchantMigrationImportReport:
         records = await self.record_repository.list_by_migration(self.migration.id)
@@ -150,12 +175,22 @@ class CatalogImporter:
             records, MerchantMigrationRecordType.subscription
         )
 
-        # Products and customers first: a subscription resolves both from their
-        # imported ledger rows.
-        product_result = await self._import_products(product_records)
-        customer_result = await self._import_customers(customer_records)
-        subscription_result = await self._import_subscriptions(
-            subscription_records, product_records, customer_records
+        product_source_ids, customer_source_ids = (
+            self._selected_subscription_dependencies(
+                subscription_records, product_records, customer_records
+            )
+        )
+
+        product_result = await self._import_products(
+            product_records, selected_source_ids=product_source_ids
+        )
+        customer_result = await self._import_customers(
+            customer_records, selected_source_ids=customer_source_ids
+        )
+        subscription_result = MerchantMigrationImportResult(
+            entity=PrecheckEntity.subscriptions,
+            imported=0,
+            skipped=0,
         )
 
         return MerchantMigrationImportReport(
@@ -170,15 +205,66 @@ class CatalogImporter:
     ) -> list[MerchantMigrationRecord]:
         return [record for record in records if record.type == type]
 
-    def _is_selected(self, record: MerchantMigrationRecord) -> bool:
+    def _is_subscription_selected(self, record: MerchantMigrationRecord) -> bool:
         if self.record_ids is not None:
             return record.id in self.record_ids
         if self.exclude_record_ids is not None:
             return record.id not in self.exclude_record_ids
         return True
 
+    def _selected_subscription_dependencies(
+        self,
+        subscription_records: Sequence[MerchantMigrationRecord],
+        product_records: Sequence[MerchantMigrationRecord],
+        customer_records: Sequence[MerchantMigrationRecord],
+    ) -> tuple[set[str], set[str]]:
+        subscriptions = [
+            self._as(deserialize(record.type, record.canonical), CanonicalSubscription)
+            for record in subscription_records
+        ]
+        products = [
+            self._as(deserialize(record.type, record.canonical), CanonicalProduct)
+            for record in product_records
+        ]
+        customers = [
+            self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
+            for record in customer_records
+        ]
+        plans = plan_subscription_imports(
+            subscriptions,
+            products,
+            customers,
+            self.organization.default_presentment_currency,
+        )
+        product_by_price = {
+            canonical_price_key(price): product
+            for product in products
+            for price in product.prices
+        }
+
+        product_source_ids: set[str] = set()
+        customer_source_ids: set[str] = set()
+        for record, subscription in zip(
+            subscription_records, subscriptions, strict=True
+        ):
+            if (
+                record.status != MerchantMigrationRecordStatus.pending
+                or not self._is_subscription_selected(record)
+                or plans[subscription.source_id] is not None
+            ):
+                continue
+            customer_source_ids.add(subscription.customer_source_id)
+            key = subscription_price_key(subscription)
+            product = product_by_price.get(key) if key is not None else None
+            if product is not None:
+                product_source_ids.add(product.source_id)
+        return product_source_ids, customer_source_ids
+
     async def _import_products(
-        self, records: Sequence[MerchantMigrationRecord]
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        *,
+        selected_source_ids: set[str],
     ) -> MerchantMigrationImportResult:
         products = [
             self._as(deserialize(record.type, record.canonical), CanonicalProduct)
@@ -190,7 +276,7 @@ class CatalogImporter:
 
         counts = ImportCounts()
         for record, product in zip(records, products, strict=True):
-            if not self._is_selected(record):
+            if record.source_id not in selected_source_ids:
                 continue
             if record.status != MerchantMigrationRecordStatus.pending:
                 counts.settle(record.status)
@@ -211,7 +297,10 @@ class CatalogImporter:
         )
 
     async def _import_customers(
-        self, records: Sequence[MerchantMigrationRecord]
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        *,
+        selected_source_ids: set[str],
     ) -> MerchantMigrationImportResult:
         customers = [
             self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
@@ -221,7 +310,7 @@ class CatalogImporter:
 
         counts = ImportCounts()
         for record, customer in zip(records, customers, strict=True):
-            if not self._is_selected(record):
+            if record.source_id not in selected_source_ids:
                 continue
             if record.status != MerchantMigrationRecordStatus.pending:
                 counts.settle(record.status)
@@ -252,7 +341,7 @@ class CatalogImporter:
         assert product.recurring_interval is not None
         prices: list[ProductPriceCreate] = []
         for price in product.prices:
-            if price.source_id not in plan.importable_price_ids:
+            if canonical_price_key(price) not in plan.importable_prices:
                 continue
             assert price.amount is not None
             prices.append(
@@ -326,193 +415,6 @@ class CatalogImporter:
         except ValueError:
             return None
         return Address(country=country)
-
-    async def _import_subscriptions(
-        self,
-        records: Sequence[MerchantMigrationRecord],
-        product_records: Sequence[MerchantMigrationRecord],
-        customer_records: Sequence[MerchantMigrationRecord],
-    ) -> MerchantMigrationImportResult:
-        subscriptions = [
-            self._as(deserialize(record.type, record.canonical), CanonicalSubscription)
-            for record in records
-        ]
-        products = [
-            self._as(deserialize(record.type, record.canonical), CanonicalProduct)
-            for record in product_records
-        ]
-        customers = [
-            self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
-            for record in customer_records
-        ]
-        plans = plan_subscription_imports(
-            subscriptions,
-            products,
-            customers,
-            self.organization.default_presentment_currency,
-        )
-        product_by_price = {
-            price.source_id: product for product in products for price in product.prices
-        }
-        # Their ledger rows already carry target ids in-session, so resolve from
-        # these maps instead of a query per subscription.
-        customer_target_by_source = self._imported_targets(customer_records)
-        product_target_by_source = self._imported_targets(product_records)
-
-        counts = ImportCounts()
-        for record, subscription in zip(records, subscriptions, strict=True):
-            if not self._is_selected(record):
-                continue
-            if record.status != MerchantMigrationRecordStatus.pending:
-                counts.settle(record.status)
-                continue
-            skip = plans[subscription.source_id]
-            if skip is not None:
-                await self._mark_skipped(record, skip)
-                counts.skipped += 1
-                continue
-            result = await self._create_subscription(
-                subscription,
-                product_by_price,
-                customer_target_by_source,
-                product_target_by_source,
-            )
-            # A missing dependency means it was skipped or deselected, so skip
-            # the subscription rather than leave it pending.
-            if result.skip is not None:
-                await self._mark_skipped(record, result.skip)
-                counts.skipped += 1
-                continue
-            if result.subscription is None:
-                continue
-            await self._mark_imported(record, result.subscription.id)
-            counts.imported += 1
-
-        return MerchantMigrationImportResult(
-            entity=PrecheckEntity.subscriptions,
-            imported=counts.imported,
-            skipped=counts.skipped,
-        )
-
-    async def _create_subscription(
-        self,
-        subscription: CanonicalSubscription,
-        product_by_price: dict[str, CanonicalProduct],
-        customer_target_by_source: dict[str, UUID],
-        product_target_by_source: dict[str, UUID],
-    ) -> ImportedSubscription:
-        customer_target = customer_target_by_source.get(subscription.customer_source_id)
-        if customer_target is None:
-            return ImportedSubscription(skip=_CUSTOMER_NOT_IMPORTED)
-        canonical_product = product_by_price.get(subscription.price_source_id)
-        if canonical_product is None:
-            return ImportedSubscription(skip=_PRODUCT_NOT_IMPORTED)
-        product_target = product_target_by_source.get(canonical_product.source_id)
-        if product_target is None:
-            return ImportedSubscription(skip=_PRODUCT_NOT_IMPORTED)
-
-        polar_product = await self._load_product(product_target)
-        customer = await self._load_customer(customer_target)
-        if polar_product is None or customer is None:
-            return ImportedSubscription()
-
-        # Never create a second live subscription to the same product for a
-        # customer — at cutover it would double-bill them.
-        if await self.subscription_repository.exists_live_by_customer_and_product(
-            customer.id, polar_product.id
-        ):
-            return ImportedSubscription(skip=_CUSTOMER_ALREADY_SUBSCRIBED)
-
-        price = self._find_price(
-            polar_product, canonical_product, subscription.price_source_id
-        )
-        if price is None:
-            return ImportedSubscription()
-
-        return ImportedSubscription(
-            subscription=await self._persist_subscription(
-                subscription, polar_product, price, customer
-            )
-        )
-
-    async def _persist_subscription(
-        self,
-        subscription: CanonicalSubscription,
-        product: Product,
-        price: ProductPriceFixed,
-        customer: Customer,
-    ) -> Subscription:
-        return await subscription_service.create_imported(
-            self.session,
-            product=product,
-            price=price,
-            customer=customer,
-            current_period_start=subscription.current_period_start,
-            current_period_end=subscription.current_period_end,
-            user_metadata={"stripe_subscription_id": subscription.source_id},
-        )
-
-    def _imported_targets(
-        self, records: Sequence[MerchantMigrationRecord]
-    ) -> dict[str, UUID]:
-        return {
-            record.source_id: record.target_id
-            for record in records
-            if record.status == MerchantMigrationRecordStatus.imported
-            and record.target_id is not None
-        }
-
-    async def _load_customer(self, customer_id: UUID) -> Customer | None:
-        # Several subscriptions often share one customer.
-        if customer_id not in self._customer_cache:
-            customer = await self.customer_repository.get_by_id(customer_id)
-            if customer is None:
-                return None
-            self._customer_cache[customer_id] = customer
-        return self._customer_cache[customer_id]
-
-    async def _load_product(self, product_id: UUID) -> Product | None:
-        cached = self._product_cache.get(product_id)
-        if cached is not None:
-            return cached
-        # None only if an imported product row vanished; the caller leaves the
-        # subscription pending rather than crashing.
-        product = await self.product_repository.get_by_id_and_organization(
-            product_id,
-            self.organization.id,
-            options=(
-                selectinload(Product.prices),
-                joinedload(Product.organization),
-            ),
-        )
-        if product is not None:
-            self._product_cache[product_id] = product
-        return product
-
-    def _find_price(
-        self,
-        product: Product,
-        canonical_product: CanonicalProduct,
-        price_source_id: str,
-    ) -> ProductPriceFixed | None:
-        # Prices carry no durable source id, and an imported product holds one
-        # fixed price per currency, so the currency identifies it.
-        canonical_price = next(
-            (p for p in canonical_product.prices if p.source_id == price_source_id),
-            None,
-        )
-        if canonical_price is None:
-            return None
-        currency = canonical_price.currency.lower()
-        return next(
-            (
-                price
-                for price in product.prices
-                if isinstance(price, ProductPriceFixed)
-                and price.price_currency == currency
-            ),
-            None,
-        )
 
     async def _mark_imported(
         self, record: MerchantMigrationRecord, target_id: UUID

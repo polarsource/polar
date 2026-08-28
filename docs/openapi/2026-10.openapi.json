@@ -175,11 +175,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.organizations.iter_list(\n    page=1,\n    limit=10,\n    sorting=['created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.organizations.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -253,11 +253,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.organizations.create(\n    name='string',\n    slug='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.organizations.create(\n  {\n    \"name\": \"string\",\n    \"slug\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -348,11 +348,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.organizations.get(\n    '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.organizations.get(\n  \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -476,11 +476,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.organizations.update(\n    '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.organizations.update(\n  \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -938,11 +938,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.subscriptions.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-started_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.subscriptions.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-started_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -1020,11 +1020,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.create(\n    product_id='d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23',\n    customer_id='992fae2a-2a17-4b7a-8d9e-e287cf90131b',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.create(\n  {\n    \"product_id\": \"d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23\",\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -1269,11 +1269,11 @@
         "x-speakeasy-name-override": "export",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.export(\n    timezone='UTC',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.export(\n  {\n    \"timezone\": \"UTC\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -1362,11 +1362,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -1498,11 +1498,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.update(\n    '00000000-0000-4000-8000-000000000000',\n    product_id='d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"product_id\": \"d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -1606,11 +1606,11 @@
         "x-speakeasy-name-override": "revoke",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.revoke(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.revoke(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -1672,11 +1672,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.oauth2.clients.oauth2.create_client(\n    redirect_uris=['https://example.com'],\n    token_endpoint_auth_method='client_secret_post',\n    grant_types=['authorization_code', 'refresh_token'],\n    response_types=['code'],\n    scope=('openid profile email user:read user:write organizations:read '\n     'organizations:write custom_fields:read custom_fields:write '\n     'discounts:read discounts:write checkout_links:read '\n     'checkout_links:write checkouts:read checkouts:write '\n     'transactions:read transactions:write payouts:read payouts:write '\n     'products:read products:write benefits:read benefits:write '\n     'events:read events:write meters:read meters:write files:read '\n     'files:write subscriptions:read subscriptions:write customers:read '\n     'customers:write members:read members:write wallets:read '\n     'wallets:write disputes:read disputes:write customer_meters:read '\n     'customer_sessions:write member_sessions:write customer_seats:read '\n     'customer_seats:write orders:read orders:write refunds:read '\n     'refunds:write payments:read metrics:read metrics:write webhooks:read '\n     'webhooks:write license_keys:read license_keys:write '\n     'customer_portal:read customer_portal:write notifications:read '\n     'notifications:write notification_recipients:read '\n     'notification_recipients:write'),\n    client_name='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.oauth2.clients.oauth2.createClient(\n  {\n    \"redirect_uris\": [\n      \"https://example.com\"\n    ],\n    \"token_endpoint_auth_method\": \"client_secret_post\",\n    \"grant_types\": [\n      \"authorization_code\",\n      \"refresh_token\"\n    ],\n    \"response_types\": [\n      \"code\"\n    ],\n    \"scope\": \"openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write\",\n    \"client_name\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -1739,11 +1739,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.oauth2.clients.oauth2.get_client(\n    'string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.oauth2.clients.oauth2.getClient(\n  \"string\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -1814,11 +1814,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.oauth2.clients.oauth2.update_client(\n    'string',\n    redirect_uris=['https://example.com'],\n    token_endpoint_auth_method='client_secret_post',\n    grant_types=['authorization_code', 'refresh_token'],\n    response_types=['code'],\n    scope=('openid profile email user:read user:write organizations:read '\n     'organizations:write custom_fields:read custom_fields:write '\n     'discounts:read discounts:write checkout_links:read '\n     'checkout_links:write checkouts:read checkouts:write '\n     'transactions:read transactions:write payouts:read payouts:write '\n     'products:read products:write benefits:read benefits:write '\n     'events:read events:write meters:read meters:write files:read '\n     'files:write subscriptions:read subscriptions:write customers:read '\n     'customers:write members:read members:write wallets:read '\n     'wallets:write disputes:read disputes:write customer_meters:read '\n     'customer_sessions:write member_sessions:write customer_seats:read '\n     'customer_seats:write orders:read orders:write refunds:read '\n     'refunds:write payments:read metrics:read metrics:write webhooks:read '\n     'webhooks:write license_keys:read license_keys:write '\n     'customer_portal:read customer_portal:write notifications:read '\n     'notifications:write notification_recipients:read '\n     'notification_recipients:write'),\n    client_name='string',\n    client_id='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.oauth2.clients.oauth2.updateClient(\n  \"string\",\n  {\n    \"redirect_uris\": [\n      \"https://example.com\"\n    ],\n    \"token_endpoint_auth_method\": \"client_secret_post\",\n    \"grant_types\": [\n      \"authorization_code\",\n      \"refresh_token\"\n    ],\n    \"response_types\": [\n      \"code\"\n    ],\n    \"scope\": \"openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write\",\n    \"client_name\": \"string\",\n    \"client_id\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -1874,11 +1874,11 @@
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.oauth2.clients.oauth2.delete_client(\n    'string',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.oauth2.clients.oauth2.deleteClient(\n  \"string\",\n);\n"
           }
         ]
@@ -1935,11 +1935,11 @@
         "x-speakeasy-name-override": "authorize",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.oauth2.authorize()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.oauth2.authorize();\nconsole.log(response);\n"
           }
         ]
@@ -1990,11 +1990,11 @@
         "x-speakeasy-name-override": "token",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.oauth2.request_token()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.oauth2.requestToken();\nconsole.log(response);\n"
           }
         ]
@@ -2035,11 +2035,11 @@
         "x-speakeasy-name-override": "revoke",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.oauth2.revoke_token()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.oauth2.revokeToken();\nconsole.log(response);\n"
           }
         ]
@@ -2080,11 +2080,11 @@
         "x-speakeasy-name-override": "introspect",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.oauth2.introspect_token()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.oauth2.introspectToken();\nconsole.log(response);\n"
           }
         ]
@@ -2128,11 +2128,11 @@
         "x-speakeasy-group": "oauth2",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.oauth2.userinfo()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.oauth2.userinfo();\nconsole.log(response);\n"
           }
         ]
@@ -2416,11 +2416,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.benefits.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.benefits.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -2491,11 +2491,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.benefits.create(\n    type='custom',\n    description='string',\n    properties={},\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.create(\n  {\n    \"type\": \"custom\",\n    \"description\": \"string\",\n    \"properties\": {}\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -2584,11 +2584,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.benefits.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -2708,11 +2708,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.benefits.update(\n    '00000000-0000-4000-8000-000000000000',\n    type='custom',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"type\": \"custom\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -2798,11 +2798,11 @@
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.benefits.delete(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.benefits.delete(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -2941,11 +2941,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.benefits.iter_files(\n    '00000000-0000-4000-8000-000000000000',\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.benefits.iterFiles(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -3156,11 +3156,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.benefits.iter_grants(\n    '00000000-0000-4000-8000-000000000000',\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.benefits.iterGrants(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -3408,11 +3408,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.benefit_grants.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.benefitGrants.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -3564,11 +3564,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.webhooks.iter_list_webhook_endpoints(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.webhooks.iterListWebhookEndpoints(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -3638,11 +3638,11 @@
         "x-speakeasy-name-override": "create_webhook_endpoint",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.create_webhook_endpoint(\n    url='https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n    format='raw',\n    events=['checkout.created'],\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.createWebhookEndpoint(\n  {\n    \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    \"format\": \"raw\",\n    \"events\": [\n      \"checkout.created\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -3731,11 +3731,11 @@
         "x-speakeasy-name-override": "get_webhook_endpoint",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.get_webhook_endpoint(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.getWebhookEndpoint(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -3829,11 +3829,11 @@
         "x-speakeasy-name-override": "update_webhook_endpoint",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.update_webhook_endpoint(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.updateWebhookEndpoint(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -3910,11 +3910,11 @@
         "x-speakeasy-name-override": "delete_webhook_endpoint",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.webhooks.delete_webhook_endpoint(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.webhooks.deleteWebhookEndpoint(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -4000,11 +4000,11 @@
         "x-speakeasy-name-override": "reset_webhook_endpoint_secret",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.reset_webhook_endpoint_secret(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.resetWebhookEndpointSecret(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -4270,11 +4270,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.webhooks.iter_list_webhook_deliveries(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.webhooks.iterListWebhookDeliveries(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -4358,11 +4358,11 @@
         "x-speakeasy-name-override": "redeliver_webhook_event",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.redeliver_webhook_event(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.redeliverWebhookEvent(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -4679,11 +4679,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.products.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.products.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -4753,11 +4753,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.create(\n    name='string',\n    prices=[{'amount_type': 'fixed', 'price_amount': 0}],\n    recurring_interval='day',\n    recurring_interval_count=1,\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.create(\n  {\n    \"name\": \"string\",\n    \"prices\": [\n      {\n        \"amount_type\": \"fixed\",\n        \"price_amount\": 0\n      }\n    ],\n    \"recurring_interval\": \"day\",\n    \"recurring_interval_count\": 1\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -4845,11 +4845,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -4952,11 +4952,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -5061,11 +5061,11 @@
         "x-speakeasy-name-override": "update_benefits",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.update_benefits(\n    '00000000-0000-4000-8000-000000000000',\n    benefits=['00000000-0000-4000-8000-000000000000'],\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.updateBenefits(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"benefits\": [\n      \"00000000-0000-4000-8000-000000000000\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -5496,11 +5496,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.orders.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.orders.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -5570,11 +5570,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.create(\n    customer_id='00000000-0000-4000-8000-000000000000',\n    product_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.create(\n  {\n    \"customer_id\": \"00000000-0000-4000-8000-000000000000\",\n    \"product_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -5798,11 +5798,11 @@
         "x-speakeasy-name-override": "export",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.export(\n    timezone='UTC',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.export(\n  {\n    \"timezone\": \"UTC\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -5888,11 +5888,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -5986,11 +5986,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -6132,11 +6132,11 @@
         "x-speakeasy-name-override": "finalize",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.finalize(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.finalize(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -6233,11 +6233,11 @@
         "x-speakeasy-name-override": "generate_invoice",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.generate_invoice(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.generateInvoice(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -6324,11 +6324,11 @@
         "x-speakeasy-name-override": "invoice",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.invoice(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.invoice(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -6417,11 +6417,11 @@
         "x-speakeasy-name-override": "receipt",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.orders.receipt(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.orders.receipt(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -6753,11 +6753,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.refunds.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.refunds.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -6837,11 +6837,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.refunds.create(\n    order_id='00000000-0000-4000-8000-000000000000',\n    reason='duplicate',\n    amount=1,\n    revoke_benefits=False,\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.refunds.create(\n  {\n    \"order_id\": \"00000000-0000-4000-8000-000000000000\",\n    \"reason\": \"duplicate\",\n    \"amount\": 1,\n    \"revoke_benefits\": false\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -7069,11 +7069,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.disputes.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.disputes.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -7162,11 +7162,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.disputes.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.disputes.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -7262,11 +7262,11 @@
         "x-speakeasy-name-override": "accept",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.disputes.accept(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.disputes.accept(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -7566,11 +7566,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.checkouts.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.checkouts.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -7640,11 +7640,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.create(\n    allow_discount_codes=True,\n    require_billing_address=False,\n    allow_trial=True,\n    is_business_customer=False,\n    products=['00000000-0000-4000-8000-000000000000'],\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.create(\n  {\n    \"allow_discount_codes\": true,\n    \"require_billing_address\": false,\n    \"allow_trial\": true,\n    \"is_business_customer\": false,\n    \"products\": [\n      \"00000000-0000-4000-8000-000000000000\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -7733,11 +7733,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -7841,11 +7841,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -7919,11 +7919,11 @@
         "x-speakeasy-name-override": "client_get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.client_get(\n    'string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.clientGet(\n  \"string\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -8015,11 +8015,11 @@
         "x-speakeasy-name-override": "client_update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.client_update(\n    'string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.clientUpdate(\n  \"string\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -8135,11 +8135,11 @@
         "x-speakeasy-name-override": "client_confirm",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.client_confirm(\n    'string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.clientConfirm(\n  \"string\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -8317,11 +8317,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.files.iter_list(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.files.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -8391,11 +8391,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.files.create(\n    name='string',\n    mime_type='string',\n    size=1,\n    upload={'parts': [{'number': 1, 'chunk_start': 1, 'chunk_end': 1}]},\n    service='downloadable',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.files.create(\n  {\n    \"name\": \"string\",\n    \"mime_type\": \"string\",\n    \"size\": 1,\n    \"upload\": {\n      \"parts\": [\n        {\n          \"number\": 1,\n          \"chunk_start\": 1,\n          \"chunk_end\": 1\n        }\n      ]\n    },\n    \"service\": \"downloadable\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -8501,11 +8501,11 @@
         "x-speakeasy-name-override": "uploaded",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.files.uploaded(\n    '00000000-0000-4000-8000-000000000000',\n    id='string',\n    path='string',\n    parts=[{'number': 1,\n      'checksum_etag': 'string',\n      'checksum_sha256_base64': 'string'}],\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.files.uploaded(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"id\": \"string\",\n    \"path\": \"string\",\n    \"parts\": [\n      {\n        \"number\": 1,\n        \"checksum_etag\": \"string\",\n        \"checksum_sha256_base64\": \"string\"\n      }\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -8611,11 +8611,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.files.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.files.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -8700,11 +8700,11 @@
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.files.delete(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.files.delete(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -9550,11 +9550,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.metrics.get(\n    start_date='2026-01-01',\n    end_date='2026-01-01',\n    timezone='UTC',\n    interval='year',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.metrics.get(\n  {\n    \"start_date\": \"2026-01-01\",\n    \"end_date\": \"2026-01-01\",\n    \"timezone\": \"UTC\",\n    \"interval\": \"year\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -10400,11 +10400,11 @@
         "x-speakeasy-name-override": "export",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.metrics.export(\n    start_date='2026-01-01',\n    end_date='2026-01-01',\n    timezone='UTC',\n    interval='year',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.metrics.export(\n  {\n    \"start_date\": \"2026-01-01\",\n    \"end_date\": \"2026-01-01\",\n    \"timezone\": \"UTC\",\n    \"interval\": \"year\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -10456,11 +10456,11 @@
         "x-speakeasy-name-override": "limits",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.metrics.limits()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.metrics.limits();\nconsole.log(response);\n"
           }
         ]
@@ -10562,11 +10562,11 @@
         "x-speakeasy-name-override": "list_dashboards",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.metrics.list_dashboards()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.metrics.listDashboards();\nconsole.log(response);\n"
           }
         ]
@@ -10636,11 +10636,11 @@
         "x-speakeasy-name-override": "create_dashboard",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.metrics.create_dashboard(\n    name='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.metrics.createDashboard(\n  {\n    \"name\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -10716,11 +10716,11 @@
         "x-speakeasy-name-override": "get_dashboard",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.metrics.get_dashboard(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.metrics.getDashboard(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -10804,11 +10804,11 @@
         "x-speakeasy-name-override": "update_dashboard",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.metrics.update_dashboard(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.metrics.updateDashboard(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -10875,11 +10875,11 @@
         "x-speakeasy-name-override": "delete_dashboard",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.metrics.delete_dashboard(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.metrics.deleteDashboard(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -11103,11 +11103,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.license_keys.iter_list(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.licenseKeys.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -11204,11 +11204,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.license_keys.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.licenseKeys.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -11310,11 +11310,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.license_keys.update(\n    '00000000-0000-4000-8000-000000000000',\n    usage=0,\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.licenseKeys.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"usage\": 0\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -11421,11 +11421,11 @@
         "x-speakeasy-name-override": "get_activation",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.license_keys.get_activation(\n    '00000000-0000-4000-8000-000000000000',\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.licenseKeys.getActivation(\n  \"00000000-0000-4000-8000-000000000000\",\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -11507,11 +11507,11 @@
         "x-speakeasy-name-override": "validate",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.license_keys.validate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.licenseKeys.validate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -11603,11 +11603,11 @@
         "x-speakeasy-name-override": "activate",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.license_keys.activate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n    label='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.licenseKeys.activate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\",\n    \"label\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -11682,11 +11682,11 @@
         "x-speakeasy-name-override": "deactivate",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.license_keys.deactivate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n    activation_id='00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.licenseKeys.deactivate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\",\n    \"activation_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\n"
           }
         ]
@@ -11890,11 +11890,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.checkout_links.iter_list(\n    page=1,\n    limit=10,\n    sorting=['created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.checkoutLinks.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -11967,11 +11967,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkout_links.create(\n    payment_processor='stripe',\n    allow_discount_codes=True,\n    require_billing_address=False,\n    product_price_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkoutLinks.create(\n  {\n    \"payment_processor\": \"stripe\",\n    \"allow_discount_codes\": true,\n    \"require_billing_address\": false,\n    \"product_price_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -12060,11 +12060,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkout_links.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkoutLinks.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -12158,11 +12158,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkout_links.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkoutLinks.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -12239,11 +12239,11 @@
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.checkout_links.delete(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.checkoutLinks.delete(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -12461,11 +12461,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.custom_fields.iter_list(\n    page=1,\n    limit=10,\n    sorting=['slug'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customFields.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"slug\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -12536,11 +12536,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.custom_fields.create(\n    type='text',\n    slug='string',\n    name='string',\n    properties={},\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customFields.create(\n  {\n    \"type\": \"text\",\n    \"slug\": \"string\",\n    \"name\": \"string\",\n    \"properties\": {}\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -12630,11 +12630,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.custom_fields.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customFields.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -12729,11 +12729,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.custom_fields.update(\n    '00000000-0000-4000-8000-000000000000',\n    type='text',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customFields.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"type\": \"text\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -12810,11 +12810,11 @@
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.custom_fields.delete(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customFields.delete(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -13008,11 +13008,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.discounts.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.discounts.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -13083,11 +13083,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.discounts.create(\n    name='string',\n    type='fixed',\n    duration='once',\n    currency='usd',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.discounts.create(\n  {\n    \"name\": \"string\",\n    \"type\": \"fixed\",\n    \"duration\": \"once\",\n    \"currency\": \"usd\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -13177,11 +13177,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.discounts.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.discounts.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -13276,11 +13276,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.discounts.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.discounts.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -13357,11 +13357,11 @@
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.discounts.delete(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.discounts.delete(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -13601,11 +13601,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customers.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customers.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -13675,11 +13675,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.create(\n    external_id='usr_1337',\n    type='individual',\n    email='customer@example.com',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.create(\n  {\n    \"external_id\": \"usr_1337\",\n    \"type\": \"individual\",\n    \"email\": \"customer@example.com\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -13780,11 +13780,11 @@
         "x-speakeasy-name-override": "export",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.export()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.export();\nconsole.log(response);\n"
           }
         ]
@@ -13873,11 +13873,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -13971,11 +13971,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.update(\n    '00000000-0000-4000-8000-000000000000',\n    email='customer@example.com',\n    external_id='usr_1337',\n    type='team',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"email\": \"customer@example.com\",\n    \"external_id\": \"usr_1337\",\n    \"type\": \"team\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -14064,11 +14064,11 @@
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.customers.delete(\n    '00000000-0000-4000-8000-000000000000',\n    anonymize=False,\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customers.delete(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"anonymize\": false\n  },\n);\n"
           }
         ]
@@ -14156,11 +14156,11 @@
         "x-speakeasy-name-override": "get_external",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.get_external(\n    'string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.getExternal(\n  \"string\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -14253,11 +14253,11 @@
         "x-speakeasy-name-override": "update_external",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.update_external(\n    'string',\n    email='customer@example.com',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.updateExternal(\n  \"string\",\n  {\n    \"email\": \"customer@example.com\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -14345,11 +14345,11 @@
         "x-speakeasy-name-override": "delete_external",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.customers.delete_external(\n    'string',\n    anonymize=False,\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customers.deleteExternal(\n  \"string\",\n  {\n    \"anonymize\": false\n  },\n);\n"
           }
         ]
@@ -14438,11 +14438,11 @@
         "x-speakeasy-name-override": "get_state",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.get_state(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.getState(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -14530,11 +14530,11 @@
         "x-speakeasy-name-override": "get_state_external",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.get_state_external(\n    'string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.getStateExternal(\n  \"string\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -14674,11 +14674,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customers.iter_list_payment_methods(\n    '00000000-0000-4000-8000-000000000000',\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customers.iterListPaymentMethods(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -14817,11 +14817,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customers.iter_list_payment_methods_external(\n    'string',\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customers.iterListPaymentMethodsExternal(\n  \"string\",\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -15018,11 +15018,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.members.iter_list_members(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.members.iterListMembers(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -15129,11 +15129,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.create(\n    '00000000-0000-4000-8000-000000000000',\n    email='member@example.com',\n    external_id='usr_1337',\n    role='member',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.create(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"email\": \"member@example.com\",\n    \"external_id\": \"usr_1337\",\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -15249,11 +15249,11 @@
         "x-speakeasy-name-override": "create_external",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.create_external(\n    'string',\n    email='member@example.com',\n    external_id='usr_1337',\n    role='member',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.createExternal(\n  \"string\",\n  {\n    \"email\": \"member@example.com\",\n    \"external_id\": \"usr_1337\",\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -15353,11 +15353,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.get(\n    '00000000-0000-4000-8000-000000000000',\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.get(\n  \"00000000-0000-4000-8000-000000000000\",\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -15462,11 +15462,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.update(\n    '00000000-0000-4000-8000-000000000000',\n    '00000000-0000-4000-8000-000000000000',\n    role='member',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -15554,11 +15554,11 @@
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.customers.members.delete(\n    '00000000-0000-4000-8000-000000000000',\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customers.members.delete(\n  \"00000000-0000-4000-8000-000000000000\",\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -15668,11 +15668,11 @@
         "x-speakeasy-name-override": "get_external",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.get_external(\n    'string',\n    'string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.getExternal(\n  \"string\",\n  \"string\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -15787,11 +15787,11 @@
         "x-speakeasy-name-override": "update_external",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.update_external(\n    'string',\n    'string',\n    role='member',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.updateExternal(\n  \"string\",\n  \"string\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -15889,11 +15889,11 @@
         "x-speakeasy-name-override": "delete_external",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.customers.members.delete_external(\n    'string',\n    'string',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customers.members.deleteExternal(\n  \"string\",\n  \"string\",\n);\n"
           }
         ]
@@ -16207,11 +16207,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.benefit_grants.iter_list(\n    page=1,\n    limit=10,\n    sorting=['product_benefit', '-granted_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.benefitGrants.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"product_benefit\",\n      \"-granted_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -16296,11 +16296,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.benefit_grants.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.benefitGrants.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -16402,11 +16402,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.benefit_grants.update(\n    '00000000-0000-4000-8000-000000000000',\n    benefit_type='discord',\n    properties={'account_id': 'string'},\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.benefitGrants.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"benefit_type\": \"discord\",\n    \"properties\": {\n      \"account_id\": \"string\"\n    }\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -16456,11 +16456,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.get()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.get();\nconsole.log(response);\n"
           }
         ]
@@ -16522,11 +16522,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.update()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.update(\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -16638,11 +16638,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.customers.iter_list_payment_methods(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.customers.iterListPaymentMethods(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -16715,11 +16715,11 @@
         "x-speakeasy-name-override": "add_payment_method",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.add_payment_method(\n    confirmation_token_id='string',\n    set_default=True,\n    return_url='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.addPaymentMethod(\n  {\n    \"confirmation_token_id\": \"string\",\n    \"set_default\": true,\n    \"return_url\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -16757,7 +16757,7 @@
               }
             }
           },
-          "400": {
+          "403": {
             "description": "Customer is not ready to confirm a payment method.",
             "content": {
               "application/json": {
@@ -16794,11 +16794,11 @@
         "x-speakeasy-name-override": "confirm_payment_method",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.confirm_payment_method(\n    setup_intent_id='string',\n    set_default=True,\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.confirmPaymentMethod(\n  {\n    \"setup_intent_id\": \"string\",\n    \"set_default\": true\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -16877,11 +16877,11 @@
         "x-speakeasy-name-override": "delete_payment_method",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.customer_portal.customers.delete_payment_method(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customerPortal.customers.deletePaymentMethod(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -16943,11 +16943,11 @@
         "x-speakeasy-name-override": "request_email_update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.request_email_update(\n    email='customer@example.com',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.requestEmailUpdate(\n  {\n    \"email\": \"customer@example.com\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -16996,11 +16996,11 @@
         "x-speakeasy-name-override": "check_email_update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.customer_portal.customers.check_email_update(\n    token='string',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customerPortal.customers.checkEmailUpdate(\n  {\n    \"token\": \"string\"\n  },\n);\n"
           }
         ]
@@ -17048,11 +17048,11 @@
         "x-speakeasy-name-override": "verify_email_update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.verify_email_update(\n    token='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.verifyEmailUpdate(\n  {\n    \"token\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -17235,11 +17235,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.customer_meters.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-modified_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.customerMeters.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-modified_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -17323,11 +17323,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customer_meters.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customerMeters.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -17436,11 +17436,11 @@
         "x-speakeasy-name-override": "list_seats",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.seats.list_seats()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.listSeats();\nconsole.log(response);\n"
           }
         ]
@@ -17513,11 +17513,11 @@
         "x-speakeasy-name-override": "assign_seat",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.seats.assign_seat(\n    immediate_claim=False,\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.assignSeat(\n  {\n    \"immediate_claim\": false\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -17591,11 +17591,11 @@
         "x-speakeasy-name-override": "revoke_seat",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.seats.revoke_seat(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.revokeSeat(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -17672,11 +17672,11 @@
         "x-speakeasy-name-override": "resend_invitation",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.seats.resend_invitation(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.resendInvitation(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -17792,11 +17792,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.seats.iter_list_claimed_subscriptions(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.seats.iterListClaimedSubscriptions(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -17846,11 +17846,11 @@
         "x-speakeasy-name-override": "introspect",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customer_session.introspect()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customerSession.introspect();\nconsole.log(response);\n"
           }
         ]
@@ -17900,11 +17900,11 @@
         "x-speakeasy-name-override": "get_authenticated_user",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customer_session.get_authenticated_user()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customerSession.getAuthenticatedUser();\nconsole.log(response);\n"
           }
         ]
@@ -18045,11 +18045,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.downloadables.iter_list(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.downloadables.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -18202,11 +18202,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.license_keys.iter_list(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.licenseKeys.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -18288,11 +18288,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.license_keys.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -18354,11 +18354,11 @@
         "x-speakeasy-name-override": "validate",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.license_keys.validate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.validate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -18433,11 +18433,11 @@
         "x-speakeasy-name-override": "activate",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.license_keys.activate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n    label='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.activate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\",\n    \"label\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -18492,11 +18492,11 @@
         "x-speakeasy-name-override": "deactivate",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.customer_portal.license_keys.deactivate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n    activation_id='00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customerPortal.licenseKeys.deactivate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\",\n    \"activation_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\n"
           }
         ]
@@ -18604,11 +18604,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.members.iter_list_members(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.members.iterListMembers(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -18674,11 +18674,11 @@
         "x-speakeasy-name-override": "add_member",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.members.add_member(\n    email='customer@example.com',\n    role='billing_manager',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.members.addMember(\n  {\n    \"email\": \"customer@example.com\",\n    \"role\": \"billing_manager\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -18761,11 +18761,11 @@
         "x-speakeasy-name-override": "update_member",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.members.update_member(\n    '00000000-0000-4000-8000-000000000000',\n    role='billing_manager',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.members.updateMember(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"role\": \"billing_manager\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -18829,11 +18829,11 @@
         "x-speakeasy-name-override": "remove_member",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.customer_portal.members.remove_member(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customerPortal.members.removeMember(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
@@ -19064,11 +19064,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.orders.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.orders.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -19148,11 +19148,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -19238,11 +19238,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -19333,11 +19333,11 @@
         "x-speakeasy-name-override": "generate_invoice",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.generate_invoice(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.generateInvoice(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -19418,11 +19418,11 @@
         "x-speakeasy-name-override": "invoice",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.invoice(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.invoice(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -19505,11 +19505,11 @@
         "x-speakeasy-name-override": "receipt",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.receipt(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.receipt(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -19589,11 +19589,11 @@
         "x-speakeasy-name-override": "get_payment_status",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.get_payment_status(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.getPaymentStatus(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -19701,11 +19701,11 @@
         "x-speakeasy-name-override": "confirm_retry_payment",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.confirm_retry_payment(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.confirmRetryPayment(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -19770,11 +19770,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.organizations.get(\n    'string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.organizations.get(\n  \"string\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -19975,11 +19975,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.subscriptions.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-started_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.subscriptions.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-started_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -20063,11 +20063,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.subscriptions.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.subscriptions.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -20191,11 +20191,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.subscriptions.update(\n    '00000000-0000-4000-8000-000000000000',\n    product_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.subscriptions.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"product_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -20281,11 +20281,11 @@
         "x-speakeasy-name-override": "cancel",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.subscriptions.cancel(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.subscriptions.cancel(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -20418,11 +20418,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.wallets.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.wallets.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -20502,11 +20502,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.wallets.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.wallets.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -20590,11 +20590,11 @@
         "x-speakeasy-name-override": "assign_seat",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_seats.assign_seat(\n    immediate_claim=False,\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.assignSeat(\n  {\n    \"immediate_claim\": false\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -20699,11 +20699,11 @@
         "x-speakeasy-name-override": "list_seats",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_seats.list_seats()\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.listSeats();\nconsole.log(response);\n"
           }
         ]
@@ -20786,11 +20786,11 @@
         "x-speakeasy-name-override": "revoke_seat",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_seats.revoke_seat(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.revokeSeat(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -20876,11 +20876,11 @@
         "x-speakeasy-name-override": "resend_invitation",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_seats.resend_invitation(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.resendInvitation(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -20940,11 +20940,11 @@
         "x-speakeasy-name-override": "get_claim_info",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_seats.get_claim_info(\n    'string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.getClaimInfo(\n  \"string\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -21000,11 +21000,11 @@
         "x-speakeasy-name-override": "claim_seat",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_seats.claim_seat(\n    invitation_token='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.claimSeat(\n  {\n    \"invitation_token\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -21084,11 +21084,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_sessions.create(\n    return_url='https://example.com/account',\n    customer_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSessions.create(\n  {\n    \"return_url\": \"https://example.com/account\",\n    \"customer_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -21491,11 +21491,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.events.list(\n    page=1,\n    limit=10,\n    sorting=['-timestamp'],\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.events.list(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-timestamp\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -21765,11 +21765,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.events.iter_list_names(\n    page=1,\n    limit=10,\n    sorting=['-last_seen'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.events.iterListNames(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-last_seen\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -21858,11 +21858,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.events.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.events.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -21934,11 +21934,11 @@
         "x-speakeasy-name-override": "ingest",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.events.ingest(\n    events=[{'name': 'string',\n      'customer_id': '00000000-0000-4000-8000-000000000000'}],\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.events.ingest(\n  {\n    \"events\": [\n      {\n        \"name\": \"string\",\n        \"customer_id\": \"00000000-0000-4000-8000-000000000000\"\n      }\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -22233,11 +22233,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.event_types.iter_list(\n    root_events=False,\n    page=1,\n    limit=10,\n    sorting=['-last_seen'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.eventTypes.iterList(\n  {\n    \"root_events\": false,\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-last_seen\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -22326,11 +22326,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.event_types.update(\n    '00000000-0000-4000-8000-000000000000',\n    label='string',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.eventTypes.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"label\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -22552,11 +22552,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.meters.iter_list(\n    page=1,\n    limit=10,\n    sorting=['name'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.meters.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"name\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -22626,11 +22626,11 @@
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.meters.create(\n    name='string',\n    filter={'conjunction': 'and',\n     'clauses': [{'property': 'string',\n                  'operator': 'eq',\n                  'value': 'string'}]},\n    aggregation={'func': 'count'},\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.meters.create(\n  {\n    \"name\": \"string\",\n    \"filter\": {\n      \"conjunction\": \"and\",\n      \"clauses\": [\n        {\n          \"property\": \"string\",\n          \"operator\": \"eq\",\n          \"value\": \"string\"\n        }\n      ]\n    },\n    \"aggregation\": {\n      \"func\": \"count\"\n    }\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -22719,11 +22719,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.meters.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.meters.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -22817,11 +22817,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.meters.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.meters.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
@@ -23637,11 +23637,11 @@
         "x-speakeasy-name-override": "quantities",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.meters.quantities(\n    '00000000-0000-4000-8000-000000000000',\n    start_timestamp='2026-01-01T00:00:00Z',\n    end_timestamp='2026-01-01T00:00:00Z',\n    interval='year',\n    timezone='UTC',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.meters.quantities(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"start_timestamp\": \"2026-01-01T00:00:00Z\",\n    \"end_timestamp\": \"2026-01-01T00:00:00Z\",\n    \"interval\": \"year\",\n    \"timezone\": \"UTC\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
@@ -23894,11 +23894,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_meters.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-modified_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerMeters.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-modified_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -23984,11 +23984,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -24313,11 +24313,11 @@
         },
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.payments.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.payments.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
@@ -24403,11 +24403,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
-            "lang": "Python (New SDK)",
+            "lang": "python",
             "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.payments.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
-            "lang": "TypeScript (New SDK)",
+            "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.payments.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
@@ -24417,7 +24417,7 @@
   "webhooks": {
     "checkout.created": {
       "post": {
-        "summary": "checkout.created",
+        "summary": "checkout_created",
         "description": "Sent when a new checkout is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcheckout_created_post",
         "requestBody": {
@@ -24452,6 +24452,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "checkout.created",
             "sidebarTitle": "checkout.created"
           }
         }
@@ -24459,7 +24460,7 @@
     },
     "checkout.updated": {
       "post": {
-        "summary": "checkout.updated",
+        "summary": "checkout_updated",
         "description": "Sent when a checkout is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcheckout_updated_post",
         "requestBody": {
@@ -24494,6 +24495,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "checkout.updated",
             "sidebarTitle": "checkout.updated"
           }
         }
@@ -24501,7 +24503,7 @@
     },
     "checkout.expired": {
       "post": {
-        "summary": "checkout.expired",
+        "summary": "checkout_expired",
         "description": "Sent when a checkout expires.\n\nThis event fires when a checkout reaches its expiration time without being completed.\nDevelopers can use this to send reminder emails or track checkout abandonment.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcheckout_expired_post",
         "requestBody": {
@@ -24536,6 +24538,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "checkout.expired",
             "sidebarTitle": "checkout.expired"
           }
         }
@@ -24543,7 +24546,7 @@
     },
     "customer.created": {
       "post": {
-        "summary": "customer.created",
+        "summary": "customer_created",
         "description": "Sent when a new customer is created.\n\nA customer can be created:\n\n* After a successful checkout.\n* Programmatically via the API.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcustomer_created_post",
         "requestBody": {
@@ -24578,6 +24581,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer.created",
             "sidebarTitle": "customer.created"
           }
         }
@@ -24585,7 +24589,7 @@
     },
     "customer.updated": {
       "post": {
-        "summary": "customer.updated",
+        "summary": "customer_updated",
         "description": "Sent when a customer is updated.\n\nThis event is fired when the customer details are updated.\n\nIf you want to be notified when a customer subscription or benefit state changes, you should listen to the `customer_state_changed` event.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcustomer_updated_post",
         "requestBody": {
@@ -24620,6 +24624,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer.updated",
             "sidebarTitle": "customer.updated"
           }
         }
@@ -24627,7 +24632,7 @@
     },
     "customer.deleted": {
       "post": {
-        "summary": "customer.deleted",
+        "summary": "customer_deleted",
         "description": "Sent when a customer is deleted.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcustomer_deleted_post",
         "requestBody": {
@@ -24662,6 +24667,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer.deleted",
             "sidebarTitle": "customer.deleted"
           }
         }
@@ -24669,7 +24675,7 @@
     },
     "customer.state_changed": {
       "post": {
-        "summary": "customer.state_changed",
+        "summary": "customer_state_changed",
         "description": "Sent when a customer state has changed.\n\nIt's triggered when:\n\n* Customer is created, updated or deleted.\n* A subscription is created or updated.\n* A benefit is granted or revoked.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointcustomer_state_changed_post",
         "requestBody": {
@@ -24704,6 +24710,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer.state_changed",
             "sidebarTitle": "customer.state_changed"
           }
         }
@@ -24711,7 +24718,7 @@
     },
     "customer_seat.assigned": {
       "post": {
-        "summary": "customer_seat.assigned",
+        "summary": "customer_seat_assigned",
         "description": "Sent when a new customer seat is assigned.\n\nThis event is triggered when a seat is assigned to a customer by the organization.\nThe customer will receive an invitation email to claim the seat.",
         "operationId": "_endpointcustomer_seat_assigned_post",
         "requestBody": {
@@ -24746,6 +24753,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer_seat.assigned",
             "sidebarTitle": "customer_seat.assigned"
           }
         }
@@ -24753,7 +24761,7 @@
     },
     "customer_seat.claimed": {
       "post": {
-        "summary": "customer_seat.claimed",
+        "summary": "customer_seat_claimed",
         "description": "Sent when a customer seat is claimed.\n\nThis event is triggered when a customer accepts the seat invitation and claims their access.",
         "operationId": "_endpointcustomer_seat_claimed_post",
         "requestBody": {
@@ -24788,6 +24796,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer_seat.claimed",
             "sidebarTitle": "customer_seat.claimed"
           }
         }
@@ -24795,7 +24804,7 @@
     },
     "customer_seat.revoked": {
       "post": {
-        "summary": "customer_seat.revoked",
+        "summary": "customer_seat_revoked",
         "description": "Sent when a customer seat is revoked.\n\nThis event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.",
         "operationId": "_endpointcustomer_seat_revoked_post",
         "requestBody": {
@@ -24830,6 +24839,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "customer_seat.revoked",
             "sidebarTitle": "customer_seat.revoked"
           }
         }
@@ -24837,7 +24847,7 @@
     },
     "member.created": {
       "post": {
-        "summary": "member.created",
+        "summary": "member_created",
         "description": "Sent when a new member is created.\n\nA member represents an individual within a customer (team).\nThis event is triggered when a member is added to a customer,\neither programmatically via the API or when an owner is automatically\ncreated for a new customer.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointmember_created_post",
         "requestBody": {
@@ -24872,6 +24882,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "member.created",
             "sidebarTitle": "member.created"
           }
         }
@@ -24879,7 +24890,7 @@
     },
     "member.updated": {
       "post": {
-        "summary": "member.updated",
+        "summary": "member_updated",
         "description": "Sent when a member is updated.\n\nThis event is triggered when member details are updated,\nsuch as their name or role within the customer.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointmember_updated_post",
         "requestBody": {
@@ -24914,6 +24925,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "member.updated",
             "sidebarTitle": "member.updated"
           }
         }
@@ -24921,7 +24933,7 @@
     },
     "member.deleted": {
       "post": {
-        "summary": "member.deleted",
+        "summary": "member_deleted",
         "description": "Sent when a member is deleted.\n\nThis event is triggered when a member is removed from a customer.\nAny active seats assigned to the member will be automatically revoked.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointmember_deleted_post",
         "requestBody": {
@@ -24956,6 +24968,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "member.deleted",
             "sidebarTitle": "member.deleted"
           }
         }
@@ -24963,7 +24976,7 @@
     },
     "order.created": {
       "post": {
-        "summary": "order.created",
+        "summary": "order_created",
         "description": "Sent when a new order is created.\n\nA new order is created when:\n\n* A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.\n* A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.\n* A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.\n* A subscription is upgraded or downgraded with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.\n\n> [!WARNING]\n> The order might not be paid yet, so the `status` field might be `pending`.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointorder_created_post",
         "requestBody": {
@@ -24998,6 +25011,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "order.created",
             "sidebarTitle": "order.created"
           }
         }
@@ -25005,7 +25019,7 @@
     },
     "order.updated": {
       "post": {
-        "summary": "order.updated",
+        "summary": "order_updated",
         "description": "Sent when an order is updated.\n\nAn order is updated when:\n\n* Its status changes, e.g. from `pending` to `paid`.\n* It's refunded, partially or fully.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointorder_updated_post",
         "requestBody": {
@@ -25040,6 +25054,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "order.updated",
             "sidebarTitle": "order.updated"
           }
         }
@@ -25047,7 +25062,7 @@
     },
     "order.paid": {
       "post": {
-        "summary": "order.paid",
+        "summary": "order_paid",
         "description": "Sent when an order is paid.\n\nWhen you receive this event, the order is fully processed and payment has been received.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointorder_paid_post",
         "requestBody": {
@@ -25082,6 +25097,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "order.paid",
             "sidebarTitle": "order.paid"
           }
         }
@@ -25089,7 +25105,7 @@
     },
     "order.refunded": {
       "post": {
-        "summary": "order.refunded",
+        "summary": "order_refunded",
         "description": "Sent when an order is fully or partially refunded.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointorder_refunded_post",
         "requestBody": {
@@ -25124,6 +25140,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "order.refunded",
             "sidebarTitle": "order.refunded"
           }
         }
@@ -25131,7 +25148,7 @@
     },
     "subscription.created": {
       "post": {
-        "summary": "subscription.created",
+        "summary": "subscription_created",
         "description": "Sent when a new subscription is created.\n\nWhen this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_created_post",
         "requestBody": {
@@ -25166,6 +25183,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.created",
             "sidebarTitle": "subscription.created"
           }
         }
@@ -25173,7 +25191,7 @@
     },
     "subscription.updated": {
       "post": {
-        "summary": "subscription.updated",
+        "summary": "subscription_updated",
         "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, listen to `subscription.cycled`.\n\n**Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.",
         "operationId": "_endpointsubscription_updated_post",
         "requestBody": {
@@ -25208,6 +25226,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.updated",
             "sidebarTitle": "subscription.updated"
           }
         }
@@ -25215,7 +25234,7 @@
     },
     "subscription.active": {
       "post": {
-        "summary": "subscription.active",
+        "summary": "subscription_active",
         "description": "Sent when a subscription becomes active,\nwhether because it's a new paid subscription or because payment was recovered.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_active_post",
         "requestBody": {
@@ -25250,6 +25269,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.active",
             "sidebarTitle": "subscription.active"
           }
         }
@@ -25257,7 +25277,7 @@
     },
     "subscription.canceled": {
       "post": {
-        "summary": "subscription.canceled",
+        "summary": "subscription_canceled",
         "description": "Sent when a subscription is canceled.\nCustomers might still have access until the end of the current period.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_canceled_post",
         "requestBody": {
@@ -25292,6 +25312,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.canceled",
             "sidebarTitle": "subscription.canceled"
           }
         }
@@ -25299,7 +25320,7 @@
     },
     "subscription.uncanceled": {
       "post": {
-        "summary": "subscription.uncanceled",
+        "summary": "subscription_uncanceled",
         "description": "Sent when a customer revokes a pending cancellation.\n\nWhen a customer cancels with \"at period end\", they retain access until the\nsubscription would renew. During this time, they can change their mind and\nundo the cancellation. This event is triggered when they do so.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_uncanceled_post",
         "requestBody": {
@@ -25334,6 +25355,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.uncanceled",
             "sidebarTitle": "subscription.uncanceled"
           }
         }
@@ -25341,7 +25363,7 @@
     },
     "subscription.cycled": {
       "post": {
-        "summary": "subscription.cycled",
+        "summary": "subscription_cycled",
         "description": "Sent when a subscription enters a new billing period.\n\nThe payload carries the new `current_period_start` and `current_period_end`.\nIt fires when the period rolls over, before the renewal order exists and\nregardless of whether the renewal payment succeeds \u2014 listen to `order.paid`\nif you need the payment.\n\nA trial converting to a paid subscription starts a new period, so it fires\nthere too. Read `status` to tell the two apart.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointsubscription_cycled_post",
         "requestBody": {
@@ -25376,6 +25398,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.cycled",
             "sidebarTitle": "subscription.cycled"
           }
         }
@@ -25383,7 +25406,7 @@
     },
     "subscription.revoked": {
       "post": {
-        "summary": "subscription.revoked",
+        "summary": "subscription_revoked",
         "description": "Sent when a subscription is revoked and the user loses access immediately.\nHappens when the subscription is canceled or payment retries are exhausted (status becomes `unpaid`).\n\nFor payment failures that can still be recovered, see `subscription.past_due`.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_revoked_post",
         "requestBody": {
@@ -25418,6 +25441,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.revoked",
             "sidebarTitle": "subscription.revoked"
           }
         }
@@ -25425,7 +25449,7 @@
     },
     "subscription.past_due": {
       "post": {
-        "summary": "subscription.past_due",
+        "summary": "subscription_past_due",
         "description": "Sent when a subscription payment fails and the subscription enters `past_due` status.\n\nThis is a recoverable state - the customer can update their payment method to restore the subscription.\nBenefits may be revoked depending on the organization's grace period settings.\n\nIf payment retries are exhausted, a `subscription.revoked` event will be sent.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_past_due_post",
         "requestBody": {
@@ -25460,6 +25484,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.past_due",
             "sidebarTitle": "subscription.past_due"
           }
         }
@@ -25467,7 +25492,7 @@
     },
     "subscription.paused": {
       "post": {
-        "summary": "subscription.paused",
+        "summary": "subscription_paused",
         "description": "Sent when a subscription is paused and the customer temporarily loses access.\n\nNo order is created while paused. The subscription resumes either on its\nscheduled resume date or when resumed manually, starting a new billing period.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_paused_post",
         "requestBody": {
@@ -25502,6 +25527,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.paused",
             "sidebarTitle": "subscription.paused"
           }
         }
@@ -25509,7 +25535,7 @@
     },
     "subscription.resumed": {
       "post": {
-        "summary": "subscription.resumed",
+        "summary": "subscription_resumed",
         "description": "Sent when a paused subscription resumes, restoring the customer's access.\n\nResuming starts a new billing period and charges the customer immediately.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_resumed_post",
         "requestBody": {
@@ -25544,6 +25570,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "subscription.resumed",
             "sidebarTitle": "subscription.resumed"
           }
         }
@@ -25551,7 +25578,7 @@
     },
     "refund.created": {
       "post": {
-        "summary": "refund.created",
+        "summary": "refund_created",
         "description": "Sent when a refund is created regardless of status.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointrefund_created_post",
         "requestBody": {
@@ -25586,6 +25613,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "refund.created",
             "sidebarTitle": "refund.created"
           }
         }
@@ -25593,7 +25621,7 @@
     },
     "refund.updated": {
       "post": {
-        "summary": "refund.updated",
+        "summary": "refund_updated",
         "description": "Sent when a refund is updated.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointrefund_updated_post",
         "requestBody": {
@@ -25628,6 +25656,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "refund.updated",
             "sidebarTitle": "refund.updated"
           }
         }
@@ -25635,7 +25664,7 @@
     },
     "product.created": {
       "post": {
-        "summary": "product.created",
+        "summary": "product_created",
         "description": "Sent when a new product is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointproduct_created_post",
         "requestBody": {
@@ -25670,6 +25699,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "product.created",
             "sidebarTitle": "product.created"
           }
         }
@@ -25677,7 +25707,7 @@
     },
     "product.updated": {
       "post": {
-        "summary": "product.updated",
+        "summary": "product_updated",
         "description": "Sent when a product is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointproduct_updated_post",
         "requestBody": {
@@ -25712,6 +25742,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "product.updated",
             "sidebarTitle": "product.updated"
           }
         }
@@ -25719,7 +25750,7 @@
     },
     "discount.created": {
       "post": {
-        "summary": "discount.created",
+        "summary": "discount_created",
         "description": "Sent when a new discount is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointdiscount_created_post",
         "requestBody": {
@@ -25754,6 +25785,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "discount.created",
             "sidebarTitle": "discount.created"
           }
         }
@@ -25761,7 +25793,7 @@
     },
     "discount.updated": {
       "post": {
-        "summary": "discount.updated",
+        "summary": "discount_updated",
         "description": "Sent when a discount is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointdiscount_updated_post",
         "requestBody": {
@@ -25796,6 +25828,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "discount.updated",
             "sidebarTitle": "discount.updated"
           }
         }
@@ -25803,7 +25836,7 @@
     },
     "discount.deleted": {
       "post": {
-        "summary": "discount.deleted",
+        "summary": "discount_deleted",
         "description": "Sent when a discount is deleted.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointdiscount_deleted_post",
         "requestBody": {
@@ -25838,6 +25871,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "discount.deleted",
             "sidebarTitle": "discount.deleted"
           }
         }
@@ -25845,7 +25879,7 @@
     },
     "organization.updated": {
       "post": {
-        "summary": "organization.updated",
+        "summary": "organization_updated",
         "description": "Sent when a organization is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointorganization_updated_post",
         "requestBody": {
@@ -25880,6 +25914,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "organization.updated",
             "sidebarTitle": "organization.updated"
           }
         }
@@ -25887,7 +25922,7 @@
     },
     "benefit.created": {
       "post": {
-        "summary": "benefit.created",
+        "summary": "benefit_created",
         "description": "Sent when a new benefit is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_created_post",
         "requestBody": {
@@ -25922,6 +25957,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit.created",
             "sidebarTitle": "benefit.created"
           }
         }
@@ -25929,7 +25965,7 @@
     },
     "benefit.updated": {
       "post": {
-        "summary": "benefit.updated",
+        "summary": "benefit_updated",
         "description": "Sent when a benefit is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_updated_post",
         "requestBody": {
@@ -25964,6 +26000,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit.updated",
             "sidebarTitle": "benefit.updated"
           }
         }
@@ -25971,7 +26008,7 @@
     },
     "benefit_grant.created": {
       "post": {
-        "summary": "benefit_grant.created",
+        "summary": "benefit_grant_created",
         "description": "Sent when a new benefit grant is created.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_created_post",
         "requestBody": {
@@ -26006,6 +26043,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit_grant.created",
             "sidebarTitle": "benefit_grant.created"
           }
         }
@@ -26013,7 +26051,7 @@
     },
     "benefit_grant.updated": {
       "post": {
-        "summary": "benefit_grant.updated",
+        "summary": "benefit_grant_updated",
         "description": "Sent when a benefit grant is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_updated_post",
         "requestBody": {
@@ -26048,6 +26086,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit_grant.updated",
             "sidebarTitle": "benefit_grant.updated"
           }
         }
@@ -26055,7 +26094,7 @@
     },
     "benefit_grant.cycled": {
       "post": {
-        "summary": "benefit_grant.cycled",
+        "summary": "benefit_grant_cycled",
         "description": "Sent when a benefit grant is cycled,\nmeaning the related subscription has been renewed for another period.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_cycled_post",
         "requestBody": {
@@ -26090,6 +26129,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit_grant.cycled",
             "sidebarTitle": "benefit_grant.cycled"
           }
         }
@@ -26097,7 +26137,7 @@
     },
     "benefit_grant.revoked": {
       "post": {
-        "summary": "benefit_grant.revoked",
+        "summary": "benefit_grant_revoked",
         "description": "Sent when a benefit grant is revoked.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_revoked_post",
         "requestBody": {
@@ -26132,6 +26172,7 @@
         },
         "x-mint": {
           "metadata": {
+            "title": "benefit_grant.revoked",
             "sidebarTitle": "benefit_grant.revoked"
           }
         }
@@ -33881,7 +33922,8 @@
         "properties": {
           "limit": {
             "type": "integer",
-            "maximum": 50.0,
+            "maximum": 2147483647.0,
+            "minimum": -2147483648.0,
             "exclusiveMinimum": 0.0,
             "title": "Limit"
           },
@@ -34150,6 +34192,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": -2147483648.0,
                 "exclusiveMinimum": 0.0
               },
               {
@@ -58850,7 +58894,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1000.0,
+                "maximum": 2147483647.0,
                 "minimum": -2147483648.0,
                 "exclusiveMinimum": 0.0
               },
@@ -70973,6 +71017,12 @@
             "description": "If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method).",
             "default": false
           },
+          "meter_cycling_enabled": {
+            "type": "boolean",
+            "title": "Meter Cycling Enabled",
+            "description": "If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).",
+            "default": false
+          },
           "slack_benefit_enabled": {
             "type": "boolean",
             "title": "Slack Benefit Enabled",
@@ -71895,6 +71945,7 @@
             "type": "string",
             "enum": [
               "admin",
+              "finance",
               "member"
             ],
             "title": "Role",
@@ -72647,6 +72698,7 @@
         "enum": [
           "owner",
           "admin",
+          "finance",
           "member"
         ],
         "title": "OrganizationRole"

@@ -94,6 +94,7 @@ class DisputeRepository(
         currency: str,
         *,
         options: Options = (),
+        for_update: bool = False,
     ) -> Dispute | None:
         statement = (
             self.get_base_statement()
@@ -108,6 +109,8 @@ class DisputeRepository(
             .order_by(Dispute.created_at.asc())
             .limit(1)
         )
+        if for_update:
+            statement = statement.with_for_update(of=Dispute)
         return await self.get_one_or_none(statement)
 
     async def get_by_alert_processor_id(
@@ -116,6 +119,7 @@ class DisputeRepository(
         processor_id: str,
         *,
         options: Options = (),
+        for_update: bool = False,
     ) -> Dispute | None:
         statement = (
             self.get_base_statement()
@@ -125,6 +129,8 @@ class DisputeRepository(
             )
             .options(*options)
         )
+        if for_update:
+            statement = statement.with_for_update(of=Dispute)
         return await self.get_one_or_none(statement)
 
     def get_statement_by_org_ids(
@@ -139,7 +145,7 @@ class DisputeRepository(
 
     async def stream_auto_accept_candidates(
         self, *, before: datetime
-    ) -> AsyncGenerator[Dispute, None]:
+    ) -> AsyncGenerator[Dispute]:
         """Disputes whose announced deadline has passed, on an opted-in
         organization."""
         feature_settings = Organization.feature_settings

@@ -50,17 +50,6 @@ class NotificationBase(Schema):
     type: NotificationType
 
 
-class MaintainerAccountUnderReviewNotificationPayload(NotificationPayloadBase):
-    account_type: str
-
-    def subject(self) -> str:
-        return "Your Polar account is being reviewed"
-
-    @classmethod
-    def template_name(cls) -> str:
-        return "notification_account_under_review"
-
-
 class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     subscriber_name: str
     subscriber_email: str | None = None

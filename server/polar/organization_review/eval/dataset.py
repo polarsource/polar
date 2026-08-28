@@ -12,8 +12,6 @@ The dataset is composed of three categories:
   since denied orgs always get human review.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 import structlog

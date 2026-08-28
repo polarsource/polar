@@ -137,25 +137,19 @@ async def resolve_member(
                 session
             ).list_active_seat_member_ids(customer_id)
             if seat_member_ids:
-                # A seat holder's grant belongs to the member on their seat, not
-                # to their own owner member. With more than one seat the right
-                # member needs the grant's scope, so leave it for the backfill
-                # rather than guessing.
+                # The member is the one on the holder's seat. Several seats need
+                # the grant's scope to tell apart, so leave those to the backfill.
                 if len(seat_member_ids) == 1 and seat_member_ids[0] is not None:
                     return await member_repository.get_by_id(seat_member_ids[0])
                 return None
-        # Phase 1 of the member model migration: link direct-purchase grants to
-        # the owner member so `grant.member` is already populated before the
-        # flag flips. Without this, every grant created during Phase 1 lands
-        # with member_id NULL and has to be backfilled later.
+        # Populate the member before the flag flips, so grants don't pile up
+        # needing a backfill. Best effort: a customer we can't build an owner
+        # member for still gets its grant.
         try:
             return await _resolve_or_create_owner_member(
                 session, customer_id, organization, include_deleted=include_deleted
             )
         except PolarRequestValidationError:
-            # The member model isn't active yet, so linking is best effort: a
-            # customer we can't build an owner member for (no email, for
-            # instance) still gets its grant, with a null member as before.
             log.warning(
                 "Could not link benefit grant to an owner member",
                 customer_id=str(customer_id),

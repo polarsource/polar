@@ -96,6 +96,102 @@ class TestResolveMember:
 
         assert result is None
 
+    async def test_phase_1_links_direct_purchase_to_owner_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Phase 1: seat-based org, flag off, direct purchase resolves the owner member.
+
+        Keeps `grant.member` populated before the member model is enabled, so the
+        backlog of member_id NULL grants doesn't grow between prepare and flip.
+        """
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "member_model_enabled": False,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+        )
+
+        assert result is not None
+        assert result.customer_id == customer.id
+        assert result.role == MemberRole.owner
+
+    async def test_phase_1_seat_based_without_member_id_returns_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Phase 1: seat grants carry an explicit member_id, so nothing is resolved."""
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "member_model_enabled": False,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=True,
+        )
+
+        assert result is None
+
+    async def test_phase_1_reuses_existing_owner_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Phase 1 resolution reuses the existing owner instead of creating a second one."""
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "member_model_enabled": False,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+        )
+
+        assert result is not None
+        assert result.id == owner.id
+
     async def test_explicit_member_id_returns_member(
         self,
         session: AsyncSession,

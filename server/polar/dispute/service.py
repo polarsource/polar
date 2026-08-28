@@ -399,11 +399,13 @@ class DisputeService:
         assert latest_charge is not None
         charge_id = get_expandable_id(latest_charge)
 
-        # First try to find by alert processor ID
+        # First try to find by alert processor ID. Locked so concurrent alert
+        # deliveries can't both see a non-prevented dispute and revoke twice.
         dispute = await repository.get_by_alert_processor_id(
             DisputeAlertProcessor.chargeback_stop,
             alert["id"],
             options=repository.get_eager_options(),
+            for_update=True,
         )
         # Then try to find by matching payment info, in case Stripe already pinged us about the dispute
         if dispute is None:
@@ -413,6 +415,7 @@ class DisputeService:
                 alert["transaction_amount_in_cents"],
                 alert["transaction_currency_code"].lower(),
                 options=repository.get_eager_options(),
+                for_update=True,
             )
 
         if dispute is None:
@@ -438,9 +441,14 @@ class DisputeService:
         dispute.dispute_alert_processor = DisputeAlertProcessor.chargeback_stop
         dispute.dispute_alert_processor_id = alert["id"]
 
-        # We refunded the transaction before the dispute could be escalated
-        if alert["transaction_refund_outcome"] == "REFUNDED":
+        # We refunded the transaction before the dispute could be escalated:
+        # the customer got their money back, so their access goes too.
+        if (
+            alert["transaction_refund_outcome"] == "REFUNDED"
+            and dispute.status != DisputeStatus.prevented
+        ):
             dispute.status = DisputeStatus.prevented
+            await self._revoke(session, dispute)
 
         return await repository.update(dispute)
 

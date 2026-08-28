@@ -32124,7 +32124,8 @@ export interface components {
     }
     /**
      * ProductPriceMeteredUnit
-     * @description A metered, usage-based, price for a product, with a fixed unit price.
+     * @description A metered, usage-based, price for a product, with either a fixed unit
+     *     price or pricing tiers.
      */
     ProductPriceMeteredUnit: {
       /**
@@ -32171,9 +32172,11 @@ export interface components {
       product_id: string
       /**
        * Unit Amount
-       * @description The price per unit in cents.
+       * @description The price per unit in cents. `null` for tiered prices: read the rates from `tiers` instead.
        */
-      unit_amount: string
+      unit_amount: string | null
+      /** @description The pricing tiers based on consumed units. `null` for prices with a fixed unit price. */
+      tiers: components['schemas']['Tiers-Output'] | null
       /**
        * Cap Amount
        * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
@@ -32190,7 +32193,7 @@ export interface components {
     }
     /**
      * ProductPriceMeteredUnitCreate
-     * @description Schema to create a metered price with a fixed unit price.
+     * @description Schema to create a metered price, with either a fixed unit price or pricing tiers.
      */
     ProductPriceMeteredUnitCreate: {
       /**
@@ -32213,9 +32216,11 @@ export interface components {
       meter_id: string
       /**
        * Unit Amount
-       * @description The price per unit in cents. Supports up to 12 decimal places.
+       * @description The price per unit in cents. Supports up to 12 decimal places. Mutually exclusive with `tiers`.
        */
-      unit_amount: number | string
+      unit_amount?: number | string | null
+      /** @description Tiered pricing based on consumed units. Mutually exclusive with `unit_amount`. */
+      tiers?: components['schemas']['Tiers-Input'] | null
       /**
        * Cap Amount
        * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.

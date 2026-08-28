@@ -6,7 +6,6 @@ from sqlalchemy import func, select
 from polar.models import (
     Benefit,
     CheckoutLink,
-    Customer,
     Dispute,
     Order,
     Organization,
@@ -78,14 +77,13 @@ class PaymentAnalyticsService:
                 func.coalesce(-func.sum(Transaction.amount), 0),
             )
             .join(Order, Refund.order_id == Order.id)
-            .join(Customer, Order.customer_id == Customer.id)
             .outerjoin(
                 Transaction,
                 onclause=(Transaction.refund_id == Refund.id)
                 & (Transaction.type == TransactionType.refund),
             )
             .where(
-                Customer.organization_id == organization_id,
+                Order.organization_id == organization_id,
                 Refund.status == RefundStatus.succeeded,
             )
         )

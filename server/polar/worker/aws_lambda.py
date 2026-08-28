@@ -20,7 +20,6 @@ from ._sqs import (
     get_consumer_sqs_client,
     parse_envelope,
     schedule_delayed_message,
-    send_delayed_message,
     send_to_dlq,
     set_message_visibility,
 )
@@ -118,37 +117,23 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
             )
             return False
 
-        retry_body = build_envelope(
-            envelope.actor,
-            tuple(envelope.args),
-            envelope.kwargs,
-            envelope.correlation_id,
-            receive_count + 1,
-            envelope.message_timestamp,
-            message_id=envelope.message_id,
-            debounce_key=envelope.debounce_key,
-            message_options=envelope.message_options,
-        )
-
-        if action is RetryAction.RE_ENQUEUE:
-            send_delayed_message(
-                consumer_sqs_client, queue_arn, retry_body, delay_seconds
-            )
-            log.info(
-                "polar.worker.sqs_retry_reenqueued",
-                actor=envelope.actor,
-                receive_count=receive_count,
-                backoff_seconds=delay_seconds,
-            )
-            return False
-
         if action is RetryAction.SCHEDULE:
             assert scheduler_role_arn is not None
             schedule_delayed_message(
                 consumer_scheduler_client,
                 queue_arn,
                 scheduler_role_arn,
-                retry_body,
+                build_envelope(
+                    envelope.actor,
+                    tuple(envelope.args),
+                    envelope.kwargs,
+                    envelope.correlation_id,
+                    receive_count + 1,
+                    envelope.message_timestamp,
+                    message_id=envelope.message_id,
+                    debounce_key=envelope.debounce_key,
+                    message_options=envelope.message_options,
+                ),
                 delay_seconds,
                 build_retry_schedule_name(
                     queue_arn, record["messageId"], envelope.attempt

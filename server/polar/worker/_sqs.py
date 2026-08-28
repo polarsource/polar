@@ -228,19 +228,6 @@ def set_message_visibility(
     )
 
 
-def send_delayed_message(
-    client: "SQSClient", queue_arn: str, body: str, delay_seconds: int
-) -> None:
-    """Re-enqueue a retry so its backoff waits outside the visible queue."""
-    queue_name = queue_arn.rsplit(":", 1)[-1]
-    queue_url = get_queue_url(client, queue_name)
-    client.send_message(
-        QueueUrl=queue_url,
-        MessageBody=body,
-        DelaySeconds=min(delay_seconds, MAX_DELAY_SECONDS),
-    )
-
-
 def build_retry_schedule_name(queue_arn: str, message_id: str, attempt: int) -> str:
     """Deterministic per logical handoff so a crash + SQS redelivery is idempotent."""
     digest = hashlib.sha256(f"{queue_arn}:{message_id}:{attempt}".encode()).hexdigest()
@@ -255,7 +242,7 @@ def schedule_delayed_message(
     delay_seconds: int,
     schedule_name: str,
 ) -> None:
-    """Redeliver to SQS after a delay longer than SQS's own delay cap allows."""
+    """Redeliver to SQS after a delay longer than SQS visibility allows (>12h)."""
     fire_at = datetime.now(UTC) + timedelta(seconds=delay_seconds)
     try:
         client.create_schedule(
@@ -345,7 +332,6 @@ def send_jobs_sync(jobs: list[Job]) -> None:
 
 
 __all__ = [
-    "MAX_DELAY_SECONDS",
     "MAX_JOB_PAYLOAD_BYTES",
     "MAX_VISIBILITY_TIMEOUT_SECONDS",
     "Job",
@@ -361,7 +347,6 @@ __all__ = [
     "parse_envelope",
     "resolve_queue_url",
     "schedule_delayed_message",
-    "send_delayed_message",
     "send_jobs",
     "send_jobs_sync",
     "send_to_dlq",

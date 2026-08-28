@@ -146,6 +146,12 @@ class TestMeteredTieredAmountAndLabel:
     def test_is_never_free(self) -> None:
         assert _make_metered_price(unit_amount=Decimal(100)).is_free is False
 
+    def test_fractional_units_round_at_half_cent(self) -> None:
+        # 0.7 units × 5¢ = 3.5¢ must round to 4, not 3. Passing the float
+        # straight to Decimal would carry binary noise (3.4999…) and round down.
+        price = _make_metered_price(unit_amount=Decimal(5))
+        assert price.get_amount_and_label(0.7)[0] == 4
+
 
 class TestFixedPriceIsFree:
     """A fixed price with an amount of 0 is the free-pricing representation and must

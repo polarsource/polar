@@ -369,7 +369,7 @@ class ProductPriceMeteredUnit(TieredPrice, NewProductPrice, ProductPrice):
         return relationship("Meter", lazy="joined")
 
     def get_amount_and_label(self, units: float) -> tuple[int, str]:
-        billable_units = Decimal(max(0, units))
+        billable_units = Decimal(str(max(0, units)))
         formatted_units = format_decimal(max(0, units), locale="en_US")
 
         if self.tiers is not None:

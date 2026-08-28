@@ -810,6 +810,39 @@ class TestTransferOwnership:
                 organization_id=organization.id,
             )
 
+    async def test_allows_unverified_user_in_sandbox(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: Any,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        mocker.patch(
+            "polar.user_organization.service.settings.is_sandbox",
+            return_value=True,
+        )
+        await save_fixture(
+            UserOrganization(
+                user_id=user_second.id,
+                organization_id=organization.id,
+                role=OrganizationRole.member,
+            )
+        )
+        # user_second left at the default unverified status
+
+        await user_organization_service.transfer_ownership(
+            session,
+            new_owner_user_id=user_second.id,
+            organization_id=organization.id,
+        )
+
+        new = await user_organization_service.get_by_user_and_org(
+            session, user_second.id, organization.id
+        )
+        assert new is not None
+        assert new.role == OrganizationRole.owner
+
     async def test_rejects_non_member(
         self,
         session: Any,

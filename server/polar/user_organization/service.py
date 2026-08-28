@@ -6,6 +6,7 @@ from sqlalchemy import Select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
+from polar.config import settings
 from polar.exceptions import PolarError
 from polar.integrations.polar.service import billing_member_role
 from polar.integrations.polar.service import polar_self as polar_self_service
@@ -250,7 +251,8 @@ class UserOrganizationService:
         promote `new_owner_user_id` to `owner`.
 
         Fires the `IdentityVerificationStatus.verified` gate on the new
-        owner, since payouts route through whoever holds `owner`.
+        owner, since payouts route through whoever holds `owner`. The gate
+        is skipped in the sandbox environment.
         """
         new_owner_user_org = await self.get_by_user_and_org(
             session, new_owner_user_id, organization_id
@@ -264,7 +266,8 @@ class UserOrganizationService:
             raise AlreadyOwner(new_owner_user_id, organization_id)
 
         if (
-            new_owner_user.identity_verification_status
+            not settings.is_sandbox()
+            and new_owner_user.identity_verification_status
             != IdentityVerificationStatus.verified
         ):
             raise NewOwnerNotVerified(

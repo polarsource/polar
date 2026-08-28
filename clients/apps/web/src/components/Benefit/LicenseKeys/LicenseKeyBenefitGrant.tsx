@@ -107,7 +107,7 @@ export const LicenseKeyBenefitGrant = ({
   api,
   benefitGrant,
   locale = DEFAULT_LOCALE,
-  allowRotation = true,
+  allowRotation = false,
 }: {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrantLicenseKeys']

@@ -79,7 +79,11 @@ export const CustomerPortalGrantsComplex = ({
                   key={benefitGrant.id}
                   className="py-6 hover:bg-transparent dark:hover:bg-transparent"
                 >
-                  <BenefitGrant api={api} benefitGrant={benefitGrant} />
+                  <BenefitGrant
+                    api={api}
+                    benefitGrant={benefitGrant}
+                    allowLicenseKeyRotation
+                  />
                 </ListItem>
               ))}
             </List>

@@ -503,7 +503,7 @@ export const BenefitGrant = ({
   api,
   benefitGrant,
   locale = DEFAULT_LOCALE,
-  allowLicenseKeyRotation = true,
+  allowLicenseKeyRotation = false,
 }: BenefitGrantProps) => {
   const t = useTranslations(locale)
   const { benefit } = benefitGrant

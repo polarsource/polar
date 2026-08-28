@@ -6,6 +6,7 @@ from collections.abc import Generator
 from fastapi import Request
 from tagflow import classes, tag, text
 
+from polar.config import settings
 from polar.models import Organization
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
@@ -125,6 +126,7 @@ class TeamSection:
                                             member_is_verified = (
                                                 member.user.identity_verification_status
                                                 == IdentityVerificationStatus.verified
+                                                or settings.is_sandbox()
                                             )
                                             if (
                                                 not member_is_owner
@@ -172,12 +174,13 @@ class TeamSection:
                                 "of the organization"
                             )
 
-                    with tag.li(classes="flex items-start gap-2"):
-                        with tag.span(classes="text-base-content/60"):
-                            text(
-                                "• The new owner must have completed Stripe "
-                                "identity verification"
-                            )
+                    if not settings.is_sandbox():
+                        with tag.li(classes="flex items-start gap-2"):
+                            with tag.span(classes="text-base-content/60"):
+                                text(
+                                    "• The new owner must have completed Stripe "
+                                    "identity verification"
+                                )
 
                     with tag.li(classes="flex items-start gap-2"):
                         with tag.span(classes="text-base-content/60"):

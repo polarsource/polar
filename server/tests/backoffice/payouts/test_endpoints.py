@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 import httpx
 import pytest
 import pytest_asyncio
+from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
@@ -139,3 +140,167 @@ class TestMarkPaid:
 
         assert response.status_code == 200
         assert "Mark as Paid" not in response.text
+
+
+@pytest.mark.asyncio
+class TestGet:
+    async def test_manual_pending_shows_mark_as_paid_not_retry(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+
+        response = await backoffice_client.get(f"/payouts/{payout.id}")
+
+        assert response.status_code == 200
+        assert "Mark as Paid" in response.text
+        assert "Retry Payout" not in response.text
+
+    async def test_stripe_pending_shows_retry_button(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+
+        response = await backoffice_client.get(f"/payouts/{payout.id}")
+
+        assert response.status_code == 200
+        assert "Retry Payout" in response.text
+        assert "Mark as Paid" not in response.text
+
+
+@pytest.mark.asyncio
+class TestRetry:
+    async def test_get_manual_payout_returns_400(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+
+        response = await backoffice_client.get(f"/payouts/{payout.id}/retry")
+
+        assert response.status_code == 400
+
+    async def test_post_manual_payout_returns_400_and_does_not_enqueue(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+        enqueue_job_mock = mocker.patch(
+            "polar.backoffice.payouts.endpoints.enqueue_job"
+        )
+
+        response = await backoffice_client.post(f"/payouts/{payout.id}/retry", data={})
+
+        assert response.status_code == 400
+        enqueue_job_mock.assert_not_called()
+
+    async def test_get_stripe_payout_shows_confirmation(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+
+        response = await backoffice_client.get(f"/payouts/{payout.id}/retry")
+
+        assert response.status_code == 200
+        assert f"Retry Payout {payout.id}" in response.text
+
+    async def test_post_stripe_payout_enqueues_task(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+        enqueue_job_mock = mocker.patch(
+            "polar.backoffice.payouts.endpoints.enqueue_job"
+        )
+
+        response = await backoffice_client.post(f"/payouts/{payout.id}/retry", data={})
+
+        assert response.status_code == 200
+        assert f"/payouts/{payout.id}" in response.text
+        enqueue_job_mock.assert_called_once_with(
+            "payout.trigger_stripe_payout",
+            payout_id=payout.id,
+            account_amount=None,
+        )

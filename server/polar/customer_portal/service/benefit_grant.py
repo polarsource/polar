@@ -65,7 +65,9 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         )
 
         if query is not None:
-            statement = statement.where(Benefit.description.ilike(f"%{query}%"))
+            statement = statement.where(
+                Benefit.description.icontains(query, autoescape=True)
+            )
 
         if type is not None:
             statement = statement.where(Benefit.type.in_(type))

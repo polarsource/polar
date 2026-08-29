@@ -81,4 +81,73 @@ describe('setValidationErrors', () => {
     setValidationErrors([], setError)
     expect(setError).not.toHaveBeenCalled()
   })
+
+  it('maps discriminator-only path to root after stripping', () => {
+    const setError = vi.fn()
+    const errors = [
+      {
+        loc: ['body', 'fixed'],
+        type: 'value_error',
+        msg: 'Must specify either `amount` or `amounts`.',
+      },
+    ]
+
+    setValidationErrors(errors, setError, 1, ['fixed', 'percentage'])
+
+    expect(setError).toHaveBeenCalledWith('root', {
+      type: 'value_error',
+      message: 'Must specify either `amount` or `amounts`.',
+    })
+  })
+
+  it('maps body-only path (empty after slice) to root', () => {
+    const setError = vi.fn()
+    const errors = [
+      {
+        loc: ['body'],
+        type: 'value_error',
+        msg: 'Something went wrong at the root',
+      },
+    ]
+
+    setValidationErrors(errors, setError)
+
+    expect(setError).toHaveBeenCalledWith('root', {
+      type: 'value_error',
+      message: 'Something went wrong at the root',
+    })
+  })
+
+  it('does not call setError with an empty string path', () => {
+    const setError = vi.fn()
+    const errors = [
+      {
+        loc: ['body', 'percentage'],
+        type: 'value_error',
+        msg: 'Must specify either `amount` or `amounts`.',
+      },
+    ]
+
+    setValidationErrors(errors, setError, 1, ['fixed', 'percentage'])
+
+    expect(setError).not.toHaveBeenCalledWith('', expect.anything())
+  })
+
+  it('still maps non-discriminator fields within a discriminated union', () => {
+    const setError = vi.fn()
+    const errors = [
+      {
+        loc: ['body', 'fixed', 'amount'],
+        type: 'value_error',
+        msg: 'Must be greater than 0',
+      },
+    ]
+
+    setValidationErrors(errors, setError, 1, ['fixed', 'percentage'])
+
+    expect(setError).toHaveBeenCalledWith('amount', {
+      type: 'value_error',
+      message: 'Must be greater than 0',
+    })
+  })
 })

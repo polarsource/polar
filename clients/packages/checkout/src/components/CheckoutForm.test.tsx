@@ -308,8 +308,6 @@ describe('CheckoutForm', () => {
     let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
     const update = vi.fn(async () => createCheckout())
     const checkout = createCheckout({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      payment_processor: 'dummy' as any,
       billing_address_fields: {
         country: 'required',
         state: 'required',
@@ -337,6 +335,7 @@ describe('CheckoutForm', () => {
             line1: 'Foo St',
           },
         }}
+        themePreset={{ stripe: {} } as ThemingPresetProps}
         locale="en"
       />,
     )
@@ -363,6 +362,77 @@ describe('CheckoutForm', () => {
     )
     expect(form!.getValues('customer_billing_address.city')).toBe('Stockholm')
     expect(form!.getValues('customer_billing_address.line1')).toBe('Foo St')
+
+    // The update payload must include all existing address fields — not just
+    // the country — with state set to '' since it was reset for the new country.
+    expect(update).toHaveBeenCalledWith({
+      customer_billing_address: expect.objectContaining({
+        country: 'US',
+        state: '',
+        postal_code: '12391',
+        city: 'Stockholm',
+        line1: 'Foo St',
+      }),
+    })
+  })
+
+  it('sends all billing address fields when country changes without state reset', async () => {
+    let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
+    const update = vi.fn(async () => createCheckout())
+    const checkout = createCheckout({
+      billing_address_fields: {
+        country: 'required',
+        state: 'optional',
+        city: 'optional',
+        postal_code: 'optional',
+        line1: 'optional',
+        line2: 'disabled',
+      },
+    })
+
+    render(
+      <FormWrapper
+        checkout={checkout}
+        {...defaultProps}
+        update={update}
+        onForm={(f) => {
+          form = f
+        }}
+        defaultValues={{
+          customer_billing_address: {
+            country: 'SE',
+            state: 'Stockholm',
+            postal_code: '12391',
+            city: 'Stockholm',
+            line1: 'Foo St',
+          },
+        }}
+        themePreset={{ stripe: {} } as ThemingPresetProps}
+        locale="en"
+      />,
+    )
+
+    await act(async () => {
+      form!.setValue('customer_billing_address.country', 'DE')
+    })
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 600))
+    })
+
+    // State is preserved when neither country has fixed state options.
+    expect(form!.getValues('customer_billing_address.state')).toBe('Stockholm')
+
+    // All address fields are sent to the server, not just the country.
+    expect(update).toHaveBeenCalledWith({
+      customer_billing_address: expect.objectContaining({
+        country: 'DE',
+        state: 'Stockholm',
+        postal_code: '12391',
+        city: 'Stockholm',
+        line1: 'Foo St',
+      }),
+    })
   })
 
   it('displays validation error on billing address state field', async () => {

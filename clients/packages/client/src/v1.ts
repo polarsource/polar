@@ -19577,6 +19577,7 @@ export interface components {
     CustomerSubscriptionChangePreview:
       | components['schemas']['CustomerSubscriptionChangePreviewProduct']
       | components['schemas']['CustomerSubscriptionChangePreviewSeats']
+      | components['schemas']['CustomerSubscriptionChangePreviewUnits']
     /** CustomerSubscriptionChangePreviewProduct */
     CustomerSubscriptionChangePreviewProduct: {
       /**
@@ -19593,6 +19594,14 @@ export interface components {
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
+    }
+    /** CustomerSubscriptionChangePreviewUnits */
+    CustomerSubscriptionChangePreviewUnits: {
+      /**
+       * Units
+       * @description Preview a change of the subscription to this number of units.
+       */
+      units: number
     }
     /** CustomerSubscriptionMeter */
     CustomerSubscriptionMeter: {
@@ -19808,6 +19817,7 @@ export interface components {
     CustomerSubscriptionUpdate:
       | components['schemas']['CustomerSubscriptionUpdateProduct']
       | components['schemas']['CustomerSubscriptionUpdateSeats']
+      | components['schemas']['CustomerSubscriptionUpdateUnits']
       | components['schemas']['CustomerSubscriptionCancel']
       | components['schemas']['CustomerSubscriptionPause']
       | components['schemas']['CustomerSubscriptionResume']
@@ -19836,6 +19846,14 @@ export interface components {
        * @description Update the number of seats for this subscription.
        */
       seats: number
+    }
+    /** CustomerSubscriptionUpdateUnits */
+    CustomerSubscriptionUpdateUnits: {
+      /**
+       * Units
+       * @description Update the number of units for this subscription.
+       */
+      units: number
     }
     /**
      * CustomerTeam
@@ -37055,6 +37073,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** UpdateSubscriptionUnitsNotAllowed */
+    UpdateSubscriptionUnitsNotAllowed: {
+      /**
+       * Error
+       * @example UpdateSubscriptionUnitsNotAllowed
+       * @constant
+       */
+      error: 'UpdateSubscriptionUnitsNotAllowed'
+      /** Detail */
+      detail: string
+    }
     /**
      * UserDeletionBlockedReason
      * @description Reasons why a user account cannot be immediately deleted.
@@ -53679,6 +53708,8 @@ export interface operations {
           'application/json':
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['PauseResumeNotAllowed']
+            | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
+            | components['schemas']['UpdateSubscriptionUnitsNotAllowed']
         }
       }
       /** @description Customer subscription was not found. */
@@ -53827,6 +53858,7 @@ export interface operations {
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['UpdateSubscriptionPlanNotAllowed']
             | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
+            | components['schemas']['UpdateSubscriptionUnitsNotAllowed']
         }
       }
       /** @description Customer subscription was not found. */

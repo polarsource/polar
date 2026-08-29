@@ -102,6 +102,15 @@ class CustomerSubscriptionUpdateSeats(Schema):
     )
 
 
+class CustomerSubscriptionUpdateUnits(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    units: Int32 = Field(
+        description="Update the number of units for this subscription.",
+        ge=1,
+    )
+
+
 class CustomerSubscriptionChangePreviewProduct(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -119,8 +128,19 @@ class CustomerSubscriptionChangePreviewSeats(Schema):
     )
 
 
+class CustomerSubscriptionChangePreviewUnits(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    units: Int32 = Field(
+        description="Preview a change of the subscription to this number of units.",
+        ge=1,
+    )
+
+
 CustomerSubscriptionChangePreview = Annotated[
-    CustomerSubscriptionChangePreviewProduct | CustomerSubscriptionChangePreviewSeats,
+    CustomerSubscriptionChangePreviewProduct
+    | CustomerSubscriptionChangePreviewSeats
+    | CustomerSubscriptionChangePreviewUnits,
     SetSchemaReference("CustomerSubscriptionChangePreview"),
 ]
 
@@ -213,6 +233,7 @@ class CustomerSubscriptionUpdateClear(Schema):
 CustomerSubscriptionUpdate = Annotated[
     CustomerSubscriptionUpdateProduct
     | CustomerSubscriptionUpdateSeats
+    | CustomerSubscriptionUpdateUnits
     | CustomerSubscriptionCancel
     | CustomerSubscriptionPause
     | CustomerSubscriptionResume

@@ -351,6 +351,13 @@ jobs:
       - name: 🐦 Install Tinybird CLI
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: 🐦 Prepare Tinybird workspace
+        working-directory: ./server
+        run: |
+          token=$(uv run python -m scripts.tinybird_test_workspace)
+          echo "::add-mask::$token"
+          echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
+
       - name: ⚗️ alembic migrate
         working-directory: ./server
         run: uv run task db_migrate

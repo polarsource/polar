@@ -1,8 +1,6 @@
-import subprocess
-import time
+import os
 import uuid
 from collections.abc import Generator
-from pathlib import Path
 from unittest.mock import patch
 
 import httpx
@@ -12,120 +10,41 @@ from polar.config import settings
 from polar.integrations.tinybird import service as tinybird_service
 from polar.integrations.tinybird.client import TinybirdClient
 from polar.metrics import queries_tinybird
+from scripts.tinybird_test_workspace import (
+    create_workspace,
+    delete_workspace,
+    deploy_schema,
+    get_tokens,
+    wait_for_ingestion,
+)
 
-TINYBIRD_DIR = Path(__file__).parent.parent.parent / "tinybird"
-
-
-def get_tinybird_tokens() -> dict[str, str] | None:
-    """Fetch tokens from local Tinybird instance."""
-    try:
-        response = httpx.get(f"{settings.TINYBIRD_API_URL}/tokens", timeout=2)
-        if response.status_code == 200:
-            return response.json()
-    except httpx.RequestError:
-        pass
-    return None
+TOKEN_ENV_VAR = "POLAR_TEST_TINYBIRD_TOKEN"
 
 
 def tinybird_available() -> bool:
-    """Check if local Tinybird is running and accessible."""
-    return get_tinybird_tokens() is not None
+    return bool(os.environ.get(TOKEN_ENV_VAR)) or get_tokens() is not None
 
 
 @pytest.fixture(scope="session")
 def tinybird_workspace() -> Generator[str]:
-    """Create an isolated Tinybird workspace, deploy schema, and yield token."""
-    tokens = get_tinybird_tokens()
+    """Yield a Tinybird workspace token, creating a throwaway workspace if needed."""
+    shared_token = os.environ.get(TOKEN_ENV_VAR)
+    if shared_token:
+        yield shared_token
+        return
+
+    host = settings.TINYBIRD_API_URL
+    tokens = get_tokens(host)
     if not tokens:
         pytest.skip("Tinybird not running")
 
-    user_token = tokens["user_token"]
-    admin_token = tokens["admin_token"]
-    host = settings.TINYBIRD_API_URL
-    workspace_name = f"test_{uuid.uuid4().hex[:8]}"
-
-    organization_response = httpx.get(
-        f"{host}/v1/user/workspaces",
-        params={"with_organization": "true", "token": admin_token},
-    )
-    organization_response.raise_for_status()
-    organization_id = organization_response.json()["organization_id"]
-
-    ws_response = httpx.post(
-        f"{host}/v1/workspaces",
-        params={"name": workspace_name, "assign_to_organization_id": organization_id},
-        headers={"Authorization": f"Bearer {user_token}"},
-    )
-    ws_response.raise_for_status()
-    workspace_id = ws_response.json()["id"]
-
-    workspaces_response = httpx.get(
-        f"{host}/v1/user/workspaces",
-        params={"token": user_token},
-    )
-    workspaces_response.raise_for_status()
-    workspace_token = next(
-        workspace["token"]
-        for workspace in workspaces_response.json()["workspaces"]
-        if workspace["id"] == workspace_id
-    )
-
-    deploy_cmd = [
-        "tb",
-        "--cloud",
-        "--host",
-        host,
-        "--token",
-        workspace_token,
-        "deploy",
-        "--wait",
-    ]
-    for attempt in range(3):
-        result = subprocess.run(
-            deploy_cmd,
-            capture_output=True,
-            text=True,
-            cwd=TINYBIRD_DIR,
-            check=False,
-        )
-        if result.returncode == 0:
-            break
-        if attempt < 2:
-            time.sleep(0.5)
-    else:
-        raise RuntimeError(
-            "Tinybird deploy failed after 3 attempts.\n"
-            f"Command: {' '.join(result.args)}\n"
-            f"Exit code: {result.returncode}\n"
-            f"stdout:\n{result.stdout}\n"
-            f"stderr:\n{result.stderr}"
-        )
-
-    for _ in range(30):
-        try:
-            r = httpx.post(
-                f"{host}/v0/events",
-                params={"name": "events_by_ingested_at", "wait": "true"},
-                content="",
-                headers={
-                    "Authorization": f"Bearer {workspace_token}",
-                    "Content-Type": "application/x-ndjson",
-                },
-                timeout=2,
-            )
-            if r.status_code != 403:
-                break
-        except httpx.RequestError:
-            pass
-        time.sleep(0.5)
+    workspace_id, workspace_token = create_workspace(host, tokens)
+    deploy_schema(host, workspace_token)
+    wait_for_ingestion(host, workspace_token)
 
     yield workspace_token
 
-    httpx.delete(
-        f"{host}/v1/workspaces/{workspace_id}",
-        params={"hard_delete_confirmation": "yes"},
-        headers={"Authorization": f"Bearer {user_token}"},
-    )
+    delete_workspace(host, workspace_id, tokens["user_token"])
 
 
 @pytest.fixture(scope="session")
@@ -163,7 +82,6 @@ def tinybird_client(
 
 
 __all__ = [
-    "get_tinybird_tokens",
     "tinybird_available",
     "tinybird_clickhouse_token",
     "tinybird_client",

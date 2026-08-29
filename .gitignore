@@ -138,6 +138,7 @@ playground.py
 
 .jwks.json
 *.mmdb
+.test_durations
 server/tests/invoice/test_invoice*.pdf
 supervisord.pid
 server/.minio/

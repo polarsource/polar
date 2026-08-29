@@ -104,6 +104,7 @@ dev = [
   # * https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/
   # * https://pypi.org/project/litellm/
   # "litellm==1.82.3",
+  "pytest-split>=0.11.0",
 ]
 
 [tool.taskipy.tasks]

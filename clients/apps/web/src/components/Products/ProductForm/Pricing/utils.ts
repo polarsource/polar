@@ -77,8 +77,11 @@ export const getActiveCurrencies = (
 
 type MeteredTiers = NonNullable<schemas['ProductPriceMeteredUnit']['tiers']>
 
-const parseTiers = (tiers: MeteredTiers['tiers']) =>
-  tiers
+const tieredCost = (
+  { type: tierType, tiers }: MeteredTiers,
+  units: number,
+): number => {
+  const parsed = tiers
     .map((tier) => ({
       bound: tier.bound ?? null,
       unitAmount: Number.parseFloat(String(tier.unit_amount)),
@@ -88,12 +91,6 @@ const parseTiers = (tiers: MeteredTiers['tiers']) =>
         Number(a.bound === null) - Number(b.bound === null) ||
         (a.bound ?? 0) - (b.bound ?? 0),
     )
-
-const tieredCost = (
-  { type: tierType, tiers }: MeteredTiers,
-  units: number,
-): number => {
-  const parsed = parseTiers(tiers)
 
   if (tierType === 'volume') {
     const tier = parsed.find((t) => t.bound === null || units <= t.bound)

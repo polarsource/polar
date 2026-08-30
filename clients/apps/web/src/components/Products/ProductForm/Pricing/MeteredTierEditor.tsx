@@ -14,9 +14,9 @@ const getMeteredTierTitle = (
   previousBound: number,
 ) => {
   const from = previousBound + 1
-  if (bound == null) return `Units ${formatUnits(from)}+`
-  if (bound === from) return `Unit ${formatUnits(from)}`
-  return `Units ${formatUnits(from)}–${formatUnits(bound)}`
+  if (bound == null) return `${formatUnits(from)}+`
+  if (bound === from) return `${formatUnits(from)}`
+  return `${formatUnits(from)}–${formatUnits(bound)}`
 }
 
 export interface MeteredTierEditorProps {

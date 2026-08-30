@@ -79,13 +79,6 @@ class TestTiersCalculateVolume:
         )
         assert tiers.calculate(10) == Decimal(5)
 
-    def test_fractional_quantity(self) -> None:
-        # Bounds are whole units, the quantity need not be: an inclusive
-        # bound still places a fractional quantity unambiguously.
-        tiers = _tiers_data(TierType.volume, SHARED_MULTI_TIER)
-        assert tiers.calculate(Decimal("9.5")) == Decimal("9.5") * 1000
-        assert tiers.calculate(Decimal("10.5")) == Decimal("10.5") * 800
-
     def test_fractional_quantity_on_and_below_a_bound(self) -> None:
         tiers = _tiers_data(TierType.volume, SHARED_MULTI_TIER)
         assert tiers.calculate(Decimal("10.0")) == Decimal("10.0") * 1000

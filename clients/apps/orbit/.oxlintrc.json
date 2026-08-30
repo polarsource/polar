@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
-  "extends": ["../../packages/eslint-config/oxlint-next.json"],
+  "extends": ["../../packages/oxlint-config/oxlint-next.json"],
   "options": {
     "denyWarnings": true,
     "typeAware": true

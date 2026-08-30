@@ -29,7 +29,7 @@ classNames and temporary glue while migrating legacy files.
 
 - Token props resolve light and dark automatically, so no per-element `dark:` duplication, and
   off-token values become unwriteable. The type system makes the wrong thing hard to write.
-- Custom ESLint rules enforce it: `no-classname-box`, `no-style-box`, `no-classname-text` on
+- Custom Oxlint rules enforce it: `no-classname-box`, `no-style-box`, `no-classname-text` on
   web, and `no-view`, `no-text`, `no-hardcoded-colors`, `no-hardcoded-spacing` on the Expo app.
 - Editing a legacy Tailwind file? Migrate it to `<Box />` rather than extend the Tailwind.
 
@@ -41,5 +41,5 @@ classNames and temporary glue while migrating legacy files.
 ## References
 
 - `clients/packages/orbit/` (`src/components/Box.tsx`, `src/tokens/`).
-- Enforcement: `clients/apps/web/eslint-rules/`, `clients/apps/app/eslint-rules/`.
+- Enforcement: `clients/apps/web/oxlint-plugins/`, `clients/apps/app/oxlint-plugins/`.
 - `clients/AGENTS.md`, "UI Authoring Rule".

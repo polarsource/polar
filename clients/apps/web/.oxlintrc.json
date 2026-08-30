@@ -1,14 +1,10 @@
 {
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
-  "extends": ["../../packages/eslint-config/oxlint-next.json"],
+  "extends": ["../../packages/oxlint-config/oxlint-next.json"],
   "jsPlugins": [
     {
-      "name": "turbo",
-      "specifier": "../../packages/eslint-config/oxlint-turbo-plugin.mjs"
-    },
-    {
       "name": "polar",
-      "specifier": "./eslint-rules/index.mjs"
+      "specifier": "./oxlint-plugins/index.mjs"
     }
   ],
   "options": {
@@ -23,6 +19,7 @@
     "build/**",
     "coverage/**",
     "eslint-rules/**",
+    "oxlint-plugins/**",
     "src/app/.well-known/**",
     "next-env.d.ts",
     "e2e/**",
@@ -30,9 +27,6 @@
     "babel.config.js",
     "scripts/**"
   ],
-  "rules": {
-    "polar/no-toast-error-detail": "error"
-  },
   "overrides": [
     {
       "files": ["src/components/Checkout/CheckoutConfirmation.tsx"],

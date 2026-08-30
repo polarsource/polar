@@ -12,7 +12,7 @@
     "build": "pnpm run clean && tsup && pkg package.json",
     "typecheck": "tsc --noEmit",
     "format": "oxfmt src",
-    "lint": "oxfmt --check src && eslint ."
+    "lint": "oxfmt --check src && oxlint ."
   },
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
@@ -27,12 +27,11 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@yao-pkg/pkg": "^6.22.0",
-    "eslint": "^10.8.1",
     "openapi-typescript": "^7.13.0",
     "oxfmt": "^0.65.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.68.0"
+    "oxlint": "^1.80.0"
   },
   "pkg": {
     "targets": [

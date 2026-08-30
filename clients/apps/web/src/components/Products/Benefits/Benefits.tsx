@@ -59,7 +59,7 @@ export const Benefits = ({
 
   useEffect(() => {
     if (createBenefitQuerystring) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // oxlint-disable-next-line react-hooks/set-state-in-effect
       setCreateBenefitType(undefined)
       setCreateModalOpen(true)
       setCreateBenefitQuerystring(null)

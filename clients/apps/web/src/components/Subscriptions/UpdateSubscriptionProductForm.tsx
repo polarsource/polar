@@ -50,7 +50,7 @@ export const UpdateSubscriptionProductForm = ({
     [subscription],
   )
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // oxlint-disable-next-line react-hooks/incompatible-library
   const selectedProductId = watch('product_id')
   const { data: selectedProduct } = useProduct(selectedProductId)
   const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)

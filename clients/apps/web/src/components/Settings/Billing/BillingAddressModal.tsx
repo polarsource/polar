@@ -41,7 +41,7 @@ export const BillingAddressModal = ({
   })
 
   const { control, handleSubmit, watch, setValue, reset } = form
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // oxlint-disable-next-line react-hooks/incompatible-library
   const country = watch('billing_address.country')
 
   useEffect(() => {

@@ -230,7 +230,7 @@ describe('CheckoutFormProvider', () => {
         ),
       })
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // oxlint-disable-next-line typescript/no-explicit-any
       let result: any = null
       await act(async () => {
         result = await getCtx().confirm(

@@ -42,7 +42,7 @@ export const productPriceToFormPrice = (
   price: schemas['ProductPrice'],
 ): schemas['ProductPrice'] | FreeFormPrice => {
   if (price.amount_type === 'fixed' && price.price_amount === 0) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // oxlint-disable-next-line typescript/no-unused-vars
     const { price_amount, ...rest } = price
     return { ...rest, amount_type: 'free' }
   }
@@ -152,7 +152,7 @@ export type ProductEditOrCreateForm = Omit<
 export const productToCreateForm = (
   product: schemas['Product'],
 ): ProductEditOrCreateForm => {
-  /* eslint-disable @typescript-eslint/no-unused-vars */
+  /* oxlint-disable typescript/no-unused-vars */
   // We want to omit a few fields from the product to create a new product form.
   // This approach somewhat wonky, the alternative is omitting them which forces us
   // to type cast which is not preferable.
@@ -169,14 +169,14 @@ export const productToCreateForm = (
     metadata,
     ...productBase
   } = product
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+  /* oxlint-enable typescript/no-unused-vars */
 
   return {
     ...productBase,
     name: `Copy of ${product.name}`,
     full_medias: product.medias.map((media) => ({ ...media })),
     prices: product.prices.map((price) => {
-      /* eslint-disable @typescript-eslint/no-unused-vars */
+      /* oxlint-disable typescript/no-unused-vars */
       const {
         id,
         created_at,

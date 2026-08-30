@@ -1,14 +1,17 @@
+import ts from 'typescript'
+
 const TEXT_PROPERTIES = new Set(['title', 'description'])
+const SAFE_TYPE_FLAGS =
+  ts.TypeFlags.StringLike |
+  ts.TypeFlags.Null |
+  ts.TypeFlags.Undefined |
+  ts.TypeFlags.Void
 
-function isSafeToastType(type, checker) {
+function isSafeToastType(type) {
   if (type.isUnion()) {
-    return type.types.every((t) => isSafeToastType(t, checker))
+    return type.types.every(isSafeToastType)
   }
-  const flags = type.getFlags()
-
-  // String=4, StringLiteral=128, TemplateLiteral=134217728,
-  // Null=65536, Undefined=32768, Void=16384
-  return (flags & (4 | 128 | 134217728 | 65536 | 32768 | 16384)) !== 0
+  return (type.getFlags() & SAFE_TYPE_FLAGS) !== 0
 }
 
 function collectExpressions(node) {
@@ -82,7 +85,7 @@ const noToastErrorDetail = {
               const tsNode = services.esTreeNodeToTSNodeMap.get(expr)
               if (!tsNode) continue
               const type = checker.getTypeAtLocation(tsNode)
-              if (!isSafeToastType(type, checker)) {
+              if (!isSafeToastType(type)) {
                 context.report({
                   node: expr,
                   messageId: 'nonStringInToast',

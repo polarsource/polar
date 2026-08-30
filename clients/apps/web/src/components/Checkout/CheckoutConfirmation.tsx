@@ -26,7 +26,7 @@ import { loadPolarStripe } from '@/utils/stripe'
 const stripePromise = loadPolarStripe()
 
 const isIntegrationError = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   err: any,
 ): err is { name: 'IntegrationError'; message: string } =>
   err.name === 'IntegrationError'

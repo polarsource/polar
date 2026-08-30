@@ -4,11 +4,11 @@
   "jsPlugins": [
     {
       "name": "expo",
-      "specifier": "./eslint-rules/oxlint-expo-plugin.js"
+      "specifier": "./oxlint-plugins/expo.js"
     },
     {
       "name": "@polar",
-      "specifier": "./eslint-rules/index.js"
+      "specifier": "./oxlint-plugins/index.js"
     }
   ],
   "categories": {

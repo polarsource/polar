@@ -5,5 +5,5 @@
     "typeAware": true
   },
   "ignorePatterns": ["node_modules/**", "dist/**"],
-  "extends": ["../eslint-config/oxlint-react.json"]
+  "extends": ["../oxlint-config/oxlint-react.json"]
 }

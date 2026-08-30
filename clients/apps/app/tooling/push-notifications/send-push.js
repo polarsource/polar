@@ -1,7 +1,7 @@
 const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
-// eslint-disable-next-line no-undef
+// oxlint-disable-next-line no-undef
 const TEMP_FILE = path.join(__dirname, '.push-payload-temp.json')
 const payloads = require('./push-payload')
 const BUNDLE_ID = 'com.polarsource.Polar'

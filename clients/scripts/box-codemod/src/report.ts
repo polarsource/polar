@@ -60,7 +60,7 @@ export function summarizeToConsole(reports: ElementReport[]): void {
   const converted = reports.filter((r) => r.status === 'converted').length
   const partial = reports.filter((r) => r.status === 'partial').length
   const skipped = reports.filter((r) => r.status === 'skipped').length
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   console.log(
     `Box codemod: ${converted} converted, ${partial} partial, ${skipped} skipped`,
   )

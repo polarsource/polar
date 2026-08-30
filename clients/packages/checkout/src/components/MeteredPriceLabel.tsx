@@ -15,8 +15,6 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
   locale = DEFAULT_LOCALE,
   discount,
 }) => {
-  // unit_amount is null only for tiered metered prices, which can't be
-  // created until the metered-tiers feature ships. Temporary guard.
   if (price.unit_amount == null) return null
 
   const { scale, label } = getMeterUnitFormat(price.meter.unit ?? 'scalar', {

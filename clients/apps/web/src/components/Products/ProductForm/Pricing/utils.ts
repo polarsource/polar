@@ -96,11 +96,7 @@ const tieredCost = (
   const parsed = parseTiers(tiers)
 
   if (tierType === 'volume') {
-    // A bounded last tier can't be created through the API, but if usage ever
-    // lands past every bound, the top rate is a better estimate than nothing.
-    const tier =
-      parsed.find((t) => t.bound === null || units <= t.bound) ??
-      parsed[parsed.length - 1]
+    const tier = parsed.find((t) => t.bound === null || units <= t.bound)
     return tier ? units * tier.unitAmount : 0
   }
 

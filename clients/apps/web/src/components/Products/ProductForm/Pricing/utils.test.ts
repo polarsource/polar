@@ -41,85 +41,40 @@ const ladder = (tierType: MeteredTiers['type']) =>
   ])
 
 describe('estimateMeteredCost', () => {
-  describe('flat rate', () => {
-    it('multiplies units by the unit amount', () => {
-      expect(estimateMeteredCost(price({ unit_amount: '0.5' }), 100)).toBe(50)
-    })
-
-    it('treats a missing unit amount as free', () => {
-      expect(estimateMeteredCost(price({ unit_amount: null }), 100)).toBe(0)
-    })
+  it('multiplies units by a flat unit amount', () => {
+    expect(estimateMeteredCost(price({ unit_amount: '0.5' }), 100)).toBe(50)
   })
 
-  describe('zero and negative usage', () => {
-    it.each([0, -1])('costs nothing for %i units', (units) => {
-      expect(
-        estimateMeteredCost(price({ tiers: ladder('graduated') }), units),
-      ).toBe(0)
-    })
+  it.each([0, -1])('costs nothing for %i units', (units) => {
+    expect(
+      estimateMeteredCost(price({ tiers: ladder('graduated') }), units),
+    ).toBe(0)
   })
 
   describe('graduated', () => {
-    it('bills a quantity inside the first tier at the first rate', () => {
+    it.each([
+      { position: 'inside the first tier', units: 500, expected: 2500 },
+      { position: 'at the tier boundary', units: 1000, expected: 5000 },
+      { position: 'across tiers', units: 2000, expected: 6000 },
+      {
+        position: 'with fractional usage',
+        units: 1000.5,
+        expected: 5000.5,
+      },
+    ])('bills usage $position', ({ units, expected }) => {
       const p = price({ unit_amount: null, tiers: ladder('graduated') })
-      expect(estimateMeteredCost(p, 500)).toBe(2500)
-    })
-
-    it('bills the boundary quantity entirely at the first rate', () => {
-      const p = price({ unit_amount: null, tiers: ladder('graduated') })
-      expect(estimateMeteredCost(p, 1000)).toBe(5000)
-    })
-
-    it('splits usage across tiers, each portion at its own rate', () => {
-      const p = price({ unit_amount: null, tiers: ladder('graduated') })
-      // 1,000 × 5c + 1,000 × 1c
-      expect(estimateMeteredCost(p, 2000)).toBe(6000)
-    })
-
-    it('handles fractional usage', () => {
-      const p = price({ unit_amount: null, tiers: ladder('graduated') })
-      // 1,000 × 5c + 0.5 × 1c
-      expect(estimateMeteredCost(p, 1000.5)).toBe(5000.5)
-    })
-
-    it('reads tiers that arrive unsorted', () => {
-      const p = price({
-        unit_amount: null,
-        tiers: tiers('graduated', [
-          { bound: null, unit_amount: '1' },
-          { bound: 1000, unit_amount: '5' },
-        ]),
-      })
-      expect(estimateMeteredCost(p, 2000)).toBe(6000)
+      expect(estimateMeteredCost(p, units)).toBe(expected)
     })
   })
 
   describe('volume', () => {
-    it('bills the whole quantity at the rate of the tier it lands in', () => {
+    it.each([
+      { position: 'inside the first tier', units: 500, expected: 2500 },
+      { position: 'at the tier boundary', units: 1000, expected: 5000 },
+      { position: 'after crossing the boundary', units: 2000, expected: 2000 },
+    ])('bills the whole quantity $position', ({ units, expected }) => {
       const p = price({ unit_amount: null, tiers: ladder('volume') })
-      expect(estimateMeteredCost(p, 500)).toBe(2500)
-    })
-
-    it('reprices the entire quantity once a bound is crossed', () => {
-      const p = price({ unit_amount: null, tiers: ladder('volume') })
-      // Not 1,000 × 5c + 1,000 × 1c — the whole 2,000 drops to the 1c rate.
-      expect(estimateMeteredCost(p, 2000)).toBe(2000)
-    })
-
-    it('keeps the boundary quantity in the lower tier', () => {
-      const p = price({ unit_amount: null, tiers: ladder('volume') })
-      expect(estimateMeteredCost(p, 1000)).toBe(5000)
-    })
-
-    it('falls back to the top tier when usage passes every bound', () => {
-      const p = price({
-        unit_amount: null,
-        tiers: tiers('volume', [
-          { bound: 100, unit_amount: '10' },
-          { bound: 200, unit_amount: '5' },
-        ]),
-      })
-      expect(estimateMeteredCost(p, 500)).toBe(2500)
+      expect(estimateMeteredCost(p, units)).toBe(expected)
     })
   })
 

@@ -5,9 +5,8 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { useMemo } from 'react'
 import { ProductCheckoutPublic } from '../guards'
-import { getMeteredPrices } from '../utils/product'
+import { getMeteredPrices, isMeteredPrice } from '../utils/product'
 import ProductPriceLabel from './ProductPriceLabel'
 
 const GaugeIcon = ({ className }: { className?: string }) => {
@@ -42,14 +41,8 @@ const MeteredPricesDisplay = ({
   const t = useTranslations(locale)
   const { product, prices, product_price, currency } = checkout
 
-  // Get the metered prices, minus the currently selected one, in case there are only metered prices
-  const meteredPrices = useMemo(
-    () =>
-      getMeteredPrices(prices[product.id], currency).filter(
-        (p) => p.id !== product_price.id,
-      ),
-    [prices, product, product_price, currency],
-  )
+  const meteredPrices = getMeteredPrices(prices[product.id], currency)
+  const selectedPriceIsMetered = isMeteredPrice(product_price)
 
   if (meteredPrices.length === 0) {
     return null
@@ -58,7 +51,9 @@ const MeteredPricesDisplay = ({
   return (
     <div className="text-sm">
       <h2 className="mb-2 text-base font-medium">
-        + {t('checkout.pricing.additionalMeteredUsage')}
+        {selectedPriceIsMetered
+          ? t('checkout.pricing.meteredUsage')
+          : `+ ${t('checkout.pricing.additionalMeteredUsage')}`}
       </h2>
       {meteredPrices.map((price) => (
         <div

@@ -18,7 +18,7 @@ import {
 } from '../guards'
 import { getSeatRows } from '../utils/seats'
 import { getDiscountDisplay } from '../utils/discount'
-import { getMeteredPrices } from '../utils/product'
+import { getMeteredPrices, isMeteredPrice } from '../utils/product'
 import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
 import DetailRow from './DetailRow'
@@ -278,7 +278,12 @@ const CheckoutPricingBreakdown = ({
           </DetailRow>
           {meteredPrices.length > 0 && (
             <DetailRow
-              title={t('checkout.pricing.additionalMeteredUsage')}
+              title={t(
+                hasProductCheckout(checkout) &&
+                  isMeteredPrice(checkout.product_price)
+                  ? 'checkout.pricing.meteredUsage'
+                  : 'checkout.pricing.additionalMeteredUsage',
+              )}
               className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-4"
             />
           )}
@@ -292,6 +297,7 @@ const CheckoutPricingBreakdown = ({
                 price={meteredPrice}
                 locale={locale}
                 discount={checkout.discount}
+                showTierLadder
               />
             </DetailRow>
           ))}

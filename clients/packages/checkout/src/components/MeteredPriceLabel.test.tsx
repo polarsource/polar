@@ -318,6 +318,39 @@ describe('MeteredPriceLabel', () => {
       expect(container.textContent).toContain('up to 1,000')
     })
 
+    it('localizes the tier bound', () => {
+      const price = tieredPrice('graduated', [
+        { bound: 1000, unit_amount: '5' },
+        { bound: null, unit_amount: '1' },
+      ])
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="sv" />,
+      )
+
+      expect(container.textContent).toContain('upp till')
+    })
+
+    it('shows the complete tier ladder when requested', () => {
+      const price = tieredPrice('volume', [
+        { bound: 1000, unit_amount: '5' },
+        { bound: 5000, unit_amount: '2' },
+        { bound: null, unit_amount: '1' },
+      ])
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" showTierLadder />,
+      )
+
+      expect(container.textContent).toContain('Volume pricing')
+      expect(container.textContent).toContain('up to 1,000')
+      expect(container.textContent).toContain('Over 1,000, up to 5,000')
+      expect(container.textContent).toContain('Over 5,000')
+      expect(container.textContent).toContain('$0.05')
+      expect(container.textContent).toContain('$0.02')
+      expect(container.textContent).toContain('$0.01')
+    })
+
     it('omits the bound when the only tier is unbounded', () => {
       const price = tieredPrice('graduated', [
         { bound: null, unit_amount: '5' },

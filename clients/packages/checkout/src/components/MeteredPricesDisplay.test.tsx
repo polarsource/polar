@@ -65,8 +65,18 @@ describe('MeteredPricesDisplay', () => {
       expect(container.textContent).toContain('$0.0005')
     })
 
-    it('filters out the currently selected price', () => {
-      const meteredPrice = createMeteredPrice({ id: 'price_metered_only' })
+    it('shows a selected tiered metered price', () => {
+      const meteredPrice = createMeteredPrice({
+        id: 'price_metered_only',
+        unit_amount: null,
+        tiers: {
+          type: 'graduated',
+          tiers: [
+            { bound: 1000, unit_amount: '5' },
+            { bound: null, unit_amount: '1' },
+          ],
+        },
+      })
 
       const checkout = createCheckout({
         product_price: meteredPrice,
@@ -79,7 +89,10 @@ describe('MeteredPricesDisplay', () => {
         <MeteredPricesDisplay checkout={checkout} locale="en" />,
       )
 
-      expect(container.innerHTML).toBe('')
+      expect(container.textContent).toContain('Metered usage')
+      expect(container.textContent).toContain('API Calls')
+      expect(container.textContent).toContain('$0.05')
+      expect(container.textContent).toContain('up to 1,000')
     })
 
     it('shows multiple metered prices', () => {

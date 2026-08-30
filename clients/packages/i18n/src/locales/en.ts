@@ -94,6 +94,14 @@ export default {
         },
       },
       additionalMeteredUsage: 'Additional metered usage',
+      meteredUsage: 'Metered usage',
+      tieredPricing: {
+        graduated: 'Graduated pricing',
+        volume: 'Volume pricing',
+        allUsage: 'All usage',
+        over: 'Over {units}',
+        overUpTo: 'Over {lowerBound}, up to {upperBound}',
+      },
       upTo: {
         value: 'up to {units}',
         _llmContext:

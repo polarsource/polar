@@ -1,5 +1,6 @@
 'use client'
 
+import { formatScalar } from '@/utils/formatters'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { Button, Grid, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -14,16 +15,6 @@ import React from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
 import UnitAmountInput from '../UnitAmountInput'
-
-const formatUnits = (value: number) => value.toLocaleString('en-US')
-
-const parseTierBoundInput = (raw: string): number | null => {
-  if (raw === '') {
-    return null
-  }
-  const parsed = Number(raw)
-  return Number.isNaN(parsed) ? null : parsed
-}
 
 export interface MeteredTierCardProps {
   index: number
@@ -56,7 +47,8 @@ export const MeteredTierCard: React.FC<MeteredTierCardProps> = ({
     if (isLast) {
       return
     }
-    onChange(parseTierBoundInput(event.target.value))
+    const value = event.currentTarget.valueAsNumber
+    onChange(Number.isNaN(value) ? null : value)
     setValue(`prices.${index}.id`, '')
   }
 
@@ -70,9 +62,9 @@ export const MeteredTierCard: React.FC<MeteredTierCardProps> = ({
       onChange(null)
       return
     }
-    const parsed = parseTierBoundInput(event.target.value)
+    const parsed = event.currentTarget.valueAsNumber
     const minAllowed = previousBound + 1
-    if (parsed == null) {
+    if (Number.isNaN(parsed)) {
       onChange(minAllowed)
       return
     }
@@ -93,12 +85,11 @@ export const MeteredTierCard: React.FC<MeteredTierCardProps> = ({
             if (isLast && value == null) {
               return true
             }
-            const parsed = Number(value)
-            if (!Number.isInteger(parsed)) {
+            if (!Number.isInteger(value)) {
               return 'Must be a whole number of units'
             }
-            if (parsed <= previousBound) {
-              return `Must be greater than ${formatUnits(previousBound)}`
+            if (value != null && value <= previousBound) {
+              return `Must be greater than ${formatScalar(previousBound)}`
             }
             return true
           },
@@ -113,6 +104,7 @@ export const MeteredTierCard: React.FC<MeteredTierCardProps> = ({
                 min={previousBound + 1}
                 step={1}
                 value={field.value ?? ''}
+                readOnly={isLast}
                 placeholder={isLast ? 'Unlimited' : undefined}
                 onChange={(e) => handleBoundChange(e, field.onChange)}
                 onBlur={(e) => handleBoundBlur(e, field.onChange, field.onBlur)}
@@ -136,7 +128,6 @@ export const MeteredTierCard: React.FC<MeteredTierCardProps> = ({
             <FormControl>
               <UnitAmountInput
                 {...field}
-                name={field.name}
                 currency={currency}
                 value={field.value}
                 onValueChange={(v) => {

@@ -374,6 +374,50 @@ class TestUpdateReviewSubmission:
         enqueue_job_mock.assert_not_called()
 
     @pytest.mark.auth
+    async def test_not_null_fields_explicit_null_ignored(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        original_name = organization.name
+        original_socials = organization.socials
+        original_embed_hosts = organization.embed_hosts
+        original_currency = organization.default_presentment_currency
+        original_tax_behavior = organization.default_tax_behavior
+        original_sso_enforced = organization.sso_enforced
+        original_email_settings = organization.customer_email_settings
+        original_portal_settings = organization.customer_portal_settings
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate.model_validate(
+                {
+                    "name": None,
+                    "socials": None,
+                    "embed_hosts": None,
+                    "default_presentment_currency": None,
+                    "default_tax_behavior": None,
+                    "sso_enforced": None,
+                    "customer_email_settings": None,
+                    "customer_portal_settings": None,
+                }
+            ),
+        )
+
+        assert result.name == original_name
+        assert result.socials == original_socials
+        assert result.embed_hosts == original_embed_hosts
+        assert result.default_presentment_currency == original_currency
+        assert result.default_tax_behavior == original_tax_behavior
+        assert result.sso_enforced == original_sso_enforced
+        assert result.customer_email_settings == original_email_settings
+        assert result.customer_portal_settings == original_portal_settings
+
+    @pytest.mark.auth
     async def test_update_with_submit_for_review(
         self,
         mocker: MockerFixture,

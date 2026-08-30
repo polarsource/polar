@@ -363,6 +363,31 @@ class TestUpdate:
         assert license_key.limit_activations == 5
         enqueue_job_mock.assert_not_called()
 
+    async def test_status_explicit_null_ignored(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
+        license_key, _ = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+        original_status = license_key.status
+
+        await license_key_service.update(
+            session,
+            license_key=license_key,
+            updates=LicenseKeyUpdate.model_validate({"status": None}),
+        )
+
+        assert license_key.status == original_status
+        enqueue_job_mock.assert_not_called()
+
 
 @pytest.mark.asyncio
 class TestRotate:

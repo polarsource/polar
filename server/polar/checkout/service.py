@@ -2396,9 +2396,21 @@ class CheckoutService:
         if checkout.customer_id is not None:
             exclude.add("customer_email")
 
+        # These columns are NOT NULL with defaults, but the update schema types them
+        # Optional so they can be omitted. Pydantic keeps an explicitly-sent `null`
+        # in the `exclude_unset` output, so skip it here to preserve the current
+        # value instead of raising a NOT NULL IntegrityError.
+        non_nullable_fields = {
+            "is_business_customer",
+            "allow_discount_codes",
+            "require_billing_address",
+            "customer_metadata",
+        }
         for attr, value in checkout_update.model_dump(
             exclude_unset=True, exclude=exclude, by_alias=True
         ).items():
+            if value is None and attr in non_nullable_fields:
+                continue
             setattr(checkout, attr, value)
 
         if disabling_business_customer:

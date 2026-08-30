@@ -437,6 +437,9 @@ class ProductService:
         ):
             product.description = update_schema.description
 
+        if update_schema.visibility is not None:
+            product.visibility = update_schema.visibility
+
         if update_schema.recurring_interval is not None:
             product.recurring_interval = update_schema.recurring_interval
 
@@ -447,9 +450,20 @@ class ProductService:
         if update_schema.is_archived:
             product = await self._archive(session, product)
 
+        # `name`, `visibility` and `is_archived` map to NOT NULL columns and are
+        # already handled above with `is not None` guards. Exclude them here so an
+        # explicitly-sent `null` (which `exclude_unset` keeps) can't overwrite the
+        # earlier handling and trigger a NOT NULL violation.
         for attr, value in update_schema.model_dump(
             exclude_unset=True,
-            exclude={"prices", "medias", "attached_custom_fields"},
+            exclude={
+                "prices",
+                "medias",
+                "attached_custom_fields",
+                "name",
+                "visibility",
+                "is_archived",
+            },
             by_alias=True,
         ).items():
             setattr(product, attr, value)

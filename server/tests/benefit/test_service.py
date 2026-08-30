@@ -628,6 +628,31 @@ class TestUpdate:
 
         enqueue_benefit_grant_updates_mock.assert_awaited_once()
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_description_explicit_null(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        benefit_organization: Benefit,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+    ) -> None:
+        update_schema = BenefitCustomUpdate.model_validate(
+            {"type": BenefitType.custom, "description": None}
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await benefit_service.update(
+                session,
+                redis,
+                benefit_organization,
+                update_schema,
+                auth_subject,
+            )
+
     @pytest.mark.auth
     async def test_slack_shared_channel_update_keeps_integration(
         self,

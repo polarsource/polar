@@ -56,10 +56,11 @@ export const MeteredPricingFields: React.FC<MeteredPricingFieldsProps> = ({
   const meterId = watch(`prices.${index}.meter_id`)
   const unitAmount = watch(`prices.${index}.unit_amount`)
   const tiersValue = watch(`prices.${index}.tiers`)
+  const tieredPricingEnabled =
+    organization.feature_settings?.metered_tiered_pricing_enabled ?? false
 
-  const pricingModel: MeteredPricingModel = tiersValue
-    ? tiersValue.type
-    : 'fixed'
+  const pricingModel: MeteredPricingModel =
+    tieredPricingEnabled && tiersValue ? tiersValue.type : 'fixed'
 
   const handlePricingModelChange = useCallback(
     (value: MeteredPricingModel) => {
@@ -102,26 +103,28 @@ export const MeteredPricingFields: React.FC<MeteredPricingFieldsProps> = ({
 
   return (
     <>
-      <FormItem>
-        <FormLabel>Pricing model</FormLabel>
-        <Box display="block">
-          <Select
-            value={pricingModel}
-            onValueChange={(v) =>
-              handlePricingModelChange(v as MeteredPricingModel)
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fixed">Flat price per unit</SelectItem>
-              <SelectItem value="graduated">Graduated</SelectItem>
-              <SelectItem value="volume">Volume</SelectItem>
-            </SelectContent>
-          </Select>
-        </Box>
-      </FormItem>
+      {tieredPricingEnabled ? (
+        <FormItem>
+          <FormLabel>Pricing model</FormLabel>
+          <Box display="block">
+            <Select
+              value={pricingModel}
+              onValueChange={(v) =>
+                handlePricingModelChange(v as MeteredPricingModel)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">Flat price per unit</SelectItem>
+                <SelectItem value="graduated">Graduated</SelectItem>
+                <SelectItem value="volume">Volume</SelectItem>
+              </SelectContent>
+            </Select>
+          </Box>
+        </FormItem>
+      ) : null}
 
       {pricingModel === 'fixed' ? (
         <FormField

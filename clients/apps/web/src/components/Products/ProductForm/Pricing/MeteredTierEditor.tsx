@@ -85,7 +85,10 @@ export const MeteredTierEditor: React.FC<MeteredTierEditorProps> = ({
             tierIndex={tierIndex}
             currency={currency}
             hasSingleTier={hasSingleTier}
-            title={getMeteredTierTitle(tiers?.[tierIndex]?.bound, previousBound)}
+            title={getMeteredTierTitle(
+              tiers?.[tierIndex]?.bound,
+              previousBound,
+            )}
             previousBound={previousBound}
             isLast={tierIndex === fields.length - 1}
             onRemove={() => removeTier(tierIndex)}

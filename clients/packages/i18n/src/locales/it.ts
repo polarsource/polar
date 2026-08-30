@@ -95,6 +95,14 @@ export default {
       inclTax: 'IVA (inclusa)',
       basePrice: 'Prezzo base',
       upTo: 'fino a {units}',
+      meteredUsage: 'Utilizzo a consumo',
+      tieredPricing: {
+        graduated: 'Prezzi a scaglioni',
+        volume: 'Prezzi a volume',
+        allUsage: "Tutto l'utilizzo",
+        over: 'Oltre {units}',
+        overUpTo: 'Oltre {lowerBound}, fino a {upperBound}',
+      },
     },
     trial: {
       hero: {

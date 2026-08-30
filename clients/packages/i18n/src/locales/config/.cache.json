@@ -179,7 +179,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -361,7 +367,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -543,7 +555,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -725,7 +743,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -907,7 +931,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1081,7 +1111,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1255,7 +1291,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1429,7 +1471,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1603,7 +1651,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1777,7 +1831,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1951,7 +2011,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2125,7 +2191,13 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2299,6 +2371,12 @@
     "intervals.short.year.other": "# yr",
     "checkout.trialUnavailable.title": "No free trial for this purchase",
     "checkout.trialUnavailable.description": "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
-    "checkout.pricing.upTo": "up to {units}"
+    "checkout.pricing.upTo": "up to {units}",
+    "checkout.pricing.meteredUsage": "Metered usage",
+    "checkout.pricing.tieredPricing.graduated": "Graduated pricing",
+    "checkout.pricing.tieredPricing.volume": "Volume pricing",
+    "checkout.pricing.tieredPricing.allUsage": "All usage",
+    "checkout.pricing.tieredPricing.over": "Over {units}",
+    "checkout.pricing.tieredPricing.overUpTo": "Over {lowerBound}, up to {upperBound}"
   }
 }

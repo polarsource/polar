@@ -95,6 +95,14 @@ export default {
       inclTax: 'ÁFA (tartalmazza)',
       basePrice: 'Alapár',
       upTo: '{units}-ig',
+      meteredUsage: 'Mért használat',
+      tieredPricing: {
+        graduated: 'Fokozatos díjszabás',
+        volume: 'Mennyiségi díjszabás',
+        allUsage: 'Minden használat',
+        over: '{units} felett',
+        overUpTo: '{lowerBound} felett, {upperBound}-ig',
+      },
     },
     trial: {
       hero: {

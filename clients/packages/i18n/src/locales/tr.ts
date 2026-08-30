@@ -95,6 +95,14 @@ export default {
       },
       basePrice: 'Temel fiyat',
       upTo: "{units}'e kadar",
+      meteredUsage: 'Kullanıma göre ücretlendirme',
+      tieredPricing: {
+        graduated: 'Kademeli fiyatlandırma',
+        volume: 'Hacim bazlı fiyatlandırma',
+        allUsage: 'Tüm kullanım',
+        over: '{units} üzeri',
+        overUpTo: '{lowerBound} üzeri, {upperBound} kadar',
+      },
     },
     trial: {
       hero: {

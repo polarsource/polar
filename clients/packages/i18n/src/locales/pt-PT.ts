@@ -95,6 +95,14 @@ export default {
       inclTax: 'IVA (incluído)',
       basePrice: 'Preço base',
       upTo: 'até {units}',
+      meteredUsage: 'Utilização medida',
+      tieredPricing: {
+        graduated: 'Preços graduais',
+        volume: 'Preços por volume',
+        allUsage: 'Toda a utilização',
+        over: 'Acima de {units}',
+        overUpTo: 'Acima de {lowerBound}, até {upperBound}',
+      },
     },
     trial: {
       hero: {

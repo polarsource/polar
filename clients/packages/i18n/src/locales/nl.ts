@@ -95,6 +95,14 @@ export default {
       inclTax: 'Btw (inbegrepen)',
       basePrice: 'Basisprijs',
       upTo: 'tot {units}',
+      meteredUsage: 'Verbruik op basis van gebruik',
+      tieredPricing: {
+        graduated: 'Gedifferentieerde prijs',
+        volume: 'Volumekorting',
+        allUsage: 'Alle verbruik',
+        over: 'Boven {units}',
+        overUpTo: 'Boven {lowerBound}, tot {upperBound}',
+      },
     },
     trial: {
       hero: {

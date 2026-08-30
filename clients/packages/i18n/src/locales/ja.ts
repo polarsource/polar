@@ -95,6 +95,14 @@ export default {
       },
       basePrice: '基本料金',
       upTo: '{units}まで',
+      meteredUsage: '従量課金',
+      tieredPricing: {
+        graduated: '段階課金',
+        volume: '数量割引',
+        allUsage: '全使用量',
+        over: '{units}超',
+        overUpTo: '{lowerBound}超、{upperBound}以下',
+      },
     },
     trial: {
       hero: {

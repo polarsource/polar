@@ -29,7 +29,7 @@ const getSortedTiers = (
     return []
   }
 
-  return price.tiers.tiers.toSorted(
+  return [...price.tiers.tiers].sort(
     (a, b) =>
       Number(a.bound === null) - Number(b.bound === null) ||
       (a.bound ?? 0) - (b.bound ?? 0),

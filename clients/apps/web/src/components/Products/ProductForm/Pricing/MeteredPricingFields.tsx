@@ -66,8 +66,12 @@ export const MeteredPricingFields: React.FC<MeteredPricingFieldsProps> = ({
     (value: MeteredPricingModel) => {
       setValue(`prices.${index}.id`, '')
       if (value === 'fixed') {
+        const currentTiers = getValues(`prices.${index}.tiers`)
         setValue(`prices.${index}.tiers`, null)
-        setValue(`prices.${index}.unit_amount`, 0)
+        setValue(
+          `prices.${index}.unit_amount`,
+          Number(currentTiers?.tiers?.[0]?.unit_amount) || 0,
+        )
         return
       }
       const currentTiers = getValues(`prices.${index}.tiers`)
@@ -131,8 +135,9 @@ export const MeteredPricingFields: React.FC<MeteredPricingFieldsProps> = ({
           control={control}
           name={`prices.${index}.unit_amount`}
           rules={{
-            min: 0,
             required: 'This field is required',
+            validate: (value) =>
+              Number(value) > 0 || 'Amount must be greater than 0',
           }}
           render={({ field }) => {
             return (

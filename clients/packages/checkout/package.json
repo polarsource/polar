@@ -12,8 +12,7 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && tsup",
-    "lint": "oxfmt --check . && eslint --max-warnings 0 .",
-    "lint:oxlint": "oxlint .",
+    "lint": "oxfmt --check . && oxlint .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -81,7 +80,6 @@
     }
   },
   "devDependencies": {
-    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@stylexjs/babel-plugin": "^0.18.2",
     "@stripe/react-stripe-js": "^5.6.1",

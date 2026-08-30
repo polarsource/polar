@@ -96,13 +96,13 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     }
   }, [organization, canManageFinance, canWithdraw, isPayoutIntervalLimited])
 
-  /* eslint-disable react-hooks/set-state-in-effect -- fetches payout estimate when modal opens */
+  /* oxlint-disable react-hooks/set-state-in-effect -- fetches payout estimate when modal opens */
   useEffect(() => {
     if (isShown) {
       getPayoutEstimate()
     }
   }, [isShown, getPayoutEstimate])
-  /* eslint-enable react-hooks/set-state-in-effect */
+  /* oxlint-enable react-hooks/set-state-in-effect */
 
   const [loading, setLoading] = useState(false)
   const onConfirm = useCallback(async () => {

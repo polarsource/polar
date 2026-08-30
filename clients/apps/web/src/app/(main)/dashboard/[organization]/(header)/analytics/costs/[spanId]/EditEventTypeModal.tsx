@@ -85,7 +85,7 @@ export const EditEventTypeModal = ({
               Edit Event Type
             </Text>
             <p className="dark:text-polar-500 text-sm font-normal text-gray-500">
-              {/* eslint-disable-next-line react/no-unescaped-entities */}
+              {/* oxlint-disable-next-line react/no-unescaped-entities */}
               Update the display label for event type "{eventName}"
             </p>
           </div>

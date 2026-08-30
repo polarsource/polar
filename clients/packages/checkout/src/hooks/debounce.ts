@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   callback: T,
   delay: number,
@@ -18,7 +18,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
         callback(...args)
       }, delay)
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
     [callback, delay, ...(dependencies ? dependencies : [])],
   )
 }

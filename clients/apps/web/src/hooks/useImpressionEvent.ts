@@ -35,6 +35,6 @@ export const useImpressionEvent = ({
     // Intentionally only re-run when `enabled` flips — `build`, `event`,
     // and `posthog` are read freshly via the closure but should not cause
     // refires.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled])
 }

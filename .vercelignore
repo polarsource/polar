@@ -13,7 +13,6 @@
 **/build
 **/.expo
 **/*.tsbuildinfo
-**/.eslintcache
 server/emails/bin/
 
 server/.venv

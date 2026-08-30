@@ -9,7 +9,7 @@ const Footer = ({ email }: { email: string | null }) => (
       {email && (
         <Text variant="caption" align="center" noMargin>
           This email was sent to{' '}
-          {/* eslint-disable-next-line email-ds/no-raw-text-elements -- footer value uses the dark tone, label stays muted */}
+          {/* oxlint-disable-next-line email-ds/no-raw-text-elements -- footer value uses the dark tone, label stays muted */}
           <a
             href={`mailto:${email}`}
             className="font-semibold text-gray-900 no-underline"

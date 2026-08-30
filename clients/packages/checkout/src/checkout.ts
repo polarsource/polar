@@ -44,7 +44,7 @@ type EmbedCheckoutMessage =
   | EmbedCheckoutMessageSuccess
 
 const isEmbedCheckoutMessage = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   message: any,
 ): message is EmbedCheckoutMessage => {
   return message.type === POLAR_CHECKOUT_EVENT
@@ -174,7 +174,7 @@ class EmbedCheckout {
     // page, which would otherwise scroll it behind the checkout.
     iframe.setAttribute('data-lenis-prevent', '')
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // oxlint-disable-next-line typescript/ban-ts-comment
     // @ts-ignore
     const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
       .split(',')
@@ -261,7 +261,7 @@ class EmbedCheckout {
   ): void
   public addEventListener(
     type: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line typescript/no-explicit-any
     listener: any,
     options?: AddEventListenerOptions | boolean,
   ): void {
@@ -290,7 +290,7 @@ class EmbedCheckout {
     type: 'success',
     listener: (event: CustomEvent<EmbedCheckoutMessageSuccess>) => void,
   ): void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   public removeEventListener(type: string, listener: any): void {
     this.eventTarget.removeEventListener(type, listener)
   }
@@ -366,7 +366,7 @@ class EmbedCheckout {
    */
   private handleWindowMessage({ data, origin }: MessageEvent): void {
     if (
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // oxlint-disable-next-line typescript/ban-ts-comment
       // @ts-ignore
       !__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
         .split(',')

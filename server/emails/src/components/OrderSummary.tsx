@@ -1,4 +1,4 @@
-/* eslint-disable email-ds/no-raw-text-elements */
+/* oxlint-disable email-ds/no-raw-text-elements */
 import { Column, Heading, Hr, Row, Section } from 'react-email'
 import type { schemas } from '../types'
 

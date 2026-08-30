@@ -8,7 +8,7 @@ const plugins = [
       image: './assets/images/splash-icon.png',
       imageWidth: 120,
       resizeMode: 'contain',
-      // eslint-disable-next-line @polar/no-hardcoded-colors
+      // oxlint-disable-next-line @polar/no-hardcoded-colors
       backgroundColor: '#0D0E10',
     },
   ],
@@ -73,7 +73,7 @@ module.exports = {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
-        // eslint-disable-next-line @polar/no-hardcoded-colors
+        // oxlint-disable-next-line @polar/no-hardcoded-colors
         backgroundColor: '#0D0E10',
       },
       package: 'com.polarsource.Polar',

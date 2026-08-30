@@ -91,7 +91,7 @@ export const BenefitListSidebar = ({
       showCreateBenefitModal()
       setCreateBenefitQuerystring(null)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [createBenefitQuerystring])
 
   const selectedBenefitId = useMemo(() => {

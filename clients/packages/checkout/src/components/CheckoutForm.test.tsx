@@ -55,7 +55,7 @@ beforeAll(() => {
     observe() {}
     unobserve() {}
     disconnect() {}
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line typescript/no-explicit-any
   } as any
 })
 
@@ -76,7 +76,7 @@ function FormWrapper({
   const form = useForm<schemas['CheckoutUpdatePublic']>({
     defaultValues: { customer_email: '', ...defaultValues },
   })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => onForm?.(form), [])
   return <CheckoutForm form={form} checkout={checkout} {...props} />
 }
@@ -118,7 +118,7 @@ describe('CheckoutForm', () => {
   describe('CTA button label', () => {
     it('shows "Start trial" when trial is active', () => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
         active_trial_interval: 'month',
         active_trial_interval_count: 1,
@@ -139,7 +139,7 @@ describe('CheckoutForm', () => {
 
     it('shows "Subscribe now" for recurring paid product', () => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
         is_payment_form_required: true,
         product: recurringProduct,
@@ -154,7 +154,7 @@ describe('CheckoutForm', () => {
 
     it('shows "Pay now" for one-time paid product', () => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
         is_payment_form_required: true,
       })
@@ -168,7 +168,7 @@ describe('CheckoutForm', () => {
 
     it('shows "Get for free" when payment is not required', () => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
         is_payment_form_required: false,
         is_payment_required: false,
@@ -189,7 +189,7 @@ describe('CheckoutForm', () => {
   describe('footer mandate text', () => {
     it('shows trial mandate for trial checkout', () => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
         is_payment_form_required: true,
         active_trial_interval: 'month',
@@ -205,7 +205,7 @@ describe('CheckoutForm', () => {
 
     it('shows subscription mandate for recurring product', () => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
         is_payment_form_required: true,
         product: recurringProduct,
@@ -220,7 +220,7 @@ describe('CheckoutForm', () => {
 
     it('shows one-time mandate for one-time product', () => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
         is_payment_form_required: true,
       })
@@ -232,7 +232,7 @@ describe('CheckoutForm', () => {
 
     it('shows merchant of record text for free product', () => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
         is_payment_form_required: false,
         is_payment_required: false,
@@ -253,7 +253,7 @@ describe('CheckoutForm', () => {
   describe('disabled state', () => {
     it('disables the submit button when disabled prop is true', () => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
       })
 
@@ -273,7 +273,7 @@ describe('CheckoutForm', () => {
   describe('trial unavailable notice', () => {
     const renderWithTrialUnavailable = (trialUnavailable: boolean) => {
       const checkout = createCheckout({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
       })
 
@@ -308,7 +308,7 @@ describe('CheckoutForm', () => {
     let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
     const update = vi.fn(async () => createCheckout())
     const checkout = createCheckout({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // oxlint-disable-next-line typescript/no-explicit-any
       payment_processor: 'dummy' as any,
       billing_address_fields: {
         country: 'required',
@@ -368,7 +368,7 @@ describe('CheckoutForm', () => {
   it('displays validation error on billing address state field', async () => {
     let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
     const checkout = createCheckout({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // oxlint-disable-next-line typescript/no-explicit-any
       payment_processor: 'dummy' as any,
       billing_address_fields: {
         country: 'required',
@@ -410,7 +410,7 @@ describe('CheckoutForm', () => {
   it('clears billing address errors when country changes', async () => {
     let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
     const checkout = createCheckout({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // oxlint-disable-next-line typescript/no-explicit-any
       payment_processor: 'dummy' as any,
       billing_address_fields: {
         country: 'required',

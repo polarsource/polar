@@ -364,7 +364,7 @@ export const BOX_STYLE_PROP_KEYS = new Set<string>(
 
 // --- Main resolver ---
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 type StyleMap = Readonly<Record<string, any>>
 
 export interface ResolvedStyles {

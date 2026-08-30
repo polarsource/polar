@@ -8,7 +8,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { MouseEvent, useCallback, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { Modal, type ModalProps } from '@polar-sh/orbit'
 
 // Collapses runs of any Unicode whitespace (including non-breaking spaces,
@@ -49,8 +49,8 @@ export const ConfirmModal = ({
       prompt: '',
     },
   })
-  const { control, handleSubmit, reset, watch } = form
-  const prompt = watch('prompt')
+  const { control, handleSubmit, reset } = form
+  const prompt = useWatch({ control, name: 'prompt' })
   const normalizedConfirmPrompt =
     confirmPrompt !== undefined ? normalizeWhitespace(confirmPrompt) : undefined
 

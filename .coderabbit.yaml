@@ -26,7 +26,7 @@ reviews:
       - "WIP"
       - "DO NOT MERGE"
 
-  # Style/format is enforced by ruff (Python) and oxfmt/ESLint (TS); don't
+  # Style/format is enforced by ruff (Python) and oxfmt/Oxlint (TS); don't
   # re-review generated, vendored, or lock files.
   path_filters:
     - "!**/pnpm-lock.yaml"
@@ -40,8 +40,6 @@ reviews:
 
   tools:
     ruff:
-      enabled: true
-    eslint:
       enabled: true
     gitleaks:
       enabled: true

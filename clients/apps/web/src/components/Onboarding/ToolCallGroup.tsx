@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* oxlint-disable typescript/no-explicit-any */
 'use client'
 
 import { Box } from '@polar-sh/orbit/Box'

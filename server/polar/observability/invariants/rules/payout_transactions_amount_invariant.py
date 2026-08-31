@@ -48,18 +48,28 @@ class PayoutTransactionsAmountInvariant(Invariant):
     AGE_LIMIT = timedelta(days=30)
 
     async def check(self) -> None:
+        # Reversals are created after their payout, so AGE_LIMIT covers them too
+        reversed_payout_ids = (
+            (
+                await self.session.execute(
+                    select(Transaction.payout_id).where(
+                        Transaction.created_at > (func.now() - self.AGE_LIMIT),
+                        Transaction.type == TransactionType.payout_reversal,
+                        Transaction.payout_id.isnot(None),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+
         # Recent payout transactions without reversal (same payout_id)
         recent_payouts = (
             select(Transaction.id, Transaction.amount)
             .where(
                 Transaction.created_at > (func.now() - self.AGE_LIMIT),
                 Transaction.type == TransactionType.payout,
-                ~Transaction.payout_id.in_(
-                    select(Transaction.payout_id).where(
-                        Transaction.type == TransactionType.payout_reversal,
-                        Transaction.payout_id.isnot(None),
-                    )
-                ),
+                Transaction.payout_id.not_in(reversed_payout_ids),
             )
             .cte("recent_payouts")
         )

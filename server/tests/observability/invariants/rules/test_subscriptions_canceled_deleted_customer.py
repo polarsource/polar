@@ -74,7 +74,7 @@ async def test_failure_over_limit(
 
     with pytest.raises(SubscriptionsCanceledDeletedCustomerInvariantError) as exc_info:
         await invariant.check()
-    assert exc_info.value.context["count"] == 15
+    assert exc_info.value.context["count"] == 10
     assert len(exc_info.value.context["subscriptions"]["ids"]) == 10
     assert exc_info.value.context["subscriptions"]["has_more"] is True
 

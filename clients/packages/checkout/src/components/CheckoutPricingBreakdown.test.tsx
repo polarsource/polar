@@ -655,12 +655,12 @@ describe('CheckoutPricingBreakdown', () => {
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
       expect(screen.getByText(/^metered usage$/i)).toBeInTheDocument()
-      const row = screen.getByTestId('detail-row-API Calls')
-      expect(row).toHaveTextContent('Graduated pricing')
-      expect(row).toHaveTextContent('up to 1,000')
-      expect(row).toHaveTextContent('$0.05 / unit')
-      expect(row).toHaveTextContent('Over 1,000')
-      expect(row).toHaveTextContent('$0.01 / unit')
+      expect(screen.getByTestId('detail-row-API Calls')).toBeInTheDocument()
+      expect(screen.getByText('Up to 1,000')).toBeInTheDocument()
+      expect(screen.getByText('Over 1,000')).toBeInTheDocument()
+      expect(screen.getAllByText('/ unit')).toHaveLength(2)
+      expect(screen.getByText('$0.05')).toBeInTheDocument()
+      expect(screen.getByText('$0.01')).toBeInTheDocument()
     })
 
     it('strikes through the original rate when a percentage discount is active', () => {

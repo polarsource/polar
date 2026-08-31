@@ -342,8 +342,7 @@ describe('MeteredPriceLabel', () => {
         <MeteredPriceLabel price={price} locale="en" showTierLadder />,
       )
 
-      expect(container.textContent).toContain('Volume pricing')
-      expect(container.textContent).toContain('up to 1,000')
+      expect(container.textContent).toContain('Up to 1,000')
       expect(container.textContent).toContain('Over 1,000, up to 5,000')
       expect(container.textContent).toContain('Over 5,000')
       expect(container.textContent).toContain('$0.05')

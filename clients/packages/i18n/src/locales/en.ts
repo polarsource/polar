@@ -96,9 +96,8 @@ export default {
       additionalMeteredUsage: 'Additional metered usage',
       meteredUsage: 'Metered usage',
       tieredPricing: {
-        graduated: 'Graduated pricing',
-        volume: 'Volume pricing',
         allUsage: 'All usage',
+        upTo: 'Up to {units}',
         over: 'Over {units}',
         overUpTo: 'Over {lowerBound}, up to {upperBound}',
       },

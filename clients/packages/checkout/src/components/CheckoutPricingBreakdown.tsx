@@ -287,20 +287,37 @@ const CheckoutPricingBreakdown = ({
               className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-4"
             />
           )}
-          {meteredPrices.map((meteredPrice) => (
-            <DetailRow
-              title={meteredPrice.meter.name}
-              key={meteredPrice.id}
-              emphasis
-            >
-              <MeteredPriceLabel
-                price={meteredPrice}
-                locale={locale}
-                discount={checkout.discount}
-                showTierLadder
-              />
-            </DetailRow>
-          ))}
+          {meteredPrices.map((meteredPrice) => {
+            if (meteredPrice.tiers !== null) {
+              return (
+                <div
+                  key={meteredPrice.id}
+                  className="flex flex-col gap-y-2"
+                >
+                  <DetailRow title={meteredPrice.meter.name} emphasis />
+                  <MeteredPriceLabel
+                    price={meteredPrice}
+                    locale={locale}
+                    discount={checkout.discount}
+                    showTierLadder
+                  />
+                </div>
+              )
+            }
+            return (
+              <DetailRow
+                title={meteredPrice.meter.name}
+                key={meteredPrice.id}
+                emphasis
+              >
+                <MeteredPriceLabel
+                  price={meteredPrice}
+                  locale={locale}
+                  discount={checkout.discount}
+                />
+              </DetailRow>
+            )
+          })}
         </>
       ) : (
         <span>{t('checkout.pricing.free')}</span>

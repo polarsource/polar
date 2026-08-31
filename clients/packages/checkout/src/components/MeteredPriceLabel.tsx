@@ -103,20 +103,17 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
 
   if (showTierLadder && price.tiers !== null) {
     return (
-      <span className="flex flex-col gap-y-1.5">
-        <span className={`${mutedTextClass} text-right`}>
-          {t(`checkout.pricing.tieredPricing.${price.tiers.type}`)}
-        </span>
+      <span className="flex w-full flex-col gap-y-1.5">
         {tiers.map((tier, index) => {
           const previousBound = index > 0 ? tiers[index - 1].bound : null
           const range =
             index === 0
-              ? tier.bound === null
+              ? tier.bound == null
                 ? t('checkout.pricing.tieredPricing.allUsage')
-                : t('checkout.pricing.upTo', {
+                : t('checkout.pricing.tieredPricing.upTo', {
                     units: numberFormat.format(tier.bound),
                   })
-              : tier.bound === null
+              : tier.bound == null
                 ? t('checkout.pricing.tieredPricing.over', {
                     units: numberFormat.format(previousBound ?? 0),
                   })

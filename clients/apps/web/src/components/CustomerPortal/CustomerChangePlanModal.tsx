@@ -179,8 +179,8 @@ const CustomerChangePlanModal = ({
   const willIssueInvoice =
     trialOutcome?.kind === 'ends' ||
     willTriggerImmediateCycle ||
-    prorationBehavior === 'invoice' ||
-    prorationBehavior === 'reset'
+    (!isTrialing &&
+      (prorationBehavior === 'invoice' || prorationBehavior === 'reset'))
   const [approveImmediateInvoice, setApproveImmediateInvoice] = useState(false)
 
   const canChangePlan = useMemo(() => {

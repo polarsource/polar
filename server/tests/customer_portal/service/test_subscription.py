@@ -6,17 +6,20 @@ import pytest
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.subscription import (
     CustomerSubscriptionChangePreviewProduct,
+    CustomerSubscriptionChangePreviewUnits,
     CustomerSubscriptionPause,
     CustomerSubscriptionResume,
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
     CustomerSubscriptionUpdateSeats,
+    CustomerSubscriptionUpdateUnits,
 )
 from polar.customer_portal.service.subscription import (
     PauseResumeNotAllowed,
     PaymentMethodRequired,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
+    UpdateSubscriptionUnitsNotAllowed,
 )
 from polar.customer_portal.service.subscription import (
     customer_subscription as customer_subscription_service,
@@ -41,7 +44,9 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_payment_method,
     create_product,
+    create_product_unit_based,
     create_subscription,
+    create_subscription_with_units,
 )
 
 
@@ -347,6 +352,83 @@ class TestUpdate:
         assert (
             updated_subscription.recurring_interval == product_second.recurring_interval
         )
+
+
+@pytest.mark.asyncio
+class TestUpdateUnits:
+    async def test_update_not_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture, organization=organization
+        )
+        subscription = await create_subscription_with_units(
+            save_fixture, product=product, customer=customer, units=3
+        )
+
+        with pytest.raises(UpdateSubscriptionUnitsNotAllowed):
+            await customer_subscription_service.update(
+                session,
+                subscription,
+                updates=CustomerSubscriptionUpdateUnits(units=5),
+            )
+
+    async def test_preview_change_not_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture, organization=organization
+        )
+        subscription = await create_subscription_with_units(
+            save_fixture, product=product, customer=customer, units=3
+        )
+
+        with pytest.raises(UpdateSubscriptionUnitsNotAllowed):
+            await customer_subscription_service.preview_change(
+                session,
+                subscription,
+                change=CustomerSubscriptionChangePreviewUnits(units=5),
+            )
+
+    @pytest.mark.keep_session_state
+    async def test_update_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "update_units": True,
+            },
+        }
+        await save_fixture(organization)
+        product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=2900
+        )
+        subscription = await create_subscription_with_units(
+            save_fixture, product=product, customer=customer, units=3
+        )
+
+        updated = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionUpdateUnits(units=5),
+        )
+
+        assert updated.units == 5
+        assert updated.amount == 5 * 2900
 
 
 @pytest.mark.asyncio

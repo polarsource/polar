@@ -237,6 +237,45 @@ async def test_update_tracks_billing_name(
 
 
 @pytest.mark.asyncio
+async def test_update_tracks_billing_name_with_flush_true(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    # `flush=True` causes SQLAlchemy to flush the session inside `update()`,
+    # which clears attribute history. Changes must still be tracked correctly.
+    customer.billing_name = "New Billing Name"
+    await repository.update(customer, flush=True)
+
+    enqueue_job_mock.assert_any_call(
+        "customer.event",
+        customer.id,
+        SystemEvent.customer_updated,
+        {"billing_name": "New Billing Name"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_with_update_dict_tracks_changed_fields(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    await repository.update(customer, update_dict={"name": "New Name Via Dict"})
+
+    enqueue_job_mock.assert_any_call(
+        "customer.event",
+        customer.id,
+        SystemEvent.customer_updated,
+        {"name": "New Name Via Dict"},
+    )
+
+
+@pytest.mark.asyncio
 async def test_update_deleted_customer_is_silent(
     mocker: MockerFixture,
     customer: Customer,

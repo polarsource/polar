@@ -97,4 +97,5 @@ Tinybird has a slight latency from PostgreSQL, so if your end timestamp is close
 
 ### Other scripts
 
+- **Full backfill**: `uv run python -m scripts.backfill_tinybird_events --batch-size 5000 --start-date <iso8601> --cutoff-date <iso8601>`
 - **Cleanup/reingest specific events**: `uv run python -m scripts.tinybird_events_cleanup events.json --delete --reingest`

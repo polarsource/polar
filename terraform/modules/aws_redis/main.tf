@@ -22,6 +22,12 @@ resource "aws_elasticache_parameter_group" "this" {
   }
 }
 
+resource "aws_cloudwatch_log_group" "slow_log" {
+  name              = "/aws/elasticache/${var.name}/slow-log"
+  retention_in_days = var.log_retention_days
+  tags              = var.tags
+}
+
 resource "aws_elasticache_replication_group" "this" {
   replication_group_id       = var.name
   description                = "${var.name} cache"
@@ -37,4 +43,11 @@ resource "aws_elasticache_replication_group" "this" {
   subnet_group_name          = aws_elasticache_subnet_group.this.name
   security_group_ids         = [aws_security_group.this.id]
   tags                       = var.tags
+
+  log_delivery_configuration {
+    destination      = aws_cloudwatch_log_group.slow_log.name
+    destination_type = "cloudwatch-logs"
+    log_format       = "json"
+    log_type         = "slow-log"
+  }
 }

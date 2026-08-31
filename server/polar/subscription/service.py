@@ -2227,6 +2227,7 @@ class SubscriptionService:
                         ]
                     )
                 subscription.status = SubscriptionStatus.trialing
+                subscription.trial_start = utc_now()
                 subscription.trial_end = subscription.current_period_end = trial_end
 
         # Keep any pending update's cycle end in sync with the new period end,

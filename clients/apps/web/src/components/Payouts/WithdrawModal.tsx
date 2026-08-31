@@ -14,6 +14,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 
+const COOLDOWN_PAYOUT_STATUSES: schemas['PayoutStatus'][] = [
+  'pending',
+  'in_transit',
+  'succeeded',
+  'failed',
+  'held',
+]
+
 interface WithdrawModalProps {
   organization: schemas['Organization']
   account: schemas['Account']
@@ -44,6 +52,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     {
       limit: 1,
       sorting: ['-created_at'],
+      status: COOLDOWN_PAYOUT_STATUSES,
     },
   )
 

@@ -104,7 +104,8 @@ class CustomerRepository(
     ) -> Customer:
         inspection = orm_inspect(object)
 
-        customer = await super().update(object, update_dict=update_dict, flush=flush)
+        # Force flush to False so we can inspect the changed attributes before the flush occurs.
+        customer = await super().update(object, update_dict=update_dict, flush=False)
 
         # Only create an event if the customer is not being deleted
         if not customer.deleted_at:
@@ -157,6 +158,9 @@ class CustomerRepository(
             changed, value = _get_changed_value(inspection, "external_id")
             if changed and value is not None:
                 enqueue_job("customer.resolve_first_user_event_at", customer.id)
+
+        if flush:
+            await self.session.flush()
 
         return customer
 

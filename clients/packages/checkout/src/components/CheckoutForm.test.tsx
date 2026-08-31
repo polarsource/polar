@@ -76,7 +76,7 @@ function FormWrapper({
   const form = useForm<schemas['CheckoutUpdatePublic']>({
     defaultValues: { customer_email: '', ...defaultValues },
   })
-  // oxlint-disable-next-line react-hooks/exhaustive-deps
+  // oxlint-disable-next-line react/exhaustive-deps
   useEffect(() => onForm?.(form), [])
   return <CheckoutForm form={form} checkout={checkout} {...props} />
 }

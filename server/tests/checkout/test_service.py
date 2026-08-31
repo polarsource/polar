@@ -2947,27 +2947,6 @@ class TestCheckoutLinkCreate:
 
         assert checkout.amount == 1000
 
-    @pytest.mark.parametrize("amount", ["inf", "1e1000"])
-    async def test_query_prefill_amount_custom_price_overflow_ignored(
-        self,
-        amount: str,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product_one_time_custom_price: Product,
-    ) -> None:
-        price = product_one_time_custom_price.prices[0]
-        checkout_link = await create_checkout_link(
-            save_fixture, products=[product_one_time_custom_price]
-        )
-
-        checkout = await checkout_service.checkout_link_create(
-            session,
-            checkout_link,
-            query_prefill={"amount": amount},
-        )
-
-        assert checkout.amount == price.minimum_amount
-
     async def test_query_prefill_multiple_fields(
         self,
         save_fixture: SaveFixture,

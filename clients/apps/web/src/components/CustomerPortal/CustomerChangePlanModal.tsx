@@ -160,11 +160,13 @@ const CustomerChangePlanModal = ({
 
     switch (prorationBehavior) {
       case 'invoice':
-        return "I'll be charged immediately with a proration for the current month."
+        return "I'll be charged immediately, with a proration for the current period."
       case 'prorate':
-        return 'Your next invoice will include the new plan plus the proration for the current month.'
+        return 'Your next invoice will include the new plan plus the proration for the current period.'
       case 'next_period':
         return 'The new plan will be applied on your next billing cycle.'
+      case 'reset':
+        return "I'll be charged the full amount for the new plan immediately, and my billing period restarts today."
     }
   }, [
     selectedProduct,
@@ -177,7 +179,8 @@ const CustomerChangePlanModal = ({
   const willIssueInvoice =
     trialOutcome?.kind === 'ends' ||
     willTriggerImmediateCycle ||
-    prorationBehavior === 'invoice'
+    prorationBehavior === 'invoice' ||
+    prorationBehavior === 'reset'
   const [approveImmediateInvoice, setApproveImmediateInvoice] = useState(false)
 
   const canChangePlan = useMemo(() => {

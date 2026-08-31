@@ -17,6 +17,11 @@ import type { ProductCheckoutPublic } from '../guards'
 import { isLegacyRecurringProductPrice } from '../guards'
 import { hasLegacyRecurringPrices } from '../utils/product'
 import { capitalize, decapitalize } from '../utils/string'
+import {
+  getBasePricePerUnit,
+  getMinimumUnitAmount,
+  getUnitLabels,
+} from '../utils/units'
 import AmountLabel from './AmountLabel'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -35,29 +40,64 @@ export const CheckoutProductSwitcherItemPrice = ({
   checkout,
   locale,
 }: CheckoutProductSwitcherItemPriceProps) => {
-  // Products with presentment currencies hold the same logical price in several
-  // currencies. Filter to the checkout's currency first, otherwise `find` could
-  // return a fixed/seat price in the wrong currency and show the wrong amounts.
   const productPrices = (checkout.prices[product.id] ?? []).filter(
-    (p) => p.price_currency === checkout.currency,
+    (productPrice) => productPrice.price_currency === checkout.currency,
   )
   const fixedPrice = productPrices.find(
-    (p): p is schemas['ProductPriceFixed'] => p.amount_type === 'fixed',
+    (productPrice): productPrice is schemas['ProductPriceFixed'] =>
+      productPrice.amount_type === 'fixed',
   )
   const seatPrice = productPrices.find(
-    (p): p is schemas['ProductPriceSeatBased'] =>
-      p.amount_type === 'seat_based',
+    (productPrice): productPrice is schemas['ProductPriceSeatBased'] =>
+      productPrice.amount_type === 'seat_based',
+  )
+  const unitPrice = productPrices.find(
+    (productPrice): productPrice is schemas['ProductPriceUnitBased'] =>
+      productPrice.amount_type === 'unit_based',
   )
 
-  // Fixed + seat products are billed as `base + seat_charge`. Show the decomposed
-  // structure for every option, selected or not, so the pricing model stays
-  // legible across the switcher.
   if (fixedPrice && seatPrice) {
     return (
       <FixedSeatPrice
         fixedPrice={fixedPrice}
         seatPrice={seatPrice}
         product={product}
+        locale={locale}
+      />
+    )
+  }
+
+  if (fixedPrice && unitPrice) {
+    return (
+      <FixedUnitPrice
+        fixedPrice={fixedPrice}
+        unitPrice={unitPrice}
+        product={product}
+        locale={locale}
+      />
+    )
+  }
+
+  if (price.amount_type === 'unit_based') {
+    if (isSelected) {
+      return (
+        <AmountLabel
+          amount={checkout.net_amount || 0}
+          currency={price.price_currency}
+          interval={product.recurring_interval}
+          intervalCount={product.recurring_interval_count}
+          mode="standard"
+          locale={locale}
+        />
+      )
+    }
+
+    return (
+      <FromPrice
+        amount={getMinimumUnitAmount(price)}
+        currency={price.price_currency}
+        interval={product.recurring_interval}
+        intervalCount={product.recurring_interval_count}
         locale={locale}
       />
     )
@@ -114,7 +154,7 @@ const FixedSeatPrice = ({
   locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale ?? DEFAULT_LOCALE)
-  const sortedTiers = [...(seatPrice.seat_tiers?.tiers ?? [])].sort(
+  const sortedTiers = (seatPrice.seat_tiers?.tiers ?? []).toSorted(
     (a, b) => a.min_seats - b.min_seats,
   )
   const basePricePerSeat = sortedTiers[0]?.price_per_seat ?? 0
@@ -136,6 +176,42 @@ const FixedSeatPrice = ({
         locale={locale}
       />
       <span>{t('checkout.pricing.perSeat')}</span>
+    </span>
+  )
+}
+
+const FixedUnitPrice = ({
+  fixedPrice,
+  unitPrice,
+  product,
+  locale,
+}: {
+  fixedPrice: schemas['ProductPriceFixed']
+  unitPrice: schemas['ProductPriceUnitBased']
+  product: ProductCheckoutPublic['product']
+  locale?: AcceptedLocale
+}) => {
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const { unitLabel } = getUnitLabels(unitPrice, locale)
+  const basePricePerUnit = getBasePricePerUnit(unitPrice)
+  return (
+    <span className="flex flex-wrap items-baseline justify-end gap-x-1">
+      <AmountLabel
+        amount={fixedPrice.price_amount}
+        currency={fixedPrice.price_currency}
+        interval={product.recurring_interval}
+        intervalCount={product.recurring_interval_count}
+        mode="standard"
+        locale={locale}
+      />
+      <span>+</span>
+      <AmountLabel
+        amount={basePricePerUnit}
+        currency={unitPrice.price_currency}
+        mode="standard"
+        locale={locale}
+      />
+      <span>{t('checkout.pricing.perUnit', { unitLabel })}</span>
     </span>
   )
 }

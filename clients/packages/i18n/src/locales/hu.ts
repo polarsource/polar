@@ -94,6 +94,17 @@ export default {
       },
       inclTax: 'ÁFA (tartalmazza)',
       basePrice: 'Alapár',
+      perUnit: '{unitLabel}enként',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: '{unitLabelPlural} száma',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        updateFailed: 'Nem sikerült frissíteni az egységeket',
+      },
     },
     trial: {
       hero: {

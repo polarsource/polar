@@ -15,9 +15,11 @@ import {
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
   CheckoutSeatSelector,
+  CheckoutUnitSelector,
 } from '@polar-sh/checkout/components'
 import {
   getSeatPrice,
+  getUnitPrice,
   hasProductCheckout,
   type ProductCheckoutPublic,
 } from '@polar-sh/checkout/guards'
@@ -277,6 +279,14 @@ const Checkout = ({
                     compact
                   />
                 )}
+                {!!getUnitPrice(checkout) && (
+                  <CheckoutUnitSelector
+                    checkout={checkout}
+                    update={update}
+                    locale={locale}
+                    compact
+                  />
+                )}
                 {checkout.active_trial_interval &&
                   checkout.active_trial_interval_count && (
                     <>
@@ -407,6 +417,14 @@ const Checkout = ({
                   <div className="flex flex-col gap-4 text-sm">
                     {!!getSeatPrice(checkout) && (
                       <CheckoutSeatSelector
+                        checkout={checkout}
+                        update={update}
+                        locale={locale}
+                        compact
+                      />
+                    )}
+                    {!!getUnitPrice(checkout) && (
+                      <CheckoutUnitSelector
                         checkout={checkout}
                         update={update}
                         locale={locale}

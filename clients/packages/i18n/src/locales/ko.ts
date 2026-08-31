@@ -94,6 +94,17 @@ export default {
       },
       inclTax: '부가세 (포함)',
       basePrice: '기본 가격',
+      perUnit: '{unitLabel}당',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: '{unitLabelPlural} 수',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        updateFailed: '유닛을 업데이트하지 못했습니다',
+      },
     },
     trial: {
       hero: {

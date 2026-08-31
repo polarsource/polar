@@ -94,6 +94,17 @@ export default {
       },
       inclTax: 'Impostos (inclusos)',
       basePrice: 'Preço base',
+      perUnit: 'por {unitLabel}',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: 'Número de {unitLabelPlural}',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        updateFailed: 'Falha ao atualizar as unidades',
+      },
     },
     trial: {
       hero: {

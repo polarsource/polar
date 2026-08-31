@@ -94,6 +94,17 @@ export default {
       },
       inclTax: 'Btw (inbegrepen)',
       basePrice: 'Basisprijs',
+      perUnit: 'per {unitLabel}',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: 'Aantal {unitLabelPlural}',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        updateFailed: 'Eenheden bijwerken mislukt',
+      },
     },
     trial: {
       hero: {

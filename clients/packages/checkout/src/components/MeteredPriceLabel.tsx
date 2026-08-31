@@ -12,7 +12,6 @@ interface MeteredPriceLabelProps {
   price: schemas['ProductPriceMeteredUnit']
   locale?: AcceptedLocale
   discount?: schemas['CheckoutPublic']['discount']
-  showTierLadder?: boolean
 }
 
 type MeteredTier = NonNullable<
@@ -85,13 +84,9 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
   price,
   locale = DEFAULT_LOCALE,
   discount,
-  showTierLadder = false,
 }) => {
   const t = useTranslations(locale)
   const tiers = getSortedTiers(price)
-  const firstTier = tiers[0] ?? null
-  const unitAmount = firstTier?.unit_amount ?? price.unit_amount
-  if (unitAmount === null) return null
 
   const { scale, label } = getMeterUnitFormat(price.meter.unit ?? 'scalar', {
     customLabel: price.meter.custom_label,
@@ -101,7 +96,7 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
   const lowercaseLabel = price.meter.unit === 'custom'
   const numberFormat = new Intl.NumberFormat(locale)
 
-  if (showTierLadder && price.tiers !== null) {
+  if (price.tiers !== null) {
     return (
       <span className="flex w-full flex-col gap-y-1.5">
         {tiers.map((tier, index) => {
@@ -144,12 +139,12 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
     )
   }
 
-  const bound = firstTier?.bound ?? null
+  if (price.unit_amount === null) return null
 
   return (
     <span className="flex flex-row items-baseline gap-x-1">
       <MeteredRate
-        unitAmount={unitAmount}
+        unitAmount={price.unit_amount}
         scale={scale}
         label={label}
         currency={price.price_currency}
@@ -157,14 +152,6 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
         discount={discount}
         lowercaseLabel={lowercaseLabel}
       />
-      {bound !== null && (
-        <span className={mutedTextClass}>
-          ·{' '}
-          {t('checkout.pricing.upTo', {
-            units: numberFormat.format(bound),
-          })}
-        </span>
-      )}
     </span>
   )
 }

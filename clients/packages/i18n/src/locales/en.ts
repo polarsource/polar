@@ -101,11 +101,6 @@ export default {
         over: 'Over {units}',
         overUpTo: 'Over {lowerBound}, up to {upperBound}',
       },
-      upTo: {
-        value: 'up to {units}',
-        _llmContext:
-          'Suffix after a metered price rate on checkout, marking the usage bound that rate applies up to. {units} is an already-formatted number of metered units, e.g. "1,000". Displayed as: "$0.05 / unit \u00b7 up to 1,000".',
-      },
       perSeat: 'per seat',
       basePrice: {
         value: 'Base price',

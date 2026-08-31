@@ -299,7 +299,6 @@ const CheckoutPricingBreakdown = ({
                     price={meteredPrice}
                     locale={locale}
                     discount={checkout.discount}
-                    showTierLadder
                   />
                 </div>
               )

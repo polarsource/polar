@@ -92,7 +92,7 @@ describe('MeteredPricesDisplay', () => {
       expect(container.textContent).toContain('Metered usage')
       expect(container.textContent).toContain('API Calls')
       expect(container.textContent).toContain('$0.05')
-      expect(container.textContent).toContain('up to 1,000')
+      expect(container.textContent).toContain('Up to 1,000')
     })
 
     it('shows multiple metered prices', () => {

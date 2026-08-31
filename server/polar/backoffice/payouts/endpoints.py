@@ -277,18 +277,23 @@ async def get(
     if payout is None:
         raise HTTPException(status_code=404)
 
-    can_retry = payout.status not in (
-        PayoutStatus.canceled,
-        PayoutStatus.held,
-    ) and (
-        payout.status == PayoutStatus.failed
-        or len(payout.attempts) == 0
-        or sum(
-            attempt.amount
-            for attempt in payout.attempts
-            if attempt.status != PayoutAttemptStatus.failed
+    can_retry = (
+        payout.processor == PayoutAccountType.stripe
+        and payout.status
+        not in (
+            PayoutStatus.canceled,
+            PayoutStatus.held,
         )
-        < payout.account_amount
+        and (
+            payout.status == PayoutStatus.failed
+            or len(payout.attempts) == 0
+            or sum(
+                attempt.amount
+                for attempt in payout.attempts
+                if attempt.status != PayoutAttemptStatus.failed
+            )
+            < payout.account_amount
+        )
     )
 
     with layout(
@@ -439,6 +444,12 @@ async def retry(
         raise HTTPException(
             status_code=400,
             detail="Cannot retry a held payout while the organization is under review.",
+        )
+
+    if payout.processor != PayoutAccountType.stripe:
+        raise HTTPException(
+            status_code=400,
+            detail="Manual payouts cannot be retried. Use the 'Mark as Paid' action instead.",
         )
 
     remaining_amount = payout.account_amount - sum(

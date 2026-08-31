@@ -230,9 +230,13 @@ jobs:
         run: exit 1
 
   test:
-    name: "Server: Tests 🐍"
+    name: "Server: Tests 🐍 (${{ matrix.shard }}/4)"
     needs: changes
     if: needs.changes.outputs.server == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     env:
@@ -377,9 +381,16 @@ jobs:
         working-directory: ./server
         run: uv run alembic check
 
+      - name: 📊 Restore test durations
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}
+          restore-keys: test-durations-
+
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+        run: uv run pytest --splits 4 --group ${{ matrix.shard }} -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
 
       - name: 💾 Save test durations
         if: github.event_name == 'push'
@@ -387,3 +398,22 @@ jobs:
         with:
           path: server/.test_durations
           key: test-durations-${{ github.sha }}
+
+  test-status:
+    name: "Server: Tests 🐍"
+    needs: [changes, test]
+    if: always()
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Check shard results
+        env:
+          RESULT: ${{ needs.test.result }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+        run: |
+          if [ "$RESULT" = "success" ]; then
+            exit 0
+          fi
+          if [ "$RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
+            exit 0
+          fi
+          exit 1

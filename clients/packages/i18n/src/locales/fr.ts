@@ -105,6 +105,13 @@ export default {
         },
         updateFailed: 'Impossible de mettre à jour les unités',
       },
+      meteredChargesMayApply:
+        'Des frais supplémentaires au compteur peuvent s’appliquer',
+      meteredIncluded: '{units} inclus',
+      meterUnits: {
+        token: 'jetons',
+        scalar: 'unités',
+      },
     },
     trial: {
       hero: {

@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import UUID4, Discriminator
 
@@ -66,6 +66,7 @@ from .strategies.license_keys.schemas import (
 from .strategies.meter_credit.schemas import (
     BenefitMeterCredit,
     BenefitMeterCreditCreate,
+    BenefitMeterCreditPublic,
     BenefitMeterCreditUpdate,
 )
 from .strategies.slack_shared_channel.schemas import (
@@ -209,4 +210,22 @@ BenefitGrantWebhook = Annotated[
 
 
 # Properties that are public (when embedding products benefits in storefront and checkout)
-class BenefitPublic(BenefitPublicBase): ...
+class BenefitPublicGeneric(BenefitPublicBase):
+    type: Literal[
+        BenefitType.custom,
+        BenefitType.discord,
+        BenefitType.github_repository,
+        BenefitType.downloadables,
+        BenefitType.license_keys,
+        BenefitType.feature_flag,
+        BenefitType.slack_shared_channel,
+    ]
+
+
+BenefitPublic = Annotated[
+    BenefitMeterCreditPublic | BenefitPublicGeneric,
+    Discriminator("type"),
+    SetSchemaReference("BenefitPublic"),
+    MergeJSONSchema({"title": "BenefitPublic"}),
+    ClassName("BenefitPublic"),
+]

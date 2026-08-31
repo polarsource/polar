@@ -105,6 +105,12 @@ export default {
         },
         updateFailed: 'Nem sikerült frissíteni az egységeket',
       },
+      meteredChargesMayApply: 'További használatalapú díjak merülhetnek fel',
+      meteredIncluded: 'tartalmazza: {units}',
+      meterUnits: {
+        token: 'tokenek',
+        scalar: 'egységek',
+      },
     },
     trial: {
       hero: {

@@ -105,6 +105,12 @@ export default {
         },
         updateFailed: 'Det gick inte att uppdatera antalet',
       },
+      meteredChargesMayApply: 'Ytterligare rörliga avgifter kan tillkomma',
+      meteredIncluded: '{units} ingår',
+      meterUnits: {
+        token: 'tokens',
+        scalar: 'enheter',
+      },
     },
     trial: {
       hero: {

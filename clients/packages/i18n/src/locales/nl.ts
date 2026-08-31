@@ -105,6 +105,13 @@ export default {
         },
         updateFailed: 'Eenheden bijwerken mislukt',
       },
+      meteredChargesMayApply:
+        'Er kunnen extra kosten op basis van verbruik van toepassing zijn',
+      meteredIncluded: 'Inclusief {units}',
+      meterUnits: {
+        token: 'tokens',
+        scalar: 'eenheden',
+      },
     },
     trial: {
       hero: {

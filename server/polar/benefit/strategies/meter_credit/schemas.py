@@ -9,6 +9,7 @@ from polar.models.benefit import BenefitType
 from ..base.schemas import (
     BenefitBase,
     BenefitCreateBase,
+    BenefitPublicBase,
     BenefitSubscriberBase,
     BenefitUpdateBase,
     BenefitUpdateVisibilityMixin,
@@ -73,3 +74,23 @@ class BenefitMeterCredit(BenefitBase):
 class BenefitMeterCreditSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.meter_credit]
     properties: BenefitMeterCreditSubscriberProperties
+
+
+class BenefitMeterCreditPublicProperties(Schema):
+    """
+    Properties for a benefit of type `meter_credit`.
+    """
+
+    units: int
+    meter_id: UUID4
+
+
+class BenefitMeterCreditPublic(BenefitPublicBase):
+    """
+    A benefit of type `meter_credit`.
+
+    Grants a number of units on a specific meter.
+    """
+
+    type: Literal[BenefitType.meter_credit]
+    properties: BenefitMeterCreditPublicProperties

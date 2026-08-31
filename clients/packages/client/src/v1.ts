@@ -11539,6 +11539,76 @@ export interface components {
        */
       meter_id: string
     }
+    /**
+     * BenefitMeterCreditPublic
+     * @description A benefit of type `meter_credit`.
+     *
+     *     Grants a number of units on a specific meter.
+     */
+    BenefitMeterCreditPublic: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'meter_credit'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      properties: components['schemas']['BenefitMeterCreditPublicProperties']
+    }
+    /**
+     * BenefitMeterCreditPublicProperties
+     * @description Properties for a benefit of type `meter_credit`.
+     */
+    BenefitMeterCreditPublicProperties: {
+      /** Units */
+      units: number
+      /**
+       * Meter Id
+       * Format: uuid4
+       */
+      meter_id: string
+    }
     /** BenefitMeterCreditSubscriber */
     BenefitMeterCreditSubscriber: {
       /**
@@ -11642,8 +11712,11 @@ export interface components {
         | components['schemas']['BenefitMeterCreditCreateProperties']
         | null
     }
-    /** BenefitPublic */
-    BenefitPublic: {
+    BenefitPublic:
+      | components['schemas']['BenefitMeterCreditPublic']
+      | components['schemas']['BenefitPublicGeneric']
+    /** BenefitPublicGeneric */
+    BenefitPublicGeneric: {
       /**
        * Id
        * Format: uuid4
@@ -11661,8 +11734,18 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
-      /** @description The type of the benefit. */
-      type: components['schemas']['BenefitType']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type:
+        | 'custom'
+        | 'discord'
+        | 'downloadables'
+        | 'feature_flag'
+        | 'github_repository'
+        | 'license_keys'
+        | 'slack_shared_channel'
       /**
        * Description
        * @description The description of the benefit.
@@ -13454,7 +13537,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -13840,7 +13923,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -17738,7 +17821,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -18404,7 +18487,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -19675,7 +19758,7 @@ export interface components {
         | components['schemas']['ProductPrice']
       )[]
       /**
-       * BenefitPublic
+       * Benefits
        * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
@@ -67291,6 +67374,20 @@ export const benefitMeterCreditTypeValues: ReadonlyArray<
 export const benefitMeterCreditCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditCreate']['type']
 > = ['meter_credit']
+export const benefitMeterCreditPublicTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditPublic']['type']
+> = ['meter_credit']
+export const benefitPublicGenericTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitPublicGeneric']['type']
+> = [
+  'custom',
+  'discord',
+  'downloadables',
+  'feature_flag',
+  'github_repository',
+  'license_keys',
+  'slack_shared_channel',
+]
 export const benefitRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitRevokedEvent']['name']
 > = ['benefit.revoked']

@@ -105,6 +105,13 @@ export default {
         },
         updateFailed: 'Não foi possível atualizar as unidades',
       },
+      meteredChargesMayApply:
+        'Podem aplicar-se custos adicionais por utilização',
+      meteredIncluded: '{units} incluídos',
+      meterUnits: {
+        token: 'tokens',
+        scalar: 'unidades',
+      },
     },
     trial: {
       hero: {

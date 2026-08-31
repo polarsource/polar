@@ -1074,8 +1074,5 @@ def _filter_benefit_public_list(
 BenefitPublicList = Annotated[
     list[BenefitPublic],
     BeforeValidator(_filter_benefit_public_list),
-    Field(
-        title="BenefitPublic",
-        description="List of benefits granted by the product.",
-    ),
+    Field(description="List of benefits granted by the product."),
 ]

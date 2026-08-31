@@ -282,14 +282,6 @@ class User(RecordModel):
         meta["signup"] = value
         self.meta = meta
 
-    @property
-    def had_creator_signup_intent(self) -> bool:
-        return self.signup_attribution.get("intent") == "creator"
-
-    @property
-    def campaign_code(self) -> str | None:
-        return self.signup_attribution.get("campaign")
-
     def get_oauth_account(self, platform: OAuthPlatform) -> OAuthAccount | None:
         return next(
             (
@@ -313,10 +305,3 @@ class User(RecordModel):
         if github_oauth_account is not None and github_oauth_account.account_username:
             return github_oauth_account.account_username
         return self.email[0]
-
-    @property
-    def github_username(self) -> str | None:
-        github_oauth_account = self.get_github_account()
-        if github_oauth_account is not None:
-            return github_oauth_account.account_username
-        return None

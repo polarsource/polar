@@ -272,7 +272,6 @@ async def user_github_oauth(
 
 async def create_user(
     save_fixture: SaveFixture,
-    stripe_customer_id: str | None = None,
     email_verified: bool = True,
 ) -> User:
     user = User(
@@ -281,7 +280,6 @@ async def create_user(
         email_verified=email_verified,
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         oauth_accounts=[],
-        stripe_customer_id=stripe_customer_id,
     )
     await save_fixture(user)
     return user

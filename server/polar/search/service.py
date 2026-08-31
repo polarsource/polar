@@ -65,7 +65,6 @@ class SearchService:
 
         ts_query_simple = func.websearch_to_tsquery("simple", query)
         ts_query_english = func.websearch_to_tsquery("english", query)
-        ilike_term = f"%{query}%"
 
         organization_subquery = select(Organization.id).where(
             Organization.id == organization_id,
@@ -81,7 +80,7 @@ class SearchService:
 
         if self._has_customers_scope(auth_subject):
             customers_subquery = self._build_customers_subquery(
-                organization_subquery, query_uuid, ts_query_simple, ilike_term
+                organization_subquery, query_uuid, ts_query_simple, query
             )
             subqueries.append(customers_subquery)
 
@@ -91,7 +90,7 @@ class SearchService:
                 query_uuid,
                 ts_query_simple,
                 ts_query_english,
-                ilike_term,
+                query,
             )
             subqueries.append(orders_subquery)
 
@@ -101,7 +100,7 @@ class SearchService:
                 query_uuid,
                 ts_query_simple,
                 ts_query_english,
-                ilike_term,
+                query,
             )
             subqueries.append(subscriptions_subquery)
 
@@ -155,7 +154,7 @@ class SearchService:
         organization_subquery: Select[tuple[uuid.UUID]],
         query_uuid: uuid.UUID | None,
         ts_query_simple: ColumnElement[Any],
-        ilike_term: str,
+        query: str,
     ) -> Select[Any]:
         rank_expr = func.ts_rank(Customer.search_vector, ts_query_simple)
 
@@ -183,7 +182,7 @@ class SearchService:
             stmt = stmt.where(
                 or_(
                     Customer.search_vector.op("@@")(ts_query_simple),
-                    Customer.email.ilike(ilike_term),
+                    Customer.email.icontains(query, autoescape=True),
                 )
             )
 
@@ -195,7 +194,7 @@ class SearchService:
         query_uuid: uuid.UUID | None,
         ts_query_simple: ColumnElement[Any],
         ts_query_english: ColumnElement[Any],
-        ilike_term: str,
+        query: str,
     ) -> Select[Any]:
         rank_expr = func.greatest(
             func.ts_rank(Order.search_vector, ts_query_simple),
@@ -236,7 +235,7 @@ class SearchService:
                     Order.search_vector.op("@@")(ts_query_simple),
                     Customer.search_vector.op("@@")(ts_query_simple),
                     Product.search_vector.op("@@")(ts_query_english),
-                    Customer.email.ilike(ilike_term),
+                    Customer.email.icontains(query, autoescape=True),
                 )
             )
 
@@ -248,7 +247,7 @@ class SearchService:
         query_uuid: uuid.UUID | None,
         ts_query_simple: ColumnElement[Any],
         ts_query_english: ColumnElement[Any],
-        ilike_term: str,
+        query: str,
     ) -> Select[Any]:
         rank_expr = func.greatest(
             func.ts_rank(Customer.search_vector, ts_query_simple),
@@ -285,7 +284,7 @@ class SearchService:
                 or_(
                     Customer.search_vector.op("@@")(ts_query_simple),
                     Product.search_vector.op("@@")(ts_query_english),
-                    Customer.email.ilike(ilike_term),
+                    Customer.email.icontains(query, autoescape=True),
                 )
             )
 

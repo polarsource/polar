@@ -104,7 +104,7 @@ class TestEncryptClassmethods:
 
 @pytest.mark.asyncio
 class TestGetTokens:
-    async def test_prefers_encrypted(self, user: User) -> None:
+    async def test_decrypts_encrypted(self, user: User) -> None:
         oauth_account = await _build(user)
         await oauth_account.set_tokens(
             access_token="the-access-token", refresh_token="the-refresh-token"
@@ -113,20 +113,19 @@ class TestGetTokens:
         assert await oauth_account.get_access_token() == "the-access-token"
         assert await oauth_account.get_refresh_token() == "the-refresh-token"
 
-    async def test_falls_back_to_plain(self, user: User) -> None:
+    async def test_access_token_requires_encrypted(self, user: User) -> None:
         oauth_account = await _build(user)
         oauth_account.id = OAuthAccount.generate_id()
         oauth_account.access_token = "the-access-token"
-        oauth_account.refresh_token = "the-refresh-token"
 
-        assert await oauth_account.get_access_token() == "the-access-token"
-        assert await oauth_account.get_refresh_token() == "the-refresh-token"
+        with pytest.raises(ValueError, match="access_token_encrypted is required"):
+            await oauth_account.get_access_token()
 
     async def test_refresh_token_none_without_encrypted(self, user: User) -> None:
         oauth_account = await _build(user)
         oauth_account.id = OAuthAccount.generate_id()
         oauth_account.access_token = "the-access-token"
-        oauth_account.refresh_token = None
+        oauth_account.refresh_token = "the-refresh-token"
 
         assert await oauth_account.get_refresh_token() is None
 

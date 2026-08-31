@@ -136,6 +136,94 @@ class TestList:
         assert len(grants) == 1
         assert grants[0].benefit_id == benefit_organization.id
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    async def test_query_escapes_percent_character(
+        self,
+        auth_subject: AuthSubject[Customer],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Test that % in query is treated as literal, not wildcard."""
+        benefit_with_percent = await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="50% Off Benefit",
+        )
+        benefit_without_percent = await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="500 Credits Benefit",
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_with_percent,
+            granted=True,
+            subscription=subscription,
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_without_percent,
+            granted=True,
+            subscription=subscription,
+        )
+
+        grants, count = await customer_benefit_grant_service.list(
+            session, auth_subject, query="50%", pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 1
+        assert len(grants) == 1
+        assert grants[0].benefit.description == "50% Off Benefit"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    async def test_query_escapes_underscore_character(
+        self,
+        auth_subject: AuthSubject[Customer],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Test that _ in query is treated as literal, not single-char wildcard."""
+        benefit_with_underscore = await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="Pro_Plan",
+        )
+        benefit_without_underscore = await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="ProXPlan",
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_with_underscore,
+            granted=True,
+            subscription=subscription,
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_without_underscore,
+            granted=True,
+            subscription=subscription,
+        )
+
+        grants, count = await customer_benefit_grant_service.list(
+            session, auth_subject, query="Pro_Plan", pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 1
+        assert len(grants) == 1
+        assert grants[0].benefit.description == "Pro_Plan"
+
     @pytest.mark.parametrize(
         "sorting",
         [

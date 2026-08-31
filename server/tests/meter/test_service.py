@@ -2,7 +2,7 @@ import uuid
 from collections import Counter
 from datetime import timedelta
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
@@ -844,8 +844,8 @@ class TestGetQuantities:
     async def test_total_respects_requested_range_for_non_summable_aggregation(
         self,
         aggregation: Aggregation,
-        in_range_events: list[dict[str, str | int]],
-        out_of_range_events: list[dict[str, str | int]],
+        in_range_events: list[dict[str, Any]],
+        out_of_range_events: list[dict[str, Any]],
         expected_total: int,
         save_fixture: SaveFixture,
         session: AsyncSession,

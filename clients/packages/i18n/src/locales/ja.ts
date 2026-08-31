@@ -71,6 +71,7 @@ export default {
         },
       },
       additionalMeteredUsage: '追加の従量課金',
+      dueToday: '本日のお支払い',
       perSeat: '1席あたり',
       seats: {
         label: '席数',

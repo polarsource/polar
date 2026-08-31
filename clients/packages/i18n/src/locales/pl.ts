@@ -70,6 +70,7 @@ export default {
         },
       },
       additionalMeteredUsage: 'Dodatkowe opłaty wg zużycia',
+      dueToday: 'Do zapłaty dzisiaj',
       discount: {
         until: 'Do {date}',
       },

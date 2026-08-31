@@ -70,6 +70,7 @@ export default {
         },
       },
       additionalMeteredUsage: 'Ek kullanım',
+      dueToday: 'Bugün ödenecek',
       discount: {
         until: '{date} tarihine kadar',
       },

@@ -70,6 +70,7 @@ export default {
         },
       },
       additionalMeteredUsage: 'Utilizzo aggiuntivo a consumo',
+      dueToday: 'Da pagare oggi',
       discount: {
         until: 'Fino al {date}',
       },

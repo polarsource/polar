@@ -1,5 +1,6 @@
 'use client'
 
+import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useMultipleMeterQuantities } from '@/hooks/queries/meters'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
@@ -43,16 +44,11 @@ const getOverages = (cm: CustomerMeterWithSubscription) => {
     (price): price is schemas['ProductPriceMeteredUnit'] =>
       price.amount_type === 'metered_unit' && price.meter_id === cm.meter.id,
   )
-  // unit_amount is null only for tiered metered prices, which can't be
-  // created until the metered-tiers feature ships. Temporary guard.
-  if (!unitPrice || unitPrice.unit_amount === null) return null
+  if (!unitPrice) return null
 
   const overageUnits = Math.abs(cm.balance)
-  const overageCost = overageUnits * parseFloat(unitPrice.unit_amount)
   return {
-    cost: unitPrice.cap_amount
-      ? Math.min(overageCost, unitPrice.cap_amount)
-      : overageCost,
+    cost: estimateMeteredCost(unitPrice, overageUnits),
     currency: unitPrice.price_currency,
   }
 }

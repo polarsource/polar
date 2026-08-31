@@ -16,7 +16,7 @@ const UnitAmountInput = ({
   ...props
 }: ComponentProps<typeof Input> & {
   currency: string
-  onValueChange: (value: number) => void
+  onValueChange: (value: number | null) => void
 }) => {
   const { value, onValueChange, className, ...rest } = props
 
@@ -93,7 +93,13 @@ const UnitAmountInput = ({
       const input = e.target.value
       setDisplayValue(input)
 
-      if (input === '' || input.endsWith('.')) return
+      if (input === '') {
+        lastEmittedRef.current = null
+        onValueChange(null)
+        return
+      }
+
+      if (input.endsWith('.')) return
 
       const parsed = Number.parseFloat(input)
       if (isNaN(parsed)) return

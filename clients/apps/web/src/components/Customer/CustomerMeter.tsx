@@ -1,3 +1,4 @@
+import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
 import { ParsedMeterQuantities } from '@/hooks/queries/meters'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { schemas } from '@polar-sh/client'
@@ -26,9 +27,7 @@ export const CustomerMeter = ({
   )
 
   const overages = useMemo(() => {
-    // unit_amount is null only for tiered metered prices, which can't be
-    // created until the metered-tiers feature ships. Temporary guard.
-    if (!unitPrice || unitPrice.unit_amount === null) {
+    if (!unitPrice) {
       return null
     }
 
@@ -37,13 +36,7 @@ export const CustomerMeter = ({
     }
 
     const overageUnits = Math.abs(customerMeter.balance)
-    const overageCost = overageUnits * parseFloat(unitPrice.unit_amount)
-
-    if (unitPrice.cap_amount) {
-      return Math.min(overageCost, unitPrice.cap_amount)
-    }
-
-    return overageCost
+    return estimateMeteredCost(unitPrice, overageUnits)
   }, [customerMeter.balance, unitPrice])
 
   const creditProgress = useMemo(() => {

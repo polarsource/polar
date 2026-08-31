@@ -479,9 +479,13 @@ export const ProductPricingSection = ({
     recurringInterval !== null &&
     !!organization.feature_settings?.unit_based_pricing_enabled
 
+  const hasMeteredPrice =
+    pricesForSelectedCurrency.length > staticPricesForSelectedCurrency.length
+
   const canAddBasePrice =
     onlyStaticAmountType === 'seat_based' ||
-    onlyStaticAmountType === 'unit_based'
+    onlyStaticAmountType === 'unit_based' ||
+    (staticPricesForSelectedCurrency.length === 0 && hasMeteredPrice)
 
   if (isLegacyRecurringProduct) {
     return (
@@ -712,9 +716,9 @@ export const ProductPricingSection = ({
                   onAmountTypeChange={handleAmountTypeChange}
                   canChangeType={!isMetered && staticPriceCount <= 1}
                   canRemove={
-                    staticPriceCount > 1 ||
-                    (isMetered &&
-                      (meteredPriceCount > 1 || staticPriceCount >= 1))
+                    isMetered
+                      ? meteredPriceCount > 1 || staticPriceCount >= 1
+                      : staticPriceCount > 1 || meteredPriceCount >= 1
                   }
                   key={`${selectedCurrency}-${index}`}
                 />

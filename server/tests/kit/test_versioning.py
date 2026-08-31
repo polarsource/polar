@@ -4,6 +4,7 @@ from typing import Annotated
 import pytest
 from fastapi import Depends, FastAPI
 from fastapi.openapi.utils import get_openapi
+from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, Field
 
@@ -157,7 +158,7 @@ def test_versioned_routes() -> None:
         schema = get_openapi(
             title="Test",
             version=str(api_version),
-            routes=routes_for_version(app.routes, api_version),
+            routes=routes_for_version(iter_route_contexts(app.routes), api_version),
         )
         operation = schema["paths"]["/items"]["get"]
         assert operation["operationId"] == "items:get_items"

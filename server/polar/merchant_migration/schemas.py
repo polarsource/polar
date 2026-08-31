@@ -95,6 +95,42 @@ class MerchantMigrationRecordItem(Schema):
     subtitle: str | None = Field(
         description="Secondary detail (lifecycle status, country)."
     )
+    product_name: str | None = Field(
+        description=(
+            "The source product name. None for customer rows, and for a "
+            "subscription whose product wasn't in the staged catalog."
+        ),
+    )
+    product_source_id: str | None = Field(
+        description=(
+            "The source product identifier (e.g. Stripe `prod_…`). None for "
+            "customer rows, and for a subscription whose product wasn't staged."
+        ),
+    )
+    customer_email: str | None = Field(
+        description=(
+            "The customer email. None for product and price rows, or when the "
+            "source customer has none."
+        ),
+    )
+    customer_name: str | None = Field(
+        description=(
+            "The customer name on the source. None for product and price rows, or "
+            "when the source customer has none."
+        ),
+    )
+    customer_source_id: str | None = Field(
+        description=(
+            "The source customer identifier (e.g. Stripe `cus_…`). None for "
+            "product and price rows."
+        ),
+    )
+    customer_country: str | None = Field(
+        description=(
+            "The customer billing country. None for product and price rows, or "
+            "when the source customer has none."
+        ),
+    )
     amount: int | None = Field(
         description=(
             "Recurring price in the currency's smallest unit (cents for USD), for "
@@ -104,6 +140,18 @@ class MerchantMigrationRecordItem(Schema):
     currency: str | None = Field(description="ISO currency for `amount`.")
     recurring_interval: str | None = Field(
         description="Billing interval for `amount` (e.g. `month`, `year`).",
+    )
+    recurring_interval_count: int | None = Field(
+        description=(
+            "How many `recurring_interval` units each billing period spans, so a "
+            "quarterly price reads as 3 months. None for rows without an interval."
+        ),
+    )
+    automatic_tax: bool | None = Field(
+        description=(
+            "Whether the source computed tax on this subscription. None for "
+            "non-subscription rows, or when the source doesn't say."
+        ),
     )
     status: PrecheckRecordStatus = Field(
         description="Whether this record will be imported or stays on the source."

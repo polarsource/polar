@@ -1,23 +1,15 @@
 'use client'
 
+import { DetailCell } from '@/components/Orders/OrderSection'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ReactNode } from 'react'
-import {
-  entityLabelSingular,
-  needsAttention,
-  ReviewRow,
-  rowAmount,
-} from './reviewRows'
+import { needsAttention, ReviewRow } from './reviewRows'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
-
-// What `subtitle` carries depends on the entity it came from.
-const SUBTITLE_LABELS: Record<ReviewRow['entity'], string> = {
-  subscriptions: 'Stripe status',
-  customers: 'Country',
-  products: 'Billing',
-  prices: 'Price',
-}
+import {
+  CustomerFields,
+  ProductFields,
+  SubscriptionFields,
+} from './ReviewRecordFields'
 
 export function ReviewRecordModal({
   row,
@@ -26,13 +18,13 @@ export function ReviewRecordModal({
   row: ReviewRow
   onClose: () => void
 }) {
-  const amount = rowAmount(row)
+  const isSubscription = row.entity === 'subscriptions'
 
   return (
     <Box flexDirection="column" height="100%">
       <InlineModalHeader hide={onClose}>
         <Text variant="heading-xs" as="h2">
-          {row.title}
+          {row.customer_email || row.title}
         </Text>
       </InlineModalHeader>
 
@@ -56,51 +48,24 @@ export function ReviewRecordModal({
           </Box>
         )}
 
-        <Box as="section" flexDirection="column" rowGap="m">
-          <Field label="Type">
-            <Text>{entityLabelSingular(row.entity)}</Text>
-          </Field>
-          <Field label="Import">
-            <ReviewStatusIndicator row={row} />
-          </Field>
-          {amount && (
-            <Field label="Amount">
-              <Text monospace tabularNums>
-                {amount.money}
-                {amount.interval ?? ''}
-              </Text>
-            </Field>
-          )}
-          {row.subtitle && (
-            <Field label={SUBTITLE_LABELS[row.entity]}>
-              <Text>{row.subtitle}</Text>
-            </Field>
-          )}
-          {/* Only the failed case says something "Import" doesn't already. */}
-          {row.import_status === 'failed' && (
-            <Field label="Last run">
-              <Text color="danger">Failed</Text>
-            </Field>
-          )}
-          <Field label="Stripe ID">
-            <Text monospace variant="caption" color="muted">
-              {row.source_id}
+        {isSubscription ? (
+          <SubscriptionFields row={row} />
+        ) : (
+          <Box flexDirection="column" rowGap="l" minWidth={0}>
+            <Text variant="body" as="h3">
+              Import
             </Text>
-          </Field>
-        </Box>
-      </Box>
-    </Box>
-  )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <Box alignItems="baseline" columnGap="l" justifyContent="between">
-      <Text variant="caption" color="muted">
-        {label}
-      </Text>
-      <Box minWidth={0} justifyContent="end">
-        {children}
+            <Box flexDirection="column" rowGap="m" minWidth={0}>
+              <DetailCell
+                label="Status"
+                value={<ReviewStatusIndicator row={row} />}
+              />
+              <DetailCell label="Stripe ID" value={row.source_id} monospace />
+            </Box>
+          </Box>
+        )}
+        <ProductFields row={row} />
+        <CustomerFields row={row} />
       </Box>
     </Box>
   )

@@ -24453,6 +24453,36 @@ export interface components {
        */
       subtitle: string | null
       /**
+       * Product Name
+       * @description The source product name. None for customer rows, and for a subscription whose product wasn't in the staged catalog.
+       */
+      product_name: string | null
+      /**
+       * Product Source Id
+       * @description The source product identifier (e.g. Stripe `prod_…`). None for customer rows, and for a subscription whose product wasn't staged.
+       */
+      product_source_id: string | null
+      /**
+       * Customer Email
+       * @description The customer email. None for product and price rows, or when the source customer has none.
+       */
+      customer_email: string | null
+      /**
+       * Customer Name
+       * @description The customer name on the source. None for product and price rows, or when the source customer has none.
+       */
+      customer_name: string | null
+      /**
+       * Customer Source Id
+       * @description The source customer identifier (e.g. Stripe `cus_…`). None for product and price rows.
+       */
+      customer_source_id: string | null
+      /**
+       * Customer Country
+       * @description The customer billing country. None for product and price rows, or when the source customer has none.
+       */
+      customer_country: string | null
+      /**
        * Amount
        * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
        */
@@ -24467,6 +24497,16 @@ export interface components {
        * @description Billing interval for `amount` (e.g. `month`, `year`).
        */
       recurring_interval: string | null
+      /**
+       * Recurring Interval Count
+       * @description How many `recurring_interval` units each billing period spans, so a quarterly price reads as 3 months. None for rows without an interval.
+       */
+      recurring_interval_count: number | null
+      /**
+       * Automatic Tax
+       * @description Whether the source computed tax on this subscription. None for non-subscription rows, or when the source doesn't say.
+       */
+      automatic_tax: boolean | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']
       /** @description The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product. */

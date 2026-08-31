@@ -738,9 +738,9 @@ class TestClassifyRecords:
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "subscription_product_not_importable"
+        assert items[0].reason_code == "missing_default_currency_price"
 
-    def test_product_matching_an_existing_polar_name_gets_a_note(self) -> None:
+    def test_product_already_in_polar_is_annotated_not_skipped(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(product_source_id="prod_1", name="Pro")
         ]
@@ -892,7 +892,7 @@ class TestClassifyCascade:
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "subscription_product_not_importable"
+        assert items[0].reason_code == "one_time_product"
 
     def test_subscription_skipped_when_customer_skipped(self) -> None:
         duplicate_customer_subscription = replace(
@@ -910,7 +910,7 @@ class TestClassifyCascade:
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "subscription_customer_not_importable"
+        assert items[0].reason_code == "duplicate_customer_email"
 
     def test_subscription_imports_when_its_product_shares_a_name(self) -> None:
         subscription = replace(
@@ -956,6 +956,9 @@ class TestClassifyCascade:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_product_not_importable"
+        assert items[0].reason is not None
+        assert "archived" in items[0].reason
+        assert items[0].product_name is None
 
     def test_subscription_uses_currency_option_on_shared_price_id(self) -> None:
         records: list[CanonicalRecord] = [
@@ -974,6 +977,41 @@ class TestClassifyCascade:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].currency == "usd"
         assert items[0].amount == 1000
+
+    def test_subscription_carries_its_product_and_customer_detail(self) -> None:
+        subscription = replace(build_subscription(), automatic_tax=True)
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=3,
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            subscription,
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].product_name == "Pro"
+        assert items[0].product_source_id == "prod_1"
+        assert items[0].recurring_interval == "month"
+        assert items[0].recurring_interval_count == 3
+        assert items[0].customer_name == "A"
+        assert items[0].customer_email == "a@example.com"
+        assert items[0].customer_source_id == "cus_1"
+        assert items[0].customer_country == "US"
+        assert items[0].automatic_tax is True
+
+    def test_subscription_keeps_its_customer_id_when_the_customer_is_missing(
+        self,
+    ) -> None:
+        records: list[CanonicalRecord] = [build_product(), build_subscription()]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].customer_source_id == "cus_1"
+        assert items[0].customer_name is None
 
 
 class TestPlanProductImports:

@@ -216,12 +216,14 @@ def _stripe_subscription(
     currency: str = "usd",
     items: list[dict[str, Any]] | None = None,
     payment_method: dict[str, Any] | None = None,
+    automatic_tax: dict[str, Any] | None = None,
 ) -> stripe_lib.Subscription:
     return stripe_lib.Subscription.construct_from(
         {
             "id": "sub_1",
             "customer": "cus_1",
             "currency": currency,
+            "automatic_tax": automatic_tax,
             "status": status,
             "collection_method": "charge_automatically",
             "cancel_at_period_end": cancel_at_period_end,
@@ -454,6 +456,32 @@ class TestGetSubscription:
             exp_month=4,
             exp_year=2030,
         )
+
+    async def test_reads_whether_the_source_calculated_tax(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(automatic_tax={"enabled": True})
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.automatic_tax is True
+
+    async def test_unreported_tax_stays_unknown(self, mocker: MockerFixture) -> None:
+        # A restricted key can read a subscription without `automatic_tax`;
+        # absent is not the same as "no tax was charged".
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription()
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.automatic_tax is None
 
     async def test_reads_a_running_trial(self, mocker: MockerFixture) -> None:
         """The cutover keeps the trial running rather than billing at once, so

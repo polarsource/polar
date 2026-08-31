@@ -1345,7 +1345,7 @@ class TestCycle:
 
     @pytest.mark.parametrize(
         ("cancel_at_period_end", "expected_delay"),
-        [(False, None), (True, 60 * 60 * 1000)],
+        [(False, None), (True, 15 * 60 * 1000)],
     )
     async def test_delays_settlement_only_when_cancelling(
         self,
@@ -1835,7 +1835,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
-            delay=60 * 60 * 1000,
+            delay=15 * 60 * 1000,
         )
 
         assert_webhook_not_sent(
@@ -2022,7 +2022,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
-            delay=60 * 60 * 1000,
+            delay=15 * 60 * 1000,
         )
         # The after-trial billing reason must NOT have been enqueued.
         for mock_call in enqueue_job_mock.call_args_list:

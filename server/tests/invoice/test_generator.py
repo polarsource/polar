@@ -15,6 +15,16 @@ from polar.invoice.generator import (
 from polar.kit.address import Address, CountryAlpha2
 from polar.tax.calculation import TaxabilityReason
 
+UNSUPPORTED_BIDI_NAME = (
+    "\U0001d4a2\U0001d4a7\U0001d4aa\U0001d49e\U0001d4a6 \U0001f1ed\U0001f1f9"
+)
+"""Mathematical alphanumeric symbols plus a regional-indicator flag emoji.
+
+These code points don't resolve to a bidi type the Unicode bidi algorithm
+accepts (L/R/EN/AN), so ``python-bidi`` raises on them. Used to exercise the
+graceful fallback in ``InvoiceGenerator._shape_text``.
+"""
+
 
 @pytest.fixture
 def invoice() -> Invoice:
@@ -258,6 +268,44 @@ def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None
     generator.output(str(path))
 
     assert path.exists()
+
+
+def test_generator_handles_unsupported_bidi_text(invoice: Invoice) -> None:
+    """Customer-supplied text the bidi/text-shaping pipeline can't handle must
+    not crash invoice generation."""
+    generator = InvoiceGenerator(
+        invoice.model_copy(
+            update={
+                "customer_name": UNSUPPORTED_BIDI_NAME,
+                "customer_additional_info": UNSUPPORTED_BIDI_NAME,
+                "customer_address": Address(
+                    line1=UNSUPPORTED_BIDI_NAME,
+                    city="Port-au-Prince",
+                    country=CountryAlpha2("HT"),
+                ),
+                "items": [
+                    InvoiceItem(
+                        description=UNSUPPORTED_BIDI_NAME,
+                        quantity=1,
+                        unit_amount=50_00,
+                        amount=50_00,
+                    ),
+                ],
+                "notes": UNSUPPORTED_BIDI_NAME,
+            }
+        )
+    )
+    generator.generate()
+    output = generator.output()
+    assert isinstance(output, bytearray)
+    assert len(output) > 0
+
+
+def test_shape_text_falls_back_on_unsupported_text(invoice: Invoice) -> None:
+    generator = InvoiceGenerator(invoice)
+
+    assert generator._shape_text("John Doe") == "John Doe"
+    assert generator._shape_text(UNSUPPORTED_BIDI_NAME) == UNSUPPORTED_BIDI_NAME
 
 
 def test_generator_registers_unicode_fallback_fonts(invoice: Invoice) -> None:

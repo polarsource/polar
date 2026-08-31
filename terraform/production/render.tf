@@ -74,7 +74,7 @@ resource "render_postgres" "db" {
   plan           = "pro_64gb"
   region         = "ohio"
   version        = "15"
-  disk_size_gb   = 500
+  disk_size_gb   = 750
 
   high_availability_enabled = false
 

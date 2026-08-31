@@ -12,7 +12,7 @@ import {
 import { useRequirePaymentMethod } from '@/hooks/useRequirePaymentMethod'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { hasBillingPermission } from '@/utils/customerPortal'
-import { isUnitBasedPrice } from '@/utils/product'
+import { getUnitLabels, isUnitBasedPrice } from '@/utils/product'
 import { getPauseAction } from '@/utils/subscription'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -96,6 +96,7 @@ const CustomerPortalSubscription = ({
   )
 
   const unitPrice = subscription.prices.find(isUnitBasedPrice)
+  const { unitLabel, unitLabelPlural } = getUnitLabels(unitPrice)
 
   // Check customer portal settings for seat management visibility
   const portalSettings =
@@ -169,6 +170,13 @@ const CustomerPortalSubscription = ({
             )
           }
         />
+        {subscription.units !== null && (
+          <DetailRow
+            label={subscription.units === 1 ? unitLabel : unitLabelPlural}
+            labelClassName="capitalize"
+            value={subscription.units}
+          />
+        )}
         <DetailRow
           label="Status"
           value={<SubscriptionStatusLabel subscription={subscription} />}

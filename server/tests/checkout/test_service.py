@@ -7554,6 +7554,31 @@ class TestCreateUnitBasedCheckout:
         assert checkout.currency == price.price_currency
 
     @pytest.mark.auth
+    async def test_with_units_on_one_time_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=organization,
+            price_per_unit=2900,
+            recurring_interval=None,
+        )
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(product_id=product.id, units=10),
+            auth_subject,
+        )
+
+        assert checkout.units == 10
+        assert checkout.amount == 29000
+
+    @pytest.mark.auth
     async def test_without_units_defaults_to_one(
         self,
         session: AsyncSession,

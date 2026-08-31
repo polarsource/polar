@@ -1,6 +1,7 @@
 import uuid
+from collections.abc import Sequence
 
-from sqlalchemy import and_, func, over, select
+from sqlalchemy import and_, select
 
 from polar.models import Customer, Subscription
 
@@ -10,7 +11,7 @@ from .base import Invariant, InvariantError
 class SubscriptionsCanceledDeletedCustomerInvariantError(InvariantError):
     """Exception raised when the SubscriptionsCanceledDeletedCustomerInvariant check fails."""
 
-    def __init__(self, count: int, subscriptions: list[uuid.UUID]) -> None:
+    def __init__(self, count: int, subscriptions: Sequence[uuid.UUID]) -> None:
         message = (
             f"Found {count} subscriptions with active status for deleted customers."
         )
@@ -21,7 +22,8 @@ class SubscriptionsCanceledDeletedCustomerInvariantError(InvariantError):
                 "count": count,
                 "subscriptions": {
                     "ids": subscriptions,
-                    "has_more": count > len(subscriptions),
+                    "has_more": count
+                    == SubscriptionsCanceledDeletedCustomerInvariant.LIMIT,
                 },
             },
         )
@@ -38,7 +40,7 @@ class SubscriptionsCanceledDeletedCustomerInvariant(Invariant):
 
     async def check(self) -> None:
         statement = (
-            select(Subscription.id, over(func.count()))
+            select(Subscription.id)
             .join(Customer, Subscription.customer_id == Customer.id)
             .where(
                 and_(
@@ -51,14 +53,8 @@ class SubscriptionsCanceledDeletedCustomerInvariant(Invariant):
         )
 
         result = await self.session.execute(statement)
-        results = result.fetchall()
-        if len(results) > 0:
-            count = results[0][1]
-        else:
-            count = 0
-
-        if count > 0:
-            subscriptions = [row[0] for row in results]
+        subscriptions = result.scalars().all()
+        if subscriptions:
             raise SubscriptionsCanceledDeletedCustomerInvariantError(
-                count, subscriptions
+                len(subscriptions), subscriptions
             )

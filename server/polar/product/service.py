@@ -669,6 +669,16 @@ class ProductService:
                             }
                         )
                         continue
+                    if price.meter.organization_id != organization.id:
+                        errors.append(
+                            {
+                                "type": "value_error",
+                                "loc": (*error_prefix, index, "meter_id"),
+                                "msg": "Meter must be on the same organization as the product.",
+                                "input": price_schema.meter_id,
+                            }
+                        )
+                        continue
                 added_prices.append(price)
             prices.append(price)
             prices_per_currency[price.price_currency].append((price, index))

@@ -62,6 +62,7 @@ from tests.fixtures.random_objects import (
     METER_ID,
     create_benefit,
     create_checkout_link,
+    create_meter,
     create_product,
     set_product_benefits,
 )
@@ -825,6 +826,41 @@ class TestCreate:
                             price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(100),
                             meter_id=uuid.uuid4(),
+                        ),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_invalid_metered_meter_from_different_organization(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization_second)
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[
+                        ProductPriceMeteredUnitCreate(
+                            amount_type=ProductPriceAmountType.metered_unit,
+                            price_currency=PresentmentCurrency.usd,
+                            unit_amount=Decimal(100),
+                            meter_id=meter.id,
                         ),
                     ],
                     organization_id=organization.id,
@@ -2359,6 +2395,39 @@ class TestUpdate:
                 session,
                 product,
                 update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_invalid_metered_meter_from_different_organization(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization_second: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization_second)
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.update(
+                session,
+                product,
+                ProductUpdate(
+                    prices=[
+                        ProductPriceMeteredUnitCreate(
+                            amount_type=ProductPriceAmountType.metered_unit,
+                            price_currency=PresentmentCurrency.usd,
+                            unit_amount=Decimal(100),
+                            meter_id=meter.id,
+                        ),
+                    ]
+                ),
                 auth_subject,
             )
 

@@ -104,6 +104,7 @@ dev = [
   # * https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/
   # * https://pypi.org/project/litellm/
   # "litellm==1.82.3",
+  "openapi-kit>=0.3.1",
 ]
 
 [tool.taskipy.tasks]
@@ -205,7 +206,7 @@ warn_untyped_fields = true
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { reauth = false, polar-sdk = false } # Reauth and the Polar SDK are brand new, but remember to remove these exclusions when stabilized
+exclude-newer-package = { reauth = false, polar-sdk = false, openapi-kit = false }
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

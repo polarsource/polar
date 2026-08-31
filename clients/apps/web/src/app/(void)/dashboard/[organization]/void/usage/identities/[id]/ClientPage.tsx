@@ -76,7 +76,7 @@ export default function ClientPage({ customerId }: { customerId: string }) {
 
   if (!customer) {
     return (
-      <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
+      <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
         <Text variant="heading-m" color="muted">
           Loading identity
         </Text>
@@ -101,7 +101,7 @@ export default function ClientPage({ customerId }: { customerId: string }) {
     <Box
       as="main"
       flexDirection="column"
-      paddingTop="5xl"
+      paddingTop="xl"
       paddingBottom="5xl"
       flexGrow={1}
       rowGap="4xl"

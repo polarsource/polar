@@ -108,8 +108,8 @@ export const VoidIdentities = ({
                         columnGap="l"
                         alignItems="baseline"
                       >
-                        <Box columnGap="l" alignItems="baseline">
-                          <Text variant="heading-xxs" color="muted" tabularNums>
+                        <Box columnGap="m" alignItems="baseline">
+                          <Text variant="heading-xs" color="muted" tabularNums>
                             {String(position + 1).padStart(2, '0')}
                           </Text>
                           <Text variant="heading-xs" color="inherit" truncate>

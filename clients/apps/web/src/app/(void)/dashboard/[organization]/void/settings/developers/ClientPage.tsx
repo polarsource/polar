@@ -21,8 +21,12 @@ export default function ClientPage() {
   const tokens = data?.items ?? []
 
   return (
-    <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
-      <VoidSection label="Settings" meta={`${tokens.length} access tokens`}>
+    <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
+      <VoidSection
+        flush
+        label="Settings"
+        meta={`${tokens.length} access tokens`}
+      >
         {tokens.length > 0 ? (
           <Box flexDirection="column" rowGap="xl">
             {tokens.map((token) => (

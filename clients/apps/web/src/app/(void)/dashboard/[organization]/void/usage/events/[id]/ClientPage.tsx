@@ -33,7 +33,7 @@ export default function ClientPage({ eventId }: { eventId: string }) {
 
   if (!event) {
     return (
-      <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
+      <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
         <Text variant="heading-m" color="muted">
           Loading event
         </Text>
@@ -59,7 +59,7 @@ export default function ClientPage({ eventId }: { eventId: string }) {
     <Box
       as="main"
       flexDirection="column"
-      paddingTop="5xl"
+      paddingTop="xl"
       paddingBottom="5xl"
       flexGrow={1}
       rowGap="4xl"

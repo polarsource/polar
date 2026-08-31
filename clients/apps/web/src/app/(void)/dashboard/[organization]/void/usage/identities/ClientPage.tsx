@@ -67,8 +67,9 @@ export default function ClientPage() {
   const humans = customers.length - agents
 
   return (
-    <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
+    <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
       <VoidSection
+        flush
         label="Identities"
         meta={`${humans} human / ${agents} agent`}
       >

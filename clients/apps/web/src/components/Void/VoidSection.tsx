@@ -8,22 +8,24 @@ interface VoidSectionProps {
   label: string
   meta?: string
   anchor?: string
+  flush?: boolean
 }
 
 export const VoidSection = ({
   label,
   meta,
   anchor,
+  flush,
   children,
 }: PropsWithChildren<VoidSectionProps>) => (
   <Box
     as="section"
     id={anchor}
     flexDirection="column"
-    borderTopWidth={1}
+    borderTopWidth={flush ? 0 : 1}
     borderStyle="solid"
     borderColor="border-primary"
-    paddingTop="2xl"
+    paddingTop={flush ? 'none' : '2xl'}
     paddingBottom="5xl"
     rowGap="4xl"
   >

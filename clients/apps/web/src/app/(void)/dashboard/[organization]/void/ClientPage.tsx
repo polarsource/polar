@@ -12,7 +12,7 @@ export default function ClientPage() {
   const { organization } = useContext(OrganizationContext)
 
   return (
-    <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
+    <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
       <VoidHero organizationId={organization.id} />
       <VoidIdentities organizationId={organization.id} />
       <VoidPerformance organizationId={organization.id} />

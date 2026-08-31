@@ -56,6 +56,7 @@ export const VoidHero = ({ organizationId }: { organizationId: string }) => {
 
   return (
     <VoidSection
+      flush
       anchor="usage"
       label="Usage revenue"
       meta={`${rangeLabel(startDate)} / ${rangeLabel(endDate)}`}

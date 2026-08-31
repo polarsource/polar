@@ -23,8 +23,8 @@ export default function ClientPage() {
   const checkouts = data?.items ?? []
 
   return (
-    <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
-      <VoidSection label="Billing" meta={`${checkouts.length} checkouts`}>
+    <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
+      <VoidSection flush label="Billing" meta={`${checkouts.length} checkouts`}>
         {checkouts.length > 0 ? (
           <Box flexDirection="column" rowGap="xl">
             {checkouts.map((checkout) => (

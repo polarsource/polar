@@ -117,8 +117,8 @@ export default function ClientPage() {
   const rangeLabel = RANGES.find((option) => option.key === range)?.label ?? ''
 
   return (
-    <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
-      <VoidSection label="Metrics" meta={rangeLabel}>
+    <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
+      <VoidSection flush label="Metrics" meta={rangeLabel}>
         <Box columnGap="xl" flexWrap="wrap" rowGap="s">
           {RANGES.map((option) => (
             <button

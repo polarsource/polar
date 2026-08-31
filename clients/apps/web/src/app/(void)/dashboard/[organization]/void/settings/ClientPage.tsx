@@ -18,8 +18,8 @@ export default function ClientPage() {
   const { organization } = useContext(OrganizationContext)
 
   return (
-    <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
-      <VoidSection label="Settings" meta="General">
+    <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
+      <VoidSection flush label="Settings" meta="General">
         <Box flexDirection="column" rowGap="4xl" maxWidth={720}>
           <ProfileBlock organization={organization} />
           <PaymentsBlock organization={organization} />

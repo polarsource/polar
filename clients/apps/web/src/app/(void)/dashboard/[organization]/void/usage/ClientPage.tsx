@@ -32,8 +32,9 @@ export default function ClientPage() {
       : undefined
 
   return (
-    <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
+    <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
       <VoidSection
+        flush
         label="Usage"
         meta={
           totalCount !== undefined

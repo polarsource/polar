@@ -21,8 +21,8 @@ export default function ClientPage() {
   const products = data?.items ?? []
 
   return (
-    <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
-      <VoidSection label="Billing" meta={`${products.length} products`}>
+    <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
+      <VoidSection flush label="Billing" meta={`${products.length} products`}>
         {products.length > 0 ? (
           <Box flexDirection="column" rowGap="xl">
             {products.map((product) => (

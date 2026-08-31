@@ -53,8 +53,8 @@ export default function ClientPage() {
   const lines = buildDefinition(data?.items.map((meter) => meter.name) ?? [])
 
   return (
-    <Box as="main" flexDirection="column" paddingTop="5xl" flexGrow={1}>
-      <VoidSection label="Billing" meta="Billing as code">
+    <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
+      <VoidSection flush label="Billing" meta="Billing as code">
         <VoidGrid>
           <VoidCell colSpan={{ base: 1, md: 2, lg: 2 }}>
             <Box flexDirection="column" rowGap="xl">

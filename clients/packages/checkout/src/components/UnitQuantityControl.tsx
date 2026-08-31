@@ -14,21 +14,7 @@ interface UnitQuantityControlProps {
 
 const NUMERIC_INPUT_PATTERN = /^\d+$/
 
-const QuantityIcon = ({
-  increment,
-  compact,
-}: {
-  increment: boolean
-  compact: boolean
-}) => {
-  const path = compact
-    ? increment
-      ? 'M7 3v8M3 7h8'
-      : 'M3 7h8'
-    : increment
-      ? 'M12 5v14m-7-7h14'
-      : 'M5 12h14'
-
+const IncrementIcon = ({ compact }: { compact: boolean }) => {
   return (
     <svg
       className={compact ? 'h-3 w-3' : 'h-5 w-5'}
@@ -39,7 +25,23 @@ const QuantityIcon = ({
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d={path} />
+      <path d={compact ? 'M7 3v8M3 7h8' : 'M12 5v14m-7-7h14'} />
+    </svg>
+  )
+}
+
+const DecrementIcon = ({ compact }: { compact: boolean }) => {
+  return (
+    <svg
+      className={compact ? 'h-3 w-3' : 'h-5 w-5'}
+      viewBox={compact ? '0 0 14 14' : '0 0 24 24'}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={compact ? 2 : 2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={compact ? 'M3 7h8' : 'M5 12h14'} />
     </svg>
   )
 }
@@ -76,7 +78,7 @@ export const UnitQuantityControl = ({
       (!hasMaximumLimit || newUnits <= maximumUnits) &&
       newUnits !== units
     ) {
-      void onUpdate(newUnits)
+      onUpdate(newUnits)
     }
     stopEditing()
   }
@@ -115,7 +117,7 @@ export const UnitQuantityControl = ({
         className={`${quantityButtonClassName} ${compact ? 'rounded-l-lg' : ''}`}
         aria-label="Decrease units"
       >
-        <QuantityIcon increment={false} compact={compact} />
+        <DecrementIcon compact={compact} />
       </Button>
       {isEditing ? (
         <Input
@@ -163,7 +165,7 @@ export const UnitQuantityControl = ({
         className={`${quantityButtonClassName} ${compact ? 'rounded-r-lg' : ''}`}
         aria-label="Increase units"
       >
-        <QuantityIcon increment compact={compact} />
+        <IncrementIcon compact={compact} />
       </Button>
     </div>
   )

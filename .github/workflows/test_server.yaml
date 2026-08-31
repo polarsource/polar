@@ -238,6 +238,7 @@ jobs:
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+      POLAR_TEST_DATABASE_TEMPLATE: polar_test
 
     services:
       postgres:
@@ -306,11 +307,20 @@ jobs:
           POLICY_FILE: policy.json
         run: bash github.sh
 
+      - name: 📬 Restore emails renderer
+        id: emails
+        uses: actions/cache@v6.1.0
+        with:
+          path: server/emails/bin
+          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsup.config.js', 'server/emails/.node-version') }}
+
       - uses: pnpm/action-setup@v6.0.10
+        if: steps.emails.outputs.cache-hit != 'true'
         with:
           package_json_file: server/emails/package.json
 
       - name: 📬 Setup Node.js environment for server/emails
+        if: steps.emails.outputs.cache-hit != 'true'
         uses: actions/setup-node@v7.0.0
         with:
           node-version-file: server/emails/.node-version
@@ -318,6 +328,7 @@ jobs:
           cache-dependency-path: "clients/pnpm-lock.yaml"
 
       - name: 📬 Build server/emails
+        if: steps.emails.outputs.cache-hit != 'true'
         working-directory: server/emails
         run: pnpm install --frozen-lockfile && pnpm build
 
@@ -351,6 +362,13 @@ jobs:
       - name: 🐦 Install Tinybird CLI
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: 🐦 Prepare Tinybird workspace
+        working-directory: ./server
+        run: |
+          token=$(uv run python -m scripts.tinybird_test_workspace)
+          echo "::add-mask::$token"
+          echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
+
       - name: ⚗️ alembic migrate
         working-directory: ./server
         run: uv run task db_migrate
@@ -361,4 +379,11 @@ jobs:
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest -n auto --dist=loadgroup --no-cov --durations=0
+        run: uv run pytest -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+
+      - name: 💾 Save test durations
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}

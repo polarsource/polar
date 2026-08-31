@@ -1,5 +1,7 @@
 import asyncio
+import os
 import pathlib
+import time
 from collections.abc import AsyncIterator, Callable, Coroutine
 
 import pytest
@@ -8,6 +10,7 @@ from alembic import command
 from alembic.config import Config
 from pydantic_core import Url
 from pytest_mock import MockerFixture
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -29,6 +32,8 @@ def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
     )
 
 
+TEMPLATE_DATABASE = os.environ.get("POLAR_TEST_DATABASE_TEMPLATE")
+
 ALEMBIC_CONFIG_FILE = pathlib.Path(__file__).parent.parent.parent / "alembic.ini"
 
 
@@ -38,6 +43,18 @@ def apply_migrations(asyncpg_database_url: str) -> None:
     command.upgrade(alembic_cfg, "head")
 
 
+def clone_template_database(sync_database_url: str) -> None:
+    for _ in range(150):
+        try:
+            create_database(sync_database_url, template=TEMPLATE_DATABASE)
+            return
+        except SQLAlchemyError as e:
+            if "being accessed by other users" not in str(e):
+                raise
+            time.sleep(0.2)
+    raise RuntimeError(f"Template database {TEMPLATE_DATABASE} never became free")
+
+
 @pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
 async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
     sync_database_url = get_database_url(worker_id, "psycopg2")
@@ -45,8 +62,11 @@ async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
     if database_exists(sync_database_url):
         drop_database(sync_database_url)
 
-    create_database(sync_database_url)
-    await asyncio.to_thread(apply_migrations, get_database_url(worker_id))
+    if TEMPLATE_DATABASE:
+        await asyncio.to_thread(clone_template_database, sync_database_url)
+    else:
+        create_database(sync_database_url)
+        await asyncio.to_thread(apply_migrations, get_database_url(worker_id))
 
     yield
 

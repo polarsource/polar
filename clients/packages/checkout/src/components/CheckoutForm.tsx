@@ -38,6 +38,7 @@ import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
+import { isTemporaryDiscount } from '../utils/discount'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
 import { useCheckoutForm } from '../providers/CheckoutFormProvider'
 import CustomFieldInput from './CustomFieldInput'
@@ -763,6 +764,7 @@ const BaseCheckoutForm = ({
             isPaymentRequired={checkout.is_payment_form_required}
             isTrial={!!checkout.active_trial_interval}
             isRecurring={!!interval}
+            hasTemporaryDiscount={isTemporaryDiscount(checkout.discount)}
             buttonLabel={checkoutLabel}
             locale={locale}
           />

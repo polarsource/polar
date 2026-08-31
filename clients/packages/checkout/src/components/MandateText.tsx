@@ -2,37 +2,55 @@ import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
+  type TranslateFn,
 } from '@polar-sh/i18n'
 
 const BUYER_TERMS_PLACEHOLDER = '{buyerTermsLink}'
 
-export const MandateText = ({
-  isPaymentRequired,
-  isTrial,
-  isRecurring,
-  buttonLabel,
-  locale,
-}: {
+interface MandateProps {
   isPaymentRequired: boolean
   isTrial: boolean
   isRecurring: boolean
+  hasTemporaryDiscount?: boolean
   buttonLabel: string
   locale?: AcceptedLocale
-}) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+}
+
+const getMandate = (
+  t: TranslateFn,
+  {
+    isPaymentRequired,
+    isTrial,
+    isRecurring,
+    hasTemporaryDiscount,
+  }: MandateProps,
+  interpolations: { buttonLabel: string; buyerTermsLink: string },
+): string => {
+  if (!isPaymentRequired) {
+    return t('checkout.footer.merchantOfRecord')
+  }
+  if (isTrial) {
+    return hasTemporaryDiscount
+      ? t('checkout.footer.mandateSubscriptionTrialDiscounted', interpolations)
+      : t('checkout.footer.mandateSubscriptionTrial', interpolations)
+  }
+  if (isRecurring) {
+    return hasTemporaryDiscount
+      ? t('checkout.footer.mandateSubscriptionDiscounted', interpolations)
+      : t('checkout.footer.mandateSubscription', interpolations)
+  }
+  return t('checkout.footer.mandateOneTime', interpolations)
+}
+
+export const MandateText = (props: MandateProps) => {
+  const t = useTranslations(props.locale ?? DEFAULT_LOCALE)
 
   const interpolations = {
-    buttonLabel,
+    buttonLabel: props.buttonLabel,
     buyerTermsLink: BUYER_TERMS_PLACEHOLDER,
   }
 
-  const mandate = isPaymentRequired
-    ? isTrial
-      ? t('checkout.footer.mandateSubscriptionTrial', interpolations)
-      : isRecurring
-        ? t('checkout.footer.mandateSubscription', interpolations)
-        : t('checkout.footer.mandateOneTime', interpolations)
-    : t('checkout.footer.merchantOfRecord')
+  const mandate = getMandate(t, props, interpolations)
 
   const buyerTermsLabel = t('checkout.footer.buyerTermsLink')
   const [prefix, suffix] = mandate.split(BUYER_TERMS_PLACEHOLDER)

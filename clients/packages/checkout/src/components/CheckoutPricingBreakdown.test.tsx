@@ -443,6 +443,104 @@ describe('CheckoutPricingBreakdown', () => {
     })
   })
 
+  describe('total row with a limited-time discount', () => {
+    it('labels the recurring total as the first invoice without an interval suffix', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'month',
+        discount: onceDiscount,
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const row = screen.getByTestId('detail-row-First payment')
+      expect(row).toHaveTextContent('$4.99')
+      expect(row).not.toHaveTextContent('/ mo')
+      expect(screen.queryByTestId('detail-row-Monthly')).not.toBeInTheDocument()
+    })
+
+    it('labels the trial total as total after trial, dated at the trial end', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'month',
+        discount: onceDiscount,
+        trial: true,
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const row = screen.getByTestId('detail-row-Total after trial')
+      expect(row).toHaveTextContent('Apr 5')
+      expect(row).toHaveTextContent('$4.99')
+      expect(
+        screen.queryByTestId('detail-row-First payment'),
+      ).not.toBeInTheDocument()
+    })
+
+    it('labels the total as first invoice for repeating discounts', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'month',
+        discount: repeatingDiscount(3),
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(screen.getByTestId('detail-row-First payment')).toBeInTheDocument()
+      expect(screen.queryByTestId('detail-row-Monthly')).not.toBeInTheDocument()
+    })
+
+    it('keeps the recurring total label for forever discounts', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'month',
+        discount: {
+          ...onceDiscount,
+          duration: 'forever',
+        } as schemas['CheckoutPublic']['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const row = screen.getByTestId('detail-row-Monthly')
+      expect(row).toHaveTextContent('$4.99')
+      expect(row).toHaveTextContent('/ mo')
+      expect(
+        screen.queryByTestId('detail-row-First payment'),
+      ).not.toBeInTheDocument()
+    })
+
+    it('composes with the due-today experiment like a dated total after trial plus due today', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'month',
+        discount: onceDiscount,
+        trial: true,
+      })
+
+      render(
+        <CheckoutPricingBreakdown
+          checkout={checkout}
+          locale="en"
+          trialDueTodayExperiment
+        />,
+      )
+
+      expect(screen.getByTestId('detail-row-Due today')).toHaveTextContent('$0')
+      const afterTrial = screen.getByTestId('detail-row-Total after trial')
+      expect(afterTrial).toHaveTextContent('Apr 5')
+    })
+
+    it('keeps the total label for one-time purchases', () => {
+      const checkout = createDiscountedCheckout({
+        interval: null,
+        discount: onceDiscount,
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(getRowValue('Total')).toBe('$4.99')
+      expect(
+        screen.queryByTestId('detail-row-First payment'),
+      ).not.toBeInTheDocument()
+    })
+  })
+
   describe('trial section', () => {
     it('shows the regular total row with trial active', () => {
       const checkout = createCheckout({
@@ -752,7 +850,7 @@ describe('CheckoutPricingBreakdown', () => {
         trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
       })
 
-    it('shows an emphasized due-today row and mutes the recurring total', () => {
+    it('shows a due-today row alongside the recurring total', () => {
       render(
         <CheckoutPricingBreakdown
           checkout={trialCheckout()}
@@ -761,15 +859,11 @@ describe('CheckoutPricingBreakdown', () => {
         />,
       )
 
-      const dueTodayRow = screen.getByTestId('detail-row-Due today')
-      expect(dueTodayRow).toHaveTextContent('$0')
-      expect(dueTodayRow).toHaveClass('font-medium')
-      expect(screen.getByTestId('detail-row-Monthly')).not.toHaveClass(
-        'font-medium',
-      )
+      expect(screen.getByTestId('detail-row-Due today')).toHaveTextContent('$0')
+      expect(screen.getByTestId('detail-row-Monthly')).toBeInTheDocument()
     })
 
-    it('keeps the emphasized recurring total by default', () => {
+    it('keeps only the recurring total by default', () => {
       render(
         <CheckoutPricingBreakdown checkout={trialCheckout()} locale="en" />,
       )
@@ -777,9 +871,7 @@ describe('CheckoutPricingBreakdown', () => {
       expect(
         screen.queryByTestId('detail-row-Due today'),
       ).not.toBeInTheDocument()
-      expect(screen.getByTestId('detail-row-Monthly')).toHaveClass(
-        'font-medium',
-      )
+      expect(screen.getByTestId('detail-row-Monthly')).toBeInTheDocument()
     })
   })
 

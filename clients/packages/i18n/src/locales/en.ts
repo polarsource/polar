@@ -94,6 +94,13 @@ export default {
         },
       },
       additionalMeteredUsage: 'Additional metered usage',
+      meteredUsage: 'Metered usage',
+      tieredPricing: {
+        allUsage: 'All usage',
+        upTo: 'Up to {units}',
+        over: 'Over {units}',
+        overUpTo: 'Over {lowerBound}, up to {upperBound}',
+      },
       perSeat: 'per seat',
       basePrice: {
         value: 'Base price',

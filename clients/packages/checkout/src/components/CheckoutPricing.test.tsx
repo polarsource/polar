@@ -5,6 +5,7 @@ import {
   createCheckout,
   createCustomPrice,
   createFreePrice,
+  createMeteredPrice,
 } from '../test-utils/makeCheckout'
 import CheckoutPricing from './CheckoutPricing'
 
@@ -119,6 +120,33 @@ describe('CheckoutPricing', () => {
       render(<CheckoutPricing checkout={checkout} locale="en" />)
 
       expect(screen.getByTestId('headline-price')).toHaveTextContent('$0')
+    })
+  })
+
+  describe('tiered metered price', () => {
+    it('shows the first tier alongside the zero upfront total', () => {
+      const meteredPrice = createMeteredPrice({
+        unit_amount: null,
+        tiers: {
+          type: 'volume',
+          tiers: [
+            { bound: 1000, unit_amount: '5' },
+            { bound: null, unit_amount: '1' },
+          ],
+        },
+      })
+      const checkout = createCheckout({
+        amount: 0,
+        net_amount: 0,
+        total_amount: 0,
+        product_price: meteredPrice,
+      })
+
+      render(<CheckoutPricing checkout={checkout} locale="en" />)
+
+      expect(screen.getByTestId('headline-price')).toHaveTextContent('$0')
+      expect(screen.getByText(/metered usage/i)).toBeInTheDocument()
+      expect(screen.getByText(/up to 1,000/i)).toBeInTheDocument()
     })
   })
 })

@@ -94,6 +94,13 @@ export default {
         updateFailed: 'Koltuklar güncellenemedi',
       },
       basePrice: 'Temel fiyat',
+      meteredUsage: 'Kullanıma göre ücretlendirme',
+      tieredPricing: {
+        allUsage: 'Tüm kullanım',
+        over: '{units} üzeri',
+        overUpTo: '{lowerBound} üzeri, {upperBound} kadar',
+        upTo: '{units} adede kadar',
+      },
     },
     trial: {
       hero: {

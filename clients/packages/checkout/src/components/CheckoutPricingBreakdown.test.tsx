@@ -633,6 +633,36 @@ describe('CheckoutPricingBreakdown', () => {
       expect(screen.getByTestId('detail-row-API Calls')).toBeInTheDocument()
     })
 
+    it('shows the selected tiered price as metered usage', () => {
+      const meteredPrice = createMeteredPrice({
+        id: 'price_metered_1',
+        unit_amount: null,
+        tiers: {
+          type: 'graduated',
+          tiers: [
+            { bound: 1000, unit_amount: '5' },
+            { bound: null, unit_amount: '1' },
+          ],
+        },
+      })
+      const checkout = createCheckout({
+        amount: 0,
+        net_amount: 0,
+        total_amount: 0,
+        product_price: meteredPrice,
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(screen.getByText(/^metered usage$/i)).toBeInTheDocument()
+      expect(screen.getByTestId('detail-row-API Calls')).toBeInTheDocument()
+      expect(screen.getByText('Up to 1,000')).toBeInTheDocument()
+      expect(screen.getByText('Over 1,000')).toBeInTheDocument()
+      expect(screen.getAllByText('/ unit')).toHaveLength(2)
+      expect(screen.getByText('$0.05')).toBeInTheDocument()
+      expect(screen.getByText('$0.01')).toBeInTheDocument()
+    })
+
     it('strikes through the original rate when a percentage discount is active', () => {
       const meteredPrice = createMeteredPrice({
         id: 'price_metered_1',

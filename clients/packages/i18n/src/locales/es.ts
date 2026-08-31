@@ -94,6 +94,13 @@ export default {
       },
       inclTax: 'Impuestos (incluidos)',
       basePrice: 'Precio base',
+      meteredUsage: 'Uso medido',
+      tieredPricing: {
+        allUsage: 'Todo el uso',
+        over: 'Más de {units}',
+        overUpTo: 'Más de {lowerBound}, hasta {upperBound}',
+        upTo: 'Hasta {units}',
+      },
     },
     trial: {
       hero: {

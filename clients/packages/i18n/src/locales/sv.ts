@@ -94,6 +94,13 @@ export default {
       },
       inclTax: 'Moms (ingår)',
       basePrice: 'Grundavgift',
+      meteredUsage: 'Debitering efter användning',
+      tieredPricing: {
+        allUsage: 'All användning',
+        over: 'Över {units}',
+        overUpTo: 'Över {lowerBound}, upp till {upperBound}',
+        upTo: 'Upp till {units}',
+      },
     },
     trial: {
       hero: {

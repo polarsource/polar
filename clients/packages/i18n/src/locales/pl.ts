@@ -94,6 +94,13 @@ export default {
       },
       inclTax: 'Podatki (w cenie)',
       basePrice: 'Cena bazowa',
+      meteredUsage: 'Rozliczanie według zużycia',
+      tieredPricing: {
+        allUsage: 'Całe zużycie',
+        over: 'Powyżej {units}',
+        overUpTo: 'Powyżej {lowerBound}, do {upperBound}',
+        upTo: 'Do {units}',
+      },
     },
     trial: {
       hero: {

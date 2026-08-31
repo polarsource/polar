@@ -94,6 +94,13 @@ export default {
       },
       inclTax: 'ÁFA (tartalmazza)',
       basePrice: 'Alapár',
+      meteredUsage: 'Mért használat',
+      tieredPricing: {
+        allUsage: 'Minden használat',
+        over: '{units} felett',
+        overUpTo: '{lowerBound} felett, {upperBound}-ig',
+        upTo: 'Akár {units} darab',
+      },
     },
     trial: {
       hero: {

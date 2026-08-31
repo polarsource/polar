@@ -94,6 +94,13 @@ export default {
       },
       inclTax: 'MwSt. (inklusive)',
       basePrice: 'Grundpreis',
+      meteredUsage: 'Nutzungsabhängige Abrechnung',
+      tieredPricing: {
+        allUsage: 'Gesamte Nutzung',
+        over: 'Über {units}',
+        overUpTo: 'Über {lowerBound}, bis {upperBound}',
+        upTo: 'Bis zu {units}',
+      },
     },
     trial: {
       hero: {

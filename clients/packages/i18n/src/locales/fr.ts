@@ -94,6 +94,13 @@ export default {
       },
       inclTax: 'TVA (incluse)',
       basePrice: 'Prix de base',
+      meteredUsage: "Utilisation facturée à l'usage",
+      tieredPricing: {
+        allUsage: "Toute l'utilisation",
+        over: 'Au-delà de {units}',
+        overUpTo: "Au-delà de {lowerBound}, jusqu'à {upperBound}",
+        upTo: 'Jusqu’à {units}',
+      },
     },
     trial: {
       hero: {

@@ -236,12 +236,12 @@ async def create_oauth_account(
 ) -> OAuthAccount:
     oauth_account = OAuthAccount(
         platform=platform,
-        access_token="xxyyzz",
         account_id="xxyyzz",
         account_email="foo@bar.com",
         account_username=rstr("gh_username"),
         user=user,
     )
+    await oauth_account.set_tokens(access_token="xxyyzz", refresh_token=None)
     await save_fixture(oauth_account)
     return oauth_account
 
@@ -252,12 +252,12 @@ async def create_user_github_oauth(
 ) -> OAuthAccount:
     oauth_account = OAuthAccount(
         platform=OAuthPlatform.github,
-        access_token="xxyyzz",
         account_id="xxyyzz",
         account_email="foo@bar.com",
         account_username=rstr("gh_username"),
         user=user,
     )
+    await oauth_account.set_tokens(access_token="xxyyzz", refresh_token=None)
     await save_fixture(oauth_account)
     return oauth_account
 

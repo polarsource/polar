@@ -113,19 +113,19 @@ class OAuthAccount(RecordModel):
     def should_refresh_access_token(self, unless_ttl_gt: int = 60 * 30) -> bool:
         return bool(
             self.expires_at
-            and self.refresh_token
+            and self.refresh_token_encrypted
             and self.expires_at <= time.time() + unless_ttl_gt
         )
 
     async def get_access_token(self) -> str:
-        if self.access_token_encrypted is not None:
-            return await self.access_token_encrypted.decrypt(id=str(self.id))
-        return self.access_token
+        if self.access_token_encrypted is None:
+            raise ValueError("access_token_encrypted is required")
+        return await self.access_token_encrypted.decrypt(id=str(self.id))
 
     async def get_refresh_token(self) -> str | None:
-        if self.refresh_token_encrypted is not None:
-            return await self.refresh_token_encrypted.decrypt(id=str(self.id))
-        return self.refresh_token
+        if self.refresh_token_encrypted is None:
+            return None
+        return await self.refresh_token_encrypted.decrypt(id=str(self.id))
 
     async def to_dataclass(self, scope: list[str]) -> OAuth2EnrollmentDataclass:
         return OAuth2EnrollmentDataclass(

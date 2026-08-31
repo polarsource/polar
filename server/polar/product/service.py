@@ -14,6 +14,7 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
+from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
@@ -577,9 +578,7 @@ class ProductService:
         builtins.list[ValidationError],
     ]:
         meter_repository = MeterRepository.from_session(session)
-        meter_org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=OrganizationPermission.products_read
-        )
+        meter_org_ids = {AccessibleOrganizationID(organization.id)}
         prices: list[ProductPrice] = []
         prices_per_currency = defaultdict[str, list[tuple[ProductPrice, int]]](list)
         existing_prices: set[ProductPrice] = set()
@@ -665,16 +664,6 @@ class ProductService:
                                 "type": "value_error",
                                 "loc": (*error_prefix, index, "meter_id"),
                                 "msg": "Meter does not exist.",
-                                "input": price_schema.meter_id,
-                            }
-                        )
-                        continue
-                    if price.meter.organization_id != organization.id:
-                        errors.append(
-                            {
-                                "type": "value_error",
-                                "loc": (*error_prefix, index, "meter_id"),
-                                "msg": "Meter must be on the same organization as the product.",
                                 "input": price_schema.meter_id,
                             }
                         )

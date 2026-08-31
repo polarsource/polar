@@ -841,15 +841,11 @@ class TestCreate:
         save_fixture: SaveFixture,
         organization: Organization,
         organization_second: Organization,
-        user: User,
         user_organization: UserOrganization,
     ) -> None:
         meter = await create_meter(save_fixture, organization=organization_second)
-        await save_fixture(
-            UserOrganization(user=user, organization=organization_second)
-        )
 
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await product_service.create(
                 session,
                 ProductCreateRecurring(
@@ -867,6 +863,7 @@ class TestCreate:
                 ),
                 auth_subject,
             )
+        assert exc_info.value.errors()[0]["msg"] == "Meter does not exist."
 
     @pytest.mark.auth
     async def test_invalid_metered_one_time_product(
@@ -2406,15 +2403,11 @@ class TestUpdate:
         save_fixture: SaveFixture,
         product: Product,
         organization_second: Organization,
-        user: User,
         user_organization: UserOrganization,
     ) -> None:
         meter = await create_meter(save_fixture, organization=organization_second)
-        await save_fixture(
-            UserOrganization(user=user, organization=organization_second)
-        )
 
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await product_service.update(
                 session,
                 product,
@@ -2430,6 +2423,7 @@ class TestUpdate:
                 ),
                 auth_subject,
             )
+        assert exc_info.value.errors()[0]["msg"] == "Meter does not exist."
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

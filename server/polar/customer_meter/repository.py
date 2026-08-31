@@ -103,12 +103,11 @@ class CustomerMeterRepository(
         customer_meter = CustomerMeter(
             customer=customer, meter=meter, activated_at=activated_at
         )
-        nested = await self.session.begin_nested()
         try:
-            self.session.add(customer_meter)
-            await self.session.flush()
+            async with self.session.begin_nested():
+                self.session.add(customer_meter)
+                await self.session.flush()
         except IntegrityError:
-            await nested.rollback()
             customer_meter = await self.get_by_customer_and_meter_for_update(
                 customer.id, meter.id
             )

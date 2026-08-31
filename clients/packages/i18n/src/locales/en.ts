@@ -14,7 +14,7 @@ export default {
         value:
           'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.',
         _llmContext:
-          'Legal mandate text for a free-trial subscription checkout where a limited-time discount (applied once or for a set number of months) is active, so the first invoice(s) differ from the ongoing price. Keep legal terminology precise in the target locale.',
+          'Legal mandate text for a free-trial subscription checkout where a limited-time discount (applied once or for a set number of months) is active, so the first invoice(s) differ from the ongoing price. Nothing is charged at purchase time — the first charge happens at the end of the trial, so do not add words like "immediately" (unlike the no-trial variant). Keep legal terminology precise and consistent with the sibling mandate strings in the target locale, especially the established translation of "merchant of record".',
       },
       mandateSubscriptionDiscounted: {
         value:

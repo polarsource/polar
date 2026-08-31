@@ -11,6 +11,10 @@ export default {
       buyerTermsLink: '구매자 약관',
       mandateOneTime:
         '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택하신 결제 수단으로 위에 표시된 금액을 청구하는 것을 승인하며, {buyerTermsLink}에 동의하게 됩니다. 이는 일회성 결제입니다.',
+      mandateSubscriptionTrialDiscounted:
+        '"{buttonLabel}"을(를) 클릭하면 귀하는 Polar Software, Inc., 당사의 온라인 리셀러이자 기록상 판매자에게, 체험 기간 종료 시 위에 표시된 할인 금액을 선택한 결제 수단으로 청구하고, 할인 기간 종료 후에는 취소할 때까지 각 결제일마다 정가를 청구하는 것에 동의하며, {buyerTermsLink}에 동의하게 됩니다. 요금이 청구되지 않도록 하려면 체험 기간 종료 전 언제든지 취소할 수 있습니다.',
+      mandateSubscriptionDiscounted:
+        '"{buttonLabel}"을(를) 클릭하면 귀하는 Polar Software, Inc., 당사의 온라인 리셀러이자 기록상 판매자에게, 위에 표시된 할인 금액을 선택한 결제 수단으로 즉시 청구하고, 할인 기간 종료 후에는 취소할 때까지 각 결제일마다 정가를 청구하는 것에 동의하며, {buyerTermsLink}에 동의하게 됩니다.',
     },
     form: {
       email: '이메일',
@@ -112,6 +116,8 @@ export default {
         token: '토큰',
         scalar: '단위',
       },
+      firstPayment: '첫 결제',
+      totalAfterTrial: '체험 종료 후 총액',
     },
     trial: {
       hero: {
@@ -140,6 +146,7 @@ export default {
         },
         then: '이후',
         startingDate: '{date}부터',
+        freeUntil: '{date}까지 무료',
       },
     },
     pwywForm: {

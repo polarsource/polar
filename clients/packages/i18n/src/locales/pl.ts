@@ -94,14 +94,12 @@ export default {
       },
       inclTax: 'Podatki (w cenie)',
       basePrice: 'Cena bazowa',
-      upTo: 'do {units}',
       meteredUsage: 'Rozliczanie według zużycia',
       tieredPricing: {
-        graduated: 'Cennik progresywny',
-        volume: 'Cennik wolumenowy',
         allUsage: 'Całe zużycie',
         over: 'Powyżej {units}',
         overUpTo: 'Powyżej {lowerBound}, do {upperBound}',
+        upTo: 'Do {units}',
       },
     },
     trial: {

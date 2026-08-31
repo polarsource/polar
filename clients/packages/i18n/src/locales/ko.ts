@@ -94,14 +94,12 @@ export default {
       },
       inclTax: '부가세 (포함)',
       basePrice: '기본 가격',
-      upTo: '최대 {units}',
       meteredUsage: '사용량 기반 과금',
       tieredPricing: {
-        graduated: '누진 요금',
-        volume: '수량별 요금',
         allUsage: '전체 사용량',
         over: '{units} 초과',
         overUpTo: '{lowerBound} 초과, {upperBound} 이하',
+        upTo: '최대 {units}',
       },
     },
     trial: {

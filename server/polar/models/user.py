@@ -219,6 +219,10 @@ class User(RecordModel):
     def accepted_terms_of_service(self) -> bool:
         return self.accepted_terms_of_service_at is not None
 
+    stripe_customer_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None, unique=True
+    )
+
     identity_verification_status: Mapped[IdentityVerificationStatus] = mapped_column(
         StringEnum(IdentityVerificationStatus),
         nullable=False,

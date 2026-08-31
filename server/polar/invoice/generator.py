@@ -461,9 +461,21 @@ class InvoiceGenerator(FPDF):
         lines = text.split("\n")
         shaped = []
         for line in lines:
-            reshaped = arabic_reshaper.reshape(line)
-            shaped.append(get_display(reshaped))
+            shaped.append(self._shape_line(line))
         return "\n".join(shaped)
+
+    def _shape_line(self, line: str) -> str:
+        # arabic_reshaper + python-bidi only handle characters the Unicode
+        # bidi algorithm resolves to L/R/EN/AN. Customer-supplied text can
+        # contain code points it rejects (e.g. mathematical alphanumeric
+        # symbols, regional-indicator flag emoji), which makes get_display
+        # raise. Fall back to the unshaped line so a single unusual field can
+        # never crash invoice rendering.
+        try:
+            reshaped = arabic_reshaper.reshape(line)
+            return get_display(reshaped)
+        except Exception:
+            return line
 
     def cell_height(self, font_size: float | None = None) -> float:
         font_size = font_size or self.base_font_size

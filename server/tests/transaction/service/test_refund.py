@@ -577,6 +577,12 @@ class TestRevert:
         assert refund_reversal_transaction.type == TransactionType.refund_reversal
         assert refund_reversal_transaction.processor == Processor.stripe
         assert refund_reversal_transaction.amount == refund.amount
+        assert refund_reversal_transaction.account_currency == (
+            refund_transaction.account_currency
+        )
+        assert refund_reversal_transaction.account_amount == (
+            -refund_transaction.account_amount
+        )
 
         events = await get_all_by_name(session, SystemEvent.balance_refund_reversal)
         assert len(events) == 1
@@ -753,6 +759,13 @@ class TestRevert:
         assert refund_reversal_transaction.presentment_currency == "eur"
         assert refund_reversal_transaction.presentment_amount == 1000
         assert refund_reversal_transaction.presentment_tax_amount == 200
+
+        assert refund_reversal_transaction.account_currency == (
+            refund_transaction.account_currency
+        )
+        assert refund_reversal_transaction.account_amount == (
+            -refund_transaction.account_amount
+        )
 
         balance_transaction_repository = BalanceTransactionRepository.from_session(
             session

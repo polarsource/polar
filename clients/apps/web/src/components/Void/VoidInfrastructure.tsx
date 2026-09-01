@@ -48,21 +48,21 @@ export const VoidInfrastructure = () => {
       value: `${meterCount}`,
       meta: 'running',
       href: `${base}/usage/meters`,
-      span: { base: 1, md: 2, lg: 1 },
+      span: { base: 12, lg: 3 },
     },
     {
       label: 'Definition',
       value: 'v14',
       meta: 'sha 8f2c41a / active',
       href: `${base}/billing`,
-      span: { base: 1, md: 2, lg: 1 },
+      span: { base: 12, lg: 3 },
     },
     {
       label: 'Event stream',
       value: eventCount.toLocaleString('en-US'),
       meta: lastEvent ? `last ingested ${lastSeen(lastEvent)}` : 'no events',
       href: `${base}/usage`,
-      span: { base: 1, md: 2, lg: 2 },
+      span: { base: 12, lg: 6 },
     },
   ]
 
@@ -70,7 +70,7 @@ export const VoidInfrastructure = () => {
     <VoidSection label="Infrastructure" meta="Billing as code">
       <VoidGrid>
         {cells.map((cell) => (
-          <VoidCell key={cell.label} colSpan={cell.span} minHeight={200}>
+          <VoidCell key={cell.label} span={cell.span} minHeight={200}>
             <Link href={cell.href} className="flex grow">
               <Box
                 flexDirection="column"

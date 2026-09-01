@@ -42,7 +42,7 @@ export default function ClientPage() {
               />
             ))
           ) : (
-            <VoidCell colSpan={{ base: 1, md: 2, lg: 4 }}>
+            <VoidCell span={12}>
               <Box flexDirection="column" rowGap="s" paddingVertical="2xl">
                 <Text variant="heading-m" color="muted">
                   No meters running

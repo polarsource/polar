@@ -109,7 +109,7 @@ export const VoidPerformance = ({
             </Box>
           </VoidCell>
         ))}
-        <VoidCell colSpan={{ base: 1, md: 2, lg: 4 }}>
+        <VoidCell span={12}>
           <Box flexDirection="column" rowGap="2xl">
             <Text variant="heading-xxs">Revenue mix</Text>
             <VoidSegmentBar
@@ -137,7 +137,7 @@ export const VoidPerformance = ({
             />
           </Box>
         </VoidCell>
-        <VoidCell colSpan={{ base: 1, md: 2, lg: 2 }}>
+        <VoidCell span={{ base: 12, lg: 6 }}>
           <Box flexDirection="column" rowGap="2xl" flexGrow={1}>
             <Text variant="heading-xxs">Gross margin</Text>
             <VoidSegmentBar
@@ -159,7 +159,7 @@ export const VoidPerformance = ({
             />
           </Box>
         </VoidCell>
-        <VoidCell colSpan={{ base: 1, md: 2, lg: 2 }}>
+        <VoidCell span={{ base: 12, lg: 6 }}>
           <Box flexDirection="column" rowGap="2xl" flexGrow={1}>
             <Text variant="heading-xxs">Checkout conversion</Text>
             <VoidSegmentBar

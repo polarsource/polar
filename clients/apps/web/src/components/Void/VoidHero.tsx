@@ -63,14 +63,14 @@ export const VoidHero = ({ organizationId }: { organizationId: string }) => {
     >
       <Box flexDirection="column" rowGap="4xl">
         <VoidGrid>
-          <VoidCell colSpan={{ base: 1, md: 2, lg: 3 }} minHeight={220}>
+          <VoidCell span={{ base: 12, lg: 9 }} minHeight={220}>
             <Box flexDirection="column" justifyContent="end" flexGrow={1}>
               <Text variant="heading-2xl">
                 {formatCurrency('standard')(revenue, 'usd')}
               </Text>
             </Box>
           </VoidCell>
-          <VoidCell colSpan={{ base: 1, md: 2, lg: 1 }}>
+          <VoidCell span={{ base: 12, lg: 3 }}>
             <Box
               flexDirection="column"
               justifyContent="between"

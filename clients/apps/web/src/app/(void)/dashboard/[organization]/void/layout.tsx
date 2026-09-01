@@ -4,7 +4,7 @@ import { OrganizationContextProvider } from '@/providers/maintainerOrganization'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { getAuthenticatedUser } from '@/utils/user'
-import { Grid, GridItem } from '@polar-sh/orbit'
+import { VoidGrid, VoidItem } from '@/components/Void/VoidGrid'
 import { Box } from '@polar-sh/orbit/Box'
 import { notFound, redirect } from 'next/navigation'
 
@@ -48,21 +48,21 @@ export default async function Layout(props: {
           backgroundColor="background-primary"
           flexDirection="column"
         >
-          <Grid
+          <VoidGrid
             width="100%"
-            paddingHorizontal={{ base: 'l', md: '2xl' }}
-            templateColumns={{ base: '1fr', lg: 'repeat(4, 1fr)' }}
-            columnGap="none"
+            paddingHorizontal={{ base: 'xl', md: '3xl' }}
+            paddingVertical="xl"
+            rowGap="none"
             flexGrow={1}
           >
-            <VoidHeader
-              organizationName={organization.name}
-              organizationSlug={organization.slug}
-            />
-            <GridItem colSpan={{ base: 1, lg: 3 }} flexDirection="column">
-              {children}
-            </GridItem>
-          </Grid>
+            <VoidItem span={{ base: 12, lg: 2 }}>
+              <VoidHeader
+                organizationName={organization.name}
+                organizationSlug={organization.slug}
+              />
+            </VoidItem>
+            <VoidItem span={{ base: 12, lg: 10 }}>{children}</VoidItem>
+          </VoidGrid>
         </Box>
       </OrganizationContextProvider>
     </PolarThemeProvider>

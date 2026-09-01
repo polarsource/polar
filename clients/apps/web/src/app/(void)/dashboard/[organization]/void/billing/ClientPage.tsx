@@ -56,7 +56,7 @@ export default function ClientPage() {
     <Box as="main" flexDirection="column" paddingTop="xl" flexGrow={1}>
       <VoidSection flush label="Billing" meta="Billing as code">
         <VoidGrid>
-          <VoidCell colSpan={{ base: 1, md: 2, lg: 2 }}>
+          <VoidCell span={{ base: 12, lg: 6 }}>
             <Box flexDirection="column" rowGap="xl">
               <Box justifyContent="between" columnGap="l">
                 <Text variant="body" monospace>
@@ -86,7 +86,7 @@ export default function ClientPage() {
               </Box>
             </Box>
           </VoidCell>
-          <VoidCell colSpan={{ base: 1, md: 2, lg: 2 }}>
+          <VoidCell span={{ base: 12, lg: 6 }}>
             <Box
               flexDirection="column"
               justifyContent="between"

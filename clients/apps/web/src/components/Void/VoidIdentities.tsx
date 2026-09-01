@@ -73,7 +73,7 @@ export const VoidIdentities = ({
     >
       {customers.length > 0 ? (
         <VoidGrid>
-          <VoidCell colSpan={{ base: 1, md: 2, lg: 4 }}>
+          <VoidCell span={12}>
             <Box flexDirection="column" rowGap="2xl">
               <Text variant="heading-xxs">Cohort health</Text>
               <VoidSegmentBar
@@ -86,7 +86,7 @@ export const VoidIdentities = ({
               />
             </Box>
           </VoidCell>
-          <VoidCell colSpan={{ base: 1, md: 2, lg: 2 }}>
+          <VoidCell span={{ base: 12, lg: 6 }}>
             <Box flexDirection="column" rowGap="2xl" flexGrow={1}>
               <Text variant="heading-xxs">Top identities / 30 days</Text>
               <Box flexDirection="column" rowGap="xl">
@@ -140,7 +140,7 @@ export const VoidIdentities = ({
               </Link>
             </Box>
           </VoidCell>
-          <VoidCell colSpan={{ base: 1, md: 2, lg: 2 }}>
+          <VoidCell span={{ base: 12, lg: 6 }}>
             <Box flexDirection="column" rowGap="2xl" flexGrow={1}>
               <Text variant="heading-xxs">Signals</Text>
               <Box flexDirection="column" rowGap="xl">
@@ -158,7 +158,7 @@ export const VoidIdentities = ({
         </VoidGrid>
       ) : (
         <VoidGrid>
-          <VoidCell colSpan={{ base: 1, md: 2, lg: 4 }}>
+          <VoidCell span={12}>
             <Box flexDirection="column" rowGap="s" paddingVertical="2xl">
               <Text variant="heading-m" color="muted">
                 No identities yet

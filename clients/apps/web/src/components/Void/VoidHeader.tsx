@@ -59,9 +59,8 @@ export const VoidHeader = ({
       as="header"
       flexDirection="column"
       rowGap="3xl"
-      alignSelf="start"
       position={{ lg: 'sticky' }}
-      top={{ lg: 0 }}
+      top={{ lg: 'xl' }}
       paddingTop="xl"
       paddingBottom="2xl"
     >

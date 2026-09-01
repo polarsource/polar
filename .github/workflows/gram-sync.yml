@@ -1,0 +1,75 @@
+name: Sync OpenAPI to Gram
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/polar/**"
+      - "server/scripts/generate_openapi.py"
+      - "server/pyproject.toml"
+      - "server/uv.lock"
+      - "sdk/generator/**"
+  workflow_dispatch:
+
+concurrency:
+  group: gram-sync
+  cancel-in-progress: true
+
+jobs:
+  push-source:
+    name: "Push OpenAPI source"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      GRAM_API_KEY: ${{ secrets.GRAM_API_KEY }}
+      GRAM_ORG: polar
+      GRAM_PROJECT: default
+      POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
+      POLAR_PYDANTIC_AI_GATEWAY_API_KEY: "POLAR_PYDANTIC_AI_GATEWAY_API_KEY"
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: Set up server
+        working-directory: server
+        run: |
+          touch /tmp/email-renderer
+          uv sync --frozen
+          uv run task generate_dev_jwks
+
+      - name: Generate OpenAPI schema
+        working-directory: server
+        run: uv run -m scripts.generate_openapi > "$RUNNER_TEMP/raw.openapi.json"
+
+      - name: Install OpenAPI generator dependencies
+        working-directory: sdk/generator
+        run: uv sync --frozen
+
+      - name: Generate public OpenAPI schema
+        run: |
+          uv run --directory sdk/generator -m cli mcp-openapi \
+            "$RUNNER_TEMP/raw.openapi.json" \
+            --output "$RUNNER_TEMP/gram-openapi"
+
+      - name: Install Gram CLI
+        run: curl -fsSL https://raw.githubusercontent.com/speakeasy-api/cli/main/install-cli.sh | bash
+
+      - name: Push OpenAPI source
+        run: |
+          gram stage --config "$RUNNER_TEMP/gram.deploy.json" openapi \
+            --slug polar \
+            --name "Polar" \
+            --location "$RUNNER_TEMP/gram-openapi/raw.openapi.json"
+          gram push --config "$RUNNER_TEMP/gram.deploy.json" --method merge

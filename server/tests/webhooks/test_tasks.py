@@ -8,6 +8,7 @@ from polar.config import settings
 from polar.models import WebhookEndpoint, WebhookEvent
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
+from polar.version import CURRENT_API_VERSION
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import (
     _webhook_event_failed_debounce_key,
@@ -37,6 +38,7 @@ class TestWebhookEventSend:
         event = WebhookEvent(
             webhook_endpoint_id=webhook_endpoint_organization.id,
             type=WebhookEventType.customer_created,
+            api_version=CURRENT_API_VERSION,
             payload='{"foo":"bar"}',
         )
         await save_fixture(event)
@@ -63,6 +65,7 @@ class TestOnEventFailed:
             event = WebhookEvent(
                 webhook_endpoint_id=webhook_endpoint_organization.id,
                 type=WebhookEventType.customer_created,
+                api_version=CURRENT_API_VERSION,
                 payload='{"foo":"bar"}',
                 succeeded=False,
             )
@@ -88,6 +91,7 @@ class TestOnEventFailed:
             event = WebhookEvent(
                 webhook_endpoint_id=webhook_endpoint_organization.id,
                 type=WebhookEventType.customer_created,
+                api_version=CURRENT_API_VERSION,
                 payload='{"foo":"bar"}',
                 succeeded=False,
             )
@@ -113,6 +117,7 @@ class TestOnEventFailed:
             event = WebhookEvent(
                 webhook_endpoint_id=webhook_endpoint_organization.id,
                 type=WebhookEventType.customer_created,
+                api_version=CURRENT_API_VERSION,
                 payload='{"foo":"bar"}',
                 succeeded=False,
             )
@@ -123,6 +128,7 @@ class TestOnEventFailed:
         success_event = WebhookEvent(
             webhook_endpoint_id=webhook_endpoint_organization.id,
             type=WebhookEventType.customer_created,
+            api_version=CURRENT_API_VERSION,
             payload='{"foo":"bar"}',
             succeeded=True,
         )
@@ -133,6 +139,7 @@ class TestOnEventFailed:
             event = WebhookEvent(
                 webhook_endpoint_id=webhook_endpoint_organization.id,
                 type=WebhookEventType.customer_created,
+                api_version=CURRENT_API_VERSION,
                 payload='{"foo":"bar"}',
                 succeeded=False,
             )
@@ -160,6 +167,7 @@ class TestOnEventFailed:
         event = WebhookEvent(
             webhook_endpoint_id=webhook_endpoint_organization.id,
             type=WebhookEventType.customer_created,
+            api_version=CURRENT_API_VERSION,
             payload='{"foo":"bar"}',
             succeeded=False,
         )
@@ -184,6 +192,7 @@ class TestOnEventFailed:
             event = WebhookEvent(
                 webhook_endpoint_id=webhook_endpoint_organization.id,
                 type=WebhookEventType.customer_created,
+                api_version=CURRENT_API_VERSION,
                 payload='{"foo":"bar"}',
                 succeeded=False,
             )
@@ -195,6 +204,7 @@ class TestOnEventFailed:
             pending_event = WebhookEvent(
                 webhook_endpoint_id=webhook_endpoint_organization.id,
                 type=WebhookEventType.customer_created,
+                api_version=CURRENT_API_VERSION,
                 payload='{"foo":"bar"}',
                 succeeded=None,
             )
@@ -219,6 +229,7 @@ class TestOnEventFailed:
             event = WebhookEvent(
                 webhook_endpoint_id=webhook_endpoint_organization.id,
                 type=WebhookEventType.customer_created,
+                api_version=CURRENT_API_VERSION,
                 payload='{"foo":"bar"}',
                 succeeded=False,
             )
@@ -231,6 +242,7 @@ class TestOnEventFailed:
             pending_event = WebhookEvent(
                 webhook_endpoint_id=webhook_endpoint_organization.id,
                 type=WebhookEventType.customer_created,
+                api_version=CURRENT_API_VERSION,
                 payload='{"foo":"bar"}',
                 succeeded=None,
                 skipped=False,

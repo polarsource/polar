@@ -39,3 +39,23 @@ def test_valid_hostname(url: str) -> None:
         organization_id=None,
     )
     assert create.url is not None
+
+
+@pytest.mark.parametrize(
+    "api_version",
+    [
+        pytest.param("v1", id="invalid format"),
+        pytest.param("1991-06", id="not available version"),
+    ],
+)
+def test_invalid_api_version(api_version: str) -> None:
+    with pytest.raises(ValidationError):
+        WebhookEndpointCreate.model_validate(
+            {
+                "url": "https://example.com/hook",
+                "format": WebhookFormat.raw,
+                "api_version": api_version,
+                "events": [],
+                "organization_id": None,
+            }
+        )

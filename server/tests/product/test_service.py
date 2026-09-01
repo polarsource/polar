@@ -1272,34 +1272,6 @@ def _unit_price_create(
 
 @pytest.mark.asyncio
 class TestCreateUnitBasedPrice:
-    @pytest_asyncio.fixture
-    async def unit_based_pricing_enabled(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        organization.feature_settings = {"unit_based_pricing_enabled": True}
-        session.add(organization)
-        await session.flush()
-
-    @pytest.mark.auth
-    async def test_feature_disabled(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(
-                session,
-                ProductCreateRecurring(
-                    name="Product",
-                    recurring_interval=SubscriptionRecurringInterval.month,
-                    prices=[_unit_price_create()],
-                    organization_id=organization.id,
-                ),
-                auth_subject,
-            )
-
     @pytest.mark.auth
     async def test_valid(
         self,
@@ -1307,7 +1279,6 @@ class TestCreateUnitBasedPrice:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        unit_based_pricing_enabled: None,
     ) -> None:
         product = await product_service.create(
             session,
@@ -1345,7 +1316,6 @@ class TestCreateUnitBasedPrice:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        unit_based_pricing_enabled: None,
     ) -> None:
         product = await product_service.create(
             session,
@@ -1371,7 +1341,6 @@ class TestCreateUnitBasedPrice:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        unit_based_pricing_enabled: None,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
@@ -1392,12 +1361,8 @@ class TestCreateUnitBasedPrice:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        unit_based_pricing_enabled: None,
     ) -> None:
-        organization.feature_settings = {
-            "unit_based_pricing_enabled": True,
-            "seat_based_pricing_enabled": True,
-        }
+        organization.feature_settings = {"seat_based_pricing_enabled": True}
         session.add(organization)
         await session.flush()
 
@@ -1420,7 +1385,6 @@ class TestCreateUnitBasedPrice:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        unit_based_pricing_enabled: None,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
@@ -1448,7 +1412,6 @@ class TestCreateUnitBasedPrice:
         organization: Organization,
         user_organization: UserOrganization,
         meter: Meter,
-        unit_based_pricing_enabled: None,
     ) -> None:
         product = await product_service.create(
             session,

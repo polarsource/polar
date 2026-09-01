@@ -175,9 +175,6 @@ class OrganizationFeatureSettings(Schema):
     seat_based_pricing_enabled: bool = Field(
         False, description="If this organization has seat-based pricing enabled"
     )
-    unit_based_pricing_enabled: bool = Field(
-        False, description="If this organization has unit-based pricing enabled"
-    )
     wallets_enabled: bool = Field(
         False, description="If this organization has Wallets enabled"
     )

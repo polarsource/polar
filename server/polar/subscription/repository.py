@@ -44,7 +44,6 @@ from polar.models import (
     Discount,
     Product,
     ProductPrice,
-    ProductPriceMeteredUnit,
     Subscription,
     SubscriptionMeter,
     SubscriptionProductPrice,
@@ -685,7 +684,8 @@ class SubscriptionProductPriceRepository(
             )
             .where(
                 ProductPrice.is_metered,
-                ProductPriceMeteredUnit.meter_id == meter_id,
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id == meter_id,
                 Subscription.billable,
                 Subscription.customer_id == sa.any_(customer_ids_parameter),
             )

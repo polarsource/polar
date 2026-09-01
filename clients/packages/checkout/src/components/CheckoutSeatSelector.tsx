@@ -10,6 +10,8 @@ import { Input } from '@polar-sh/orbit'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getSeatPrice, type ProductCheckoutPublic } from '../guards'
 import { ErrorResponse } from '../providers/CheckoutProvider'
+import MinusIcon from './icons/MinusIcon'
+import PlusIcon from './icons/PlusIcon'
 
 export interface CheckoutSeatSelectorProps {
   checkout: ProductCheckoutPublic
@@ -190,16 +192,7 @@ const CheckoutSeatSelector = ({
               className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-l-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Decrease seats"
             >
-              <svg
-                className="h-3 w-3"
-                viewBox="0 0 14 14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <path d="M3 7h8" />
-              </svg>
+              <MinusIcon className="h-3 w-3" />
             </button>
             {isEditing ? (
               <Input
@@ -237,16 +230,7 @@ const CheckoutSeatSelector = ({
               className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-r-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Increase seats"
             >
-              <svg
-                className="h-3 w-3"
-                viewBox="0 0 14 14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <path d="M7 3v8M3 7h8" />
-              </svg>
+              <PlusIcon className="h-3 w-3" />
             </button>
           </div>
         )}

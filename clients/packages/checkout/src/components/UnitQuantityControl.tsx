@@ -2,6 +2,8 @@
 
 import { Button, Input } from '@polar-sh/orbit'
 import { type ChangeEvent, type KeyboardEvent, useState } from 'react'
+import MinusIcon from './icons/MinusIcon'
+import PlusIcon from './icons/PlusIcon'
 
 interface UnitQuantityControlProps {
   units: number
@@ -12,38 +14,6 @@ interface UnitQuantityControlProps {
 }
 
 const NUMERIC_INPUT_PATTERN = /^\d+$/
-
-const IncrementIcon = () => {
-  return (
-    <svg
-      className="h-3 w-3"
-      viewBox="0 0 14 14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M7 3v8M3 7h8" />
-    </svg>
-  )
-}
-
-const DecrementIcon = () => {
-  return (
-    <svg
-      className="h-3 w-3"
-      viewBox="0 0 14 14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 7h8" />
-    </svg>
-  )
-}
 
 export const UnitQuantityControl = ({
   units,
@@ -108,7 +78,7 @@ export const UnitQuantityControl = ({
         className={`${quantityButtonClassName} rounded-l-lg`}
         aria-label="Decrease units"
       >
-        <DecrementIcon />
+        <MinusIcon className="h-3 w-3" />
       </Button>
       {isEditing ? (
         <Input
@@ -148,7 +118,7 @@ export const UnitQuantityControl = ({
         className={`${quantityButtonClassName} rounded-r-lg`}
         aria-label="Increase units"
       >
-        <IncrementIcon />
+        <PlusIcon className="h-3 w-3" />
       </Button>
     </div>
   )

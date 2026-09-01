@@ -43,6 +43,7 @@ import { useCheckoutForm } from '../providers/CheckoutFormProvider'
 import CustomFieldInput from './CustomFieldInput'
 import PolarLogo from './PolarLogo'
 import { CheckoutBanner } from './CheckoutBanner'
+import XIcon from './icons/XIcon'
 
 const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay', 'link']
 const DEFAULT_PAYMENT_METHOD_ORDER = ['apple_pay', 'google_pay', 'card']
@@ -56,26 +57,6 @@ const KRW_PAYMENT_METHOD_ORDER = [
 ]
 
 type ContactField = 'customer_email' | 'customer_name'
-
-const XIcon = ({ className }: { className?: string }) => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
-  )
-}
 
 interface BaseCheckoutFormProps {
   form: UseFormReturn<schemas['CheckoutUpdatePublic']>

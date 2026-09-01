@@ -1,3 +1,5 @@
+import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
+import { isMeteredPrice, MeteredPrice } from '@/utils/product'
 import { ParsedMeterQuantities } from '@/hooks/queries/meters'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { schemas } from '@polar-sh/client'
@@ -21,8 +23,8 @@ export const CustomerMeter = ({
   const { meter } = customerMeter
 
   const unitPrice = customerMeter.subscription?.product.prices.find(
-    (price): price is schemas['ProductPriceMeteredUnit'] =>
-      price.amount_type === 'metered_unit' && price.meter_id === meter.id,
+    (price): price is MeteredPrice =>
+      isMeteredPrice(price) && price.meter_id === meter.id,
   )
 
   const overages = useMemo(() => {
@@ -35,13 +37,7 @@ export const CustomerMeter = ({
     }
 
     const overageUnits = Math.abs(customerMeter.balance)
-    const overageCost = overageUnits * parseFloat(unitPrice.unit_amount)
-
-    if (unitPrice.cap_amount) {
-      return Math.min(overageCost, unitPrice.cap_amount)
-    }
-
-    return overageCost
+    return estimateMeteredCost(unitPrice, overageUnits)
   }, [customerMeter.balance, unitPrice])
 
   const creditProgress = useMemo(() => {

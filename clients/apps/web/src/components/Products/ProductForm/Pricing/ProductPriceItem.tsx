@@ -95,7 +95,13 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                 <div className="flex flex-row items-center gap-2">
                   <FormControl>
                     <Select
-                      value={field.value}
+                      // Both metered types share this entry; the tiers variant
+                      // is chosen inside the metered fields, not here.
+                      value={
+                        field.value === 'metered_tiers'
+                          ? 'metered_unit'
+                          : field.value
+                      }
                       onValueChange={(v) => {
                         field.onChange(v)
                         onAmountTypeChange(

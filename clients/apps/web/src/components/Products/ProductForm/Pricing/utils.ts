@@ -113,7 +113,9 @@ const tieredCost = (
 }
 
 export const estimateMeteredCost = (
-  price: schemas['ProductPriceMeteredUnit'] | schemas['ProductPriceMeteredTiers'],
+  price:
+    | schemas['ProductPriceMeteredUnit']
+    | schemas['ProductPriceMeteredTiers'],
   units: number,
 ): number => {
   if (units <= 0) {

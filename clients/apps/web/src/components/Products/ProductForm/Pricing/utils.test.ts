@@ -61,9 +61,7 @@ describe('estimateMeteredCost', () => {
   })
 
   it.each([0, -1])('costs nothing for %i units', (units) => {
-    expect(
-      estimateMeteredCost(tieredPrice(ladder('graduated')), units),
-    ).toBe(0)
+    expect(estimateMeteredCost(tieredPrice(ladder('graduated')), units)).toBe(0)
   })
 
   describe('graduated', () => {

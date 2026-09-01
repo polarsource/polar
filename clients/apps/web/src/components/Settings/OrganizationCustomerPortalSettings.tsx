@@ -28,6 +28,7 @@ const OrganizationCustomerPortalSettings: React.FC<
       ...organization.customer_portal_settings,
       subscription: {
         pause: false,
+        update_units: false,
         ...organization.customer_portal_settings.subscription,
       },
       customer: {
@@ -112,6 +113,29 @@ const OrganizationCustomerPortalSettings: React.FC<
             <FormField
               control={control}
               name="subscription.update_seats"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={readOnly}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
+
+          <SettingsGroupItem
+            layout="inline"
+            title="Enable subscription unit changes"
+            description="Allow customers to change the number of units on their subscription from the portal."
+          >
+            <FormField
+              control={control}
+              name="subscription.update_units"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>

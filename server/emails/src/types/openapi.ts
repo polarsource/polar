@@ -1033,6 +1033,8 @@ export interface components {
       update_seats: boolean
       /** Update Plan */
       update_plan: boolean
+      /** Update Units */
+      update_units?: boolean
       /** Pause */
       pause?: boolean
     }

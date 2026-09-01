@@ -179,6 +179,7 @@ class CustomerPortalUsageSettings(TypedDict):
 class CustomerPortalSubscriptionSettings(TypedDict):
     update_seats: bool
     update_plan: bool
+    update_units: NotRequired[bool]
     pause: NotRequired[bool]
 
 
@@ -894,6 +895,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def customer_portal_subscription_update_plan(self) -> bool:
         return self.customer_portal_settings.get("subscription", {}).get(
             "update_plan", True
+        )
+
+    @property
+    def customer_portal_subscription_update_units(self) -> bool:
+        return self.customer_portal_settings.get("subscription", {}).get(
+            "update_units", False
         )
 
     @property

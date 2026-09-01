@@ -12,6 +12,7 @@ import {
 import { useRequirePaymentMethod } from '@/hooks/useRequirePaymentMethod'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { hasBillingPermission } from '@/utils/customerPortal'
+import { getUnitLabels, isUnitBasedPrice } from '@/utils/product'
 import { getPauseAction } from '@/utils/subscription'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -30,6 +31,7 @@ import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerPauseSubscriptionModal from './CustomerPauseSubscriptionModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
+import { CustomerUnitQuantityManager } from './CustomerUnitQuantityManager'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const CustomerPortalSubscription = ({
@@ -93,10 +95,14 @@ const CustomerPortalSubscription = ({
     (price) => price.amount_type === 'seat_based',
   )
 
+  const unitPrice = subscription.prices.find(isUnitBasedPrice)
+  const { unitLabel, unitLabelPlural } = getUnitLabels(unitPrice)
+
   // Check customer portal settings for seat management visibility
   const portalSettings =
     subscription.product.organization.customer_portal_settings
   const showSeatManagement = portalSettings.subscription.update_seats === true
+  const showUnitManagement = portalSettings.subscription.update_units === true
   const showPauseResume = portalSettings.subscription.pause === true
 
   const pauseAction = getPauseAction(subscription)
@@ -164,6 +170,13 @@ const CustomerPortalSubscription = ({
             )
           }
         />
+        {subscription.units !== null && (
+          <DetailRow
+            label={subscription.units === 1 ? unitLabel : unitLabelPlural}
+            labelClassName="capitalize"
+            value={subscription.units}
+          />
+        )}
         <DetailRow
           label="Status"
           value={<SubscriptionStatusLabel subscription={subscription} />}
@@ -269,6 +282,12 @@ const CustomerPortalSubscription = ({
                 value={`${subscription.seats} -> ${pendingUpdate.seats}`}
               />
             )}
+            {pendingUpdate.units !== null && (
+              <DetailRow
+                label="Units"
+                value={`${subscription.units} -> ${pendingUpdate.units}`}
+              />
+            )}
             <DetailRow
               label="Update in effect from"
               value={
@@ -339,6 +358,18 @@ const CustomerPortalSubscription = ({
           prorationBehavior={
             subscription.product.organization.proration_behavior
           }
+        />
+      )}
+
+      {unitPrice && showUnitManagement && canManageBilling && !isCancelled && (
+        <CustomerUnitQuantityManager
+          api={api}
+          subscription={subscription}
+          unitPrice={unitPrice}
+          prorationBehavior={
+            subscription.product.organization.proration_behavior
+          }
+          onUpdate={() => router.refresh()}
         />
       )}
 

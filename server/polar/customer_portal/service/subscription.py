@@ -31,12 +31,14 @@ from polar.subscription.service import subscription as subscription_service
 from ..schemas.subscription import (
     CustomerSubscriptionChangePreview,
     CustomerSubscriptionChangePreviewSeats,
+    CustomerSubscriptionChangePreviewUnits,
     CustomerSubscriptionPause,
     CustomerSubscriptionResume,
     CustomerSubscriptionUpdate,
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
     CustomerSubscriptionUpdateSeats,
+    CustomerSubscriptionUpdateUnits,
 )
 from ..utils import get_customer_id
 
@@ -52,6 +54,11 @@ class UpdateSubscriptionPlanNotAllowed(CustomerSubscriptionError):
 class UpdateSubscriptionSeatsNotAllowed(CustomerSubscriptionError):
     def __init__(self) -> None:
         super().__init__("Updating subscription seats is not allowed.", 403)
+
+
+class UpdateSubscriptionUnitsNotAllowed(CustomerSubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("Updating subscription units is not allowed.", 403)
 
 
 class PauseResumeNotAllowed(CustomerSubscriptionError):
@@ -206,6 +213,20 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     seats=updates.seats,
                 )
 
+        if isinstance(updates, CustomerSubscriptionUpdateUnits):
+            if not organization.customer_portal_subscription_update_units:
+                raise UpdateSubscriptionUnitsNotAllowed()
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                return await subscription_service.update_units(
+                    session,
+                    ctx,
+                    subscription,
+                    units=updates.units,
+                )
+
         if isinstance(updates, CustomerSubscriptionUpdateClear):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
@@ -265,6 +286,15 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 session,
                 subscription,
                 seats=change.seats,
+            )
+
+        if isinstance(change, CustomerSubscriptionChangePreviewUnits):
+            if not organization.customer_portal_subscription_update_units:
+                raise UpdateSubscriptionUnitsNotAllowed()
+            return await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                units=change.units,
             )
 
         if not organization.customer_portal_subscription_update_plan:

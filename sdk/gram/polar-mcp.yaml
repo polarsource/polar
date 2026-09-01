@@ -4,39 +4,42 @@
 # and overrides below are defined ONCE and applied to every target in `targets`
 # (sandbox + production share identical tools; only their coordinates differ).
 #
-# Sync model (planned CI step, run once per target after `gram push`):
-#   tools     -> POST /rpc/toolsets.update         (tool_urns = the included set)
-#   overrides -> POST /rpc/variations.upsertGlobal  (title/description per tool)
+# Sync model (planned CI step):
+#   gram push (OpenAPI source `source_slug`, once for the project)
+#   then for each target MCP:
+#     toolsets.update         (tool_urns = the included set)
+#     variations.upsertGlobal  (title/description per tool)
+# Each target's toolset is resolved at runtime by matching `mcp_slug` against
+# /rpc/toolsets.list — no toolset slugs to hardcode.
 #
 # Tool identity: entries under `tools` are the URN suffix after "tools:http:polar:".
 # Gram derives it from the source slug (`polar`) + the OpenAPI operationId, so the
 # names are stable as long as the source slug and operationIds don't change. The
-# sync script must validate every name against /rpc/tools.list per target and fail
-# loudly on an unknown tool rather than silently dropping it.
+# sync script must validate every name against /rpc/tools.list and fail loudly on
+# an unknown tool rather than silently dropping it.
 #
 # Regenerate/verify the tools+overrides from a live toolset with:
 #   ./sdk/gram/bootstrap_manifest.py < toolset.get.json
 
 # ---------------------------------------------------------------------------
-# Deployment targets. Same tools, different coordinates. API keys are NEVER
-# stored here — `api_key_env` names the CI secret / env var to read at sync
-# time. `server_url` is applied to each Gram environment's POLAR_SERVER_URL.
+# Shared coordinates — identical for every target (same Gram org, project, and
+# API key). The key is NEVER stored here: `api_key_env` names the CI secret.
+# ---------------------------------------------------------------------------
+org: polar
+project: default
+api_key_env: GRAM_API_KEY
+source_slug: polar   # OpenAPI source pushed by `gram push`
+
+# ---------------------------------------------------------------------------
+# MCP servers kept in sync. Same tools/overrides applied to each; the toolset
+# behind each is found by its `mcp_slug`. `server_url` is informational (which
+# Polar API the MCP targets — configured on the Gram environment, not by sync).
 # ---------------------------------------------------------------------------
 targets:
-  production:
-    org: polar
-    project: default
-    toolset_slug: polar
-    mcp_slug: polar-mcp
+  - mcp_slug: polar-mcp        # production
     server_url: https://api.polar.sh
-    api_key_env: GRAM_API_KEY_PRODUCTION
-  sandbox:
-    org: polar               # TODO: confirm sandbox org slug
-    project: default         # TODO: confirm sandbox project slug
-    toolset_slug: polar      # TODO: confirm sandbox toolset slug
-    mcp_slug: polar-sandbox
+  - mcp_slug: polar-sandbox    # sandbox
     server_url: https://sandbox-api.polar.sh
-    api_key_env: GRAM_API_KEY_SANDBOX
 
 # ---------------------------------------------------------------------------
 # Exposed tools (42), shared across all targets. Grouped by resource for

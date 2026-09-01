@@ -102,6 +102,7 @@
                 ]
               },
               "features/seat-based-pricing",
+              "features/unit-based-pricing",
               "features/custom-fields",
               "features/discounts",
               "features/tax-inclusive-pricing",

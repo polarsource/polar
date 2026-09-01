@@ -1,15 +1,21 @@
-from typing import cast
+import json
+import uuid
+from typing import Annotated, cast
 from unittest.mock import MagicMock
 
 import httpx
 import pytest
 import respx
 from dramatiq import Retry
+from pydantic import Field
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.schemas import IDSchema
+from polar.kit.utils import utc_now
+from polar.kit.versioning import Version
 from polar.models.organization import Organization
 from polar.models.subscription import Subscription
 from polar.models.webhook_delivery import WebhookDelivery
@@ -19,15 +25,57 @@ from polar.models.webhook_endpoint import (
     WebhookFormat,
 )
 from polar.models.webhook_event import WebhookEvent
+from polar.version import CURRENT_API_VERSION
 from polar.webhook.repository import WebhookDeliveryRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import _webhook_event_send, webhook_event_send
+from polar.webhook.webhooks import BaseWebhookPayload
 from tests.fixtures.database import SaveFixture
+from tests.kit.test_versioning import CURRENT_VERSION, NEXT_VERSION
 
 
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.webhook.service.enqueue_job")
+
+
+def test_versioned_raw_payload() -> None:
+    class VersionedProduct(IDSchema):
+        name: str
+        shared_field: Annotated[
+            str, Version(starting_from=CURRENT_VERSION, up_to=NEXT_VERSION)
+        ] = "shared"
+        current_field: Annotated[str, Version(up_to=CURRENT_VERSION)] = "current"
+        next_field: Annotated[
+            str,
+            Version(starting_from=NEXT_VERSION),
+            Field(description="Only available in the next API version."),
+        ] = "next"
+
+    class VersionedWebhookPayload(BaseWebhookPayload):
+        data: VersionedProduct
+
+    current_payload = VersionedWebhookPayload(
+        type=WebhookEventType.product_created,
+        timestamp=utc_now(),
+        api_version=CURRENT_VERSION,
+        data=VersionedProduct(id=uuid.uuid4(), name="Test Product"),
+    )
+    current_payload_data = json.loads(current_payload.get_raw_payload())
+    assert "shared_field" in current_payload_data["data"]
+    assert "current_field" in current_payload_data["data"]
+    assert "next_field" not in current_payload_data["data"]
+
+    next_payload = VersionedWebhookPayload(
+        type=WebhookEventType.product_created,
+        timestamp=utc_now(),
+        api_version=NEXT_VERSION,
+        data=VersionedProduct(id=uuid.uuid4(), name="Test Product"),
+    )
+    next_payload_data = json.loads(next_payload.get_raw_payload())
+    assert "shared_field" in next_payload_data["data"]
+    assert "current_field" not in next_payload_data["data"]
+    assert "next_field" in next_payload_data["data"]
 
 
 @pytest.mark.asyncio
@@ -124,6 +172,7 @@ async def test_webhook_delivery_success(
     event = WebhookEvent(
         webhook_endpoint_id=endpoint.id,
         type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
         payload='{"foo":"bar"}',
     )
     await save_fixture(event)
@@ -160,6 +209,7 @@ async def test_webhook_delivery_500(
     event = WebhookEvent(
         webhook_endpoint_id=endpoint.id,
         type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
         payload='{"foo":"bar"}',
     )
     await save_fixture(event)
@@ -213,6 +263,7 @@ async def test_webhook_delivery_http_error(
     event = WebhookEvent(
         webhook_endpoint_id=endpoint.id,
         type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
         payload='{"foo":"bar"}',
     )
     await save_fixture(event)
@@ -264,6 +315,7 @@ async def test_webhook_standard_webhooks_compatible(
     event = WebhookEvent(
         webhook_endpoint_id=endpoint.id,
         type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
         payload='{"foo":"bar"}',
     )
     await save_fixture(event)

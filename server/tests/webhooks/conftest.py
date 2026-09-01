@@ -8,6 +8,7 @@ from polar.models import (
     WebhookEvent,
 )
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
+from polar.version import CURRENT_API_VERSION
 from tests.fixtures.database import SaveFixture
 
 
@@ -35,6 +36,7 @@ async def webhook_event_user(
         last_http_code=200,
         succeeded=True,
         type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
         payload='{"foo":"bar"}',
     )
     await save_fixture(event)
@@ -65,6 +67,7 @@ async def webhook_event_organization(
         last_http_code=200,
         succeeded=True,
         type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
         payload='{"foo":"bar"}',
     )
     await save_fixture(event)

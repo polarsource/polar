@@ -122,12 +122,9 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                             {AMOUNT_TYPE_LABELS.seat_based}
                           </SelectItem>
                         )}
-                        {organization.feature_settings
-                          ?.unit_based_pricing_enabled && (
-                          <SelectItem value="unit_based">
-                            {AMOUNT_TYPE_LABELS.unit_based}
-                          </SelectItem>
-                        )}
+                        <SelectItem value="unit_based">
+                          {AMOUNT_TYPE_LABELS.unit_based}
+                        </SelectItem>
                         {recurringInterval !== null && (
                           <SelectItem value="metered_unit">
                             {AMOUNT_TYPE_LABELS.metered_unit}

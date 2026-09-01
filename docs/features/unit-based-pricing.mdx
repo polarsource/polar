@@ -1,0 +1,113 @@
+---
+title: "Unit-Based Pricing"
+description: "Sell a quantity of anything, paid up front, with tiered rates"
+---
+
+Unit-based pricing lets a customer buy a quantity of something and pay for it up front. Devices, licenses, gigabytes, servers. You name the unit, set the rate, and the buyer picks how many they want at checkout.
+
+<Info>
+**Unit-based pricing is ideal for:**
+
+- Per-device or per-installation licensing
+- Prepaid capacity, such as storage or bandwidth
+- Any quantity that isn't a person and isn't measured after the fact
+- Products where volume discounts should apply to the declared quantity
+</Info>
+
+## Choosing between unit-based, seat-based, and metered
+
+Three pricing models charge by quantity. They differ in what the quantity counts and when the customer pays.
+
+| Model | The quantity counts | Customer pays | Benefits go to |
+|-------|--------------------|--------------|----------------|
+| **Unit-based** | Anything that isn't a person | Up front | The customer, once |
+| **Seat-based** | People | Up front | Each member who claims a seat |
+| **Metered** | Consumption you record | After the period | The customer, once |
+
+Pick seat-based when each unit maps to a person who needs their own access. Polar then handles invitations, seat claims, and per-member benefits.
+
+Pick unit-based for everything else.
+
+Pick metered when Polar counts the quantity for you, from usage events. With unit-based the buyer declares the number themselves, at checkout.
+
+## How it works
+
+The buyer chooses a quantity at checkout and pays for it immediately. The price comes from the tiers you configure and the quantity they picked.
+
+On a subscription, the quantity carries across billing periods. You can change it at any time, and so can the customer if you let them. Polar prorates the difference. On a one-time purchase, the quantity is fixed at the moment of sale.
+
+## Creating a unit-based product
+
+<Steps>
+  <Step title="Create a new product">
+    From your dashboard, [create a new product](https://polar.sh/to/dashboard/products/new).
+  </Step>
+  <Step title="Configure basic settings">
+    Set your product name, description, and media as usual.
+  </Step>
+  <Step title="Select unit-based pricing">
+    Under **Pricing**, select:
+    - **Product type**: Subscription or One-time
+    - **Billing cycle** (subscriptions only): Monthly or Yearly
+    - **Pricing type**: Unit-based
+  </Step>
+  <Step title="Name the unit">
+    Set the singular and plural nouns for what you're selling, such as `device` and `devices`. They appear at checkout, in the Customer Portal, and on invoices. Leave them empty and Polar falls back to "unit" and "units".
+  </Step>
+  <Step title="Choose a tiering model">
+    Under **Tiering model**, select how the quantity is priced:
+
+    | Model | Description |
+    |-------|-------------|
+    | **Fixed price per unit** | Every unit costs the same rate. |
+    | **Volume** | The rate is set by the total quantity, and that rate applies to every unit. Crossing a threshold lowers the price on the whole order. |
+    | **Graduated** | Each tier range is priced at its own rate. The total is the sum across ranges. |
+
+    Define a tier by an upper bound and a rate. The bound is inclusive, and each tier starts where the previous one ended. Leave the last tier's bound empty for an open-ended top range.
+
+    **Example** with tiers at up to 10: \$10 per unit, and beyond: \$8 per unit:
+    - Volume: 14 units = 14 × \$8 = \$112. Every unit gets the lower rate.
+    - Graduated: 14 units = 10 × \$10 + 4 × \$8 = \$132. Each range keeps its own rate.
+  </Step>
+  <Step title="Set a minimum">
+    **Minimum units** is the smallest quantity a customer can buy. It defaults to 1.
+
+    There is no separate maximum field. If your last tier has a bound, that bound is the ceiling. Leave it open and customers can buy any quantity above the minimum.
+  </Step>
+  <Step title="Add benefits">
+    Configure the benefits the customer receives on purchase.
+  </Step>
+</Steps>
+
+### Combining with other prices
+
+Add a fixed price alongside the unit-based one for a base fee plus a per-unit rate. Metered prices can sit on top of both, so a subscription can charge a flat monthly amount, a rate per device, and usage on a meter.
+
+## Benefits
+
+The customer receives each benefit once, whatever quantity they buy. Buying 40 devices grants one license key, not 40.
+
+If you need one grant per unit, use [seat-based pricing](/features/seat-based-pricing).
+
+## Changing the quantity
+
+You can change the quantity on a subscription from your dashboard or through the API at any time.
+
+Customers can change it themselves from the Customer Portal once you allow it. Go to **Settings**, then **Customer portal**, and turn on **Enable subscription unit changes**. It is off by default.
+
+### Proration
+
+When the quantity changes mid-period, Polar prorates the difference using your organization's proration behavior:
+
+- **Increasing the quantity** charges for the added units, prorated over the remainder of the period.
+- **Reducing the quantity** credits the removed units for the unused part of the period.
+
+The full amount applies from the next billing period onward.
+
+## Limitations
+
+- The quantity is a whole number. Fractional quantities need [metered billing](/features/usage-based-billing/introduction) instead.
+- Tier rates are whole cents.
+- A product carries at most one unit-based price.
+- Unit-based cannot be combined with seat-based or pay-what-you-want pricing.
+- One-time purchases cannot change quantity after the sale. The customer buys again instead.

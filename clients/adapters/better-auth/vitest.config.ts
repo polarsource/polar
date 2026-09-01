@@ -9,10 +9,5 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'dist/', 'example/', '**/*.d.ts'],
     },
-  },
-  resolve: {
-    alias: {
-      '@': '/Users/ewidlund/dev/polar-adapters/packages/polar-betterauth/src',
-    },
-  },
+  }
 })

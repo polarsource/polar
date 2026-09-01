@@ -168,10 +168,22 @@ class TestPlanRetry:
         action, _ = plan_retry("dummy", max_retries, None, scheduler_available=True)
         assert action is not RetryAction.DEAD_LETTER
 
-    def test_sets_visibility_for_short_backoff(self) -> None:
+    def test_re_enqueues_for_short_backoff(self) -> None:
         action, delay = plan_retry("dummy", 1, None, scheduler_available=True)
+        assert action is RetryAction.RE_ENQUEUE
+        assert delay <= _sqs.MAX_DELAY_SECONDS
+
+    def test_schedules_when_backoff_exceeds_delay_cap(self) -> None:
+        long_delay = Retry(delay=2 * _sqs.MAX_DELAY_SECONDS * 1000)
+        action, delay = plan_retry("dummy", 1, long_delay, scheduler_available=True)
+        assert action is RetryAction.SCHEDULE
+        assert delay == 2 * _sqs.MAX_DELAY_SECONDS
+
+    def test_falls_back_to_visibility_without_scheduler(self) -> None:
+        long_delay = Retry(delay=2 * _sqs.MAX_DELAY_SECONDS * 1000)
+        action, delay = plan_retry("dummy", 1, long_delay, scheduler_available=False)
         assert action is RetryAction.SET_VISIBILITY
-        assert delay <= _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
+        assert delay == 2 * _sqs.MAX_DELAY_SECONDS
 
     def test_schedules_when_backoff_exceeds_visibility(self) -> None:
         long_delay = Retry(delay=2 * _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS * 1000)
@@ -184,6 +196,41 @@ class TestPlanRetry:
         action, delay = plan_retry("dummy", 1, long_delay, scheduler_available=False)
         assert action is RetryAction.SET_VISIBILITY
         assert delay == _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
+
+
+class TestSendDelayedMessage:
+    def test_re_enqueues_with_delay(self, mocker: MockerFixture) -> None:
+        client = mocker.MagicMock()
+        client.get_queue_url.return_value = {"QueueUrl": "https://sqs/queue"}
+        _sqs._queue_url_cache.clear()
+
+        _sqs.send_delayed_message(
+            client,
+            "arn:aws:sqs:us-east-2:123456789012:polar-sandbox-tasks-dummy",
+            '{"actor":"dummy"}',
+            60,
+        )
+
+        client.get_queue_url.assert_called_once_with(
+            QueueName="polar-sandbox-tasks-dummy"
+        )
+        client.send_message.assert_called_once_with(
+            QueueUrl="https://sqs/queue",
+            MessageBody='{"actor":"dummy"}',
+            DelaySeconds=60,
+        )
+
+    def test_caps_delay_at_sqs_limit(self, mocker: MockerFixture) -> None:
+        client = mocker.MagicMock()
+        client.get_queue_url.return_value = {"QueueUrl": "https://sqs/queue"}
+        _sqs._queue_url_cache.clear()
+
+        _sqs.send_delayed_message(client, "arn:q", "{}", _sqs.MAX_DELAY_SECONDS * 2)
+
+        assert (
+            client.send_message.call_args.kwargs["DelaySeconds"]
+            == _sqs.MAX_DELAY_SECONDS
+        )
 
 
 class TestBuildRetryScheduleName:

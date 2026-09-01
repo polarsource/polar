@@ -283,14 +283,14 @@ const Checkout = ({
                 {!!getSeatPrice(checkout) && (
                   <CheckoutSeatSelector
                     checkout={checkout}
-                    update={update}
+                    updateCheckout={update}
                     locale={locale}
                   />
                 )}
                 {!!getUnitPrice(checkout) && (
                   <CheckoutUnitSelector
                     checkout={checkout}
-                    update={update}
+                    updateCheckout={update}
                     locale={locale}
                   />
                 )}
@@ -429,14 +429,14 @@ const Checkout = ({
                     {!!getSeatPrice(checkout) && (
                       <CheckoutSeatSelector
                         checkout={checkout}
-                        update={update}
+                        updateCheckout={update}
                         locale={locale}
                       />
                     )}
                     {!!getUnitPrice(checkout) && (
                       <CheckoutUnitSelector
                         checkout={checkout}
-                        update={update}
+                        updateCheckout={update}
                         locale={locale}
                       />
                     )}

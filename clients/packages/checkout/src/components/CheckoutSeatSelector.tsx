@@ -15,7 +15,7 @@ import PlusIcon from './icons/PlusIcon'
 
 export interface CheckoutSeatSelectorProps {
   checkout: ProductCheckoutPublic
-  update: (
+  updateCheckout: (
     data: schemas['CheckoutUpdatePublic'],
   ) => Promise<schemas['CheckoutPublic']>
   locale?: AcceptedLocale
@@ -23,7 +23,7 @@ export interface CheckoutSeatSelectorProps {
 
 const CheckoutSeatSelector = ({
   checkout,
-  update,
+  updateCheckout,
   locale = DEFAULT_LOCALE,
 }: CheckoutSeatSelectorProps) => {
   const t = useTranslations(locale)
@@ -80,7 +80,7 @@ const CheckoutSeatSelector = ({
     ) {
       autoCorrectAttempted.current = true
 
-      update({
+      updateCheckout({
         seats: minimumSeats,
       }).catch((err) => {
         setError(getErrorMessage(err))
@@ -92,7 +92,7 @@ const CheckoutSeatSelector = ({
     isFixedSeats,
     minimumSeats,
     isUpdating,
-    update,
+    updateCheckout,
     getErrorMessage,
   ])
 
@@ -107,7 +107,7 @@ const CheckoutSeatSelector = ({
     setIsUpdating(true)
     setError(null)
 
-    await update({
+    await updateCheckout({
       seats: newSeats,
     })
       .catch((error) => {

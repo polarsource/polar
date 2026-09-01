@@ -44,7 +44,7 @@ describe('CheckoutSeatSelector', () => {
       const { container } = render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -60,7 +60,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -74,7 +74,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -90,7 +90,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -108,7 +108,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -125,7 +125,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -151,7 +151,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -171,7 +171,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -190,7 +190,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -219,7 +219,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -245,7 +245,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -271,7 +271,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -314,7 +314,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -332,7 +332,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -351,7 +351,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -370,7 +370,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -392,7 +392,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -415,7 +415,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -438,7 +438,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -461,7 +461,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -488,7 +488,7 @@ describe('CheckoutSeatSelector', () => {
         render(
           <CheckoutSeatSelector
             checkout={checkout}
-            update={update}
+            updateCheckout={update}
             locale="en"
           />,
         )
@@ -509,7 +509,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -536,7 +536,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )

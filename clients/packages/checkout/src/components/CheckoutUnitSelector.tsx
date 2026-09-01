@@ -15,7 +15,7 @@ import { UnitQuantityControl } from './UnitQuantityControl'
 
 export interface CheckoutUnitSelectorProps {
   checkout: ProductCheckoutPublic
-  update: (
+  updateCheckout: (
     data: schemas['CheckoutUpdatePublic'],
   ) => Promise<schemas['CheckoutPublic']>
   locale?: AcceptedLocale
@@ -23,7 +23,7 @@ export interface CheckoutUnitSelectorProps {
 
 const CheckoutUnitSelector = ({
   checkout,
-  update,
+  updateCheckout,
   locale = DEFAULT_LOCALE,
 }: CheckoutUnitSelectorProps) => {
   const t = useTranslations(locale)
@@ -70,7 +70,7 @@ const CheckoutUnitSelector = ({
     ) {
       autoCorrectAttempted.current = true
 
-      update({
+      updateCheckout({
         units: minimumUnits,
       }).catch((err) => {
         setError(getErrorMessage(err))
@@ -82,7 +82,7 @@ const CheckoutUnitSelector = ({
     isFixedUnits,
     minimumUnits,
     isUpdating,
-    update,
+    updateCheckout,
     getErrorMessage,
   ])
 
@@ -97,7 +97,7 @@ const CheckoutUnitSelector = ({
     setIsUpdating(true)
     setError(null)
 
-    await update({
+    await updateCheckout({
       units: newUnits,
     })
       .catch((error) => {

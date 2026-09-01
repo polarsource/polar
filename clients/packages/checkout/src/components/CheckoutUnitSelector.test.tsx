@@ -48,7 +48,7 @@ describe('CheckoutUnitSelector', () => {
       const { container } = render(
         <CheckoutUnitSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -64,7 +64,7 @@ describe('CheckoutUnitSelector', () => {
       render(
         <CheckoutUnitSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -81,7 +81,7 @@ describe('CheckoutUnitSelector', () => {
       render(
         <CheckoutUnitSelector
           checkout={createUnitCheckout()}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -97,7 +97,7 @@ describe('CheckoutUnitSelector', () => {
       render(
         <CheckoutUnitSelector
           checkout={createUnitCheckout()}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -126,7 +126,7 @@ describe('CheckoutUnitSelector', () => {
       render(
         <CheckoutUnitSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )

@@ -15,7 +15,7 @@ REFRESH_TOKEN_PREFIX: dict[SubType, str] = {
     SubType.organization: "polar_rt_o_",
 }
 
-ISSUER = "https://polar.sh"
+ISSUER = settings.BASE_URL
 SERVICE_DOCUMENTATION = "https://polar.sh/docs"
 SUBJECT_TYPES_SUPPORTED = ["public"]
 ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED = ["RS256"]

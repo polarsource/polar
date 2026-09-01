@@ -1,7 +1,18 @@
 ---
-title: "Elysia"
+title: "Elysia (deprecated)"
 description: "Payments and Checkouts made dead simple with Elysia"
 ---
+
+<Warning>
+  **`@polar-sh/elysia` is deprecated** and no longer maintained. Integrate with
+  the [TypeScript SDK](/integrate/sdk/typescript) directly instead. The
+  [`polar-integration` skill](https://github.com/polarsource/skills/tree/main/skills/polar-integration)
+  can help you migrate:
+
+  ```bash
+  npx skills add https://github.com/polarsource/skills --skill polar-integration
+  ```
+</Warning>
 
 ## Examples
 
@@ -38,7 +49,7 @@ Install the required Polar packages using the following command:
 
 Create a Checkout handler which takes care of redirections.
 
-```typescript icon="square-js" 
+```typescript icon="square-js"
 import { Elysia } from "elysia";
 import { Checkout } from "@polar-sh/elysia";
 
@@ -71,7 +82,7 @@ Pass query params to this route.
 
 Create a customer portal where your customer can view orders and subscriptions.
 
-```typescript icon="square-js" 
+```typescript icon="square-js"
 import { Elysia } from "elysia";
 import { CustomerPortal } from "@polar-sh/elysia";
 
@@ -92,7 +103,7 @@ app.get(
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
-```typescript icon="square-js" 
+```typescript icon="square-js"
 import { Elysia } from 'elysia'
 import { Webhooks } from "@polar-sh/elysia";
 

@@ -1,7 +1,18 @@
 ---
-title: "Deno"
+title: "Deno (deprecated)"
 description: "Payments and Checkouts made dead simple with Deno"
 ---
+
+<Warning>
+  **`@polar-sh/deno` is deprecated** and no longer maintained. Integrate with
+  the [TypeScript SDK](/integrate/sdk/typescript) directly instead. The
+  [`polar-integration` skill](https://github.com/polarsource/skills/tree/main/skills/polar-integration)
+  can help you migrate:
+
+  ```bash
+  npx skills add https://github.com/polarsource/skills --skill polar-integration
+  ```
+</Warning>
 
 ## Examples
 
@@ -11,7 +22,7 @@ description: "Payments and Checkouts made dead simple with Deno"
 
 Create a Checkout handler which takes care of redirections.
 
-```typescript icon="square-js" 
+```typescript icon="square-js"
 import { Checkout } from "jsr:@polar-sh/deno";
 
 Deno.serve(
@@ -38,7 +49,7 @@ Pass query params to this route.
 
 Create a customer portal where your customer can view orders and subscriptions.
 
-```typescript icon="square-js" 
+```typescript icon="square-js"
 import { CustomerPortal } from "jsr:@polar-sh/deno";
 
 Deno.serve(
@@ -55,7 +66,7 @@ Deno.serve(
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
-```typescript icon="square-js" 
+```typescript icon="square-js"
 import { Webhooks } from "jsr:@polar-sh/deno";
 
 Deno.serve(

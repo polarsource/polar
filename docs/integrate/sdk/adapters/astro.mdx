@@ -1,7 +1,18 @@
 ---
-title: "Astro"
+title: "Astro (deprecated)"
 description: "Payments and Checkouts made dead simple with Astro"
 ---
+
+<Warning>
+  **`@polar-sh/astro` is deprecated** and no longer maintained. Integrate with
+  the [TypeScript SDK](/integrate/sdk/typescript) directly instead. The
+  [`polar-integration` skill](https://github.com/polarsource/skills/tree/main/skills/polar-integration)
+  can help you migrate:
+
+  ```bash
+  npx skills add https://github.com/polarsource/skills --skill polar-integration
+  ```
+</Warning>
 
 ## Examples
 
@@ -39,7 +50,7 @@ Install the required Polar packages using the following command:
 
 Create a Checkout handler which takes care of redirections.
 
-```typescript icon="square-js" 
+```typescript icon="square-js"
 import { Checkout } from "@polar-sh/astro";
 import { POLAR_ACCESS_TOKEN, POLAR_SUCCESS_URL } from "astro:env/server";
 
@@ -67,7 +78,7 @@ Pass query params to this route.
 
 Create a customer portal where your customer can view orders and subscriptions.
 
-```typescript icon="square-js" 
+```typescript icon="square-js"
 import { CustomerPortal } from "@polar-sh/astro";
 import { POLAR_ACCESS_TOKEN } from "astro:env/server";
 
@@ -83,7 +94,7 @@ export const GET = CustomerPortal({
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
-```typescript icon="square-js" 
+```typescript icon="square-js"
 import { Webhooks } from '@polar-sh/astro';
 import { POLAR_WEBHOOK_SECRET } from "astro:env/server"
 

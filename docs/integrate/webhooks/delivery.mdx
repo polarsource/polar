@@ -115,13 +115,13 @@ implementation details with better developer ergonomics.
 If you are using a firewall or a reverse proxy that requires IP allowlisting, here are the IPs range you need to allow:
 
 <Danger>
-  **New IP ranges**
+  **New IP address**
 
-Starting **October 27th, 2025**, new IP ranges will be added:
+A new IP address will soon start sending production webhooks. Allow it now so
+deliveries aren't blocked when we start using it:
 
 ```
-74.220.50.0/24
-74.220.58.0/24
+3.134.178.243
 ```
 
 </Danger>
@@ -149,12 +149,6 @@ Starting **October 27th, 2025**, new IP ranges will be added:
 ```
 
 </CodeGroup>
-
-<Note>
-  `3.134.178.243` is not sending webhooks yet, but will in the future. Allow it
-  now so deliveries aren't blocked when we start using it. `18.117.215.101` is
-  already sending sandbox webhooks.
-</Note>
 
 ## Failure Handling
 

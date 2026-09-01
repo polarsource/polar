@@ -1,0 +1,92 @@
+name: Preview Template Refresh
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "server/migrations/**"
+      - ".github/workflows/preview-template.yml"
+  schedule:
+    - cron: "0 4 * * 1"
+
+permissions:
+  contents: read
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    name: Refresh template database
+    runs-on: ubuntu-latest
+    concurrency:
+      group: preview-template
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: Install server dependencies
+        working-directory: ./server
+        run: uv sync --frozen
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4.1.3
+        with:
+          oauth-client-id: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+          tags: ${{ vars.POLAR_PREVIEW_TAILSCALE_TAGS || 'tag:ci' }}
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: server/emails/.node-version
+
+      - name: Build config artifacts
+        working-directory: ./server
+        run: |
+          set -euo pipefail
+          uv run task emails
+          uv run python -m polar.kit.jwk polar_preview > .jwks.json
+
+      - name: Migrate template database
+        working-directory: ./server
+        env:
+          POLAR_PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
+          TEMPLATE_DATABASE: ${{ vars.POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE }}
+        run: |
+          set -euo pipefail
+          eval "$(uv run python - <<'EOF'
+          import os
+          from shlex import quote
+          from urllib.parse import unquote, urlsplit
+
+          dsn = urlsplit(os.environ["POLAR_PREVIEW_POSTGRES_ADMIN_DSN"])
+          for name, value in (
+              ("POLAR_POSTGRES_HOST", dsn.hostname or ""),
+              ("POLAR_POSTGRES_PORT", str(dsn.port or 5432)),
+              ("POLAR_POSTGRES_USER", unquote(dsn.username or "")),
+              ("POLAR_POSTGRES_PWD", unquote(dsn.password or "")),
+          ):
+              print(f"export {name}={quote(value)}")
+          EOF
+          )"
+          export POLAR_POSTGRES_DATABASE="$TEMPLATE_DATABASE"
+          export POLAR_ENV=development
+          export POLAR_CURRENT_JWK_KID=polar_preview
+
+          uv run alembic upgrade head

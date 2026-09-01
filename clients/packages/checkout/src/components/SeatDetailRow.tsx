@@ -35,7 +35,6 @@ const SeatDetailRow = ({
     <DetailRow
       title={t('checkout.pricing.seats.count', { count: row.seats })}
       subtitle={
-        '· ' +
         formatCurrency('standard', locale)(row.pricePerSeat, currency) +
         ' ' +
         t('checkout.pricing.perSeat')

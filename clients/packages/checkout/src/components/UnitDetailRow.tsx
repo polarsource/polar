@@ -33,7 +33,6 @@ const UnitDetailRow = ({
         unitLabelPlural,
       })}
       subtitle={
-        '· ' +
         formatCurrency('standard', locale)(row.pricePerUnit, currency) +
         ' ' +
         t('checkout.pricing.perUnit', { unitLabel })

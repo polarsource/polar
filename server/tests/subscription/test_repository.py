@@ -14,7 +14,7 @@ from polar.models.customer_seat import SeatStatus
 from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.postgres import AsyncSession
-from polar.product.guard import is_metered_price
+from polar.product.guard import is_metered_unit_price
 from polar.subscription.repository import (
     SubscriptionProductPriceRepository,
     SubscriptionRepository,
@@ -293,7 +293,7 @@ class TestSubscriptionProductPriceRepository:
         )
         # And the unit amount reflects subscription_a's metered price.
         product_price = customer_price.subscription_product_price.product_price
-        assert is_metered_price(product_price)
+        assert is_metered_unit_price(product_price)
         assert product_price.unit_amount == Decimal(100)
 
 

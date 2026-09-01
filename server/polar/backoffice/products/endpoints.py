@@ -14,7 +14,8 @@ from polar.product import sorting
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
-    is_metered_price,
+    is_metered_tiers_price,
+    is_metered_unit_price,
     is_seat_price,
     is_unit_price,
 )
@@ -66,7 +67,9 @@ def _format_price_display(price: ProductPrice) -> str:
         if len(price.tiers.tiers) > 1:
             return f"From {price_display} / {noun}"
         return f"{price_display} / {noun}"
-    elif is_metered_price(price):
+    elif is_metered_tiers_price(price):
+        return f"{price.meter.name}: {price.tiers.type} pricing ({len(price.tiers.tiers)} tiers)"
+    elif is_metered_unit_price(price):
         return f"{price.meter.name}: {formatters.currency(price.unit_amount, price.price_currency, decimal_quantization=False)} / unit"
     return "N/A"
 

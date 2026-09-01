@@ -7,8 +7,10 @@ from sqlalchemy import select
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Meter, Product
 from polar.models.product_price import (
+    ProductPrice,
     ProductPriceAmountType,
     ProductPriceFixed,
+    ProductPriceMeteredTiers,
     ProductPriceSeatUnit,
     ProductPriceUnit,
     TieredPrice,
@@ -21,6 +23,7 @@ from polar.product.tiers import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_product_price_metered_tiers,
     create_product_price_metered_unit,
     create_product_price_seat_unit,
 )
@@ -510,3 +513,84 @@ class TestUnitBasedPrice:
         price.unit_label = {"fr": {"=1": "siège", "other": "sièges"}}
         assert price.get_unit_noun(1) == "siège"
         assert price.get_unit_noun(2, "de") == "sièges"
+
+
+@pytest.mark.asyncio
+class TestProductPriceMeteredTiers:
+    def _price(
+        self, tiers: Tiers, cap_amount: int | None = None
+    ) -> ProductPriceMeteredTiers:
+        return ProductPriceMeteredTiers(
+            tiers=tiers, cap_amount=cap_amount, price_currency="usd"
+        )
+
+    def test_prices_consumed_units_from_its_tiers(self) -> None:
+        price = self._price(
+            Tiers.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [
+                        {"bound": 100, "unit_amount": "10"},
+                        {"bound": None, "unit_amount": "8"},
+                    ],
+                }
+            )
+        )
+
+        amount, label = price.get_amount_and_label(500)
+
+        assert amount == 4_000
+        assert label == "(500 consumed units, volume pricing)"
+
+    def test_rounds_the_total_once_not_per_tier(self) -> None:
+        price = self._price(
+            Tiers.model_validate(
+                {
+                    "type": TierType.graduated,
+                    "tiers": [
+                        {"bound": 2, "unit_amount": "0.2"},
+                        {"bound": None, "unit_amount": "0.2"},
+                    ],
+                }
+            )
+        )
+
+        # 4 × 0.2 = 0.8, which rounds to 1. Rounding each range would give 0.
+        assert price.get_amount_and_label(4)[0] == 1
+
+    def test_is_never_free_even_with_zero_rates(self) -> None:
+        price = self._price(
+            Tiers.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [{"bound": None, "unit_amount": "0"}],
+                }
+            )
+        )
+
+        assert price.is_free is False
+
+    async def test_is_metered_holds_in_a_query(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        meter: Meter,
+    ) -> None:
+        price = await create_product_price_metered_tiers(
+            save_fixture,
+            product=product,
+            meter=meter,
+            tiers=Tiers.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [{"bound": None, "unit_amount": "10"}],
+                }
+            ),
+        )
+
+        result = await session.execute(
+            select(ProductPrice.id).where(ProductPrice.is_metered)
+        )
+
+        assert price.id in result.scalars().all()

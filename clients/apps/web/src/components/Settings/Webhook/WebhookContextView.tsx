@@ -21,20 +21,22 @@ export default function WebhookContextView({
 }: {
   endpoint: schemas['WebhookEndpoint']
 }) {
+  const { secret: _, ...endpointWithoutSecret } = endpoint
   const form = useForm<schemas['WebhookEndpointUpdate']>({
-    defaultValues: {
-      ...endpoint,
-    },
+    defaultValues: endpointWithoutSecret,
   })
 
   const { handleSubmit } = form
   const updateWebhookEndpoint = useEditWebhookEndpoint()
 
   const onSubmit = useCallback(
-    async (form: schemas['WebhookEndpointUpdate']) => {
+    async (values: schemas['WebhookEndpointUpdate']) => {
+      const { secret: _secret, ...body } = values as schemas['WebhookEndpointUpdate'] & {
+        secret?: string
+      }
       const { error } = await updateWebhookEndpoint.mutateAsync({
         id: endpoint.id,
-        body: form,
+        body,
       })
       if (error) {
         toast({

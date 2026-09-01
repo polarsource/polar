@@ -4,6 +4,8 @@ import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+const NEXT_API_VERSION = '2026-10'
+
 export const useListWebhooksDeliveries = (
   parameters: NonNullable<
     operations['webhooks:list_webhook_deliveries']['parameters']['query']
@@ -80,7 +82,10 @@ export const useWebhookEndpoint = (id?: string) =>
 export const useCreateWebhookEndpoint = () =>
   useMutation({
     mutationFn: (body: schemas['WebhookEndpointCreate']) =>
-      api.POST('/v1/webhooks/endpoints', { body }),
+      api.POST('/v1/webhooks/endpoints', {
+        body,
+        headers: { 'Polar-Version': NEXT_API_VERSION },
+      }),
     onSuccess: (result) => {
       if (result.error) {
         return
@@ -104,6 +109,7 @@ export const useEditWebhookEndpoint = () =>
           },
         },
         body: variables.body,
+        headers: { 'Polar-Version': NEXT_API_VERSION },
       }),
     onSuccess: (result, variables) => {
       if (result.error) {

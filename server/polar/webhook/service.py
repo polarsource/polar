@@ -65,6 +65,7 @@ from polar.worker import enqueue_job
 from .constants import WEBHOOK_SECRET_PREFIX
 from .eventstream import publish_webhook_event
 from .schemas import (
+    DeprecatedWebhookEndpointCreateWithSecret,
     WebhookEndpointCreate,
     WebhookEndpointUpdate,
     validate_hostname,
@@ -148,10 +149,12 @@ class WebhookService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
-        if create_schema.secret is not None:
+        secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+        if (
+            isinstance(create_schema, DeprecatedWebhookEndpointCreateWithSecret)
+            and create_schema.secret is not None
+        ):
             secret = create_schema.secret
-        else:
-            secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
 
         endpoint = await repository.create(
             WebhookEndpoint(

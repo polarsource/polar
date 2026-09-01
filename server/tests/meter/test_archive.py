@@ -14,12 +14,14 @@ from polar.meter.service import meter as meter_service
 from polar.models import Benefit, Customer, Meter, Organization, Product, Subscription
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
+from polar.product.tiers import Tiers, TierType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_customer,
     create_event,
     create_product,
+    create_product_price_metered_tiers,
 )
 
 
@@ -75,6 +77,37 @@ class TestMeterArchive:
         auth_subject: AuthSubject[Organization],
     ) -> None:
         # Try to archive meter that's attached to an active product
+        with pytest.raises(PolarRequestValidationError) as exc:
+            await meter_service.archive(session, meter)
+        assert "Cannot archive meter that is still attached to active products" in str(
+            exc.value
+        )
+
+    async def test_archive_with_active_tiered_product_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        await create_product_price_metered_tiers(
+            save_fixture,
+            product=product,
+            meter=meter,
+            tiers=Tiers.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [{"bound": None, "unit_amount": "100"}],
+                }
+            ),
+        )
+
         with pytest.raises(PolarRequestValidationError) as exc:
             await meter_service.archive(session, meter)
         assert "Cannot archive meter that is still attached to active products" in str(

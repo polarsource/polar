@@ -45,7 +45,7 @@ from polar.models import (
     Event,
     Meter,
     Product,
-    ProductPriceMeteredUnit,
+    ProductPrice,
     SubscriptionProductPrice,
 )
 from polar.organization.resolver import get_payload_organization
@@ -225,15 +225,17 @@ class MeterService:
         return await repository.update(meter, update_dict=update_dict)
 
     async def archive(self, session: AsyncSession, meter: Meter) -> Meter:
-        # Check if meter is attached to any active ProductPriceMeteredUnit
+        # Check if meter is attached to any active metered price
         active_prices = await session.scalar(
-            select(func.count(ProductPriceMeteredUnit.id))
+            select(func.count(ProductPrice.id))
             .join(Product)
             .where(
                 ~Product.is_archived,
-                ProductPriceMeteredUnit.meter_id == meter.id,
-                ~ProductPriceMeteredUnit.is_archived,
-                ~ProductPriceMeteredUnit.is_deleted,
+                ProductPrice.is_metered,
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id == meter.id,
+                ~ProductPrice.is_archived,
+                ~ProductPrice.is_deleted,
             )
         )
 

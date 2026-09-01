@@ -22,8 +22,6 @@ vi.mock('better-auth/api', () => ({
   },
 }))
 
-const { APIError } = (await vi.importMock('better-auth/api')) as any
-
 describe('customer hooks', () => {
   let mockClient: ReturnType<typeof createMockPolarClient>
 

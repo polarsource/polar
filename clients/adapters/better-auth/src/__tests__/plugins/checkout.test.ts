@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CheckoutParams, checkout } from '../../plugins/checkout'
 import { resolveBillingPrincipal } from '../../principal'
-import { mockApiError, mockApiResponse } from '../utils/helpers'
+import { mockApiError } from '../utils/helpers'
 import {
   createMockBetterAuthContext,
   createMockCheckout,

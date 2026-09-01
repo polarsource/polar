@@ -30,9 +30,7 @@ const { handleWebhookPayload } = (await vi.importMock(
   '@polar-sh/adapter-utils',
 )) as any
 const { validateEvent } = (await vi.importMock('@polar-sh/sdk/webhooks')) as any
-const { APIError, createAuthEndpoint } = (await vi.importMock(
-  'better-auth/api',
-)) as any
+const { createAuthEndpoint } = (await vi.importMock('better-auth/api')) as any
 
 describe('webhooks plugin', () => {
   let mockClient: ReturnType<typeof createMockPolarClient>

@@ -13,7 +13,7 @@ export default function Home() {
   }
 
   const onClickCustomerPortal = async () => {
-    const { data: state } = await authClient.customer.portal()
+    await authClient.customer.portal()
   }
 
   const onClickCustomerState = async () => {
@@ -22,7 +22,7 @@ export default function Home() {
   }
 
   const onClickOrganization = async () => {
-    const { data: state } = await authClient.organization.create({
+    await authClient.organization.create({
       name: 'My Organization',
       slug: 'my-organization',
     })

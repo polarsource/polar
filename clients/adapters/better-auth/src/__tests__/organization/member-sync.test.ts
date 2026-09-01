@@ -201,7 +201,6 @@ describe('organization member and owner synchronization', () => {
   })
 
   it('creates an admin as a billing manager without duplicating it on retry', async () => {
-    const owner = betterAuthMember('owner', 'owner')
     const admin = betterAuthMember('admin', 'member, admin')
     const harness = createHarness({
       [organizationId]: [polarMember('owner', 'owner')],
@@ -226,10 +225,6 @@ describe('organization member and owner synchronization', () => {
   it('scopes one Better Auth user to each Polar team customer', async () => {
     const secondOrganizationId = 'organization-456'
     const shared = betterAuthMember('shared-user', 'member')
-    const firstOwner = betterAuthMember('first-owner', 'owner')
-    const secondOwner = betterAuthMember('second-owner', 'owner', {
-      organizationId: secondOrganizationId,
-    })
     const harness = createHarness({
       [organizationId]: [polarMember('first-owner', 'owner')],
       [secondOrganizationId]: [

@@ -5,7 +5,7 @@ import { portal } from '../plugins/portal'
 import { usage } from '../plugins/usage'
 import { webhooks } from '../plugins/webhooks'
 import { createTestPolarOptions } from './utils/helpers'
-import { createMockPolarClient, createMockUser } from './utils/mocks'
+import { createMockPolarClient } from './utils/mocks'
 
 vi.mock('../plugins/checkout')
 vi.mock('../plugins/portal')

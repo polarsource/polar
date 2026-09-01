@@ -29,6 +29,7 @@ from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
+    ProductPriceMeteredTiers,
 )
 from polar.organization_review.schemas import ReviewContext
 from polar.postgres import AsyncSession
@@ -46,6 +47,7 @@ from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
+    ProductPriceMeteredTiersCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceSeatTier,
@@ -773,6 +775,47 @@ class TestCreate:
         assert product.organization_id == organization.id
 
         assert len(product.prices) == len(create_schema.prices)
+
+    @pytest.mark.auth
+    async def test_valid_tiered_metered_price(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        tiers = Tiers.model_validate(
+            {
+                "type": "graduated",
+                "tiers": [
+                    {"bound": 1000, "unit_amount": "0.5"},
+                    {"bound": None, "unit_amount": "0.25"},
+                ],
+            }
+        )
+
+        product = await product_service.create(
+            session,
+            ProductCreateRecurring(
+                name="Recurring tiered metered",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                organization_id=organization.id,
+                prices=[
+                    ProductPriceMeteredTiersCreate(
+                        amount_type=ProductPriceAmountType.metered_tiers,
+                        price_currency=PresentmentCurrency.usd,
+                        meter_id=METER_ID,
+                        tiers=tiers,
+                    )
+                ],
+            ),
+            auth_subject,
+        )
+
+        price = product.prices[0]
+        assert isinstance(price, ProductPriceMeteredTiers)
+        assert price.tiers == tiers
 
     @pytest.mark.auth
     async def test_invalid_several_static_prices(

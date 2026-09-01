@@ -14,11 +14,12 @@ from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
+    ProductPriceMeteredTiersCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatTiers,
     ProductPriceUnitBasedCreate,
 )
-from polar.product.tiers import TierType
+from polar.product.tiers import Tiers, TierType
 from tests.fixtures.random_objects import METER_ID
 
 # PostgreSQL int4 range limit
@@ -104,6 +105,40 @@ def test_incomplete_trial_configuration(payload: dict[str, Any]) -> None:
         errors[0]["msg"]
         == "Both trial_interval and trial_interval_count must be set together."
     )
+
+
+class TestProductPriceMeteredTiersCreate:
+    def test_valid(self) -> None:
+        schema = ProductPriceMeteredTiersCreate(
+            amount_type=ProductPriceAmountType.metered_tiers,
+            price_currency=PresentmentCurrency.usd,
+            meter_id=METER_ID,
+            tiers=Tiers.model_validate(
+                {
+                    "type": TierType.graduated,
+                    "tiers": [
+                        {"bound": 1000, "unit_amount": "0.5"},
+                        {"bound": None, "unit_amount": "0.25"},
+                    ],
+                }
+            ),
+        )
+        assert len(schema.tiers.tiers) == 2
+
+    def test_bounded_last_tier_rejected(self) -> None:
+        # Usage has no ceiling, so the top tier has to stay open.
+        with pytest.raises(ValidationError, match="must be unbounded"):
+            ProductPriceMeteredTiersCreate(
+                amount_type=ProductPriceAmountType.metered_tiers,
+                price_currency=PresentmentCurrency.usd,
+                meter_id=METER_ID,
+                tiers=Tiers.model_validate(
+                    {
+                        "type": TierType.volume,
+                        "tiers": [{"bound": 1000, "unit_amount": "0.5"}],
+                    }
+                ),
+            )
 
 
 class TestProductPriceMeteredUnitCreate:

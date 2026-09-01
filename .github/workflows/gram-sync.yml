@@ -1,0 +1,61 @@
+name: Gram Sync
+
+# Keeps the Gram-hosted Polar MCP servers in sync with the repo:
+#   * pushes the generated OpenAPI document to the Gram source, and
+#   * applies sdk/gram/polar-mcp.yaml (exposed tools + name/description
+#     overrides) to every target MCP (polar-mcp, polar-sandbox).
+#
+# Requires a repository secret GRAM_API_KEY (a "Provider"-scoped Gram API key).
+
+concurrency: gram-sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/openapi/**"
+      - "sdk/gram/polar-mcp.yaml"
+      - "sdk/gram/sync.py"
+      - ".github/workflows/gram-sync.yml"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply changes (unchecked = dry-run)"
+        type: boolean
+        default: true
+      target:
+        description: "Limit the tools stage to one mcp_slug (optional)"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GRAM_API_KEY: ${{ secrets.GRAM_API_KEY }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --quiet pyyaml
+          curl -fsSL https://raw.githubusercontent.com/speakeasy-api/gram/main/install-cli.sh | bash
+
+      - name: Sync to Gram
+        run: |
+          args=()
+          # push to main always applies; workflow_dispatch honours the input
+          if [[ "${{ github.event_name }}" != "workflow_dispatch" || "${{ inputs.apply }}" == "true" ]]; then
+            args+=(--apply)
+          fi
+          if [[ -n "${{ inputs.target }}" ]]; then
+            args+=(--target "${{ inputs.target }}")
+          fi
+          ./sdk/gram/sync.py "${args[@]}"

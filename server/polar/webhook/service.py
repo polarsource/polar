@@ -55,6 +55,7 @@ from polar.organization.resolver import get_payload_organization
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.version import CURRENT_API_VERSION
 from polar.webhook.repository import (
     WebhookDeliveryRepository,
     WebhookEndpointRepository,
@@ -851,7 +852,12 @@ class WebhookService:
     ) -> list[WebhookEvent]:
         now = utc_now()
         payload = WebhookPayloadTypeAdapter.validate_python(
-            {"type": event, "timestamp": now, "data": data}
+            {
+                "type": event,
+                "timestamp": now,
+                "api_version": CURRENT_API_VERSION,
+                "data": data,
+            }
         )
 
         # Publish to eventstream for CLI listeners, regardless of webhook endpoints
@@ -864,13 +870,17 @@ class WebhookService:
         for endpoint in await self._get_event_target_endpoints(
             session, event=event, target=target
         ):
+            endpoint_payload = payload.model_copy(
+                update={"api_version": endpoint.api_version}
+            )
             try:
-                payload_data = payload.get_payload(endpoint.format, target)
+                payload_data = endpoint_payload.get_payload(endpoint.format, target)
                 event_type = WebhookEvent(
-                    created_at=payload.timestamp,
+                    created_at=endpoint_payload.timestamp,
                     webhook_endpoint=endpoint,
                     type=event,
                     payload=payload_data,
+                    api_version=endpoint_payload.api_version,
                 )
                 session.add(event_type)
                 events.append(event_type)

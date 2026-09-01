@@ -121,6 +121,7 @@ async def _webhook_event_send(
         "webhook-id": str(event.id),
         "webhook-timestamp": str(int(ts.timestamp())),
         "webhook-signature": signature,
+        "webhook-api-version": str(event.api_version),
     }
 
     delivery = WebhookDelivery(

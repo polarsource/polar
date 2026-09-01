@@ -135,7 +135,7 @@ const CustomerChangePlanModal = ({
     return [willTrigger, chargeOrCredit]
   }, [selectedProduct, prorationBehavior, subscription, isTrialing])
 
-  const invoicingMessage = useMemo(() => {
+  const invoicingMessage = useMemo((): string | null => {
     if (!selectedProduct) return null
 
     if (trialOutcome?.kind === 'continues') {

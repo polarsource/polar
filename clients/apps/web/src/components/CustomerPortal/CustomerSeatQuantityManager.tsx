@@ -43,7 +43,7 @@ export const CustomerSeatQuantityManager = ({
   const canDecrease = seats !== undefined && seats > assignedSeats
   const hasChanges = seats !== totalSeats
 
-  const invoicingMessage = useMemo(() => {
+  const invoicingMessage = useMemo((): string | null => {
     if (!prorationBehavior) return null
     switch (prorationBehavior) {
       case 'invoice':

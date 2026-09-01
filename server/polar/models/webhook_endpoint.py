@@ -86,8 +86,8 @@ class WebhookEndpoint(RecordModel):
     events: Mapped[list[WebhookEventType]] = mapped_column(
         JSONB, nullable=False, default=[]
     )
-    api_version: Mapped[APIVersion | None] = mapped_column(
-        APIVersionType, nullable=True, default=CURRENT_API_VERSION
+    api_version: Mapped[APIVersion] = mapped_column(
+        APIVersionType, nullable=False, default=CURRENT_API_VERSION
     )
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 

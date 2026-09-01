@@ -285,7 +285,6 @@ const Checkout = ({
                     checkout={checkout}
                     update={update}
                     locale={locale}
-                    compact
                   />
                 )}
                 {!!getUnitPrice(checkout) && (
@@ -293,7 +292,6 @@ const Checkout = ({
                     checkout={checkout}
                     update={update}
                     locale={locale}
-                    compact
                   />
                 )}
                 {checkout.active_trial_interval &&
@@ -433,7 +431,6 @@ const Checkout = ({
                         checkout={checkout}
                         update={update}
                         locale={locale}
-                        compact
                       />
                     )}
                     {!!getUnitPrice(checkout) && (
@@ -441,7 +438,6 @@ const Checkout = ({
                         checkout={checkout}
                         update={update}
                         locale={locale}
-                        compact
                       />
                     )}
                     <CheckoutPricingBreakdown

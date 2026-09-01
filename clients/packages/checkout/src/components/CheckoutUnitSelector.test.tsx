@@ -57,7 +57,7 @@ describe('CheckoutUnitSelector', () => {
     })
   })
 
-  describe('compact layout', () => {
+  describe('layout', () => {
     it('renders the Units label without throwing', () => {
       const checkout = createUnitCheckout()
 
@@ -66,7 +66,6 @@ describe('CheckoutUnitSelector', () => {
           checkout={checkout}
           update={noopUpdate}
           locale="en"
-          compact
         />,
       )
 
@@ -78,23 +77,6 @@ describe('CheckoutUnitSelector', () => {
   })
 
   describe('default layout', () => {
-    it('shows the unit selector heading and total', () => {
-      const checkout = createUnitCheckout({
-        net_amount: 3000,
-      })
-
-      render(
-        <CheckoutUnitSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      expect(screen.getByText('Number of units')).toBeInTheDocument()
-      expect(screen.getByTestId('headline-price')).toHaveTextContent('$30')
-    })
-
     it('increments the unit quantity', async () => {
       render(
         <CheckoutUnitSelector
@@ -131,7 +113,7 @@ describe('CheckoutUnitSelector', () => {
     })
   })
 
-  describe('compact layout with a custom label', () => {
+  describe('custom unit label', () => {
     it('title-cases the merchant plural noun', () => {
       const price = createUnitBasedPrice({
         unit_label: { en: { '=1': 'device', other: 'devices' } },
@@ -146,7 +128,6 @@ describe('CheckoutUnitSelector', () => {
           checkout={checkout}
           update={noopUpdate}
           locale="en"
-          compact
         />,
       )
 

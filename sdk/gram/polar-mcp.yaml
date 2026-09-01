@@ -1,0 +1,132 @@
+# Polar MCP — Gram toolset definition
+#
+# Single source of truth for the Gram-hosted "Polar" MCP server:
+#   * which Polar API operations are exposed as MCP tools (`tools`), and
+#   * per-tool display overrides — name/description/behaviour (`overrides`).
+#
+# This file is environment-agnostic. The same toolset is deployed to BOTH the
+# sandbox and production Gram targets; org/project/API-key and the server URL
+# (POLAR_SERVER_URL) are supplied per-target at sync time, never stored here.
+#
+# Sync model (planned CI step, runs per target after `gram push`):
+#   tools     -> POST /rpc/toolsets.update        (tool_urns = the included set)
+#   overrides -> POST /rpc/variations.upsertGlobal (title/description per tool)
+#
+# Tool identity: entries below are the URN suffix after "tools:http:polar:".
+# Gram derives it from the source slug (`polar`) + the OpenAPI operationId, so
+# these names are stable as long as the source slug and operationIds don't
+# change. The sync script must validate every name against /rpc/tools.list and
+# fail loudly on an unknown tool rather than silently dropping it.
+#
+# Bootstrapped from the live production MCP (toolset "polar", mcp "polar-mcp").
+# Regenerate/verify from a live toolset with:
+#   ./sdk/gram/bootstrap_manifest.py < toolset.get.json
+
+toolset_slug: polar
+mcp_slug: polar-mcp
+
+# ---------------------------------------------------------------------------
+# Exposed tools (42). Grouped by resource for readability only; order is not
+# significant. Anything NOT listed here is excluded from the MCP.
+# ---------------------------------------------------------------------------
+tools:
+  # Customers
+  - polar_customers_list
+  - polar_customers_create
+  - polar_customers_get
+  - polar_customers_get_external
+  - polar_customers_get_state
+  - polar_customers_get_state_external
+  - polar_customers_get_balance
+  - polar_customers_update
+  - polar_customers_update_external
+  - polar_customers_delete
+  - polar_customers_delete_external
+  - polar_customers_export
+
+  # Products
+  - polar_products_list
+  - polar_products_get
+  - polar_products_create
+  - polar_products_update
+  - polar_products_update_benefits
+
+  # Orders
+  - polar_orders_list
+  - polar_orders_get
+  - polar_orders_update
+  - polar_orders_invoice
+  - polar_orders_generate_invoice
+
+  # Subscriptions
+  - polar_subscriptions_list
+  - polar_subscriptions_get
+  - polar_subscriptions_update
+  - polar_subscriptions_revoke
+  - polar_subscriptions_export
+
+  # Payments
+  - polar_payments_list
+  - polar_payments_get
+
+  # Customer meters
+  - polar_customer_meters_list
+  - polar_customer_meters_get
+
+  # Metrics
+  - polar_metrics_get
+  - polar_metrics_limits
+
+  # Webhooks
+  - polar_webhooks_list_webhook_endpoints
+  - polar_webhooks_get_webhook_endpoint
+  - polar_webhooks_create_webhook_endpoint
+  - polar_webhooks_update_webhook_endpoint
+  - polar_webhooks_delete_webhook_endpoint
+  - polar_webhooks_reset_webhook_endpoint_secret
+  - polar_webhooks_list_webhook_deliveries
+  - polar_webhooks_redeliver_webhook_event
+
+  # Organizations
+  - polar_organizations_list
+
+# ---------------------------------------------------------------------------
+# Display overrides. Only tools whose MCP name/description should differ from
+# the OpenAPI operation's own summary/description need an entry. Everything
+# else inherits from the source spec. (Mirrors the current live variations.)
+# ---------------------------------------------------------------------------
+overrides:
+  polar_products_create:
+    title: Create product
+    description: Create a new product with pricing and benefits (entitlements).
+
+  polar_products_list:
+    title: List products
+    description: List all products in your organization.
+
+  polar_products_get:
+    title: Get product
+    description: Retrieve a specific product by ID.
+
+  polar_products_update:
+    title: Update product
+    description: Update an existing product's details, pricing, or settings.
+
+  polar_products_update_benefits:
+    title: Update product benefits
+    description: Update which benefits are granted when a product is purchased.
+
+  polar_customers_create:
+    title: Create customer
+    description: Create a new customer record with email, name, metadata, and optional external_id for reconciliation.
+
+  polar_subscriptions_list:
+    title: List subscriptions
+    description: List active subscriptions.
+
+  polar_subscriptions_get:
+    title: Get subscription details
+    description: Get a subscription by ID.
+
+  polar_subscriptions_revoke:
+    title: Revoke subscription

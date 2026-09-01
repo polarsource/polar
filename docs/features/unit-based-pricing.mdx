@@ -3,13 +3,13 @@ title: "Unit-Based Pricing"
 description: "Sell a quantity of anything, paid up front, with tiered rates"
 ---
 
-Unit-based pricing lets a customer buy a quantity of something and pay for it up front. Devices, licenses, gigabytes, credits, servers. You name the unit, set the rate, and the buyer picks how many they want at checkout.
+Unit-based pricing lets a customer buy a quantity of something and pay for it up front. Devices, licenses, gigabytes, servers. You name the unit, set the rate, and the buyer picks how many they want at checkout.
 
 <Info>
 **Unit-based pricing is ideal for:**
 
 - Per-device or per-installation licensing
-- Prepaid capacity, such as storage or credits
+- Prepaid capacity, such as storage or bandwidth
 - Any quantity that isn't a person and isn't measured after the fact
 - Products where volume discounts should apply to the declared quantity
 </Info>
@@ -26,9 +26,9 @@ Three pricing models charge by quantity. They differ in what the quantity counts
 
 Pick seat-based when each unit maps to a person who needs their own access. Polar then handles invitations, seat claims, and per-member benefits.
 
-Pick unit-based for everything else. Nobody expects buying 500 GB to create 500 accounts, and there is no Gigabyte #17 to grant anything to.
+Pick unit-based for everything else.
 
-Pick metered when you can only count the quantity after the customer has used it.
+Pick metered when Polar counts the quantity for you, from usage events. With unit-based the buyer declares the number themselves, at checkout.
 
 ## How it works
 
@@ -87,11 +87,7 @@ Add a fixed price alongside the unit-based one for a base fee plus a per-unit ra
 
 The customer receives each benefit once, whatever quantity they buy. Buying 40 devices grants one license key, not 40.
 
-<Info>
-This is what separates unit-based from seat-based pricing. Seat-based quantities are denominated in people, so Polar grants benefits to each member individually. Unit-based quantities are denominated in anything else, so there is nobody to distribute to.
-
-If you need one grant per unit, use seat-based pricing.
-</Info>
+If you need one grant per unit, use [seat-based pricing](/features/seat-based-pricing).
 
 ## Changing the quantity
 

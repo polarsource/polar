@@ -1,8 +1,9 @@
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -79,6 +80,9 @@ class WebhookEndpoint(RecordModel):
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     format: Mapped[WebhookFormat] = mapped_column(String, nullable=False)
     secret: Mapped[str] = mapped_column(String, nullable=False)
+    secret_generated_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
     events: Mapped[list[WebhookEventType]] = mapped_column(
         JSONB, nullable=False, default=[]
     )

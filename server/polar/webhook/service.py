@@ -157,6 +157,7 @@ class WebhookService:
             WebhookEndpoint(
                 **create_schema.model_dump(exclude={"secret"}, by_alias=True),
                 secret=secret,
+                secret_generated_at=utc_now(),
                 organization=organization,
             )
         )
@@ -192,9 +193,13 @@ class WebhookService:
                     ]
                 ) from e
 
+        update_dict = update_schema.model_dump(exclude_unset=True, exclude_none=True)
+        if "secret" in update_dict:
+            update_dict["secret_generated_at"] = utc_now()
+
         return await repository.update(
             endpoint,
-            update_dict=update_schema.model_dump(exclude_unset=True, exclude_none=True),
+            update_dict=update_dict,
         )
 
     async def reset_endpoint_secret(
@@ -212,6 +217,7 @@ class WebhookService:
             endpoint,
             update_dict={
                 "secret": generate_token(prefix=WEBHOOK_SECRET_PREFIX),
+                "secret_generated_at": utc_now(),
             },
         )
 

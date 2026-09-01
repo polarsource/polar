@@ -75,6 +75,8 @@ class TestCreateEndpoint:
             session, auth_subject, create_schema
         )
         assert endpoint.organization == organization
+        assert endpoint.secret.startswith("whsec_")
+        assert endpoint.secret_generated_at is not None
 
 
 @pytest.mark.asyncio
@@ -144,6 +146,8 @@ class TestResetEndpointSecret:
             session, auth_subject, endpoint=webhook_endpoint_organization
         )
         assert updated_endpoint.secret != old_secret
+        assert updated_endpoint.secret.startswith("whsec_")
+        assert updated_endpoint.secret_generated_at is not None
 
 
 @pytest.mark.asyncio

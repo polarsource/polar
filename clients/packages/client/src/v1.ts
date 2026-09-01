@@ -14586,6 +14586,7 @@ export interface components {
           | components['schemas']['ProductPriceSeatBasedCreate']
           | components['schemas']['ProductPriceUnitBasedCreate']
           | components['schemas']['ProductPriceMeteredUnitCreate']
+          | components['schemas']['ProductPriceMeteredTiersCreate']
         )[]
       } | null
     }
@@ -28622,6 +28623,12 @@ export interface components {
        */
       seat_based_pricing_enabled: boolean
       /**
+       * Metered Tiered Pricing Enabled
+       * @description If this organization has tiered pricing for metered prices enabled
+       * @default false
+       */
+      metered_tiered_pricing_enabled: boolean
+      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false
@@ -31810,6 +31817,7 @@ export interface components {
         | components['schemas']['ProductPriceSeatBasedCreate']
         | components['schemas']['ProductPriceUnitBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
+        | components['schemas']['ProductPriceMeteredTiersCreate']
       )[]
       /**
        * Medias
@@ -31881,6 +31889,7 @@ export interface components {
         | components['schemas']['ProductPriceSeatBasedCreate']
         | components['schemas']['ProductPriceUnitBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
+        | components['schemas']['ProductPriceMeteredTiersCreate']
       )[]
       /**
        * Medias
@@ -32009,6 +32018,7 @@ export interface components {
       | components['schemas']['ProductPriceSeatBased']
       | components['schemas']['ProductPriceUnitBased']
       | components['schemas']['ProductPriceMeteredUnit']
+      | components['schemas']['ProductPriceMeteredTiers']
     /**
      * ProductPriceCustom
      * @description A pay-what-you-want price for a product.
@@ -32610,6 +32620,100 @@ export interface components {
       custom_multiplier: number | null
     }
     /**
+     * ProductPriceMeteredTiers
+     * @description A metered, usage-based, price for a product, billed from tiers.
+     */
+    ProductPriceMeteredTiers: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /**
+       * Cap Amount
+       * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
+       */
+      cap_amount: number | null
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description The ID of the meter associated to the price.
+       */
+      meter_id: string
+      /** @description The meter associated to the price. */
+      meter: components['schemas']['ProductPriceMeter']
+      /** @description The pricing tiers based on consumed units. */
+      tiers: components['schemas']['Tiers-Output']
+    }
+    /**
+     * ProductPriceMeteredTiersCreate
+     * @description Schema to create a metered price billed from tiers on consumed units.
+     */
+    ProductPriceMeteredTiersCreate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description The ID of the meter associated to the price.
+       */
+      meter_id: string
+      /** @description Tiered pricing based on consumed units. */
+      tiers: components['schemas']['Tiers-Input']
+      /**
+       * Cap Amount
+       * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
+       */
+      cap_amount?: number | null
+    }
+    /**
      * ProductPriceMeteredUnit
      * @description A metered, usage-based, price for a product, with a fixed unit price.
      */
@@ -32657,11 +32761,6 @@ export interface components {
        */
       product_id: string
       /**
-       * Unit Amount
-       * @description The price per unit in cents.
-       */
-      unit_amount: string
-      /**
        * Cap Amount
        * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
        */
@@ -32674,6 +32773,11 @@ export interface components {
       meter_id: string
       /** @description The meter associated to the price. */
       meter: components['schemas']['ProductPriceMeter']
+      /**
+       * Unit Amount
+       * @description The price per unit in cents.
+       */
+      unit_amount: string
     }
     /**
      * ProductPriceMeteredUnitCreate
@@ -33041,6 +33145,7 @@ export interface components {
                 | components['schemas']['ProductPriceSeatBasedCreate']
                 | components['schemas']['ProductPriceUnitBasedCreate']
                 | components['schemas']['ProductPriceMeteredUnitCreate']
+                | components['schemas']['ProductPriceMeteredTiersCreate']
               )
           )[]
         | null
@@ -70610,6 +70715,12 @@ export const productPriceFixedAmount_typeValues: ReadonlyArray<
 export const productPriceFixedCreateAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceFixedCreate']['amount_type']
 > = ['fixed']
+export const productPriceMeteredTiersAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductPriceMeteredTiers']['amount_type']
+> = ['metered_tiers']
+export const productPriceMeteredTiersCreateAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductPriceMeteredTiersCreate']['amount_type']
+> = ['metered_tiers']
 export const productPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']

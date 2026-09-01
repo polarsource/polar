@@ -192,7 +192,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -384,7 +389,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -576,7 +586,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -771,7 +786,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -966,7 +986,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1150,7 +1175,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1337,7 +1367,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1521,7 +1556,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1705,7 +1745,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1889,7 +1934,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2076,7 +2126,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2263,7 +2318,12 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2450,6 +2510,11 @@
     "checkout.pricing.meteredChargesMayApply": "Additional metered charges may apply",
     "checkout.pricing.meteredIncluded": "{units} included",
     "checkout.pricing.meterUnits.token": "tokens",
-    "checkout.pricing.meterUnits.scalar": "units"
+    "checkout.pricing.meterUnits.scalar": "units",
+    "checkout.footer.mandateSubscriptionTrialDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
+    "checkout.pricing.firstPayment": "First payment",
+    "checkout.pricing.totalAfterTrial": "Total after trial",
+    "checkout.trial.hero.freeUntil": "Free until {date}"
   }
 }

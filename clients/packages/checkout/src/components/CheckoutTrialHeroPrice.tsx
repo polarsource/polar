@@ -5,6 +5,7 @@ import type { AcceptedLocale } from '@polar-sh/i18n'
 import { DEFAULT_LOCALE, useTranslations } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
 import type { ProductCheckoutPublic } from '../guards'
+import { isTemporaryDiscount } from '../utils/discount'
 import { isLegacyRecurringPrice } from '../utils/product'
 
 export interface CheckoutTrialHeroPriceProps {
@@ -46,6 +47,25 @@ const CheckoutTrialHeroPrice = ({
       ? checkout.active_trial_interval_count! * 7
       : checkout.active_trial_interval_count!
   const trialLabel = t(TRIAL_FREE_KEYS[trialUnit], { count: trialCount })
+
+  if (isTemporaryDiscount(checkout.discount)) {
+    return (
+      <div className="flex flex-col gap-y-1">
+        <span>{trialLabel}</span>
+        {checkout.trial_end && (
+          <span className="dark:text-polar-500 text-sm text-gray-500">
+            {t('checkout.trial.hero.freeUntil', {
+              date: formatDate(checkout.trial_end, effectiveLocale, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              }),
+            })}
+          </span>
+        )}
+      </div>
+    )
+  }
 
   const currency = checkout.currency ?? product_price.price_currency
   const recurringAmount = checkout.total_amount ?? checkout.net_amount ?? 0

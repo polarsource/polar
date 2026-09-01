@@ -11,6 +11,10 @@ export default {
       buyerTermsLink: 'Köpvillkor',
       mandateOneTime:
         'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår onlineåterförsäljare och registrerade handlare, debiterar din valda betalningsmetod med beloppet som visas ovan, samt accepterar {buyerTermsLink}. Detta är en engångsavgift.',
+      mandateSubscriptionTrialDiscounted:
+        'Genom att klicka på "{buttonLabel}" ger du Polar Software, Inc., vår återförsäljare online och merchant of record, tillstånd att debitera din valda betalningsmetod det rabatterade belopp som visas ovan när din provperiod är slut, och ordinarie pris på varje faktureringsdatum efter att din rabattperiod har upphört, tills du avbryter, och godkänner {buyerTermsLink}. Du kan när som helst avbryta före provperiodens slut för att undvika debitering.',
+      mandateSubscriptionDiscounted:
+        'Genom att klicka på "{buttonLabel}" ger du Polar Software, Inc., vår återförsäljare online och merchant of record, tillstånd att omedelbart debitera din valda betalningsmetod det rabatterade belopp som visas ovan, och ordinarie pris på varje faktureringsdatum efter att din rabattperiod har upphört, tills du avbryter, och godkänner {buyerTermsLink}.',
     },
     form: {
       email: 'Email',
@@ -112,6 +116,8 @@ export default {
         token: 'tokens',
         scalar: 'enheter',
       },
+      firstPayment: 'Första betalning',
+      totalAfterTrial: 'Totalt efter provperiod',
     },
     trial: {
       hero: {
@@ -140,6 +146,7 @@ export default {
         },
         then: 'Därefter',
         startingDate: 'från {date}',
+        freeUntil: 'Gratis till {date}',
       },
     },
     pwywForm: {

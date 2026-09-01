@@ -167,6 +167,76 @@ describe('CheckoutTrialHeroPrice', () => {
       expect(container.textContent).toContain('$49.99/year')
     })
 
+    describe('with a limited-time discount', () => {
+      const discountedCheckout = (
+        discount: Partial<NonNullable<ProductCheckoutPublic['discount']>>,
+        overrides: Partial<ProductCheckoutPublic> = {},
+      ) =>
+        createTrialCheckout({
+          amount: 9999,
+          discount_amount: 5000,
+          net_amount: 4999,
+          total_amount: 4999,
+          discount: {
+            id: 'disc_1',
+            name: '50% off',
+            type: 'percentage',
+            code: null,
+            basis_points: 5000,
+            ...discount,
+          } as ProductCheckoutPublic['discount'],
+          ...overrides,
+        })
+
+      it('replaces the price line with the trial end date for a once discount', () => {
+        const { container } = render(
+          <CheckoutTrialHeroPrice
+            checkout={discountedCheckout({ duration: 'once' })}
+            locale="en"
+          />,
+        )
+
+        expect(screen.getByText('1 month free')).toBeInTheDocument()
+        expect(screen.getByText('Free until April 5, 2026')).toBeInTheDocument()
+        expect(container.textContent).not.toContain('Then')
+        expect(container.textContent).not.toContain('$')
+      })
+
+      it('replaces the price line with the trial end date for repeating discounts', () => {
+        const { container } = render(
+          <CheckoutTrialHeroPrice
+            checkout={discountedCheckout(
+              { duration: 'repeating', duration_in_months: 3 },
+              {
+                product: { ...trialProduct, recurring_interval: 'month' },
+              },
+            )}
+            locale="en"
+          />,
+        )
+
+        expect(screen.getByText('1 month free')).toBeInTheDocument()
+        expect(screen.getByText('Free until April 5, 2026')).toBeInTheDocument()
+        expect(container.textContent).not.toContain('Then')
+        expect(container.textContent).not.toContain('$')
+      })
+
+      it('omits the free-until line when trial_end is unknown', () => {
+        const { container } = render(
+          <CheckoutTrialHeroPrice
+            checkout={discountedCheckout(
+              { duration: 'once' },
+              { trial_end: null },
+            )}
+            locale="en"
+          />,
+        )
+
+        expect(screen.getByText('1 month free')).toBeInTheDocument()
+        expect(container.textContent).not.toContain('Free until')
+      })
+    })
+
     it('shows "starting" date when trial_end is set', () => {
       const checkout = createTrialCheckout({
         trial_end: '2026-04-05T00:00:00Z',

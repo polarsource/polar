@@ -8,7 +8,7 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
-import { addDays, addMonths, addWeeks, addYears } from 'date-fns'
+import { addMonths } from 'date-fns'
 import { useMemo } from 'react'
 import {
   getFixedPrice,
@@ -18,7 +18,12 @@ import {
   isLegacyRecurringProductPrice,
 } from '../guards'
 import { getSeatRows } from '../utils/seats'
-import { getDiscountDisplay } from '../utils/discount'
+import {
+  addBillingInterval,
+  getDiscountDisplay,
+  getDiscountEndDate,
+  isTemporaryDiscount,
+} from '../utils/discount'
 import { getUnitRows } from '../utils/units'
 import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
@@ -36,42 +41,6 @@ function formatShortDate(date: Date, locale: AcceptedLocale): string {
   })
 }
 
-function addInterval(date: Date, interval: string, count: number | null): Date {
-  const c = count ?? 1
-  switch (interval) {
-    case 'day':
-      return addDays(date, c)
-    case 'week':
-      return addWeeks(date, c)
-    case 'month':
-      return addMonths(date, c)
-    case 'year':
-      return addYears(date, c)
-    default:
-      return addMonths(date, c)
-  }
-}
-
-function getDiscountEndDate(
-  baseDate: Date,
-  discount: NonNullable<schemas['CheckoutPublic']['discount']>,
-  interval: string | null,
-  intervalCount: number | null,
-): Date {
-  if (discount.duration === 'once') {
-    return interval
-      ? addInterval(baseDate, interval, intervalCount)
-      : addMonths(baseDate, intervalCount ?? 1)
-  }
-  if (
-    'duration_in_months' in discount &&
-    typeof discount.duration_in_months === 'number'
-  ) {
-    return addMonths(baseDate, discount.duration_in_months)
-  }
-  return baseDate
-}
-
 export interface CheckoutPricingBreakdownProps {
   checkout: schemas['CheckoutPublic']
   locale?: AcceptedLocale
@@ -84,6 +53,8 @@ const CheckoutPricingBreakdown = ({
   trialDueTodayExperiment = false,
 }: CheckoutPricingBreakdownProps) => {
   const t = useTranslations(locale)
+
+  const temporaryDiscount = isTemporaryDiscount(checkout.discount)
 
   const interval = hasProductCheckout(checkout)
     ? isLegacyRecurringProductPrice(checkout.product_price)
@@ -115,7 +86,7 @@ const CheckoutPricingBreakdown = ({
         baseDate,
         checkout.discount.duration_in_months,
       )
-      const nextCycle = addInterval(baseDate, interval, intervalCount)
+      const nextCycle = addBillingInterval(baseDate, interval, intervalCount)
       if (discountEnd <= nextCycle) {
         return ''
       }
@@ -277,11 +248,25 @@ const CheckoutPricingBreakdown = ({
               : '—'}
           </DetailRow>
 
-          <DetailRow title={totalLabel} emphasis={!trialDueTodayExperiment}>
+          <DetailRow
+            title={
+              temporaryDiscount && interval
+                ? checkout.trial_end
+                  ? t('checkout.pricing.totalAfterTrial')
+                  : t('checkout.pricing.firstPayment')
+                : totalLabel
+            }
+            subtitle={
+              temporaryDiscount && interval && checkout.trial_end
+                ? formatShortDate(new Date(checkout.trial_end), locale)
+                : undefined
+            }
+            emphasis={!trialDueTodayExperiment}
+          >
             <AmountLabel
               amount={checkout.total_amount}
               currency={checkout.currency}
-              interval={interval}
+              interval={temporaryDiscount ? null : interval}
               intervalCount={intervalCount}
               mode="standard"
               locale={locale}

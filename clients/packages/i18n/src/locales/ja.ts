@@ -11,6 +11,10 @@ export default {
       mandateOneTime:
         '「{buttonLabel}」をクリックすると、オンライン再販業者兼販売元である Polar Software, Inc. に対し、上記の金額を選択した支払い方法に請求することを承認し、{buyerTermsLink} に同意したものとみなされます。これは1回限りの請求です。',
       buyerTermsLink: '購入者規約',
+      mandateSubscriptionTrialDiscounted:
+        '「{buttonLabel}」をクリックすると、Polar Software, Inc.（当社のオンライン再販業者および販売記録上の販売者）に対し、試用期間終了時に上記に表示された割引額を選択したお支払い方法に請求し、割引期間終了後はキャンセルするまで各請求日に通常価格を請求すること、および {buyerTermsLink} に同意することを承認したものとみなされます。請求を避けるには、試用期間終了前であればいつでもキャンセルできます。',
+      mandateSubscriptionDiscounted:
+        '「{buttonLabel}」をクリックすると、Polar Software, Inc.（当社のオンライン再販業者および販売記録上の販売者）に対し、上記に表示された割引額を選択したお支払い方法に直ちに請求し、割引期間終了後はキャンセルするまで各請求日に通常価格を請求すること、および {buyerTermsLink} に同意することを承認したものとみなされます。',
     },
     form: {
       email: 'メールアドレス',
@@ -112,6 +116,8 @@ export default {
         token: 'トークン',
         scalar: '単位',
       },
+      firstPayment: '初回のお支払い',
+      totalAfterTrial: '試用期間後の合計',
     },
     trial: {
       hero: {
@@ -140,6 +146,7 @@ export default {
         },
         then: 'その後',
         startingDate: '{date}から',
+        freeUntil: '{date} まで無料',
       },
     },
     pwywForm: {

@@ -56,6 +56,38 @@ describe('MandateText', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders discount-aware trial mandate when a limited-time discount is active', () => {
+    render(
+      <MandateText
+        isPaymentRequired={true}
+        isTrial={true}
+        isRecurring={true}
+        hasTemporaryDiscount={true}
+        buttonLabel="Start trial"
+      />,
+    )
+
+    expect(screen.getByText(/discounted amount/)).toBeInTheDocument()
+    expect(screen.getByText(/after your discount ends/)).toBeInTheDocument()
+    expect(screen.getByText(/trial period/)).toBeInTheDocument()
+  })
+
+  it('renders discount-aware subscription mandate when a limited-time discount is active', () => {
+    render(
+      <MandateText
+        isPaymentRequired={true}
+        isTrial={false}
+        isRecurring={true}
+        hasTemporaryDiscount={true}
+        buttonLabel="Subscribe"
+      />,
+    )
+
+    expect(screen.getByText(/discounted amount/)).toBeInTheDocument()
+    expect(screen.getByText(/after your discount ends/)).toBeInTheDocument()
+    expect(screen.queryByText(/trial period/)).not.toBeInTheDocument()
+  })
+
   it('renders merchant of record text without buyer terms link when payment is not required', () => {
     render(
       <MandateText
@@ -70,5 +102,35 @@ describe('MandateText', () => {
     expect(
       screen.queryByRole('link', { name: 'Buyer Terms' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('ignores the discount flag for one-time purchases', () => {
+    render(
+      <MandateText
+        isPaymentRequired={true}
+        isTrial={false}
+        isRecurring={false}
+        hasTemporaryDiscount={true}
+        buttonLabel="Pay now"
+      />,
+    )
+
+    expect(screen.getByText(/one-time charge/)).toBeInTheDocument()
+    expect(screen.queryByText(/discount/)).not.toBeInTheDocument()
+  })
+
+  it('prefers merchant of record over every other variant when payment is not required', () => {
+    render(
+      <MandateText
+        isPaymentRequired={false}
+        isTrial={true}
+        isRecurring={true}
+        hasTemporaryDiscount={true}
+        buttonLabel="Continue"
+      />,
+    )
+
+    expect(screen.getByText(/Merchant of Record/)).toBeInTheDocument()
+    expect(screen.queryByText(/trial period/)).not.toBeInTheDocument()
   })
 })

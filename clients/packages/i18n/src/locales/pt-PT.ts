@@ -11,6 +11,10 @@ export default {
       buyerTermsLink: 'Termos de Compra',
       mandateOneTime:
         'Ao clicar em "{buttonLabel}", autoriza a Polar Software, Inc., o nosso revendedor online e comerciante registado, a cobrar o montante indicado acima no seu método de pagamento selecionado e concorda com os {buyerTermsLink}. Esta é uma cobrança única.',
+      mandateSubscriptionTrialDiscounted:
+        'Ao clicar em "{buttonLabel}", autoriza a Polar Software, Inc., o nosso revendedor online e comerciante registado, a debitar no método de pagamento selecionado o valor com desconto acima indicado no final do período experimental e, após o fim do desconto, o preço normal em cada data de cobrança, até cancelar, e concorda com os {buyerTermsLink}. Pode cancelar a qualquer momento antes do fim do período experimental para evitar ser cobrado.',
+      mandateSubscriptionDiscounted:
+        'Ao clicar em "{buttonLabel}", autoriza a Polar Software, Inc., o nosso revendedor online e comerciante registado, a debitar imediatamente no método de pagamento selecionado o valor com desconto acima indicado e, após o fim do desconto, o preço normal em cada data de cobrança, até cancelar, e concorda com os {buyerTermsLink}.',
     },
     form: {
       email: 'E-mail',
@@ -113,6 +117,8 @@ export default {
         token: 'tokens',
         scalar: 'unidades',
       },
+      firstPayment: 'Primeiro pagamento',
+      totalAfterTrial: 'Total após o período experimental',
     },
     trial: {
       hero: {
@@ -141,6 +147,7 @@ export default {
         },
         then: 'Depois',
         startingDate: 'a partir de {date}',
+        freeUntil: 'Grátis até {date}',
       },
     },
     pwywForm: {

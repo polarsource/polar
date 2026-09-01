@@ -11,6 +11,10 @@ export default {
       buyerTermsLink: 'Kopersvoorwaarden',
       mandateOneTime:
         'Door op "{buttonLabel}" te klikken, machtig je Polar Software, Inc., onze online wederverkoper en officiële verkoper, om het hierboven getoonde bedrag via je gekozen betaalmethode in rekening te brengen, en ga je akkoord met de {buyerTermsLink}. Dit is een eenmalige betaling.',
+      mandateSubscriptionTrialDiscounted:
+        'Door op "{buttonLabel}" te klikken, machtigt u Polar Software, Inc., onze online reseller en merchant of record, om het hierboven getoonde kortingsbedrag aan het einde van uw proefperiode in rekening te brengen op uw geselecteerde betaalmethode, en vervolgens de reguliere prijs op elke factureringsdatum nadat uw korting is afgelopen, totdat u opzegt, en gaat u akkoord met de {buyerTermsLink}. U kunt op elk moment vóór het einde van uw proefperiode opzeggen om te voorkomen dat er kosten in rekening worden gebracht.',
+      mandateSubscriptionDiscounted:
+        'Door op "{buttonLabel}" te klikken, machtigt u Polar Software, Inc., onze online reseller en merchant of record, om het hierboven getoonde kortingsbedrag direct in rekening te brengen op uw geselecteerde betaalmethode, en vervolgens de reguliere prijs op elke factureringsdatum nadat uw korting is afgelopen, totdat u opzegt, en gaat u akkoord met de {buyerTermsLink}.',
     },
     form: {
       email: 'E-mailadres',
@@ -113,6 +117,8 @@ export default {
         token: 'tokens',
         scalar: 'eenheden',
       },
+      firstPayment: 'Eerste betaling',
+      totalAfterTrial: 'Totaal na proefperiode',
     },
     trial: {
       hero: {
@@ -141,6 +147,7 @@ export default {
         },
         then: 'Daarna',
         startingDate: 'vanaf {date}',
+        freeUntil: 'Gratis tot {date}',
       },
     },
     pwywForm: {

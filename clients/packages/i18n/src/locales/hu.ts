@@ -11,6 +11,10 @@ export default {
       buyerTermsLink: 'Vásárlási feltételek',
       mandateOneTime:
         'A(z) „{buttonLabel}” gombra kattintva felhatalmazza a Polar Software, Inc.-t, online viszonteladónkat és hivatalos kereskedőnket, hogy a kiválasztott fizetési módot megterhelje a fent látható összeggel, valamint elfogadja a(z) {buyerTermsLink} rendelkezéseit. Ez egy egyszeri terhelés.',
+      mandateSubscriptionTrialDiscounted:
+        'Azzal, hogy a "{buttonLabel}," gombra kattint, felhatalmazza a Polar Software, Inc.-et, mint online viszonteladót és a kereskedői jogok birtokosát, hogy a kiválasztott fizetési módról a próbaidőszak végén levonja a fent látható kedvezményes összeget, majd a kedvezmény lejárta után minden számlázási napon a rendszeres árat egészen a lemondásig, továbbá elfogadja a {buyerTermsLink} feltételeit. A terhelés elkerülése érdekében a próbaidőszak vége előtt bármikor lemondhat.',
+      mandateSubscriptionDiscounted:
+        'Azzal, hogy a "{buttonLabel}," gombra kattint, felhatalmazza a Polar Software, Inc.-et, mint online viszonteladót és a kereskedői jogok birtokosát, hogy a kiválasztott fizetési módról azonnal levonja a fent látható kedvezményes összeget, majd a kedvezmény lejárta után minden számlázási napon a rendszeres árat egészen a lemondásig, továbbá elfogadja a {buyerTermsLink} feltételeit.',
     },
     form: {
       email: 'E-mail cím',
@@ -112,6 +116,8 @@ export default {
         token: 'tokenek',
         scalar: 'egységek',
       },
+      firstPayment: 'Első fizetés',
+      totalAfterTrial: 'Összesen a próbaidőszak után',
     },
     trial: {
       hero: {
@@ -140,6 +146,7 @@ export default {
         },
         then: 'Ezután',
         startingDate: 'kezdés: {date}',
+        freeUntil: 'Ingyenes {date}-ig',
       },
     },
     pwywForm: {

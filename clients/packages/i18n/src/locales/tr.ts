@@ -11,6 +11,10 @@ export default {
       mandateOneTime:
         '"{buttonLabel}" düğmesine tıklayarak, çevrimiçi satıcımız ve kayıtlı satıcı olarak Polar Software, Inc.\'in, seçtiğiniz ödeme yönteminden yukarıda gösterilen tutarı tahsil etmesine yetki vermiş ve {buyerTermsLink} koşullarını kabul etmiş olursunuz. Bu tek seferlik bir tahsilattır.',
       buyerTermsLink: 'Alıcı Koşulları',
+      mandateSubscriptionTrialDiscounted:
+        '"{buttonLabel}" düğmesine tıklayarak, Polar Software, Inc.\'i, çevrimiçi yeniden satıcımız ve kayıtlı satıcı olarak, deneme sürenizin sonunda yukarıda gösterilen indirimli tutarı seçtiğiniz ödeme yönteminden tahsil etmeye; indirim süreniz sona erdikten sonra iptal edene kadar her fatura tarihinde normal fiyatı tahsil etmeye; ve {buyerTermsLink} koşullarını kabul etmiş olursunuz. Ücretlendirilmemek için deneme süreniz bitmeden istediğiniz zaman iptal edebilirsiniz.',
+      mandateSubscriptionDiscounted:
+        '"{buttonLabel}" düğmesine tıklayarak, Polar Software, Inc.\'i, çevrimiçi yeniden satıcımız ve kayıtlı satıcı olarak, seçtiğiniz ödeme yönteminden yukarıda gösterilen indirimli tutarı derhal tahsil etmeye; indirim süreniz sona erdikten sonra iptal edene kadar her fatura tarihinde normal fiyatı tahsil etmeye; ve {buyerTermsLink} koşullarını kabul etmiş olursunuz.',
     },
     form: {
       email: 'E-posta',
@@ -112,6 +116,8 @@ export default {
         token: 'tokenlar',
         scalar: 'birimler',
       },
+      firstPayment: 'İlk ödeme',
+      totalAfterTrial: 'Deneme sonrası toplam',
     },
     trial: {
       hero: {
@@ -140,6 +146,7 @@ export default {
         },
         then: 'Sonrasında',
         startingDate: '{date} itibarıyla',
+        freeUntil: '{date} tarihine kadar ücretsiz',
       },
     },
     pwywForm: {

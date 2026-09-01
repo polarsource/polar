@@ -10,6 +10,18 @@ export default {
         'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel, and agree to the {buyerTermsLink}.',
       mandateOneTime:
         'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above, and agree to the {buyerTermsLink}. This is a one-time charge.',
+      mandateSubscriptionTrialDiscounted: {
+        value:
+          'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the discounted amount shown above at the end of your trial period, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.',
+        _llmContext:
+          'Legal mandate text for a free-trial subscription checkout where a limited-time discount (applied once or for a set number of months) is active, so the first invoice(s) differ from the ongoing price. Nothing is charged at purchase time — the first charge happens at the end of the trial, so do not add words like "immediately" (unlike the no-trial variant). Keep legal terminology precise and consistent with the sibling mandate strings in the target locale, especially the established translation of "merchant of record".',
+      },
+      mandateSubscriptionDiscounted: {
+        value:
+          'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.',
+        _llmContext:
+          'Legal mandate text for a subscription checkout (no trial) where a limited-time discount is active, so the first invoice(s) differ from the ongoing price. Keep legal terminology precise in the target locale.',
+      },
       buyerTermsLink: 'Buyer Terms',
     },
     form: {
@@ -121,6 +133,16 @@ export default {
         _llmContext:
           'Total row label on free-trial checkouts where nothing is charged until the trial ends; shown next to a zero amount.',
       },
+      firstPayment: {
+        value: 'First payment',
+        _llmContext:
+          'Total row label in the pricing breakdown when a limited-time discount makes the first payment cheaper than the ongoing recurring price and the subscription starts immediately (no trial); the amount next to it applies to the first payment only.',
+      },
+      totalAfterTrial: {
+        value: 'Total after trial',
+        _llmContext:
+          'Total row label in the pricing breakdown on free-trial checkouts when a limited-time discount makes the first charge cheaper than the ongoing recurring price. Shown next to the date of that first charge, e.g. "Total after trial Oct 31 · $49.50".',
+      },
       perSeat: 'per seat',
       basePrice: {
         value: 'Base price',
@@ -222,6 +244,11 @@ export default {
           value: 'starting {date}',
           _llmContext:
             'Suffix after the recurring price when a trial end date is known. Displayed as: "Then $99.99/year starting April 5, 2026". The "Then" prefix and bold price are separate elements.',
+        },
+        freeUntil: {
+          value: 'Free until {date}',
+          _llmContext:
+            'Trial hero subtitle shown when a limited-time discount is active, replacing the recurring-price line (which would be misleading). States when the free trial ends, e.g. "Free until October 31, 2026". The full pricing breakdown appears directly below.',
         },
       },
     },

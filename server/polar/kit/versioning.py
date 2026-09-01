@@ -13,7 +13,7 @@ from collections.abc import (
 )
 
 from fastapi import APIRouter, FastAPI
-from fastapi.routing import APIRoute
+from fastapi.routing import APIRoute, RouteContext, iter_route_contexts
 from pydantic import Field, GetJsonSchemaHandler
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
@@ -236,19 +236,23 @@ class VersionedAPIRoute(APIRoute):
 type _RouteKey = tuple[str, frozenset[str]]
 
 
-def _get_route_key(route: APIRoute) -> _RouteKey:
-    return route.path, frozenset(route.methods or ())
+def _get_route_key(route_context: RouteContext) -> _RouteKey:
+    assert route_context.path is not None
+    return route_context.path, frozenset(route_context.methods or ())
 
 
 def finalize_versioned_routes(
-    routes: Iterable[BaseRoute], versions: Iterable[APIVersion]
+    route_contexts: Iterable[RouteContext], versions: Iterable[APIVersion]
 ) -> None:
     supported_versions = tuple(sorted(set(versions)))
     route_versions_map: dict[_RouteKey, list[VersionedAPIRoute]] = {}
 
-    for route in routes:
+    for route_context in route_contexts:
+        route = route_context.original_route
         if isinstance(route, VersionedAPIRoute):
-            route_versions_map.setdefault(_get_route_key(route), []).append(route)
+            route_versions_map.setdefault(_get_route_key(route_context), []).append(
+                route
+            )
 
     for route_key, route_versions in route_versions_map.items():
         versioned_routes = [
@@ -304,25 +308,28 @@ def finalize_versioned_routes(
 
 
 def routes_for_version(
-    routes: Iterable[BaseRoute], version: APIVersion
-) -> list[BaseRoute]:
+    route_contexts: Iterable[RouteContext], version: APIVersion
+) -> list[RouteContext]:
     return [
-        route
-        for route in routes
-        if not isinstance(route, VersionedAPIRoute) or route.is_available_in(version)
+        route_context
+        for route_context in route_contexts
+        if not isinstance(route_context.original_route, VersionedAPIRoute)
+        or route_context.original_route.is_available_in(version)
     ]
 
 
 def _create_openapi_endpoint(
     version: APIVersion,
-    routes: Sequence[BaseRoute],
+    route_contexts: Sequence[RouteContext],
     webhooks: Sequence[BaseRoute],
 ) -> Callable[[], Awaitable[JSONResponse]]:
     @functools.cache
     def get_schema() -> dict[str, typing.Any]:
         from polar.openapi import get_openapi
 
-        return get_openapi(version=version, routes=routes, webhooks=webhooks)
+        return get_openapi(
+            version=version, route_contexts=route_contexts, webhooks=webhooks
+        )
 
     async def openapi() -> JSONResponse:
         return JSONResponse(get_schema())
@@ -348,14 +355,16 @@ def add_versioned_routers(
 
     first_route_index = len(app.router.routes)
     app.include_router(api_router)
-    api_routes = app.router.routes[first_route_index:]
-    finalize_versioned_routes(api_routes, supported_versions)
+    api_route_contexts = tuple(
+        iter_route_contexts(app.router.routes[first_route_index:])
+    )
+    finalize_versioned_routes(api_route_contexts, supported_versions)
 
     for version in supported_versions:
-        version_routes = routes_for_version(api_routes, version)
+        version_route_contexts = routes_for_version(api_route_contexts, version)
         app.add_api_route(
             f"/{version}/openapi.json",
-            _create_openapi_endpoint(version, version_routes, webhooks),
+            _create_openapi_endpoint(version, version_route_contexts, webhooks),
             methods=["GET"],
             include_in_schema=False,
             name=f"openapi:{version}",

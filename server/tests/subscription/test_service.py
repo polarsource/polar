@@ -2971,6 +2971,7 @@ class TestCheckMeterCycleLag:
         with pytest.raises(SubscriptionMeterCycleLag):
             subscription_service.check_meter_cycle_lag(subscription)
 
+    @freeze_time("2024-01-15 12:00:00")
     async def test_noop_within_one_period(
         self,
         save_fixture: SaveFixture,
@@ -6790,14 +6791,17 @@ class TestUpdateTrial:
 
         trial_end = subscription.current_period_end + timedelta(days=14)
 
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
-        ) as ctx:
-            updated_subscription = await subscription_service.update_trial(
-                session, ctx, subscription, trial_end=trial_end
-            )
+        trial_added_at = datetime(2025, 6, 1, 12, 0, 0, tzinfo=UTC)
+        with freezegun.freeze_time(trial_added_at):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end=trial_end
+                )
 
         assert updated_subscription.status == SubscriptionStatus.trialing
+        assert updated_subscription.trial_start == trial_added_at
         assert updated_subscription.trial_end == trial_end
         assert updated_subscription.current_period_end == trial_end
         assert updated_subscription.trialing

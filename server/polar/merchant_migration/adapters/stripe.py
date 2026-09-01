@@ -295,7 +295,14 @@ class StripeAdapter:
             stopped_for_migration=self._stopped_for_migration(subscription),
             anchor_day=self._anchor_day(subscription),
             currency=subscription.currency,
+            automatic_tax=self._automatic_tax(subscription),
         )
+
+    def _automatic_tax(self, subscription: stripe_lib.Subscription) -> bool | None:
+        automatic_tax = subscription.get("automatic_tax")
+        if automatic_tax is None:
+            return None
+        return bool(automatic_tax.get("enabled"))
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

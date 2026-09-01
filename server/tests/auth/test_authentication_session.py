@@ -1,6 +1,12 @@
 import pytest
+from pytest_mock import MockerFixture
+from starlette.requests import Request
 
-from polar.auth.authentication_session import AuthenticationSessionService
+from polar.auth.authentication_session import (
+    AuthenticationSessionService,
+    get_optional_authentication_session,
+)
+from polar.config import settings
 from polar.models import AuthenticationSession
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -30,3 +36,19 @@ class TestUpdate:
         await session.refresh(authentication_session)
 
         assert authentication_session.context == {"foo": "bar"}
+
+
+@pytest.mark.asyncio
+class TestGetOptionalAuthenticationSession:
+    async def test_non_ascii_cookie_returns_none(
+        self, session: AsyncSession, mocker: MockerFixture
+    ) -> None:
+        cookie = f"{settings.AUTHENTICATION_SESSION_COOKIE_KEY}=token-中文".encode()
+        request = Request({"type": "http", "headers": [(b"cookie", cookie)]})
+        service = AuthenticationSessionService(session, set())
+        get_by_token_mock = mocker.patch.object(service, "get_by_token")
+
+        result = await get_optional_authentication_session(request, service)
+
+        assert result is None
+        get_by_token_mock.assert_not_called()

@@ -4,13 +4,8 @@ import { DataTableColumnDef } from '@polar-sh/orbit'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { HeaderCheckState } from '../selection'
-import {
-  entityLabelSingular,
-  isImported,
-  isSelectable,
-  ReviewRow,
-  rowAmount,
-} from './reviewRows'
+import { renewsLabel } from '../recordFormat'
+import { isImported, isSelectable, ReviewRow, rowAmount } from './reviewRows'
 
 interface ColumnContext {
   isSelected: (id: string) => boolean
@@ -27,7 +22,7 @@ export function buildReviewColumns({
   onToggle,
   onToggleAll,
 }: ColumnContext): DataTableColumnDef<ReviewRow>[] {
-  const columns: DataTableColumnDef<ReviewRow>[] = [
+  return [
     {
       id: 'select',
       size: 44,
@@ -48,30 +43,31 @@ export function buildReviewColumns({
     },
     {
       id: 'name',
-      size: 420,
+      size: 280,
       header: 'Customer',
       cell: ({ row }) => <NameCell row={row.original} />,
     },
-  ]
-
-  columns.push(
     {
-      id: 'type',
-      size: 140,
-      header: 'Type',
-      cell: ({ row }) => (
-        <Text color="muted">{entityLabelSingular(row.original.entity)}</Text>
-      ),
+      id: 'product',
+      size: 200,
+      header: 'Product',
+      cell: ({ row }) => <ProductCell row={row.original} />,
     },
     {
       id: 'status',
-      size: 180,
+      size: 160,
       header: 'Import',
       cell: ({ row }) => <ReviewStatusIndicator row={row.original} />,
     },
     {
+      id: 'renews',
+      size: 140,
+      header: 'Renews',
+      cell: ({ row }) => <RenewsCell row={row.original} />,
+    },
+    {
       id: 'amount',
-      size: 150,
+      size: 140,
       header: () => (
         <Box width="100%" justifyContent="end">
           <Text variant="caption" color="muted">
@@ -81,19 +77,38 @@ export function buildReviewColumns({
       ),
       cell: ({ row }) => <AmountCell row={row.original} />,
     },
-  )
-
-  return columns
+  ]
 }
 
 function NameCell({ row }: { row: ReviewRow }) {
   return (
     <Box minWidth={0}>
       <Text truncate color={row.status === 'skipped' ? 'muted' : 'default'}>
-        {row.title}
+        {row.customer_email || row.title}
       </Text>
     </Box>
   )
+}
+
+function ProductCell({ row }: { row: ReviewRow }) {
+  if (!row.product_name) {
+    return <Text color="muted">—</Text>
+  }
+  return (
+    <Box minWidth={0}>
+      <Text truncate color={row.status === 'skipped' ? 'muted' : 'default'}>
+        {row.product_name}
+      </Text>
+    </Box>
+  )
+}
+
+function RenewsCell({ row }: { row: ReviewRow }) {
+  const label = renewsLabel(row)
+  if (!label) {
+    return <Text color="muted">—</Text>
+  }
+  return <Text color="muted">{label}</Text>
 }
 
 function AmountCell({ row }: { row: ReviewRow }) {

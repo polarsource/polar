@@ -3,6 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 
 from fastapi.openapi.utils import get_openapi as _get_openapi
+from fastapi.routing import RouteContext
 from starlette.routing import BaseRoute
 
 from polar.kit.metadata import add_metadata_query_schema
@@ -62,7 +63,9 @@ class APITag(StrEnum):
 
 
 def get_openapi(
-    version: "APIVersion", routes: Sequence[BaseRoute], webhooks: Sequence[BaseRoute]
+    version: "APIVersion",
+    route_contexts: Sequence[RouteContext],
+    webhooks: Sequence[BaseRoute],
 ) -> dict[str, Any]:
     with api_version_context(version):
         openapi_schema = _get_openapi(
@@ -70,7 +73,7 @@ def get_openapi(
             version=str(version),
             summary="Polar HTTP and Webhooks API",
             description="Read the docs at https://polar.sh/docs/api-reference",
-            routes=routes,
+            routes=route_contexts,
             webhooks=webhooks,
             tags=APITag.metadata(),  # type: ignore
             servers=[

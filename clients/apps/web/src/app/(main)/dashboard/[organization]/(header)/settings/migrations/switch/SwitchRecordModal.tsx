@@ -1,9 +1,9 @@
 'use client'
 
+import { DetailCell } from '@/components/Orders/OrderSection'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ReactNode } from 'react'
+import { renewalDate } from '../recordFormat'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
 import { needsAttention, SwitchRow } from './switchRows'
 
@@ -43,44 +43,30 @@ export function SwitchRecordModal({
           </Box>
         )}
 
-        <Box as="section" flexDirection="column" rowGap="m">
-          <Field label="Status">
-            <SwitchStatusIndicator row={row} />
-          </Field>
-          {row.subtitle && (
-            <Field label="Stripe status">
-              <Text>{row.subtitle}</Text>
-            </Field>
-          )}
-          <Field label="Payment method">
-            <Text color={row.has_payment_method ? 'default' : 'danger'}>
-              {row.has_payment_method ? 'Ready to charge' : 'None yet'}
-            </Text>
-          </Field>
-          {row.renews_at && (
-            <Field label="Renews on Stripe">
-              <FormattedDateTime datetime={row.renews_at} />
-            </Field>
-          )}
-          <Field label="Stripe ID">
-            <Text monospace variant="caption" color="muted">
-              {row.source_id}
-            </Text>
-          </Field>
+        <Box flexDirection="column" rowGap="l" minWidth={0}>
+          <Text variant="body" as="h3">
+            Subscription
+          </Text>
+          <Box flexDirection="column" rowGap="m" minWidth={0}>
+            <DetailCell
+              label="Switch"
+              value={<SwitchStatusIndicator row={row} />}
+            />
+            {row.subtitle ? (
+              <DetailCell label="Status" value={row.subtitle} />
+            ) : null}
+            <DetailCell
+              label="Payment method"
+              value={row.has_payment_method ? 'Ready to charge' : null}
+            />
+            <DetailCell label="Renewal on Stripe" value={renewalDate(row)} />
+            <DetailCell
+              label="Stripe subscription ID"
+              value={row.source_id}
+              monospace
+            />
+          </Box>
         </Box>
-      </Box>
-    </Box>
-  )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <Box alignItems="baseline" columnGap="l" justifyContent="between">
-      <Text variant="caption" color="muted">
-        {label}
-      </Text>
-      <Box minWidth={0} justifyContent="end">
-        {children}
       </Box>
     </Box>
   )

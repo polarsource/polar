@@ -405,7 +405,7 @@ jobs:
     with:
       environment: sandbox
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
-      render-worker-service-ids: "srv-d62q7vh4tr6s73fk44ng,srv-d733cp15pdvs73f6vqng,srv-d7unnjhj2pic73c2vr60,srv-d089jj7diees73934kgg"
+      render-worker-service-ids: "srv-d089jj7diees73934kgg"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}

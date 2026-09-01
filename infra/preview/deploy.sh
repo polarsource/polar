@@ -98,20 +98,21 @@ fi
 git -C "$CHECKOUT" checkout -f "$SHA"
 
 # --- Detect what changed ---
-BACKEND_CHANGED=true
-FRONTEND_CHANGED=true
+CHANGED_FILES="UNKNOWN"
 if [[ -n "$PREV_SHA" ]] && [[ "$PREV_SHA" != "$SHA" ]]; then
     CHANGED_FILES=$(git -C "$CHECKOUT" diff --name-only "$PREV_SHA" "$SHA" 2>/dev/null || echo "UNKNOWN")
-    if [[ "$CHANGED_FILES" != "UNKNOWN" ]]; then
-        if ! echo "$CHANGED_FILES" | grep -q '^server/'; then
-            BACKEND_CHANGED=false
-            log "No backend changes detected"
-        fi
-        if ! echo "$CHANGED_FILES" | grep -q '^clients/'; then
-            FRONTEND_CHANGED=false
-            log "No frontend changes detected"
-        fi
-    fi
+fi
+
+# True when the previous SHA is unknown, so an undiffable deploy rebuilds everything
+changed() {
+    [[ "$CHANGED_FILES" == "UNKNOWN" ]] && return 0
+    printf '%s\n' "$CHANGED_FILES" | grep -E "$1" >/dev/null
+}
+
+BACKEND_CHANGED=true
+if ! changed '^server/'; then
+    BACKEND_CHANGED=false
+    log "No backend changes detected"
 fi
 
 # --- Backend dependencies ---
@@ -119,23 +120,33 @@ cd "${CHECKOUT}/server"
 if [[ "$BACKEND_CHANGED" == "true" ]]; then
     log "Installing backend dependencies"
     uv sync --frozen
+fi
 
+# Build outputs are gitignored, so they can be missing even when the sources
+# are unchanged.
+if changed '^server/emails/' || [[ ! -x "${CHECKOUT}/server/emails/bin/react-email-pkg" ]]; then
     log "Building email renderer"
     uv run task emails
 fi
 
-# Built every deploy (not gated on BACKEND_CHANGED): assets are
-# gitignored so they can be missing even when backend is unchanged.
-log "Building backoffice assets"
-uv run task backoffice
+if changed '^server/polar/backoffice/' || [[ ! -f "${CHECKOUT}/server/polar/backoffice/static/styles.css" ]] || [[ ! -f "${CHECKOUT}/server/polar/backoffice/static/scripts.js" ]]; then
+    log "Building backoffice assets"
+    uv run task backoffice
+fi
 
 # --- Frontend dependencies ---
-if [[ "$FRONTEND_CHANGED" == "true" ]]; then
+# next dev resolves packages through their source or dist JS, never their
+# type declarations, so skip the tsup DTS pass: it dominates the build.
+export POLAR_SKIP_DTS=1
+cd "${CHECKOUT}/clients"
+if changed '^clients/(pnpm-lock\.yaml|pnpm-workspace\.yaml|package\.json|patches/|.*/package\.json)' || [[ ! -d node_modules ]]; then
     log "Installing frontend dependencies"
-    cd "${CHECKOUT}/clients"
     pnpm install --frozen-lockfile
-    cd "${CHECKOUT}/server"
 fi
+
+log "Building frontend packages"
+pnpm exec turbo run build --filter='./packages/*'
+cd "${CHECKOUT}/server"
 
 # --- Backend .env (must be written before migrations) ---
 log "Writing backend .env"
@@ -203,7 +214,7 @@ log "Restarting services"
 systemctl restart polar-backend polar-frontend
 
 # --- Deferred demo and analytics data ---
-systemctl reset-failed "$SEED_COMPLEMENT_UNIT"
+systemctl reset-failed "$SEED_COMPLEMENT_UNIT" 2>/dev/null || true
 systemctl restart --no-block "$SEED_COMPLEMENT_UNIT"
 log "Simple-complement seed started; status at ${BASE_URL}/_logs/seed"
 

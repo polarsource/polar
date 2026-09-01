@@ -43,15 +43,17 @@ export const CustomerSeatQuantityManager = ({
   const canDecrease = seats !== undefined && seats > assignedSeats
   const hasChanges = seats !== totalSeats
 
-  const invoicingMessage = useMemo(() => {
+  const invoicingMessage = useMemo((): string | null => {
     if (!prorationBehavior) return null
     switch (prorationBehavior) {
       case 'invoice':
-        return "I'll be charged immediately with a proration for the current month."
+        return "You'll be charged immediately, with a proration for the current period."
       case 'prorate':
-        return 'Your next invoice will include the updated seats plus the proration for the current month.'
+        return 'Your next invoice will include the updated seats plus the proration for the current period.'
       case 'next_period':
         return 'The seat update will be applied on your next billing cycle.'
+      case 'reset':
+        return "You'll be charged the full new amount immediately, and your billing period restarts today."
     }
   }, [prorationBehavior])
 

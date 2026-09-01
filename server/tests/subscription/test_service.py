@@ -2971,6 +2971,7 @@ class TestCheckMeterCycleLag:
         with pytest.raises(SubscriptionMeterCycleLag):
             subscription_service.check_meter_cycle_lag(subscription)
 
+    @freeze_time("2024-01-15 12:00:00")
     async def test_noop_within_one_period(
         self,
         save_fixture: SaveFixture,

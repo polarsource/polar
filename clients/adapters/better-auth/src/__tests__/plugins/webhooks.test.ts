@@ -110,7 +110,7 @@ describe('webhooks plugin', () => {
       }
 
       const plugin = webhooks(options)
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       handler = endpoints.polarWebhooks.handler
 
       // Create a mock request with proper headers
@@ -180,7 +180,7 @@ describe('webhooks plugin', () => {
     it('should throw error when webhook secret is missing', async () => {
       const options = { secret: '' }
       const plugin = webhooks(options)
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       const noSecretHandler = endpoints.polarWebhooks.handler
 
       const ctx = {
@@ -299,7 +299,7 @@ describe('webhooks plugin', () => {
       }
 
       const plugin = webhooks(mockHandlers)
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       const handlerWithAllOptions = endpoints.polarWebhooks.handler
 
       const mockEvent = { type: 'checkout.created', data: {} }

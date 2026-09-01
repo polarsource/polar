@@ -77,7 +77,7 @@ describe('portal plugin', () => {
 
     beforeEach(() => {
       const plugin = portal()
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       handler = endpoints.portal.handler
     })
 
@@ -194,7 +194,7 @@ describe('portal plugin', () => {
 
     it('should apply theme to portal URL when provided', async () => {
       const plugin = portal({ theme: 'dark' })
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       const themeHandler = endpoints.portal.handler
 
       const mockSession = {
@@ -223,7 +223,7 @@ describe('portal plugin', () => {
 
     it('should support light theme', async () => {
       const plugin = portal({ theme: 'light' })
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       const themeHandler = endpoints.portal.handler
 
       const mockSession = {
@@ -252,7 +252,7 @@ describe('portal plugin', () => {
 
     it('should not add theme parameter when not provided', async () => {
       const plugin = portal()
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       const noThemeHandler = endpoints.portal.handler
 
       const mockSession = {
@@ -281,7 +281,7 @@ describe('portal plugin', () => {
 
     it('should preserve existing query parameters when adding theme', async () => {
       const plugin = portal({ theme: 'dark' })
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       const themeHandler = endpoints.portal.handler
 
       const mockSession = {
@@ -314,7 +314,7 @@ describe('portal plugin', () => {
 
     beforeEach(() => {
       const plugin = portal()
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       handler = endpoints.state.handler
     })
 
@@ -379,7 +379,7 @@ describe('portal plugin', () => {
 
     beforeEach(() => {
       const plugin = portal()
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       handler = endpoints.benefits.handler
     })
 
@@ -470,7 +470,7 @@ describe('portal plugin', () => {
 
     beforeEach(() => {
       const plugin = portal()
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       handler = endpoints.subscriptions.handler
     })
 
@@ -578,7 +578,7 @@ describe('portal plugin', () => {
 
     beforeEach(() => {
       const plugin = portal()
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       handler = endpoints.orders.handler
     })
 
@@ -684,7 +684,7 @@ describe('portal plugin', () => {
     })
 
     it('selects organizationId from the portal query', async () => {
-      const endpoints = portal()(mockClient)
+      const endpoints = portal()(mockClient) as any
       const parsed = endpoints.portal.config.query.parse({
         organizationId: 'organization-123',
       })
@@ -705,7 +705,7 @@ describe('portal plugin', () => {
     })
 
     it('uses the organization customer for state', async () => {
-      const endpoints = portal()(mockClient)
+      const endpoints = portal()(mockClient) as any
       vi.mocked(mockClient.customers.getStateExternal).mockResolvedValue({})
 
       await endpoints.state.handler({
@@ -726,7 +726,7 @@ describe('portal plugin', () => {
     ] as const)(
       'uses a member-scoped session for organization %s',
       async (endpointName, resourceName) => {
-        const endpoints = portal()(mockClient)
+        const endpoints = portal()(mockClient) as any
         vi.mocked(
           mockClient.customerPortal[resourceName].list,
         ).mockResolvedValue({
@@ -747,7 +747,7 @@ describe('portal plugin', () => {
     )
 
     it('rejects organizationId with the legacy referenceId path', async () => {
-      const endpoints = portal()(mockClient)
+      const endpoints = portal()(mockClient) as any
 
       await expect(
         endpoints.subscriptions.handler({
@@ -763,7 +763,7 @@ describe('portal plugin', () => {
     })
 
     it('rejects a non-member before calling Polar', async () => {
-      const endpoints = portal()(mockClient)
+      const endpoints = portal()(mockClient) as any
       vi.mocked(resolveBillingPrincipal).mockRejectedValue(
         new APIError('FORBIDDEN', { message: 'Not a member' }),
       )

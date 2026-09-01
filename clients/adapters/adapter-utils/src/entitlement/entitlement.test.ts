@@ -59,7 +59,7 @@ describe('EntitlementStrategy', () => {
           description: 'test',
         } as unknown as Benefit,
       },
-    } as WebhookBenefitGrantCreatedPayload
+    } as unknown as WebhookBenefitGrantCreatedPayload
 
     entitlement.handler('test')(payload)
 

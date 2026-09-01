@@ -23,6 +23,9 @@ const mockHandleWebhookPayload = vi.mocked(handleWebhookPayload) as ReturnType<
   typeof vi.fn
 >
 const mockValidateEvent = vi.mocked(validateEvent) as ReturnType<typeof vi.fn>
+const mockEntitlements = {} as NonNullable<
+  Parameters<typeof Webhooks>[0]['entitlements']
+>
 
 describe('Webhooks', () => {
   beforeEach(() => {
@@ -41,7 +44,7 @@ describe('Webhooks', () => {
 
       const webhookHandler = Webhooks({
         webhookSecret: 'secret_123',
-        entitlements: {},
+        entitlements: mockEntitlements,
         onPayload: vi.fn(),
       })
 
@@ -70,7 +73,7 @@ describe('Webhooks', () => {
 
       expect(mockHandleWebhookPayload).toHaveBeenCalledWith(mockPayload, {
         webhookSecret: 'secret_123',
-        entitlements: {},
+        entitlements: mockEntitlements,
         onPayload: expect.any(Function),
       })
 
@@ -89,7 +92,7 @@ describe('Webhooks', () => {
 
       const webhookHandler = Webhooks({
         webhookSecret: 'secret_123',
-        entitlements: {},
+        entitlements: mockEntitlements,
       })
 
       const request = new NextRequest('https://example.com/webhooks', {
@@ -121,7 +124,7 @@ describe('Webhooks', () => {
 
       const webhookHandler = Webhooks({
         webhookSecret: 'secret_123',
-        entitlements: {},
+        entitlements: mockEntitlements,
       })
 
       const request = new NextRequest('https://example.com/webhooks', {
@@ -149,7 +152,7 @@ describe('Webhooks', () => {
 
       const webhookHandler = Webhooks({
         webhookSecret: 'secret_123',
-        entitlements: {},
+        entitlements: mockEntitlements,
       })
 
       const request = new NextRequest('https://example.com/webhooks', {
@@ -170,7 +173,7 @@ describe('Webhooks', () => {
       }
       const onPayload = vi.fn()
       const onCheckoutCreated = vi.fn()
-      const entitlements = {}
+      const entitlements = mockEntitlements
 
       mockValidateEvent.mockReturnValue(mockPayload)
       mockHandleWebhookPayload.mockResolvedValue([])

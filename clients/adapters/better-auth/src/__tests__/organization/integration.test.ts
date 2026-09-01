@@ -72,7 +72,11 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
   const subscriptionSeats = new Map<string, CustomerSeat[]>()
   const checkoutProduct = options.checkoutSeatProduct
     ? createSeatProduct()
-    : ({ id: 'product-pro', isRecurring: false, prices: [] } as Product)
+    : ({
+        id: 'product-pro',
+        isRecurring: false,
+        prices: [],
+      } as unknown as Product)
   let nextSeatId = 1
   const memberKey = (organizationId: string, userId: string) =>
     `${organizationId}:${userId}`
@@ -85,7 +89,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     },
   )
 
-  vi.mocked(client.customers.create).mockImplementation(async (input) => {
+  vi.mocked(client.customers.create).mockImplementation(async (input: any) => {
     if (input.type !== 'team') {
       throw new Error('Integration harness only supports team customers')
     }
@@ -240,7 +244,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     },
   )
   vi.mocked(client.subscriptions.update).mockImplementation(
-    async ({ id, subscriptionUpdate }) => {
+    async ({ id, subscriptionUpdate }: any) => {
       const current = subscriptions.get(id)
       if (!current) throw new Error(`Subscription "${id}" was not seeded`)
       const updated = {
@@ -252,7 +256,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     },
   )
   vi.mocked(client.customerSeats.listSeats).mockImplementation(
-    async ({ subscriptionId }) => {
+    async ({ subscriptionId }: any) => {
       const seats = subscriptionSeats.get(subscriptionId) ?? []
       return {
         seats,
@@ -262,7 +266,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     },
   )
   vi.mocked(client.customerSeats.assignSeat).mockImplementation(
-    async ({ subscriptionId, externalMemberId }) => {
+    async ({ subscriptionId, externalMemberId }: any) => {
       const assigned = {
         id: `seat-${nextSeatId++}`,
         status: 'claimed',
@@ -276,7 +280,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     },
   )
   vi.mocked(client.customerSeats.revokeSeat).mockImplementation(
-    async ({ seatId }) => {
+    async ({ seatId }: any) => {
       for (const [subscriptionId, seats] of subscriptionSeats) {
         subscriptionSeats.set(
           subscriptionId,
@@ -325,7 +329,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     return subscription
   }
 
-  const auth = betterAuth({
+  const auth: any = betterAuth({
     baseURL,
     secret: 'better-auth-secret-that-is-long-enough-for-tests',
     database: memoryAdapter(database),
@@ -354,13 +358,13 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
           mapBetterAuthRoleToPolarRole: options.mapBetterAuthRoleToPolarRole,
           selectSeatProductsForMember: options.selectSeatProductsForMember,
         },
-        use: options.checkout
+        use: (options.checkout
           ? [
               checkout({
                 products: [{ slug: 'pro', productId: 'product-pro' }],
               }),
             ]
-          : [],
+          : []) as any,
       }),
     ],
   })

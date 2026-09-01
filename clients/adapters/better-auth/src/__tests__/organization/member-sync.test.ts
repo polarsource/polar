@@ -38,6 +38,9 @@ const betterAuthMember = (
     id: userId,
     email: `${userId}@example.com`,
     name: userId,
+    createdAt,
+    updatedAt: createdAt,
+    emailVerified: true,
   },
   ...overrides,
 })

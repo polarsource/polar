@@ -158,7 +158,7 @@ describe('customer hooks', () => {
       const mockUser = createMockUser()
       const hook = onBeforeUserCreate(options)
 
-      await hook(mockUser) // No context provided
+      await hook(mockUser, null)
 
       expect(mockClient.customers.create).not.toHaveBeenCalled()
     })
@@ -367,7 +367,7 @@ describe('customer hooks', () => {
       const mockUser = createMockUser()
       const hook = onAfterUserCreate(options)
 
-      await hook(mockUser) // No context provided
+      await hook(mockUser, null)
 
       expect(mockClient.customers.list).not.toHaveBeenCalled()
       expect(mockClient.customers.update).not.toHaveBeenCalled()
@@ -474,7 +474,7 @@ describe('customer hooks', () => {
       const mockUser = createMockUser()
       const hook = onUserUpdate(options)
 
-      await hook(mockUser) // No context provided
+      await hook(mockUser, null)
 
       expect(mockClient.customers.updateExternal).not.toHaveBeenCalled()
     })

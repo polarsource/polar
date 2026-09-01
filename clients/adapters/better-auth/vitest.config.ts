@@ -9,5 +9,5 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'dist/', 'example/', '**/*.d.ts'],
     },
-  }
+  },
 })

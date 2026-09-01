@@ -2,6 +2,11 @@
   "name": "@polar-sh/better-auth",
   "version": "1.9.0",
   "description": "Polar integration for better-auth",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/adapters/better-auth"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -32,14 +37,15 @@
     "node": ">=16"
   },
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "tsup ./src/index.ts ./src/client.ts --format esm,cjs --dts --clean --sourcemap",
     "dev": "npm run build -- --watch",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "lint": "pnpm format:check && eslint --max-warnings 0 ."
+    "lint": "pnpm format:check && eslint --max-warnings 0 .",
+    "typecheck": "tsc --noEmit"
   },
   "files": [
     "dist"
@@ -50,15 +56,19 @@
     "payments",
     "subscriptions"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/sdk": "^0.49.0",
-    "@sindresorhus/tsconfig": "^7.0.0",
+    "@polar-sh/typescript-config": "workspace:*",
     "@types/node": "^20.0.0",
-    "better-auth": "^1.4.18",
+    "better-auth": "1.4.18",
     "tsup": "^8.5.1",
-    "vitest": "^2.1.8",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.4",
     "zod": "^3.25.0 || ^4.0.0"
   },
   "peerDependencies": {

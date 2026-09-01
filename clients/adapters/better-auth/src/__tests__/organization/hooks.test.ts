@@ -433,7 +433,9 @@ describe('organization hook installation', () => {
     vi.mocked(client.members.listMembers).mockResolvedValue(
       memberPage([polarOwner]),
     )
-    vi.mocked(client.customers.members.deleteExternal).mockResolvedValue()
+    vi.mocked(client.customers.members.deleteExternal).mockResolvedValue(
+      undefined,
+    )
 
     installOrganizationHooks(
       context.ctx,

@@ -86,7 +86,7 @@ describe('checkout plugin', () => {
         successUrl: 'https://example.com/success',
         theme: 'dark',
       })
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       handler = endpoints.checkout.handler
     })
 
@@ -184,7 +184,7 @@ describe('checkout plugin', () => {
           enabled: true,
           mapBetterAuthRoleToPolarRole,
         },
-      })
+      }) as any
       const customHandler = endpoints.checkout.handler
       const session = {
         user: {
@@ -381,7 +381,7 @@ describe('checkout plugin', () => {
         ])
 
       const plugin = checkout({ products: asyncProducts })
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       const asyncHandler = endpoints.checkout.handler
 
       const mockCheckout = createMockCheckout()
@@ -460,7 +460,7 @@ describe('checkout plugin', () => {
 
     it('should handle unauthenticated users when not required', async () => {
       const plugin = checkout({ authenticatedUsersOnly: false })
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       const publicHandler = endpoints.checkout.handler
 
       const mockCheckout = createMockCheckout()
@@ -490,7 +490,7 @@ describe('checkout plugin', () => {
 
     it('should throw error for unauthenticated users when authentication required', async () => {
       const plugin = checkout({ authenticatedUsersOnly: true })
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       const authHandler = endpoints.checkout.handler
 
       vi.mocked(getSessionFromCtx).mockResolvedValue(null)

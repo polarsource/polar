@@ -4,11 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockCheckoutCreate = vi.fn()
 
 vi.mock('@polar-sh/sdk', () => ({
-  Polar: vi.fn().mockImplementation(() => ({
-    checkouts: {
-      create: mockCheckoutCreate,
-    },
-  })),
+  Polar: vi.fn(function () {
+    return {
+      checkouts: {
+        create: mockCheckoutCreate,
+      },
+    }
+  }),
 }))
 
 import { Checkout } from './checkout'

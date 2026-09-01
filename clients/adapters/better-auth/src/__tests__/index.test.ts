@@ -85,7 +85,7 @@ describe('polar plugin', () => {
     })
 
     const plugin = polar(options)
-    const initResult = plugin.init()
+    const initResult = plugin.init({} as never)
 
     expect(initResult.options).toHaveProperty('databaseHooks')
     expect(initResult.options.databaseHooks).toHaveProperty('user')
@@ -115,7 +115,7 @@ describe('polar plugin', () => {
   it('should handle empty plugin array', () => {
     const options = createTestPolarOptions({
       client: mockClient,
-      use: [],
+      use: [] as any,
     })
 
     const plugin = polar(options)

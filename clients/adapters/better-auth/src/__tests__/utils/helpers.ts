@@ -7,7 +7,7 @@ export const createTestPolarOptions = (
 ): PolarOptions => ({
   client: createMockPolarClient(),
   createCustomerOnSignUp: true,
-  use: [],
+  use: [] as any,
   ...overrides,
 })
 
@@ -25,7 +25,7 @@ export const mockApiError = (status: number, message: string) => {
 
 export const mockApiResponse = <T>(data: T) => Promise.resolve({ data })
 
-export const createMockMiddleware = () => {
+export const createMockMiddleware = (): ReturnType<typeof vi.fn> => {
   const middleware = vi.fn()
   middleware.mockImplementation((context, next) => next())
   return middleware

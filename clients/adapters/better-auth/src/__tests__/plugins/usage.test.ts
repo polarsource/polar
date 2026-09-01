@@ -88,7 +88,7 @@ describe('usage plugin', () => {
 
     beforeEach(() => {
       const plugin = usage()
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       handler = endpoints.meters.handler
     })
 
@@ -227,7 +227,7 @@ describe('usage plugin', () => {
 
     beforeEach(() => {
       const plugin = usage()
-      const endpoints = plugin(mockClient)
+      const endpoints = plugin(mockClient) as any
       handler = endpoints.ingestion.handler
     })
 
@@ -425,7 +425,7 @@ describe('usage plugin', () => {
     })
 
     it('lists organization meters with a member-scoped session', async () => {
-      const endpoints = usage()(mockClient)
+      const endpoints = usage()(mockClient) as any
       const query = endpoints.meters.config.query.parse({
         organizationId: 'organization-123',
       })
@@ -451,7 +451,7 @@ describe('usage plugin', () => {
     })
 
     it('attributes organization usage without changing caller metadata', async () => {
-      const endpoints = usage()(mockClient)
+      const endpoints = usage()(mockClient) as any
       const body = endpoints.ingestion.config.body.parse({
         organizationId: 'organization-123',
         event: 'api_call',
@@ -480,7 +480,7 @@ describe('usage plugin', () => {
     })
 
     it('rejects unauthorized organization usage before calling Polar', async () => {
-      const endpoints = usage()(mockClient)
+      const endpoints = usage()(mockClient) as any
       vi.mocked(resolveBillingPrincipal).mockRejectedValue(
         new APIError('FORBIDDEN', { message: 'Not a member' }),
       )

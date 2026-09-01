@@ -9,7 +9,6 @@ import {
 const createMembership = (overrides: Partial<Member> = {}): Member => ({
   id: 'membership-123',
   organizationId: 'organization-123',
-  organizationEnabled: true,
   userId: 'user-123',
   role: 'member',
   createdAt: new Date('2025-01-01T00:00:00.000Z'),
@@ -18,18 +17,21 @@ const createMembership = (overrides: Partial<Member> = {}): Member => ({
 
 const createSession = (
   overrides: Partial<BillingPrincipalSession['user']> = {},
-): BillingPrincipalSession => ({
-  user: {
-    id: 'user-123',
-    email: 'user@example.com',
-    name: 'Test User',
-    ...overrides,
-  },
-})
+): BillingPrincipalSession =>
+  ({
+    user: {
+      id: 'user-123',
+      email: 'user@example.com',
+      name: 'Test User',
+      ...overrides,
+    },
+  }) as unknown as BillingPrincipalSession
 
 const createContext = (membership: Member | null = null) => {
   const findOne = vi.fn()
-  const adapterFindOne: AuthContext['adapter']['findOne'] = async <T>(data) => {
+  const adapterFindOne: AuthContext['adapter']['findOne'] = async <T>(
+    data: any,
+  ) => {
     findOne(data)
     return membership as T | null
   }
@@ -359,7 +361,7 @@ describe('resolveBillingPrincipal', () => {
           organizationEnabled: true,
           authorization: 'billing',
           roleMapping: {
-            mapBetterAuthRoleToPolarRole: async () => 'member',
+            mapBetterAuthRoleToPolarRole: async () => 'member' as const,
           },
         }),
       ).rejects.toMatchObject({ status: 'FORBIDDEN' })

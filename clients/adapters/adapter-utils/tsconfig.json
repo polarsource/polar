@@ -1,5 +1,5 @@
 {
-  "extends": "@sindresorhus/tsconfig",
+  "extends": "@polar-sh/typescript-config/bundled.json",
   "compilerOptions": {
     "outDir": "dist",
     "skipLibCheck": true,

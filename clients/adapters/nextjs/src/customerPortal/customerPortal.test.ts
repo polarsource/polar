@@ -4,11 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockCustomerSessionCreate = vi.fn()
 
 vi.mock('@polar-sh/sdk', () => ({
-  Polar: vi.fn().mockImplementation(() => ({
-    customerSessions: {
-      create: mockCustomerSessionCreate,
-    },
-  })),
+  Polar: vi.fn(function () {
+    return {
+      customerSessions: {
+        create: mockCustomerSessionCreate,
+      },
+    }
+  }),
 }))
 
 import { CustomerPortal } from './customerPortal'

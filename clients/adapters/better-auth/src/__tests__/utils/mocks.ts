@@ -1,9 +1,17 @@
 import type { Polar } from '@polar-sh/sdk'
 import type { Customer } from '@polar-sh/sdk/models/components/customer.js'
 import type { User } from 'better-auth'
-import { vi } from 'vitest'
+import { type Mock, vi } from 'vitest'
 
-export const createMockPolarClient = (): Polar =>
+type PolarClientMocks<T> = T extends (...args: infer Args) => unknown
+  ? Mock<(...args: Args) => any>
+  : T extends object
+    ? { [Key in keyof T]: PolarClientMocks<T[Key]> }
+    : T
+
+type MockPolarClient = Polar & PolarClientMocks<Polar>
+
+export const createMockPolarClient = (): MockPolarClient =>
   ({
     products: {
       get: vi.fn().mockResolvedValue({ isRecurring: false, prices: [] }),
@@ -100,7 +108,7 @@ export const createMockUser = (overrides: Partial<User> = {}): User => ({
   ...overrides,
 })
 
-export const createMockBetterAuthContext = () => ({
+export const createMockBetterAuthContext = (): any => ({
   request: new Request('http://localhost:3000/test'),
   getPlugin: vi.fn().mockReturnValue({
     id: 'organization',
@@ -156,19 +164,22 @@ export const createMockCheckout = () => ({
 
 export const createMockCustomer = (
   overrides: Partial<Customer> = {},
-): Customer => ({
-  id: 'customer-123',
-  email: 'test@example.com',
-  emailVerified: true,
-  name: 'Test Customer',
-  billingAddress: null,
-  taxId: null,
-  organizationId: 'org-123',
-  avatarUrl: '',
-  createdAt: new Date(),
-  modifiedAt: new Date(),
-  externalId: 'external-id-123',
-  deletedAt: null,
-  metadata: {},
-  ...overrides,
-})
+): Customer =>
+  ({
+    id: 'customer-123',
+    type: 'individual',
+    email: 'test@example.com',
+    emailVerified: true,
+    name: 'Test Customer',
+    billingName: null,
+    billingAddress: null,
+    taxId: null,
+    organizationId: 'org-123',
+    avatarUrl: '',
+    createdAt: new Date(),
+    modifiedAt: new Date(),
+    externalId: 'external-id-123',
+    deletedAt: null,
+    metadata: {},
+    ...overrides,
+  }) as Customer

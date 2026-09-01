@@ -4,7 +4,8 @@
   "description": "Polar.sh integration for Nuxt",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/polar-sh/polar.git"
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/adapters/nuxt"
   },
   "license": "MIT",
   "type": "module",
@@ -20,19 +21,22 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "nuxt-module-build build",
     "prepare": "nuxt-module-build prepare",
     "dev": "nuxi dev playground",
     "dev:build": "nuxi build playground",
     "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare playground",
-    "release": "npm run lint && npm run test && npm run prepack && changelogen --release && npm publish && git push --follow-tags",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "pnpm format:check && eslint --max-warnings 0 .",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest watch",
-    "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit"
+    "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit",
+    "typecheck": "nuxi prepare playground && pnpm test:types"
   },
   "dependencies": {
     "@nuxt/kit": "^3.15.4",
@@ -46,7 +50,6 @@
     "@nuxt/schema": "^3.15.4",
     "@nuxt/test-utils": "^3.21.0",
     "@types/node": "latest",
-    "changelogen": "^0.6.2",
     "eslint": "^9.39.1",
     "nuxt": "^3.15.4",
     "typescript": "5.9.3",

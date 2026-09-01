@@ -27,11 +27,12 @@
     "dev:build": "nuxi build playground",
     "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare playground",
     "release": "npm run lint && npm run test && npm run prepack && changelogen --release && npm publish && git push --follow-tags",
-    "lint": "eslint .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "pnpm format:check && eslint --max-warnings 0 .",
     "test": "vitest",
     "test:watch": "vitest watch",
-    "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit",
-    "check": "biome check --write ./src"
+    "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit"
   },
   "dependencies": {
     "@nuxt/kit": "^3.15.4",
@@ -39,7 +40,6 @@
     "@polar-sh/sdk": "^0.47.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
     "@nuxt/devtools": "^2.6.5",
     "@nuxt/eslint-config": "^1.11.0",
     "@nuxt/module-builder": "^0.8.4",

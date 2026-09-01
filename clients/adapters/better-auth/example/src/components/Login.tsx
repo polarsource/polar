@@ -1,11 +1,11 @@
-"use client";
+'use client'
 
-import { signIn } from "@/lib/auth-client";
-import { useState } from "react";
+import { signIn } from '@/lib/auth-client'
+import { useState } from 'react'
 
 export const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
   return (
     <div className="flex flex-col gap-4">
@@ -24,18 +24,18 @@ export const Login = () => {
       />
       <button
         type="button"
-        className="bg-blue-500 text-white p-2 rounded-md"
+        className="rounded-md bg-blue-500 p-2 text-white"
         onClick={async () => {
           const user = await signIn.email({
             email,
             password,
-          });
+          })
 
-          console.log(user);
+          console.log(user)
         }}
       >
         Sign In
       </button>
     </div>
-  );
-};
+  )
+}

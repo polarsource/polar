@@ -10,18 +10,18 @@ Create a Checkout handler which takes care of redirections.
 
 ```typescript
 // routes/api/checkout.ts
-import { Checkout } from "@polar-sh/tanstack-start";
-import { createAPIFileRoute } from "@tanstack/react-start/api";
+import { Checkout } from '@polar-sh/tanstack-start'
+import { createAPIFileRoute } from '@tanstack/react-start/api'
 
-export const APIRoute = createAPIFileRoute("/api/checkout")({
+export const APIRoute = createAPIFileRoute('/api/checkout')({
   GET: Checkout({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
     successUrl: process.env.SUCCESS_URL,
-    returnUrl: "https://myapp.com", // Optional Return URL, which renders a Back-button in the Checkout
-    server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
-    theme: "dark" // Enforces the theme - System-preferred theme will be set if left omitted
+    returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Checkout
+    server: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+    theme: 'dark', // Enforces the theme - System-preferred theme will be set if left omitted
   }),
-});
+})
 ```
 
 ### Query Params
@@ -42,18 +42,18 @@ Create a customer portal where your customer can view orders and subscriptions.
 
 ```typescript
 // routes/api/portal.ts
-import { CustomerPortal } from "@polar-sh/tanstack-start";
-import { createAPIFileRoute } from "@tanstack/react-start/api";
-import { getSupabaseServerClient } from "~/servers/supabase-server";
+import { CustomerPortal } from '@polar-sh/tanstack-start'
+import { createAPIFileRoute } from '@tanstack/react-start/api'
+import { getSupabaseServerClient } from '~/servers/supabase-server'
 
-export const APIRoute = createAPIFileRoute("/api/portal")({
+export const APIRoute = createAPIFileRoute('/api/portal')({
   GET: CustomerPortal({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
-    getCustomerId: async (request: Request) => "", // Fuction to resolve a Polar Customer ID
-    returnUrl: "https://myapp.com", // Optional Return URL, which renders a Back-button in the Customer Portal
-    server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+    getCustomerId: async (request: Request) => '', // Fuction to resolve a Polar Customer ID
+    returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Customer Portal
+    server: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
   }),
-});
+})
 ```
 
 ## Webhooks
@@ -62,10 +62,10 @@ A simple utility which resolves incoming webhook payloads by signing the webhook
 
 ```typescript
 // api/webhook/polar.ts
-import { Webhooks } from "@polar-sh/tanstack-start";
-import { createAPIFileRoute } from "@tanstack/react-start/api";
+import { Webhooks } from '@polar-sh/tanstack-start'
+import { createAPIFileRoute } from '@tanstack/react-start/api'
 
-export const APIRoute = createAPIFileRoute("/api/webhook/polar")({
+export const APIRoute = createAPIFileRoute('/api/webhook/polar')({
   POST: Webhooks({
     webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
     onPayload: async (payload) => {
@@ -73,7 +73,7 @@ export const APIRoute = createAPIFileRoute("/api/webhook/polar")({
       // No need to return an acknowledge response
     },
   }),
-});
+})
 ```
 
 #### Payload Handlers

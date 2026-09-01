@@ -1,43 +1,43 @@
-import type { Polar } from "@polar-sh/sdk";
+import type { Polar } from '@polar-sh/sdk'
 import {
   APIError,
   createAuthEndpoint,
   getSessionFromCtx,
-} from "better-auth/api";
-import * as z from "zod/v4";
-import { getBetterAuthCreatorRole } from "../organization/roles";
+} from 'better-auth/api'
+import * as z from 'zod/v4'
+import { getBetterAuthCreatorRole } from '../organization/roles'
 import {
   getBetterAuthOrganizationOptions,
   getCheckoutSeatProducts,
   getOrganization,
   getOrganizationRoster,
   resolveRosterProductAllocations,
-} from "../organization/seats";
-import { isTeamCustomerSynchronized } from "../organization/sync";
-import { resolveBillingPrincipal } from "../principal";
-import type { PolarOptions, Product } from "../types";
+} from '../organization/seats'
+import { isTeamCustomerSynchronized } from '../organization/sync'
+import { resolveBillingPrincipal } from '../principal'
+import type { PolarOptions, Product } from '../types'
 
 export interface CheckoutOptions {
   /**
    * Optional list of slug -> productId mappings for easy slug checkouts
    */
-  products?: Product[] | (() => Promise<Product[]>);
+  products?: Product[] | (() => Promise<Product[]>)
   /**
    * Checkout Success URL
    */
-  successUrl?: string;
+  successUrl?: string
   /**
    * Checkout Return URL
    */
-  returnUrl?: string;
+  returnUrl?: string
   /**
    * Only allow authenticated customers to checkout
    */
-  authenticatedUsersOnly?: boolean;
+  authenticatedUsersOnly?: boolean
   /**
    * Checkout theme
    */
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark'
 }
 
 export const CheckoutParams = z.object({
@@ -51,10 +51,10 @@ export const CheckoutParams = z.object({
   metadata: z
     .record(z.string(), z.union([z.string().max(500), z.number(), z.boolean()]))
     .refine((obj) => Object.keys(obj).length <= 50, {
-      message: "Metadata can have at most 50 key-value pairs",
+      message: 'Metadata can have at most 50 key-value pairs',
     })
     .refine((obj) => Object.keys(obj).every((key) => key.length <= 40), {
-      message: "Metadata keys must be at most 40 characters",
+      message: 'Metadata keys must be at most 40 characters',
     })
     .optional(),
   allowDiscountCodes: z.coerce.boolean().optional(),
@@ -66,75 +66,75 @@ export const CheckoutParams = z.object({
   embedOrigin: z.url().optional(),
   successUrl: z
     .string()
-    .refine((val) => val.startsWith("/") || URL.canParse(val), {
-      message: "Must be a valid URL or a relative path starting with /",
+    .refine((val) => val.startsWith('/') || URL.canParse(val), {
+      message: 'Must be a valid URL or a relative path starting with /',
     })
     .optional(),
   returnUrl: z
     .string()
-    .refine((val) => val.startsWith("/") || URL.canParse(val), {
-      message: "Must be a valid URL or a relative path starting with /",
+    .refine((val) => val.startsWith('/') || URL.canParse(val), {
+      message: 'Must be a valid URL or a relative path starting with /',
     })
     .optional(),
   allowTrial: z.boolean().optional(),
-  trialInterval: z.enum(["day", "week", "month", "year"]).optional(),
+  trialInterval: z.enum(['day', 'week', 'month', 'year']).optional(),
   trialIntervalCount: z.number().int().min(1).max(1000).optional(),
-});
+})
 
-export type CheckoutParams = z.infer<typeof CheckoutParams>;
+export type CheckoutParams = z.infer<typeof CheckoutParams>
 
 export const checkout =
   (checkoutOptions: CheckoutOptions = {}) =>
   (
     polar: Polar,
-    rootOptions?: Pick<PolarOptions, "experimental_organizationSync">,
+    rootOptions?: Pick<PolarOptions, 'experimental_organizationSync'>,
   ) => {
     return {
       checkout: createAuthEndpoint(
-        "/checkout",
+        '/checkout',
         {
-          method: "POST",
+          method: 'POST',
           body: CheckoutParams,
         },
         async (ctx) => {
-          const session = await getSessionFromCtx(ctx);
+          const session = await getSessionFromCtx(ctx)
 
-          let productIds: string[] = [];
+          let productIds: string[] = []
 
           if (ctx.body.slug) {
             const resolvedProducts = await (typeof checkoutOptions.products ===
-            "function"
+            'function'
               ? checkoutOptions.products()
-              : checkoutOptions.products);
+              : checkoutOptions.products)
 
             const productId = resolvedProducts?.find(
               (product) => product.slug === ctx.body.slug,
-            )?.productId;
+            )?.productId
 
             if (!productId) {
-              throw new APIError("BAD_REQUEST", {
-                message: "Product not found",
-              });
+              throw new APIError('BAD_REQUEST', {
+                message: 'Product not found',
+              })
             }
 
-            productIds = [productId];
+            productIds = [productId]
           } else {
             productIds = Array.isArray(ctx.body.products)
               ? ctx.body.products.filter((id) => id !== undefined)
-              : [ctx.body.products].filter((id) => id !== undefined);
+              : [ctx.body.products].filter((id) => id !== undefined)
           }
 
           if (checkoutOptions.authenticatedUsersOnly) {
             if (!session?.user.id) {
-              throw new APIError("UNAUTHORIZED", {
-                message: "You must be logged in to checkout",
-              });
+              throw new APIError('UNAUTHORIZED', {
+                message: 'You must be logged in to checkout',
+              })
             }
 
-            if (session.user["isAnonymous"]) {
-              throw new APIError("UNAUTHORIZED", {
-                message: "Anonymous users are not allowed to checkout",
-              });
+            if (session.user['isAnonymous']) {
+              throw new APIError('UNAUTHORIZED', {
+                message: 'Anonymous users are not allowed to checkout',
+              })
             }
           }
 
@@ -145,7 +145,7 @@ export const checkout =
                 organizationId: ctx.body.organizationId,
                 organizationEnabled:
                   rootOptions?.experimental_organizationSync?.enabled,
-                authorization: "billing",
+                authorization: 'billing',
                 roleMapping: {
                   creatorRole: getBetterAuthCreatorRole(ctx.context),
                   mapBetterAuthRoleToPolarRole:
@@ -153,34 +153,33 @@ export const checkout =
                       ?.mapBetterAuthRoleToPolarRole,
                 },
               })
-            : undefined;
+            : undefined
           if (
-            principal?.kind === "team" &&
+            principal?.kind === 'team' &&
             !(await isTeamCustomerSynchronized(
               polar,
               principal.externalCustomerId,
             ))
           ) {
-            throw new APIError("BAD_REQUEST", {
+            throw new APIError('BAD_REQUEST', {
               message:
-                "Polar team customer was not found for this Better Auth organization. Use referenceId for an existing unsynchronized organization.",
-            });
+                'Polar team customer was not found for this Better Auth organization. Use referenceId for an existing unsynchronized organization.',
+            })
           }
 
-          let seats = ctx.body.seats;
-          let minSeats = ctx.body.minSeats;
-          let maxSeats = ctx.body.maxSeats;
-          const organizationOptions =
-            rootOptions?.experimental_organizationSync;
+          let seats = ctx.body.seats
+          let minSeats = ctx.body.minSeats
+          let maxSeats = ctx.body.maxSeats
+          const organizationOptions = rootOptions?.experimental_organizationSync
           if (
-            principal?.kind === "team" &&
+            principal?.kind === 'team' &&
             organizationOptions?.enabled &&
             organizationOptions.syncSeats
           ) {
-            const products = await getCheckoutSeatProducts(polar, productIds);
+            const products = await getCheckoutSeatProducts(polar, productIds)
             if (products.length > 0) {
               const betterAuthOrganizationOptions =
-                getBetterAuthOrganizationOptions(ctx.context);
+                getBetterAuthOrganizationOptions(ctx.context)
               const [organization, roster] = await Promise.all([
                 getOrganization(ctx.context, principal.externalCustomerId),
                 getOrganizationRoster(
@@ -188,50 +187,50 @@ export const checkout =
                   betterAuthOrganizationOptions,
                   principal.externalCustomerId,
                 ),
-              ]);
+              ])
               const allocations = await resolveRosterProductAllocations({
                 organization,
                 roster,
                 products,
                 selector: organizationOptions.selectSeatProductsForMember,
-              });
-              const allocationsList = [...allocations.values()];
+              })
+              const allocationsList = [...allocations.values()]
               if (
                 allocationsList.every(
                   (allocation) => allocation.memberIds.size === 0,
                 )
               ) {
-                throw new APIError("BAD_REQUEST", {
+                throw new APIError('BAD_REQUEST', {
                   message:
-                    "Organization checkout requires at least one selected product seat",
-                });
+                    'Organization checkout requires at least one selected product seat',
+                })
               }
               const counts = new Set(
                 allocationsList.map((allocation) =>
                   Math.max(allocation.memberIds.size, allocation.minimumSeats),
                 ),
-              );
+              )
               if (counts.size !== 1) {
-                throw new APIError("BAD_REQUEST", {
+                throw new APIError('BAD_REQUEST', {
                   message:
-                    "Organization products require different seat quantities. Create a separate checkout for each seat-based product.",
-                });
+                    'Organization products require different seat quantities. Create a separate checkout for each seat-based product.',
+                })
               }
-              const calculatedSeats = counts.values().next().value as number;
+              const calculatedSeats = counts.values().next().value as number
               if (calculatedSeats > 10_000) {
-                throw new APIError("BAD_REQUEST", {
+                throw new APIError('BAD_REQUEST', {
                   message:
-                    "Organization checkout supports at most 10,000 product seats",
-                });
+                    'Organization checkout supports at most 10,000 product seats',
+                })
               }
-              seats = calculatedSeats;
-              minSeats = calculatedSeats;
-              maxSeats = calculatedSeats;
+              seats = calculatedSeats
+              minSeats = calculatedSeats
+              maxSeats = calculatedSeats
             }
           }
 
-          const successUrl = ctx.body.successUrl ?? checkoutOptions.successUrl;
-          const returnUrl = ctx.body.returnUrl ?? checkoutOptions.returnUrl;
+          const successUrl = ctx.body.successUrl ?? checkoutOptions.successUrl
+          const returnUrl = ctx.body.returnUrl ?? checkoutOptions.returnUrl
 
           try {
             const checkout = await polar.checkouts.create({
@@ -266,30 +265,30 @@ export const checkout =
                     ctx.request?.url ?? ctx.context.baseURL,
                   ).toString()
                 : undefined,
-            });
+            })
 
-            const redirectUrl = new URL(checkout.url);
+            const redirectUrl = new URL(checkout.url)
 
             if (checkoutOptions.theme) {
-              redirectUrl.searchParams.set("theme", checkoutOptions.theme);
+              redirectUrl.searchParams.set('theme', checkoutOptions.theme)
             }
 
             return ctx.json({
               url: redirectUrl.toString(),
               redirect: ctx.body.redirect ?? true,
-            });
+            })
           } catch (e: unknown) {
             if (e instanceof Error) {
               ctx.context.logger.error(
                 `Polar checkout creation failed. Error: ${e.message}`,
-              );
+              )
             }
 
-            throw new APIError("INTERNAL_SERVER_ERROR", {
-              message: "Checkout creation failed",
-            });
+            throw new APIError('INTERNAL_SERVER_ERROR', {
+              message: 'Checkout creation failed',
+            })
           }
         },
       ),
-    };
-  };
+    }
+  }

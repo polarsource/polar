@@ -1,14 +1,14 @@
 export default defineNuxtConfig({
-  modules: ["../src/module"],
+  modules: ['../src/module'],
   polar: {},
   devtools: { enabled: true },
-  compatibilityDate: "2025-02-25",
+  compatibilityDate: '2025-02-25',
   runtimeConfig: {
     private: {
-      polarAccessToken: "",
-      polarServer: "",
-      polarCheckoutSuccessUrl: "",
-      polarWebhookSecret: "",
+      polarAccessToken: '',
+      polarServer: '',
+      polarCheckoutSuccessUrl: '',
+      polarWebhookSecret: '',
     },
   },
-});
+})

@@ -37,7 +37,9 @@
     "test:coverage": "vitest run --coverage",
     "build": "tsup ./src/index.ts ./src/client.ts --format esm,cjs --dts --clean --sourcemap",
     "dev": "npm run build -- --watch",
-    "check": "biome check --write ./src"
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "pnpm format:check && eslint --max-warnings 0 ."
   },
   "files": [
     "dist"
@@ -49,8 +51,8 @@
     "subscriptions"
   ],
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
     "@polar-sh/adapter-utils": "workspace:*",
+    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/sdk": "^0.49.0",
     "@sindresorhus/tsconfig": "^7.0.0",
     "@types/node": "^20.0.0",

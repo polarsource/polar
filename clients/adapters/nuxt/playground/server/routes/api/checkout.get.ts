@@ -1,13 +1,13 @@
 export default defineEventHandler((event) => {
   const {
     private: { polarAccessToken, polarCheckoutSuccessUrl, polarServer },
-  } = useRuntimeConfig();
+  } = useRuntimeConfig()
 
   const checkoutHandler = Checkout({
     accessToken: polarAccessToken,
     successUrl: polarCheckoutSuccessUrl,
-    server: polarServer as "sandbox" | "production",
-  });
+    server: polarServer as 'sandbox' | 'production',
+  })
 
-  return checkoutHandler(event);
-});
+  return checkoutHandler(event)
+})

@@ -102,38 +102,32 @@ const auth = betterAuth({
 You will be using the BetterAuth Client to interact with the Polar functionalities.
 
 ```typescript
-import { createAuthClient } from "better-auth/react";
-import { polarClient } from "@polar-sh/better-auth";
-import { organizationClient } from "better-auth/client/plugins";
+import { createAuthClient } from 'better-auth/react'
+import { polarClient } from '@polar-sh/better-auth'
+import { organizationClient } from 'better-auth/client/plugins'
 
 // This is all that is needed
 // All Polar plugins, etc. should be attached to the server-side BetterAuth config
 export const authClient = createAuthClient({
   plugins: [organizationClient(), polarClient()],
-});
+})
 ```
 
 ## Configuration Options
 
 ```typescript
-import { betterAuth } from "better-auth";
-import {
-  polar,
-  checkout,
-  portal,
-  usage,
-  webhooks,
-} from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
-import { organization } from "better-auth/plugins";
+import { betterAuth } from 'better-auth'
+import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth'
+import { Polar } from '@polar-sh/sdk'
+import { organization } from 'better-auth/plugins'
 
 const polarClient = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
   // Use 'sandbox' if you're using the Polar Sandbox environment
   // Remember that access tokens, products, etc. are completely separated between environments.
   // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
-  server: "sandbox",
-});
+  server: 'sandbox',
+})
 
 const auth = betterAuth({
   // ... Better Auth config
@@ -152,7 +146,7 @@ const auth = betterAuth({
         enabled: true,
         getTeamCustomerCreateParams: async ({ organization, owner }) => ({
           metadata: {
-            source: "better-auth",
+            source: 'better-auth',
             createdBy: owner.id,
           },
         }),
@@ -162,7 +156,7 @@ const auth = betterAuth({
       ],
     }),
   ],
-});
+})
 ```
 
 ### Required Options
@@ -192,11 +186,11 @@ Organizations created after synchronization is enabled are mirrored normally. Ex
 
 The current mapping is deterministic:
 
-| Better Auth | Polar |
-| --- | --- |
-| `organization.id` | Team customer `externalId` |
+| Better Auth                    | Polar                             |
+| ------------------------------ | --------------------------------- |
+| `organization.id`              | Team customer `externalId`        |
 | Organization creator `user.id` | Initial owner member `externalId` |
-| `organization.name` | Team customer `name` |
+| `organization.name`            | Team customer `name`              |
 
 On organization creation, the adapter creates or reuses a team customer and supplies the creator as its explicit owner. The team customer has no email by default, avoiding collisions when one user owns several organizations. `experimental_organizationSync.getTeamCustomerCreateParams` may add metadata, locale, address, tax, or other supported team-customer fields, but cannot override `type`, `externalId`, `name`, or owner identity. Organization name changes update the team customer.
 
@@ -219,22 +213,19 @@ polar({
     enabled: true,
     syncSeats: true,
     selectSeatProductsForMember: async ({ member, user, products }) => {
-      const roles = new Set(member.role.split(",").map((role) => role.trim()));
+      const roles = new Set(member.role.split(',').map((role) => role.trim()))
 
       return products
         .filter((product) => {
-          if (product.metadata.seatAudience === "everyone") return true;
-          if (product.metadata.seatAudience === user.department) return true;
-          return roles.has("admin") && product.id === ANALYTICS_PRODUCT_ID;
+          if (product.metadata.seatAudience === 'everyone') return true
+          if (product.metadata.seatAudience === user.department) return true
+          return roles.has('admin') && product.id === ANALYTICS_PRODUCT_ID
         })
-        .map((product) => product.id);
+        .map((product) => product.id)
     },
   },
-  use: [
-    checkout(),
-    webhooks({ secret: process.env.POLAR_WEBHOOK_SECRET! }),
-  ],
-});
+  use: [checkout(), webhooks({ secret: process.env.POLAR_WEBHOOK_SECRET! })],
+})
 ```
 
 The selector receives the Better Auth organization, membership, complete user record (including custom fields), and candidate products as Polar SDK `Product` objects. Returned IDs must come from `products`; unknown IDs fail synchronization. Keep the selector deterministic from these inputs so retries calculate the same desired state. Applications that need additional billing context can fetch it with their Polar SDK client.
@@ -290,29 +281,28 @@ When checkouts are enabled, you're able to initialize Checkout Sessions using th
 ```typescript
 await authClient.checkout({
   // Any Polar Product ID can be passed here
-  products: ["e651f46d-ac20-4f26-b769-ad088b123df2"],
+  products: ['e651f46d-ac20-4f26-b769-ad088b123df2'],
   // Or, if you setup "products" in the Checkout Config, you can pass the slug
-  slug: "pro",
-});
+  slug: 'pro',
+})
 ```
 
 Checkouts will automatically carry the authenticated User as the customer to the checkout. Email-address will be "locked-in".
 
 If `authenticatedUsersOnly` is `false` - then it will be possible to trigger checkout sessions without any associated customer.
 
-
 ### Checkout Embed
 
-You can use the `checkoutEmbed` method to instead open the Checkout as an Embed on your site. 
+You can use the `checkoutEmbed` method to instead open the Checkout as an Embed on your site.
 
 ```typescript
 const embed = await authClient.checkoutEmbed({
-  products: ["e651f46d-ac20-4f26-b769-ad088b123df2"],
-});
+  products: ['e651f46d-ac20-4f26-b769-ad088b123df2'],
+})
 
 // Listen for successful completion
-checkout.addEventListener("success", (event) => {
-  console.log("Purchase successful!", event.detail);
+checkout.addEventListener('success', (event) => {
+  console.log('Purchase successful!', event.detail)
 
   // Call event.preventDefault() if you want to prevent the standard behavior
   // event.preventDefault()
@@ -320,10 +310,10 @@ checkout.addEventListener("success", (event) => {
 
   // If redirect is false, you can show your own success message
   if (!event.detail.redirect) {
-    showSuccessMessage();
+    showSuccessMessage()
   }
   // Otherwise, the user will be redirected to the success URL (unless prevented)
-});
+})
 ```
 
 ### Metadata-based organization billing with `referenceId`
@@ -339,36 +329,35 @@ const auth = betterAuth({
       createCustomerOnSignUp: true,
       use: [
         checkout({
-          products: [{ productId: "123-456-789", slug: "pro" }],
+          products: [{ productId: '123-456-789', slug: 'pro' }],
         }),
         portal(),
       ],
     }),
   ],
-});
+})
 ```
 
 Pass the Better Auth organization ID as checkout metadata:
 
 ```typescript
-const organizationId = (await authClient.organization.list()).data?.[0]?.id;
+const organizationId = (await authClient.organization.list()).data?.[0]?.id
 
 await authClient.checkout({
-  slug: "pro",
+  slug: 'pro',
   referenceId: organizationId,
-});
+})
 ```
 
 The checkout remains attached to the authenticated user's personal Polar customer. `referenceId` is copied to the checkout, order, and subscription metadata, allowing subscriptions to be queried by organization ID:
 
 ```typescript
-const { data: subscriptions } =
-  await authClient.customer.subscriptions.list({
-    query: {
-      referenceId: organizationId,
-      active: true,
-    },
-  });
+const { data: subscriptions } = await authClient.customer.subscriptions.list({
+  query: {
+    referenceId: organizationId,
+    active: true,
+  },
+})
 ```
 
 This is metadata-based tracking, not Polar team-customer billing. The adapter does not authorize Better Auth organization membership for `referenceId`, so your application must verify membership before using the result to grant access.
@@ -377,9 +366,9 @@ If this is already how your application handles organization billing, keep using
 
 ```typescript
 await authClient.checkout({
-  slug: "pro",
+  slug: 'pro',
   organizationId,
-});
+})
 ```
 
 Do not send both `organizationId` and `referenceId` when listing subscriptions; that combination is rejected.
@@ -415,12 +404,12 @@ The portal-plugin gives the BetterAuth Client a set of customer management metho
 The following method will redirect the user to the Polar Customer Portal, where they can see orders, purchases, subscriptions, benefits, etc.
 
 ```typescript
-await authClient.customer.portal();
+await authClient.customer.portal()
 
 // Explicit organization portal access (membership is checked server-side)
 await authClient.customer.portal({
   query: { organizationId },
-});
+})
 ```
 
 ### Customer State
@@ -428,11 +417,11 @@ await authClient.customer.portal({
 The portal plugin also adds a convenient state-method for retrieving the general Customer State.
 
 ```typescript
-const { data: customerState } = await authClient.customer.state();
+const { data: customerState } = await authClient.customer.state()
 
 const { data: organizationState } = await authClient.customer.state({
   query: { organizationId },
-});
+})
 ```
 
 The customer state object contains:
@@ -463,7 +452,7 @@ const { data: benefits } = await authClient.customer.benefits.list({
     page: 1,
     limit: 10,
   },
-});
+})
 ```
 
 #### Orders
@@ -475,9 +464,9 @@ const { data: orders } = await authClient.customer.orders.list({
   query: {
     page: 1,
     limit: 10,
-    productBillingType: "one_time", // or 'recurring'
+    productBillingType: 'one_time', // or 'recurring'
   },
-});
+})
 ```
 
 #### Subscriptions
@@ -491,7 +480,7 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
     limit: 10,
     active: true,
   },
-});
+})
 ```
 
 **Metadata-based organization filtering**
@@ -506,21 +495,20 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
     active: true,
     referenceId: organizationId,
   },
-});
+})
 ```
 
 For organization subscriptions, use `query.organizationId` instead. The adapter authorizes membership and uses a member-scoped Polar customer session:
 
 ```typescript
-const { data: subscriptions } =
-  await authClient.customer.subscriptions.list({
-    query: {
-      organizationId,
-      page: 1,
-      limit: 10,
-      active: true,
-    },
-  });
+const { data: subscriptions } = await authClient.customer.subscriptions.list({
+  query: {
+    organizationId,
+    page: 1,
+    limit: 10,
+    active: true,
+  },
+})
 ```
 
 ## Usage Plugin
@@ -553,13 +541,13 @@ Polar's Usage Based Billing builds entirely on event ingestion. Ingest events fr
 
 ```typescript
 const { data: ingested } = await authClient.usage.ingest({
-  event: "file-uploads",
+  event: 'file-uploads',
   metadata: {
     uploadedFiles: 12,
   },
   // Optional: attributes the event to the team customer and this member.
   organizationId,
-});
+})
 ```
 
 The authenticated user is automatically associated with the ingested event.
@@ -585,7 +573,7 @@ const { data: customerMeters } = await authClient.usage.meters.list({
     // Optional: creates a member-scoped team customer session.
     organizationId,
   },
-});
+})
 ```
 
 ## Webhooks Plugin

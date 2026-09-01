@@ -611,6 +611,24 @@ class OrganizationService:
             },
         )
 
+        # These map to NOT NULL columns. Pydantic keeps an explicitly-sent `null`
+        # in the `exclude_unset` output (it counts as set), so drop it here to
+        # preserve the current value instead of hitting a NOT NULL violation,
+        # mirroring how feature_settings / subscription_settings / dispute_settings
+        # above ignore a null value.
+        for non_nullable_field in (
+            "name",
+            "socials",
+            "embed_hosts",
+            "default_presentment_currency",
+            "default_tax_behavior",
+            "sso_enforced",
+            "customer_email_settings",
+            "customer_portal_settings",
+        ):
+            if update_dict.get(non_nullable_field) is None:
+                update_dict.pop(non_nullable_field, None)
+
         if update_schema.details:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()

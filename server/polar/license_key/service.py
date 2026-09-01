@@ -177,6 +177,11 @@ class LicenseKeyService:
             await self._enqueue_grant_lifecycle(session, license_key, status)
 
         for key, value in update_dict.items():
+            # `status` is NOT NULL; an explicitly-sent `null` would violate the
+            # constraint. Ignore it and keep the current status, mirroring the
+            # `status is not None` guard used for the lifecycle job above.
+            if key == "status" and value is None:
+                continue
             setattr(license_key, key, value)
 
         session.add(license_key)

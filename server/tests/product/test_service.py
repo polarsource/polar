@@ -1847,6 +1847,35 @@ class TestUpdate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_name_visibility_is_archived_explicit_null_ignored(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        original_name = product.name
+        original_visibility = product.visibility
+        original_is_archived = product.is_archived
+
+        updated_product = await product_service.update(
+            session,
+            product,
+            ProductUpdate.model_validate(
+                {"name": None, "visibility": None, "is_archived": None}
+            ),
+            auth_subject,
+        )
+
+        assert updated_product.name == original_name
+        assert updated_product.visibility == original_visibility
+        assert updated_product.is_archived == original_is_archived
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_active_organization_enqueues_review(
         self,
         session: AsyncSession,

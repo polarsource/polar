@@ -189,6 +189,12 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         for attr, value in custom_field_update.model_dump(
             exclude_unset=True, by_alias=True
         ).items():
+            # `name`, `slug` and `properties` map to NOT NULL columns. Pydantic
+            # keeps an explicitly-sent `null` in the `exclude_unset` output, so
+            # ignore it and keep the current value instead of raising a NOT NULL
+            # IntegrityError, mirroring the `slug is not None` guard above.
+            if value is None:
+                continue
             setattr(custom_field, attr, value)
 
         # Update the slug from all custom_field_data JSONB

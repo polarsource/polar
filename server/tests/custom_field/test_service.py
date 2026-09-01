@@ -152,3 +152,27 @@ class TestUpdate:
         await session.flush()
 
         assert updated_field.slug == deleted_field.slug
+
+    @pytest.mark.auth
+    async def test_name_slug_explicit_null_ignored(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+    ) -> None:
+        original_name = text_field.name
+        original_slug = text_field.slug
+
+        updated_field = await custom_field_service.update(
+            session,
+            text_field,
+            CustomFieldUpdateText.model_validate(
+                {"type": text_field.type, "name": None, "slug": None}
+            ),
+            auth_subject,
+        )
+        await session.flush()
+
+        assert updated_field.name == original_name
+        assert updated_field.slug == original_slug

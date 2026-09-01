@@ -3749,6 +3749,34 @@ class TestUpdate:
 
         assert checkout.customer_metadata == {"key": "value"}
 
+    async def test_not_null_fields_explicit_null_ignored(
+        self,
+        session: AsyncSession,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        checkout_one_time_free.is_business_customer = True
+        checkout_one_time_free.allow_discount_codes = False
+        checkout_one_time_free.require_billing_address = True
+        checkout_one_time_free.customer_metadata = {"key": "value"}
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_free,
+            CheckoutUpdate.model_validate(
+                {
+                    "is_business_customer": None,
+                    "allow_discount_codes": None,
+                    "require_billing_address": None,
+                    "customer_metadata": None,
+                }
+            ),
+        )
+
+        assert checkout.is_business_customer is True
+        assert checkout.allow_discount_codes is False
+        assert checkout.require_billing_address is True
+        assert checkout.customer_metadata == {"key": "value"}
+
     @pytest.mark.parametrize(
         "custom_field_data",
         [pytest.param({"text": "abc", "select": "c"}, id="invalid select")],

@@ -232,7 +232,10 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
-        if discount_update.type is not None and discount_update.type != discount.type:
+        if (
+            "type" in discount_update.model_fields_set
+            and discount_update.type != discount.type
+        ):
             raise PolarRequestValidationError(
                 [
                     {
@@ -240,6 +243,18 @@ class DiscountService(ResourceServiceReader[Discount]):
                         "loc": ("body", "type"),
                         "msg": "Type cannot be changed.",
                         "input": discount_update.type,
+                    }
+                ]
+            )
+
+        if "name" in discount_update.model_fields_set and discount_update.name is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "name"),
+                        "msg": "Name cannot be null.",
+                        "input": discount_update.name,
                     }
                 ]
             )

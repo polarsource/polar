@@ -48,13 +48,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     timeout-minutes: 15
-    runs-on:
-      size: 4x16
-      image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1
+    runs-on: depot-ubuntu-24.04-4
     steps:
       - uses: actions/checkout@v7.0.1
-        with:
-          clean: false
 
       # - uses: actions/cache@v4
       #   with:
@@ -66,7 +62,7 @@ jobs:
       #       mypy-
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.0
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
 
@@ -85,7 +81,8 @@ jobs:
 
       - name: 🛟 Type Check Server (mypy)
         working-directory: ./server
-        run: MYPY_CACHE_DIR="$HOME/.mypy_cache" uv run task lint_types
+        run: uv run task lint_types
+
 
   emails:
     name: "Server: Emails 📬"
@@ -245,51 +242,70 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    runs-on:
-      size: 8x32
-      image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1
+    runs-on: depot-ubuntu-24.04-8
     timeout-minutes: 15
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
       POLAR_TEST_DATABASE_TEMPLATE: polar_test
 
+    services:
+      postgres:
+        image: postgres:15.1-bullseye
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7.4-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      minio:
+        image: bitnamilegacy/minio:2024.5.28
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+        options: >-
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      tinybird:
+        image: tinybirdco/tinybird-local:latest
+        ports:
+          - 7181:7181
+          - 7182:7182
+        options: >-
+          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v7.0.1
-        with:
-          clean: false
 
-      - uses: pnpm/action-setup@v6.0.10
-        with:
-          package_json_file: server/emails/package.json
-
-      - name: 📬 Setup Node.js environment for server/emails
-        uses: actions/setup-node@v7.0.0
-        with:
-          node-version-file: server/emails/.node-version
-          cache: "pnpm"
-          cache-dependency-path: "clients/pnpm-lock.yaml"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.0
-        with:
-          enable-cache: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v7.0.0
-        with:
-          python-version-file: "server/pyproject.toml"
-
-      - name: 📬 Restore emails renderer
-        id: emails
-        uses: actions/cache@v6.1.0
-        with:
-          path: server/emails/bin
-          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsup.config.js', 'server/emails/.node-version') }}
-
-      - name: 🚀 Start services and prepare dependencies
+      - name: 💿 MinIO Setup
+        working-directory: ./server/.minio
         env:
-          EMAILS_CACHE_HIT: ${{ steps.emails.outputs.cache-hit }}
           MINIO_HOST: 127.0.0.1
           MINIO_ROOT_USER: polar
           MINIO_ROOT_PASSWORD: polarpolar
@@ -298,96 +314,69 @@ jobs:
           BUCKET_NAME: polar-s3
           BUCKET_TESTING_NAME: testing-polar-s3
           POLICY_FILE: policy.json
+        run: bash github.sh
+
+      - name: 📬 Restore emails renderer
+        id: emails
+        uses: actions/cache@v6.1.0
+        with:
+          path: server/emails/bin
+          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsup.config.js', 'server/emails/.node-version') }}
+
+      - uses: pnpm/action-setup@v6.0.10
+        if: steps.emails.outputs.cache-hit != 'true'
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: 📬 Setup Node.js environment for server/emails
+        if: steps.emails.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: server/emails/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: 📬 Build server/emails
+        if: steps.emails.outputs.cache-hit != 'true'
+        working-directory: server/emails
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: Cache CJK fonts
+        id: cjk-fonts-cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: /usr/share/fonts/opentype/noto
+          key: cjk-fonts-${{ runner.os }}-noto-cjk-v1
+
+      - name: Install CJK fonts
+        if: steps.cjk-fonts-cache.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+
+      - name: 🔧 uv install
+        working-directory: ./server
         run: |
-          set -uo pipefail
+          uv sync --dev --frozen
+          uv run task generate_dev_jwks
 
-          start_containers() {
-            docker run -d --name postgres -p 5432:5432 \
-              -e POSTGRES_USER=polar -e POSTGRES_PASSWORD=polar -e POSTGRES_DB=polar_test \
-              postgres:15.1-bullseye \
-              -c max_connections=1000 \
-              -c shared_buffers=4GB \
-              -c fsync=off \
-              -c synchronous_commit=off \
-              -c full_page_writes=off
-            docker run -d --name redis -p 6379:6379 redis:7.4-alpine
-            docker run -d --name minio -p 9000:9000 -p 9001:9001 \
-              -e MINIO_ROOT_USER="$MINIO_ROOT_USER" -e MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD" \
-              bitnamilegacy/minio:2024.5.28
-            docker run -d --name tinybird -p 7181:7181 -p 7182:7182 \
-              tinybirdco/tinybird-local:latest
-          }
+      - name: 🐦 Install Tinybird CLI
+        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-          await() {
-            local name=$1 tries=$2
-            shift 2
-            for _ in $(seq 1 "$tries"); do
-              if "$@" > /dev/null 2>&1; then
-                return 0
-              fi
-              sleep 0.5
-            done
-            echo "::error::$name never became ready"
-            docker logs "$name" 2>&1 | tail -40
-            return 1
-          }
-
-          wait_postgres() { await postgres 200 docker exec postgres pg_isready -q; }
-          wait_redis()    { await redis 200 docker exec redis redis-cli ping; }
-          wait_minio()    { await minio 200 curl -sf http://127.0.0.1:9000/minio/health/live; }
-          wait_tinybird() { await tinybird 400 curl -sf http://127.0.0.1:7181/tokens; }
-
-          setup_minio() {
-            cd server/.minio
-            bash github.sh
-          }
-
-          build_emails() {
-            if [ "${EMAILS_CACHE_HIT:-}" = "true" ]; then
-              echo "restored from cache"
-              return 0
-            fi
-            cd server/emails
-            pnpm install --frozen-lockfile
-            pnpm build
-          }
-
-          sync_venv() {
-            cd server
-            uv sync --dev --frozen
-            uv run task generate_dev_jwks
-          }
-
-          setup_tinybird() {
-            cd server
-            local token
-            token=$(uv run python -m scripts.tinybird_test_workspace)
-            echo "::add-mask::$token"
-            echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
-          }
-
-          start_containers
-
-          names=(postgres minio emails venv)
-          wait_postgres                                        > /tmp/setup-postgres.log 2>&1 & pids[0]=$!
-          ( (wait_minio) && (setup_minio) )                    > /tmp/setup-minio.log    2>&1 & pids[1]=$!
-          build_emails                                         > /tmp/setup-emails.log   2>&1 & pids[2]=$!
-          ( (sync_venv) && (wait_redis) && (wait_tinybird) && (setup_tinybird) ) > /tmp/setup-venv.log 2>&1 & pids[3]=$!
-
-          status=0
-          for i in 0 1 2 3; do
-            name=${names[$i]}
-            if wait "${pids[$i]}"; then
-              echo "::group::$name"
-            else
-              echo "::error::$name failed"
-              echo "::group::$name (failed)"
-              status=1
-            fi
-            cat "/tmp/setup-$name.log"
-            echo "::endgroup::"
-          done
-          exit $status
+      - name: 🐦 Prepare Tinybird workspace
+        working-directory: ./server
+        run: |
+          token=$(uv run python -m scripts.tinybird_test_workspace)
+          echo "::add-mask::$token"
+          echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
 
       - name: ⚗️ alembic migrate
         working-directory: ./server
@@ -397,6 +386,21 @@ jobs:
         working-directory: ./server
         run: uv run alembic check
 
+      - name: 📊 Restore test durations
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}
+          restore-keys: test-durations-
+
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest --splits 4 --group ${{ matrix.shard }} -n 12 --dist=loadgroup --no-cov --durations=0
+        run: uv run pytest --splits 4 --group ${{ matrix.shard }} -n 12 --dist=loadgroup --no-cov --durations=0 --store-durations
+
+      - name: 💾 Save test durations
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}
+

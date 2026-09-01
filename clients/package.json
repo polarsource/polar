@@ -16,7 +16,7 @@
     "box-codemod": "pnpm --filter @polar-sh/box-codemod box-codemod",
     "preinstall": "npx only-allow pnpm",
     "prepare": "turbo run build --filter='./packages/*'",
-    "release-packages": "turbo run build test --filter='./packages/*' && turbo run lint && changeset publish"
+    "release-packages": "turbo run build test --filter='./packages/*' --filter='./adapters/*' && turbo run lint && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
@@ -35,7 +35,8 @@
   "pnpm": {
     "overrides": {
       "@types/react": "19.2.13",
-      "@types/react-dom": "19.2.3"
+      "@types/react-dom": "19.2.3",
+      "nuxi": "3.28.0"
     },
     "patchedDependencies": {
       "openapi-typescript@7.10.1": "patches/openapi-typescript@7.10.1.patch"

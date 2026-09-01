@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "polar-nuxt-playground",
+  "type": "module",
+  "scripts": {
+    "dev": "nuxi dev",
+    "build": "nuxi build",
+    "generate": "nuxi generate"
+  },
+  "dependencies": {
+    "nuxt": "^3.15.4"
+  }
+}

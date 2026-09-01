@@ -1,0 +1,12 @@
+{
+	"extends": "@sindresorhus/tsconfig",
+	"compilerOptions": {
+		"outDir": "dist",
+		"skipLibCheck": true,
+		"declaration": true,
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"typeRoots": ["./types", "./node_modules/@types"]
+	},
+	"include": ["src"]
+}

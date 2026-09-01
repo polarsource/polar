@@ -21,6 +21,7 @@ After finishing a feature, always run `pnpm lint` and check for any new errors o
 
 ```
 clients/
+├── adapters/               # Published framework and authentication adapters
 ├── apps/
 │   ├── web/                    # Main Next.js application
 │   │   └── src/

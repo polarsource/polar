@@ -1,5 +1,6 @@
 packages:
   - apps/*
+  - adapters/*
   - packages/*
   - examples/*
   - scripts/*

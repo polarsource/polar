@@ -1,0 +1,57 @@
+{
+  "name": "@polar-sh/nuxt",
+  "version": "0.5.8",
+  "description": "Polar.sh integration for Nuxt",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/polar-sh/polar.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/module.mjs",
+      "require": "./dist/module.cjs"
+    }
+  },
+  "main": "./dist/module.cjs",
+  "types": "./dist/types.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nuxt-module-build build",
+    "prepare": "nuxt-module-build prepare",
+    "dev": "nuxi dev playground",
+    "dev:build": "nuxi build playground",
+    "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare playground",
+    "release": "npm run lint && npm run test && npm run prepack && changelogen --release && npm publish && git push --follow-tags",
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit",
+    "check": "biome check --write ./src"
+  },
+  "dependencies": {
+    "@nuxt/kit": "^3.15.4",
+    "@polar-sh/adapter-utils": "workspace:*",
+    "@polar-sh/sdk": "^0.47.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@nuxt/devtools": "^2.6.5",
+    "@nuxt/eslint-config": "^1.11.0",
+    "@nuxt/module-builder": "^0.8.4",
+    "@nuxt/schema": "^3.15.4",
+    "@nuxt/test-utils": "^3.21.0",
+    "@types/node": "latest",
+    "changelogen": "^0.6.2",
+    "eslint": "^9.39.1",
+    "nuxt": "^3.15.4",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.4",
+    "vue-tsc": "2.1.6",
+    "zod": "^3.24.2"
+  }
+}

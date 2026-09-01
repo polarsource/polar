@@ -138,10 +138,7 @@ def delete_workspace(host: str, workspace_id: str, user_token: str) -> None:
 @cli.command()
 def main() -> None:
     host = settings.TINYBIRD_API_URL
-    tokens = get_tokens(host)
-    if tokens is None:
-        raise typer.BadParameter(f"Tinybird is not reachable at {host}")
-
+    tokens = request("GET", f"{host}/tokens", timeout=2).json()
     _, workspace_token = create_workspace(host, tokens)
     deploy_schema(host, workspace_token)
     wait_for_ingestion(host, workspace_token)

@@ -9,6 +9,28 @@ export default [
   {
     rules: {
       'react/prop-types': 'off',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@polar-sh/orbit', '@polar-sh/orbit/*'],
+              message:
+                'The checkout package must not depend on the Orbit design system — checkout styling is tuned independently for conversion. Use the local components in src/components/ui instead.',
+            },
+            {
+              group: [
+                '@polar-sh/ui/components/atoms/CountryPicker',
+                '@polar-sh/ui/components/atoms/CountryStatePicker',
+                '@polar-sh/ui/components/atoms/MoneyInput',
+                '@polar-sh/ui/components/ui/checkbox',
+              ],
+              message:
+                'This @polar-sh/ui component wraps Orbit components, which are not allowed in the checkout package. Use the local components in src/components/ui instead.',
+            },
+          ],
+        },
+      ],
     },
   },
 ]

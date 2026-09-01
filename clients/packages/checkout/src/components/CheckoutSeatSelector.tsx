@@ -6,7 +6,7 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { Input } from '@polar-sh/orbit'
+import { Input } from './ui/Input'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getSeatPrice, type ProductCheckoutPublic } from '../guards'
 import { ErrorResponse } from '../providers/CheckoutProvider'

@@ -30,6 +30,7 @@ import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerPauseSubscriptionModal from './CustomerPauseSubscriptionModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
+import { CustomerUnitQuantityManager } from './CustomerUnitQuantityManager'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const CustomerPortalSubscription = ({
@@ -91,6 +92,11 @@ const CustomerPortalSubscription = ({
   // Seats management
   const hasSeatBasedPricing = subscription.prices.some(
     (price) => price.amount_type === 'seat_based',
+  )
+
+  const unitPrice = subscription.prices.find(
+    (price): price is schemas['ProductPriceUnitBased'] =>
+      price.amount_type === 'unit_based',
   )
 
   // Check customer portal settings for seat management visibility
@@ -269,6 +275,12 @@ const CustomerPortalSubscription = ({
                 value={`${subscription.seats} -> ${pendingUpdate.seats}`}
               />
             )}
+            {pendingUpdate.units !== null && (
+              <DetailRow
+                label="Units"
+                value={`${subscription.units} -> ${pendingUpdate.units}`}
+              />
+            )}
             <DetailRow
               label="Update in effect from"
               value={
@@ -340,6 +352,21 @@ const CustomerPortalSubscription = ({
             subscription.product.organization.proration_behavior
           }
         />
+      )}
+
+      {unitPrice && canManageBilling && !isCancelled && (
+        <div className="flex flex-col gap-y-2">
+          <h3 className="text-lg">Units</h3>
+          <CustomerUnitQuantityManager
+            api={api}
+            subscription={subscription}
+            unitPrice={unitPrice}
+            prorationBehavior={
+              subscription.product.organization.proration_behavior
+            }
+            onUpdate={() => router.refresh()}
+          />
+        </div>
       )}
 
       <CustomerPortalGrants api={api} subscriptionId={subscription.id} />

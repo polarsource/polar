@@ -11,12 +11,14 @@ from polar.customer_portal.schemas.subscription import (
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
     CustomerSubscriptionUpdateSeats,
+    CustomerSubscriptionUpdateUnits,
 )
 from polar.customer_portal.service.subscription import (
     PauseResumeNotAllowed,
     PaymentMethodRequired,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
+    UpdateSubscriptionUnitsNotAllowed,
 )
 from polar.customer_portal.service.subscription import (
     customer_subscription as customer_subscription_service,
@@ -41,7 +43,9 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_payment_method,
     create_product,
+    create_product_unit_based,
     create_subscription,
+    create_subscription_with_units,
 )
 
 
@@ -347,6 +351,30 @@ class TestUpdate:
         assert (
             updated_subscription.recurring_interval == product_second.recurring_interval
         )
+
+
+@pytest.mark.asyncio
+class TestUpdateUnits:
+    async def test_update_not_allowed_without_feature_flag(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture, organization=organization, price_per_unit=1000
+        )
+        subscription = await create_subscription_with_units(
+            save_fixture, product=product, customer=customer, units=3
+        )
+
+        with pytest.raises(UpdateSubscriptionUnitsNotAllowed):
+            await customer_subscription_service.update(
+                session,
+                subscription,
+                updates=CustomerSubscriptionUpdateUnits(units=5),
+            )
 
 
 @pytest.mark.asyncio

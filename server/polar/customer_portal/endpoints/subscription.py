@@ -36,6 +36,7 @@ from ..service.subscription import (
     RevokeNotAllowed,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
+    UpdateSubscriptionUnitsNotAllowed,
 )
 from ..service.subscription import (
     customer_subscription as customer_subscription_service,
@@ -185,7 +186,8 @@ async def get_cancel_preview(
             "description": "Previewing this change is not allowed.",
             "model": AlreadyCanceledSubscription.schema()
             | UpdateSubscriptionPlanNotAllowed.schema()
-            | UpdateSubscriptionSeatsNotAllowed.schema(),
+            | UpdateSubscriptionSeatsNotAllowed.schema()
+            | UpdateSubscriptionUnitsNotAllowed.schema(),
         },
         404: SubscriptionNotFound,
     },
@@ -228,7 +230,9 @@ async def preview_change(
                 "or pausing/resuming is not enabled for the organization."
             ),
             "model": AlreadyCanceledSubscription.schema()
-            | PauseResumeNotAllowed.schema(),
+            | PauseResumeNotAllowed.schema()
+            | UpdateSubscriptionSeatsNotAllowed.schema()
+            | UpdateSubscriptionUnitsNotAllowed.schema(),
         },
         404: SubscriptionNotFound,
         409: {

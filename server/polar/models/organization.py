@@ -720,6 +720,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.feature_settings.get("compass_enabled", False)
 
     @property
+    def is_unit_based_pricing_enabled(self) -> bool:
+        return self.feature_settings.get("unit_based_pricing_enabled", False)
+
+    @property
     def is_merchant_migration_enabled(self) -> bool:
         return self.feature_settings.get("merchant_migration_enabled", False)
 

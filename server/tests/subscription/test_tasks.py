@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta
 
 import pytest
+from freezegun.api import freeze_time
 from pytest_mock import MockerFixture
 
 from polar.enums import SubscriptionRecurringInterval
@@ -315,6 +316,7 @@ class TestSubscriptionCycle:
         with pytest.raises(SubscriptionMeterCycleLag):
             await subscription_cycle(subscription.id)
 
+    @freeze_time("2026-01-01 12:00:00")
     async def test_billing_due_without_meter_lag_cycles(
         self,
         save_fixture: SaveFixture,

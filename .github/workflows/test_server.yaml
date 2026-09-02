@@ -240,7 +240,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 15
+    timeout-minutes: 18
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
@@ -291,10 +291,14 @@ jobs:
         ports:
           - 7181:7181
           - 7182:7182
-        # Image HEALTHCHECK is /tokens, which is not API-ready and can stay
-        # unhealthy through setup's expected first-boot crash. Disable it so
-        # GHA does not fail Initialize containers; Prepare waits for the API.
-        options: --no-healthcheck
+        # Replace the image HEALTHCHECK (/tokens). That probe is not workspace
+        # readiness and can stay unhealthy through setup's expected first-boot
+        # crash, which fails Initialize containers. Prepare waits for the API.
+        options: >-
+          --health-cmd "true"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v7.0.1
@@ -368,19 +372,16 @@ jobs:
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: 🐦 Prepare Tinybird workspace
+        id: tinybird-workspace
         working-directory: ./server
         run: |
-          set +e
           token=$(uv run python -m scripts.tinybird_test_workspace)
-          status=$?
-          set -e
-          if [ "$status" -eq 0 ]; then
-            echo "::add-mask::$token"
-            echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
-            exit 0
-          fi
+          echo "::add-mask::$token"
+          echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
 
-          echo "::warning::Tinybird workspace API never became ready; Tinybird tests will skip"
+      - name: 🐦 Dump Tinybird sidecar logs
+        if: failure() && steps.tinybird-workspace.outcome == 'failure'
+        run: |
           cid=$(docker ps -q --filter ancestor=tinybirdco/tinybird-local | head -n1)
           if [ -z "$cid" ]; then
             echo "Tinybird sidecar container not found"

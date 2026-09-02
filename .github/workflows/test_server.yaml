@@ -291,6 +291,10 @@ jobs:
         ports:
           - 7181:7181
           - 7182:7182
+        # Image HEALTHCHECK is /tokens, which is not API-ready and can stay
+        # unhealthy through setup's expected first-boot crash. Disable it so
+        # GHA does not fail Initialize containers; Prepare waits for the API.
+        options: --no-healthcheck
 
     steps:
       - uses: actions/checkout@v7.0.1

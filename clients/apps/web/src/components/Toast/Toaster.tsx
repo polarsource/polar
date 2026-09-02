@@ -33,7 +33,8 @@ export function Toaster() {
         title: error
           ? (error ?? 'Hmm... Something went wrong.')
           : (status ?? 'Alright!'),
-        description: error ? error_description : status_description,
+        description:
+          (error ? error_description : status_description) ?? undefined,
         variant: error ? 'error' : undefined,
         duration: 3000,
       })

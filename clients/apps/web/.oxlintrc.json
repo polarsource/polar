@@ -18,7 +18,6 @@
     "out/**",
     "build/**",
     "coverage/**",
-    "eslint-rules/**",
     "oxlint-plugins/**",
     "src/app/.well-known/**",
     "next-env.d.ts",

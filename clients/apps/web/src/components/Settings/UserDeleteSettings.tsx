@@ -21,9 +21,7 @@ export default function UserDeleteSettings() {
     if (error) {
       toast({
         title: 'Deletion Failed',
-        description: (
-          <>An error occurred while trying to delete your account.</>
-        ),
+        description: 'An error occurred while trying to delete your account.',
         variant: 'error',
         duration: TOAST_LONG_DURATION,
       })

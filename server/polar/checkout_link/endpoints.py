@@ -255,10 +255,4 @@ async def redirect(
     }
     checkout_url = checkout_url.include_query_params(**query_params)
 
-    # Commit before redirecting: the client immediately fetches the checkout by
-    # its client secret, but get_db_session only commits after the response is
-    # sent. Without an explicit commit, that follow-up read can race ahead of the
-    # commit and 404 on a checkout that was just created.
-    await session.commit()
-
     return RedirectResponse(checkout_url)

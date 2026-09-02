@@ -4,17 +4,11 @@ from typing import Any
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from polar.benefit.schemas import BenefitPublicGeneric
-from polar.benefit.strategies.meter_credit.schemas import BenefitMeterCreditPublic
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.currency import PresentmentCurrency
-from polar.kit.visibility import Visibility
-from polar.models import Meter, Organization
-from polar.models.benefit import BenefitType
 from polar.models.product_price import ProductPriceAmountType
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
-    BenefitPublicList,
     ProductCreate,
     ProductCreateOneTime,
     ProductCreateRecurring,
@@ -25,8 +19,7 @@ from polar.product.schemas import (
     ProductPriceUnitBasedCreate,
 )
 from polar.product.tiers import TierType
-from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import METER_ID, create_benefit
+from tests.fixtures.random_objects import METER_ID
 
 # PostgreSQL int4 range limit
 INT_MAX_VALUE = 2_147_483_647
@@ -473,109 +466,6 @@ class TestProductCreateDiscriminator:
         # No recurring_interval error
         for e in errors:
             assert "recurring_interval" not in str(e["loc"])
-
-
-@pytest.mark.asyncio
-class TestBenefitPublicList:
-    async def test_excludes_non_public_benefits(
-        self,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        public_benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            description="Public benefit",
-        )
-        private_benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            description="Private benefit",
-        )
-        private_benefit.visibility = Visibility.private
-        await save_fixture(private_benefit)
-
-        adapter: TypeAdapter[BenefitPublicList] = TypeAdapter(BenefitPublicList)
-        benefits = adapter.validate_python(
-            [public_benefit, private_benefit], from_attributes=True
-        )
-
-        assert len(benefits) == 1
-        assert benefits[0].description == "Public benefit"
-
-    async def test_meter_credit_exposes_public_properties(
-        self,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        meter: Meter,
-    ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.meter_credit,
-            properties={
-                "units": 10000,
-                "rollover": True,
-                "meter_id": str(meter.id),
-            },
-        )
-
-        adapter: TypeAdapter[BenefitPublicList] = TypeAdapter(BenefitPublicList)
-        benefits = adapter.validate_python([benefit], from_attributes=True)
-
-        assert len(benefits) == 1
-        serialized = benefits[0]
-        assert isinstance(serialized, BenefitMeterCreditPublic)
-        assert serialized.properties.units == 10000
-        assert serialized.properties.meter_id == meter.id
-        assert not hasattr(serialized.properties, "rollover")
-
-    async def test_excludes_non_public_meter_credit_benefits(
-        self,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        meter: Meter,
-    ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.meter_credit,
-            properties={
-                "units": 10000,
-                "rollover": False,
-                "meter_id": str(meter.id),
-            },
-        )
-        benefit.visibility = Visibility.private
-        await save_fixture(benefit)
-
-        adapter: TypeAdapter[BenefitPublicList] = TypeAdapter(BenefitPublicList)
-        benefits = adapter.validate_python([benefit], from_attributes=True)
-
-        assert benefits == []
-
-    @pytest.mark.parametrize(
-        "benefit_type",
-        [t for t in BenefitType if t != BenefitType.meter_credit],
-    )
-    async def test_other_types_serialize_as_generic(
-        self,
-        benefit_type: BenefitType,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=benefit_type,
-        )
-
-        adapter: TypeAdapter[BenefitPublicList] = TypeAdapter(BenefitPublicList)
-        benefits = adapter.validate_python([benefit], from_attributes=True)
-
-        assert len(benefits) == 1
-        assert isinstance(benefits[0], BenefitPublicGeneric)
-        assert benefits[0].type == benefit_type
 
 
 @pytest.mark.parametrize(

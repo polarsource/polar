@@ -9156,6 +9156,57 @@ export interface components {
       /** Note */
       note: (string | null) | null
     }
+    /** BenefitCustomPublic */
+    BenefitCustomPublic: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'custom'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+    }
     /** BenefitCustomSubscriber */
     BenefitCustomSubscriber: {
       /**
@@ -9466,6 +9517,57 @@ export interface components {
       /** Guild Token */
       readonly guild_token: string
     }
+    /** BenefitDiscordPublic */
+    BenefitDiscordPublic: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'discord'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+    }
     /** BenefitDiscordSubscriber */
     BenefitDiscordSubscriber: {
       /**
@@ -9739,6 +9841,57 @@ export interface components {
       /** Files */
       files: string[]
     }
+    /** BenefitDownloadablesPublic */
+    BenefitDownloadablesPublic: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'downloadables'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+    }
     /** BenefitDownloadablesSubscriber */
     BenefitDownloadablesSubscriber: {
       /**
@@ -9944,6 +10097,57 @@ export interface components {
      * @description Properties for a benefit of type `feature_flag`.
      */
     BenefitFeatureFlagProperties: Record<string, never>
+    /** BenefitFeatureFlagPublic */
+    BenefitFeatureFlagPublic: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'feature_flag'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+    }
     /** BenefitFeatureFlagSubscriber */
     BenefitFeatureFlagSubscriber: {
       /**
@@ -10182,6 +10386,57 @@ export interface components {
        * @enum {string}
        */
       permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin'
+    }
+    /** BenefitGitHubRepositoryPublic */
+    BenefitGitHubRepositoryPublic: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'github_repository'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
     }
     /** BenefitGitHubRepositorySubscriber */
     BenefitGitHubRepositorySubscriber: {
@@ -11305,6 +11560,57 @@ export interface components {
       /** Limit Usage */
       limit_usage: number | null
     }
+    /** BenefitLicenseKeysPublic */
+    BenefitLicenseKeysPublic: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'license_keys'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+    }
     /** BenefitLicenseKeysSubscriber */
     BenefitLicenseKeysSubscriber: {
       /**
@@ -11713,66 +12019,14 @@ export interface components {
         | null
     }
     BenefitPublic:
+      | components['schemas']['BenefitCustomPublic']
+      | components['schemas']['BenefitDiscordPublic']
+      | components['schemas']['BenefitGitHubRepositoryPublic']
+      | components['schemas']['BenefitDownloadablesPublic']
+      | components['schemas']['BenefitLicenseKeysPublic']
+      | components['schemas']['BenefitFeatureFlagPublic']
+      | components['schemas']['BenefitSlackSharedChannelPublic']
       | components['schemas']['BenefitMeterCreditPublic']
-      | components['schemas']['BenefitPublicGeneric']
-    /** BenefitPublicGeneric */
-    BenefitPublicGeneric: {
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the benefit.
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type:
-        | 'custom'
-        | 'discord'
-        | 'downloadables'
-        | 'feature_flag'
-        | 'github_repository'
-        | 'license_keys'
-        | 'slack_shared_channel'
-      /**
-       * Description
-       * @description The description of the benefit.
-       */
-      description: string
-      /**
-       * Selectable
-       * @description Whether the benefit is selectable when creating a product.
-       */
-      selectable: boolean
-      /**
-       * Deletable
-       * @description Whether the benefit is deletable.
-       */
-      deletable: boolean
-      /**
-       * Is Deleted
-       * @description Whether the benefit is deleted.
-       */
-      is_deleted: boolean
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description The ID of the organization owning the benefit.
-       */
-      organization_id: string
-    }
     /**
      * BenefitRevokedEvent
      * @description An event created by Polar when a benefit is revoked from a customer.
@@ -12003,6 +12257,57 @@ export interface components {
        * @description Slack user IDs from the merchant workspace to invite to every channel created for this benefit.
        */
       team_invitees?: string[]
+    }
+    /** BenefitSlackSharedChannelPublic */
+    BenefitSlackSharedChannelPublic: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'slack_shared_channel'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
     }
     /** BenefitSlackSharedChannelSubscriber */
     BenefitSlackSharedChannelSubscriber: {
@@ -67417,6 +67722,9 @@ export const benefitCustomTypeValues: ReadonlyArray<
 export const benefitCustomCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitCustomCreate']['type']
 > = ['custom']
+export const benefitCustomPublicTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitCustomPublic']['type']
+> = ['custom']
 export const benefitCycledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitCycledEvent']['name']
 > = ['benefit.cycled']
@@ -67426,17 +67734,26 @@ export const benefitDiscordTypeValues: ReadonlyArray<
 export const benefitDiscordCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitDiscordCreate']['type']
 > = ['discord']
+export const benefitDiscordPublicTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitDiscordPublic']['type']
+> = ['discord']
 export const benefitDownloadablesTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitDownloadables']['type']
 > = ['downloadables']
 export const benefitDownloadablesCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitDownloadablesCreate']['type']
 > = ['downloadables']
+export const benefitDownloadablesPublicTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitDownloadablesPublic']['type']
+> = ['downloadables']
 export const benefitFeatureFlagTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitFeatureFlag']['type']
 > = ['feature_flag']
 export const benefitFeatureFlagCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitFeatureFlagCreate']['type']
+> = ['feature_flag']
+export const benefitFeatureFlagPublicTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitFeatureFlagPublic']['type']
 > = ['feature_flag']
 export const benefitGitHubRepositoryTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepository']['type']
@@ -67450,6 +67767,9 @@ export const benefitGitHubRepositoryCreatePropertiesPermissionValues: ReadonlyAr
 export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepositoryProperties']['permission']
 > = ['pull', 'triage', 'push', 'maintain', 'admin']
+export const benefitGitHubRepositoryPublicTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepositoryPublic']['type']
+> = ['github_repository']
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitGrantGitHubRepositoryProperties']['permission']
 > = ['pull', 'triage', 'push', 'maintain', 'admin']
@@ -67475,6 +67795,9 @@ export const benefitLicenseKeysTypeValues: ReadonlyArray<
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeysCreate']['type']
 > = ['license_keys']
+export const benefitLicenseKeysPublicTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeysPublic']['type']
+> = ['license_keys']
 export const benefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCredit']['type']
 > = ['meter_credit']
@@ -67484,17 +67807,6 @@ export const benefitMeterCreditCreateTypeValues: ReadonlyArray<
 export const benefitMeterCreditPublicTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditPublic']['type']
 > = ['meter_credit']
-export const benefitPublicGenericTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['BenefitPublicGeneric']['type']
-> = [
-  'custom',
-  'discord',
-  'downloadables',
-  'feature_flag',
-  'github_repository',
-  'license_keys',
-  'slack_shared_channel',
-]
 export const benefitRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitRevokedEvent']['name']
 > = ['benefit.revoked']
@@ -67503,6 +67815,9 @@ export const benefitSlackSharedChannelTypeValues: ReadonlyArray<
 > = ['slack_shared_channel']
 export const benefitSlackSharedChannelCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitSlackSharedChannelCreate']['type']
+> = ['slack_shared_channel']
+export const benefitSlackSharedChannelPublicTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitSlackSharedChannelPublic']['type']
 > = ['slack_shared_channel']
 export const benefitSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitSortProperty']

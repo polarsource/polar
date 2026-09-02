@@ -165,6 +165,9 @@ async def polar_webhook(request: Request) -> dict[str, bool]:
     return {"received": True}
 ```
 
-The signature is checked before the body is parsed. `validate_event` raises
-`PolarWebhookVerificationError` for invalid signatures and `PolarWebhookUnknownTypeError` when the
-event is not supported by the selected API version. Both inherit from `PolarWebhookError`.
+The signature is checked before the body is parsed. Verification accepts Polar's
+original HMAC key (UTF-8 bytes of the full secret, including `whsec_`) and the
+Standard Webhooks key (base64-decode of the remainder after `whsec_`).
+`validate_event` raises `PolarWebhookVerificationError` for invalid signatures and
+`PolarWebhookUnknownTypeError` when the event is not supported by the selected API
+version. Both inherit from `PolarWebhookError`.

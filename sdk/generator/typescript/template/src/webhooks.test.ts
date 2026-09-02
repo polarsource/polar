@@ -59,6 +59,26 @@ describe("validateWebhook", () => {
     });
   });
 
+  test("validates a Standard Webhooks-formatted secret", async () => {
+    const key = globalThis.crypto.getRandomValues(new Uint8Array(32));
+    const secret = `whsec_${Buffer.from(key).toString("base64")}`;
+    const body = JSON.stringify({ type: "dummy.event", value: "payload" });
+    const timestamp = new Date();
+    const signature = new Webhook(secret).sign("test-webhook", timestamp, body);
+    const headers = {
+      "Webhook-Id": "test-webhook",
+      "Webhook-Timestamp": String(Math.floor(timestamp.getTime() / 1000)),
+      "Webhook-Signature": signature,
+    };
+
+    await expect(
+      validateWebhook<DummyPayload>(body, headers, secret, eventTypes),
+    ).resolves.toEqual({
+      type: "dummy.event",
+      value: "payload",
+    });
+  });
+
   test("rejects an invalid signature", async () => {
     const body = JSON.stringify({ type: "dummy.event", value: "payload" });
 

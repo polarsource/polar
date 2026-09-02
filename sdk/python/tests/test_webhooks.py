@@ -2,6 +2,7 @@ import base64
 import dataclasses
 import datetime
 import json
+import os
 import typing
 
 import pytest
@@ -55,6 +56,23 @@ def test_validate_event(as_bytes: bool) -> None:
     raw_body = body.encode() if as_bytes else body
 
     assert _validate_event(raw_body, _get_headers(body)) == DummyPayload(
+        type=_EVENT_TYPE, value="payload"
+    )
+
+
+def test_validate_event_accepts_standard_webhooks_secret() -> None:
+    key = os.urandom(32)
+    secret = "whsec_" + base64.b64encode(key).decode()
+    body = json.dumps({"type": _EVENT_TYPE, "value": "payload"})
+    timestamp = datetime.datetime.now(tz=datetime.UTC)
+    signature = Webhook(secret).sign("test-webhook", timestamp, body)
+    headers = {
+        "Webhook-Id": "test-webhook",
+        "Webhook-Timestamp": str(int(timestamp.timestamp())),
+        "Webhook-Signature": signature,
+    }
+
+    assert _validate_event(body, headers, secret) == DummyPayload(
         type=_EVENT_TYPE, value="payload"
     )
 

@@ -61,12 +61,12 @@ describe("validateWebhook", () => {
       "Webhook-Signature": signature,
     };
 
-    await expect(
-      validateWebhook<DummyPayload>(body, headers, secret, eventTypes),
-    ).resolves.toEqual({
-      type: "dummy.event",
-      value: "payload",
-    });
+    await expect(validateWebhook<DummyPayload>(body, headers, secret, eventTypes)).resolves.toEqual(
+      {
+        type: "dummy.event",
+        value: "payload",
+      },
+    );
   });
 
   test("rejects an invalid signature", async () => {

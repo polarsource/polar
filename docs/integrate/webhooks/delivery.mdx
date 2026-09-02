@@ -106,7 +106,7 @@ in case you want to roll your own.
   including `whsec_`. Standard Webhooks libraries therefore need that whole
   secret **base64-encoded** before verification.
 
-  Polar SDKs try both that original Polar key and the Standard Webhooks key
+  Polar SDKs (version 1.0.0-alpha.19 and later) try both that original Polar key and the Standard Webhooks key
   (base64-decode of the `whsec_` remainder). You can keep passing the `whsec_…`
   secret as Polar shows it. Rolling your own verifier still needs the original
   Polar encoding until Polar starts signing with the spec key.

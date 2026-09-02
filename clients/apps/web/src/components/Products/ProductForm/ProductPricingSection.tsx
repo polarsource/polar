@@ -108,9 +108,17 @@ export const ProductPricingSection = ({
     const filteredPrices = currentPrices.filter(
       (price) => !isMeteredPrice(price as ProductPrice),
     )
-    if (filteredPrices.length !== currentPrices.length) {
+    if (filteredPrices.length === currentPrices.length) return
+    if (filteredPrices.length > 0) {
       replace(filteredPrices)
+      return
     }
+
+    currentPrices.forEach((_, index) => {
+      setValue(`prices.${index}.amount_type`, 'fixed')
+      setValue(`prices.${index}.price_amount`, 0)
+      setValue(`prices.${index}.id`, '')
+    })
   }, [recurringInterval, recurringIntervalCount, setValue, getValues, replace])
 
   const [productType, setProductType] = useState<'one_time' | 'recurring'>(

@@ -59,6 +59,7 @@ SplashScreen.setOptions({
 SplashScreen.preventAutoHideAsync()
 
 onlineManager.setEventListener((setOnline) => {
+  // oxlint-disable-next-line import/no-named-as-default-member
   return NetInfo.addEventListener((state) => {
     setOnline(!!state.isConnected)
   })

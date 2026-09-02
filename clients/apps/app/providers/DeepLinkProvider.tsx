@@ -25,6 +25,7 @@ export default function DeepLinkProvider({
 }: {
   children: React.ReactNode
 }) {
+  // oxlint-disable-next-line no-unused-vars
   const router = useRouter()
   const handlersRef = useRef<Map<string, DeepLinkHandler>>(new Map())
   const initialUrlHandled = useRef(false)

@@ -1,7 +1,8 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "options": {
-    "typeAware": true
+    "typeAware": true,
+    "denyWarnings": true
   },
   "ignorePatterns": [
     "**/node_modules/**",

@@ -60,7 +60,7 @@
     "no-unsafe-optional-chaining": "error",
     "no-unused-labels": "error",
     "no-unused-private-class-members": "error",
-    "no-unused-vars": "error",
+    "no-unused-vars": "warn",
     "no-useless-backreference": "error",
     "no-useless-catch": "error",
     "no-useless-escape": "error",
@@ -78,7 +78,7 @@
       }
     ],
     "no-var": "error",
-    "prefer-const": "error",
+    "prefer-const": "warn",
     "typescript/ban-ts-comment": "error",
     "typescript/no-duplicate-enum-values": "error",
     "typescript/no-empty-object-type": "error",

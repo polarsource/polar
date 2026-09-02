@@ -1,3 +1,4 @@
+import Big from 'big.js'
 import { schemas } from '@polar-sh/client'
 import { FreeProductPriceCreate, ProductFormType } from '../ProductForm'
 
@@ -80,11 +81,11 @@ type MeteredTiers = schemas['ProductPriceMeteredTiers']['tiers']
 const tieredCost = (
   { type: tierType, tiers }: MeteredTiers,
   units: number,
-): number => {
+): Big => {
   const parsed = tiers
     .map((tier) => ({
       bound: tier.bound ?? null,
-      unitAmount: Number.parseFloat(String(tier.unit_amount)),
+      unitAmount: String(tier.unit_amount),
     }))
     .sort(
       (a, b) =>
@@ -94,10 +95,10 @@ const tieredCost = (
 
   if (tierType === 'volume') {
     const tier = parsed.find((t) => t.bound === null || units <= t.bound)
-    return tier ? units * tier.unitAmount : 0
+    return tier ? new Big(units).times(tier.unitAmount) : new Big(0)
   }
 
-  let total = 0
+  let total = new Big(0)
   let remaining = units
   let previousBound = 0
   for (const { bound, unitAmount } of parsed) {
@@ -105,7 +106,7 @@ const tieredCost = (
     const capacity = bound === null ? null : bound - previousBound
     const unitsInTier =
       capacity === null ? remaining : Math.min(remaining, capacity)
-    total += unitsInTier * unitAmount
+    total = total.plus(new Big(unitsInTier).times(unitAmount))
     remaining -= unitsInTier
     if (bound !== null) previousBound = bound
   }
@@ -124,9 +125,9 @@ export const estimateMeteredCost = (
   const cost =
     price.amount_type === 'metered_tiers'
       ? tieredCost(price.tiers, units)
-      : units * Number.parseFloat(price.unit_amount)
+      : new Big(units).times(price.unit_amount)
 
-  const rounded = Math.round(cost)
+  const rounded = cost.round(0, Big.roundHalfUp).toNumber()
   if (price.cap_amount != null) {
     return Math.min(rounded, price.cap_amount)
   }

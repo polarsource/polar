@@ -24,4 +24,10 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
+  checkout_cta_primary_color: {
+    description:
+      'Alternative primary color for the checkout CTA button instead of the default black/white',
+    variants: ['control', 'treatment'] as const,
+    defaultVariant: 'control',
+  },
 } as const

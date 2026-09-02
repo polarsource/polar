@@ -2986,6 +2986,7 @@ class TestCheckMeterCycleLag:
         subscription.current_meter_period_start = now - timedelta(days=32)
         # Boundary in the past (due), but the next period lands in the future.
         subscription.current_meter_period_end = now - timedelta(days=2)
+        subscription.anchor_day = subscription.current_meter_period_end.day
         await save_fixture(subscription)
 
         # Does not raise.

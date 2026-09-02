@@ -339,6 +339,7 @@ class TestSubscriptionCycle:
         # Meter aligned with the billing boundary: due, but next period is ahead.
         subscription.current_meter_period_start = now - timedelta(days=32)
         subscription.current_meter_period_end = old_period_end  # meter_due=True, no lag
+        subscription.anchor_day = old_period_end.day
         await save_fixture(subscription)
 
         session.expunge_all()

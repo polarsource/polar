@@ -134,6 +134,21 @@ export default {
           _llmContext:
             'Prefix before the cheapest rate of a tiered usage-based price, e.g. "From $0.05 / unit", meaning the rate shown is the starting one and higher usage is billed differently. Fragment, not a sentence.',
         },
+        range: {
+          value: '{from}–{to}',
+          _llmContext:
+            'A usage range in the tier table of a metered price on checkout, e.g. "1–1,000". Both values are already-formatted unit counts. Keep it a bare numeric range with no unit noun.',
+        },
+        andAbove: {
+          value: '{from}+',
+          _llmContext:
+            'The final, unbounded usage range in the tier table of a metered price, e.g. "1,001+". {from} is an already-formatted unit count.',
+        },
+        volumeExplainer: {
+          value: 'All usage is billed at the rate for the range it falls in',
+          _llmContext:
+            'Caption under the tier table of a volume-tiered metered price on checkout. It warns that crossing into a higher range reprices the entire usage, not just the part above the bound. Shown for volume tiers only; graduated tiers get no caption.',
+        },
       },
       dueToday: {
         value: 'Due today',

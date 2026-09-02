@@ -71,7 +71,7 @@ describe('MeteredChargesDetails', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('renders a tiered metered price at its starting rate', () => {
+  it('lists the tiers under a tiered price instead of repeating its rate', () => {
     const base = createCheckout()
     const checkout = createCheckout({
       prices: { prod_1: [base.product_price, createMeteredTiersPrice()] },
@@ -85,9 +85,11 @@ describe('MeteredChargesDetails', () => {
       }),
     )
 
-    expect(screen.getByTestId('detail-row-API Calls')).toHaveTextContent(
+    expect(screen.getByTestId('detail-row-API Calls')).not.toHaveTextContent(
       '$9.00',
     )
+    expect(screen.getByTestId('detail-row-1–1,000')).toHaveTextContent('$9.00')
+    expect(screen.getByTestId('detail-row-1,001+')).toHaveTextContent('$4.50')
   })
 
   it('is collapsed by default', () => {

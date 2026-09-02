@@ -8,11 +8,12 @@ import {
   type TranslateFn,
 } from '@polar-sh/i18n'
 import { cn } from '@polar-sh/ui/lib/utils'
-import { useId, useState } from 'react'
+import { Fragment, useId, useState } from 'react'
 import { hasProductCheckout } from '../guards'
 import { getMeteredPrices } from '../utils/product'
 import DetailRow from './DetailRow'
 import MeteredPriceLabel from './MeteredPriceLabel'
+import MeteredTierRows, { hasMeteredTierRows } from './MeteredTierRows'
 import ChevronDownIcon from './icons/ChevronDownIcon'
 
 const getIncludedUnitsByMeter = (
@@ -90,24 +91,32 @@ const MeteredChargesDetails = ({
               meteredPrice.meter.id,
             )
             return (
-              <DetailRow
-                key={meteredPrice.id}
-                title={meteredPrice.meter.name}
-                subtitle={
-                  includedUnits
-                    ? t('checkout.pricing.meteredIncluded', {
-                        units: `${numberFormat.format(includedUnits)} ${getUnitNoun(meteredPrice.meter, t)}`,
-                      })
-                    : undefined
-                }
-                emphasis
-              >
-                <MeteredPriceLabel
+              <Fragment key={meteredPrice.id}>
+                <DetailRow
+                  title={meteredPrice.meter.name}
+                  subtitle={
+                    includedUnits
+                      ? t('checkout.pricing.meteredIncluded', {
+                          units: `${numberFormat.format(includedUnits)} ${getUnitNoun(meteredPrice.meter, t)}`,
+                        })
+                      : undefined
+                  }
+                  emphasis
+                >
+                  {!hasMeteredTierRows(meteredPrice) && (
+                    <MeteredPriceLabel
+                      price={meteredPrice}
+                      locale={locale}
+                      discount={checkout.discount}
+                    />
+                  )}
+                </DetailRow>
+                <MeteredTierRows
                   price={meteredPrice}
                   locale={locale}
                   discount={checkout.discount}
                 />
-              </DetailRow>
+              </Fragment>
             )
           })}
         </div>

@@ -1,5 +1,12 @@
 import type { ClientBase, RequestOptions } from "../../../base";
-import type { Member, MemberCreateFromCustomer, MemberUpdate } from "../../models";
+import type {
+  ListResourceMember,
+  Member,
+  MemberCreateFromCustomer,
+  MemberRole,
+  MemberSortProperty,
+  MemberUpdate,
+} from "../../models";
 
 import {
   AmbiguousExternalCustomerID,
@@ -8,6 +15,98 @@ import {
   ResourceNotFound,
 } from "../../errors";
 
+export const listMembers = (client: ClientBase) => {
+  /**
+   * List the members of a customer.
+   *
+   * **Scopes**: `members:read` `members:write`
+   *
+   * @param id - The customer ID.
+   * @param query - Query parameters
+   * @param requestOptions - Request options
+   * @returns {ListResourceMember}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {ResourceNotFound} Customer not found.
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (
+    id: string,
+    query?: {
+      role?: MemberRole | null;
+      page?: number;
+      limit?: number;
+      sorting?: MemberSortProperty[] | null;
+    },
+    requestOptions?: RequestOptions,
+  ): Promise<ListResourceMember> => {
+    const pathParams = {
+      id: id,
+    };
+    const queryParams = {
+      role: query?.role,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
+    };
+    const request = client.buildRequest(
+      "GET",
+      "/v1/customers/{id}/members",
+      pathParams,
+      queryParams,
+      undefined,
+    );
+    const response = await client.sendRequest(request, requestOptions);
+    return client.parseResponse<ListResourceMember>(response, "json", {
+      404: ResourceNotFound,
+      422: HTTPValidationError,
+    });
+  };
+};
+/**
+ * List the members of a customer.
+ *
+ * **Scopes**: `members:read` `members:write`
+ *
+ * @param id - The customer ID.
+ * @param query - Query parameters
+ * @param requestOptions - Request options
+ * @returns {AsyncGenerator<Member>} A generator that yields items of type Member.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ResourceNotFound} Customer not found.
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterListMembers = (client: ClientBase) => {
+  return async function* (
+    id: string,
+    query?: {
+      role?: MemberRole | null;
+      page?: number;
+      limit?: number;
+      sorting?: MemberSortProperty[] | null;
+    },
+    requestOptions?: RequestOptions,
+  ): AsyncGenerator<Member> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listMembers(client)(id, { ...query, page, limit }, requestOptions);
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createMembers = (client: ClientBase) => {
   /**
    * Create a new member for a customer.
@@ -50,6 +149,105 @@ export const createMembers = (client: ClientBase) => {
       404: ResourceNotFound,
       422: HTTPValidationError,
     });
+  };
+};
+export const listExternalMembers = (client: ClientBase) => {
+  /**
+   * List the members of a customer identified by its external ID.
+   *
+   * **Scopes**: `members:read` `members:write`
+   *
+   * @param external_id - The customer external ID.
+   * @param query - Query parameters
+   * @param requestOptions - Request options
+   * @returns {ListResourceMember}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {ResourceNotFound} Customer not found.
+   * @throws {AmbiguousExternalCustomerID} The external customer ID matches customers in several accessible organizations.
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (
+    external_id: string,
+    query?: {
+      role?: MemberRole | null;
+      page?: number;
+      limit?: number;
+      sorting?: MemberSortProperty[] | null;
+    },
+    requestOptions?: RequestOptions,
+  ): Promise<ListResourceMember> => {
+    const pathParams = {
+      external_id: external_id,
+    };
+    const queryParams = {
+      role: query?.role,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
+    };
+    const request = client.buildRequest(
+      "GET",
+      "/v1/customers/external/{external_id}/members",
+      pathParams,
+      queryParams,
+      undefined,
+    );
+    const response = await client.sendRequest(request, requestOptions);
+    return client.parseResponse<ListResourceMember>(response, "json", {
+      404: ResourceNotFound,
+      409: AmbiguousExternalCustomerID,
+      422: HTTPValidationError,
+    });
+  };
+};
+/**
+ * List the members of a customer identified by its external ID.
+ *
+ * **Scopes**: `members:read` `members:write`
+ *
+ * @param external_id - The customer external ID.
+ * @param query - Query parameters
+ * @param requestOptions - Request options
+ * @returns {AsyncGenerator<Member>} A generator that yields items of type Member.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ResourceNotFound} Customer not found.
+ * @throws {AmbiguousExternalCustomerID} The external customer ID matches customers in several accessible organizations.
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterListExternalMembers = (client: ClientBase) => {
+  return async function* (
+    external_id: string,
+    query?: {
+      role?: MemberRole | null;
+      page?: number;
+      limit?: number;
+      sorting?: MemberSortProperty[] | null;
+    },
+    requestOptions?: RequestOptions,
+  ): AsyncGenerator<Member> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listExternalMembers(client)(
+        external_id,
+        { ...query, page, limit },
+        requestOptions,
+      );
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
   };
 };
 export const createExternalMembers = (client: ClientBase) => {
@@ -346,7 +544,9 @@ export const updateExternalMembers = (client: ClientBase) => {
 
 export function createMembersService(client: ClientBase) {
   return {
+    list: listMembers(client),
     create: createMembers(client),
+    listExternal: listExternalMembers(client),
     createExternal: createExternalMembers(client),
     get: getMembers(client),
     delete: deleteMembers(client),
@@ -354,6 +554,8 @@ export function createMembersService(client: ClientBase) {
     getExternal: getExternalMembers(client),
     deleteExternal: deleteExternalMembers(client),
     updateExternal: updateExternalMembers(client),
+    iterList: iterListMembers(client),
+    iterListExternal: iterListExternalMembers(client),
   };
 }
 

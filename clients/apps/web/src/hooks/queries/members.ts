@@ -9,19 +9,16 @@ import { defaultRetry } from './retry'
  */
 export const useMembers = (
   customerId: string,
-  parameters?: Omit<
-    NonNullable<operations['members:list_members']['parameters']['query']>,
-    'customer_id'
-  >,
+  parameters?: operations['customers:members:list']['parameters']['query'],
 ) =>
   useInfiniteQuery({
     queryKey: ['members', customerId, parameters],
     queryFn: async ({ pageParam }) =>
       unwrap(
-        api.GET('/v1/members/', {
+        api.GET('/v1/customers/{id}/members', {
           params: {
+            path: { id: customerId },
             query: {
-              customer_id: customerId,
               ...parameters,
               page: pageParam,
             },

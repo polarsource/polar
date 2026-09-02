@@ -27,7 +27,6 @@ from polar.v2026_10.services.event_types import EventTypesAsync, EventTypesSync
 from polar.v2026_10.services.events import EventsAsync, EventsSync
 from polar.v2026_10.services.files import FilesAsync, FilesSync
 from polar.v2026_10.services.license_keys import LicenseKeysAsync, LicenseKeysSync
-from polar.v2026_10.services.members import MembersAsync, MembersSync
 from polar.v2026_10.services.meters import MetersAsync, MetersSync
 from polar.v2026_10.services.metrics import MetricsAsync, MetricsSync
 from polar.v2026_10.services.oauth2 import Oauth2Async, Oauth2Sync
@@ -79,7 +78,6 @@ class Polar:
         self.custom_fields = CustomFieldsSync(self._client)
         self.discounts = DiscountsSync(self._client)
         self.customers = CustomersSync(self._client)
-        self.members = MembersSync(self._client)
         self.customer_portal = CustomerPortalSync(self._client)
         self.customer_seats = CustomerSeatsSync(self._client)
         self.customer_sessions = CustomerSessionsSync(self._client)
@@ -135,7 +133,6 @@ class PolarAsync:
         self.custom_fields = CustomFieldsAsync(self._client)
         self.discounts = DiscountsAsync(self._client)
         self.customers = CustomersAsync(self._client)
-        self.members = MembersAsync(self._client)
         self.customer_portal = CustomerPortalAsync(self._client)
         self.customer_seats = CustomerSeatsAsync(self._client)
         self.customer_sessions = CustomerSessionsAsync(self._client)

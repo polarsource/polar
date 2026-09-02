@@ -4,12 +4,13 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc
+from sqlalchemy import Select, UnaryExpression, asc, desc
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
+from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.repository import CustomerSeatRepository
 from polar.exceptions import (
@@ -19,6 +20,7 @@ from polar.exceptions import (
     ResourceNotFound,
 )
 from polar.kit.pagination import PaginationParams
+from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models.customer import Customer, CustomerType
 from polar.models.member import Member, MemberRole
@@ -68,13 +70,62 @@ class MemberService:
         if customer_id is not None:
             statement = statement.where(Member.customer_id == customer_id)
 
-        if role is not None:
-            statement = statement.where(Member.role == role)
-
         if external_customer_id is not None:
             statement = statement.join(Customer).where(
                 Customer.external_id == external_customer_id
             )
+
+        return await self._paginate(
+            repository, statement, role=role, pagination=pagination, sorting=sorting
+        )
+
+    async def list_for_customer(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        customer_id: UUID | None = None,
+        external_customer_id: str | None = None,
+        role: MemberRole | None = None,
+        pagination: PaginationParams,
+        sorting: Sequence[Sorting[MemberSortProperty]] = (
+            (MemberSortProperty.created_at, True),
+        ),
+    ) -> tuple[Sequence[Member], int]:
+        """
+        List the members of a customer resolved by its internal or external ID.
+
+        Raises:
+            ResourceNotFound: If the customer is not found or not accessible
+            AmbiguousExternalCustomerID: If the external ID matches several customers
+        """
+        repository = MemberRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        customer = await self._get_readable_customer(
+            session,
+            org_ids,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+        )
+        statement = repository.get_statement_by_org_ids(org_ids).where(
+            Member.customer_id == customer.id
+        )
+
+        return await self._paginate(
+            repository, statement, role=role, pagination=pagination, sorting=sorting
+        )
+
+    async def _paginate(
+        self,
+        repository: MemberRepository,
+        statement: Select[tuple[Member]],
+        *,
+        role: MemberRole | None,
+        pagination: PaginationParams,
+        sorting: Sequence[Sorting[MemberSortProperty]],
+    ) -> tuple[Sequence[Member], int]:
+        if role is not None:
+            statement = statement.where(Member.role == role)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -86,6 +137,40 @@ class MemberService:
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )
+
+    async def _get_readable_customer(
+        self,
+        session: AsyncReadSession | AsyncSession,
+        org_ids: set[AccessibleOrganizationID],
+        *,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+        options: Options = (),
+    ) -> Customer:
+        if customer_id is not None and external_customer_id is not None:
+            raise ValueError(
+                "Provide either customer_id or external_customer_id, not both."
+            )
+
+        customer_repository = CustomerRepository.from_session(session)
+        if customer_id is not None:
+            customer = await customer_repository.get_readable_by_id(
+                org_ids, customer_id, options=options
+            )
+        elif external_customer_id is not None:
+            try:
+                customer = await customer_repository.get_readable_by_external_id(
+                    org_ids, external_customer_id, options=options
+                )
+            except MultipleResultsFound as e:
+                raise AmbiguousExternalCustomerID(external_customer_id) from e
+        else:
+            raise ResourceNotFound("Customer not found")
+
+        if customer is None:
+            raise ResourceNotFound("Customer not found")
+
+        return customer
 
     async def get(
         self,
@@ -565,32 +650,14 @@ class MemberService:
             ResourceNotFound: If customer not found or not accessible
             NotPermitted: If feature flag disabled or no permission to add members
         """
-        if customer_id is not None and external_customer_id is not None:
-            raise ValueError(
-                "Provide either customer_id or external_customer_id, not both."
-            )
-
-        customer_repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        if customer_id is not None:
-            customer = await customer_repository.get_readable_by_id(
-                org_ids, customer_id, options=(joinedload(Customer.organization),)
-            )
-        elif external_customer_id is not None:
-            try:
-                customer = await customer_repository.get_readable_by_external_id(
-                    org_ids,
-                    external_customer_id,
-                    options=(joinedload(Customer.organization),),
-                )
-            except MultipleResultsFound as e:
-                raise AmbiguousExternalCustomerID(external_customer_id) from e
-        else:
-            raise ResourceNotFound("Customer not found")
-
-        if customer is None:
-            raise ResourceNotFound("Customer not found")
-
+        customer = await self._get_readable_customer(
+            session,
+            org_ids,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            options=(joinedload(Customer.organization),),
+        )
         customer_id = customer.id
 
         member_model = customer.organization.feature_settings.get(

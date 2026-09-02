@@ -3929,6 +3929,7 @@ export interface paths {
     }
     /**
      * List Members
+     * @deprecated
      * @description List members with optional customer ID filter.
      *
      *     **Scopes**: `members:read` `members:write`
@@ -4040,7 +4041,13 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get?: never
+    /**
+     * List Members
+     * @description List the members of a customer.
+     *
+     *     **Scopes**: `members:read` `members:write`
+     */
+    get: operations['customers:members:list']
     put?: never
     /**
      * Create Member
@@ -4065,7 +4072,13 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get?: never
+    /**
+     * List Members by Customer External ID
+     * @description List the members of a customer identified by its external ID.
+     *
+     *     **Scopes**: `members:read` `members:write`
+     */
+    get: operations['customers:members:list_external']
     put?: never
     /**
      * Create Member by Customer External ID
@@ -51558,6 +51571,56 @@ export interface operations {
       }
     }
   }
+  'customers:members:list': {
+    parameters: {
+      query?: {
+        /** @description Filter by member role. */
+        role?: components['schemas']['MemberRole'] | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['MemberSortProperty'][] | null
+      }
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Members retrieved. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_Member_']
+        }
+      }
+      /** @description Customer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customers:members:create': {
     parameters: {
       query?: never
@@ -51599,6 +51662,65 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:list_external': {
+    parameters: {
+      query?: {
+        /** @description Filter by member role. */
+        role?: components['schemas']['MemberRole'] | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['MemberSortProperty'][] | null
+      }
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Members retrieved. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_Member_']
+        }
+      }
+      /** @description Customer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
         }
       }
       /** @description Validation Error */

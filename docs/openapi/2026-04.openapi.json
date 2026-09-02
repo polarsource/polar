@@ -14935,15 +14935,16 @@
         ]
       }
     },
-    "/v1/members/": {
+    "/v1/customers/{id}/members": {
       "get": {
         "tags": [
+          "customers",
           "members",
           "public"
         ],
         "summary": "List Members",
-        "description": "List members with optional customer ID filter.\n\n**Scopes**: `members:read` `members:write`",
-        "operationId": "members:list_members",
+        "description": "List the members of a customer.\n\n**Scopes**: `members:read` `members:write`",
+        "operationId": "customers:members:list",
         "security": [
           {
             "oidc": [
@@ -14966,41 +14967,16 @@
         ],
         "parameters": [
           {
-            "name": "customer_id",
-            "in": "query",
-            "required": false,
+            "name": "id",
+            "in": "path",
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by customer ID.",
-              "title": "Customer Id"
+              "type": "string",
+              "format": "uuid4",
+              "description": "The customer ID.",
+              "title": "Id"
             },
-            "description": "Filter by customer ID."
-          },
-          {
-            "name": "external_customer_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "The customer external ID."
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by customer external ID.",
-              "title": "External Customer Id"
-            },
-            "description": "Filter by customer external ID."
+            "description": "The customer ID."
           },
           {
             "name": "role",
@@ -15073,11 +15049,21 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Members retrieved.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ListResource_Member_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
                 }
               }
             }
@@ -15116,8 +15102,8 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "members",
-        "x-speakeasy-name-override": "list_members",
+        "x-speakeasy-group": "customers.members",
+        "x-speakeasy-name-override": "list",
         "x-polar-pagination": {
           "type": "page_limit",
           "item_schema": {
@@ -15127,16 +15113,14 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.members.iter_list_members(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
+            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customers.members.iter_list(\n    '00000000-0000-4000-8000-000000000000',\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.members.iterListMembers(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customers.members.iterList(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
-      }
-    },
-    "/v1/customers/{id}/members": {
+      },
       "post": {
         "tags": [
           "customers",
@@ -15248,6 +15232,200 @@
       }
     },
     "/v1/customers/external/{external_id}/members": {
+      "get": {
+        "tags": [
+          "customers",
+          "members",
+          "public"
+        ],
+        "summary": "List Members by Customer External ID",
+        "description": "List the members of a customer identified by its external ID.\n\n**Scopes**: `members:read` `members:write`",
+        "operationId": "customers:members:list_external",
+        "security": [
+          {
+            "oidc": [
+              "members:read",
+              "members:write"
+            ]
+          },
+          {
+            "pat": [
+              "members:read",
+              "members:write"
+            ]
+          },
+          {
+            "oat": [
+              "members:read",
+              "members:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The customer external ID.",
+              "title": "External Id"
+            },
+            "description": "The customer external ID."
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MemberRole"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by member role.",
+              "title": "Role"
+            },
+            "description": "Filter by member role."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Page number, defaults to 1.",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, defaults to 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Size of a page, defaults to 10. Maximum is 100.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Size of a page, defaults to 10. Maximum is 100."
+          },
+          {
+            "name": "sorting",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberSortProperty"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+              "default": [
+                "-created_at"
+              ],
+              "title": "Sorting"
+            },
+            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResource_Member_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The external customer ID matches customers in several accessible organizations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AmbiguousExternalCustomerID"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-pagination": {
+          "type": "offsetLimit",
+          "inputs": [
+            {
+              "name": "page",
+              "in": "parameters",
+              "type": "page"
+            },
+            {
+              "name": "limit",
+              "in": "parameters",
+              "type": "limit"
+            }
+          ],
+          "outputs": {
+            "results": "$.items",
+            "numPages": "$.pagination.max_page"
+          }
+        },
+        "x-speakeasy-group": "customers.members",
+        "x-speakeasy-name-override": "list_external",
+        "x-polar-pagination": {
+          "type": "page_limit",
+          "item_schema": {
+            "$ref": "#/components/schemas/Member"
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customers.members.iter_list_external(\n    'string',\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customers.members.iterListExternal(\n  \"string\",\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
+          }
+        ]
+      },
       "post": {
         "tags": [
           "customers",

@@ -21,20 +21,20 @@ export default function WebhookContextView({
 }: {
   endpoint: schemas['WebhookEndpoint']
 }) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { secret, ...endpointWithoutSecret } = endpoint
   const form = useForm<schemas['WebhookEndpointUpdate']>({
-    defaultValues: {
-      ...endpoint,
-    },
+    defaultValues: endpointWithoutSecret,
   })
 
   const { handleSubmit } = form
   const updateWebhookEndpoint = useEditWebhookEndpoint()
 
   const onSubmit = useCallback(
-    async (form: schemas['WebhookEndpointUpdate']) => {
+    async (body: schemas['WebhookEndpointUpdate']) => {
       const { error } = await updateWebhookEndpoint.mutateAsync({
         id: endpoint.id,
-        body: form,
+        body,
       })
       if (error) {
         toast({

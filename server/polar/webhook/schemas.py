@@ -109,11 +109,6 @@ class WebhookEndpointCreate(Schema):
         default=None,
         description="An optional name for the webhook endpoint to help organize and identify it.",
     )
-    secret: SkipJsonSchema[EndpointSecret | None] = Field(
-        default=None,
-        deprecated="The secret is now generated on the backend.",
-        min_length=32,
-    )
     format: EndpointFormat
     events: EndpointEvents
     organization_id: OrganizationID | None = Field(
@@ -122,6 +117,14 @@ class WebhookEndpointCreate(Schema):
             "The organization ID associated with the webhook endpoint. "
             "**Required unless you use an organization token.**"
         ),
+    )
+
+
+class DeprecatedWebhookEndpointCreateWithSecret(WebhookEndpointCreate):
+    secret: SkipJsonSchema[EndpointSecret | None] = Field(
+        default=None,
+        deprecated="The secret is now generated on the backend.",
+        min_length=32,
     )
 
 
@@ -135,15 +138,18 @@ class WebhookEndpointUpdate(Schema):
         default=None,
         description="An optional name for the webhook endpoint to help organize and identify it.",
     )
-    secret: SkipJsonSchema[EndpointSecret | None] = Field(
-        default=None,
-        deprecated="The secret should is now generated on the backend.",
-        min_length=32,
-    )
     format: EndpointFormat | None = None
     events: EndpointEvents | None = None
     enabled: bool | None = Field(
         default=None, description="Whether the webhook endpoint is enabled."
+    )
+
+
+class DeprecatedWebhookEndpointUpdateWithSecret(WebhookEndpointUpdate):
+    secret: SkipJsonSchema[EndpointSecret | None] = Field(
+        default=None,
+        deprecated="The secret should is now generated on the backend.",
+        min_length=32,
     )
 
 

@@ -3146,6 +3146,7 @@ def polar_self_env() -> None:
                 name=WEBHOOK_NAME,
                 format=WebhookFormat.raw,
                 secret=webhook_secret,
+                secret_generated_at=utc_now(),
                 events=WEBHOOK_EVENTS,
                 enabled=True,
             )

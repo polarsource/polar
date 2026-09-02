@@ -5,18 +5,25 @@ from pydantic import UUID4, AwareDatetime
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
+from polar.kit.versioning import version
 from polar.models import WebhookEndpoint
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
+from polar.version import V2026_10
 
 from .auth import WebhooksRead, WebhooksWrite
+from .schemas import (
+    DeprecatedWebhookEndpointCreateWithSecret,
+    DeprecatedWebhookEndpointUpdateWithSecret,
+    WebhookEndpointCreate,
+    WebhookEndpointUpdate,
+)
 from .schemas import WebhookDelivery as WebhookDeliverySchema
 from .schemas import WebhookEndpoint as WebhookEndpointSchema
-from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .service import webhook as webhook_service
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks", APITag.public])
@@ -76,6 +83,28 @@ async def get_webhook_endpoint(
     responses={201: {"description": "Webhook endpoint created."}},
 )
 async def create_webhook_endpoint(
+    endpoint_create: Annotated[
+        DeprecatedWebhookEndpointCreateWithSecret,
+        SetSchemaReference("WebhookEndpointCreate"),
+    ],
+    auth_subject: WebhooksWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> WebhookEndpoint:
+    """
+    Create a webhook endpoint.
+    """
+    return await webhook_service.create_endpoint(session, auth_subject, endpoint_create)
+
+
+@router.post(
+    "/endpoints",
+    name="create_webhook_endpoint",
+    response_model=WebhookEndpointSchema,
+    status_code=201,
+    responses={201: {"description": "Webhook endpoint created."}},
+)
+@version(starting_from=V2026_10)
+async def create_webhook_endpoint_v2026_10(
     endpoint_create: WebhookEndpointCreate,
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
@@ -95,6 +124,37 @@ async def create_webhook_endpoint(
     },
 )
 async def update_webhook_endpoint(
+    id: WebhookEndpointID,
+    update: Annotated[
+        DeprecatedWebhookEndpointUpdateWithSecret,
+        SetSchemaReference("WebhookEndpointUpdate"),
+    ],
+    auth_subject: WebhooksWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> WebhookEndpoint:
+    """
+    Update a webhook endpoint.
+    """
+    endpoint = await webhook_service.get_endpoint(session, auth_subject, id)
+    if not endpoint:
+        raise ResourceNotFound()
+
+    return await webhook_service.update_endpoint(
+        session, auth_subject, endpoint=endpoint, update_schema=update
+    )
+
+
+@router.patch(
+    "/endpoints/{id}",
+    name="update_webhook_endpoint",
+    response_model=WebhookEndpointSchema,
+    responses={
+        200: {"description": "Webhook endpoint updated."},
+        404: WebhookEndpointNotFound,
+    },
+)
+@version(starting_from=V2026_10)
+async def update_webhook_endpoint_v2026_10(
     id: WebhookEndpointID,
     update: WebhookEndpointUpdate,
     auth_subject: WebhooksWrite,

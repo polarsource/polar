@@ -65,6 +65,7 @@ from polar.worker import enqueue_job
 from .constants import WEBHOOK_SECRET_PREFIX
 from .eventstream import publish_webhook_event
 from .schemas import (
+    DeprecatedWebhookEndpointCreateWithSecret,
     WebhookEndpointCreate,
     WebhookEndpointUpdate,
     validate_hostname,
@@ -148,15 +149,18 @@ class WebhookService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
-        if create_schema.secret is not None:
+        secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+        if (
+            isinstance(create_schema, DeprecatedWebhookEndpointCreateWithSecret)
+            and create_schema.secret is not None
+        ):
             secret = create_schema.secret
-        else:
-            secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
 
         endpoint = await repository.create(
             WebhookEndpoint(
                 **create_schema.model_dump(exclude={"secret"}, by_alias=True),
                 secret=secret,
+                secret_generated_at=utc_now(),
                 organization=organization,
             )
         )
@@ -192,9 +196,13 @@ class WebhookService:
                     ]
                 ) from e
 
+        update_dict = update_schema.model_dump(exclude_unset=True, exclude_none=True)
+        if "secret" in update_dict:
+            update_dict["secret_generated_at"] = utc_now()
+
         return await repository.update(
             endpoint,
-            update_dict=update_schema.model_dump(exclude_unset=True, exclude_none=True),
+            update_dict=update_dict,
         )
 
     async def reset_endpoint_secret(
@@ -212,6 +220,7 @@ class WebhookService:
             endpoint,
             update_dict={
                 "secret": generate_token(prefix=WEBHOOK_SECRET_PREFIX),
+                "secret_generated_at": utc_now(),
             },
         )
 

@@ -20287,6 +20287,51 @@ export interface components {
       /** @default text */
       format: components['schemas']['ColumnFormat']
     }
+    /** DeprecatedWebhookEndpointCreateWithSecret */
+    DeprecatedWebhookEndpointCreateWithSecret: {
+      /**
+       * Url
+       * Format: uri
+       * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
+       */
+      url: string
+      /**
+       * Name
+       * @description An optional name for the webhook endpoint to help organize and identify it.
+       */
+      name?: string | null
+      /** @description The format of the webhook payload. */
+      format: components['schemas']['WebhookFormat']
+      /**
+       * Events
+       * @description The events that will trigger the webhook.
+       */
+      events: components['schemas']['WebhookEventType'][]
+      /**
+       * Organization Id
+       * @description The organization ID associated with the webhook endpoint. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+    }
+    /** DeprecatedWebhookEndpointUpdateWithSecret */
+    DeprecatedWebhookEndpointUpdateWithSecret: {
+      /** Url */
+      url?: string | null
+      /**
+       * Name
+       * @description An optional name for the webhook endpoint to help organize and identify it.
+       */
+      name?: string | null
+      format?: components['schemas']['WebhookFormat'] | null
+      /** Events */
+      events?: components['schemas']['WebhookEventType'][] | null
+      /**
+       * Enabled
+       * @description Whether the webhook endpoint is enabled.
+       */
+      enabled?: boolean | null
+    }
     /** DiscordGuild */
     DiscordGuild: {
       /** Name */
@@ -38335,10 +38380,7 @@ export interface components {
        */
       enabled: boolean
     }
-    /**
-     * WebhookEndpointCreate
-     * @description Schema to create a webhook endpoint.
-     */
+    /** DeprecatedWebhookEndpointCreateWithSecret */
     WebhookEndpointCreate: {
       /**
        * Url
@@ -38365,10 +38407,7 @@ export interface components {
        */
       organization_id?: string | null
     }
-    /**
-     * WebhookEndpointUpdate
-     * @description Schema to update a webhook endpoint.
-     */
+    /** DeprecatedWebhookEndpointUpdateWithSecret */
     WebhookEndpointUpdate: {
       /** Url */
       url?: string | null

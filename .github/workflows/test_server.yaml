@@ -280,6 +280,7 @@ jobs:
         env:
           MINIO_ROOT_USER: polar
           MINIO_ROOT_PASSWORD: polarpolar
+          BITNAMI_DEBUG: "true"
         options: >-
           --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
           --health-interval 10s

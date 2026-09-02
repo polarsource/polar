@@ -283,17 +283,15 @@ const Checkout = ({
                 {!!getSeatPrice(checkout) && (
                   <CheckoutSeatSelector
                     checkout={checkout}
-                    update={update}
+                    updateCheckout={update}
                     locale={locale}
-                    compact
                   />
                 )}
                 {!!getUnitPrice(checkout) && (
                   <CheckoutUnitSelector
                     checkout={checkout}
-                    update={update}
+                    updateCheckout={update}
                     locale={locale}
-                    compact
                   />
                 )}
                 {checkout.active_trial_interval &&
@@ -431,17 +429,15 @@ const Checkout = ({
                     {!!getSeatPrice(checkout) && (
                       <CheckoutSeatSelector
                         checkout={checkout}
-                        update={update}
+                        updateCheckout={update}
                         locale={locale}
-                        compact
                       />
                     )}
                     {!!getUnitPrice(checkout) && (
                       <CheckoutUnitSelector
                         checkout={checkout}
-                        update={update}
+                        updateCheckout={update}
                         locale={locale}
-                        compact
                       />
                     )}
                     <CheckoutPricingBreakdown

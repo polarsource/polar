@@ -35,44 +35,6 @@ function createSeatCheckout(
 const noopUpdate = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
 
 describe('CheckoutSeatSelector', () => {
-  describe('default layout total amount display', () => {
-    it('shows netAmount (current behavior, no tax)', () => {
-      const checkout = createSeatCheckout({
-        net_amount: 3147,
-        total_amount: 3147,
-        tax_amount: null,
-      })
-
-      render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      expect(screen.getByTestId('headline-price')).toHaveTextContent('$31.47')
-    })
-
-    it('shows netAmount even when totalAmount differs (current behavior with tax)', () => {
-      const checkout = createSeatCheckout({
-        net_amount: 3147,
-        tax_amount: 787,
-        total_amount: 3934,
-      })
-
-      render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      expect(screen.getByTestId('headline-price')).toHaveTextContent('$31.47')
-    })
-  })
-
   describe('returns null for non-seat-based pricing', () => {
     it('renders nothing for fixed price', () => {
       const checkout = createCheckout({
@@ -82,7 +44,7 @@ describe('CheckoutSeatSelector', () => {
       const { container } = render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -91,74 +53,15 @@ describe('CheckoutSeatSelector', () => {
     })
   })
 
-  describe('with discount', () => {
-    it('shows discounted netAmount (current behavior)', () => {
-      const checkout = createSeatCheckout({
-        amount: 3147,
-        discount_amount: 629,
-        net_amount: 2518,
-        tax_amount: null,
-        total_amount: 2518,
-        discount: {
-          id: 'disc_1',
-          name: '20% off',
-          type: 'percentage',
-          duration: 'once',
-          code: null,
-          basis_points: 2000,
-        } as ProductCheckoutPublic['discount'],
-      })
-
-      render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      expect(screen.getByTestId('headline-price')).toHaveTextContent('$25.18')
-    })
-
-    it('shows netAmount not totalAmount when discount + tax (current behavior)', () => {
-      const checkout = createSeatCheckout({
-        amount: 3147,
-        discount_amount: 629,
-        net_amount: 2518,
-        tax_amount: 630,
-        total_amount: 3148,
-        discount: {
-          id: 'disc_1',
-          name: '20% off',
-          type: 'percentage',
-          duration: 'once',
-          code: null,
-          basis_points: 2000,
-        } as ProductCheckoutPublic['discount'],
-      })
-
-      render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      expect(screen.getByTestId('headline-price')).toHaveTextContent('$25.18')
-    })
-  })
-
-  describe('compact layout', () => {
+  describe('layout', () => {
     it('shows "Seats" label', () => {
       const checkout = createSeatCheckout()
 
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
-          compact
         />,
       )
 
@@ -171,9 +74,8 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
-          compact
         />,
       )
 
@@ -181,16 +83,15 @@ describe('CheckoutSeatSelector', () => {
       expect(screen.getByLabelText('Increase seats')).toBeInTheDocument()
     })
 
-    it('calls update with seats+1 when increase is clicked in compact mode', async () => {
+    it('calls update with seats+1 when increase is clicked', async () => {
       const update = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
       const checkout = createSeatCheckout({ seats: 3 })
 
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
-          compact
         />,
       )
 
@@ -201,15 +102,14 @@ describe('CheckoutSeatSelector', () => {
       expect(update).toHaveBeenCalledWith({ seats: 4 })
     })
 
-    it('enters edit mode in compact layout when seat count is clicked', () => {
+    it('enters edit mode when the seat count is clicked', () => {
       const checkout = createSeatCheckout({ seats: 3 })
 
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
-          compact
         />,
       )
 
@@ -218,16 +118,15 @@ describe('CheckoutSeatSelector', () => {
       expect(screen.getByDisplayValue('3')).toBeInTheDocument()
     })
 
-    it('updates seats from compact edit input on blur', async () => {
+    it('updates seats from the edit input on blur', async () => {
       const update = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
       const checkout = createSeatCheckout({ seats: 3 })
 
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
-          compact
         />,
       )
 
@@ -242,7 +141,7 @@ describe('CheckoutSeatSelector', () => {
       expect(update).toHaveBeenCalledWith({ seats: 6 })
     })
 
-    it('renders the seat-limit text in compact mode when min/max are set', () => {
+    it('renders the seat-limit text when min/max are set', () => {
       const checkout = createSeatCheckout({
         seats: 5,
         min_seats: 3,
@@ -252,9 +151,8 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
-          compact
         />,
       )
 
@@ -273,7 +171,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -282,7 +180,7 @@ describe('CheckoutSeatSelector', () => {
       expect(screen.queryByLabelText('Increase seats')).not.toBeInTheDocument()
     })
 
-    it('shows just the count in compact mode too', () => {
+    it('shows just the count when seats are fixed', () => {
       const checkout = createSeatCheckout({
         seats: 5,
         min_seats: 5,
@@ -292,9 +190,8 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
-          compact
         />,
       )
 
@@ -322,7 +219,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -348,7 +245,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -374,7 +271,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -411,27 +308,13 @@ describe('CheckoutSeatSelector', () => {
       return createCheckout({ ...graduatedDefaults, ...overrides })
     }
 
-    it('shows total amount for graduated pricing', () => {
-      const checkout = createGraduatedCheckout()
-
-      render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      expect(screen.getByTestId('headline-price')).toHaveTextContent('$140')
-    })
-
     it('renders stepper buttons for graduated pricing', () => {
       const checkout = createGraduatedCheckout()
 
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -449,7 +332,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -468,7 +351,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -487,7 +370,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -509,7 +392,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -532,7 +415,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -555,7 +438,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={update}
+          updateCheckout={update}
           locale="en"
         />,
       )
@@ -578,7 +461,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -605,7 +488,7 @@ describe('CheckoutSeatSelector', () => {
         render(
           <CheckoutSeatSelector
             checkout={checkout}
-            update={update}
+            updateCheckout={update}
             locale="en"
           />,
         )
@@ -626,7 +509,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )
@@ -653,7 +536,7 @@ describe('CheckoutSeatSelector', () => {
       render(
         <CheckoutSeatSelector
           checkout={checkout}
-          update={noopUpdate}
+          updateCheckout={noopUpdate}
           locale="en"
         />,
       )

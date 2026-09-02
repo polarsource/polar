@@ -30,7 +30,18 @@ class Tier(BaseModel):
     )
 
 
-def sort_and_check_bounds[TierT: Tier](tiers: list[TierT]) -> list[TierT]:
+class TierInput(BaseModel):
+    """A tier submitted through the API. Rates go up to 19 whole digits, the
+    reach of the BigInteger amount columns, with 12 decimal places.
+    """
+
+    bound: int | None = Field(default=None, gt=0)
+    unit_amount: Decimal = Field(
+        ge=0, max_digits=31, decimal_places=12, allow_inf_nan=False
+    )
+
+
+def sort_and_check_bounds[TierT: Tier | TierInput](tiers: list[TierT]) -> list[TierT]:
     sorted_tiers = sorted(tiers, key=lambda tier: (tier.bound is None, tier.bound or 0))
     for current, next_tier in pairwise(sorted_tiers):
         if current.bound is None:
@@ -101,6 +112,27 @@ class Tiers(BaseModel):
     @property
     def last_bound(self) -> int | None:
         return self.tiers[-1].bound
+
+
+class TiersInput(BaseModel):
+    """Tiers submitted through the API. Kept apart from `Tiers` so tightening
+    a rule here never stops a stored row from loading.
+    """
+
+    type: TierType
+    tiers: list[TierInput] = Field(min_length=1)
+
+    @field_validator("tiers")
+    @classmethod
+    def validate_tiers(cls, tiers: list[TierInput]) -> list[TierInput]:
+        return sort_and_check_bounds(tiers)
+
+    @property
+    def last_bound(self) -> int | None:
+        return self.tiers[-1].bound
+
+    def to_tiers(self) -> Tiers:
+        return Tiers.model_validate(self.model_dump())
 
 
 def validate_unit_bounds(

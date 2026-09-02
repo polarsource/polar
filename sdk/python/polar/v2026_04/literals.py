@@ -808,7 +808,6 @@ PaymentTrigger: typing.TypeAlias = typing.Literal[
 Permission: typing.TypeAlias = typing.Literal[
     "pull", "triage", "push", "maintain", "admin"
 ]
-"""The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
 PresentmentCurrency: typing.TypeAlias = typing.Literal[
     "aed",
     "all",
@@ -1110,6 +1109,7 @@ TaxBehavior: typing.TypeAlias = typing.Literal["inclusive", "exclusive"]
 TaxBehaviorOption: typing.TypeAlias = typing.Literal[
     "location", "inclusive", "exclusive"
 ]
+TierType: typing.TypeAlias = typing.Literal["volume", "graduated"]
 TimeInterval: typing.TypeAlias = typing.Literal["year", "month", "week", "day", "hour"]
 Timeframe: typing.TypeAlias = typing.Literal["year", "month", "day"]
 Timezone: typing.TypeAlias = typing.Literal[

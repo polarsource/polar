@@ -86,6 +86,9 @@ from polar.v2026_10.outputs import (
     ResourceNotFound as ResourceNotFoundModel,
 )
 from polar.v2026_10.outputs import (
+    RotateNotPermitted as RotateNotPermittedModel,
+)
+from polar.v2026_10.outputs import (
     SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
 )
 from polar.v2026_10.outputs import (
@@ -93,6 +96,12 @@ from polar.v2026_10.outputs import (
 )
 from polar.v2026_10.outputs import (
     Unauthorized as UnauthorizedModel,
+)
+from polar.v2026_10.outputs import (
+    UpdateSubscriptionSeatsNotAllowed as UpdateSubscriptionSeatsNotAllowedModel,
+)
+from polar.v2026_10.outputs import (
+    UpdateSubscriptionUnitsNotAllowed as UpdateSubscriptionUnitsNotAllowedModel,
 )
 
 
@@ -323,6 +332,15 @@ class Unauthorized(PolarClientError):
     error: UnauthorizedModel
 
     def __init__(self, status_code: int, error: UnauthorizedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class RotateNotPermitted(PolarClientError):
+    error_type = RotateNotPermittedModel
+    error: RotateNotPermittedModel
+
+    def __init__(self, status_code: int, error: RotateNotPermittedModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -674,13 +692,26 @@ class ManualRetryLimitExceeded(PolarClientError):
 
 
 class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
-    error_type = AlreadyCanceledSubscriptionModel | PauseResumeNotAllowedModel
-    error: AlreadyCanceledSubscriptionModel | PauseResumeNotAllowedModel
+    error_type = (
+        AlreadyCanceledSubscriptionModel
+        | PauseResumeNotAllowedModel
+        | UpdateSubscriptionSeatsNotAllowedModel
+        | UpdateSubscriptionUnitsNotAllowedModel
+    )
+    error: (
+        AlreadyCanceledSubscriptionModel
+        | PauseResumeNotAllowedModel
+        | UpdateSubscriptionSeatsNotAllowedModel
+        | UpdateSubscriptionUnitsNotAllowedModel
+    )
 
     def __init__(
         self,
         status_code: int,
-        error: AlreadyCanceledSubscriptionModel | PauseResumeNotAllowedModel,
+        error: AlreadyCanceledSubscriptionModel
+        | PauseResumeNotAllowedModel
+        | UpdateSubscriptionSeatsNotAllowedModel
+        | UpdateSubscriptionUnitsNotAllowedModel,
     ) -> None:
         self.error = error
         super().__init__(status_code, error)

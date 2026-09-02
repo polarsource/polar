@@ -30,6 +30,7 @@ from polar.v2026_10.inputs import (
     SubscriptionUpdateBillingPeriod,
     SubscriptionUpdateClear,
     SubscriptionUpdateSeats,
+    SubscriptionUpdateUnits,
 )
 from polar.v2026_10.literals import (
     CustomerCancellationReason,
@@ -431,6 +432,15 @@ class SubscriptionsSync(SyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateSeats],
+    ) -> Subscription: ...
+
+    @typing.overload
+    def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[SubscriptionUpdateUnits],
     ) -> Subscription: ...
 
     @typing.overload
@@ -925,6 +935,15 @@ class SubscriptionsAsync(AsyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[SubscriptionUpdateSeats],
+    ) -> Subscription: ...
+
+    @typing.overload
+    async def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[SubscriptionUpdateUnits],
     ) -> Subscription: ...
 
     @typing.overload

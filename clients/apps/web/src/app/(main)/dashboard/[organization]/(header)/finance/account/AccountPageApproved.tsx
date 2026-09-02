@@ -37,7 +37,7 @@ export const AccountPageApproved = ({ organization }: Props) => {
       const errorMessage = extractApiErrorMessage(
         {
           detail:
-            typeof errorDetail === 'object' ? errorDetail.detail : errorDetail,
+            typeof errorDetail === 'object' ? errorDetail?.detail : errorDetail,
         },
         'Unable to start identity verification. Please try again.',
       )

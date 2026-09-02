@@ -388,7 +388,8 @@
                   {
                     "group": "Members",
                     "pages": [
-                      "GET /v1/members/"
+                      "GET /v1/customers/{id}/members",
+                      "GET /v1/customers/external/{external_id}/members"
                     ]
                   },
                   {
@@ -794,7 +795,8 @@
                   {
                     "group": "Members",
                     "pages": [
-                      "GET /v1/members/"
+                      "GET /v1/customers/{id}/members",
+                      "GET /v1/customers/external/{external_id}/members"
                     ]
                   },
                   {

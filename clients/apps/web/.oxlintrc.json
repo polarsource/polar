@@ -22,6 +22,9 @@
     "babel.config.js",
     "scripts/**"
   ],
+  "rules": {
+    "polar/no-unsanitized-toast-detail": "error"
+  },
   "overrides": [
     {
       "files": ["src/components/Checkout/CheckoutConfirmation.tsx"],

@@ -5,6 +5,7 @@ import noMerchantApiCallsInCustomerPortal from './no-merchant-api-calls-in-custo
 import noMerchantQueriesInCustomerPortal from './no-merchant-queries-in-customer-portal.mjs'
 import noNextImage from './no-next-image.mjs'
 import noRawHtmlLayout from './no-raw-html-layout.mjs'
+import noUnsanitizedToastDetail from './no-unsanitized-toast-detail.mjs'
 import noStyleBox from './no-style-box.mjs'
 import noStyleText from './no-style-text.mjs'
 import requireCustomerPortalPage from './require-customer-portal-page.mjs'
@@ -23,6 +24,7 @@ const polarPlugin = {
     'no-merchant-queries-in-customer-portal': noMerchantQueriesInCustomerPortal,
     'no-next-image': noNextImage,
     'no-raw-html-layout': noRawHtmlLayout,
+    'no-unsanitized-toast-detail': noUnsanitizedToastDetail,
     'no-style-box': noStyleBox,
     'no-style-text': noStyleText,
     'require-customer-portal-page': requireCustomerPortalPage,

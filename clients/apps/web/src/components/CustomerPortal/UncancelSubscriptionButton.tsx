@@ -3,6 +3,7 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerUncancelSubscription } from '@/hooks/queries/customerPortal'
 import { useRequirePaymentMethod } from '@/hooks/useRequirePaymentMethod'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import type { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 
@@ -28,10 +29,10 @@ const UncancelSubscriptionButton = ({
     if (error) {
       toast({
         title: 'Failed to uncancel subscription',
-        description:
-          typeof error.detail === 'string'
-            ? error.detail
-            : 'An error occurred while uncancelling the subscription.',
+        description: extractApiErrorMessage(
+          error,
+          'An error occurred while uncancelling the subscription.',
+        ),
         variant: 'error',
       })
       return

@@ -3,7 +3,7 @@
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
@@ -61,10 +61,7 @@ export const ProductUrlSection = ({
       } else {
         toast({
           title: 'Failed to update website',
-          description:
-            typeof error.detail === 'string'
-              ? error.detail
-              : 'Please try again.',
+          description: extractApiErrorMessage(error, 'Please try again.'),
         })
       }
       return

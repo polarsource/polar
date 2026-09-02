@@ -7,6 +7,7 @@ import {
   usePayoutAccounts,
   useSetOrganizationPayoutAccount,
 } from '@/hooks/queries/payout_accounts'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { permissionDeniedMessage } from '@/utils/permissions'
 import { schemas, unwrap } from '@polar-sh/client'
@@ -103,10 +104,10 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
       if (error) {
         toast({
           title: 'Failed to delete payout account',
-          description:
-            typeof error.detail === 'string'
-              ? error.detail
-              : 'An error occurred while deleting the payout account.',
+          description: extractApiErrorMessage(
+            error,
+            'An error occurred while deleting the payout account.',
+          ),
         })
       } else {
         toast({
@@ -127,10 +128,10 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
       if (error) {
         toast({
           title: 'Failed to switch payout account',
-          description:
-            typeof error.detail === 'string'
-              ? error.detail
-              : 'An error occurred while switching the payout account.',
+          description: extractApiErrorMessage(
+            error,
+            'An error occurred while switching the payout account.',
+          ),
         })
       } else {
         toast({

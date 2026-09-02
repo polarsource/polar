@@ -2,7 +2,7 @@ import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateMember } from '@/hooks/queries/members'
 import { permissionDeniedMessage } from '@/utils/permissions'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -65,7 +65,7 @@ export const EditMemberModal = ({
             } else {
               toast({
                 title: 'Member Update Failed',
-                description: `Error updating member ${member.email}: ${error.detail}`,
+                description: `Error updating member ${member.email}: ${extractApiErrorMessage(error)}`,
               })
             }
           }

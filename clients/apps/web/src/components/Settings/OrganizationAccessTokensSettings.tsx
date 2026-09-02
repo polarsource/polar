@@ -36,6 +36,7 @@ import { toast, useToast } from '../Toast/use-toast'
 import { CreateAccessTokenModal } from './CreateAccessTokenModal'
 import { TreeMultiSelect } from './TreeMultiSelect'
 import { useResumeOrganizationAccessTokenCreation } from './useResumeOrganizationAccessTokenCreation'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 
 export interface AccessTokenCreate {
   comment: string
@@ -221,7 +222,7 @@ const AccessTokenItem = ({
       if (error) {
         toast({
           title: 'Could not delete access token',
-          description: error.detail?.[0]?.msg ?? 'Unknown error',
+          description: extractApiErrorMessage(error, 'Unknown error'),
         })
         return
       }

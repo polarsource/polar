@@ -8,6 +8,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { isTerminalStatus } from '@/hooks/identityVerification'
 import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { CheckIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
@@ -33,6 +34,13 @@ export const AccountPageApproved = ({ organization }: Props) => {
         | string
         | { error?: string; detail?: string }
         | undefined
+      const errorMessage = extractApiErrorMessage(
+        {
+          detail:
+            typeof errorDetail === 'object' ? errorDetail.detail : errorDetail,
+        },
+        'Unable to start identity verification. Please try again.',
+      )
       if (
         (typeof errorDetail === 'object' &&
           errorDetail?.error === 'IdentityVerificationProcessing') ||
@@ -46,11 +54,7 @@ export const AccountPageApproved = ({ organization }: Props) => {
       } else {
         toast({
           title: 'Error starting identity verification',
-          description:
-            typeof errorDetail === 'string'
-              ? errorDetail
-              : (typeof errorDetail === 'object' && errorDetail?.detail) ||
-                'Unable to start identity verification. Please try again.',
+          description: errorMessage,
         })
       }
       return

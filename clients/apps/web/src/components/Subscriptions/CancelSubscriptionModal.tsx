@@ -4,7 +4,7 @@ import {
   useSubscriptionCancelPreview,
   useUpdateSubscription,
 } from '@/hooks/queries'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Alert, Button, InlineModalHeader } from '@polar-sh/orbit'
@@ -122,7 +122,7 @@ const CancelSubscriptionModal = ({
             } else {
               toast({
                 title: 'Customer Update Failed',
-                description: `Error cancelling subscription ${subscription.product.name}: ${error.detail}`,
+                description: `Error cancelling subscription ${subscription.product.name}: ${extractApiErrorMessage(error)}`,
               })
             }
           return

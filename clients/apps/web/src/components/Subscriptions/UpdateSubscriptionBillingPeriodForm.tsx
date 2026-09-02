@@ -1,7 +1,7 @@
 'use client'
 
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
@@ -56,7 +56,7 @@ export const UpdateSubscriptionBillingPeriodForm = ({
             } else {
               toast({
                 title: 'Billing period update failed',
-                description: `Error while updating billing period for ${subscription.product.name}: ${error.detail}`,
+                description: `Error while updating billing period for ${subscription.product.name}: ${extractApiErrorMessage(error)}`,
               })
             }
           return

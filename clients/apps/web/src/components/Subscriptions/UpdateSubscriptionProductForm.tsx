@@ -2,7 +2,7 @@
 
 import { useProduct } from '@/hooks/queries'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { useTrialChangeOutcome } from '@/utils/trial-change'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -70,7 +70,7 @@ export const UpdateSubscriptionProductForm = ({
             } else {
               toast({
                 title: 'Subscription update failed',
-                description: `Error while updating subscription ${subscription.product.name}: ${error.detail}`,
+                description: `Error while updating subscription ${subscription.product.name}: ${extractApiErrorMessage(error)}`,
               })
             }
           return

@@ -4,7 +4,7 @@ import { SocialLinksField } from './SocialLinksField'
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -51,10 +51,7 @@ export const SocialLinksSection = ({ organization: initialOrg }: Props) => {
       } else {
         toast({
           title: 'Failed to update social links',
-          description:
-            typeof error.detail === 'string'
-              ? error.detail
-              : 'Please try again.',
+          description: extractApiErrorMessage(error, 'Please try again.'),
         })
       }
       return

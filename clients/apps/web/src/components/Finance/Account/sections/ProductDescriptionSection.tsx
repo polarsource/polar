@@ -7,7 +7,7 @@ import { usePostHog } from '@/hooks/posthog'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useOrganizationKYC } from '@/hooks/queries/org'
 import { useAupValidation } from '@/hooks/useAupValidation'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { PRICING_MODELS, SELLING_CATEGORIES } from '@/utils/productCategories'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -96,10 +96,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
       } else {
         toast({
           title: 'Failed to update product description',
-          description:
-            typeof error.detail === 'string'
-              ? error.detail
-              : 'Please try again.',
+          description: extractApiErrorMessage(error, 'Please try again.'),
         })
       }
       return false

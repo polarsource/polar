@@ -280,11 +280,10 @@ jobs:
         env:
           MINIO_ROOT_USER: polar
           MINIO_ROOT_PASSWORD: polarpolar
-          BITNAMI_DEBUG: "true"
         options: >-
-          --health-cmd "true"
-          --health-interval 2s
-          --health-timeout 2s
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
           --health-retries 5
 
       tinybird:
@@ -302,28 +301,6 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: 💿 Wait for MinIO
-        env:
-          MINIO_CONTAINER_ID: ${{ job.services.minio.id }}
-        run: |
-          for attempt in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:9000/minio/health/live; then
-              exit 0
-            fi
-            if [ "$(docker inspect --format '{{.State.Running}}' "$MINIO_CONTAINER_ID")" != "true" ]; then
-              break
-            fi
-            if (( attempt % 5 == 0 )); then
-              docker top "$MINIO_CONTAINER_ID" -eo pid,ppid,user,stat,etime,cmd || true
-              docker stats --no-stream "$MINIO_CONTAINER_ID" || true
-            fi
-            sleep 2
-          done
-          docker logs "$MINIO_CONTAINER_ID" || true
-          docker inspect "$MINIO_CONTAINER_ID" || true
-          sudo dmesg --ctime | tail -200 || true
-          exit 1
-
       - uses: actions/checkout@v7.0.1
 
       - name: 💿 MinIO Setup

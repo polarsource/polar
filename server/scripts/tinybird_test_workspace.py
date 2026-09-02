@@ -16,7 +16,7 @@ TINYBIRD_DIR = Path(__file__).resolve().parent.parent / "tinybird"
 
 # Tinybird Local answers /tokens before setup finishes. setup also exits 1 once
 # and is respawned by supervisord; the workspace API can take >60s after that.
-API_READY_ATTEMPTS = 180
+API_READY_TIMEOUT_SECONDS = 180
 
 
 def get_tokens(host: str | None = None) -> dict[str, str] | None:
@@ -32,10 +32,16 @@ def get_tokens(host: str | None = None) -> dict[str, str] | None:
 
 def request(method: str, url: str, **kwargs: Any) -> httpx.Response:
     """Tinybird answers /tokens before its API is up, so retry past gateway errors."""
+    started_at = time.monotonic()
+    deadline = started_at + API_READY_TIMEOUT_SECONDS
+    next_progress_at = started_at + 15
+    request_timeout = float(kwargs.pop("timeout", 5.0))
     last_error = "no response"
-    for attempt in range(1, API_READY_ATTEMPTS + 1):
+    while (remaining := deadline - time.monotonic()) > 0:
         try:
-            response = httpx.request(method, url, **kwargs)
+            response = httpx.request(
+                method, url, timeout=min(request_timeout, remaining), **kwargs
+            )
         except httpx.RequestError as exc:
             last_error = str(exc)
         else:
@@ -43,12 +49,15 @@ def request(method: str, url: str, **kwargs: Any) -> httpx.Response:
                 response.raise_for_status()
                 return response
             last_error = f"HTTP {response.status_code}"
-        if attempt % 15 == 0:
+        now = time.monotonic()
+        if now >= next_progress_at:
+            elapsed = min(round(now - started_at), API_READY_TIMEOUT_SECONDS)
             print(
-                f"Waiting for Tinybird {url} ({last_error}, attempt {attempt}/{API_READY_ATTEMPTS})",
+                f"Waiting for Tinybird {url} ({last_error}, {elapsed}/{API_READY_TIMEOUT_SECONDS}s)",
                 file=sys.stderr,
             )
-        time.sleep(1)
+            next_progress_at = now + 15
+        time.sleep(min(1, max(0, deadline - now)))
     raise RuntimeError(f"Tinybird never served {url} ({last_error})")
 
 

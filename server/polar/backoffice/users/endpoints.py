@@ -8,12 +8,13 @@ from difflib import SequenceMatcher
 from typing import Annotated, Any
 
 import stripe as stripe_lib
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
+from fastapi import Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 from tagflow import classes, tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -32,7 +33,7 @@ from ..layout import layout
 from ..toast import add_toast
 from .views.modals import DeleteIdentityVerificationModal
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 @contextlib.contextmanager

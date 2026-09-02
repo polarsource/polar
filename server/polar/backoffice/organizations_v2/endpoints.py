@@ -16,7 +16,7 @@ from typing import Any, cast
 
 import stripe as stripe_lib
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from fastapi.datastructures import FormData
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
@@ -28,6 +28,7 @@ from tagflow import tag, text
 from polar.account.repository import AccountRepository
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.service import account_credit_service
+from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
 from polar.enums import PayoutAccountType
 from polar.file.repository import FileRepository
@@ -152,7 +153,7 @@ from .views.sections.settings_section import SettingsSection
 from .views.sections.support_cases_list_section import SupportCasesListSection
 from .views.sections.team_section import TeamSection
 
-router = APIRouter(prefix="/organizations", tags=["organizations"])
+router = BackofficeRouter(prefix="/organizations", tags=["organizations"])
 
 logger = structlog.getLogger(__name__)
 

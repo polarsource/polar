@@ -3,13 +3,14 @@ from collections.abc import Sequence
 from typing import Annotated
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from pydantic import UUID4
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.dispute.repository import DisputeRepository
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParamsQuery, count_subquery
@@ -51,7 +52,7 @@ from ..toast import add_toast
 from .queries import TYPE_LABELS, Row, cases_statement
 from .urls import case_detail_url, is_safe_return_to
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 def _list_url(

@@ -19,7 +19,9 @@ from polar.backoffice.components import datatable, description_list, modal, acco
 ```python
 from fastapi.responses import HTMLResponse
 
-router = APIRouter(prefix="/backoffice/resources", tags=["backoffice"])
+from polar.backoffice.routing import BackofficeRouter
+
+router = BackofficeRouter(prefix="/backoffice/resources", tags=["backoffice"])
 
 
 @router.get("/", response_class=HTMLResponse)

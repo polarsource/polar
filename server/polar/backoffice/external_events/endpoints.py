@@ -2,11 +2,12 @@ import urllib.parse
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
 from tagflow import tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.external_event import sorting
 from polar.external_event.repository import ExternalEventRepository
 from polar.external_event.service import external_event as external_event_service
@@ -32,7 +33,7 @@ def _get_logfire_url(event: ExternalEvent) -> str:
     )
 
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 @router.get("/", name="external_events:list")

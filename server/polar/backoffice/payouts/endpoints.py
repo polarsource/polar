@@ -3,13 +3,14 @@ import uuid
 from collections.abc import Generator
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload, selectinload
 from tagflow import attr, classes, tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.enums import PayoutAccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -35,7 +36,7 @@ from ..layout import layout
 from ..toast import add_toast
 from .forms import RetryPayoutForm
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 @contextlib.contextmanager

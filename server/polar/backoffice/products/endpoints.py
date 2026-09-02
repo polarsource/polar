@@ -1,11 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from tagflow import tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, Product, ProductBenefit
 from polar.models.product_price import ProductPrice
@@ -26,7 +27,7 @@ from .. import formatters
 from ..components import button, datatable, description_list, input
 from ..layout import layout
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 def _format_price_display(price: ProductPrice) -> str:

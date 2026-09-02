@@ -4,11 +4,12 @@ from collections.abc import Generator
 from typing import Annotated, Any
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import func, or_, select
 from tagflow import classes, tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.email.react import render_from_json
 from polar.email.repository import EmailLogRepository
 from polar.kit.pagination import PaginationParamsQuery
@@ -21,7 +22,7 @@ from ..layout import layout
 
 log: Logger = structlog.get_logger()
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 def empty_str_to_none(v: str | None) -> str | None:

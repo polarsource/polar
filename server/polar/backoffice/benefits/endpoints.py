@@ -2,12 +2,13 @@ import builtins
 import uuid
 from typing import Annotated, Any, cast
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.benefit import sorting
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.sorting import BenefitSortProperty
@@ -27,7 +28,7 @@ from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from ..components import button, datatable, description_list, input
 from ..layout import layout
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 class BenefitTypeColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortProperty]):

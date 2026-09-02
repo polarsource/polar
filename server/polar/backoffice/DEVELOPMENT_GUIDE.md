@@ -68,10 +68,11 @@ touch polar/backoffice/my_entity/forms.py  # Optional
 Create `my_entity/endpoints.py`:
 
 ```python
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
 from tagflow import tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import MyEntity
 from polar.my_entity.repository import MyEntityRepository
@@ -83,7 +84,7 @@ from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 @router.get("/", name="my_entity:list")

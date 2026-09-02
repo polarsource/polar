@@ -2,10 +2,11 @@ from collections.abc import Sequence
 from operator import attrgetter
 from typing import Any
 
-from fastapi import APIRouter, Query, Request
+from fastapi import Query, Request
 from pydantic import ValidationError
 from tagflow import tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.worker import enqueue_job
 
 from ..components import button, datatable, input, modal
@@ -13,7 +14,7 @@ from ..layout import layout
 from ..toast import add_toast
 from .forms import build_enqueue_task_form_class
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 @router.get("/", name="tasks:list")

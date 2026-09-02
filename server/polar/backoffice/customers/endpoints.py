@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Annotated, Any
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from pydantic import (
     UUID4,
@@ -21,6 +21,7 @@ from tagflow import classes, document, tag, text
 
 from polar.backoffice import forms
 from polar.backoffice.orders.components import orders_datatable
+from polar.backoffice.routing import BackofficeRouter
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -147,7 +148,7 @@ class WalletTransactionReferenceColumn(datatable.DatatableColumn[WalletTransacti
         return None
 
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 @router.get("/", name="customers:list")

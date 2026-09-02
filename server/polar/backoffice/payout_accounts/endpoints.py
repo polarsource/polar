@@ -5,12 +5,13 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 from tagflow import classes, tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.enums import PayoutAccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -29,7 +30,7 @@ from .forms import DeletePayoutAccountForm
 
 logger = structlog.get_logger()
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 @contextlib.contextmanager

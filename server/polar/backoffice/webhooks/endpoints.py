@@ -1,11 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
@@ -16,7 +17,7 @@ from ..components import button, confirmation_dialog, datatable, description_lis
 from ..layout import layout
 from ..toast import add_toast
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 @router.get("/", name="webhooks:list")

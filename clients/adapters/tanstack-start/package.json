@@ -28,7 +28,6 @@
     "dev": "tsc --watch",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "lint": "pnpm format:check && eslint --max-warnings 0 .",
     "typecheck": "tsc --noEmit"
   },
   "files": [
@@ -43,7 +42,6 @@
     "@tanstack/react-start": "^1.140.0"
   },
   "devDependencies": {
-    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",

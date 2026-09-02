@@ -101,7 +101,12 @@ export interface WebhooksConfig {
 
 export const handleWebhookPayload = async (
   payload: ReturnType<typeof validateEvent>,
-  { webhookSecret, entitlements, onPayload, ...eventHandlers }: WebhooksConfig,
+  {
+    webhookSecret: _webhookSecret,
+    entitlements,
+    onPayload,
+    ...eventHandlers
+  }: WebhooksConfig,
 ) => {
   const promises: Promise<void>[] = []
 

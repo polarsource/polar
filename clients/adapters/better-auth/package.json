@@ -44,7 +44,6 @@
     "dev": "npm run build -- --watch",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "lint": "pnpm format:check && eslint --max-warnings 0 .",
     "typecheck": "tsc --noEmit"
   },
   "files": [
@@ -61,7 +60,6 @@
   },
   "devDependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/sdk": "^0.49.0",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/node": "^20.0.0",

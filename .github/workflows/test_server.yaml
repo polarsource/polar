@@ -372,34 +372,11 @@ jobs:
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: 🐦 Prepare Tinybird workspace
-        id: tinybird-workspace
         working-directory: ./server
         run: |
           token=$(uv run python -m scripts.tinybird_test_workspace)
           echo "::add-mask::$token"
           echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
-
-      - name: 🐦 Dump Tinybird sidecar logs
-        if: failure() && steps.tinybird-workspace.outcome == 'failure'
-        run: |
-          cid=$(docker ps -q --filter ancestor=tinybirdco/tinybird-local | head -n1)
-          if [ -z "$cid" ]; then
-            echo "Tinybird sidecar container not found"
-            docker ps -a
-            exit 0
-          fi
-          echo "::group::supervisorctl status"
-          docker exec "$cid" supervisorctl status || true
-          echo "::endgroup::"
-          echo "::group::supervisorctl tail setup"
-          docker exec "$cid" supervisorctl tail -10000 setup || true
-          echo "::endgroup::"
-          echo "::group::tinybird-local-setup.log"
-          docker exec "$cid" sh -c 'tail -n 200 /var/log/tinybird-local-setup.log' || true
-          echo "::endgroup::"
-          echo "::group::tinybird-local-server.log"
-          docker exec "$cid" sh -c 'tail -n 200 /var/log/tinybird-local-server.log' || true
-          echo "::endgroup::"
 
       - name: ⚗️ alembic migrate
         working-directory: ./server

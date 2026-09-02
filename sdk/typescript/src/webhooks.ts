@@ -92,13 +92,9 @@ const verifySignature = async (
   const signedContentBytes = textEncoder.encode(signedContent);
   const signingKeys = await Promise.all(
     hmacKeys(secret).map((key) =>
-      globalThis.crypto.subtle.importKey(
-        "raw",
-        key,
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["verify"],
-      ),
+      globalThis.crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, [
+        "verify",
+      ]),
     ),
   );
 
@@ -131,15 +127,9 @@ const verifySignature = async (
 const hmacKeys = (secret: string): BufferSource[] => {
   const utf8Key = new TextEncoder().encode(secret);
   const keys: BufferSource[] = [utf8Key];
-  const remainder = secret.startsWith("whsec_")
-    ? secret.slice("whsec_".length)
-    : secret;
+  const remainder = secret.startsWith("whsec_") ? secret.slice("whsec_".length) : secret;
   const decoded = decodeBase64(remainder);
-  if (
-    decoded !== null &&
-    decoded.byteLength > 0 &&
-    !bytesEqual(decoded, utf8Key)
-  ) {
+  if (decoded !== null && decoded.byteLength > 0 && !bytesEqual(decoded, utf8Key)) {
     keys.push(decoded);
   }
   return keys;

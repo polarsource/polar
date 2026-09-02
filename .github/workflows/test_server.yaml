@@ -130,7 +130,8 @@ jobs:
           --health-cmd "curl -sf http://127.0.0.1:7181/tokens || exit 1"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 18
+          --health-start-period 60s
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -290,11 +291,6 @@ jobs:
         ports:
           - 7181:7181
           - 7182:7182
-        options: >-
-          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - uses: actions/checkout@v7.0.1

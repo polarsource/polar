@@ -61,9 +61,7 @@ export const MeteredPricingFields: React.FC<MeteredPricingFieldsProps> = ({
     organization.feature_settings?.metered_tiered_pricing_enabled ?? false
 
   const pricingModel: MeteredPricingModel =
-    tieredPricingEnabled && amountType === 'metered_tiers' && tiersValue
-      ? tiersValue.type
-      : 'fixed'
+    amountType === 'metered_tiers' && tiersValue ? tiersValue.type : 'fixed'
 
   // A flat rate and tiers are separate price types, so switching the model
   // replaces the price rather than clearing one of its fields.

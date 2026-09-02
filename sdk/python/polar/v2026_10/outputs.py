@@ -46,6 +46,7 @@ from polar.v2026_10.literals import (
     SubType,
     TaxBehavior,
     TaxBehaviorOption,
+    TierType,
     Timeframe,
     TokenType,
     TrialInterval,
@@ -752,6 +753,35 @@ class BenefitCustomProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitCustomPublic:
+    id: str
+    """The ID of the benefit."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    type: typing.Literal["custom"]
+
+    description: str
+    """The description of the benefit."""
+
+    selectable: bool
+    """Whether the benefit is selectable when creating a product."""
+
+    deletable: bool
+    """Whether the benefit is deletable."""
+
+    is_deleted: bool
+    """Whether the benefit is deleted."""
+
+    organization_id: str
+    """The ID of the organization owning the benefit."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitCustomSubscriber:
     id: str
     """The ID of the benefit."""
@@ -895,6 +925,35 @@ class BenefitDiscordProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitDiscordPublic:
+    id: str
+    """The ID of the benefit."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    type: typing.Literal["discord"]
+
+    description: str
+    """The description of the benefit."""
+
+    selectable: bool
+    """Whether the benefit is selectable when creating a product."""
+
+    deletable: bool
+    """Whether the benefit is deletable."""
+
+    is_deleted: bool
+    """Whether the benefit is deleted."""
+
+    organization_id: str
+    """The ID of the organization owning the benefit."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitDiscordSubscriber:
     id: str
     """The ID of the benefit."""
@@ -1024,6 +1083,35 @@ class BenefitDownloadablesProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitDownloadablesPublic:
+    id: str
+    """The ID of the benefit."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    type: typing.Literal["downloadables"]
+
+    description: str
+    """The description of the benefit."""
+
+    selectable: bool
+    """Whether the benefit is selectable when creating a product."""
+
+    deletable: bool
+    """Whether the benefit is deletable."""
+
+    is_deleted: bool
+    """Whether the benefit is deleted."""
+
+    organization_id: str
+    """The ID of the organization owning the benefit."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitDownloadablesSubscriber:
     id: str
     """The ID of the benefit."""
@@ -1107,6 +1195,35 @@ class BenefitFeatureFlag:
 class BenefitFeatureFlagProperties:
     """Properties for a benefit of type `feature_flag`."""
 
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitFeatureFlagPublic:
+    id: str
+    """The ID of the benefit."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    type: typing.Literal["feature_flag"]
+
+    description: str
+    """The description of the benefit."""
+
+    selectable: bool
+    """Whether the benefit is selectable when creating a product."""
+
+    deletable: bool
+    """Whether the benefit is deletable."""
+
+    is_deleted: bool
+    """Whether the benefit is deleted."""
+
+    organization_id: str
+    """The ID of the organization owning the benefit."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -1201,6 +1318,35 @@ class BenefitGitHubRepositoryProperties:
 
     permission: Permission
     """The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGitHubRepositoryPublic:
+    id: str
+    """The ID of the benefit."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    type: typing.Literal["github_repository"]
+
+    description: str
+    """The description of the benefit."""
+
+    selectable: bool
+    """Whether the benefit is selectable when creating a product."""
+
+    deletable: bool
+    """Whether the benefit is deletable."""
+
+    is_deleted: bool
+    """Whether the benefit is deleted."""
+
+    organization_id: str
+    """The ID of the organization owning the benefit."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -1920,6 +2066,35 @@ class BenefitLicenseKeysProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitLicenseKeysPublic:
+    id: str
+    """The ID of the benefit."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    type: typing.Literal["license_keys"]
+
+    description: str
+    """The description of the benefit."""
+
+    selectable: bool
+    """Whether the benefit is selectable when creating a product."""
+
+    deletable: bool
+    """Whether the benefit is deletable."""
+
+    is_deleted: bool
+    """Whether the benefit is deleted."""
+
+    organization_id: str
+    """The ID of the organization owning the benefit."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitLicenseKeysSubscriber:
     id: str
     """The ID of the benefit."""
@@ -2016,6 +2191,50 @@ class BenefitMeterCreditProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitMeterCreditPublic:
+    """A benefit of type `meter_credit`.
+
+    Grants a number of units on a specific meter."""
+
+    id: str
+    """The ID of the benefit."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    type: typing.Literal["meter_credit"]
+
+    description: str
+    """The description of the benefit."""
+
+    selectable: bool
+    """Whether the benefit is selectable when creating a product."""
+
+    deletable: bool
+    """Whether the benefit is deletable."""
+
+    is_deleted: bool
+    """Whether the benefit is deleted."""
+
+    organization_id: str
+    """The ID of the organization owning the benefit."""
+
+    properties: BenefitMeterCreditPublicProperties
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitMeterCreditPublicProperties:
+    """Properties for a benefit of type `meter_credit`."""
+
+    units: int
+
+    meter_id: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitMeterCreditSubscriber:
     id: str
     """The ID of the benefit."""
@@ -2057,35 +2276,6 @@ class BenefitMeterCreditSubscriberProperties:
     rollover: bool
 
     meter_id: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class BenefitPublic:
-    id: str
-    """The ID of the benefit."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    type: BenefitType
-
-    description: str
-    """The description of the benefit."""
-
-    selectable: bool
-    """Whether the benefit is selectable when creating a product."""
-
-    deletable: bool
-    """Whether the benefit is deletable."""
-
-    is_deleted: bool
-    """Whether the benefit is deleted."""
-
-    organization_id: str
-    """The ID of the organization owning the benefit."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -2190,6 +2380,35 @@ class BenefitSlackSharedChannelProperties:
 
     team_invitees: list[str] | None = None
     """Slack user IDs from the merchant workspace to invite to every channel created for this benefit."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitSlackSharedChannelPublic:
+    id: str
+    """The ID of the benefit."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    type: typing.Literal["slack_shared_channel"]
+
+    description: str
+    """The description of the benefit."""
+
+    selectable: bool
+    """Whether the benefit is selectable when creating a product."""
+
+    deletable: bool
+    """Whether the benefit is deletable."""
+
+    is_deleted: bool
+    """Whether the benefit is deleted."""
+
+    organization_id: str
+    """The ID of the organization owning the benefit."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -2329,7 +2548,7 @@ class CardPayment:
     """The payment amount in cents."""
 
     currency: str
-    """The payment currency. Currently, only `usd` is supported."""
+    """The payment currency"""
 
     method: typing.Literal["card"]
     """The payment method used."""
@@ -2418,6 +2637,15 @@ class Checkout:
 
     max_seats: int | None = None
     """Maximum number of seats (works with seat-based pricing only)"""
+
+    units: int | None
+    """Predefined number of units (works with unit-based pricing only)"""
+
+    min_units: int | None
+    """Minimum number of units (works with unit-based pricing only)"""
+
+    max_units: int | None
+    """Maximum number of units (works with unit-based pricing only)"""
 
     discount_amount: int
     """Discount amount in cents."""
@@ -2755,6 +2983,9 @@ class CheckoutLink:
     seats: int | None
     """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
 
+    units: int | None
+    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+
     organization_id: str
     """The organization ID."""
 
@@ -2965,6 +3196,15 @@ class CheckoutPublic:
     max_seats: int | None = None
     """Maximum number of seats (works with seat-based pricing only)"""
 
+    units: int | None
+    """Predefined number of units (works with unit-based pricing only)"""
+
+    min_units: int | None
+    """Minimum number of units (works with unit-based pricing only)"""
+
+    max_units: int | None
+    """Maximum number of units (works with unit-based pricing only)"""
+
     discount_amount: int
     """Discount amount in cents."""
 
@@ -3133,6 +3373,15 @@ class CheckoutPublicConfirmed:
 
     max_seats: int | None = None
     """Maximum number of seats (works with seat-based pricing only)"""
+
+    units: int | None
+    """Predefined number of units (works with unit-based pricing only)"""
+
+    min_units: int | None
+    """Minimum number of units (works with unit-based pricing only)"""
+
+    max_units: int | None
+    """Maximum number of units (works with unit-based pricing only)"""
 
     discount_amount: int
     """Discount amount in cents."""
@@ -4120,6 +4369,9 @@ class CustomerOrder:
     seats: int | None = None
     """Number of seats purchased (for seat-based one-time orders)."""
 
+    units: int | None
+    """Number of units purchased (for unit-based pricing)."""
+
     customer_id: str
 
     product_id: str | None
@@ -4332,6 +4584,9 @@ class CustomerOrderSubscription:
     seats: int | None = None
     """The number of seats for seat-based subscriptions. None for non-seat subscriptions."""
 
+    units: int | None
+    """The number of units for unit-based subscriptions. None for non-unit subscriptions."""
+
     customer_cancellation_reason: CustomerCancellationReason | None
 
     customer_cancellation_comment: str | None
@@ -4446,6 +4701,29 @@ class CustomerPaymentMethodGeneric:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class CustomerPaymentMethodKrCard:
+    id: str
+    """The ID of the object."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    processor: PaymentProcessor
+
+    customer_id: str
+
+    type: typing.Literal["kr_card"]
+
+    method_metadata: PaymentMethodKrCardMetadata
+
+    is_default: bool
+    """Whether this payment method is the customer's default payment method."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerPortalCustomer:
     created_at: str
     """Creation timestamp of the object."""
@@ -4516,6 +4794,8 @@ class CustomerPortalSubscriptionSettings:
     update_seats: bool
 
     update_plan: bool
+
+    update_units: bool | None = None
 
     pause: bool | None = None
 
@@ -5030,6 +5310,9 @@ class CustomerSubscription:
 
     seats: int | None = None
     """The number of seats for seat-based subscriptions. None for non-seat subscriptions."""
+
+    units: int | None
+    """The number of units for unit-based subscriptions. None for non-unit subscriptions."""
 
     customer_cancellation_reason: CustomerCancellationReason | None
 
@@ -6137,7 +6420,7 @@ class GenericPayment:
     """The payment amount in cents."""
 
     currency: str
-    """The payment currency. Currently, only `usd` is supported."""
+    """The payment currency"""
 
     method: str
     """The payment method used."""
@@ -6199,6 +6482,67 @@ class IntrospectTokenResponse:
     exp: int
 
     iat: int
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class KrCardPayment:
+    """Schema of a payment with a South Korean card payment method."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the object."""
+
+    processor: PaymentProcessor
+
+    status: PaymentStatus
+
+    amount: int
+    """The payment amount in cents."""
+
+    currency: str
+    """The payment currency"""
+
+    method: typing.Literal["kr_card"]
+    """The payment method used."""
+
+    trigger: PaymentTrigger | None
+    """What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry."""
+
+    decline_reason: str | None
+    """Error code, if the payment was declined."""
+
+    decline_message: str | None
+    """Human-readable error message, if the payment was declined."""
+
+    organization_id: str
+    """The ID of the organization that owns the payment."""
+
+    checkout_id: str | None
+    """The ID of the checkout session associated with this payment."""
+
+    order_id: str | None
+    """The ID of the order associated with this payment."""
+
+    processor_metadata: dict[str, typing.Any] | None = None
+    """Additional metadata from the payment processor for internal use."""
+
+    method_metadata: KrCardPaymentMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class KrCardPaymentMetadata:
+    """Additional metadata for a South Korean card payment method."""
+
+    brand: str | None
+    """The local South Korean card brand used for the payment."""
+
+    last4: str | None
+    """The last 4 digits of the card number."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7462,6 +7806,9 @@ class Order:
     seats: int | None = None
     """Number of seats purchased (for seat-based one-time orders)."""
 
+    units: int | None
+    """Number of units purchased (for unit-based pricing)."""
+
     customer_id: str
 
     product_id: str | None
@@ -7896,6 +8243,9 @@ class OrderSubscription:
     seats: int | None = None
     """The number of seats for seat-based subscriptions. None for non-seat subscriptions."""
 
+    units: int | None
+    """The number of units for unit-based subscriptions. None for non-unit subscriptions."""
+
     customer_cancellation_reason: CustomerCancellationReason | None
 
     customer_cancellation_comment: str | None
@@ -8203,6 +8553,9 @@ class OrganizationFeatureSettings:
     seat_based_pricing_enabled: bool = False
     """If this organization has seat-based pricing enabled"""
 
+    metered_tiered_pricing_enabled: bool = False
+    """If this organization has tiered pricing for metered prices enabled"""
+
     wallets_enabled: bool = False
     """If this organization has Wallets enabled"""
 
@@ -8375,6 +8728,33 @@ class PaymentMethodInUseByActiveSubscription:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class PaymentMethodKrCard:
+    id: str
+    """The ID of the object."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    processor: PaymentProcessor
+
+    customer_id: str
+
+    type: typing.Literal["kr_card"]
+
+    method_metadata: PaymentMethodKrCardMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class PaymentMethodKrCardMetadata:
+    brand: str | None
+
+    last4: str | None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class PaymentMethodRequired:
     error: typing.Literal["PaymentMethodRequired"]
 
@@ -8416,6 +8796,9 @@ class PendingSubscriptionUpdate:
 
     seats: int | None
     """Number of seats to apply to the subscription. If `null`, the number of seats won't be changed."""
+
+    units: int | None
+    """Number of units to apply to the subscription. If `null`, the number of units won't be changed."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8636,6 +9019,46 @@ class ProductPriceMeter:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class ProductPriceMeteredTiers:
+    """A metered, usage-based, price for a product, billed from tiers."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the price."""
+
+    source: ProductPriceSource
+
+    amount_type: typing.Literal["metered_tiers"]
+
+    price_currency: str
+    """The currency in which the customer will be charged."""
+
+    tax_behavior: TaxBehaviorOption | None
+    """The tax behavior of the price. If null, it defaults to the organization's default tax behavior."""
+
+    is_archived: bool
+    """Whether the price is archived and no longer available."""
+
+    product_id: str
+    """The ID of the product owning the price."""
+
+    cap_amount: int | None
+    """The maximum amount in cents that can be charged, regardless of the number of units consumed."""
+
+    meter_id: str
+    """The ID of the meter associated to the price."""
+
+    meter: ProductPriceMeter
+
+    tiers: TiersOutput
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class ProductPriceMeteredUnit:
     """A metered, usage-based, price for a product, with a fixed unit price."""
 
@@ -8664,9 +9087,6 @@ class ProductPriceMeteredUnit:
     product_id: str
     """The ID of the product owning the price."""
 
-    unit_amount: str
-    """The price per unit in cents."""
-
     cap_amount: int | None
     """The maximum amount in cents that can be charged, regardless of the number of units consumed."""
 
@@ -8674,6 +9094,9 @@ class ProductPriceMeteredUnit:
     """The ID of the meter associated to the price."""
 
     meter: ProductPriceMeter
+
+    unit_amount: str
+    """The price per unit in cents."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8740,6 +9163,48 @@ class ProductPriceSeatTiersOutput:
 
     maximum_seats: int | None
     """Maximum number of seats allowed for purchase, derived from last tier. None for unlimited."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class ProductPriceUnitBased:
+    """A unit-based price for a product: the buyer picks a quantity of units,
+    pays for it up-front. On subscriptions, quantity changes are prorated."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the price."""
+
+    source: ProductPriceSource
+
+    amount_type: typing.Literal["unit_based"]
+
+    price_currency: str
+    """The currency in which the customer will be charged."""
+
+    tax_behavior: TaxBehaviorOption | None
+    """The tax behavior of the price. If null, it defaults to the organization's default tax behavior."""
+
+    is_archived: bool
+    """Whether the price is archived and no longer available."""
+
+    product_id: str
+    """The ID of the product owning the price."""
+
+    tiers: TiersOutput
+
+    minimum_units: int | None
+    """The minimum purchasable quantity (inclusive)."""
+
+    unit_label: dict[str, dict[str, str]] | None
+    """Per-locale unit nouns shown at checkout and on invoices. `null` defaults to "unit"/"units"."""
+
+    maximum_units: int | None
+    """The maximum purchasable quantity, from the last tier's bound. `null` for unlimited."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8848,6 +9313,13 @@ class ResourceNotFound:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class RevokeTokenResponse: ...
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class RotateNotPermitted:
+    error: typing.Literal["RotateNotPermitted"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9010,6 +9482,9 @@ class Subscription:
 
     seats: int | None = None
     """The number of seats for seat-based subscriptions. None for non-seat subscriptions."""
+
+    units: int | None
+    """The number of units for unit-based subscriptions. None for non-unit subscriptions."""
 
     customer_cancellation_reason: CustomerCancellationReason | None
 
@@ -9924,6 +10399,63 @@ class SubscriptionUncanceledMetadata:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionUnitsUpdatedEvent:
+    """An event created by Polar when the units on a subscription are changed."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["subscription.units_updated"]
+    """The name of the event."""
+
+    metadata: SubscriptionUnitsUpdatedMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionUnitsUpdatedMetadata:
+    subscription_id: str
+
+    old_units: int
+
+    new_units: int
+
+    proration_behavior: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class SubscriptionUpdateClearedEvent:
     """An event created by Polar when a pending subscription update is cleared without being applied."""
 
@@ -10032,6 +10564,8 @@ class SubscriptionUpdatedMetadata:
 
     seats: int | None = None
 
+    units: int | None = None
+
     billing_period_end: str | None = None
 
     subscription_id: str
@@ -10076,6 +10610,30 @@ class SupportCaseAttachmentFileRead:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class TierOutput:
+    """A per-unit rate up to and including `bound`.
+
+    Each tier starts where the previous one ended. The first starts at
+    zero. `bound` is None on the last tier if it's unbounded. Rates are
+    in cents and may be fractional."""
+
+    bound: int | None = None
+
+    unit_amount: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class TiersOutput:
+    """The structure of the shared tiers JSONB column, used by every tiered
+    price type. Purchasable quantity bounds live in the `minimum_units` and
+    `maximum_units` columns, not here."""
+
+    type: TierType
+
+    tiers: list[TierOutput]
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class TokenResponse:
     access_token: str
 
@@ -10109,6 +10667,20 @@ class UniqueAggregation:
     func: typing.Literal["unique"] = "unique"
 
     property: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class UpdateSubscriptionSeatsNotAllowed:
+    error: typing.Literal["UpdateSubscriptionSeatsNotAllowed"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class UpdateSubscriptionUnitsNotAllowed:
+    error: typing.Literal["UpdateSubscriptionUnitsNotAllowed"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -10347,6 +10919,17 @@ BenefitGrantWebhook: typing.TypeAlias = (
     | BenefitGrantSlackSharedChannelWebhook
 )
 
+BenefitPublic: typing.TypeAlias = (
+    BenefitCustomPublic
+    | BenefitDiscordPublic
+    | BenefitGitHubRepositoryPublic
+    | BenefitDownloadablesPublic
+    | BenefitLicenseKeysPublic
+    | BenefitFeatureFlagPublic
+    | BenefitSlackSharedChannelPublic
+    | BenefitMeterCreditPublic
+)
+
 CheckoutForbiddenError: typing.TypeAlias = (
     AlreadyActiveSubscriptionError
     | NotOpenCheckout
@@ -10376,7 +10959,9 @@ CustomerBenefitGrant: typing.TypeAlias = (
     | CustomerBenefitGrantSlackSharedChannel
 )
 
-CustomerPaymentMethod: typing.TypeAlias = PaymentMethodCard | PaymentMethodGeneric
+CustomerPaymentMethod: typing.TypeAlias = (
+    PaymentMethodCard | PaymentMethodKrCard | PaymentMethodGeneric
+)
 
 CustomerPaymentMethodCreateResponse: typing.TypeAlias = (
     CustomerPaymentMethodCreateSucceededResponse
@@ -10403,17 +10988,21 @@ LegacyRecurringProductPrice: typing.TypeAlias = (
     LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
 )
 
-Payment: typing.TypeAlias = CardPayment | GenericPayment
+Payment: typing.TypeAlias = CardPayment | KrCardPayment | GenericPayment
 
 PaymentMethod: typing.TypeAlias = (
-    CustomerPaymentMethodCard | CustomerPaymentMethodGeneric
+    CustomerPaymentMethodCard
+    | CustomerPaymentMethodKrCard
+    | CustomerPaymentMethodGeneric
 )
 
 ProductPrice: typing.TypeAlias = (
     ProductPriceFixed
     | ProductPriceCustom
     | ProductPriceSeatBased
+    | ProductPriceUnitBased
     | ProductPriceMeteredUnit
+    | ProductPriceMeteredTiers
 )
 
 SystemEvent: typing.TypeAlias = (
@@ -10436,6 +11025,7 @@ SystemEvent: typing.TypeAlias = (
     | SubscriptionUncanceledEvent
     | SubscriptionProductUpdatedEvent
     | SubscriptionSeatsUpdatedEvent
+    | SubscriptionUnitsUpdatedEvent
     | SubscriptionBillingPeriodUpdatedEvent
     | SubscriptionUpdateClearedEvent
     | OrderPaidEvent

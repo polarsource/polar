@@ -24,6 +24,7 @@ from polar.v2026_10.inputs import (
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
     CustomerSubscriptionUpdateSeats,
+    CustomerSubscriptionUpdateUnits,
 )
 from polar.v2026_10.literals import (
     CustomerSubscriptionSortProperty,
@@ -233,6 +234,15 @@ class SubscriptionsSync(SyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateSeats],
+    ) -> CustomerSubscription: ...
+
+    @typing.overload
+    def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerSubscriptionUpdateUnits],
     ) -> CustomerSubscription: ...
 
     @typing.overload
@@ -518,6 +528,15 @@ class SubscriptionsAsync(AsyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateSeats],
+    ) -> CustomerSubscription: ...
+
+    @typing.overload
+    async def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        **kwargs: typing.Unpack[CustomerSubscriptionUpdateUnits],
     ) -> CustomerSubscription: ...
 
     @typing.overload

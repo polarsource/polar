@@ -13,6 +13,7 @@ from polar.v2026_10.errors import (
     HTTPValidationError,
     NotPermitted,
     ResourceNotFound,
+    RotateNotPermitted,
     Unauthorized,
 )
 from polar.v2026_10.inputs import (
@@ -154,6 +155,53 @@ class LicenseKeysSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, LicenseKeyWithActivations, method_errors)
+
+    def rotate(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+    ) -> LicenseKeyRead:
+        """
+        Rotate a license key.
+
+        Generates a new key string for the same license key record. The previous
+        key string immediately stops validating. Status, usage, limits, expiry,
+        and activations are preserved.
+
+        **Scopes**: `customer_portal:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            RotateNotPermitted: License key cannot be rotated in its current status. Allowed statuses: disabled, granted.
+            Unauthorized: Not authorized to manage license key.
+            ResourceNotFound: License key not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/license-keys/{id}/rotate",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            400: RotateNotPermitted,
+            401: Unauthorized,
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, LicenseKeyRead, method_errors)
 
     def validate(
         self,
@@ -407,6 +455,53 @@ class LicenseKeysAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, LicenseKeyWithActivations, method_errors)
+
+    async def rotate(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+    ) -> LicenseKeyRead:
+        """
+        Rotate a license key.
+
+        Generates a new key string for the same license key record. The previous
+        key string immediately stops validating. Status, usage, limits, expiry,
+        and activations are preserved.
+
+        **Scopes**: `customer_portal:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            RotateNotPermitted: License key cannot be rotated in its current status. Allowed statuses: disabled, granted.
+            Unauthorized: Not authorized to manage license key.
+            ResourceNotFound: License key not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/license-keys/{id}/rotate",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            400: RotateNotPermitted,
+            401: Unauthorized,
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, LicenseKeyRead, method_errors)
 
     async def validate(
         self,

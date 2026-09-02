@@ -28,6 +28,7 @@ from polar.v2026_10.literals import (
     SubscriptionProrationBehavior,
     SubType,
     TaxBehaviorOption,
+    TierType,
     Timeframe,
     TokenEndpointAuthMethod,
     TrialInterval,
@@ -595,6 +596,9 @@ class CheckoutConfirmStripe(typing.TypedDict):
     seats: typing.NotRequired[int | None]
     """Number of seats for seat-based pricing."""
 
+    units: typing.NotRequired[int | None]
+    """Number of units for unit-based pricing."""
+
     is_business_customer: typing.NotRequired[bool | None]
 
     customer_name: typing.NotRequired[str | None]
@@ -671,6 +675,15 @@ You can store up to **50 key-value pairs**."""
     max_seats: typing.NotRequired[int | None]
     """Maximum number of seats (works with seat-based pricing only)"""
 
+    units: typing.NotRequired[int | None]
+    """Predefined number of units (works with unit-based pricing only)"""
+
+    min_units: typing.NotRequired[int | None]
+    """Minimum number of units (works with unit-based pricing only)"""
+
+    max_units: typing.NotRequired[int | None]
+    """Maximum number of units (works with unit-based pricing only)"""
+
     allow_trial: typing.NotRequired[bool]
     """Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured."""
 
@@ -734,7 +747,9 @@ You can store up to **50 key-value pairs**."""
                 ProductPriceFixedCreate
                 | ProductPriceCustomCreate
                 | ProductPriceSeatBasedCreate
+                | ProductPriceUnitBasedCreate
                 | ProductPriceMeteredUnitCreate
+                | ProductPriceMeteredTiersCreate
             ],
         ]
         | None
@@ -783,6 +798,9 @@ You can store up to **50 key-value pairs**."""
 
     seats: typing.NotRequired[int | None]
     """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+
+    units: typing.NotRequired[int | None]
+    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
 
     success_url: typing.NotRequired[str | None]
     """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
@@ -835,6 +853,9 @@ You can store up to **50 key-value pairs**."""
     seats: typing.NotRequired[int | None]
     """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
 
+    units: typing.NotRequired[int | None]
+    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+
     success_url: typing.NotRequired[str | None]
     """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
 
@@ -883,6 +904,9 @@ You can store up to **50 key-value pairs**."""
 
     seats: typing.NotRequired[int | None]
     """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+
+    units: typing.NotRequired[int | None]
+    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
 
     success_url: typing.NotRequired[str | None]
     """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
@@ -933,6 +957,9 @@ You can store up to **50 key-value pairs**."""
     seats: typing.NotRequired[int | None]
     """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
 
+    units: typing.NotRequired[int | None]
+    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+
     success_url: typing.NotRequired[str | None]
     """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
 
@@ -956,6 +983,9 @@ class CheckoutUpdate(typing.TypedDict):
 
     seats: typing.NotRequired[int | None]
     """Number of seats for seat-based pricing."""
+
+    units: typing.NotRequired[int | None]
+    """Number of units for unit-based pricing."""
 
     is_business_customer: typing.NotRequired[bool | None]
 
@@ -1045,6 +1075,9 @@ class CheckoutUpdatePublic(typing.TypedDict):
 
     seats: typing.NotRequired[int | None]
     """Number of seats for seat-based pricing."""
+
+    units: typing.NotRequired[int | None]
+    """Number of units for unit-based pricing."""
 
     is_business_customer: typing.NotRequired[bool | None]
 
@@ -1591,6 +1624,8 @@ class CustomerPortalSubscriptionSettings(typing.TypedDict):
 
     update_plan: bool
 
+    update_units: typing.NotRequired[bool]
+
     pause: typing.NotRequired[bool]
 
 
@@ -1713,6 +1748,11 @@ class CustomerSubscriptionUpdateProduct(typing.TypedDict):
 class CustomerSubscriptionUpdateSeats(typing.TypedDict):
     seats: int
     """Update the number of seats for this subscription."""
+
+
+class CustomerSubscriptionUpdateUnits(typing.TypedDict):
+    units: int
+    """Update the number of units for this subscription."""
 
 
 class CustomerTeamCreate(typing.TypedDict):
@@ -2727,7 +2767,9 @@ You can store up to **50 key-value pairs**."""
         ProductPriceFixedCreate
         | ProductPriceCustomCreate
         | ProductPriceSeatBasedCreate
+        | ProductPriceUnitBasedCreate
         | ProductPriceMeteredUnitCreate
+        | ProductPriceMeteredTiersCreate
     ]
     """List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products."""
 
@@ -2773,7 +2815,9 @@ You can store up to **50 key-value pairs**."""
         ProductPriceFixedCreate
         | ProductPriceCustomCreate
         | ProductPriceSeatBasedCreate
+        | ProductPriceUnitBasedCreate
         | ProductPriceMeteredUnitCreate
+        | ProductPriceMeteredTiersCreate
     ]
     """List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products."""
 
@@ -3258,6 +3302,25 @@ Minimum amounts per currency:
 - Other currencies: 50 minor units"""
 
 
+class ProductPriceMeteredTiersCreate(typing.TypedDict):
+    """Schema to create a metered price billed from tiers on consumed units."""
+
+    amount_type: typing.Literal["metered_tiers"]
+
+    price_currency: typing.NotRequired[PresentmentCurrency]
+
+    tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
+    """The tax behavior of the price. If not set, it will default to the organization's default tax behavior."""
+
+    meter_id: str
+    """The ID of the meter associated to the price."""
+
+    tiers: TiersInput
+
+    cap_amount: typing.NotRequired[int | None]
+    """Optional maximum amount in cents that can be charged, regardless of the number of units consumed."""
+
+
 class ProductPriceMeteredUnitCreate(typing.TypedDict):
     """Schema to create a metered price with a fixed unit price."""
 
@@ -3317,6 +3380,26 @@ class ProductPriceSeatTiersInput(typing.TypedDict):
     """List of pricing tiers"""
 
 
+class ProductPriceUnitBasedCreate(typing.TypedDict):
+    """Schema to create a unit-based price: the buyer picks a quantity of units,
+    pays for it up-front. On subscriptions, quantity changes are prorated."""
+
+    amount_type: typing.Literal["unit_based"]
+
+    price_currency: typing.NotRequired[PresentmentCurrency]
+
+    tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
+    """The tax behavior of the price. If not set, it will default to the organization's default tax behavior."""
+
+    tiers: TiersInput
+
+    minimum_units: typing.NotRequired[int | None]
+    """The minimum purchasable quantity (inclusive). Defaults to 1 when not set."""
+
+    unit_label: typing.NotRequired[dict[str, dict[str, str]] | None]
+    """Per-locale unit nouns shown at checkout and on invoices. `{"en": {"=1": "device", "other": "devices"}}`. Defaults to "unit"/"units" when unset."""
+
+
 class ProductUpdate(typing.TypedDict):
     """Schema to update a product."""
 
@@ -3362,7 +3445,9 @@ You can store up to **50 key-value pairs**."""
             | ProductPriceFixedCreate
             | ProductPriceCustomCreate
             | ProductPriceSeatBasedCreate
+            | ProductPriceUnitBasedCreate
             | ProductPriceMeteredUnitCreate
+            | ProductPriceMeteredTiersCreate
         ]
         | None
     ]
@@ -3656,6 +3741,14 @@ class SubscriptionUpdateSeats(typing.TypedDict):
     """Determine how to handle the proration billing. If not provided, will use the default organization setting."""
 
 
+class SubscriptionUpdateUnits(typing.TypedDict):
+    units: int
+    """Update the number of units for this subscription."""
+
+    proration_behavior: typing.NotRequired[SubscriptionProrationBehavior | None]
+    """Determine how to handle the proration billing. If not provided, will use the default organization setting."""
+
+
 class SupportCaseAttachmentFileCreate(typing.TypedDict):
     """Schema to create a file attached to a support case."""
 
@@ -3676,6 +3769,28 @@ class SupportCaseAttachmentFileCreate(typing.TypedDict):
     service: typing.Literal["support_case_attachment"]
 
     version: typing.NotRequired[str | None]
+
+
+class TierInput(typing.TypedDict):
+    """A per-unit rate up to and including `bound`.
+
+    Each tier starts where the previous one ended. The first starts at
+    zero. `bound` is None on the last tier if it's unbounded. Rates are
+    in cents and may be fractional."""
+
+    bound: typing.NotRequired[int | None]
+
+    unit_amount: float | str
+
+
+class TiersInput(typing.TypedDict):
+    """The structure of the shared tiers JSONB column, used by every tiered
+    price type. Purchasable quantity bounds live in the `minimum_units` and
+    `maximum_units` columns, not here."""
+
+    type: TierType
+
+    tiers: list[TierInput]
 
 
 class UniqueAggregation(typing.TypedDict):
@@ -3767,6 +3882,7 @@ CustomerCreate: typing.TypeAlias = CustomerIndividualCreate | CustomerTeamCreate
 CustomerSubscriptionUpdate: typing.TypeAlias = (
     CustomerSubscriptionUpdateProduct
     | CustomerSubscriptionUpdateSeats
+    | CustomerSubscriptionUpdateUnits
     | CustomerSubscriptionCancel
     | CustomerSubscriptionPause
     | CustomerSubscriptionResume
@@ -3794,6 +3910,7 @@ ProductCreate: typing.TypeAlias = ProductCreateRecurring | ProductCreateOneTime
 SubscriptionUpdate: typing.TypeAlias = (
     SubscriptionUpdateBase
     | SubscriptionUpdateSeats
+    | SubscriptionUpdateUnits
     | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
     | SubscriptionRevoke

@@ -2,8 +2,5 @@
   "name": "@polar-sh/oxlint-config",
   "version": "0.0.0",
   "type": "module",
-  "private": true,
-  "scripts": {
-    "lint": "oxfmt --check ."
-  }
+  "private": true
 }

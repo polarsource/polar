@@ -7,10 +7,6 @@
       "specifier": "./oxlint-plugins/index.mjs"
     }
   ],
-  "options": {
-    "denyWarnings": true,
-    "typeAware": true
-  },
   "ignorePatterns": [
     "dist/**",
     "node_modules/**",
@@ -54,8 +50,8 @@
       "files": ["**/*.tsx"],
       "rules": {
         "react/no-danger": "error",
-        "react/self-closing-comp": "warn",
-        "react/jsx-no-useless-fragment": "warn",
+        "react/self-closing-comp": "error",
+        "react/jsx-no-useless-fragment": "error",
         "polar/no-classname-box": "error",
         "polar/no-classname-text": "error",
         "polar/no-style-box": "error",

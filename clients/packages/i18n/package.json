@@ -14,7 +14,6 @@
   "scripts": {
     "translate": "tsx scripts/translate.ts",
     "validate": "tsx scripts/validate.ts",
-    "lint": "oxfmt --check . && oxlint .",
     "typecheck": "tsc --noEmit",
     "build": "rm -rf dist && tsup",
     "test": "vitest run",

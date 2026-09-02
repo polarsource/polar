@@ -5,7 +5,8 @@
     "build": "turbo run build --filter='!./examples/*'",
     "dev": "turbo watch dev",
     "dev-web": "turbo run dev --filter=web",
-    "lint": "turbo run lint",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "generate": "pnpm -C packages/client generate",
@@ -15,7 +16,7 @@
     "box-codemod": "pnpm --filter @polar-sh/box-codemod box-codemod",
     "preinstall": "npx only-allow pnpm",
     "prepare": "turbo run build --filter='./packages/*'",
-    "release-packages": "turbo run build lint test --filter='./packages/*' && changeset publish"
+    "release-packages": "turbo run build test --filter='./packages/*' && turbo run lint && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

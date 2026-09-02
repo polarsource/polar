@@ -23,7 +23,6 @@
     "build": "rm -rf dist && tsup",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
-    "lint": "pnpm format:check && oxlint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

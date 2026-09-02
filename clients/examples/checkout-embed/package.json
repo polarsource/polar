@@ -4,8 +4,7 @@
   "description": "Polar embedded checkout example",
   "private": true,
   "scripts": {
-    "dev": "http-server . -p 3030",
-    "lint": "oxfmt --check"
+    "dev": "http-server . -p 3030"
   },
   "dependencies": {
     "@polar-sh/checkout": "workspace:*",

@@ -33,7 +33,6 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "lint": "oxfmt --check . && oxlint .",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

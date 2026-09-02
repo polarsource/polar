@@ -1,10 +1,11 @@
 import functools
 import inspect
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from typing import Any, Literal, TypedDict
 
 from fastapi import APIRouter as _APIRouter
+from fastapi import Request, Response
 from fastapi.routing import APIRoute
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,15 +14,7 @@ from polar.kit.pagination import ListResource
 from polar.openapi import APITag
 
 
-class AutoCommitAPIRoute(APIRoute):
-    """
-    A subclass of `APIRoute` that automatically
-    commits the session after the endpoint is called.
-
-    It allows to directly return ORM objects from the endpoint
-    without having to call `session.commit()` before returning.
-    """
-
+class TransactionalAPIRoute(APIRoute):
     def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
         endpoint = self.wrap_endpoint(endpoint)
         super().__init__(path, endpoint, **kwargs)
@@ -29,20 +22,31 @@ class AutoCommitAPIRoute(APIRoute):
     def wrap_endpoint(self, endpoint: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(endpoint)
         async def wrapped_endpoint(*args: Any, **kwargs: Any) -> Any:
-            session: AsyncSession | None = None
-            for arg in (args, *kwargs.values()):
-                if isinstance(arg, AsyncSession):
-                    session = arg
-                    break
-
             response = await endpoint(*args, **kwargs)
 
-            if session is not None:
-                await session.commit()
+            # Flush the session right before returning to allow database values to be
+            # filled in prevision of Pydantic's serialization.
+            for argument in (args, *kwargs.values()):
+                if isinstance(argument, AsyncSession):
+                    await argument.flush()
+                    break
 
             return response
 
         return wrapped_endpoint
+
+    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+        route_handler = super().get_route_handler()
+
+        @functools.wraps(route_handler)
+        async def transactional_route_handler(request: Request) -> Response:
+            try:
+                return await route_handler(request)
+            except BaseException:
+                request.state.transaction_failed = True
+                raise
+
+        return transactional_route_handler
 
 
 class IncludedInSchemaAPIRoute(APIRoute):
@@ -209,12 +213,12 @@ def get_api_router_class(route_class: type[APIRoute]) -> type[_APIRouter]:
 
 
 __all__ = [
-    "AutoCommitAPIRoute",
     "IncludedInSchemaAPIRoute",
     "PaginationAPIRoute",
     "SpeakeasyGroupAPIRoute",
     "SpeakeasyIgnoreAPIRoute",
     "SpeakeasyNameOverrideAPIRoute",
     "SpeakeasyPaginationAPIRoute",
+    "TransactionalAPIRoute",
     "get_api_router_class",
 ]

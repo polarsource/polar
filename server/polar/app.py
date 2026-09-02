@@ -38,13 +38,13 @@ from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.middlewares import (
     CacheControlMiddleware,
-    FlushEnqueuedWorkerJobsMiddleware,
     LogCorrelationIdMiddleware,
     MaxBodySizeMiddleware,
     OperationalErrorMiddleware,
     PathRewriteMiddleware,
     RootPathMiddleware,
     SandboxResponseHeaderMiddleware,
+    TransactionalMiddleware,
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
@@ -59,7 +59,6 @@ from polar.observability.remote_write import (
 )
 from polar.observability.slo import start_slo_metrics, stop_slo_metrics
 from polar.postgres import (
-    AsyncSessionMiddleware,
     create_async_engine,
     create_async_read_engine,
     create_sync_engine,
@@ -207,8 +206,7 @@ def create_app() -> FastAPI:
         rate_limit_redis = create_redis("rate-limit")
         app.state.rate_limit_redis = rate_limit_redis
         app.add_middleware(AuthSubjectMiddleware, redis=rate_limit_redis)
-        app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
-        app.add_middleware(AsyncSessionMiddleware)
+        app.add_middleware(TransactionalMiddleware)
         app.add_middleware(rate_limit.get_middleware, redis=rate_limit_redis)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     if settings.is_vercel():

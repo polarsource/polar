@@ -2,7 +2,7 @@ import secrets
 import typing
 from collections.abc import Awaitable
 
-from fastapi import APIRouter, Depends, Form, Query, Request
+from fastapi import Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
 from reauth.authentication_session import AuthenticationSession
 from reauth.factors.oauth2.base import (
@@ -18,6 +18,7 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 from polar.authz.dependencies import AuthorizeWebUserWrite
 from polar.config import settings
 from polar.kit.http import ReturnTo
+from polar.routing import APIRouter
 from polar.user.service import user as user_service
 
 from ..authentication_session import (
@@ -36,7 +37,7 @@ def get_oauth_login_router(
     identifier: str,
     *,
     callback_method: typing.Literal["GET", "POST"] = "GET",
-) -> APIRouter:
+) -> APIRouter:  # type: ignore[valid-type]
     router = APIRouter(prefix=f"/{identifier}", include_in_schema=False)
 
     @router.get("/authorize", name=f"auth.{identifier}.authorize")
@@ -179,7 +180,7 @@ def get_oauth_login_router(
 def get_oauth_link_router(
     factor_dependency: typing.Callable[..., Awaitable[OAuth2Factor[typing.Any]]],
     identifier: str,
-) -> APIRouter:
+) -> APIRouter:  # type: ignore[valid-type]
     router = APIRouter(prefix=f"/{identifier}/link", include_in_schema=False)
 
     @router.get("/authorize", name=f"auth.{identifier}.link_authorize")

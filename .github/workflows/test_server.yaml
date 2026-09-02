@@ -286,22 +286,14 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      tinybird:
-        image: tinybirdco/tinybird-local:latest
-        ports:
-          - 7181:7181
-          - 7182:7182
-        # Replace the image HEALTHCHECK (/tokens). That probe is not workspace
-        # readiness and can stay unhealthy through setup's expected first-boot
-        # crash, which fails Initialize containers. Prepare waits for the API.
-        options: >-
-          --health-cmd "true"
-          --health-interval 2s
-          --health-timeout 2s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v7.0.1
+
+      # Tinybird is not a GHA service. Its first-boot disk storm makes MinIO
+      # miss Initialize's ~75s health wait, and Bitnami then exits when `mc`
+      # cannot connect. Prepare still waits for the workspace API.
+      - name: 🐦 Start Tinybird Local
+        run: docker run -d --name tinybird-local -p 7181:7181 -p 7182:7182 tinybirdco/tinybird-local:latest
 
       - name: 💿 MinIO Setup
         working-directory: ./server/.minio

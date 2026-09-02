@@ -1,7 +1,7 @@
 """add secret_generated_at to webhook_endpoints
 
 Revision ID: a17f5e02e8be
-Revises: b58196b41f41
+Revises: c4e8a91b2d70
 Create Date: 2026-09-01 11:04:03.858064
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a17f5e02e8be"
-down_revision = "b58196b41f41"
+down_revision = "c4e8a91b2d70"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

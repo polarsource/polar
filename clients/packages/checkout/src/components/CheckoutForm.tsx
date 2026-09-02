@@ -137,17 +137,19 @@ const BaseCheckoutForm = ({
             !!country && COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(country)
           const nextCountryHasFixedStates =
             COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(newCountry)
-          if (
+          const shouldResetState =
             country !== newCountry &&
             (previousCountryHasFixedStates || nextCountryHasFixedStates)
-          ) {
+          if (shouldResetState) {
             resetField('customer_billing_address.state', { defaultValue: '' })
           }
           clearErrors('customer_billing_address')
           payload = {
             ...payload,
             customer_billing_address: {
+              ...customerBillingAddress,
               country: newCountry,
+              ...(shouldResetState ? { state: '' } : {}),
             },
           }
         }

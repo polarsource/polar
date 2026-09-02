@@ -34,6 +34,7 @@ jobs:
           filters: |
             server:
               - 'server/**'
+              - '!server/emails/**'
               - '.github/workflows/test_server.yaml'
             emails:
               - 'server/emails/**'
@@ -367,11 +368,31 @@ jobs:
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: 🐦 Prepare Tinybird workspace
+        id: tinybird-workspace
         working-directory: ./server
         run: |
           token=$(uv run python -m scripts.tinybird_test_workspace)
           echo "::add-mask::$token"
           echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
+
+      - name: 🐦 Dump Tinybird sidecar logs
+        if: failure() && steps.tinybird-workspace.outcome == 'failure'
+        run: |
+          cid=$(docker ps -q --filter ancestor=tinybirdco/tinybird-local | head -n1)
+          if [ -z "$cid" ]; then
+            echo "Tinybird sidecar container not found"
+            docker ps -a
+            exit 0
+          fi
+          echo "::group::supervisorctl status"
+          docker exec "$cid" supervisorctl status || true
+          echo "::endgroup::"
+          echo "::group::supervisorctl tail setup"
+          docker exec "$cid" supervisorctl tail -10000 setup || true
+          echo "::endgroup::"
+          echo "::group::setup log files"
+          docker exec "$cid" sh -c 'ls -la /var/log/supervisor /var/log 2>/dev/null; for f in /var/log/supervisor/*setup* /var/log/supervisor/*.log; do [ -f "$f" ] && echo "===== $f =====" && tail -n 200 "$f"; done' || true
+          echo "::endgroup::"
 
       - name: ⚗️ alembic migrate
         working-directory: ./server

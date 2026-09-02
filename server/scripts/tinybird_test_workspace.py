@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -12,6 +13,10 @@ from polar.config import settings
 cli = typer.Typer()
 
 TINYBIRD_DIR = Path(__file__).resolve().parent.parent / "tinybird"
+
+# Tinybird Local answers /tokens before setup finishes. setup also exits 1 once
+# and is respawned by supervisord; the workspace API can take >60s after that.
+API_READY_ATTEMPTS = 180
 
 
 def get_tokens(host: str | None = None) -> dict[str, str] | None:
@@ -27,18 +32,24 @@ def get_tokens(host: str | None = None) -> dict[str, str] | None:
 
 def request(method: str, url: str, **kwargs: Any) -> httpx.Response:
     """Tinybird answers /tokens before its API is up, so retry past gateway errors."""
-    for _ in range(60):
+    last_error = "no response"
+    for attempt in range(1, API_READY_ATTEMPTS + 1):
         try:
             response = httpx.request(method, url, **kwargs)
-        except httpx.RequestError:
-            time.sleep(1)
-            continue
-        if response.status_code >= 500:
-            time.sleep(1)
-            continue
-        response.raise_for_status()
-        return response
-    raise RuntimeError(f"Tinybird never served {url}")
+        except httpx.RequestError as exc:
+            last_error = str(exc)
+        else:
+            if response.status_code < 500:
+                response.raise_for_status()
+                return response
+            last_error = f"HTTP {response.status_code}"
+        if attempt % 15 == 0:
+            print(
+                f"Waiting for Tinybird {url} ({last_error}, attempt {attempt}/{API_READY_ATTEMPTS})",
+                file=sys.stderr,
+            )
+        time.sleep(1)
+    raise RuntimeError(f"Tinybird never served {url} ({last_error})")
 
 
 def create_workspace(host: str, tokens: dict[str, str]) -> tuple[str, str]:

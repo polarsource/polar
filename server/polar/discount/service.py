@@ -173,11 +173,10 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount_redemptions=[],
             redemptions_count=0,
         )
-        nested = await session.begin_nested()
         try:
-            discount = await repository.create(discount, flush=True)
+            async with session.begin_nested():
+                discount = await repository.create(discount, flush=True)
         except IntegrityError:
-            await nested.rollback()
             if discount_create.code is not None:
                 await self._assert_code_available(
                     repository, discount_create.code, organization.id
@@ -285,28 +284,27 @@ class DiscountService(ResourceServiceReader[Discount]):
                         )
 
         if discount_update.products is not None:
-            nested = await session.begin_nested()
-            discount.discount_products = []
-            await session.flush()
+            async with session.begin_nested():
+                discount.discount_products = []
+                await session.flush()
 
-            product_repository = ProductRepository.from_session(session)
-            for index, product_id in enumerate(discount_update.products):
-                product = await product_repository.get_by_id_and_organization(
-                    product_id, discount.organization_id
-                )
-                if product is None:
-                    await nested.rollback()
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "products", index),
-                                "msg": "Product not found.",
-                                "input": product_id,
-                            }
-                        ]
+                product_repository = ProductRepository.from_session(session)
+                for index, product_id in enumerate(discount_update.products):
+                    product = await product_repository.get_by_id_and_organization(
+                        product_id, discount.organization_id
                     )
-                discount.discount_products.append(DiscountProduct(product=product))
+                    if product is None:
+                        raise PolarRequestValidationError(
+                            [
+                                {
+                                    "type": "value_error",
+                                    "loc": ("body", "products", index),
+                                    "msg": "Product not found.",
+                                    "input": product_id,
+                                }
+                            ]
+                        )
+                    discount.discount_products.append(DiscountProduct(product=product))
 
         exclude = {"products"}
         if isinstance(discount, DiscountFixed):

@@ -80,13 +80,12 @@ class UserService:
         if user is not None:
             return (user, False)
 
-        nested = await session.begin_nested()
         try:
-            user = await self.create_by_email(
-                session, email, signup_attribution=signup_attribution
-            )
+            async with session.begin_nested():
+                user = await self.create_by_email(
+                    session, email, signup_attribution=signup_attribution
+                )
         except IntegrityError:
-            await nested.rollback()
             user = await repository.get_by_email(email)
             if user is None:
                 raise

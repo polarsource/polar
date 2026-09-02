@@ -109,13 +109,11 @@ class GitHubRepositoryBenefitUserService:
             refresh_token=oauth2_token_data["refresh_token"],
         )
 
-        nested = await session.begin_nested()
         try:
-            session.add(oauth_account)
-            await nested.commit()
+            async with session.begin_nested():
+                session.add(oauth_account)
             await session.flush()
         except IntegrityError as e:
-            await nested.rollback()
             raise ResourceAlreadyExists() from e
 
         return oauth_account

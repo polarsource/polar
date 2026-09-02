@@ -14,6 +14,7 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
+from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
@@ -69,6 +70,11 @@ from .schemas import (
     ProductUpdate,
 )
 from .sorting import ProductSortProperty
+
+
+class _SavepointRollback(Exception):
+    """Sentinel used to trigger a nested savepoint rollback while accumulating
+    validation errors, without changing the observable control flow."""
 
 
 class ProductService:
@@ -364,64 +370,72 @@ class ProductService:
 
         if update_schema.medias is not None:
             medias_errors: list[ValidationError] = []
-            nested = await session.begin_nested()
-            product.medias = []
-            await session.flush()
+            try:
+                async with session.begin_nested():
+                    product.medias = []
+                    await session.flush()
 
-            for order, file_id in enumerate(update_schema.medias):
-                file = await file_service.get_selectable_product_media_file(
-                    session, file_id, organization_id=product.organization_id
-                )
-                if file is None:
-                    medias_errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "medias", order),
-                            "msg": "File does not exist or is not yet uploaded.",
-                            "input": file_id,
-                        }
-                    )
-                    continue
-                product.product_medias.append(ProductMedia(file=file, order=order))
+                    for order, file_id in enumerate(update_schema.medias):
+                        file = await file_service.get_selectable_product_media_file(
+                            session, file_id, organization_id=product.organization_id
+                        )
+                        if file is None:
+                            medias_errors.append(
+                                {
+                                    "type": "value_error",
+                                    "loc": ("body", "medias", order),
+                                    "msg": "File does not exist or is not yet uploaded.",
+                                    "input": file_id,
+                                }
+                            )
+                            continue
+                        product.product_medias.append(
+                            ProductMedia(file=file, order=order)
+                        )
 
-            if medias_errors:
-                await nested.rollback()
+                    if medias_errors:
+                        raise _SavepointRollback()
+            except _SavepointRollback:
                 errors.extend(medias_errors)
 
         if update_schema.attached_custom_fields is not None:
             attached_custom_fields_errors: list[ValidationError] = []
-            nested = await session.begin_nested()
-            product.attached_custom_fields = []
-            await session.flush()
+            try:
+                async with session.begin_nested():
+                    product.attached_custom_fields = []
+                    await session.flush()
 
-            for order, attached_custom_field in enumerate(
-                update_schema.attached_custom_fields
-            ):
-                custom_field = await custom_field_service.get_by_organization_and_id(
-                    session,
-                    attached_custom_field.custom_field_id,
-                    product.organization_id,
-                )
-                if custom_field is None:
-                    attached_custom_fields_errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "attached_custom_fields", order),
-                            "msg": "Custom field does not exist.",
-                            "input": attached_custom_field.custom_field_id,
-                        }
-                    )
-                    continue
-                product.attached_custom_fields.append(
-                    ProductCustomField(
-                        custom_field=custom_field,
-                        order=order,
-                        required=attached_custom_field.required,
-                    )
-                )
+                    for order, attached_custom_field in enumerate(
+                        update_schema.attached_custom_fields
+                    ):
+                        custom_field = (
+                            await custom_field_service.get_by_organization_and_id(
+                                session,
+                                attached_custom_field.custom_field_id,
+                                product.organization_id,
+                            )
+                        )
+                        if custom_field is None:
+                            attached_custom_fields_errors.append(
+                                {
+                                    "type": "value_error",
+                                    "loc": ("body", "attached_custom_fields", order),
+                                    "msg": "Custom field does not exist.",
+                                    "input": attached_custom_field.custom_field_id,
+                                }
+                            )
+                            continue
+                        product.attached_custom_fields.append(
+                            ProductCustomField(
+                                custom_field=custom_field,
+                                order=order,
+                                required=attached_custom_field.required,
+                            )
+                        )
 
-            if attached_custom_fields_errors:
-                await nested.rollback()
+                    if attached_custom_fields_errors:
+                        raise _SavepointRollback()
+            except _SavepointRollback:
                 errors.extend(attached_custom_fields_errors)
 
         if errors:
@@ -578,9 +592,7 @@ class ProductService:
         builtins.list[ValidationError],
     ]:
         meter_repository = MeterRepository.from_session(session)
-        meter_org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=OrganizationPermission.products_read
-        )
+        meter_org_ids = {AccessibleOrganizationID(organization.id)}
         prices: list[ProductPrice] = []
         prices_per_currency = defaultdict[str, list[tuple[ProductPrice, int]]](list)
         existing_prices: set[ProductPrice] = set()

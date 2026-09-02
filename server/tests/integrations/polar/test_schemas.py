@@ -188,6 +188,7 @@ class TestOrganizationSubscriptionFromSdk:
                 "tax_id": None,
                 "organization_id": "org_1",
                 "deleted_at": None,
+                "first_user_event_at": None,
                 "avatar_url": "",
                 "external_id": "ext_1",
             },
@@ -196,6 +197,7 @@ class TestOrganizationSubscriptionFromSdk:
             "prices": [],
             "meters": [],
             "pending_update": None,
+            "units": None,
             **overrides,
         }
         return deserialize(data, Subscription)
@@ -220,6 +222,7 @@ class TestOrganizationSubscriptionFromSdk:
                     "applies_at": "2026-02-01T00:00:00Z",
                     "product_id": "prod_2",
                     "seats": None,
+                    "units": None,
                 }
             )
         )
@@ -237,6 +240,7 @@ class TestOrganizationSubscriptionFromSdk:
                     "applies_at": "2026-02-01T00:00:00Z",
                     "product_id": None,
                     "seats": 5,
+                    "units": None,
                 }
             )
         )

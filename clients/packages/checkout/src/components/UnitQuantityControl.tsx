@@ -1,6 +1,7 @@
 'use client'
 
-import { Button, Input } from '@polar-sh/orbit'
+import { Button } from './ui/Button'
+import { Input } from './ui/Input'
 import { type ChangeEvent, type KeyboardEvent, useState } from 'react'
 import MinusIcon from './icons/MinusIcon'
 import PlusIcon from './icons/PlusIcon'

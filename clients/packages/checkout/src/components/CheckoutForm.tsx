@@ -4,13 +4,13 @@ import type { schemas } from '@polar-sh/client'
 import { enums } from '@polar-sh/client'
 import { useTranslations, type AcceptedLocale } from '@polar-sh/i18n'
 import { MandateText } from './MandateText'
-import { Button } from '@polar-sh/orbit'
-import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
+import { Button } from './ui/Button'
+import CountryPicker from './ui/CountryPicker'
 import CountryStatePicker, {
   COUNTRIES_WITH_FIXED_STATE_OPTIONS,
-} from '@polar-sh/ui/components/atoms/CountryStatePicker'
-import { Input } from '@polar-sh/orbit'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+} from './ui/CountryStatePicker'
+import { Input } from './ui/Input'
+import { Checkbox } from './ui/Checkbox'
 import {
   Form,
   FormControl,

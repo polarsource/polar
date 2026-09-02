@@ -1,15 +1,15 @@
 import type { schemas } from '@polar-sh/client'
 
-import { Input } from '@polar-sh/orbit'
+import { Input } from './ui/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/orbit'
-import { TextArea } from '@polar-sh/orbit'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+} from './ui/Select'
+import { TextArea } from './ui/TextArea'
+import { Checkbox } from './ui/Checkbox'
 import {
   FormControl,
   FormDescription,

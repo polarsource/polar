@@ -39,6 +39,7 @@ export const useRevenueTrend = (
     0,
   )
 
+  /* oxlint-disable react-hooks/exhaustive-deps */
   const trend = useMemo(() => {
     if (
       !currentIntervalCumulativeRevenue ||
@@ -53,6 +54,7 @@ export const useRevenueTrend = (
 
     return percentageChange
   }, [currentIntervalMetrics, previousIntervalMetrics])
+  /* oxlint-enable react-hooks/exhaustive-deps */
 
   return {
     trend,

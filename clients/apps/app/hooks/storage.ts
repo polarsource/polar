@@ -55,6 +55,7 @@ export function useStorageState(key: string): UseStateHook<string> {
   const [state, setState] = useAsyncState<string>()
 
   // Get
+  /* oxlint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (Platform.OS === 'web') {
       try {
@@ -79,6 +80,7 @@ export function useStorageState(key: string): UseStateHook<string> {
     },
     [key],
   )
+  /* oxlint-enable react-hooks/exhaustive-deps */
 
   return [state, setValue]
 }

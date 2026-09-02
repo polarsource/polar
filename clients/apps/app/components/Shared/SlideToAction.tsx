@@ -19,6 +19,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Box } from './Box'
 
+// oxlint-disable-next-line import/no-named-as-default-member
 const AnimatedIcon = Animated.createAnimatedComponent(MaterialIcons)
 
 interface SlideToActionProps {

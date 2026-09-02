@@ -10,6 +10,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.exceptions import PolarError
 
+BIGINT_MAX = 9223372036854775807
+
 
 class TierType(StrEnum):
     volume = "volume"
@@ -33,13 +35,13 @@ class Tier(BaseModel):
 
 
 class TierInput(BaseModel):
-    """A tier submitted through the API. Rates go up to 19 whole digits, the
-    reach of the BigInteger amount columns, with 12 decimal places.
+    """A tier submitted through the API. Rates stop at the reach of the
+    BigInteger amount columns, with 12 decimal places.
     """
 
     bound: int | None = Field(default=None, gt=0)
     unit_amount: Decimal = Field(
-        ge=0, max_digits=31, decimal_places=12, allow_inf_nan=False
+        ge=0, le=BIGINT_MAX, max_digits=31, decimal_places=12, allow_inf_nan=False
     )
 
 

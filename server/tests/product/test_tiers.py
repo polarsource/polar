@@ -5,6 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from polar.product.tiers import (
+    BIGINT_MAX,
     InvalidQuantityError,
     NonContiguousTiersError,
     SeatTiersData,
@@ -83,11 +84,20 @@ class TestTiersInput:
             )
 
     def test_accepts_a_rate_up_to_the_biginteger_range(self) -> None:
-        rate = "9" * 19
+        rate = str(BIGINT_MAX)
         tiers = TiersInput.model_validate(
             {"type": TierType.volume, "tiers": [{"bound": None, "unit_amount": rate}]}
         )
         assert tiers.tiers[0].unit_amount == Decimal(rate)
+
+    def test_rate_beyond_the_biginteger_range_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            TiersInput.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [{"bound": None, "unit_amount": str(BIGINT_MAX + 1)}],
+                }
+            )
 
     def test_reads_a_stored_rate_it_would_reject(self) -> None:
         payload: dict[str, Any] = {

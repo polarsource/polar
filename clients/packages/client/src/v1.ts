@@ -37077,8 +37077,8 @@ export interface components {
     }
     /**
      * TierInput
-     * @description A tier submitted through the API. Rates go up to 19 whole digits, the
-     *     reach of the BigInteger amount columns, with 12 decimal places.
+     * @description A tier submitted through the API. Rates stop at the reach of the
+     *     BigInteger amount columns, with 12 decimal places.
      */
     TierInput: {
       /** Bound */

@@ -330,6 +330,28 @@ export const ProductPricingSection = ({
             unit_amount: 0,
             meter_id: meterId,
           }
+        } else if (price.amount_type === 'metered_tiers') {
+          const sourceTiers =
+            'tiers' in price && price.tiers?.tiers ? price.tiers.tiers : []
+          const meteredTiers = sourceTiers.map((t) => ({
+            bound: 'bound' in t ? (t.bound ?? null) : null,
+            unit_amount: 0,
+          }))
+          if (meteredTiers.length === 0) {
+            meteredTiers.push({ bound: null, unit_amount: 0 })
+          }
+          newPrice = {
+            ...baseCurrency,
+            amount_type: 'metered_tiers',
+            meter_id: 'meter_id' in price ? price.meter_id : '',
+            tiers: {
+              type:
+                'tiers' in price && price.tiers && 'type' in price.tiers
+                  ? price.tiers.type
+                  : 'volume',
+              tiers: meteredTiers,
+            },
+          }
         } else {
           newPrice = { ...baseCurrency, amount_type: 'free' }
         }
@@ -424,8 +446,7 @@ export const ProductPricingSection = ({
 
         const indicesToRemove = currentPrices
           .map((p, i) =>
-            'amount_type' in p &&
-            p.amount_type === 'metered_unit' &&
+            isMeteredPrice(p as ProductPrice) &&
             'meter_id' in p &&
             p.meter_id === meterId
               ? i
@@ -478,9 +499,13 @@ export const ProductPricingSection = ({
 
   const canAddUnitPricing = onlyStaticAmountType === 'fixed'
 
+  const hasMeteredPrice =
+    pricesForSelectedCurrency.length > staticPricesForSelectedCurrency.length
+
   const canAddBasePrice =
     onlyStaticAmountType === 'seat_based' ||
-    onlyStaticAmountType === 'unit_based'
+    onlyStaticAmountType === 'unit_based' ||
+    (staticPricesForSelectedCurrency.length === 0 && hasMeteredPrice)
 
   if (isLegacyRecurringProduct) {
     return (
@@ -711,9 +736,9 @@ export const ProductPricingSection = ({
                   onAmountTypeChange={handleAmountTypeChange}
                   canChangeType={!isMetered && staticPriceCount <= 1}
                   canRemove={
-                    staticPriceCount > 1 ||
-                    (isMetered &&
-                      (meteredPriceCount > 1 || staticPriceCount >= 1))
+                    isMetered
+                      ? meteredPriceCount > 1 || staticPriceCount >= 1
+                      : staticPriceCount > 1 || meteredPriceCount >= 1
                   }
                   key={`${selectedCurrency}-${index}`}
                 />

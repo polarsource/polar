@@ -1,5 +1,122 @@
+import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import { shouldShowMeterCycle } from './utils'
+import { estimateMeteredCost, shouldShowMeterCycle } from './utils'
+
+type MeteredUnitPrice = schemas['ProductPriceMeteredUnit']
+type MeteredTiersPrice = schemas['ProductPriceMeteredTiers']
+type MeteredTiers = MeteredTiersPrice['tiers']
+
+const common = {
+  id: 'price_1',
+  created_at: '2026-01-01T00:00:00Z',
+  modified_at: null,
+  is_archived: false,
+  product_id: 'prod_1',
+  price_currency: 'usd',
+  cap_amount: null,
+  meter_id: 'meter_1',
+  meter: {
+    id: 'meter_1',
+    name: 'API Calls',
+    unit: 'scalar',
+    custom_label: null,
+    custom_multiplier: null,
+  },
+}
+
+const price = (overrides: Partial<MeteredUnitPrice> = {}): MeteredUnitPrice =>
+  ({
+    ...common,
+    amount_type: 'metered_unit',
+    unit_amount: '0.05',
+    ...overrides,
+  }) as MeteredUnitPrice
+
+const tieredPrice = (
+  tiersValue: MeteredTiers,
+  overrides: Partial<MeteredTiersPrice> = {},
+): MeteredTiersPrice =>
+  ({
+    ...common,
+    amount_type: 'metered_tiers',
+    tiers: tiersValue,
+    ...overrides,
+  }) as MeteredTiersPrice
+
+const tiers = (
+  tierType: MeteredTiers['type'],
+  list: { bound: number | null; unit_amount: string }[],
+): MeteredTiers => ({ type: tierType, tiers: list })
+
+// The ladder used across the tiered cases: 5c up to 1,000, then 1c.
+const ladder = (tierType: MeteredTiers['type']) =>
+  tiers(tierType, [
+    { bound: 1000, unit_amount: '5' },
+    { bound: null, unit_amount: '1' },
+  ])
+
+describe('estimateMeteredCost', () => {
+  it('multiplies units by a flat unit amount', () => {
+    expect(estimateMeteredCost(price({ unit_amount: '0.5' }), 100)).toBe(50)
+  })
+
+  it.each([0, -1])('costs nothing for %i units', (units) => {
+    expect(estimateMeteredCost(tieredPrice(ladder('graduated')), units)).toBe(0)
+  })
+
+  describe('graduated', () => {
+    it.each([
+      { position: 'inside the first tier', units: 500, expected: 2500 },
+      { position: 'at the tier boundary', units: 1000, expected: 5000 },
+      { position: 'across tiers', units: 2000, expected: 6000 },
+      {
+        position: 'with fractional usage, rounded to whole cents',
+        units: 1000.5,
+        expected: 5001,
+      },
+    ])('bills usage $position', ({ units, expected }) => {
+      const p = tieredPrice(ladder('graduated'))
+      expect(estimateMeteredCost(p, units)).toBe(expected)
+    })
+  })
+
+  describe('volume', () => {
+    it.each([
+      { position: 'inside the first tier', units: 500, expected: 2500 },
+      { position: 'at the tier boundary', units: 1000, expected: 5000 },
+      { position: 'after crossing the boundary', units: 2000, expected: 2000 },
+    ])('bills the whole quantity $position', ({ units, expected }) => {
+      const p = tieredPrice(ladder('volume'))
+      expect(estimateMeteredCost(p, units)).toBe(expected)
+    })
+  })
+
+  describe('single unbounded tier', () => {
+    it('behaves like a flat rate', () => {
+      const p = tieredPrice(
+        tiers('graduated', [{ bound: null, unit_amount: '5' }]),
+      )
+      expect(estimateMeteredCost(p, 250)).toBe(1250)
+    })
+  })
+
+  describe('cap amount', () => {
+    it('caps a tiered cost', () => {
+      const p = tieredPrice(ladder('graduated'), { cap_amount: 1000 })
+      expect(estimateMeteredCost(p, 2000)).toBe(1000)
+    })
+
+    it('honours a zero cap, matching the server', () => {
+      const p = price({ unit_amount: '0.5', cap_amount: 0 })
+      expect(estimateMeteredCost(p, 100)).toBe(0)
+    })
+
+    it('rounds before capping, matching the server', () => {
+      const p = price({ unit_amount: '0.996', cap_amount: 100 })
+      expect(estimateMeteredCost(p, 100)).toBe(100)
+    })
+  })
+})
 
 const base = {
   isEnabledForOrganization: true,

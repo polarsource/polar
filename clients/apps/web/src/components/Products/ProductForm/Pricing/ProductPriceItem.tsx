@@ -33,6 +33,7 @@ const AMOUNT_TYPE_LABELS: Record<string, string> = {
   seat_based: 'Seats',
   unit_based: 'Units',
   metered_unit: 'Metered price',
+  metered_tiers: 'Metered price',
 }
 
 interface ProductPriceItemProps {
@@ -94,7 +95,13 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                 <div className="flex flex-row items-center gap-2">
                   <FormControl>
                     <Select
-                      value={field.value}
+                      // Both metered types share this entry; the tiers variant
+                      // is chosen inside the metered fields, not here.
+                      value={
+                        field.value === 'metered_tiers'
+                          ? 'metered_unit'
+                          : field.value
+                      }
                       onValueChange={(v) => {
                         field.onChange(v)
                         onAmountTypeChange(
@@ -166,7 +173,8 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
           {amountType === 'unit_based' && (
             <ProductPriceUnitBasedItem index={index} currency={currency} />
           )}
-          {amountType === 'metered_unit' && (
+          {(amountType === 'metered_unit' ||
+            amountType === 'metered_tiers') && (
             <ProductPriceMeteredUnitItem
               organization={organization}
               index={index}

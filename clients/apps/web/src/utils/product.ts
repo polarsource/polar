@@ -59,10 +59,14 @@ export const formPriceToApiPrice = (
     ? { ...price, amount_type: 'fixed', price_amount: 0 }
     : price
 
+export type MeteredPrice =
+  | schemas['ProductPriceMeteredUnit']
+  | schemas['ProductPriceMeteredTiers']
+
 export const isMeteredPrice = (
   price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
-): price is schemas['ProductPriceMeteredUnit'] =>
-  price.amount_type === 'metered_unit'
+): price is MeteredPrice =>
+  price.amount_type === 'metered_unit' || price.amount_type === 'metered_tiers'
 
 export const isSeatBasedPrice = (
   price: schemas['ProductPrice'],

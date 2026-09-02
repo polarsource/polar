@@ -123,7 +123,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     services:
       tinybird:
-        image: tinybirdco/tinybird-local:latest
+        image: tinybirdco/tinybird-local@sha256:36ee883f83ae850ce173e94785387b4098a37f2ebca1bdd9a6b91ea0dbadc309
         ports:
           - 7181:7181
         options: >-
@@ -287,7 +287,7 @@ jobs:
           --health-retries 5
 
       tinybird:
-        image: tinybirdco/tinybird-local:latest
+        image: tinybirdco/tinybird-local@sha256:36ee883f83ae850ce173e94785387b4098a37f2ebca1bdd9a6b91ea0dbadc309
         ports:
           - 7181:7181
           - 7182:7182

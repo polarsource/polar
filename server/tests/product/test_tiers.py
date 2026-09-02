@@ -89,6 +89,15 @@ class TestTiersInput:
         )
         assert tiers.tiers[0].unit_amount == Decimal(rate)
 
+    def test_reads_a_stored_rate_it_would_reject(self) -> None:
+        payload: dict[str, Any] = {
+            "type": TierType.volume,
+            "tiers": [{"bound": None, "unit_amount": "9" * 20}],
+        }
+        with pytest.raises(ValidationError):
+            TiersInput.model_validate(payload)
+        assert Tiers.model_validate(payload).tiers[0].unit_amount == Decimal("9" * 20)
+
 
 class TestTiersCalculateVolume:
     def test_fractional_rate(self) -> None:

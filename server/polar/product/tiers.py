@@ -22,12 +22,14 @@ class Tier(BaseModel):
     Each tier starts where the previous one ended. The first starts at
     zero. `bound` is None on the last tier if it's unbounded. Rates are
     in cents and may be fractional.
+
+    Rates carry no precision bound: this schema reads stored rows, and a
+    bound tightened later would stop them loading. `TierInput` holds the
+    rules new rates must meet.
     """
 
     bound: int | None = Field(default=None, gt=0)
-    unit_amount: Decimal = Field(
-        ge=0, max_digits=17, decimal_places=12, allow_inf_nan=False
-    )
+    unit_amount: Decimal = Field(ge=0, allow_inf_nan=False)
 
 
 class TierInput(BaseModel):

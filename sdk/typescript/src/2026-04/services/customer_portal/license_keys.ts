@@ -10,7 +10,13 @@ import type {
   ValidatedLicenseKey,
 } from "../../models";
 
-import { HTTPValidationError, NotPermitted, ResourceNotFound, Unauthorized } from "../../errors";
+import {
+  HTTPValidationError,
+  NotPermitted,
+  ResourceNotFound,
+  RotateNotPermitted,
+  Unauthorized,
+} from "../../errors";
 
 export const listLicenseKeys = (client: ClientBase) => {
   /**
@@ -126,6 +132,48 @@ export const getLicenseKeys = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<LicenseKeyWithActivations>(response, "json", {
+      404: ResourceNotFound,
+      422: HTTPValidationError,
+    });
+  };
+};
+export const rotateLicenseKeys = (client: ClientBase) => {
+  /**
+   * Rotate a license key.
+   *
+   * Generates a new key string for the same license key record. The previous
+   * key string immediately stops validating. Status, usage, limits, expiry,
+   * and activations are preserved.
+   *
+   * **Scopes**: `customer_portal:write`
+   *
+   * @param id
+   * @param requestOptions - Request options
+   * @returns {LicenseKeyRead}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {RotateNotPermitted} License key cannot be rotated in its current status. Allowed statuses: disabled, granted.
+   * @throws {Unauthorized} Not authorized to manage license key.
+   * @throws {ResourceNotFound} License key not found.
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (id: string, requestOptions?: RequestOptions): Promise<LicenseKeyRead> => {
+    const pathParams = {
+      id: id,
+    };
+    const queryParams = {};
+    const request = client.buildRequest(
+      "POST",
+      "/v1/customer-portal/license-keys/{id}/rotate",
+      pathParams,
+      queryParams,
+      undefined,
+    );
+    const response = await client.sendRequest(request, requestOptions);
+    return client.parseResponse<LicenseKeyRead>(response, "json", {
+      400: RotateNotPermitted,
+      401: Unauthorized,
       404: ResourceNotFound,
       422: HTTPValidationError,
     });
@@ -249,6 +297,7 @@ export function createLicenseKeysService(client: ClientBase) {
   return {
     list: listLicenseKeys(client),
     get: getLicenseKeys(client),
+    rotate: rotateLicenseKeys(client),
     validate: validateLicenseKeys(client),
     activate: activateLicenseKeys(client),
     deactivate: deactivateLicenseKeys(client),

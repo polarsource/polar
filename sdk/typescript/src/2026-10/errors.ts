@@ -27,9 +27,12 @@ import type {
   PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
   RefundedAlready as RefundedAlreadyModel,
   ResourceNotFound as ResourceNotFoundModel,
+  RotateNotPermitted as RotateNotPermittedModel,
   SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
   SubscriptionLocked as SubscriptionLockedModel,
   Unauthorized as UnauthorizedModel,
+  UpdateSubscriptionSeatsNotAllowed as UpdateSubscriptionSeatsNotAllowedModel,
+  UpdateSubscriptionUnitsNotAllowed as UpdateSubscriptionUnitsNotAllowedModel,
 } from "./models";
 
 import { PolarClientError } from "../base";
@@ -318,6 +321,18 @@ export class Unauthorized extends PolarClientError<UnauthorizedModel> {
   }
 }
 /**
+ * License key cannot be rotated in its current status. Allowed statuses: disabled, granted.
+ */
+export class RotateNotPermitted extends PolarClientError<RotateNotPermittedModel> {
+  constructor(
+    public readonly statusCode: 400,
+    public readonly error: RotateNotPermittedModel,
+  ) {
+    super(statusCode, error);
+    this.name = "RotateNotPermitted";
+  }
+}
+/**
  * The external customer ID matches customers in several accessible organizations.
  */
 export class AmbiguousExternalCustomerID extends PolarClientError<AmbiguousExternalCustomerIDModel> {
@@ -346,7 +361,7 @@ export class PaymentMethodSetupFailed extends PolarClientError<PaymentMethodSetu
  */
 export class CustomerNotReady extends PolarClientError<CustomerNotReadyModel> {
   constructor(
-    public readonly statusCode: 400,
+    public readonly statusCode: 403,
     public readonly error: CustomerNotReadyModel,
   ) {
     super(statusCode, error);
@@ -777,11 +792,18 @@ export class ManualRetryLimitExceeded extends PolarClientError<ManualRetryLimitE
  * Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
  */
 export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
-  AlreadyCanceledSubscriptionModel | PauseResumeNotAllowedModel
+  | AlreadyCanceledSubscriptionModel
+  | PauseResumeNotAllowedModel
+  | UpdateSubscriptionSeatsNotAllowedModel
+  | UpdateSubscriptionUnitsNotAllowedModel
 > {
   constructor(
     public readonly statusCode: 403,
-    public readonly error: AlreadyCanceledSubscriptionModel | PauseResumeNotAllowedModel,
+    public readonly error:
+      | AlreadyCanceledSubscriptionModel
+      | PauseResumeNotAllowedModel
+      | UpdateSubscriptionSeatsNotAllowedModel
+      | UpdateSubscriptionUnitsNotAllowedModel,
   ) {
     super(statusCode, error);
     this.name = "CustomerPortalSubscriptionsUpdate403Error";

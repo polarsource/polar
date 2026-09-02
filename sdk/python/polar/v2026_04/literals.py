@@ -1110,6 +1110,7 @@ TaxBehavior: typing.TypeAlias = typing.Literal["inclusive", "exclusive"]
 TaxBehaviorOption: typing.TypeAlias = typing.Literal[
     "location", "inclusive", "exclusive"
 ]
+TierType: typing.TypeAlias = typing.Literal["volume", "graduated"]
 TimeInterval: typing.TypeAlias = typing.Literal["year", "month", "week", "day", "hour"]
 Timeframe: typing.TypeAlias = typing.Literal["year", "month", "day"]
 Timezone: typing.TypeAlias = typing.Literal[

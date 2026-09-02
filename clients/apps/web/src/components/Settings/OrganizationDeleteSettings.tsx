@@ -1,6 +1,7 @@
 'use client'
 
 import { useDeleteOrganization } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -31,7 +32,7 @@ export default function OrganizationDeleteSettings({
     if (error) {
       toast({
         title: 'Deletion Failed',
-        description: error.detail as string,
+        description: extractApiErrorMessage(error),
         variant: 'error',
         duration: TOAST_LONG_DURATION,
       })

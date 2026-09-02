@@ -67,9 +67,9 @@ interface GenericChartProps<T extends Record<string, unknown>> {
   data: T[]
   series: GenericChartSeries[]
   xAxisKey: keyof T
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   xAxisFormatter?: (value: any) => string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   labelFormatter?: (value: any) => string
   valueFormatter?: (value: number, seriesKey: string) => React.ReactNode
   height?: number
@@ -224,7 +224,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
   const tooltipLabelFormatter = useMemo(() => {
     const fmt = labelFormatter ?? xAxisFormatter
     if (!fmt) return undefined
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line typescript/no-explicit-any
     return (value: any, items: any) => {
       const raw = items?.[0]?.payload?.[xAxisKey as string]
       return fmt(raw ?? value)

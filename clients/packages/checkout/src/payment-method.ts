@@ -93,7 +93,7 @@ type EmbedPaymentMethodMessage =
   | EmbedPaymentMethodMessageResize
 
 const isEmbedPaymentMethodMessage = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   message: any,
 ): message is EmbedPaymentMethodMessage => {
   return message.type === POLAR_PAYMENT_METHOD_EVENT
@@ -166,7 +166,7 @@ interface EmbedPaymentMethodCreateInlineOptions {
 }
 
 const resolveEmbedBaseURL = (): string => {
-  const origins = // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  const origins = // oxlint-disable-next-line typescript/ban-ts-comment
     // @ts-ignore - Defined at build time by tsup
     (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string).split(',')
 
@@ -180,7 +180,7 @@ const resolveEmbedBaseURL = (): string => {
 }
 
 const buildIframeAllow = (): string => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // oxlint-disable-next-line typescript/ban-ts-comment
   // @ts-ignore - Defined at build time by tsup
   const origins = (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string)
     .split(',')
@@ -463,7 +463,7 @@ class EmbedPaymentMethod {
   ): void
   public addEventListener(
     type: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line typescript/no-explicit-any
     listener: any,
     options?: AddEventListenerOptions | boolean,
   ): void {
@@ -490,7 +490,7 @@ class EmbedPaymentMethod {
     type: 'error',
     listener: (event: CustomEvent<EmbedPaymentMethodMessageError>) => void,
   ): void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   public removeEventListener(type: string, listener: any): void {
     this.eventTarget.removeEventListener(type, listener)
   }
@@ -572,7 +572,7 @@ class EmbedPaymentMethod {
    */
   private handleWindowMessage({ data, origin }: MessageEvent): void {
     if (
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // oxlint-disable-next-line typescript/ban-ts-comment
       // @ts-ignore - Defined at build time by tsup
       !__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
         .split(',')

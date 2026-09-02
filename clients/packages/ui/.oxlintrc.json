@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["node_modules/**", "dist/**"],
+  "extends": ["../oxlint-config/oxlint-react.json"],
+  "rules": {
+    "react/no-unknown-property": [
+      "error",
+      {
+        "ignore": ["cmdk-input-wrapper"]
+      }
+    ]
+  }
+}

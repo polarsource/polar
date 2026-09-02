@@ -106,7 +106,6 @@ const nextConfig = {
 
   ...(PREVIEW_BUILD && {
     typescript: { ignoreBuildErrors: true },
-    eslint: { ignoreDuringBuilds: true },
   }),
 
   outputFileTracingIncludes: {

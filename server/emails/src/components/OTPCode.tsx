@@ -1,4 +1,4 @@
-/* eslint-disable email-ds/no-raw-text-elements -- bespoke per-digit OTP widget; not prose text */
+/* oxlint-disable email-ds/no-raw-text-elements -- bespoke per-digit OTP widget; not prose text */
 import { Section } from 'react-email'
 
 export function OTPCode({ code, domain }: { code: string; domain?: string }) {

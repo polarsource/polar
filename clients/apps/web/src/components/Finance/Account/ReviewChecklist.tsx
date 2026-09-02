@@ -37,7 +37,7 @@ export const ReviewChecklist = ({
     <Box
       flexDirection="column"
       rowGap="s"
-      // eslint-disable-next-line polar/no-style-box
+      // oxlint-disable-next-line polar/no-style-box
       style={{ perspective: 1200 }}
     >
       {isLoading ? (

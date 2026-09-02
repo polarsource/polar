@@ -23,7 +23,6 @@
     "build": "rm -rf dist && tsup",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
-    "lint": "pnpm format:check && eslint --max-warnings 0 .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -56,7 +55,6 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
-    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@stripe/stripe-js": "^8.11.0",
     "@types/react": "19.2.14",

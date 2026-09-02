@@ -18,5 +18,5 @@ export const platformFeesDisplayNames: {
 export const isTransaction = (
   t: schemas['Transaction'] | schemas['TransactionEmbedded'],
 ): t is schemas['Transaction'] =>
-  // eslint-disable-next-line no-prototype-builtins
+  // oxlint-disable-next-line no-prototype-builtins
   t.hasOwnProperty('account_incurred_transactions')

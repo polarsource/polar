@@ -2,7 +2,7 @@
 
 import { useOrganizationSeats } from '@/hooks/queries/seats'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, Input } from '@polar-sh/orbit'
@@ -66,7 +66,7 @@ export const UpdateSubscriptionSeatsForm = ({
             } else {
               toast({
                 title: 'Seats update failed',
-                description: `Error while updating seats for ${subscription.product.name}: ${error.detail}`,
+                description: `Error while updating seats for ${subscription.product.name}: ${extractApiErrorMessage(error)}`,
               })
             }
           return

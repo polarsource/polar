@@ -18,7 +18,7 @@ type IncomingMessage =
   | { event: 'resize'; height: number }
 
 const isPolarMessage = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   message: any,
 ): message is IncomingMessage & { type: typeof POLAR_PAYMENT_METHOD_EVENT } => {
   return (
@@ -29,14 +29,14 @@ const isPolarMessage = (
 }
 
 const resolveEmbedBaseURL = (): string => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // oxlint-disable-next-line typescript/ban-ts-comment
   // @ts-ignore - Defined at build time by tsup
   const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string
   return origins.split(',')[0]
 }
 
 const isAllowedOrigin = (origin: string): boolean => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // oxlint-disable-next-line typescript/ban-ts-comment
   // @ts-ignore - Defined at build time by tsup
   return (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string)
     .split(',')
@@ -44,7 +44,7 @@ const isAllowedOrigin = (origin: string): boolean => {
 }
 
 const buildIframeAllow = (): string => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // oxlint-disable-next-line typescript/ban-ts-comment
   // @ts-ignore - Defined at build time by tsup
   const origins = (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string)
     .split(',')

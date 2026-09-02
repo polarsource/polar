@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["node_modules/**", "dist/**"],
+  "extends": ["../oxlint-config/oxlint-base.json"],
+  "overrides": [
+    {
+      "files": ["src/v1.ts"],
+      "rules": {
+        "max-lines": "off",
+        "max-lines-per-function": "off"
+      }
+    }
+  ]
+}

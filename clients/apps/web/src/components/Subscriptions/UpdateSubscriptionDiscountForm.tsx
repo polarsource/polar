@@ -2,7 +2,7 @@
 
 import { useDiscount, useDiscounts } from '@/hooks/queries'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -67,7 +67,7 @@ export const UpdateSubscriptionDiscountForm = ({
             } else {
               toast({
                 title: 'Subscription update failed',
-                description: `Error while updating subscription ${subscription.product.name}: ${error.detail}`,
+                description: `Error while updating subscription ${subscription.product.name}: ${extractApiErrorMessage(error)}`,
               })
             }
           return

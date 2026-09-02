@@ -64,9 +64,6 @@ importers:
         specifier: ^3.5.0
         version: 3.5.0
     devDependencies:
-      '@polar-sh/eslint-config':
-        specifier: workspace:*
-        version: link:../eslint-config
       '@polar-sh/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config

@@ -1,13 +1,12 @@
 {
   "extends": "@polar-sh/typescript-config/react-library.json",
   "compilerOptions": {
-    "baseUrl": "src/",
     "allowSyntheticDefaultImports": true,
     "lib": ["esnext", "dom"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

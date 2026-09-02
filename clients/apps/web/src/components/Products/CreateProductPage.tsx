@@ -5,6 +5,7 @@ import {
   useUpdateProductBenefits,
 } from '@/hooks/queries'
 import {
+  extractApiErrorMessage,
   findFirstErrorMessage,
   setProductValidationErrors,
 } from '@/utils/api/errors'
@@ -146,12 +147,12 @@ export const CreateProductPage = ({
             setProductValidationErrors(error.detail, setError)
             toast({
               title: 'Error',
-              description: error.detail[0]?.msg || 'An error occurred',
+              description: extractApiErrorMessage(error, 'An error occurred'),
             })
           } else {
             toast({
               title: 'Error',
-              description: String(error.detail || 'An error occurred'),
+              description: extractApiErrorMessage(error, 'An error occurred'),
             })
           }
           return

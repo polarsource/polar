@@ -1,0 +1,10 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../packages/oxlint-config/oxlint-next.json"],
+  "ignorePatterns": [
+    ".next/**",
+    "node_modules/**",
+    "babel.config.js",
+    "scripts/**"
+  ]
+}

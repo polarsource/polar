@@ -7,10 +7,10 @@ import { ToastActionElement, type ToastProps } from '.'
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToasterToast = ToastProps & {
+type ToasterToast = Omit<ToastProps, 'title' | 'description'> & {
   id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
+  title?: string
+  description?: string
   action?: ToastActionElement
 }
 
@@ -134,8 +134,7 @@ function dispatch(action: Action) {
   })
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface Toast extends Omit<ToasterToast, 'id'> {}
+type Toast = Omit<ToasterToast, 'id'>
 
 function toast({ ...props }: Toast) {
   const id = genId()

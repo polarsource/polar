@@ -2,7 +2,7 @@ import revalidate from '@/app/actions'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateCustomer } from '@/hooks/queries'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { permissionDeniedMessage } from '@/utils/permissions'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader } from '@polar-sh/orbit'
@@ -74,7 +74,7 @@ export const EditCustomerModal = ({
           } else {
             toast({
               title: 'Customer Update Failed',
-              description: `Error updating customer ${customer.email ?? customer.name ?? 'customer'}: ${error.detail}`,
+              description: `Error updating customer ${customer.email ?? customer.name ?? 'customer'}: ${extractApiErrorMessage(error)}`,
             })
           }
         return

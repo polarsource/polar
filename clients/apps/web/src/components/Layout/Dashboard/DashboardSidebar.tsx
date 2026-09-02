@@ -78,7 +78,7 @@ export const DashboardSidebar = ({
 
   const [_isImpersonating, setIsImpersonating] = useState(false)
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only cookie read to avoid hydration mismatch
+    // oxlint-disable-next-line react-hooks/set-state-in-effect -- client-only cookie read to avoid hydration mismatch
     setIsImpersonating(isImpersonating())
   }, [])
   const isTopBannerVisible = CONFIG.IS_SANDBOX || _isImpersonating

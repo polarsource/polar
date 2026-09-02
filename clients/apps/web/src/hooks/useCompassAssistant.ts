@@ -67,8 +67,6 @@ export const useCompassAssistant = ({
   const idRef = useRef(0)
   const controllerRef = useRef<AbortController | null>(null)
   const loadRef = useRef(0)
-  const onThreadChangeRef = useRef(onThreadChange)
-  onThreadChangeRef.current = onThreadChange
 
   useEffect(() => {
     // Abort the in-flight stream on unmount so the SSE connection closes and
@@ -171,7 +169,7 @@ export const useCompassAssistant = ({
           } else if (event === 'thread') {
             // Adopt the new thread so a mid-stream refresh can recover it
             setThread(payload.thread_id)
-            onThreadChangeRef.current?.(payload.thread_id)
+            onThreadChange?.(payload.thread_id)
             void queryClient.invalidateQueries({
               queryKey: ['compass_threads'],
             })
@@ -223,6 +221,7 @@ export const useCompassAssistant = ({
       organizationId,
       queryClient,
       setThread,
+      onThreadChange,
     ],
   )
 
@@ -264,8 +263,8 @@ export const useCompassAssistant = ({
     setIsStreaming(false)
     setMessages([])
     setThread(null)
-    onThreadChangeRef.current?.(null)
-  }, [claimConversation, setThread])
+    onThreadChange?.(null)
+  }, [claimConversation, onThreadChange, setThread])
 
   const loadThread = useCallback(
     async (id: string) => {
@@ -274,7 +273,7 @@ export const useCompassAssistant = ({
         const detail = await fetchCompassThread(queryClient, id)
         if (claim !== loadRef.current) return
         hydrate(detail)
-        onThreadChangeRef.current?.(detail.id)
+        onThreadChange?.(detail.id)
       } catch (error) {
         if (claim !== loadRef.current) return
         // Only a thread that is gone justifies clearing the screen, a
@@ -284,7 +283,7 @@ export const useCompassAssistant = ({
         }
       }
     },
-    [claimConversation, queryClient, hydrate, newChat],
+    [claimConversation, queryClient, hydrate, newChat, onThreadChange],
   )
 
   const selectThread = useCallback(

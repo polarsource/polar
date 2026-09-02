@@ -1,0 +1,105 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../packages/oxlint-config/oxlint-next.json"],
+  "jsPlugins": [
+    {
+      "name": "polar",
+      "specifier": "./oxlint-plugins/index.mjs"
+    }
+  ],
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    ".next/**",
+    "out/**",
+    "build/**",
+    "coverage/**",
+    "oxlint-plugins/**",
+    "src/app/.well-known/**",
+    "next-env.d.ts",
+    "e2e/**",
+    "playwright-report/**",
+    "babel.config.js",
+    "scripts/**"
+  ],
+  "rules": {
+    "polar/no-unsanitized-toast-detail": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/components/Checkout/CheckoutConfirmation.tsx"],
+      "rules": {
+        "react/set-state-in-effect": "off"
+      }
+    },
+    {
+      "files": [
+        "src/app/**/auth/email-otp/VerifyPage.tsx",
+        "src/app/**/auth/totp/VerifyPage.tsx",
+        "src/app/**/auth/backup-codes/VerifyPage.tsx"
+      ],
+      "rules": {
+        "react/immutability": "off",
+        "react/refs": "off"
+      }
+    },
+    {
+      "files": ["src/components/Orders/DownloadInvoice.tsx"],
+      "rules": {
+        "react/incompatible-library": "off"
+      }
+    },
+    {
+      "files": ["**/*.tsx"],
+      "rules": {
+        "react/no-danger": "error",
+        "react/self-closing-comp": "warn",
+        "react/jsx-no-useless-fragment": "warn",
+        "polar/no-classname-box": "error",
+        "polar/no-classname-text": "error",
+        "polar/no-style-box": "error",
+        "polar/no-style-text": "error",
+        "polar/no-next-image": "error",
+        "polar/no-external-link-component": "error",
+        "polar/require-external-link-rel": "error"
+      }
+    },
+    {
+      "files": [
+        "src/components/CustomerPortal/**/*.{ts,tsx}",
+        "src/app/**/portal/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "polar/no-merchant-queries-in-customer-portal": "error",
+        "polar/no-merchant-api-calls-in-customer-portal": "error"
+      }
+    },
+    {
+      "files": ["src/app/**/portal/**/page.tsx"],
+      "rules": {
+        "polar/require-customer-portal-page": "error"
+      }
+    },
+    {
+      "files": [
+        "src/app/**/portal/page.tsx",
+        "src/app/**/portal/request/page.tsx",
+        "src/app/**/portal/authenticate/page.tsx",
+        "src/app/**/portal/verify-email/page.tsx",
+        "src/app/**/portal/claim/page.tsx"
+      ],
+      "rules": {
+        "polar/require-customer-portal-page": "off"
+      }
+    },
+    {
+      "files": [
+        "src/app/(main)/onboarding/**/*.tsx",
+        "src/components/Onboarding/**/*.tsx"
+      ],
+      "rules": {
+        "polar/no-raw-html-layout": "error"
+      }
+    }
+  ]
+}

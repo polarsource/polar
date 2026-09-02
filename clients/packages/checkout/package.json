@@ -12,7 +12,6 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && tsup",
-    "lint": "oxfmt --check . && eslint --max-warnings 0 .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -80,7 +79,6 @@
     }
   },
   "devDependencies": {
-    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-select": "^2.2.6",

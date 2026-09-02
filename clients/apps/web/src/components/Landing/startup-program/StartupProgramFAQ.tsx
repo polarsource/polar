@@ -74,7 +74,7 @@ export const StartupProgramFAQ = () => {
     <>
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
+        // oxlint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(faqJsonLd).replace(/</g, '\\u003c'),
         }}

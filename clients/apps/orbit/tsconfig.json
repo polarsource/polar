@@ -2,10 +2,9 @@
   "extends": "@polar-sh/typescript-config/nextjs.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": "src/",
     "resolveJsonModule": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src", "next-env.d.ts", ".next/types/**/*.ts"],

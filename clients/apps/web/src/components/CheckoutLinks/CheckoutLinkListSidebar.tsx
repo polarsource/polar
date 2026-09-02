@@ -76,7 +76,7 @@ export const CheckoutLinkListSidebar = ({
       showCreateCheckoutLinkModal()
       setCreateCheckoutLinkQuerystring(null)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [createCheckoutLinkQuerystring, setCreateCheckoutLinkQuerystring])
 
   const selectedCheckoutLinkId = useMemo(() => {

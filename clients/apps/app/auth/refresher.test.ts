@@ -72,6 +72,7 @@ beforeEach(() => {
     hasRefreshToken,
     isAccessTokenStale,
     refreshAccessToken,
+    // oxlint-disable-next-line typescript/no-require-imports
   } = require('./refresher') as typeof RefresherModule)
   mockRefreshAsync.mockReset()
   mockGetStorageItemAsync.mockReset()

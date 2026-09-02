@@ -147,7 +147,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
 
   const handleMonthDigit = useMonthDigitTypeahead()
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // oxlint-disable-next-line react-hooks/incompatible-library
   const country = watch('country')
   const isUnsupportedCountry =
     country !== '' &&

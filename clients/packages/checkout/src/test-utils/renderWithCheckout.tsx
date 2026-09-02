@@ -29,7 +29,7 @@ export const renderWithCheckout = ({
   locale,
 }: RenderWithCheckoutOptions) => {
   const checkout = createCheckout({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line typescript/no-explicit-any
     payment_processor: 'dummy' as any,
     ...checkoutOverrides,
   })

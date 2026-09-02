@@ -96,7 +96,7 @@ export const BenefitSearchComplex = ({
       enabledPagination.max_page > 0 &&
       enabledPage > enabledPagination.max_page
     ) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // oxlint-disable-next-line react-hooks/set-state-in-effect
       setEnabledPage(enabledPagination.max_page)
     }
   }, [enabledPagination, enabledPage])
@@ -107,7 +107,7 @@ export const BenefitSearchComplex = ({
       availablePagination.max_page > 0 &&
       availablePage > availablePagination.max_page
     ) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // oxlint-disable-next-line react-hooks/set-state-in-effect
       setAvailablePage(availablePagination.max_page)
     }
   }, [availablePagination, availablePage])

@@ -9,8 +9,6 @@
     "gen:props": "node scripts/extract-props.mjs",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
-    "lint:only": "eslint --max-warnings 0 .",
-    "lint": "pnpm format:check && pnpm lint:only",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
@@ -28,7 +26,6 @@
     "shiki": "^3.23.0"
   },
   "devDependencies": {
-    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@stylexjs/babel-plugin": "^0.18.2",
     "@stylexjs/postcss-plugin": "^0.18.2",
@@ -37,7 +34,6 @@
     "@types/node": "^22.10.5",
     "@types/react": "19.2.13",
     "@types/react-dom": "19.2.3",
-    "eslint": "^9.39.4",
     "tailwindcss": "^4.2.2",
     "ts-morph": "^25.0.1",
     "typescript": "5.9.3"

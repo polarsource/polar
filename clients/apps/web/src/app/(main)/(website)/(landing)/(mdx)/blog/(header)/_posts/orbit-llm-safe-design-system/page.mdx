@@ -68,7 +68,7 @@ The obvious first move is to just write the rules down. Put "use our gray, not b
 
 Anything you put in a doc is a probability, not a guarantee. The LLM reads it, weighs it against everything else in its context, and follows it most of the time. Most of the time it is not a design system. Across thousands of generations the misses pile up, and you are back to reviewing every diff by hand for drift.
 
-So we drew a harder line, and it's the line the rest of Orbit hangs off: the rules that actually matter aren't written in English, they're encoded as ESLint rules that run in CI. That gives us one deterministic contract. If a PR is green, it is safe to merge. And the contrapositive is the part we've made peace with: if something is off and no rule catches it, that's a gap in our rules, not a failure of the author.
+So we drew a harder line, and it's the line the rest of Orbit hangs off: the rules that actually matter aren't written in English, they're encoded as Oxlint rules that run in CI. That gives us one deterministic contract. If a PR is green, it is safe to merge. And the contrapositive is the part we've made peace with: if something is off and no rule catches it, that's a gap in our rules, not a failure of the author.
 
 We either write the rule or we live with the output. There is no "but the guidelines said not to."
 
@@ -147,7 +147,7 @@ The obvious objection is semantics. If you ban \<div\>, \<section\>, \<nav\>, \<
 
 You still get a real \<nav\> and a real \<ul\> in the DOM, with the right DOM props typed and forwarded. What you lose is the open string surface, not the semantics. as is a closed set of allowed elements; a bare \<nav\> is an open door. We're trying to keep the meaning and close the door.
 
-And we enforce it using ESLint rules.
+And we enforce it using Oxlint rules.
 
 ```js
 'polar/no-raw-html-layout': 'error',
@@ -178,7 +178,7 @@ The LLM isn't being trusted to know our palette. It is being handed a vocabulary
 
 We still have real problems to solve. Our closed token sets are too small for some of the UI we actually build, so we're adding tokens weekly and watching for the point where the constraint starts costing us more than it saves.
 
-Most of the app is still legacy Tailwind, and we're migrating it file by file as we touch things, not in one big rewrite. And every escape hatch we allow is a crack in the guarantee, so we audit the eslint-disable lines and treat a growing list as a bug in the design system.
+Most of the app is still legacy Tailwind, and we're migrating it file by file as we touch things, not in one big rewrite. And every escape hatch we allow is a crack in the guarantee, so we audit the oxlint-disable lines and treat a growing list as a bug in the design system.
 
 The underlying idea, though, is the one we keep coming back to. A design system used to be a set of decisions you hoped people would follow. When most of your code is written by LLMs, hoping isn't a strategy. A design system has to become a set of decisions that are the only ones expressible.
 

@@ -38,7 +38,7 @@ export const CustomerSeatQuantityManager = ({
     },
   })
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // oxlint-disable-next-line react-hooks/incompatible-library
   const seats = watch('seats')
   const canDecrease = seats !== undefined && seats > assignedSeats
   const hasChanges = seats !== totalSeats

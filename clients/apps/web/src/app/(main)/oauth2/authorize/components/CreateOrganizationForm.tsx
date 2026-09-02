@@ -5,7 +5,7 @@ import { CurrencySelector } from '@/components/CurrencySelector'
 import { useToast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, Checkbox, Input } from '@polar-sh/orbit'
 import {
@@ -88,7 +88,7 @@ const CreateOrganizationForm = ({
       } else if (error.detail) {
         toast({
           title: 'Organization creation failed',
-          description: error.detail,
+          description: extractApiErrorMessage(error),
         })
       }
       return

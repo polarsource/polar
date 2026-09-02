@@ -118,6 +118,12 @@ export default {
       },
       firstPayment: '初回のお支払い',
       totalAfterTrial: '試用期間後の合計',
+      tiers: {
+        from: 'より',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer: 'すべての使用量は、該当する範囲の料金で請求されます',
+      },
     },
     trial: {
       hero: {

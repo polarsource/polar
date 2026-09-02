@@ -118,6 +118,13 @@ export default {
       },
       firstPayment: 'İlk ödeme',
       totalAfterTrial: 'Deneme sonrası toplam',
+      tiers: {
+        from: 'Başlangıç',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'Tüm kullanım, düştüğü aralığın tarifesine göre ücretlendirilir',
+      },
     },
     trial: {
       hero: {

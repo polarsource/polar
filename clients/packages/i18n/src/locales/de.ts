@@ -119,6 +119,13 @@ export default {
       },
       firstPayment: 'Erste Zahlung',
       totalAfterTrial: 'Gesamtbetrag nach Testphase',
+      tiers: {
+        from: 'Ab',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'Die gesamte Nutzung wird zum Tarif des Bereichs abgerechnet, in den sie fällt',
+      },
     },
     trial: {
       hero: {

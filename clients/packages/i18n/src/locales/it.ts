@@ -119,6 +119,13 @@ export default {
       },
       firstPayment: 'Primo pagamento',
       totalAfterTrial: 'Totale dopo la prova',
+      tiers: {
+        from: 'Da',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          "Tutto l'utilizzo viene addebitato alla tariffa dell'intervallo in cui rientra",
+      },
     },
     trial: {
       hero: {

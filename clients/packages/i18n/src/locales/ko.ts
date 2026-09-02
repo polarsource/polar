@@ -118,6 +118,12 @@ export default {
       },
       firstPayment: '첫 결제',
       totalAfterTrial: '체험 종료 후 총액',
+      tiers: {
+        from: '부터',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer: '모든 사용량은 해당 구간의 요금이 적용됩니다',
+      },
     },
     trial: {
       hero: {

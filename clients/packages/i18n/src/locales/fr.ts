@@ -119,6 +119,13 @@ export default {
       },
       firstPayment: 'Premier paiement',
       totalAfterTrial: 'Total après essai',
+      tiers: {
+        from: 'À partir de',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'Toute la consommation est facturée au tarif correspondant à la tranche dans laquelle elle se situe',
+      },
     },
     trial: {
       hero: {

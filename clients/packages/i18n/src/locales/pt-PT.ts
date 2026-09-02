@@ -119,6 +119,13 @@ export default {
       },
       firstPayment: 'Primeiro pagamento',
       totalAfterTrial: 'Total após o período experimental',
+      tiers: {
+        from: 'A partir de',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'Todo o consumo é faturado à tarifa da faixa em que se enquadra',
+      },
     },
     trial: {
       hero: {

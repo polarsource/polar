@@ -210,20 +210,45 @@ BenefitGrantWebhook = Annotated[
 
 
 # Properties that are public (when embedding products benefits in storefront and checkout)
-class BenefitPublicGeneric(BenefitPublicBase):
-    type: Literal[
-        BenefitType.custom,
-        BenefitType.discord,
-        BenefitType.github_repository,
-        BenefitType.downloadables,
-        BenefitType.license_keys,
-        BenefitType.feature_flag,
-        BenefitType.slack_shared_channel,
-    ]
+
+
+class BenefitCustomPublic(BenefitPublicBase):
+    type: Literal[BenefitType.custom]
+
+
+class BenefitDiscordPublic(BenefitPublicBase):
+    type: Literal[BenefitType.discord]
+
+
+class BenefitGitHubRepositoryPublic(BenefitPublicBase):
+    type: Literal[BenefitType.github_repository]
+
+
+class BenefitDownloadablesPublic(BenefitPublicBase):
+    type: Literal[BenefitType.downloadables]
+
+
+class BenefitLicenseKeysPublic(BenefitPublicBase):
+    type: Literal[BenefitType.license_keys]
+
+
+class BenefitFeatureFlagPublic(BenefitPublicBase):
+    type: Literal[BenefitType.feature_flag]
+
+
+class BenefitSlackSharedChannelPublic(BenefitPublicBase):
+    type: Literal[BenefitType.slack_shared_channel]
 
 
 BenefitPublic = Annotated[
-    BenefitMeterCreditPublic | BenefitPublicGeneric,
+    BenefitCustomPublic
+    | BenefitDiscordPublic
+    | BenefitGitHubRepositoryPublic
+    | BenefitDownloadablesPublic
+    | BenefitLicenseKeysPublic
+    | BenefitFeatureFlagPublic
+    | BenefitSlackSharedChannelPublic
+    | BenefitMeterCreditPublic,
     Discriminator("type"),
     SetSchemaReference("BenefitPublic"),
     MergeJSONSchema({"title": "BenefitPublic"}),

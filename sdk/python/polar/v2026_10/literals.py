@@ -1110,6 +1110,7 @@ TaxBehavior: typing.TypeAlias = typing.Literal["inclusive", "exclusive"]
 TaxBehaviorOption: typing.TypeAlias = typing.Literal[
     "location", "inclusive", "exclusive"
 ]
+TierType: typing.TypeAlias = typing.Literal["volume", "graduated"]
 TimeInterval: typing.TypeAlias = typing.Literal["year", "month", "week", "day", "hour"]
 Timeframe: typing.TypeAlias = typing.Literal["year", "month", "day"]
 Timezone: typing.TypeAlias = typing.Literal[
@@ -1718,6 +1719,15 @@ TokenEndpointAuthMethod: typing.TypeAlias = typing.Literal[
 ]
 TokenType: typing.TypeAlias = typing.Literal["access_token", "refresh_token"]
 TrialInterval: typing.TypeAlias = typing.Literal["day", "week", "month", "year"]
+Type: typing.TypeAlias = typing.Literal[
+    "custom",
+    "discord",
+    "github_repository",
+    "downloadables",
+    "license_keys",
+    "feature_flag",
+    "slack_shared_channel",
+]
 WebhookEventType: typing.TypeAlias = typing.Literal[
     "checkout.created",
     "checkout.updated",

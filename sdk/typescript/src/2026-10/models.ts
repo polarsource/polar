@@ -937,7 +937,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * Permission
+ * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -1290,6 +1290,10 @@ export type TaxBehavior = "inclusive" | "exclusive";
  * TaxBehaviorOption
  */
 export type TaxBehaviorOption = "location" | "inclusive" | "exclusive";
+/**
+ * TierType
+ */
+export type TierType = "volume" | "graduated";
 /**
  * TimeInterval
  */
@@ -1912,6 +1916,17 @@ export type TokenType = "access_token" | "refresh_token";
  * TrialInterval
  */
 export type TrialInterval = "day" | "week" | "month" | "year";
+/**
+ * Type
+ */
+export type Type =
+  | "custom"
+  | "discord"
+  | "github_repository"
+  | "downloadables"
+  | "license_keys"
+  | "feature_flag"
+  | "slack_shared_channel";
 /**
  * WebhookEventType
  */
@@ -5371,6 +5386,66 @@ export interface BenefitMeterCreditProperties {
   meter_id: string;
 }
 /**
+ * A benefit of type `meter_credit`.
+
+Grants a number of units on a specific meter.
+ */
+export interface BenefitMeterCreditPublic {
+  /**
+   * The ID of the benefit.
+   */
+  id: string;
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * type
+   */
+  type: "meter_credit";
+  /**
+   * The description of the benefit.
+   */
+  description: string;
+  /**
+   * Whether the benefit is selectable when creating a product.
+   */
+  selectable: boolean;
+  /**
+   * Whether the benefit is deletable.
+   */
+  deletable: boolean;
+  /**
+   * Whether the benefit is deleted.
+   */
+  is_deleted: boolean;
+  /**
+   * The ID of the organization owning the benefit.
+   */
+  organization_id: string;
+  /**
+   * properties
+   */
+  properties: BenefitMeterCreditPublicProperties;
+}
+/**
+ * Properties for a benefit of type `meter_credit`.
+ */
+export interface BenefitMeterCreditPublicProperties {
+  /**
+   * units
+   */
+  units: number;
+  /**
+   * meter_id
+   */
+  meter_id: string;
+}
+/**
  * BenefitMeterCreditSubscriber
  */
 export interface BenefitMeterCreditSubscriber {
@@ -5472,9 +5547,9 @@ You can store up to **50 key-value pairs**.
   properties?: BenefitMeterCreditCreateProperties | null;
 }
 /**
- * BenefitPublic
+ * BenefitPublicGeneric
  */
-export interface BenefitPublic {
+export interface BenefitPublicGeneric {
   /**
    * The ID of the benefit.
    */
@@ -5490,7 +5565,7 @@ export interface BenefitPublic {
   /**
    * type
    */
-  type: BenefitType;
+  type: Type;
   /**
    * The description of the benefit.
    */
@@ -5951,7 +6026,7 @@ export interface CardPayment {
    */
   amount: number;
   /**
-   * The payment currency. Currently, only `usd` is supported.
+   * The payment currency
    */
   currency: string;
   /**
@@ -6072,6 +6147,18 @@ export interface Checkout {
    * Maximum number of seats (works with seat-based pricing only)
    */
   max_seats?: number | null;
+  /**
+   * Predefined number of units (works with unit-based pricing only)
+   */
+  units: number | null;
+  /**
+   * Minimum number of units (works with unit-based pricing only)
+   */
+  min_units: number | null;
+  /**
+   * Maximum number of units (works with unit-based pricing only)
+   */
+  max_units: number | null;
   /**
    * Discount amount in cents.
    */
@@ -6314,6 +6401,10 @@ export interface CheckoutConfirmStripe {
    */
   seats?: number | null;
   /**
+   * Number of units for unit-based pricing.
+   */
+  units?: number | null;
+  /**
    * is_business_customer
    */
   is_business_customer?: boolean | null;
@@ -6421,6 +6512,18 @@ You can store up to **50 key-value pairs**.
    */
   max_seats?: number | null;
   /**
+   * Predefined number of units (works with unit-based pricing only)
+   */
+  units?: number | null;
+  /**
+   * Minimum number of units (works with unit-based pricing only)
+   */
+  min_units?: number | null;
+  /**
+   * Maximum number of units (works with unit-based pricing only)
+   */
+  max_units?: number | null;
+  /**
    * Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
    */
   allow_trial?: boolean;
@@ -6511,6 +6614,7 @@ You can store up to **50 key-value pairs**.
       | ProductPriceFixedCreate
       | ProductPriceCustomCreate
       | ProductPriceSeatBasedCreate
+      | ProductPriceUnitBasedCreate
       | ProductPriceMeteredUnitCreate
     )[]
   > | null;
@@ -6800,6 +6904,10 @@ export interface CheckoutLink {
    */
   seats: number | null;
   /**
+   * Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+   */
+  units: number | null;
+  /**
    * The organization ID.
    */
   organization_id: string;
@@ -6876,6 +6984,10 @@ You can store up to **50 key-value pairs**.
    */
   seats?: number | null;
   /**
+   * Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+   */
+  units?: number | null;
+  /**
    * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
    */
   success_url?: string | null;
@@ -6941,6 +7053,10 @@ You can store up to **50 key-value pairs**.
    */
   seats?: number | null;
   /**
+   * Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+   */
+  units?: number | null;
+  /**
    * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
    */
   success_url?: string | null;
@@ -7003,6 +7119,10 @@ You can store up to **50 key-value pairs**.
    * Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
    */
   seats?: number | null;
+  /**
+   * Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+   */
+  units?: number | null;
   /**
    * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
    */
@@ -7147,6 +7267,10 @@ You can store up to **50 key-value pairs**.
    * Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
    */
   seats?: number | null;
+  /**
+   * Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+   */
+  units?: number | null;
   /**
    * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
    */
@@ -7338,6 +7462,18 @@ export interface CheckoutPublic {
    * Maximum number of seats (works with seat-based pricing only)
    */
   max_seats?: number | null;
+  /**
+   * Predefined number of units (works with unit-based pricing only)
+   */
+  units: number | null;
+  /**
+   * Minimum number of units (works with unit-based pricing only)
+   */
+  min_units: number | null;
+  /**
+   * Maximum number of units (works with unit-based pricing only)
+   */
+  max_units: number | null;
   /**
    * Discount amount in cents.
    */
@@ -7578,6 +7714,18 @@ export interface CheckoutPublicConfirmed {
    */
   max_seats?: number | null;
   /**
+   * Predefined number of units (works with unit-based pricing only)
+   */
+  units: number | null;
+  /**
+   * Minimum number of units (works with unit-based pricing only)
+   */
+  min_units: number | null;
+  /**
+   * Maximum number of units (works with unit-based pricing only)
+   */
+  max_units: number | null;
+  /**
    * Discount amount in cents.
    */
   discount_amount: number;
@@ -7774,6 +7922,10 @@ export interface CheckoutUpdate {
    */
   seats?: number | null;
   /**
+   * Number of units for unit-based pricing.
+   */
+  units?: number | null;
+  /**
    * is_business_customer
    */
   is_business_customer?: boolean | null;
@@ -7898,6 +8050,10 @@ export interface CheckoutUpdatePublic {
    * Number of seats for seat-based pricing.
    */
   seats?: number | null;
+  /**
+   * Number of units for unit-based pricing.
+   */
+  units?: number | null;
   /**
    * is_business_customer
    */
@@ -9904,6 +10060,10 @@ export interface CustomerOrder {
    */
   seats?: number | null;
   /**
+   * Number of units purchased (for unit-based pricing).
+   */
+  units: number | null;
+  /**
    * customer_id
    */
   customer_id: string;
@@ -10215,6 +10375,10 @@ export interface CustomerOrderSubscription {
    */
   seats?: number | null;
   /**
+   * The number of units for unit-based subscriptions. None for non-unit subscriptions.
+   */
+  units: number | null;
+  /**
    * customer_cancellation_reason
    */
   customer_cancellation_reason: CustomerCancellationReason | null;
@@ -10434,6 +10598,43 @@ export interface CustomerPaymentMethodGeneric {
   is_default: boolean;
 }
 /**
+ * CustomerPaymentMethodKrCard
+ */
+export interface CustomerPaymentMethodKrCard {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * processor
+   */
+  processor: PaymentProcessor;
+  /**
+   * customer_id
+   */
+  customer_id: string;
+  /**
+   * type
+   */
+  type: "kr_card";
+  /**
+   * method_metadata
+   */
+  method_metadata: PaymentMethodKrCardMetadata;
+  /**
+   * Whether this payment method is the customer's default payment method.
+   */
+  is_default: boolean;
+}
+/**
  * CustomerPortalCustomer
  */
 export interface CustomerPortalCustomer {
@@ -10604,6 +10805,10 @@ export interface CustomerPortalSubscriptionSettings {
    * update_plan
    */
   update_plan: boolean;
+  /**
+   * update_units
+   */
+  update_units?: boolean;
   /**
    * pause
    */
@@ -11399,6 +11604,10 @@ export interface CustomerSubscription {
    */
   seats?: number | null;
   /**
+   * The number of units for unit-based subscriptions. None for non-unit subscriptions.
+   */
+  units: number | null;
+  /**
    * customer_cancellation_reason
    */
   customer_cancellation_reason: CustomerCancellationReason | null;
@@ -11641,6 +11850,15 @@ export interface CustomerSubscriptionUpdateSeats {
    * Update the number of seats for this subscription.
    */
   seats: number;
+}
+/**
+ * CustomerSubscriptionUpdateUnits
+ */
+export interface CustomerSubscriptionUpdateUnits {
+  /**
+   * Update the number of units for this subscription.
+   */
+  units: number;
 }
 /**
  * A team customer in an organization.
@@ -13702,7 +13920,7 @@ export interface GenericPayment {
    */
   amount: number;
   /**
-   * The payment currency. Currently, only `usd` is supported.
+   * The payment currency
    */
   currency: string;
   /**
@@ -13808,6 +14026,88 @@ export interface IntrospectTokenResponse {
    * iat
    */
   iat: number;
+}
+/**
+ * Schema of a payment with a South Korean card payment method.
+ */
+export interface KrCardPayment {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * processor
+   */
+  processor: PaymentProcessor;
+  /**
+   * status
+   */
+  status: PaymentStatus;
+  /**
+   * The payment amount in cents.
+   */
+  amount: number;
+  /**
+   * The payment currency
+   */
+  currency: string;
+  /**
+   * The payment method used.
+   */
+  method: "kr_card";
+  /**
+   * What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+   */
+  trigger: PaymentTrigger | null;
+  /**
+   * Error code, if the payment was declined.
+   */
+  decline_reason: string | null;
+  /**
+   * Human-readable error message, if the payment was declined.
+   */
+  decline_message: string | null;
+  /**
+   * The ID of the organization that owns the payment.
+   */
+  organization_id: string;
+  /**
+   * The ID of the checkout session associated with this payment.
+   */
+  checkout_id: string | null;
+  /**
+   * The ID of the order associated with this payment.
+   */
+  order_id: string | null;
+  /**
+   * Additional metadata from the payment processor for internal use.
+   */
+  processor_metadata?: Record<string, unknown>;
+  /**
+   * method_metadata
+   */
+  method_metadata: KrCardPaymentMetadata;
+}
+/**
+ * Additional metadata for a South Korean card payment method.
+ */
+export interface KrCardPaymentMetadata {
+  /**
+   * The local South Korean card brand used for the payment.
+   */
+  brand: string | null;
+  /**
+   * The last 4 digits of the card number.
+   */
+  last4: string | null;
 }
 /**
  * LLMMetadata
@@ -16378,6 +16678,10 @@ export interface Order {
    */
   seats?: number | null;
   /**
+   * Number of units purchased (for unit-based pricing).
+   */
+  units: number | null;
+  /**
    * customer_id
    */
   customer_id: string;
@@ -17073,6 +17377,10 @@ export interface OrderSubscription {
    * The number of seats for seat-based subscriptions. None for non-seat subscriptions.
    */
   seats?: number | null;
+  /**
+   * The number of units for unit-based subscriptions. None for non-unit subscriptions.
+   */
+  units: number | null;
   /**
    * customer_cancellation_reason
    */
@@ -18125,6 +18433,52 @@ export interface PaymentMethodInUseByActiveSubscription {
   detail: string;
 }
 /**
+ * PaymentMethodKrCard
+ */
+export interface PaymentMethodKrCard {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * processor
+   */
+  processor: PaymentProcessor;
+  /**
+   * customer_id
+   */
+  customer_id: string;
+  /**
+   * type
+   */
+  type: "kr_card";
+  /**
+   * method_metadata
+   */
+  method_metadata: PaymentMethodKrCardMetadata;
+}
+/**
+ * PaymentMethodKrCardMetadata
+ */
+export interface PaymentMethodKrCardMetadata {
+  /**
+   * brand
+   */
+  brand: string | null;
+  /**
+   * last4
+   */
+  last4: string | null;
+}
+/**
  * PaymentMethodRequired
  */
 export interface PaymentMethodRequired {
@@ -18191,6 +18545,10 @@ export interface PendingSubscriptionUpdate {
    * Number of seats to apply to the subscription. If `null`, the number of seats won't be changed.
    */
   seats: number | null;
+  /**
+   * Number of units to apply to the subscription. If `null`, the number of units won't be changed.
+   */
+  units: number | null;
 }
 /**
  * Information about the authenticated portal user.
@@ -18352,6 +18710,7 @@ You can store up to **50 key-value pairs**.
     | ProductPriceFixedCreate
     | ProductPriceCustomCreate
     | ProductPriceSeatBasedCreate
+    | ProductPriceUnitBasedCreate
     | ProductPriceMeteredUnitCreate
   )[];
   /**
@@ -18412,6 +18771,7 @@ You can store up to **50 key-value pairs**.
     | ProductPriceFixedCreate
     | ProductPriceCustomCreate
     | ProductPriceSeatBasedCreate
+    | ProductPriceUnitBasedCreate
     | ProductPriceMeteredUnitCreate
   )[];
   /**
@@ -19344,6 +19704,94 @@ export interface ProductPriceSeatTiersOutput {
   maximum_seats: number | null;
 }
 /**
+ * A unit-based price for a product: the buyer picks a quantity of units,
+pays for it up-front. On subscriptions, quantity changes are prorated.
+ */
+export interface ProductPriceUnitBased {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the price.
+   */
+  id: string;
+  /**
+   * source
+   */
+  source: ProductPriceSource;
+  /**
+   * amount_type
+   */
+  amount_type: "unit_based";
+  /**
+   * The currency in which the customer will be charged.
+   */
+  price_currency: string;
+  /**
+   * The tax behavior of the price. If null, it defaults to the organization's default tax behavior.
+   */
+  tax_behavior: TaxBehaviorOption | null;
+  /**
+   * Whether the price is archived and no longer available.
+   */
+  is_archived: boolean;
+  /**
+   * The ID of the product owning the price.
+   */
+  product_id: string;
+  /**
+   * tiers
+   */
+  tiers: TiersOutput;
+  /**
+   * The minimum purchasable quantity (inclusive).
+   */
+  minimum_units: number | null;
+  /**
+   * Per-locale unit nouns shown at checkout and on invoices. `null` defaults to "unit"/"units".
+   */
+  unit_label: Record<string, Record<string, string>> | null;
+  /**
+   * The maximum purchasable quantity, from the last tier's bound. `null` for unlimited.
+   */
+  maximum_units: number | null;
+}
+/**
+ * Schema to create a unit-based price: the buyer picks a quantity of units,
+pays for it up-front. On subscriptions, quantity changes are prorated.
+ */
+export interface ProductPriceUnitBasedCreate {
+  /**
+   * amount_type
+   */
+  amount_type: "unit_based";
+  /**
+   * price_currency
+   */
+  price_currency?: PresentmentCurrency;
+  /**
+   * The tax behavior of the price. If not set, it will default to the organization's default tax behavior.
+   */
+  tax_behavior?: TaxBehaviorOption | null;
+  /**
+   * tiers
+   */
+  tiers: TiersInput;
+  /**
+   * The minimum purchasable quantity (inclusive). Defaults to 1 when not set.
+   */
+  minimum_units?: number | null;
+  /**
+   * Per-locale unit nouns shown at checkout and on invoices. `{"en": {"=1": "device", "other": "devices"}}`. Defaults to "unit"/"units" when unset.
+   */
+  unit_label?: Record<string, Record<string, string>> | null;
+}
+/**
  * Schema to update a product.
  */
 export interface ProductUpdate {
@@ -19403,6 +19851,7 @@ You can store up to **50 key-value pairs**.
             | ProductPriceFixedCreate
             | ProductPriceCustomCreate
             | ProductPriceSeatBasedCreate
+            | ProductPriceUnitBasedCreate
             | ProductPriceMeteredUnitCreate
           )
       )[]
@@ -19630,6 +20079,19 @@ export interface ResourceNotFound {
  * RevokeTokenResponse
  */
 export interface RevokeTokenResponse extends Record<string, never> {}
+/**
+ * RotateNotPermitted
+ */
+export interface RotateNotPermitted {
+  /**
+   * error
+   */
+  error: "RotateNotPermitted";
+  /**
+   * detail
+   */
+  detail: string;
+}
 /**
  * S3DownloadURL
  */
@@ -19970,6 +20432,10 @@ export interface Subscription {
    * The number of seats for seat-based subscriptions. None for non-seat subscriptions.
    */
   seats?: number | null;
+  /**
+   * The number of units for unit-based subscriptions. None for non-unit subscriptions.
+   */
+  units: number | null;
   /**
    * customer_cancellation_reason
    */
@@ -21486,6 +21952,88 @@ export interface SubscriptionUncanceledMetadata {
   recurring_interval_count: number;
 }
 /**
+ * An event created by Polar when the units on a subscription are changed.
+ */
+export interface SubscriptionUnitsUpdatedEvent {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The timestamp of the event.
+   */
+  timestamp: string;
+  /**
+   * The ID of the organization owning the event.
+   */
+  organization_id: string;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string | null;
+  /**
+   * The customer associated with the event.
+   */
+  customer: Customer | null;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string | null;
+  /**
+   * ID of the member within the customer's organization who performed the action inside B2B.
+   */
+  member_id?: string | null;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action inside B2B.
+   */
+  external_member_id?: string | null;
+  /**
+   * Number of direct child events linked to this event.
+   */
+  child_count?: number;
+  /**
+   * The ID of the parent event.
+   */
+  parent_id?: string | null;
+  /**
+   * Human readable label of the event type.
+   */
+  label: string;
+  /**
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+   */
+  source: "system";
+  /**
+   * The name of the event.
+   */
+  name: "subscription.units_updated";
+  /**
+   * metadata
+   */
+  metadata: SubscriptionUnitsUpdatedMetadata;
+}
+/**
+ * SubscriptionUnitsUpdatedMetadata
+ */
+export interface SubscriptionUnitsUpdatedMetadata {
+  /**
+   * subscription_id
+   */
+  subscription_id: string;
+  /**
+   * old_units
+   */
+  old_units: number;
+  /**
+   * new_units
+   */
+  new_units: number;
+  /**
+   * proration_behavior
+   */
+  proration_behavior: string;
+}
+/**
  * SubscriptionUpdateBase
  */
 export interface SubscriptionUpdateBase {
@@ -21624,6 +22172,19 @@ export interface SubscriptionUpdateSeats {
   proration_behavior?: SubscriptionProrationBehavior | null;
 }
 /**
+ * SubscriptionUpdateUnits
+ */
+export interface SubscriptionUpdateUnits {
+  /**
+   * Update the number of units for this subscription.
+   */
+  units: number;
+  /**
+   * Determine how to handle the proration billing. If not provided, will use the default organization setting.
+   */
+  proration_behavior?: SubscriptionProrationBehavior | null;
+}
+/**
  * An event created by Polar when a subscription is updated.
  */
 export interface SubscriptionUpdatedEvent {
@@ -21708,6 +22269,10 @@ export interface SubscriptionUpdatedMetadata {
    * seats
    */
   seats?: number;
+  /**
+   * units
+   */
+  units?: number;
   /**
    * billing_period_end
    */
@@ -21824,6 +22389,70 @@ export interface SupportCaseAttachmentFileRead {
   size_readable: string;
 }
 /**
+ * A per-unit rate up to and including `bound`.
+
+Each tier starts where the previous one ended. The first starts at
+zero. `bound` is None on the last tier if it's unbounded. Rates are
+in cents and may be fractional.
+ */
+export interface TierInput {
+  /**
+   * bound
+   */
+  bound?: number | null;
+  /**
+   * unit_amount
+   */
+  unit_amount: number | string;
+}
+/**
+ * A per-unit rate up to and including `bound`.
+
+Each tier starts where the previous one ended. The first starts at
+zero. `bound` is None on the last tier if it's unbounded. Rates are
+in cents and may be fractional.
+ */
+export interface TierOutput {
+  /**
+   * bound
+   */
+  bound?: number | null;
+  /**
+   * unit_amount
+   */
+  unit_amount: string;
+}
+/**
+ * The structure of the shared tiers JSONB column, used by every tiered
+price type. Purchasable quantity bounds live in the `minimum_units` and
+`maximum_units` columns, not here.
+ */
+export interface TiersInput {
+  /**
+   * type
+   */
+  type: TierType;
+  /**
+   * tiers
+   */
+  tiers: TierInput[];
+}
+/**
+ * The structure of the shared tiers JSONB column, used by every tiered
+price type. Purchasable quantity bounds live in the `minimum_units` and
+`maximum_units` columns, not here.
+ */
+export interface TiersOutput {
+  /**
+   * type
+   */
+  type: TierType;
+  /**
+   * tiers
+   */
+  tiers: TierOutput[];
+}
+/**
  * TokenResponse
  */
 export interface TokenResponse {
@@ -21890,6 +22519,32 @@ export interface UniqueAggregation {
    * property
    */
   property: string;
+}
+/**
+ * UpdateSubscriptionSeatsNotAllowed
+ */
+export interface UpdateSubscriptionSeatsNotAllowed {
+  /**
+   * error
+   */
+  error: "UpdateSubscriptionSeatsNotAllowed";
+  /**
+   * detail
+   */
+  detail: string;
+}
+/**
+ * UpdateSubscriptionUnitsNotAllowed
+ */
+export interface UpdateSubscriptionUnitsNotAllowed {
+  /**
+   * error
+   */
+  error: "UpdateSubscriptionUnitsNotAllowed";
+  /**
+   * detail
+   */
+  detail: string;
 }
 /**
  * An event you created through the ingestion API.
@@ -22297,6 +22952,10 @@ export type BenefitGrantWebhook =
   | BenefitGrantFeatureFlagWebhook
   | BenefitGrantSlackSharedChannelWebhook;
 /**
+ * BenefitPublic
+ */
+export type BenefitPublic = BenefitMeterCreditPublic | BenefitPublicGeneric;
+/**
  * CheckoutForbiddenError
  */
 export type CheckoutForbiddenError =
@@ -22374,7 +23033,7 @@ export type CustomerCreate = CustomerIndividualCreate | CustomerTeamCreate;
 /**
  * CustomerPaymentMethod
  */
-export type CustomerPaymentMethod = PaymentMethodCard | PaymentMethodGeneric;
+export type CustomerPaymentMethod = PaymentMethodCard | PaymentMethodKrCard | PaymentMethodGeneric;
 /**
  * CustomerPaymentMethodCreateResponse
  */
@@ -22391,6 +23050,7 @@ export type CustomerState = CustomerStateIndividual | CustomerStateTeam;
 export type CustomerSubscriptionUpdate =
   | CustomerSubscriptionUpdateProduct
   | CustomerSubscriptionUpdateSeats
+  | CustomerSubscriptionUpdateUnits
   | CustomerSubscriptionCancel
   | CustomerSubscriptionPause
   | CustomerSubscriptionResume
@@ -22443,11 +23103,14 @@ export type MetadataQuery = Record<
 /**
  * Payment
  */
-export type Payment = CardPayment | GenericPayment;
+export type Payment = CardPayment | KrCardPayment | GenericPayment;
 /**
  * PaymentMethod
  */
-export type PaymentMethod = CustomerPaymentMethodCard | CustomerPaymentMethodGeneric;
+export type PaymentMethod =
+  | CustomerPaymentMethodCard
+  | CustomerPaymentMethodKrCard
+  | CustomerPaymentMethodGeneric;
 /**
  * ProductCreate
  */
@@ -22459,6 +23122,7 @@ export type ProductPrice =
   | ProductPriceFixed
   | ProductPriceCustom
   | ProductPriceSeatBased
+  | ProductPriceUnitBased
   | ProductPriceMeteredUnit;
 /**
  * SubscriptionUpdate
@@ -22466,6 +23130,7 @@ export type ProductPrice =
 export type SubscriptionUpdate =
   | SubscriptionUpdateBase
   | SubscriptionUpdateSeats
+  | SubscriptionUpdateUnits
   | SubscriptionUpdateBillingPeriod
   | SubscriptionCancel
   | SubscriptionRevoke
@@ -22495,6 +23160,7 @@ export type SystemEvent =
   | SubscriptionUncanceledEvent
   | SubscriptionProductUpdatedEvent
   | SubscriptionSeatsUpdatedEvent
+  | SubscriptionUnitsUpdatedEvent
   | SubscriptionBillingPeriodUpdatedEvent
   | SubscriptionUpdateClearedEvent
   | OrderPaidEvent

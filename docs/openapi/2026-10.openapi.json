@@ -1669,7 +1669,7 @@
           "User"
         ],
         "x-speakeasy-group": "oauth2.clients",
-        "x-speakeasy-name-override": "create",
+        "x-speakeasy-name-override": "oauth2:create_client",
         "x-codeSamples": [
           {
             "lang": "python",
@@ -1736,7 +1736,7 @@
           "User"
         ],
         "x-speakeasy-group": "oauth2.clients",
-        "x-speakeasy-name-override": "get",
+        "x-speakeasy-name-override": "oauth2:get_client",
         "x-codeSamples": [
           {
             "lang": "python",
@@ -1811,7 +1811,7 @@
           "User"
         ],
         "x-speakeasy-group": "oauth2.clients",
-        "x-speakeasy-name-override": "update",
+        "x-speakeasy-name-override": "oauth2:update_client",
         "x-codeSamples": [
           {
             "lang": "python",
@@ -1871,7 +1871,7 @@
           "User"
         ],
         "x-speakeasy-group": "oauth2.clients",
-        "x-speakeasy-name-override": "delete",
+        "x-speakeasy-name-override": "oauth2:delete_client",
         "x-codeSamples": [
           {
             "lang": "python",
@@ -1987,7 +1987,7 @@
           }
         },
         "x-speakeasy-group": "oauth2",
-        "x-speakeasy-name-override": "token",
+        "x-speakeasy-name-override": "oauth2:request_token",
         "x-codeSamples": [
           {
             "lang": "python",
@@ -2032,7 +2032,7 @@
           }
         },
         "x-speakeasy-group": "oauth2",
-        "x-speakeasy-name-override": "revoke",
+        "x-speakeasy-name-override": "oauth2:revoke_token",
         "x-codeSamples": [
           {
             "lang": "python",
@@ -2077,7 +2077,7 @@
           }
         },
         "x-speakeasy-group": "oauth2",
-        "x-speakeasy-name-override": "introspect",
+        "x-speakeasy-name-override": "oauth2:introspect_token",
         "x-codeSamples": [
           {
             "lang": "python",
@@ -11320,6 +11320,114 @@
         ]
       }
     },
+    "/v1/license-keys/{id}/rotate": {
+      "post": {
+        "tags": [
+          "license_keys",
+          "public"
+        ],
+        "summary": "Rotate License Key",
+        "description": "Rotate a license key.\n\nGenerates a new key string for the same license key record. The previous\nkey string immediately stops validating. Status, usage, limits, expiry,\nand activations are preserved.\n\n**Scopes**: `license_keys:write`",
+        "operationId": "license_keys:rotate",
+        "security": [
+          {
+            "oidc": [
+              "license_keys:write"
+            ]
+          },
+          {
+            "pat": [
+              "license_keys:write"
+            ]
+          },
+          {
+            "oat": [
+              "license_keys:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseKeyRead"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "License key cannot be rotated in its current status. Allowed statuses: disabled, granted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateNotPermitted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authorized to manage license key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "License key not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "license_keys",
+        "x-speakeasy-name-override": "rotate",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.license_keys.rotate(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.licenseKeys.rotate(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+          }
+        ]
+      }
+    },
     "/v1/license-keys/{id}/activations/{activation_id}": {
       "get": {
         "tags": [
@@ -16197,7 +16305,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.benefit-grants",
+        "x-speakeasy-group": "benefit-grants",
         "x-speakeasy-name-override": "list",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -16292,7 +16400,7 @@
           "Customer",
           "Member"
         ],
-        "x-speakeasy-group": "customer_portal.benefit-grants",
+        "x-speakeasy-group": "benefit-grants",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
@@ -16398,7 +16506,7 @@
           "Customer",
           "Member"
         ],
-        "x-speakeasy-group": "customer_portal.benefit-grants",
+        "x-speakeasy-group": "benefit-grants",
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
@@ -16452,7 +16560,7 @@
           "Customer",
           "Member"
         ],
-        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
@@ -16518,7 +16626,7 @@
             ]
           }
         ],
-        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
@@ -16628,7 +16736,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "list_payment_methods",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -16711,7 +16819,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "add_payment_method",
         "x-codeSamples": [
           {
@@ -16790,7 +16898,7 @@
             ]
           }
         ],
-        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "confirm_payment_method",
         "x-codeSamples": [
           {
@@ -16873,7 +16981,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "delete_payment_method",
         "x-codeSamples": [
           {
@@ -16939,7 +17047,7 @@
             ]
           }
         ],
-        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "request_email_update",
         "x-codeSamples": [
           {
@@ -16992,7 +17100,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "check_email_update",
         "x-codeSamples": [
           {
@@ -17044,7 +17152,7 @@
             "description": "Email address is already in use."
           }
         },
-        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "verify_email_update",
         "x-codeSamples": [
           {
@@ -17225,7 +17333,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.customer_meters",
+        "x-speakeasy-group": "customer_meters",
         "x-speakeasy-name-override": "list",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -17319,7 +17427,7 @@
           "Customer",
           "Member"
         ],
-        "x-speakeasy-group": "customer_portal.customer_meters",
+        "x-speakeasy-group": "customer_meters",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
@@ -17432,7 +17540,7 @@
           "Customer",
           "Member"
         ],
-        "x-speakeasy-group": "customer_portal.seats",
+        "x-speakeasy-group": "seats",
         "x-speakeasy-name-override": "list_seats",
         "x-codeSamples": [
           {
@@ -17509,7 +17617,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.seats",
+        "x-speakeasy-group": "seats",
         "x-speakeasy-name-override": "assign_seat",
         "x-codeSamples": [
           {
@@ -17587,7 +17695,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.seats",
+        "x-speakeasy-group": "seats",
         "x-speakeasy-name-override": "revoke_seat",
         "x-codeSamples": [
           {
@@ -17668,7 +17776,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.seats",
+        "x-speakeasy-group": "seats",
         "x-speakeasy-name-override": "resend_invitation",
         "x-codeSamples": [
           {
@@ -17782,7 +17890,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.seats",
+        "x-speakeasy-group": "seats",
         "x-speakeasy-name-override": "list_claimed_subscriptions",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -17842,7 +17950,7 @@
           "Customer",
           "Member"
         ],
-        "x-speakeasy-group": "customer_portal.customer-session",
+        "x-speakeasy-group": "customer-session",
         "x-speakeasy-name-override": "introspect",
         "x-codeSamples": [
           {
@@ -17896,7 +18004,7 @@
           "Customer",
           "Member"
         ],
-        "x-speakeasy-group": "customer_portal.customer-session",
+        "x-speakeasy-group": "customer-session",
         "x-speakeasy-name-override": "get_authenticated_user",
         "x-codeSamples": [
           {
@@ -18035,7 +18143,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.downloadables",
+        "x-speakeasy-group": "downloadables",
         "x-speakeasy-name-override": "list",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -18192,7 +18300,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.license_keys",
+        "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "list",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -18284,7 +18392,7 @@
           "Customer",
           "Member"
         ],
-        "x-speakeasy-group": "customer_portal.license_keys",
+        "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
@@ -18294,6 +18402,110 @@
           {
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+          }
+        ]
+      }
+    },
+    "/v1/customer-portal/license-keys/{id}/rotate": {
+      "post": {
+        "tags": [
+          "customer_portal",
+          "license_keys",
+          "public"
+        ],
+        "summary": "Rotate License Key",
+        "description": "Rotate a license key.\n\nGenerates a new key string for the same license key record. The previous\nkey string immediately stops validating. Status, usage, limits, expiry,\nand activations are preserved.\n\n**Scopes**: `customer_portal:write`",
+        "operationId": "customer_portal:license_keys:rotate",
+        "security": [
+          {
+            "customer_session": [
+              "customer_portal:write"
+            ]
+          },
+          {
+            "member_session": [
+              "customer_portal:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseKeyRead"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "License key cannot be rotated in its current status. Allowed statuses: disabled, granted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateNotPermitted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authorized to manage license key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "License key not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Customer",
+          "Member"
+        ],
+        "x-speakeasy-group": "license_keys",
+        "x-speakeasy-name-override": "rotate",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.license_keys.rotate(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.rotate(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -18350,7 +18562,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.license_keys",
+        "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "validate",
         "x-codeSamples": [
           {
@@ -18429,7 +18641,7 @@
         "x-mint": {
           "content": "<Tip>\n  You only need to use this endpoint if you have device **activations** enabled on the license key benefit. You then use this endpoint to reserve an allocation for a specific device. Store the unique activation ID from the response on the device and use it as extra validation in the [/validate](/api-reference/customer_portal/validate-license-key) endpoint.\n\n  Not using **activations**? Just use the [/validate](/api-reference/customer_portal/validate-license-key) endpoint directly instead.\n</Tip>"
         },
-        "x-speakeasy-group": "customer_portal.license_keys",
+        "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "activate",
         "x-codeSamples": [
           {
@@ -18488,7 +18700,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.license_keys",
+        "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "deactivate",
         "x-codeSamples": [
           {
@@ -18594,7 +18806,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.members",
+        "x-speakeasy-group": "members",
         "x-speakeasy-name-override": "list_members",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -18670,7 +18882,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.members",
+        "x-speakeasy-group": "members",
         "x-speakeasy-name-override": "add_member",
         "x-codeSamples": [
           {
@@ -18757,7 +18969,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.members",
+        "x-speakeasy-group": "members",
         "x-speakeasy-name-override": "update_member",
         "x-codeSamples": [
           {
@@ -18825,7 +19037,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.members",
+        "x-speakeasy-group": "members",
         "x-speakeasy-name-override": "remove_member",
         "x-codeSamples": [
           {
@@ -19054,7 +19266,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-group": "orders",
         "x-speakeasy-name-override": "list",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -19144,7 +19356,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-group": "orders",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
@@ -19234,7 +19446,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-group": "orders",
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
@@ -19329,7 +19541,7 @@
         "x-mint": {
           "content": "<Warning>\n  Once the invoice is generated, it's permanent and cannot be modified.\n\n  Make sure the billing details (name and address) are correct before generating the invoice. You can update them before generating the invoice by calling the [`PATCH /v1/customer-portal/orders/{id}`](/api-reference/customer_portal/update-order) endpoint.\n</Warning>\n\n<Note>\n  After successfully calling this endpoint, you get a `202` response, meaning the generation of the invoice has been scheduled. It usually only takes a few seconds before you can retrieve the invoice using the [`GET /v1/customer-portal/orders/{id}/invoice`](/api-reference/customer_portal/get-order-invoice) endpoint.\n\n  If you want a reliable notification when the invoice is ready, you can listen to the [`order.updated`](/api-reference/orderupdated) webhook and check the [`is_invoice_generated` field](/api-reference/orderupdated#schema-data-is-invoice-generated).\n</Note>"
         },
-        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-group": "orders",
         "x-speakeasy-name-override": "generate_invoice",
         "x-codeSamples": [
           {
@@ -19414,7 +19626,7 @@
         "x-mint": {
           "content": "<Note>\n  The invoice must be generated first before it can be retrieved. You should call the [`POST /v1/customer-portal/orders/{id}/invoice`](/api-reference/customer_portal/generate-order-invoice) endpoint to generate the invoice.\n\n  If the invoice is not generated, you will receive a `404` error.\n</Note>"
         },
-        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-group": "orders",
         "x-speakeasy-name-override": "invoice",
         "x-codeSamples": [
           {
@@ -19501,7 +19713,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-group": "orders",
         "x-speakeasy-name-override": "receipt",
         "x-codeSamples": [
           {
@@ -19585,7 +19797,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-group": "orders",
         "x-speakeasy-name-override": "get_payment_status",
         "x-codeSamples": [
           {
@@ -19697,7 +19909,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-group": "orders",
         "x-speakeasy-name-override": "confirm_retry_payment",
         "x-codeSamples": [
           {
@@ -19766,7 +19978,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.organizations",
+        "x-speakeasy-group": "organizations",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
@@ -19965,7 +20177,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.subscriptions",
+        "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "list",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -20059,7 +20271,7 @@
           "Customer",
           "Member"
         ],
-        "x-speakeasy-group": "customer_portal.subscriptions",
+        "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
@@ -20149,6 +20361,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/PauseResumeNotAllowed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UpdateSubscriptionSeatsNotAllowed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UpdateSubscriptionUnitsNotAllowed"
                     }
                   ],
                   "title": "Response 403 Customer Portal:Subscriptions:Update"
@@ -20187,7 +20405,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.subscriptions",
+        "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
@@ -20277,7 +20495,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.subscriptions",
+        "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "cancel",
         "x-codeSamples": [
           {
@@ -20408,7 +20626,7 @@
             "numPages": "$.pagination.max_page"
           }
         },
-        "x-speakeasy-group": "customer_portal.wallets",
+        "x-speakeasy-group": "wallets",
         "x-speakeasy-name-override": "list",
         "x-polar-pagination": {
           "type": "page_limit",
@@ -20498,7 +20716,7 @@
             }
           }
         },
-        "x-speakeasy-group": "customer_portal.wallets",
+        "x-speakeasy-group": "wallets",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
@@ -34701,6 +34919,104 @@
         "title": "BenefitMeterCreditProperties",
         "description": "Properties for a benefit of type `meter_unit`."
       },
+      "BenefitMeterCreditPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the benefit."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "type": {
+            "type": "string",
+            "const": "meter_credit",
+            "title": "Type"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the benefit."
+          },
+          "selectable": {
+            "type": "boolean",
+            "title": "Selectable",
+            "description": "Whether the benefit is selectable when creating a product."
+          },
+          "deletable": {
+            "type": "boolean",
+            "title": "Deletable",
+            "description": "Whether the benefit is deletable."
+          },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the benefit."
+          },
+          "properties": {
+            "$ref": "#/components/schemas/BenefitMeterCreditPublicProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "type",
+          "description",
+          "selectable",
+          "deletable",
+          "is_deleted",
+          "organization_id",
+          "properties"
+        ],
+        "title": "BenefitMeterCreditPublic",
+        "description": "A benefit of type `meter_credit`.\n\nGrants a number of units on a specific meter."
+      },
+      "BenefitMeterCreditPublicProperties": {
+        "properties": {
+          "units": {
+            "type": "integer",
+            "title": "Units"
+          },
+          "meter_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Meter Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "units",
+          "meter_id"
+        ],
+        "title": "BenefitMeterCreditPublicProperties",
+        "description": "Properties for a benefit of type `meter_credit`."
+      },
       "BenefitMeterCreditSubscriber": {
         "properties": {
           "id": {
@@ -34885,6 +35201,29 @@
         "title": "BenefitMeterCreditUpdate"
       },
       "BenefitPublic": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BenefitMeterCreditPublic"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitPublicGeneric"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "custom": "#/components/schemas/BenefitPublicGeneric",
+            "discord": "#/components/schemas/BenefitPublicGeneric",
+            "downloadables": "#/components/schemas/BenefitPublicGeneric",
+            "feature_flag": "#/components/schemas/BenefitPublicGeneric",
+            "github_repository": "#/components/schemas/BenefitPublicGeneric",
+            "license_keys": "#/components/schemas/BenefitPublicGeneric",
+            "meter_credit": "#/components/schemas/BenefitMeterCreditPublic",
+            "slack_shared_channel": "#/components/schemas/BenefitPublicGeneric"
+          }
+        }
+      },
+      "BenefitPublicGeneric": {
         "properties": {
           "id": {
             "type": "string",
@@ -34912,8 +35251,17 @@
             "description": "Last modification timestamp of the object."
           },
           "type": {
-            "$ref": "#/components/schemas/BenefitType",
-            "description": "The type of the benefit."
+            "type": "string",
+            "enum": [
+              "custom",
+              "discord",
+              "github_repository",
+              "downloadables",
+              "license_keys",
+              "feature_flag",
+              "slack_shared_channel"
+            ],
+            "title": "Type"
           },
           "description": {
             "type": "string",
@@ -34954,7 +35302,7 @@
           "is_deleted",
           "organization_id"
         ],
-        "title": "BenefitPublic"
+        "title": "BenefitPublicGeneric"
       },
       "BenefitRevokedEvent": {
         "properties": {
@@ -35916,7 +36264,7 @@
           "currency": {
             "type": "string",
             "title": "Currency",
-            "description": "The payment currency. Currently, only `usd` is supported.",
+            "description": "The payment currency",
             "examples": [
               "usd"
             ]
@@ -36427,6 +36775,42 @@
             "title": "Max Seats",
             "description": "Maximum number of seats (works with seat-based pricing only)"
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Predefined number of units (works with unit-based pricing only)"
+          },
+          "min_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Units",
+            "description": "Minimum number of units (works with unit-based pricing only)"
+          },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units",
+            "description": "Maximum number of units (works with unit-based pricing only)"
+          },
           "discount_amount": {
             "type": "integer",
             "title": "Discount Amount",
@@ -36907,6 +37291,9 @@
           "return_url",
           "embed_origin",
           "amount",
+          "units",
+          "min_units",
+          "max_units",
           "discount_amount",
           "net_amount",
           "tax_amount",
@@ -37067,6 +37454,20 @@
             ],
             "title": "Seats",
             "description": "Number of seats for seat-based pricing."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Number of units for unit-based pricing."
           },
           "is_business_customer": {
             "anyOf": [
@@ -37788,6 +38189,18 @@
             "title": "Seats",
             "description": "Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -37852,6 +38265,7 @@
           "require_billing_address",
           "discount_id",
           "seats",
+          "units",
           "organization_id",
           "products",
           "discount",
@@ -37984,6 +38398,20 @@
             ],
             "title": "Seats",
             "description": "Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."
           },
           "success_url": {
             "anyOf": [
@@ -38141,6 +38569,20 @@
             "title": "Seats",
             "description": "Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."
+          },
           "success_url": {
             "anyOf": [
               {
@@ -38296,6 +38738,20 @@
             ],
             "title": "Seats",
             "description": "Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."
           },
           "success_url": {
             "anyOf": [
@@ -38499,10 +38955,11 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitPublic"
+              "$ref": "#/components/schemas/BenefitPublic",
+              "title": "BenefitPublic"
             },
             "type": "array",
-            "title": "BenefitPublic",
+            "title": "Benefits",
             "description": "List of benefits granted by the product."
           },
           "medias": {
@@ -38686,6 +39143,20 @@
             ],
             "title": "Seats",
             "description": "Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."
           },
           "success_url": {
             "anyOf": [
@@ -38953,6 +39424,48 @@
             ],
             "title": "Max Seats",
             "description": "Maximum number of seats (works with seat-based pricing only)"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Predefined number of units (works with unit-based pricing only)"
+          },
+          "min_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Units",
+            "description": "Minimum number of units (works with unit-based pricing only)"
+          },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units",
+            "description": "Maximum number of units (works with unit-based pricing only)"
           },
           "allow_trial": {
             "type": "boolean",
@@ -39330,10 +39843,11 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitPublic"
+              "$ref": "#/components/schemas/BenefitPublic",
+              "title": "BenefitPublic"
             },
             "type": "array",
-            "title": "BenefitPublic",
+            "title": "Benefits",
             "description": "List of benefits granted by the product."
           },
           "medias": {
@@ -39528,6 +40042,48 @@
             ],
             "title": "Max Seats",
             "description": "Maximum number of seats (works with seat-based pricing only)"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Predefined number of units (works with unit-based pricing only)"
+          },
+          "min_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Units",
+            "description": "Minimum number of units (works with unit-based pricing only)"
+          },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units",
+            "description": "Maximum number of units (works with unit-based pricing only)"
           },
           "allow_trial": {
             "type": "boolean",
@@ -39927,6 +40483,48 @@
             "title": "Max Seats",
             "description": "Maximum number of seats (works with seat-based pricing only)"
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Predefined number of units (works with unit-based pricing only)"
+          },
+          "min_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Units",
+            "description": "Minimum number of units (works with unit-based pricing only)"
+          },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units",
+            "description": "Maximum number of units (works with unit-based pricing only)"
+          },
           "allow_trial": {
             "type": "boolean",
             "title": "Allow Trial",
@@ -40177,6 +40775,9 @@
                         "$ref": "#/components/schemas/ProductPriceSeatBasedCreate"
                       },
                       {
+                        "$ref": "#/components/schemas/ProductPriceUnitBasedCreate"
+                      },
+                      {
                         "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
                       }
                     ],
@@ -40186,7 +40787,8 @@
                         "custom": "#/components/schemas/ProductPriceCustomCreate",
                         "fixed": "#/components/schemas/ProductPriceFixedCreate",
                         "metered_unit": "#/components/schemas/ProductPriceMeteredUnitCreate",
-                        "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate"
+                        "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate",
+                        "unit_based": "#/components/schemas/ProductPriceUnitBasedCreate"
                       }
                     }
                   },
@@ -40359,6 +40961,42 @@
             ],
             "title": "Max Seats",
             "description": "Maximum number of seats (works with seat-based pricing only)"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Predefined number of units (works with unit-based pricing only)"
+          },
+          "min_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Units",
+            "description": "Minimum number of units (works with unit-based pricing only)"
+          },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units",
+            "description": "Maximum number of units (works with unit-based pricing only)"
           },
           "discount_amount": {
             "type": "integer",
@@ -40776,6 +41414,9 @@
           "return_url",
           "embed_origin",
           "amount",
+          "units",
+          "min_units",
+          "max_units",
           "discount_amount",
           "net_amount",
           "tax_amount",
@@ -40965,6 +41606,42 @@
             ],
             "title": "Max Seats",
             "description": "Maximum number of seats (works with seat-based pricing only)"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Predefined number of units (works with unit-based pricing only)"
+          },
+          "min_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Units",
+            "description": "Minimum number of units (works with unit-based pricing only)"
+          },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units",
+            "description": "Maximum number of units (works with unit-based pricing only)"
           },
           "discount_amount": {
             "type": "integer",
@@ -41393,6 +42070,9 @@
           "return_url",
           "embed_origin",
           "amount",
+          "units",
+          "min_units",
+          "max_units",
           "discount_amount",
           "net_amount",
           "tax_amount",
@@ -41540,6 +42220,20 @@
             ],
             "title": "Seats",
             "description": "Number of seats for seat-based pricing."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Number of units for unit-based pricing."
           },
           "is_business_customer": {
             "anyOf": [
@@ -41921,6 +42615,20 @@
             ],
             "title": "Seats",
             "description": "Number of seats for seat-based pricing."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Number of units for unit-based pricing."
           },
           "is_business_customer": {
             "anyOf": [
@@ -47083,6 +47791,18 @@
             "title": "Seats",
             "description": "Number of seats purchased (for seat-based one-time orders)."
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Number of units purchased (for unit-based pricing)."
+          },
           "customer_id": {
             "type": "string",
             "format": "uuid4",
@@ -47227,6 +47947,7 @@
           "invoice_number",
           "is_invoice_generated",
           "receipt_number",
+          "units",
           "customer_id",
           "product_id",
           "discount_id",
@@ -47509,10 +48230,11 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitPublic"
+              "$ref": "#/components/schemas/BenefitPublic",
+              "title": "BenefitPublic"
             },
             "type": "array",
-            "title": "BenefitPublic",
+            "title": "Benefits",
             "description": "List of benefits granted by the product."
           },
           "medias": {
@@ -47858,6 +48580,18 @@
             "title": "Seats",
             "description": "The number of seats for seat-based subscriptions. None for non-seat subscriptions."
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "The number of units for unit-based subscriptions. None for non-unit subscriptions."
+          },
           "customer_cancellation_reason": {
             "anyOf": [
               {
@@ -47908,6 +48642,7 @@
           "product_id",
           "discount_id",
           "checkout_id",
+          "units",
           "customer_cancellation_reason",
           "customer_cancellation_comment"
         ],
@@ -48068,6 +48803,9 @@
         "anyOf": [
           {
             "$ref": "#/components/schemas/PaymentMethodCard"
+          },
+          {
+            "$ref": "#/components/schemas/PaymentMethodKrCard"
           },
           {
             "$ref": "#/components/schemas/PaymentMethodGeneric"
@@ -48294,6 +49032,71 @@
           "is_default"
         ],
         "title": "CustomerPaymentMethodGeneric"
+      },
+      "CustomerPaymentMethodKrCard": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "processor": {
+            "$ref": "#/components/schemas/PaymentProcessor"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id"
+          },
+          "type": {
+            "type": "string",
+            "const": "kr_card",
+            "title": "Type"
+          },
+          "method_metadata": {
+            "$ref": "#/components/schemas/PaymentMethodKrCardMetadata"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "description": "Whether this payment method is the customer's default payment method.",
+            "examples": [
+              false
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "processor",
+          "customer_id",
+          "type",
+          "method_metadata",
+          "is_default"
+        ],
+        "title": "CustomerPaymentMethodKrCard"
       },
       "CustomerPortalCustomer": {
         "properties": {
@@ -48688,6 +49491,10 @@
             "type": "boolean",
             "title": "Update Plan"
           },
+          "update_units": {
+            "type": "boolean",
+            "title": "Update Units"
+          },
           "pause": {
             "type": "boolean",
             "title": "Pause"
@@ -48863,10 +49670,11 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitPublic"
+              "$ref": "#/components/schemas/BenefitPublic",
+              "title": "BenefitPublic"
             },
             "type": "array",
-            "title": "BenefitPublic",
+            "title": "Benefits",
             "description": "List of benefits granted by the product."
           },
           "medias": {
@@ -51003,6 +51811,18 @@
             "title": "Seats",
             "description": "The number of seats for seat-based subscriptions. None for non-seat subscriptions."
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "The number of units for unit-based subscriptions. None for non-unit subscriptions."
+          },
           "customer_cancellation_reason": {
             "anyOf": [
               {
@@ -51090,6 +51910,7 @@
           "product_id",
           "discount_id",
           "checkout_id",
+          "units",
           "customer_cancellation_reason",
           "customer_cancellation_comment",
           "product",
@@ -51148,6 +51969,9 @@
           },
           {
             "$ref": "#/components/schemas/CustomerSubscriptionChangePreviewSeats"
+          },
+          {
+            "$ref": "#/components/schemas/CustomerSubscriptionChangePreviewUnits"
           }
         ]
       },
@@ -51183,6 +52007,23 @@
           "seats"
         ],
         "title": "CustomerSubscriptionChangePreviewSeats"
+      },
+      "CustomerSubscriptionChangePreviewUnits": {
+        "properties": {
+          "units": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": -2147483648.0,
+            "title": "Units",
+            "description": "Preview a change of the subscription to this number of units."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "units"
+        ],
+        "title": "CustomerSubscriptionChangePreviewUnits"
       },
       "CustomerSubscriptionMeter": {
         "properties": {
@@ -51481,10 +52322,11 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitPublic"
+              "$ref": "#/components/schemas/BenefitPublic",
+              "title": "BenefitPublic"
             },
             "type": "array",
-            "title": "BenefitPublic",
+            "title": "Benefits",
             "description": "List of benefits granted by the product."
           },
           "medias": {
@@ -51593,6 +52435,9 @@
             "$ref": "#/components/schemas/CustomerSubscriptionUpdateSeats"
           },
           {
+            "$ref": "#/components/schemas/CustomerSubscriptionUpdateUnits"
+          },
+          {
             "$ref": "#/components/schemas/CustomerSubscriptionCancel"
           },
           {
@@ -51653,6 +52498,23 @@
           "seats"
         ],
         "title": "CustomerSubscriptionUpdateSeats"
+      },
+      "CustomerSubscriptionUpdateUnits": {
+        "properties": {
+          "units": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": -2147483648.0,
+            "title": "Units",
+            "description": "Update the number of units for this subscription."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "units"
+        ],
+        "title": "CustomerSubscriptionUpdateUnits"
       },
       "CustomerTeam": {
         "properties": {
@@ -52653,6 +53515,28 @@
           "-balance"
         ],
         "title": "CustomerWalletSortProperty"
+      },
+      "CutoverNotStarted": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CutoverNotStarted",
+            "title": "Error",
+            "examples": [
+              "CutoverNotStarted"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CutoverNotStarted"
       },
       "DataTableBlock": {
         "properties": {
@@ -57311,7 +58195,7 @@
           "currency": {
             "type": "string",
             "title": "Currency",
-            "description": "The payment currency. Currently, only `usd` is supported.",
+            "description": "The payment currency",
             "examples": [
               "usd"
             ]
@@ -57896,6 +58780,231 @@
           "detail"
         ],
         "title": "InvalidSourceCredentials"
+      },
+      "KrCardPayment": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "processor": {
+            "$ref": "#/components/schemas/PaymentProcessor",
+            "description": "The payment processor.",
+            "examples": [
+              "stripe"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus",
+            "description": "The payment status.",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount",
+            "description": "The payment amount in cents.",
+            "examples": [
+              1000
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "description": "The payment currency",
+            "examples": [
+              "usd"
+            ]
+          },
+          "method": {
+            "type": "string",
+            "const": "kr_card",
+            "title": "Method",
+            "description": "The payment method used.",
+            "examples": [
+              "kr_card"
+            ]
+          },
+          "trigger": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentTrigger"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.",
+            "examples": [
+              "subscription_cycle"
+            ]
+          },
+          "decline_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decline Reason",
+            "description": "Error code, if the payment was declined.",
+            "examples": [
+              "insufficient_funds"
+            ]
+          },
+          "decline_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decline Message",
+            "description": "Human-readable error message, if the payment was declined.",
+            "examples": [
+              "Your card has insufficient funds."
+            ]
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization that owns the payment.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "checkout_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Id",
+            "description": "The ID of the checkout session associated with this payment.",
+            "examples": [
+              "e4b478fa-cd25-4253-9f1f-8a41e6370ede"
+            ]
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "The ID of the order associated with this payment.",
+            "examples": [
+              "e4b478fa-cd25-4253-9f1f-8a41e6370ede"
+            ]
+          },
+          "processor_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Processor Metadata",
+            "description": "Additional metadata from the payment processor for internal use."
+          },
+          "method_metadata": {
+            "$ref": "#/components/schemas/KrCardPaymentMetadata",
+            "description": "Additional metadata for the South Korean card payment method."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "processor",
+          "status",
+          "amount",
+          "currency",
+          "method",
+          "trigger",
+          "decline_reason",
+          "decline_message",
+          "organization_id",
+          "checkout_id",
+          "order_id",
+          "method_metadata"
+        ],
+        "title": "KrCardPayment",
+        "description": "Schema of a payment with a South Korean card payment method."
+      },
+      "KrCardPaymentMetadata": {
+        "properties": {
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand",
+            "description": "The local South Korean card brand used for the payment.",
+            "examples": [
+              "kookmin",
+              "shinhan"
+            ]
+          },
+          "last4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last4",
+            "description": "The last 4 digits of the card number.",
+            "examples": [
+              "4242"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "brand",
+          "last4"
+        ],
+        "title": "KrCardPaymentMetadata",
+        "description": "Additional metadata for a South Korean card payment method."
       },
       "LLMMetadata": {
         "properties": {
@@ -61454,6 +62563,111 @@
         ],
         "title": "MerchantMigrationCreate"
       },
+      "MerchantMigrationCutoverReport": {
+        "properties": {
+          "started": {
+            "type": "boolean",
+            "title": "Started",
+            "description": "Whether the merchant has confirmed the switch."
+          },
+          "running": {
+            "type": "boolean",
+            "title": "Running",
+            "description": "Whether a switch run is in progress."
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed",
+            "description": "Whether the last switch run has finished."
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Subscriptions whose customer and product are in Polar."
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "description": "Not switched yet."
+          },
+          "moved": {
+            "type": "integer",
+            "title": "Moved",
+            "description": "Now billed by Polar."
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped",
+            "description": "Left on the source."
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed",
+            "description": "Hit an unexpected error."
+          }
+        },
+        "type": "object",
+        "required": [
+          "started",
+          "running",
+          "completed",
+          "total",
+          "pending",
+          "moved",
+          "skipped",
+          "failed"
+        ],
+        "title": "MerchantMigrationCutoverReport",
+        "description": "Where the switch has got to, for the imported subscriptions."
+      },
+      "MerchantMigrationCutoverRequest": {
+        "properties": {
+          "record_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Ids",
+            "description": "Subscription ledger record ids to switch (from the records listing). When omitted, every subscription whose customer and product are in Polar is switched (subject to `exclude_record_ids`)."
+          },
+          "exclude_record_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude Record Ids",
+            "description": "Switch every subscription whose customer and product are in Polar except these \u2014 the opt-out selection for large catalogs. Ignored when `record_ids` is set."
+          }
+        },
+        "type": "object",
+        "title": "MerchantMigrationCutoverRequest"
+      },
+      "MerchantMigrationCutoverStatus": {
+        "type": "string",
+        "enum": [
+          "moved",
+          "skipped",
+          "failed"
+        ],
+        "title": "MerchantMigrationCutoverStatus",
+        "description": "What the cutover did with an imported subscription.\n\nOnly subscription records ever carry one, and only once the cutover has\nlooked at them: ``None`` means \"not attempted\", which is also what every\nother record type keeps forever."
+      },
       "MerchantMigrationImportReport": {
         "properties": {
           "step": {
@@ -61492,7 +62706,7 @@
               }
             ],
             "title": "Record Ids",
-            "description": "The ledger record ids to import (from the records listing). When omitted, every importable record is imported (subject to `exclude_record_ids`). Records not selected stay pending."
+            "description": "Subscription ledger record ids to prepare (from the records listing). Their customers and products are imported automatically. When omitted, every importable subscription is prepared (subject to `exclude_record_ids`). Polar subscriptions are created at cutover."
           },
           "exclude_record_ids": {
             "anyOf": [
@@ -61508,7 +62722,7 @@
               }
             ],
             "title": "Exclude Record Ids",
-            "description": "Import every importable record except these \u2014 the opt-out selection for large catalogs. Ignored when `record_ids` is set."
+            "description": "Prepare every importable subscription except these \u2014 the opt-out selection for large catalogs. Ignored when `record_ids` is set."
           }
         },
         "type": "object",
@@ -61596,7 +62810,7 @@
               }
             ],
             "title": "Record Id",
-            "description": "The ledger record id, used to select this row for import. Null for price rows, which are imported together with their product."
+            "description": "The ledger record id. For subscriptions this is what the merchant selects for import. Null for price rows, which import with their product."
           },
           "entity": {
             "$ref": "#/components/schemas/PrecheckEntity",
@@ -61623,6 +62837,78 @@
             ],
             "title": "Subtitle",
             "description": "Secondary detail (lifecycle status, country)."
+          },
+          "product_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Name",
+            "description": "The source product name. None for customer rows, and for a subscription whose product wasn't in the staged catalog."
+          },
+          "product_source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Source Id",
+            "description": "The source product identifier (e.g. Stripe `prod_\u2026`). None for customer rows, and for a subscription whose product wasn't staged."
+          },
+          "customer_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Email",
+            "description": "The customer email. None for product and price rows, or when the source customer has none."
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name",
+            "description": "The customer name on the source. None for product and price rows, or when the source customer has none."
+          },
+          "customer_source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Source Id",
+            "description": "The source customer identifier (e.g. Stripe `cus_\u2026`). None for product and price rows."
+          },
+          "customer_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Country",
+            "description": "The customer billing country. None for product and price rows, or when the source customer has none."
           },
           "amount": {
             "anyOf": [
@@ -61659,6 +62945,30 @@
             ],
             "title": "Recurring Interval",
             "description": "Billing interval for `amount` (e.g. `month`, `year`)."
+          },
+          "recurring_interval_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurring Interval Count",
+            "description": "How many `recurring_interval` units each billing period spans, so a quarterly price reads as 3 months. None for rows without an interval."
+          },
+          "automatic_tax": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Automatic Tax",
+            "description": "Whether the source computed tax on this subscription. None for non-subscription rows, or when the source doesn't say."
           },
           "status": {
             "$ref": "#/components/schemas/PrecheckRecordStatus",
@@ -61709,6 +63019,66 @@
               }
             ],
             "description": "How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason."
+          },
+          "cutover_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MerchantMigrationCutoverStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the switch did with this subscription: `moved` (Polar bills it now), `skipped` (left on the source, see `cutover_error`) or `failed` (retryable). Null when the switch hasn't reached it, and for every entity other than subscriptions."
+          },
+          "cutover_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cutover Error",
+            "description": "Why the switch skipped or failed this subscription."
+          },
+          "renews_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renews At",
+            "description": "When the subscription next renews on the source, as staged at import. Null for non-subscription rows or when the source reported none."
+          },
+          "has_payment_method": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Payment Method",
+            "description": "Whether Polar already has a card to charge for this subscription's customer. Null for non-subscription rows."
+          },
+          "dependencies_imported": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependencies Imported",
+            "description": "Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows."
           }
         },
         "type": "object",
@@ -61718,14 +63088,27 @@
           "source_id",
           "title",
           "subtitle",
+          "product_name",
+          "product_source_id",
+          "customer_email",
+          "customer_name",
+          "customer_source_id",
+          "customer_country",
           "amount",
           "currency",
           "recurring_interval",
+          "recurring_interval_count",
+          "automatic_tax",
           "status",
           "import_status",
           "reason",
           "reason_code",
-          "reason_level"
+          "reason_level",
+          "cutover_status",
+          "cutover_error",
+          "renews_at",
+          "has_payment_method",
+          "dependencies_imported"
         ],
         "title": "MerchantMigrationRecordItem"
       },
@@ -61792,7 +63175,7 @@
           "selectable": {
             "type": "integer",
             "title": "Selectable",
-            "description": "How many an import would actually move: importable by the pre-check and still pending in the ledger."
+            "description": "How many subscriptions an import would still prepare: importable by the pre-check, pending in the ledger, and not already backed by an imported customer and product. Zero for other entities."
           }
         },
         "type": "object",
@@ -65141,28 +66524,6 @@
         ],
         "title": "MissingStripeScopes"
       },
-      "NotASeatBasedSubscription": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "NotASeatBasedSubscription",
-            "title": "Error",
-            "examples": [
-              "NotASeatBasedSubscription"
-            ]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "error",
-          "detail"
-        ],
-        "title": "NotASeatBasedSubscription"
-      },
       "NotOpenCheckout": {
         "properties": {
           "error": {
@@ -66267,6 +67628,18 @@
             "title": "Seats",
             "description": "Number of seats purchased (for seat-based one-time orders)."
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Number of units purchased (for unit-based pricing)."
+          },
           "customer_id": {
             "type": "string",
             "format": "uuid4",
@@ -66490,6 +67863,7 @@
           "invoice_number",
           "is_invoice_generated",
           "receipt_number",
+          "units",
           "customer_id",
           "product_id",
           "discount_id",
@@ -67974,6 +69348,18 @@
             "title": "Seats",
             "description": "The number of seats for seat-based subscriptions. None for non-seat subscriptions."
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "The number of units for unit-based subscriptions. None for non-unit subscriptions."
+          },
           "customer_cancellation_reason": {
             "anyOf": [
               {
@@ -68025,6 +69411,7 @@
           "product_id",
           "discount_id",
           "checkout_id",
+          "units",
           "customer_cancellation_reason",
           "customer_cancellation_comment"
         ],
@@ -75381,6 +76768,9 @@
             "$ref": "#/components/schemas/CardPayment"
           },
           {
+            "$ref": "#/components/schemas/KrCardPayment"
+          },
+          {
             "$ref": "#/components/schemas/GenericPayment"
           }
         ]
@@ -75499,6 +76889,9 @@
         "anyOf": [
           {
             "$ref": "#/components/schemas/CustomerPaymentMethodCard"
+          },
+          {
+            "$ref": "#/components/schemas/CustomerPaymentMethodKrCard"
           },
           {
             "$ref": "#/components/schemas/CustomerPaymentMethodGeneric"
@@ -75672,6 +77065,94 @@
           "detail"
         ],
         "title": "PaymentMethodInUseByActiveSubscription"
+      },
+      "PaymentMethodKrCard": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "processor": {
+            "$ref": "#/components/schemas/PaymentProcessor"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id"
+          },
+          "type": {
+            "type": "string",
+            "const": "kr_card",
+            "title": "Type"
+          },
+          "method_metadata": {
+            "$ref": "#/components/schemas/PaymentMethodKrCardMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "processor",
+          "customer_id",
+          "type",
+          "method_metadata"
+        ],
+        "title": "PaymentMethodKrCard"
+      },
+      "PaymentMethodKrCardMetadata": {
+        "properties": {
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "last4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last4"
+          }
+        },
+        "type": "object",
+        "required": [
+          "brand",
+          "last4"
+        ],
+        "title": "PaymentMethodKrCardMetadata"
       },
       "PaymentMethodRequired": {
         "properties": {
@@ -76376,6 +77857,18 @@
             ],
             "title": "Seats",
             "description": "Number of seats to apply to the subscription. If `null`, the number of seats won't be changed."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Number of units to apply to the subscription. If `null`, the number of units won't be changed."
           }
         },
         "type": "object",
@@ -76385,7 +77878,8 @@
           "id",
           "applies_at",
           "product_id",
-          "seats"
+          "seats",
+          "units"
         ],
         "title": "PendingSubscriptionUpdate",
         "description": "Pending update to be applied to a subscription at the beginning of the next period."
@@ -76515,6 +78009,28 @@
           "detail"
         ],
         "title": "PolarAuthError"
+      },
+      "PolarSelfPaidSubscriptionAlreadyExists": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PolarSelfPaidSubscriptionAlreadyExists",
+            "title": "Error",
+            "examples": [
+              "PolarSelfPaidSubscriptionAlreadyExists"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PolarSelfPaidSubscriptionAlreadyExists"
       },
       "PolarSelfPaymentMethodInUse": {
         "properties": {
@@ -77182,6 +78698,9 @@
                   "$ref": "#/components/schemas/ProductPriceSeatBasedCreate"
                 },
                 {
+                  "$ref": "#/components/schemas/ProductPriceUnitBasedCreate"
+                },
+                {
                   "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
                 }
               ],
@@ -77191,7 +78710,8 @@
                   "custom": "#/components/schemas/ProductPriceCustomCreate",
                   "fixed": "#/components/schemas/ProductPriceFixedCreate",
                   "metered_unit": "#/components/schemas/ProductPriceMeteredUnitCreate",
-                  "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate"
+                  "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate",
+                  "unit_based": "#/components/schemas/ProductPriceUnitBasedCreate"
                 }
               }
             },
@@ -77326,6 +78846,9 @@
                   "$ref": "#/components/schemas/ProductPriceSeatBasedCreate"
                 },
                 {
+                  "$ref": "#/components/schemas/ProductPriceUnitBasedCreate"
+                },
+                {
                   "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
                 }
               ],
@@ -77335,7 +78858,8 @@
                   "custom": "#/components/schemas/ProductPriceCustomCreate",
                   "fixed": "#/components/schemas/ProductPriceFixedCreate",
                   "metered_unit": "#/components/schemas/ProductPriceMeteredUnitCreate",
-                  "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate"
+                  "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate",
+                  "unit_based": "#/components/schemas/ProductPriceUnitBasedCreate"
                 }
               }
             },
@@ -77688,6 +79212,9 @@
             "$ref": "#/components/schemas/ProductPriceSeatBased"
           },
           {
+            "$ref": "#/components/schemas/ProductPriceUnitBased"
+          },
+          {
             "$ref": "#/components/schemas/ProductPriceMeteredUnit"
           }
         ],
@@ -77697,7 +79224,8 @@
             "custom": "#/components/schemas/ProductPriceCustom",
             "fixed": "#/components/schemas/ProductPriceFixed",
             "metered_unit": "#/components/schemas/ProductPriceMeteredUnit",
-            "seat_based": "#/components/schemas/ProductPriceSeatBased"
+            "seat_based": "#/components/schemas/ProductPriceSeatBased",
+            "unit_based": "#/components/schemas/ProductPriceUnitBased"
           }
         }
       },
@@ -78473,6 +80001,221 @@
         ],
         "title": "ProductPriceType"
       },
+      "ProductPriceUnitBased": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the price."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ProductPriceSource",
+            "description": "The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."
+          },
+          "amount_type": {
+            "type": "string",
+            "const": "unit_based",
+            "title": "Amount Type"
+          },
+          "price_currency": {
+            "type": "string",
+            "title": "Price Currency",
+            "description": "The currency in which the customer will be charged."
+          },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
+          },
+          "is_archived": {
+            "type": "boolean",
+            "title": "Is Archived",
+            "description": "Whether the price is archived and no longer available."
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the product owning the price."
+          },
+          "tiers": {
+            "$ref": "#/components/schemas/Tiers-Output",
+            "description": "Tiered pricing based on the purchased unit quantity."
+          },
+          "minimum_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum Units",
+            "description": "The minimum purchasable quantity (inclusive)."
+          },
+          "unit_label": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "type": "object",
+                "minLength": 1,
+                "examples": [
+                  {
+                    "en": {
+                      "=1": "seat",
+                      "other": "seats"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Label",
+            "description": "Per-locale unit nouns shown at checkout and on invoices. `null` defaults to \"unit\"/\"units\"."
+          },
+          "maximum_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum Units",
+            "description": "The maximum purchasable quantity, from the last tier's bound. `null` for unlimited.",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "source",
+          "amount_type",
+          "price_currency",
+          "tax_behavior",
+          "is_archived",
+          "product_id",
+          "tiers",
+          "minimum_units",
+          "unit_label",
+          "maximum_units"
+        ],
+        "title": "ProductPriceUnitBased",
+        "description": "A unit-based price for a product: the buyer picks a quantity of units,\npays for it up-front. On subscriptions, quantity changes are prorated."
+      },
+      "ProductPriceUnitBasedCreate": {
+        "properties": {
+          "amount_type": {
+            "type": "string",
+            "const": "unit_based",
+            "title": "Amount Type"
+          },
+          "price_currency": {
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "description": "The currency in which the customer will be charged.",
+            "default": "usd"
+          },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If not set, it will default to the organization's default tax behavior."
+          },
+          "tiers": {
+            "$ref": "#/components/schemas/Tiers-Input",
+            "description": "Tiered pricing based on the purchased unit quantity."
+          },
+          "minimum_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum Units",
+            "description": "The minimum purchasable quantity (inclusive). Defaults to 1 when not set."
+          },
+          "unit_label": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "type": "object",
+                "minLength": 1,
+                "examples": [
+                  {
+                    "en": {
+                      "=1": "seat",
+                      "other": "seats"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Label",
+            "description": "Per-locale unit nouns shown at checkout and on invoices. `{\"en\": {\"=1\": \"device\", \"other\": \"devices\"}}`. Defaults to \"unit\"/\"units\" when unset."
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount_type",
+          "tiers"
+        ],
+        "title": "ProductPriceUnitBasedCreate",
+        "description": "Schema to create a unit-based price: the buyer picks a quantity of units,\npays for it up-front. On subscriptions, quantity changes are prorated."
+      },
       "ProductSortProperty": {
         "type": "string",
         "enum": [
@@ -78636,6 +80379,9 @@
                           "$ref": "#/components/schemas/ProductPriceSeatBasedCreate"
                         },
                         {
+                          "$ref": "#/components/schemas/ProductPriceUnitBasedCreate"
+                        },
+                        {
                           "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
                         }
                       ],
@@ -78645,7 +80391,8 @@
                           "custom": "#/components/schemas/ProductPriceCustomCreate",
                           "fixed": "#/components/schemas/ProductPriceFixedCreate",
                           "metered_unit": "#/components/schemas/ProductPriceMeteredUnitCreate",
-                          "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate"
+                          "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate",
+                          "unit_based": "#/components/schemas/ProductPriceUnitBasedCreate"
                         }
                       }
                     }
@@ -79298,6 +81045,28 @@
         "properties": {},
         "type": "object",
         "title": "RevokeTokenResponse"
+      },
+      "RotateNotPermitted": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "RotateNotPermitted",
+            "title": "Error",
+            "examples": [
+              "RotateNotPermitted"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "RotateNotPermitted"
       },
       "S3DownloadURL": {
         "properties": {
@@ -81057,6 +82826,18 @@
             "title": "Seats",
             "description": "The number of seats for seat-based subscriptions. None for non-seat subscriptions."
           },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "The number of units for unit-based subscriptions. None for non-unit subscriptions."
+          },
           "customer_cancellation_reason": {
             "anyOf": [
               {
@@ -81200,6 +82981,7 @@
           "product_id",
           "discount_id",
           "checkout_id",
+          "units",
           "customer_cancellation_reason",
           "customer_cancellation_comment",
           "metadata",
@@ -81646,6 +83428,9 @@
           },
           {
             "$ref": "#/components/schemas/SubscriptionChangePreviewSeats"
+          },
+          {
+            "$ref": "#/components/schemas/SubscriptionChangePreviewUnits"
           }
         ]
       },
@@ -81706,6 +83491,34 @@
           "seats"
         ],
         "title": "SubscriptionChangePreviewSeats"
+      },
+      "SubscriptionChangePreviewUnits": {
+        "properties": {
+          "units": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": -2147483648.0,
+            "title": "Units",
+            "description": "Preview a change of the subscription to this number of units."
+          },
+          "proration_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionProrationBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Determine how to handle the proration billing. If not provided, will use the default organization setting."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "units"
+        ],
+        "title": "SubscriptionChangePreviewUnits"
       },
       "SubscriptionChargePreview": {
         "properties": {
@@ -84335,6 +86148,174 @@
         ],
         "title": "SubscriptionUncanceledMetadata"
       },
+      "SubscriptionUnitsUpdatedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "subscription.units_updated",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/SubscriptionUnitsUpdatedMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "SubscriptionUnitsUpdatedEvent",
+        "description": "An event created by Polar when the units on a subscription are changed."
+      },
+      "SubscriptionUnitsUpdatedMetadata": {
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "old_units": {
+            "type": "integer",
+            "title": "Old Units"
+          },
+          "new_units": {
+            "type": "integer",
+            "title": "New Units"
+          },
+          "proration_behavior": {
+            "type": "string",
+            "title": "Proration Behavior"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_id",
+          "old_units",
+          "new_units",
+          "proration_behavior"
+        ],
+        "title": "SubscriptionUnitsUpdatedMetadata"
+      },
       "SubscriptionUpdate": {
         "anyOf": [
           {
@@ -84342,6 +86323,9 @@
           },
           {
             "$ref": "#/components/schemas/SubscriptionUpdateSeats"
+          },
+          {
+            "$ref": "#/components/schemas/SubscriptionUpdateUnits"
           },
           {
             "$ref": "#/components/schemas/SubscriptionUpdateBillingPeriod"
@@ -84667,6 +86651,34 @@
         ],
         "title": "SubscriptionUpdateSeats"
       },
+      "SubscriptionUpdateUnits": {
+        "properties": {
+          "units": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": -2147483648.0,
+            "title": "Units",
+            "description": "Update the number of units for this subscription."
+          },
+          "proration_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionProrationBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Determine how to handle the proration billing. If not provided, will use the default organization setting."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "units"
+        ],
+        "title": "SubscriptionUpdateUnits"
+      },
       "SubscriptionUpdatedEvent": {
         "properties": {
           "id": {
@@ -84834,6 +86846,10 @@
           "seats": {
             "type": "integer",
             "title": "Seats"
+          },
+          "units": {
+            "type": "integer",
+            "title": "Units"
           },
           "billing_period_end": {
             "type": "string",
@@ -85464,6 +87480,9 @@
             "$ref": "#/components/schemas/SubscriptionSeatsUpdatedEvent"
           },
           {
+            "$ref": "#/components/schemas/SubscriptionUnitsUpdatedEvent"
+          },
+          {
             "$ref": "#/components/schemas/SubscriptionBillingPeriodUpdatedEvent"
           },
           {
@@ -85548,6 +87567,7 @@
             "subscription.revoked": "#/components/schemas/SubscriptionRevokedEvent",
             "subscription.seats_updated": "#/components/schemas/SubscriptionSeatsUpdatedEvent",
             "subscription.uncanceled": "#/components/schemas/SubscriptionUncanceledEvent",
+            "subscription.units_updated": "#/components/schemas/SubscriptionUnitsUpdatedEvent",
             "subscription.update_cleared": "#/components/schemas/SubscriptionUpdateClearedEvent",
             "subscription.updated": "#/components/schemas/SubscriptionUpdatedEvent"
           }
@@ -85852,6 +87872,120 @@
         ],
         "title": "TextBlock",
         "description": "Plain narrated text."
+      },
+      "Tier-Input": {
+        "properties": {
+          "bound": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound"
+          },
+          "unit_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Unit Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_amount"
+        ],
+        "title": "Tier",
+        "description": "A per-unit rate up to and including `bound`.\n\nEach tier starts where the previous one ended. The first starts at\nzero. `bound` is None on the last tier if it's unbounded. Rates are\nin cents and may be fractional."
+      },
+      "Tier-Output": {
+        "properties": {
+          "bound": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound"
+          },
+          "unit_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Unit Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_amount"
+        ],
+        "title": "Tier",
+        "description": "A per-unit rate up to and including `bound`.\n\nEach tier starts where the previous one ended. The first starts at\nzero. `bound` is None on the last tier if it's unbounded. Rates are\nin cents and may be fractional."
+      },
+      "TierType": {
+        "type": "string",
+        "enum": [
+          "volume",
+          "graduated"
+        ],
+        "title": "TierType"
+      },
+      "Tiers-Input": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/TierType"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/Tier-Input"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Tiers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "tiers"
+        ],
+        "title": "Tiers",
+        "description": "The structure of the shared tiers JSONB column, used by every tiered\nprice type. Purchasable quantity bounds live in the `minimum_units` and\n`maximum_units` columns, not here."
+      },
+      "Tiers-Output": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/TierType"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/Tier-Output"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Tiers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "tiers"
+        ],
+        "title": "Tiers",
+        "description": "The structure of the shared tiers JSONB column, used by every tiered\nprice type. Purchasable quantity bounds live in the `minimum_units` and\n`maximum_units` columns, not here."
       },
       "TimeInterval": {
         "type": "string",
@@ -86459,6 +88593,24 @@
         ],
         "title": "TransactionEmbedded"
       },
+      "TransactionExportColumn": {
+        "type": "string",
+        "enum": [
+          "created_at",
+          "type",
+          "product",
+          "gross_amount",
+          "tax_amount",
+          "fees",
+          "net_amount",
+          "currency",
+          "status",
+          "paid_out_at",
+          "invoice_number",
+          "order_id"
+        ],
+        "title": "TransactionExportColumn"
+      },
       "TransactionIssueReward": {
         "properties": {
           "created_at": {
@@ -87028,6 +89180,28 @@
           "detail"
         ],
         "title": "UpdateSubscriptionSeatsNotAllowed"
+      },
+      "UpdateSubscriptionUnitsNotAllowed": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "UpdateSubscriptionUnitsNotAllowed",
+            "title": "Error",
+            "examples": [
+              "UpdateSubscriptionUnitsNotAllowed"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "UpdateSubscriptionUnitsNotAllowed"
       },
       "UserDeletionBlockedReason": {
         "type": "string",

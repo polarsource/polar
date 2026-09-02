@@ -17,7 +17,6 @@
     "build:simulator": "eas build --platform all --profile simulator",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "lint": "pnpm format:check && oxlint .",
     "typecheck": "tsc --noEmit",
     "push:test": "node tooling/push-notifications/send-push.js",
     "postinstall": "pnpm --filter @polar-sh/client build && patch-package",

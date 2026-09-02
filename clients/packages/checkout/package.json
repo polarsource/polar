@@ -12,7 +12,6 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && tsup",
-    "lint": "oxfmt --check . && oxlint .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

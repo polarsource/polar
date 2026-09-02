@@ -9,8 +9,6 @@
     "gen:props": "node scripts/extract-props.mjs",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
-    "lint:only": "oxlint .",
-    "lint": "pnpm format:check && pnpm lint:only",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

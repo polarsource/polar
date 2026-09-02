@@ -10,9 +10,7 @@
     "start": "next start",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
-    "lint:only": "oxlint .",
-    "lint": "pnpm format:check && pnpm lint:only",
-    "lint:changed": "oxlint $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(cjs|js|jsx|mjs|ts|tsx)$')",
+    "lint:changed": "oxlint --type-aware $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(cjs|js|jsx|mjs|ts|tsx)$')",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"

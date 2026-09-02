@@ -2748,7 +2748,7 @@ requires-dist = [
     { name = "makefun", specifier = ">=1.15.6" },
     { name = "markdown-it-py", specifier = ">=4.2.0" },
     { name = "plain-client", specifier = ">=0.0.3" },
-    { name = "polar-sdk", specifier = "==1.0.0a17" },
+    { name = "polar-sdk", specifier = "==1.0.0a19" },
     { name = "posthog", specifier = ">=7.21.1" },
     { name = "prometheus-client", specifier = ">=0.25.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.12" },
@@ -2816,16 +2816,16 @@ dev = [
 
 [[package]]
 name = "polar-sdk"
-version = "1.0.0a17"
+version = "1.0.0a19"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adaptix" },
     { name = "httpx" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/00/ac/9de110692398d47fb26e7f3f932a13f4a0bff5498abbb9e26c3e9b49848b/polar_sdk-1.0.0a17.tar.gz", hash = "sha256:47c201da71e6ede6de924eeaa7f90ea671229872fec2d3a4bc6fb9f0539c1146", size = 209179, upload-time = "2026-08-19T12:00:51.418Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/f5/1287b3c5fe1e3dc5bebe58eaaae73c70dcf33ba05406387dad2960adb7b9/polar_sdk-1.0.0a19.tar.gz", hash = "sha256:22f48dfb76a22161183a9dc9b94ac5b5f4ae8b2ee4b13af83f380986b8e76417", size = 213972, upload-time = "2026-09-02T14:23:29.204Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/93/03/19c2d9a53d53328f53bf29a4796563b6dcccada25f3354a057ba40fac66a/polar_sdk-1.0.0a17-py3-none-any.whl", hash = "sha256:83d9497e97bcac3a4be719b514d20140d178db69eef12fa2af98c9107b1693d0", size = 293970, upload-time = "2026-08-19T12:00:49.921Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/e1/aff594a19172d195bb5a5768f827b88ef0acad93b55b345056709b6944aa/polar_sdk-1.0.0a19-py3-none-any.whl", hash = "sha256:5aa8a80e935f0aa51f595dbc4a90c157bced065c53758a43e6162c128d64e4f5", size = 299006, upload-time = "2026-09-02T14:23:28.163Z" },
 ]
 
 [[package]]

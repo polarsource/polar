@@ -102,11 +102,14 @@ easily validate signatures. Or you can follow their
 in case you want to roll your own.
 
 <Info>
-  **Note: Secret needs to be base64 encoded**
+  Polar currently signs with HMAC-SHA256 over the UTF-8 bytes of the full secret,
+  including `whsec_`. Standard Webhooks libraries therefore need that whole
+  secret **base64-encoded** before verification.
 
-One common gotcha with the specification is that the webhook secret is expected to be
-base64 encoded. You don't have to do this with our SDK as it takes care of the
-implementation details with better developer ergonomics.
+  Polar SDKs (version 1.0.0-alpha.19 and later) try both that original Polar key and the Standard Webhooks key
+  (base64-decode of the `whsec_` remainder). You can keep passing the `whsec_…`
+  secret as Polar shows it. Rolling your own verifier still needs the original
+  Polar encoding until Polar starts signing with the spec key.
 
 </Info>
 

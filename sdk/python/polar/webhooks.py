@@ -87,19 +87,31 @@ def _verify_signature(body: str, headers: dict[str, str], secret: str) -> None:
         raise PolarWebhookVerificationError("Message timestamp too new")
 
     signed_content = f"{webhook_id}.{math.floor(timestamp)}.{body}".encode()
-    expected_signature = hmac.new(
-        secret.encode(), signed_content, hashlib.sha256
-    ).digest()
-
-    for versioned_signature in webhook_signature.split():
-        version, separator, signature = versioned_signature.partition(",")
-        if version != "v1" or not separator:
-            continue
-        try:
-            decoded_signature = base64.b64decode(signature, validate=True)
-        except (binascii.Error, ValueError):
-            continue
-        if hmac.compare_digest(expected_signature, decoded_signature):
-            return
+    for signing_key in _signing_keys(secret):
+        expected_signature = hmac.new(
+            signing_key, signed_content, hashlib.sha256
+        ).digest()
+        for versioned_signature in webhook_signature.split():
+            version, separator, signature = versioned_signature.partition(",")
+            if version != "v1" or not separator:
+                continue
+            try:
+                decoded_signature = base64.b64decode(signature, validate=True)
+            except (binascii.Error, ValueError):
+                continue
+            if hmac.compare_digest(expected_signature, decoded_signature):
+                return
 
     raise PolarWebhookVerificationError("No matching signature found")
+
+
+def _signing_keys(secret: str) -> tuple[bytes, ...]:
+    keys: list[bytes] = [secret.encode()]
+    remainder = secret.removeprefix("whsec_")
+    try:
+        decoded = base64.b64decode(remainder, validate=True)
+    except (binascii.Error, ValueError):
+        return (keys[0],)
+    if decoded and decoded != keys[0]:
+        keys.append(decoded)
+    return tuple(keys)

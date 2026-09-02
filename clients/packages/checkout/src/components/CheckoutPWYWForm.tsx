@@ -5,7 +5,7 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
+import MoneyInput from './ui/MoneyInput'
 import {
   Form,
   FormField,

@@ -125,6 +125,8 @@ app.post("/webhooks/polar", rawBody, async (request, response) => {
 ```
 
 The `express.raw` middleware is required because the signature must be checked against the body
-before it is parsed. `validateEvent` throws `PolarWebhookVerificationError` for invalid signatures
+before it is parsed. Verification accepts Polar's original HMAC key (UTF-8 bytes of the full
+secret, including `whsec_`) and the Standard Webhooks key (base64-decode of the remainder after
+`whsec_`). `validateEvent` throws `PolarWebhookVerificationError` for invalid signatures
 and `PolarWebhookUnknownTypeError` when the event is not supported by the selected API version.
 Both inherit from `PolarWebhookError`.

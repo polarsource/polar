@@ -90,12 +90,12 @@ const verifySignature = async (
   const signedContent = `${webhookId}.${Math.floor(timestamp)}.${body}`;
   const textEncoder = new TextEncoder();
   const signedContentBytes = textEncoder.encode(signedContent);
-  const signingKey = await globalThis.crypto.subtle.importKey(
-    "raw",
-    textEncoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"],
+  const signingKeys = await Promise.all(
+    hmacKeys(secret).map((key) =>
+      globalThis.crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, [
+        "verify",
+      ]),
+    ),
   );
 
   for (const versionedSignature of webhookSignature.split(" ")) {
@@ -104,20 +104,47 @@ const verifySignature = async (
       continue;
     }
     const decodedSignature = decodeBase64(signature);
-    if (
-      decodedSignature !== null &&
-      (await globalThis.crypto.subtle.verify(
-        "HMAC",
-        signingKey,
-        decodedSignature,
-        signedContentBytes,
-      ))
-    ) {
-      return;
+    if (decodedSignature === null) {
+      continue;
+    }
+    for (const signingKey of signingKeys) {
+      if (
+        await globalThis.crypto.subtle.verify(
+          "HMAC",
+          signingKey,
+          decodedSignature,
+          signedContentBytes,
+        )
+      ) {
+        return;
+      }
     }
   }
 
   throw new PolarWebhookVerificationError("No matching signature found");
+};
+
+const hmacKeys = (secret: string): BufferSource[] => {
+  const utf8Key = new TextEncoder().encode(secret);
+  const keys: BufferSource[] = [utf8Key];
+  const remainder = secret.startsWith("whsec_") ? secret.slice("whsec_".length) : secret;
+  const decoded = decodeBase64(remainder);
+  if (decoded !== null && decoded.byteLength > 0 && !bytesEqual(decoded, utf8Key)) {
+    keys.push(decoded);
+  }
+  return keys;
+};
+
+const bytesEqual = (left: Uint8Array, right: Uint8Array): boolean => {
+  if (left.byteLength !== right.byteLength) {
+    return false;
+  }
+  for (let index = 0; index < left.byteLength; index++) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+  return true;
 };
 
 const decodeBase64 = (value: string): Uint8Array<ArrayBuffer> | null => {

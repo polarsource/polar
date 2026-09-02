@@ -4,13 +4,13 @@ import type { schemas } from '@polar-sh/client'
 import { enums } from '@polar-sh/client'
 import { useTranslations, type AcceptedLocale } from '@polar-sh/i18n'
 import { MandateText } from './MandateText'
-import { Button } from '@polar-sh/orbit'
-import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
+import { Button } from './ui/Button'
+import CountryPicker from './ui/CountryPicker'
 import CountryStatePicker, {
   COUNTRIES_WITH_FIXED_STATE_OPTIONS,
-} from '@polar-sh/ui/components/atoms/CountryStatePicker'
-import { Input } from '@polar-sh/orbit'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+} from './ui/CountryStatePicker'
+import { Input } from './ui/Input'
+import { Checkbox } from './ui/Checkbox'
 import {
   Form,
   FormControl,
@@ -76,6 +76,7 @@ interface BaseCheckoutFormProps {
   isWalletPayment?: boolean
   beforeSubmit?: React.ReactNode
   embed?: boolean
+  ctaColorExperiment?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -92,6 +93,7 @@ const BaseCheckoutForm = ({
   isWalletPayment,
   beforeSubmit,
   embed,
+  ctaColorExperiment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? isLegacyRecurringProductPrice(checkout.product_price)
@@ -714,6 +716,7 @@ const BaseCheckoutForm = ({
             <div className="flex w-full flex-col items-center justify-center gap-y-2">
               <Button
                 type="submit"
+                variant={ctaColorExperiment ? 'primary' : 'default'}
                 size="lg"
                 wrapperClassNames="text-base"
                 className="w-full"
@@ -784,6 +787,7 @@ interface CheckoutFormProps {
   locale?: AcceptedLocale
   beforeSubmit?: React.ReactNode
   embed?: boolean
+  ctaColorExperiment?: boolean
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {

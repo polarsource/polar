@@ -330,6 +330,28 @@ export const ProductPricingSection = ({
             unit_amount: 0,
             meter_id: meterId,
           }
+        } else if (price.amount_type === 'metered_tiers') {
+          const sourceTiers =
+            'tiers' in price && price.tiers?.tiers ? price.tiers.tiers : []
+          const meteredTiers = sourceTiers.map((t) => ({
+            bound: 'bound' in t ? (t.bound ?? null) : null,
+            unit_amount: 0,
+          }))
+          if (meteredTiers.length === 0) {
+            meteredTiers.push({ bound: null, unit_amount: 0 })
+          }
+          newPrice = {
+            ...baseCurrency,
+            amount_type: 'metered_tiers',
+            meter_id: 'meter_id' in price ? price.meter_id : '',
+            tiers: {
+              type:
+                'tiers' in price && price.tiers && 'type' in price.tiers
+                  ? price.tiers.type
+                  : 'volume',
+              tiers: meteredTiers,
+            },
+          }
         } else {
           newPrice = { ...baseCurrency, amount_type: 'free' }
         }

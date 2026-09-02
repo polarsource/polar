@@ -2,10 +2,11 @@ import type { schemas } from '@polar-sh/client'
 import { DEFAULT_LOCALE, type AcceptedLocale } from '@polar-sh/i18n'
 import { getMeterUnitFormat } from '@polar-sh/ui/lib/meterUnit'
 import { cn } from '@polar-sh/ui/lib/utils'
+import { getStartingUnitAmount, type MeteredPrice } from '../utils/product'
 import MeteredRate from './MeteredRate'
 
 interface MeteredPriceLabelProps {
-  price: schemas['ProductPriceMeteredUnit']
+  price: MeteredPrice
   locale?: AcceptedLocale
   discount?: schemas['CheckoutPublic']['discount']
 }
@@ -23,7 +24,7 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
   return (
     <div className="flex flex-row items-baseline gap-x-1">
       <MeteredRate
-        amount={Number.parseFloat(price.unit_amount) * scale}
+        amount={getStartingUnitAmount(price) * scale}
         currency={price.price_currency}
         locale={locale}
         discount={discount}

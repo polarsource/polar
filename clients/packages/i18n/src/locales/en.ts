@@ -128,6 +128,13 @@ export default {
             'Generic plural noun for metered usage units, used in quantity phrases like "10,000 units included".',
         },
       },
+      tiers: {
+        from: {
+          value: 'From',
+          _llmContext:
+            'Prefix before the cheapest rate of a tiered usage-based price, e.g. "From $0.05 / unit", meaning the rate shown is the starting one and higher usage is billed differently. Fragment, not a sentence.',
+        },
+      },
       dueToday: {
         value: 'Due today',
         _llmContext:

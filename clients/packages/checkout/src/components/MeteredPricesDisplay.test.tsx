@@ -4,6 +4,7 @@ import {
   createCheckout,
   createFixedPrice,
   createMeteredPrice,
+  createMeteredTiersPrice,
 } from '../test-utils/makeCheckout'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 
@@ -63,6 +64,22 @@ describe('MeteredPricesDisplay', () => {
 
       expect(container.textContent).toContain('API Calls')
       expect(container.textContent).toContain('$0.0005')
+    })
+
+    it('shows a tiered metered price from its starting rate', () => {
+      const fixedPrice = createFixedPrice({ id: 'price_fixed' })
+      const checkout = createCheckout({
+        product_price: fixedPrice,
+        prices: { prod_1: [fixedPrice, createMeteredTiersPrice()] },
+      })
+
+      const { container } = render(
+        <MeteredPricesDisplay checkout={checkout} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('API Calls')
+      expect(container.textContent).toContain('From')
+      expect(container.textContent).toContain('$9.00')
     })
 
     it('filters out the currently selected price', () => {

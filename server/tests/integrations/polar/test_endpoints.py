@@ -37,6 +37,7 @@ _BENEFIT_GRANT: dict[str, Any] = {
         "tax_id": None,
         "organization_id": "00000000-0000-0000-0000-000000000099",
         "deleted_at": None,
+        "first_user_event_at": None,
         "avatar_url": "",
     },
     "benefit": {
@@ -110,6 +111,7 @@ _SUBSCRIPTION: dict[str, Any] = {
         "tax_id": None,
         "organization_id": "00000000-0000-0000-0000-000000000099",
         "deleted_at": None,
+        "first_user_event_at": None,
         "avatar_url": "",
         "external_id": "00000000-0000-0000-0000-00000000000a",
     },
@@ -139,6 +141,7 @@ _SUBSCRIPTION: dict[str, Any] = {
     "prices": [],
     "meters": [],
     "pending_update": None,
+    "units": None,
 }
 
 
@@ -188,6 +191,7 @@ _ORDER: dict[str, Any] = {
     "subscription": None,
     "items": [],
     "description": "Pro subscription",
+    "units": None,
 }
 
 

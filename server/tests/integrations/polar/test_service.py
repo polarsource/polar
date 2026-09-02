@@ -60,6 +60,7 @@ _CUSTOMER_DICT: dict[str, Any] = {
     "tax_id": None,
     "organization_id": "00000000-0000-0000-0000-000000000099",
     "deleted_at": None,
+    "first_user_event_at": None,
     "avatar_url": "",
     "external_id": str(ORG_A),
 }
@@ -1392,6 +1393,7 @@ def _make_subscription(
             "prices": [dataclasses.asdict(price) for price in product.prices],
             "meters": [],
             "pending_update": None,
+            "units": None,
         },
         Subscription,
     )
@@ -2268,6 +2270,7 @@ def _order_dict(
         "subscription": None,
         "items": [],
         "description": "Pro subscription",
+        "units": None,
     }
 
 

@@ -30,6 +30,23 @@ class Tier(BaseModel):
     )
 
 
+def sort_and_check_bounds[TierT: Tier](tiers: list[TierT]) -> list[TierT]:
+    sorted_tiers = sorted(tiers, key=lambda tier: (tier.bound is None, tier.bound or 0))
+    for current, next_tier in pairwise(sorted_tiers):
+        if current.bound is None:
+            raise PydanticCustomError(
+                "unbounded_tier_not_last",
+                "Only the last tier can be unbounded",
+            )
+        if next_tier.bound == current.bound:
+            raise PydanticCustomError(
+                "duplicate_tier_bound",
+                "Tier bound values must be unique, got {bound} twice",
+                {"bound": current.bound},
+            )
+    return sorted_tiers
+
+
 class Tiers(BaseModel):
     """The structure of the shared tiers JSONB column, used by every tiered
     price type. Purchasable quantity bounds live in the `minimum_units` and
@@ -42,22 +59,7 @@ class Tiers(BaseModel):
     @field_validator("tiers")
     @classmethod
     def validate_tiers(cls, tiers: list[Tier]) -> list[Tier]:
-        sorted_tiers = sorted(
-            tiers, key=lambda tier: (tier.bound is None, tier.bound or 0)
-        )
-        for current, next_tier in pairwise(sorted_tiers):
-            if current.bound is None:
-                raise PydanticCustomError(
-                    "unbounded_tier_not_last",
-                    "Only the last tier can be unbounded",
-                )
-            if next_tier.bound == current.bound:
-                raise PydanticCustomError(
-                    "duplicate_tier_bound",
-                    "Tier bound values must be unique, got {bound} twice",
-                    {"bound": current.bound},
-                )
-        return sorted_tiers
+        return sort_and_check_bounds(tiers)
 
     def calculate(self, quantity: Decimal | int) -> Decimal:
         if quantity < 0:

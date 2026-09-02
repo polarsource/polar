@@ -89,6 +89,7 @@ export const setProductValidationErrors = <TFieldValues extends FieldValues>(
         'seat_based',
         'unit_based',
         'metered_unit',
+        'metered_tiers',
       ]
       if (priceDiscriminatorValues.includes(segmentStr)) {
         // Check if previous segments match the pattern: "prices", then a number

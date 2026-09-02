@@ -138,7 +138,7 @@ class TiersInput(BaseModel):
 
 
 def validate_unit_bounds(
-    tiers: Tiers,
+    tiers: Tiers | TiersInput,
     *,
     minimum_units: int | None = None,
     maximum_units: int | None = None,

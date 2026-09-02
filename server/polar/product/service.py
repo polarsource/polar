@@ -612,7 +612,7 @@ class ProductService:
                         product=product,
                         source=source,
                         **price_schema.model_dump(exclude={"tiers"}),
-                        tiers=price_schema.tiers,
+                        tiers=price_schema.tiers.to_tiers(),
                     )
                 else:
                     price = model_class(

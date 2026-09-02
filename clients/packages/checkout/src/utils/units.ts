@@ -44,7 +44,7 @@ export function getUnitLabels(
   return { unitLabel, unitLabelPlural }
 }
 
-type UnitTier = schemas['Tier-Output']
+type UnitTier = schemas['Tier']
 
 function sortTiers(tiers: UnitTier[]): UnitTier[] {
   return tiers.toSorted((a, b) => {

@@ -73,6 +73,7 @@ export const MeteredPricingFields: React.FC<MeteredPricingFieldsProps> = ({
         price_currency: getValues(`prices.${index}.price_currency`),
         meter_id: getValues(`prices.${index}.meter_id`),
         cap_amount: getValues(`prices.${index}.cap_amount`),
+        tax_behavior: getValues(`prices.${index}.tax_behavior`),
       }
       const currentTiers = getValues(`prices.${index}.tiers`)
       if (value === 'fixed') {

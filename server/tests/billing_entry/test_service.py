@@ -39,6 +39,7 @@ from polar.product.guard import (
     is_metered_price,
     is_seat_price,
 )
+from polar.product.tiers import Tiers, TierType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -46,6 +47,7 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_order,
     create_product,
+    create_product_price_metered_tiers,
     create_product_price_metered_unit,
     create_subscription_with_seats,
 )
@@ -72,6 +74,44 @@ async def product_metered_unit(
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
         prices=[(meter, Decimal(100), None, "usd")],
+    )
+
+
+@pytest_asyncio.fixture
+async def product_metered_tiers(
+    save_fixture: SaveFixture, meter: Meter, organization: Organization
+) -> Product:
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[],
+    )
+    price = await create_product_price_metered_tiers(
+        save_fixture,
+        product=product,
+        meter=meter,
+        tiers=Tiers.model_validate(
+            {
+                "type": TierType.graduated,
+                "tiers": [
+                    {"bound": 20, "unit_amount": "100"},
+                    {"bound": None, "unit_amount": "50"},
+                ],
+            }
+        ),
+    )
+    product.prices.append(price)
+    product.all_prices.append(price)
+    return product
+
+
+@pytest_asyncio.fixture
+async def metered_tiers_subscription(
+    save_fixture: SaveFixture, customer: Customer, product_metered_tiers: Product
+) -> Subscription:
+    return await create_active_subscription(
+        save_fixture, customer=customer, product=product_metered_tiers
     )
 
 
@@ -400,6 +440,36 @@ class TestCreateOrderItemsFromPending:
 
         await session.refresh(deleted_entry)
         assert deleted_entry.order_item_id is None
+
+    async def test_one_tiered_metered_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_tiers: Product,
+        metered_tiers_subscription: Subscription,
+    ) -> None:
+        price = product_metered_tiers.prices[0]
+        for tokens in (20, 30):
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=metered_tiers_subscription,
+                tokens=tokens,
+            )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_tiers_subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            # Graduated: 20 units at 100, then 30 at 50.
+            assert order_items[0].amount == 20 * 100 + 30 * 50
+
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
 
     async def test_metered_entries_respect_cutoff(
         self,

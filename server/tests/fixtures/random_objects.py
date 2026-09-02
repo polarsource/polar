@@ -62,6 +62,7 @@ from polar.models import (
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
+    ProductPriceMeteredTiers,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
     ProductPriceUnit,
@@ -616,6 +617,29 @@ async def create_product_price_metered_unit(
         product=product,
     )
     assert price.amount_type == ProductPriceAmountType.metered_unit
+    await save_fixture(price)
+    return price
+
+
+async def create_product_price_metered_tiers(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    meter: Meter,
+    tiers: Tiers,
+    cap_amount: int | None = None,
+    currency: str = "usd",
+    tax_behavior: TaxBehavior | None = None,
+) -> ProductPriceMeteredTiers:
+    price = ProductPriceMeteredTiers(
+        price_currency=currency,
+        tax_behavior=tax_behavior,
+        tiers=tiers,
+        cap_amount=cap_amount,
+        meter=meter,
+        product=product,
+    )
+    assert price.amount_type == ProductPriceAmountType.metered_tiers
     await save_fixture(price)
     return price
 

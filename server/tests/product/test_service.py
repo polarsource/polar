@@ -29,6 +29,7 @@ from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
+    ProductPriceMeteredTiers,
 )
 from polar.organization_review.schemas import ReviewContext
 from polar.postgres import AsyncSession
@@ -46,6 +47,7 @@ from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
+    ProductPriceMeteredTiersCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceSeatTier,
@@ -775,6 +777,56 @@ class TestCreate:
         assert len(product.prices) == len(create_schema.prices)
 
     @pytest.mark.auth
+    async def test_valid_tiered_metered_price(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        organization.feature_settings = {"metered_tiered_pricing_enabled": True}
+        session.add(organization)
+        await session.flush()
+        price_schema = _tiered_metered_price_create()
+
+        product = await product_service.create(
+            session,
+            ProductCreateRecurring(
+                name="Recurring tiered metered",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                organization_id=organization.id,
+                prices=[price_schema],
+            ),
+            auth_subject,
+        )
+
+        price = product.prices[0]
+        assert isinstance(price, ProductPriceMeteredTiers)
+        assert price.tiers == price_schema.tiers
+
+    @pytest.mark.auth
+    async def test_tiered_metered_price_requires_the_feature_flag(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Recurring tiered metered",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    organization_id=organization.id,
+                    prices=[_tiered_metered_price_create()],
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
     async def test_invalid_several_static_prices(
         self,
         auth_subject: AuthSubject[User],
@@ -1224,6 +1276,23 @@ def _fixed_price_create(
         price_amount=amount,
         price_currency=currency,
         tax_behavior=tax_behavior,
+    )
+
+
+def _tiered_metered_price_create() -> ProductPriceMeteredTiersCreate:
+    return ProductPriceMeteredTiersCreate(
+        amount_type=ProductPriceAmountType.metered_tiers,
+        price_currency=PresentmentCurrency.usd,
+        meter_id=METER_ID,
+        tiers=Tiers.model_validate(
+            {
+                "type": "graduated",
+                "tiers": [
+                    {"bound": 1000, "unit_amount": "0.5"},
+                    {"bound": None, "unit_amount": "0.25"},
+                ],
+            }
+        ),
     )
 
 

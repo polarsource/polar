@@ -60,6 +60,15 @@ class TestTiersValidation:
             )
         assert exc.value.errors()[0]["type"] == "duplicate_tier_bound"
 
+    def test_rate_beyond_twelve_decimal_places_raises(self) -> None:
+        # Rates are stored in a Numeric(17, 12) column; anything finer would be
+        # silently truncated on write.
+        with pytest.raises(ValidationError):
+            _tiers_data(
+                TierType.volume,
+                [{"bound": None, "unit_amount": "0.1234567890123"}],
+            )
+
     def test_serializes_decimal_rates_as_strings(self) -> None:
         tiers = _tiers_data(
             TierType.volume,
@@ -119,6 +128,39 @@ class TestTiersCalculateGraduated:
         assert tiers.calculate(10) == 10 * 20000
         assert tiers.calculate(15) == 10 * 20000 + 5 * 6000
         assert tiers.calculate(5) == 5 * 20000
+
+
+class TestTiersCalculateFractionalQuantity:
+    def test_volume_prices_a_fractional_quantity(self) -> None:
+        tiers = _tiers_data(
+            TierType.volume,
+            [
+                {"bound": 10, "unit_amount": "100"},
+                {"bound": None, "unit_amount": "80"},
+            ],
+        )
+        assert tiers.calculate(Decimal("4.5")) == Decimal(450)
+
+    def test_volume_picks_the_tier_a_fractional_quantity_falls_in(self) -> None:
+        tiers = _tiers_data(
+            TierType.volume,
+            [
+                {"bound": 10, "unit_amount": "100"},
+                {"bound": None, "unit_amount": "80"},
+            ],
+        )
+        assert tiers.calculate(Decimal("10.5")) == Decimal(840)
+
+    def test_graduated_splits_a_fractional_quantity_across_ranges(self) -> None:
+        tiers = _tiers_data(
+            TierType.graduated,
+            [
+                {"bound": 10, "unit_amount": "100"},
+                {"bound": None, "unit_amount": "80"},
+            ],
+        )
+        # 10 units at 100, then 0.5 at 80.
+        assert tiers.calculate(Decimal("10.5")) == Decimal(1040)
 
 
 class TestTiersCalculateContract:

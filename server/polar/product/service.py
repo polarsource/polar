@@ -63,6 +63,7 @@ from .schemas import (
     ProductCreate,
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
+    ProductPriceMeteredTiersCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceUnitBasedCreate,
     ProductUpdate,
@@ -603,7 +604,10 @@ class ProductService:
                 existing_prices.add(price)
             else:
                 model_class = price_schema.get_model_class()
-                if isinstance(price_schema, ProductPriceUnitBasedCreate):
+                if isinstance(
+                    price_schema,
+                    ProductPriceUnitBasedCreate | ProductPriceMeteredTiersCreate,
+                ):
                     price = model_class(
                         product=product,
                         source=source,
@@ -624,6 +628,20 @@ class ProductService:
                             "type": "value_error",
                             "loc": (*error_prefix, index),
                             "msg": "Seat-based pricing is not enabled for this organization.",
+                            "input": price_schema,
+                        }
+                    )
+                    continue
+                if isinstance(
+                    price_schema, ProductPriceMeteredTiersCreate
+                ) and not organization.feature_settings.get(
+                    "metered_tiered_pricing_enabled", False
+                ):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": (*error_prefix, index),
+                            "msg": "Tiered pricing for metered prices is not enabled for this organization.",
                             "input": price_schema,
                         }
                     )

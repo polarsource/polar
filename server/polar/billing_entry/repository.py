@@ -16,7 +16,7 @@ from polar.kit.repository import (
 )
 from polar.models import BillingEntry
 from polar.models.billing_entry import BillingEntryType
-from polar.models.product_price import ProductPrice, ProductPriceMeteredUnit
+from polar.models.product_price import ProductPrice
 
 _LINK_PENDING_BATCH_SIZE = 5_000
 
@@ -108,19 +108,20 @@ class BillingEntryRepository(
         statement = (
             self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .join(
-                ProductPriceMeteredUnit,
-                BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
+                ProductPrice,
+                BillingEntry.product_price_id == ProductPrice.id,
             )
-            .where(BillingEntry.created_at <= cutoff)
+            .where(ProductPrice.is_metered, BillingEntry.created_at <= cutoff)
             .with_only_columns(
                 BillingEntry.product_price_id,
-                ProductPriceMeteredUnit.meter_id,
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id,
                 func.min(BillingEntry.start_timestamp),
                 func.max(BillingEntry.end_timestamp),
             )
-            .group_by(BillingEntry.product_price_id, ProductPriceMeteredUnit.meter_id)
+            .group_by(BillingEntry.product_price_id, ProductPrice.__table__.c.meter_id)
             .order_by(None)  # Clear existing ORDER BY from base statement
-            .order_by(ProductPriceMeteredUnit.meter_id.asc())
+            .order_by(ProductPrice.__table__.c.meter_id.asc())
         )
         results = await self.session.stream(
             statement,
@@ -161,8 +162,10 @@ class BillingEntryRepository(
         # `ix_billing_entry_pending_link` serves the id-ordered scan for one
         # price at a time.
         price_ids = await self.session.scalars(
-            select(ProductPriceMeteredUnit.id).where(
-                ProductPriceMeteredUnit.meter_id == meter_id
+            select(ProductPrice.id).where(
+                ProductPrice.is_metered,
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id == meter_id,
             )
         )
         for product_price_id in price_ids:

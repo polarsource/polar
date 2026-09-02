@@ -70,6 +70,9 @@ from polar.models.product_price import (
     ProductPriceFixed as ProductPriceFixedModel,
 )
 from polar.models.product_price import (
+    ProductPriceMeteredTiers as ProductPriceMeteredTiersModel,
+)
+from polar.models.product_price import (
     ProductPriceMeteredUnit as ProductPriceMeteredUnitModel,
 )
 from polar.models.product_price import (
@@ -447,6 +450,35 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
         return ProductPriceMeteredUnitModel
 
 
+class ProductPriceMeteredTiersCreate(ProductPriceMeteredCreateBase):
+    """
+    Schema to create a metered price billed from tiers on consumed units.
+    """
+
+    amount_type: Literal[ProductPriceAmountType.metered_tiers]
+    tiers: Tiers = Field(description="Tiered pricing based on consumed units.")
+    cap_amount: Int32 | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Optional maximum amount in cents that can be charged, "
+            "regardless of the number of units consumed."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_last_tier_unbounded(self) -> Self:
+        if self.tiers.last_bound is not None:
+            raise ValueError(
+                "The last tier must be unbounded (bound set to null), "
+                "since usage has no upper limit"
+            )
+        return self
+
+    def get_model_class(self) -> builtins.type[ProductPriceMeteredTiersModel]:
+        return ProductPriceMeteredTiersModel
+
+
 class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
     """
     Schema to create a unit-based price: the buyer picks a quantity of units,
@@ -519,7 +551,8 @@ ProductPriceCreate = Annotated[
         | ProductPriceCustomCreate
         | ProductPriceSeatBasedCreate
         | ProductPriceUnitBasedCreate
-        | ProductPriceMeteredUnitCreate,
+        | ProductPriceMeteredUnitCreate
+        | ProductPriceMeteredTiersCreate,
         Discriminator("amount_type"),
     ],
     BeforeValidator(_coerce_legacy_free_price),
@@ -944,13 +977,7 @@ class ProductPriceMeter(IDSchema):
     )
 
 
-class ProductPriceMeteredUnit(ProductPriceBase):
-    """
-    A metered, usage-based, price for a product, with a fixed unit price.
-    """
-
-    amount_type: Literal[ProductPriceAmountType.metered_unit]
-    unit_amount: Decimal = Field(description="The price per unit in cents.")
+class ProductPriceMeteredBase(ProductPriceBase):
     cap_amount: int | None = Field(
         description=(
             "The maximum amount in cents that can be charged, "
@@ -961,12 +988,31 @@ class ProductPriceMeteredUnit(ProductPriceBase):
     meter: ProductPriceMeter = Field(description="The meter associated to the price.")
 
 
+class ProductPriceMeteredUnit(ProductPriceMeteredBase):
+    """
+    A metered, usage-based, price for a product, with a fixed unit price.
+    """
+
+    amount_type: Literal[ProductPriceAmountType.metered_unit]
+    unit_amount: Decimal = Field(description="The price per unit in cents.")
+
+
+class ProductPriceMeteredTiers(ProductPriceMeteredBase):
+    """
+    A metered, usage-based, price for a product, billed from tiers.
+    """
+
+    amount_type: Literal[ProductPriceAmountType.metered_tiers]
+    tiers: Tiers = Field(description="The pricing tiers based on consumed units.")
+
+
 NewProductPrice = Annotated[
     ProductPriceFixed
     | ProductPriceCustom
     | ProductPriceSeatBased
     | ProductPriceUnitBased
-    | ProductPriceMeteredUnit,
+    | ProductPriceMeteredUnit
+    | ProductPriceMeteredTiers,
     Discriminator("amount_type"),
     SetSchemaReference("ProductPrice"),
 ]

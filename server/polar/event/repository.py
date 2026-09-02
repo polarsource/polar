@@ -36,7 +36,7 @@ from polar.models import (
     MeterEvent,
 )
 from polar.models.event import EventSource
-from polar.models.product_price import ProductPriceMeteredUnit
+from polar.models.product_price import ProductPrice
 
 from .system import SystemEvent
 
@@ -495,14 +495,16 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
             .join(
-                ProductPriceMeteredUnit,
-                BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
+                ProductPrice,
+                BillingEntry.product_price_id == ProductPrice.id,
             )
             .where(
+                ProductPrice.is_metered,
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
-                ProductPriceMeteredUnit.meter_id == meter,
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id == meter,
                 BillingEntry.start_timestamp < cutoff,
                 BillingEntry.created_at <= cutoff,
             )

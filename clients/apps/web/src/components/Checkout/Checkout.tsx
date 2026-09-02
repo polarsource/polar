@@ -108,6 +108,11 @@ const Checkout = ({
   })
   const trialDueTodayExperiment = hasActiveTrial && isTreatment
 
+  const { isTreatment: ctaColorExperiment } = useExperiment(
+    'checkout_cta_primary_color',
+    { trackExposure: !embed },
+  )
+
   const openedTrackedRef = useRef(false)
   useEffect(() => {
     if (openedTrackedRef.current) return
@@ -482,6 +487,7 @@ const Checkout = ({
             loadingLabel={label}
             theme={theme}
             themePreset={themePreset}
+            ctaColorExperiment={ctaColorExperiment}
             disabled={disableCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}

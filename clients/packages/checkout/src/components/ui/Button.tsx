@@ -7,6 +7,8 @@ const baseClasses =
 const variantClasses = {
   default:
     'bg-black dark:bg-white dark:text-black text-white hover:opacity-85 transition-opacity duration-100',
+  primary:
+    'bg-[#0570de] text-white hover:opacity-85 transition-opacity duration-100',
   secondary:
     'text-black dark:text-white hover:bg-gray-200 dark:bg-polar-700 dark:hover:bg-polar-600 bg-gray-100 border dark:border-white/5 border-black/4',
   ghost:

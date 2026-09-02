@@ -424,8 +424,7 @@ export const ProductPricingSection = ({
 
         const indicesToRemove = currentPrices
           .map((p, i) =>
-            'amount_type' in p &&
-            p.amount_type === 'metered_unit' &&
+            isMeteredPrice(p as ProductPrice) &&
             'meter_id' in p &&
             p.meter_id === meterId
               ? i

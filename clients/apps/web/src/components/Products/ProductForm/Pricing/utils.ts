@@ -125,8 +125,10 @@ export const estimateMeteredCost = (
     price.amount_type === 'metered_tiers'
       ? tieredCost(price.tiers, units)
       : units * Number.parseFloat(price.unit_amount)
+
+  const rounded = Math.round(cost)
   if (price.cap_amount != null) {
-    return Math.min(cost, price.cap_amount)
+    return Math.min(rounded, price.cap_amount)
   }
-  return cost
+  return rounded
 }

@@ -70,9 +70,9 @@ describe('estimateMeteredCost', () => {
       { position: 'at the tier boundary', units: 1000, expected: 5000 },
       { position: 'across tiers', units: 2000, expected: 6000 },
       {
-        position: 'with fractional usage',
+        position: 'with fractional usage, rounded to whole cents',
         units: 1000.5,
-        expected: 5000.5,
+        expected: 5001,
       },
     ])('bills usage $position', ({ units, expected }) => {
       const p = tieredPrice(ladder('graduated'))
@@ -109,6 +109,11 @@ describe('estimateMeteredCost', () => {
     it('honours a zero cap, matching the server', () => {
       const p = price({ unit_amount: '0.5', cap_amount: 0 })
       expect(estimateMeteredCost(p, 100)).toBe(0)
+    })
+
+    it('rounds before capping, matching the server', () => {
+      const p = price({ unit_amount: '0.996', cap_amount: 100 })
+      expect(estimateMeteredCost(p, 100)).toBe(100)
     })
   })
 })

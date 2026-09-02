@@ -1,0 +1,21 @@
+server/polar/models/user.py
+  s_eb87cbcf635926::t_ec36a6cc6991bf 79,81
+server/migrations/versions/2026-08-31-1015_enforce_oauth_accounts_access_token_encrypted_not_null.py
+  s_eb87cbcf635926::t_044e82714400b1 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "f89debdac9a3587044fcffa4d1cd2f6f6906c197",
+  "prompts": {},
+  "sessions": {
+    "s_eb87cbcf635926": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "065c9e8d-64ad-4cdc-8713-9276a0ac8b9a",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

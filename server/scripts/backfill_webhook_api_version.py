@@ -55,6 +55,7 @@ async def backfill_webhook_api_version(
                 WebhookEvent.id.in_(
                     select(WebhookEvent.id)
                     .where(WebhookEvent.api_version.is_(None))
+                    .order_by(WebhookEvent.created_at.asc())
                     .limit(limit_bindparam())
                 ),
             )

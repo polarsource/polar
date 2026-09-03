@@ -33,6 +33,7 @@ const MeteredTierRows: React.FC<MeteredTierRowsProps> = ({
   const { scale, label } = getMeterUnitFormat(price.meter.unit ?? 'scalar', {
     customLabel: price.meter.custom_label,
     customMultiplier: price.meter.custom_multiplier,
+    locale,
   })
   const formatUnits = new Intl.NumberFormat(locale)
 

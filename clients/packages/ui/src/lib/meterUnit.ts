@@ -21,6 +21,8 @@ const UNIT_FORMATS: Record<Exclude<MeterUnit, 'custom'>, MeterUnitFormat> = {
  *
  * For custom units, pass `customLabel` and `customMultiplier` to override the
  * defaults. Without them, custom units fall back to scalar (scale=1, label="unit").
+ * When the multiplier is above 1 it is included in the label so the displayed
+ * rate reads as a price per `customMultiplier` base units.
  *
  * @example
  * // Token: $10 / 1M tokens
@@ -28,18 +30,27 @@ const UNIT_FORMATS: Record<Exclude<MeterUnit, 'custom'>, MeterUnitFormat> = {
  * const displayAmount = unitAmountCents * scale  // 0.001 * 1_000_000 = 1000 cents = $10
  *
  * @example
- * // Custom: $5 / 1000 requests
+ * // Custom: $5 / 1,000 requests
  * const { scale, label } = getMeterUnitFormat('custom', { customLabel: 'requests', customMultiplier: 1000 })
  * const displayAmount = unitAmountCents * scale  // 0.5 * 1000 = 500 cents = $5
  */
 export function getMeterUnitFormat(
   unit: MeterUnit,
-  options?: { customLabel?: string | null; customMultiplier?: number | null },
+  options?: {
+    customLabel?: string | null
+    customMultiplier?: number | null
+    locale?: string
+  },
 ): MeterUnitFormat {
   if (unit === 'custom') {
+    const scale = options?.customMultiplier ?? 1
+    const label = options?.customLabel ?? 'unit'
     return {
-      scale: options?.customMultiplier ?? 1,
-      label: options?.customLabel ?? 'unit',
+      scale,
+      label:
+        scale > 1
+          ? `${new Intl.NumberFormat(options?.locale ?? 'en-US').format(scale)} ${label}`
+          : label,
     }
   }
   return UNIT_FORMATS[unit] ?? UNIT_FORMATS.scalar

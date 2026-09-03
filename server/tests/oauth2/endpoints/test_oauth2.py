@@ -596,6 +596,7 @@ class TestOAuth2Authorize:
         location = response.headers["location"]
         assert location.startswith(params["redirect_uri"])
         assert "code=" in location
+        assert parse_qs(urlparse(location).query)["iss"] == [settings.BASE_URL]
 
     @pytest.mark.auth
     async def test_new_scope(
@@ -796,6 +797,7 @@ class TestOAuth2Consent:
         assert response.status_code == 302
         location = response.headers["location"]
         assert "error=access_denied" in location
+        assert parse_qs(urlparse(location).query)["iss"] == [settings.BASE_URL]
 
     @pytest.mark.auth
     async def test_allow(

@@ -10,6 +10,7 @@ from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6749.errors import (
     UnsupportedResponseTypeError,
 )
+from authlib.oauth2.rfc6749.hooks import hooked
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
 from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
 from authlib.oauth2.rfc7591 import (
@@ -19,6 +20,7 @@ from authlib.oauth2.rfc7592 import (
     ClientConfigurationEndpoint as _ClientConfigurationEndpoint,
 )
 from authlib.oauth2.rfc7662 import IntrospectionEndpoint as _IntrospectionEndpoint
+from authlib.oauth2.rfc9207 import IssuerParameter as _IssuerParameter
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 from starlette.requests import Request
@@ -46,6 +48,21 @@ from .requests import StarletteJsonRequest, StarletteOAuth2Request
 from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
 
 logger: Logger = structlog.get_logger(__name__)
+
+
+class OAuth2Response(Response):
+    @property
+    def location(self) -> str | None:
+        return self.headers.get("Location")
+
+    @location.setter
+    def location(self, value: str) -> None:
+        self.headers["Location"] = value
+
+
+class IssuerParameter(_IssuerParameter):
+    def get_issuer(self) -> str:
+        return ISSUER
 
 
 def _get_server_metadata(server: "AuthorizationServer") -> dict[str, typing.Any]:
@@ -307,6 +324,7 @@ class AuthorizationServer(_AuthorizationServer):
         self._error_uris = dict(error_uris) if error_uris is not None else None
 
         self.register_token_generator("default", self.create_bearer_token_generator())
+        self.register_extension(IssuerParameter())
 
     @classmethod
     def build(
@@ -394,7 +412,7 @@ class AuthorizationServer(_AuthorizationServer):
     ) -> Response:
         if isinstance(payload, dict):
             payload = json.dumps(payload)
-        return Response(payload, status_code, {k: v for k, v in headers})
+        return OAuth2Response(payload, status_code, {k: v for k, v in headers})
 
     def create_bearer_token_generator(self) -> BearerTokenGenerator:
         def _access_token_generator(
@@ -411,6 +429,7 @@ class AuthorizationServer(_AuthorizationServer):
 
         return BearerTokenGenerator(_access_token_generator, _refresh_token_generator)
 
+    @hooked
     def create_authorization_response(
         self,
         request: Request,

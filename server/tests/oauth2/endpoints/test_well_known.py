@@ -25,3 +25,4 @@ async def test_openid_configuration(client: AsyncClient) -> None:
     assert len(json["revocation_endpoint_auth_methods_supported"]) > 0
     assert len(json["introspection_endpoint_auth_methods_supported"]) > 0
     assert len(json["code_challenge_methods_supported"]) > 0
+    assert json["authorization_response_iss_parameter_supported"] is True

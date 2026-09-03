@@ -164,14 +164,6 @@ class PayoutAccountService:
         session: AsyncSession,
         payout_account: PayoutAccount,
     ) -> None:
-        """Delete a payout account that is no longer referenced by any organization.
-
-        A payout account can be shared by several organizations owned by the same
-        person, so it must never be deleted while any organization still links to
-        it. Callers that want to remove a specific organization's link (and only
-        delete the account when it becomes orphaned) must use
-        `unlink_and_maybe_delete`.
-        """
         organization_repository = OrganizationRepository.from_session(session)
         linked_organizations = await organization_repository.get_all_by_payout_account(
             payout_account.id
@@ -186,14 +178,6 @@ class PayoutAccountService:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        """Unlink a single organization from its payout account.
-
-        The payout account is only actually deleted (Stripe account removed and
-        soft-deleted) once no other organization still references it. While it's
-        still shared, the account is left untouched — the pending-payout and
-        Stripe balance guards apply to the whole account and must not block or
-        destroy an account another organization depends on.
-        """
         payout_account_id = organization.payout_account_id
         if payout_account_id is None:
             return
@@ -208,7 +192,9 @@ class PayoutAccountService:
 
         # Still shared: just drop this organization's link, keep the account.
         if other_organizations:
-            await organization_repository.remove_payout_account(organization.id)
+            await organization_repository.remove_payout_account(
+                organization.id, payout_account_id
+            )
             return
 
         # Would be orphaned: run the deletion guards before unlinking so a failed
@@ -218,7 +204,9 @@ class PayoutAccountService:
         if payout_account is not None:
             await self._delete(session, payout_account)
 
-        await organization_repository.remove_payout_account(organization.id)
+        await organization_repository.remove_payout_account(
+            organization.id, payout_account_id
+        )
 
     async def _delete(
         self, session: AsyncSession, payout_account: PayoutAccount

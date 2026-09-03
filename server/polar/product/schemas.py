@@ -84,6 +84,7 @@ from polar.models.product_price import (
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.tiers import (
+    BIGINT_MAX,
     NonContiguousTiersError,
     SeatTiersData,
     SeatTierType,
@@ -136,6 +137,7 @@ SeatPriceAmount = Annotated[
     Field(
         ...,
         ge=0,
+        le=BIGINT_MAX,
         description="The price per seat in cents. Can be 0 for free tiers.",
     ),
 ]

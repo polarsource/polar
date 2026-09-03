@@ -8,6 +8,6 @@
     "generate": "nuxi generate"
   },
   "dependencies": {
-    "nuxt": "catalog:"
+    "nuxt": "^3.15.4"
   }
 }

@@ -8,6 +8,7 @@ from polar.routing import APIRouter
 from . import auth
 from .schemas import CustomerSession as CustomerSessionSchema
 from .schemas import CustomerSessionCreate
+from .service import AmbiguousExternalCustomerID
 from .service import customer_session as customer_session_service
 
 router = APIRouter(
@@ -15,13 +16,22 @@ router = APIRouter(
     tags=["customer-sessions", APITag.public],
 )
 
+AmbiguousExternalCustomer = {
+    "description": "The external customer ID matches customers in several "
+    "accessible organizations.",
+    "model": AmbiguousExternalCustomerID.schema(),
+}
+
 
 @router.post(
     "/",
     response_model=CustomerSessionSchema,
     status_code=201,
     summary="Create Customer Session",
-    responses={201: {"description": "Customer session created."}},
+    responses={
+        201: {"description": "Customer session created."},
+        409: AmbiguousExternalCustomer,
+    },
 )
 async def create(
     customer_session_create: CustomerSessionCreate,

@@ -4,13 +4,17 @@ import pytest
 from httpx import AsyncClient
 
 from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
-from polar.models import Customer, Member, Organization, UserOrganization
+from polar.models import Customer, Member, Organization, User, UserOrganization
 from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import (
+    create_account,
+    create_customer,
+    create_organization,
+)
 
 
 @pytest.mark.asyncio
@@ -455,3 +459,37 @@ class TestCreate:
         )
 
         assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_external_customer_id_ambiguous_across_organizations(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="cus_dup",
+            email="a@example.com",
+        )
+
+        # A second org the same user belongs to has a customer with the same
+        # external ID, making the external lookup ambiguous.
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
+        await save_fixture(UserOrganization(user=user, organization=other_org))
+        await create_customer(
+            save_fixture,
+            organization=other_org,
+            external_id="cus_dup",
+            email="b@example.com",
+        )
+
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={"external_customer_id": "cus_dup"},
+        )
+        assert response.status_code == 409

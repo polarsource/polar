@@ -103,12 +103,14 @@ from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
     is_static_price,
+    is_unit_price,
 )
 from polar.product.price_set import (
     NoPricesForCurrencies,
     PriceSet,
 )
 from polar.product.repository import ProductRepository
+from polar.product.unit_price import validate_unit_limits
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
@@ -712,16 +714,18 @@ class OrderService:
         prices: Iterable[ProductPrice],
         *,
         amount: int | None,
+        units: int | None,
         label: str | None,
     ) -> Sequence[OrderItem]:
         """
         Build line items for an off-session draft order over a product's
-        fixed/free static prices.
+        fixed/free/unit-based static prices.
 
         `amount`, when provided, overrides the charge (the merchant sets a custom
         price for this order); otherwise the price's own amount is used — the
-        configured amount for fixed prices, 0 for free prices. `label` overrides
-        the line item's description, defaulting to the product name.
+        configured amount for fixed prices, the tiered amount for `units` units
+        for unit-based prices, 0 for free prices. `label` overrides the line
+        item's description, defaulting to the product name and its unit count.
         """
         items: list[OrderItem] = []
         for price in prices:
@@ -730,7 +734,11 @@ class OrderService:
             if amount is not None:
                 items.append(
                     OrderItem(
-                        label=label if label is not None else price.product.name,
+                        label=label
+                        if label is not None
+                        else OrderItem.format_price_label(
+                            price.product, price, seats=None, units=units
+                        ),
                         amount=amount,
                         tax_amount=0,
                         net_amount=amount,
@@ -739,7 +747,7 @@ class OrderService:
                     )
                 )
             else:
-                items.append(OrderItem.from_price(price, 0, label=label))
+                items.append(OrderItem.from_price(price, 0, units=units, label=label))
         return items
 
     def _validate_purchase_amount(self, payload: OrderCreate, currency: str) -> None:
@@ -955,25 +963,12 @@ class OrderService:
                     }
                 ]
             )
-        if product.has_unit_based_price:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": (
-                            "Unit-based products are not supported by the "
-                            "off-session charge API."
-                        ),
-                        "input": payload.product_id,
-                    }
-                ]
-            )
 
-        # Off-session charges only support fixed-price and free products — the
-        # amount is predetermined by the product, or set by the merchant via
-        # `amount`, never chosen by the customer. Pay-what-you-want (custom)
-        # prices are rejected.
+        # Off-session charges only support fixed-price, free and unit-based
+        # products — the amount is predetermined by the product, computed from
+        # the units the merchant declares, or set by the merchant via `amount`,
+        # never chosen by the customer. Pay-what-you-want (custom) prices are
+        # rejected.
         static_prices = [price for price in product.prices if is_static_price(price)]
         if not static_prices:
             raise PolarRequestValidationError(
@@ -986,13 +981,19 @@ class OrderService:
                     }
                 ]
             )
-        if any(not is_fixed_price(price) for price in static_prices):
+        if any(
+            not (is_fixed_price(price) or is_unit_price(price))
+            for price in static_prices
+        ):
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": "Off-session charges only support fixed-price products.",
+                        "msg": (
+                            "Off-session charges only support fixed-price and "
+                            "unit-based products."
+                        ),
                         "input": payload.product_id,
                     }
                 ]
@@ -1044,11 +1045,41 @@ class OrderService:
                 ]
             ) from e
 
+        # The unit price comes from the currency-scoped set: tiers and bounds
+        # are configured per currency, so the quantity is validated against the
+        # price actually being charged.
+        unit_price = currency_prices.get_unit_price()
+        if unit_price is not None:
+            if payload.units is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "units"),
+                            "msg": "Units are required for unit-based pricing.",
+                            "input": None,
+                        }
+                    ]
+                )
+            validate_unit_limits(unit_price, payload.units)
+        elif payload.units is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "units"),
+                        "msg": "Units can only be set for unit-based pricing.",
+                        "input": payload.units,
+                    }
+                ]
+            )
+
         self._validate_purchase_amount(payload, currency)
         items = list(
             self._build_draft_order_items(
                 currency_prices,
                 amount=payload.amount,
+                units=payload.units,
                 label=payload.description,
             )
         )
@@ -1138,6 +1169,7 @@ class OrderService:
                 custom_field_data=custom_field_data,
                 items=items,
                 seats=None,
+                units=payload.units,
             ),
             flush=True,
         )

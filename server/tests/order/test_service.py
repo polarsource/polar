@@ -97,6 +97,7 @@ from polar.order.service import (
 from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_seat_price, is_static_price
 from polar.product.price_set import PriceSet
+from polar.product.tiers import Tiers, TierType
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
     CalculationExpiredError,
@@ -6980,6 +6981,148 @@ class TestCreateDraftOrder:
             await order_service.create_draft_order(
                 session, off_session_organization, payload
             )
+
+    async def test_unit_based_product_requires_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            amount=5000,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_units_on_non_unit_product_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            units=3,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_unit_based_product_priced_from_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            price_per_unit=2900,
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            units=3,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.units == 3
+        assert order.subtotal_amount == 8700
+        assert order.items[0].amount == 8700
+        assert order.items[0].label == "Product (3 units)"
+
+    async def test_units_below_minimum_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            minimum_units=5,
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            units=4,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_units_above_maximum_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            tiers=Tiers.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [{"bound": 100, "unit_amount": "2900"}],
+                }
+            ),
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            units=101,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_amount_overrides_unit_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            price_per_unit=2900,
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            units=3,
+            amount=5000,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.units == 3
+        assert order.subtotal_amount == 5000
+        assert order.items[0].label == "Product (3 units)"
 
 
 @pytest.mark.asyncio

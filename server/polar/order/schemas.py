@@ -25,6 +25,7 @@ from polar.kit.currency import format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
     IDSchema,
+    Int32,
     MergeJSONSchema,
     Schema,
     TimestampedSchema,
@@ -310,7 +311,7 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
     product_id: UUID4 = Field(
         description="The ID of the one-time product to charge for. "
         "Must belong to the order's organization. "
-        "Only fixed-price and free products are supported."
+        "Only fixed-price, free and unit-based products are supported."
     )
     currency: str | None = Field(
         None,
@@ -329,6 +330,15 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "the product's price; defaults to the product's configured price "
             "(0 for free products). A positive amount must be at least the "
             "currency's minimum."
+        ),
+    )
+    units: Int32 | None = Field(
+        None,
+        ge=1,
+        description=(
+            "The number of units to charge for. Required when the product has "
+            "unit-based pricing, and rejected otherwise. The amount comes from "
+            "the price's tiers, unless `amount` overrides it."
         ),
     )
     # `BeforeValidator` runs the strip/empty→None normalization *before* the

@@ -14,7 +14,7 @@ from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_order
+from tests.fixtures.random_objects import create_order, create_product_unit_based
 
 
 @pytest_asyncio.fixture
@@ -827,6 +827,35 @@ class TestCreateOrder:
             },
         )
         assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_valid_unit_based(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            price_per_unit=2900,
+            recurring_interval=None,
+        )
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "customer_id": str(customer.id),
+                "product_id": str(product.id),
+                "units": 3,
+            },
+        )
+        assert response.status_code == 201
+        body = response.json()
+        assert body["units"] == 3
+        assert body["net_amount"] == 8700
 
 
 @pytest.mark.asyncio

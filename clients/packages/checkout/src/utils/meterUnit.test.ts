@@ -49,12 +49,29 @@ describe('getMeterUnitFormat', () => {
       expect(scale).toBe(1000)
     })
 
-    it('returns customLabel as label', () => {
+    it('prefixes the label with the multiplier so the rate reads per N units', () => {
       const { label } = getMeterUnitFormat('custom', {
         customLabel: 'request',
         customMultiplier: 1000,
       })
-      expect(label).toBe('request')
+      expect(label).toBe('1,000 request')
+    })
+
+    it('formats the multiplier for the given locale', () => {
+      const { label } = getMeterUnitFormat('custom', {
+        customLabel: 'request',
+        customMultiplier: 1000,
+        locale: 'de-DE',
+      })
+      expect(label).toBe('1.000 request')
+    })
+
+    it('returns the bare label when the multiplier is 1', () => {
+      const { label } = getMeterUnitFormat('custom', {
+        customLabel: 'gigabyte',
+        customMultiplier: 1,
+      })
+      expect(label).toBe('gigabyte')
     })
 
     it('scales $5/1000 requests correctly', () => {
@@ -86,7 +103,7 @@ describe('getMeterUnitFormat', () => {
         customLabel: null,
         customMultiplier: 1000,
       })
-      expect(label).toBe('unit')
+      expect(label).toBe('1,000 unit')
     })
   })
 

@@ -151,7 +151,7 @@ describe('MeteredPriceLabel', () => {
       )
 
       expect(container.textContent).toContain('$5')
-      expect(container.textContent).toContain('/ request')
+      expect(container.textContent).toContain('/ 1,000 request')
     })
 
     it('falls back to "unit" label when custom_label is null', () => {
@@ -170,7 +170,7 @@ describe('MeteredPriceLabel', () => {
         <MeteredPriceLabel price={price} locale="en" />,
       )
 
-      expect(container.textContent).toContain('/ unit')
+      expect(container.textContent).toContain('/ 100 unit')
     })
   })
 

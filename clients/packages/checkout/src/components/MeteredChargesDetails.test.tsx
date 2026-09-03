@@ -180,6 +180,43 @@ describe('MeteredChargesDetails', () => {
     expect(row).toHaveTextContent('/ 1M tokens')
   })
 
+  it('surfaces the custom multiplier in the rate label so it reconciles with the included count', () => {
+    const base = createCheckout()
+    const meteredPrice = createMeteredPrice({
+      id: 'price_metered_1',
+      unit_amount: '0.5',
+      meter: {
+        id: 'meter_1',
+        name: 'API Calls',
+        unit: 'custom' as const,
+        custom_label: 'request',
+        custom_multiplier: 1000,
+      },
+    })
+    const checkout = createCheckout({
+      prices: {
+        prod_1: [base.product_price, meteredPrice],
+      },
+      product: {
+        ...base.product,
+        benefits: [createMeterCreditBenefit('meter_1', 10_000)],
+      },
+    })
+
+    render(<MeteredChargesDetails checkout={checkout} locale="en" />)
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /additional metered charges may apply/i,
+      }),
+    )
+
+    const row = screen.getByTestId('detail-row-API Calls')
+    expect(row).toHaveTextContent('10,000 request included')
+    expect(row).toHaveTextContent('$5.00')
+    expect(row).toHaveTextContent('/ 1,000 request')
+  })
+
   it('sums units across multiple credit benefits on the same meter', () => {
     render(
       <MeteredChargesDetails

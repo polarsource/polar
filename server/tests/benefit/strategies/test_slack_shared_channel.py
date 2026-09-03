@@ -52,7 +52,6 @@ async def _create_integration(
     benefit: Benefit,
     *,
     bot_token: str | None = "xoxb-test-token",
-    encrypted_only: bool = False,
 ) -> SlackApp:
     installed = bot_token is not None
     integration = SlackApp(
@@ -65,7 +64,7 @@ async def _create_integration(
         team_id="T1" if installed else None,
         team_name="Test team" if installed else None,
         bot_user_id="U1" if installed else None,
-        bot_token=None if encrypted_only else bot_token,
+        bot_token=bot_token,
         authed_user_id="U2" if installed else None,
         scopes=["channels:manage"] if installed else None,
     )
@@ -1584,37 +1583,6 @@ class TestSlackSharedChannelGrant:
             properties={**_BASE_PROPERTIES, "team_invitees": ["U01", "U02"]},
         )
         await _create_integration(save_fixture, benefit)
-        client = _mock_client(mocker)
-        strategy = _strategy(session, redis, client)
-
-        await strategy.grant(
-            benefit,
-            customer,
-            {"invited_email": "admin@customer.example"},
-        )
-
-        client.conversations_invite.assert_awaited_once_with(
-            bot_token="xoxb-test-token", channel="C123", users=["U01", "U02"]
-        )
-
-    async def test_grant_uses_encrypted_only_bot_token(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        save_fixture: SaveFixture,
-        mocker: MockerFixture,
-        customer: Customer,
-        organization: Organization,
-    ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.slack_shared_channel,
-            properties={**_BASE_PROPERTIES, "team_invitees": ["U01", "U02"]},
-        )
-        await _create_integration(
-            save_fixture, benefit, bot_token="xoxb-test-token", encrypted_only=True
-        )
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 

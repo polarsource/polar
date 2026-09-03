@@ -21,7 +21,8 @@ export const UnitMaximumField: React.FC<UnitMaximumFieldProps> = ({
   index,
   unitLabelPlural,
 }) => {
-  const { control, setValue, watch } = useFormContext<ProductFormType>()
+  const { control, setValue, trigger, watch } =
+    useFormContext<ProductFormType>()
 
   const tiers = watch(`prices.${index}.tiers.tiers`)
   const minimumUnits = watch(`prices.${index}.minimum_units`)
@@ -69,6 +70,12 @@ export const UnitMaximumField: React.FC<UnitMaximumFieldProps> = ({
                   field.onChange(Number.isNaN(parsed) ? null : parsed)
                 }
                 setValue(`prices.${index}.id`, '')
+              }}
+              onBlur={() => {
+                field.onBlur()
+                // The product form validates on submit, but a bad cap is
+                // worth saying as soon as the merchant leaves the field.
+                trigger(field.name)
               }}
             />
           </FormControl>

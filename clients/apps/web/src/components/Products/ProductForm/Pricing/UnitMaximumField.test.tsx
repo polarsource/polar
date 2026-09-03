@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { FormProvider, useForm } from 'react-hook-form'
+import { type Control, FormProvider, useForm, useWatch } from 'react-hook-form'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@polar-sh/orbit', () => ({
@@ -19,6 +19,12 @@ type Values = {
     tiers: { type: string; tiers: Tier[] }
   }[]
 }
+
+const Tiers = ({ control }: { control: Control<Values> }) => (
+  <pre data-testid="tiers">
+    {JSON.stringify(useWatch({ control, name: 'prices.0.tiers.tiers' }))}
+  </pre>
+)
 
 const Harness = ({
   tiers,
@@ -40,12 +46,10 @@ const Harness = ({
   })
   return (
     <FormProvider {...form}>
+      <Tiers control={form.control} />
       <form data-testid="form" onSubmit={form.handleSubmit(() => {})}>
         <UnitMaximumField index={0} unitLabelPlural="devices" />
       </form>
-      <pre data-testid="tiers">
-        {JSON.stringify(form.watch('prices.0.tiers.tiers'))}
-      </pre>
     </FormProvider>
   )
 }
@@ -120,16 +124,32 @@ describe('UnitMaximumField', () => {
     render(<Harness tiers={tiered} />)
 
     fireEvent.change(maximumInput(), { target: { value: '10' } })
-    fireEvent.submit(screen.getByTestId('form'))
+    fireEvent.blur(maximumInput())
 
     expect(await screen.findByText(/greater than 10/)).toBeTruthy()
+  })
+
+  it('rejects a maximum well below the tier beneath it', async () => {
+    render(
+      <Harness
+        tiers={[
+          { bound: 1000, unit_amount: 1000 },
+          { bound: null, unit_amount: 800 },
+        ]}
+      />,
+    )
+
+    fireEvent.change(maximumInput(), { target: { value: '12' } })
+    fireEvent.blur(maximumInput())
+
+    expect(await screen.findByText(/greater than 1,?000/)).toBeTruthy()
   })
 
   it('rejects a maximum below the minimum', async () => {
     render(<Harness tiers={flat} minimumUnits={5} />)
 
     fireEvent.change(maximumInput(), { target: { value: '3' } })
-    fireEvent.submit(screen.getByTestId('form'))
+    fireEvent.blur(maximumInput())
 
     expect(await screen.findByText(/at least the minimum of 5/)).toBeTruthy()
   })

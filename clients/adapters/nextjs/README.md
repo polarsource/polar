@@ -13,10 +13,10 @@ Create a Checkout handler which takes care of redirections.
 import { Checkout } from '@polar-sh/nextjs'
 
 export const GET = Checkout({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
   successUrl: process.env.SUCCESS_URL,
   returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Checkout
-  server: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  environment: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
   theme: 'dark', // Enforces the theme - System-preferred theme will be set if left omitted
 })
 ```
@@ -40,12 +40,13 @@ Create a customer portal where your customer can view orders and subscriptions.
 ```typescript
 // portal/route.ts
 import { CustomerPortal } from '@polar-sh/nextjs'
+import type { NextRequest } from 'next/server'
 
 export const GET = CustomerPortal({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
-  getCustomerId: (req: NextRequest) => '', // Fuction to resolve a Polar Customer ID
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  getCustomerId: async (req: NextRequest) => '', // Function to resolve a Polar Customer ID
   returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Customer Portal
-  server: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  environment: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
 })
 ```
 
@@ -71,24 +72,45 @@ export const POST = Webhooks({
 The Webhook handler also supports granular handlers for easy integration.
 
 - onCheckoutCreated: (payload) =>
+- onCheckoutExpired: (payload) =>
 - onCheckoutUpdated: (payload) =>
 - onOrderCreated: (payload) =>
 - onOrderUpdated: (payload) =>
 - onOrderPaid: (payload) =>
+- onOrderRefunded: (payload) =>
+- onRefundCreated: (payload) =>
+- onRefundUpdated: (payload) =>
 - onSubscriptionCreated: (payload) =>
 - onSubscriptionUpdated: (payload) =>
 - onSubscriptionActive: (payload) =>
 - onSubscriptionCanceled: (payload) =>
+- onSubscriptionCycled: (payload) =>
+- onSubscriptionPastDue: (payload) =>
+- onSubscriptionPaused: (payload) =>
+- onSubscriptionResumed: (payload) =>
 - onSubscriptionRevoked: (payload) =>
+- onSubscriptionUncanceled: (payload) =>
 - onProductCreated: (payload) =>
 - onProductUpdated: (payload) =>
 - onOrganizationUpdated: (payload) =>
 - onBenefitCreated: (payload) =>
 - onBenefitUpdated: (payload) =>
 - onBenefitGrantCreated: (payload) =>
+- onBenefitGrantCycled: (payload) =>
 - onBenefitGrantUpdated: (payload) =>
 - onBenefitGrantRevoked: (payload) =>
 - onCustomerCreated: (payload) =>
 - onCustomerUpdated: (payload) =>
 - onCustomerDeleted: (payload) =>
 - onCustomerStateChanged: (payload) =>
+- onCustomerSeatAssigned: (payload) =>
+- onCustomerSeatClaimed: (payload) =>
+- onCustomerSeatRevoked: (payload) =>
+- onDiscountCreated: (payload) =>
+- onDiscountUpdated: (payload) =>
+- onDiscountDeleted: (payload) =>
+- onMemberCreated: (payload) =>
+- onMemberUpdated: (payload) =>
+- onMemberDeleted: (payload) =>
+
+Webhook payloads use the generated SDK's snake_case fields. Signed events unknown to the installed SDK version are acknowledged and ignored so newly introduced event types do not cause retries.

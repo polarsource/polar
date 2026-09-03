@@ -1,0 +1,19 @@
+docs/integrate/webhooks/delivery.mdx
+  s_8328894b8c4ada::t_c2f311101452ef 231-234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "a3892736f3db24eccd7ca01ea720666ef9b20488",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

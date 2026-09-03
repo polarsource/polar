@@ -1,206 +1,264 @@
 ---
-title: Polar over Model Context Protocol (MCP)
-description: Extend the capabilities of your AI agents with Polar's MCP Server
+title: Model Context Protocol (MCP)
+description: Connect AI agents to Polar to manage products, customers, subscriptions, orders, and more.
 sidebarTitle: Model Context Protocol (MCP)
 ---
 
-<img src="/assets/integrate/mcp/mcp.png" />
+Use Polar's remote Model Context Protocol (MCP) server to give AI agents secure access to your Polar organization. Agents can look up data and take actions across your products, customers, subscriptions, orders, benefits, and more.
 
-Supercharge your AI agents with Polar as a Model Context Protocol (MCP) server.
+<Info>
+  Polar MCP uses OAuth. When you connect a client, your browser opens so you can sign in and authorize access to your organization. You never need to copy an API key into your agent.
+</Info>
 
-## What is MCP?
+## Choose an environment
 
-MCP is a protocol for integrating tools with AI agents. It can greatly enhance the capabilities of your AI agents by providing them with real-time data and context.
+Use the production server for your live organization and the sandbox server while building or testing.
 
-Polar offers a remote MCP server that you can connect to from most AI clients.
+| Environment | Server URL |
+| --- | --- |
+| Production | `https://mcp.polar.sh/mcp/polar-mcp` |
+| Sandbox | `https://mcp.polar.sh/mcp/polar-sandbox` |
 
-## How does it work?
+## Connect your agent
 
-You need a MCP-capable agent environment to use Polar over MCP. A few of them are Claude Desktop and Cursor.
+Choose your client and add the production server. To connect to the sandbox instead, replace the production URL with `https://mcp.polar.sh/mcp/polar-sandbox` and use a distinct name such as `polar-sandbox`.
 
-## Connecting to Polar MCP
+<Tabs>
+  <Tab title="Cursor">
+    Add the following to `.cursor/mcp.json` in your project, or to `~/.cursor/mcp.json` to make Polar available in every project:
 
-Polar provides two MCP servers:
-
-- **Production**: `https://mcp.polar.sh/mcp/polar-mcp` - Connect to your live Polar organization
-- **Sandbox**: `https://mcp.polar.sh/mcp/polar-sandbox` - Connect to the Polar sandbox environment for testing
-
-When you can specify a MCP URL, use one of the URLs above depending on your environment.
-
-If you have to specify a command, use:
-
-```json
-{
-  "mcpServers": {
-    "Polar": {
-      "command": "npx",
-      "args": ["mcp-remote", "https://mcp.polar.sh/mcp/polar-mcp"]
+    ```json
+    {
+      "mcpServers": {
+        "polar": {
+          "url": "https://mcp.polar.sh/mcp/polar-mcp"
+        }
+      }
     }
-  }
-}
-```
+    ```
 
-For sandbox:
+    Open Cursor's MCP settings and connect to `polar` to complete authorization.
+  </Tab>
 
-```json
-{
-  "mcpServers": {
-    "Polar Sandbox": {
-      "command": "npx",
-      "args": ["mcp-remote", "https://mcp.polar.sh/mcp/polar-sandbox"]
+  <Tab title="Claude Code">
+    Run:
+
+    ```bash
+    claude mcp add --transport http polar https://mcp.polar.sh/mcp/polar-mcp
+    ```
+
+    Then open `/mcp` in Claude Code and authenticate `polar` with OAuth.
+  </Tab>
+
+  <Tab title="ChatGPT">
+    In ChatGPT, open **Settings** → **Connectors**, enable developer mode if prompted, and add a custom connector with:
+
+    - **Name:** `Polar`
+    - **MCP server URL:** `https://mcp.polar.sh/mcp/polar-mcp`
+
+    Save the connector, select **Connect**, and complete authorization in the browser.
+  </Tab>
+
+  <Tab title="Claude Desktop">
+    Open **Settings** → **Connectors**, select **Add custom connector**, and enter:
+
+    - **Name:** `Polar`
+    - **MCP server URL:** `https://mcp.polar.sh/mcp/polar-mcp`
+
+    Save the connector, select **Connect**, and complete authorization in the browser.
+  </Tab>
+
+  <Tab title="Codex">
+    Add the following to `~/.codex/config.toml`, or to `.codex/config.toml` for a trusted project:
+
+    ```toml
+    [mcp_servers.polar]
+    url = "https://mcp.polar.sh/mcp/polar-mcp"
+    ```
+
+    Then authenticate with OAuth:
+
+    ```bash
+    codex mcp login polar
+    ```
+
+    Use `/mcp` in Codex to confirm that the server is connected.
+  </Tab>
+
+  <Tab title="OpenCode">
+    Add the following to `opencode.jsonc`:
+
+    ```jsonc
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "mcp": {
+        "polar": {
+          "type": "remote",
+          "url": "https://mcp.polar.sh/mcp/polar-mcp"
+        }
+      }
     }
-  }
-}
-```
+    ```
 
-### Cursor
+    OpenCode will ask you to authorize Polar when it first connects.
+  </Tab>
 
-In `.cursor/mcp.json`, add:
+  <Tab title="Other clients">
+    If your client accepts a remote MCP URL, add:
 
-```json
-{
-  "mcpServers": {
-    "Polar": {
-      "url": "https://mcp.polar.sh/mcp/polar-mcp"
+    ```text
+    https://mcp.polar.sh/mcp/polar-mcp
+    ```
+
+    If it only supports local commands, use the `mcp-remote` bridge:
+
+    ```json
+    {
+      "mcpServers": {
+        "polar": {
+          "command": "npx",
+          "args": [
+            "mcp-remote",
+            "https://mcp.polar.sh/mcp/polar-mcp"
+          ]
+        }
+      }
     }
-  }
-}
-```
+    ```
+  </Tab>
+</Tabs>
 
-For sandbox:
+## How dynamic toolsets work
 
-```json
-{
-  "mcpServers": {
-    "Polar Sandbox": {
-      "url": "https://mcp.polar.sh/mcp/polar-sandbox"
-    }
-  }
-}
-```
+Polar supports a broad set of operations. Sending every operation and its full input schema to an agent at the start of every conversation would consume context, make tool selection less reliable, and add unnecessary latency.
 
-### Windsurf
+Instead, Polar uses a dynamic toolset with three lightweight meta-tools. Your agent discovers the relevant operation at runtime, loads only the schema it needs, and then executes it.
 
-In `mcp_config.json`, add:
+| Tool | What it does |
+| --- | --- |
+| `search_tools` | Searches the Polar operation catalog and returns the tools relevant to the agent's task. |
+| `describe_tools` | Loads the description and input schema for selected tools before the agent calls them. |
+| `execute_tool` | Runs a selected tool with the supplied arguments and returns the result. |
 
-```json
-{
-  "mcpServers": {
-    "Polar": {
-      "command": "npx",
-      "args": ["mcp-remote", "https://mcp.polar.sh/mcp/polar-mcp"]
-    }
-  }
-}
-```
+<Steps>
+  <Step title="Search">
+    The agent calls `search_tools` with what it wants to accomplish, such as “find a customer and check their active subscriptions.”
+  </Step>
+  <Step title="Inspect">
+    The agent calls `describe_tools` for the best matches to learn their exact inputs and behavior.
+  </Step>
+  <Step title="Execute">
+    The agent calls `execute_tool` with the selected tool name and validated arguments.
+  </Step>
+</Steps>
 
-For sandbox:
+## Available tools
 
-```json
-{
-  "mcpServers": {
-    "Polar Sandbox": {
-      "command": "npx",
-      "args": ["mcp-remote", "https://mcp.polar.sh/mcp/polar-sandbox"]
-    }
-  }
-}
-```
+The runtime tools above provide access to the following Polar operations.
 
-### Codex
+<Accordion title="Available tools (100)">
 
-Add the following to your `~/.codex/config.toml`:
+| Tool | Description |
+| --- | --- |
+| List benefit grants | List benefit grants across all benefits accessible to the authenticated subject. |
+| Create benefit | Create a new benefit (entitlement) like license keys, file downloads, or Discord access. |
+| Delete benefit | Delete a benefit. Caution: all associated grants will be revoked and users will lose access. |
+| List benefit files | List the downloadable files for a benefit with their download statistics. |
+| Get benefit | Get a benefit by ID. |
+| List grants for benefit | List the individual grants for a benefit. It's especially useful to check if a user has been granted a benefit. |
+| List benefits | List all existing benefits. |
+| Update benefit | Update an existing benefit's configuration. |
+| Create checkout link | Create a checkout link. |
+| Delete checkout link | Delete a checkout link. |
+| Get checkout link | Get a checkout link by ID. |
+| List checkout links | List checkout links. |
+| Update checkout link | Update a checkout link. |
+| Get checkout session | Get a checkout session by ID. |
+| List checkout sessions | List checkout sessions. |
+| Create custom field | Create a custom field. |
+| Delete custom field | Delete a custom field. |
+| Get custom field | Get a custom field by ID. |
+| List custom fields | List custom fields. |
+| Update custom field | Update a custom field. |
+| Get customer meter | Get a customer meter by ID. |
+| List customer meters | List customer meters. |
+| Assign customer seat | Assign a seat for a subscription or order. |
+| Claim customer seat | Claim Seat |
+| Get customer seat claim info | Get claim information for a customer seat invitation. |
+| List customer seats | List seats for a subscription or order. |
+| Resend customer seat invitation | Resend an invitation for a pending customer seat. |
+| Revoke customer seat | Revoke a customer seat. |
+| Create customer | Create a new customer record with email, name, metadata, and optional external_id for reconciliation. |
+| Delete customer | Delete a customer. This action cannot be undone and will immediately: - Cancel any active subscriptions for the customer - Revoke all their benefits - Clear any `external_id` Use it only in the context of deleting a user within your own service. Otherwise, use more granular API endpoints to cancel a specific subscription or revoke certain benefits. Note: The customers information will nonetheless be retained for historic orders and subscriptions. Set `anonymize=true` to also anonymize PII for GDPR compliance. |
+| Delete customer by external ID | Delete a customer by external ID. Immediately cancels any active subscriptions and revokes any active benefits. Set `anonymize=true` to also anonymize PII for GDPR compliance. |
+| Get customer | Get a customer by ID. |
+| Get customer by external ID | Get a customer by external ID. |
+| Get customer state | Get a customer state by ID. The customer state includes information about the customer's active subscriptions and benefits. It's the ideal endpoint to use when you need to get a full overview of a customer's status. |
+| Get customer state by external ID | Get a customer state by external ID. The customer state includes information about the customer's active subscriptions and benefits. It's the ideal endpoint to use when you need to get a full overview of a customer's status. |
+| List customers | List customers. |
+| List customer payment methods | Get saved payment methods of a customer. |
+| List customer payment methods by external ID | Get saved payment methods of a customer by external ID. |
+| Create customer member | Create a new member for a customer. Only B2B customers with the member management feature enabled can add members. The authenticated user or organization must have access to the customer's organization. |
+| Create customer member by external ID | Create a new member for a customer identified by its external ID. |
+| Delete customer member | Delete a member of a customer. |
+| Delete customer member by external ID | Delete a member by external ID for a customer identified by its external ID. |
+| Get customer member | Get a member of a customer by its ID. |
+| Get customer member by external ID | Get a member by external ID for a customer identified by its external ID. |
+| Update customer member | Update the name, email, or role of a customer member. |
+| Update customer member by external ID | Update a member by external ID for a customer identified by its external ID. |
+| Update customer | Update a customer. |
+| Update customer by external ID | Update a customer by external ID. |
+| Create discount code | Create a new discount code for products or subscriptions. |
+| Delete discount | Delete a discount. |
+| Get discount | Retrieve a specific discount by ID. |
+| List discount codes | List all discount codes and coupons. |
+| Update discount | Update an existing discount's settings or validity. |
+| List event types | List event types with aggregated statistics. |
+| Update event type | Update an event type's label. |
+| Get event | Get an event by ID. |
+| List event names | List event names. |
+| Delete file | Delete a file. |
+| List files | List files. |
+| Get license key | Get a license key. |
+| Get license key activation | Get a license key activation. |
+| List license keys | Get license keys connected to the given organization & filters. |
+| Rotate license key | Rotate a license key. Generates a new key string for the same license key record. The previous key string immediately stops validating. Status, usage, limits, expiry, and activations are preserved. |
+| Update license key | Update a license key. |
+| List customer members | List members with optional customer ID filter. |
+| Create meter | Create a new usage meter to track customer consumption for usage-based pricing models. |
+| Get meter | Retrieve a specific meter by ID. |
+| List meters | List all usage meters in your organization for tracking consumption-based billing and analytics. |
+| Update meter | Update an existing meter's configuration. |
+| Get metrics | Get metrics about your orders and subscriptions. Currency values are output in cents. |
+| Get metrics limits | Get the interval limits for the metrics endpoint. |
+| Generate order invoice | Trigger generation of an order's invoice. |
+| Get order | Get an order by ID. |
+| Get order invoice | Get an order's invoice data. |
+| List orders | List orders. |
+| Get order receipt | Get a presigned URL to download an order's receipt PDF. |
+| Update order | Update an order. |
+| Get organization | Get an organization by ID. |
+| List organizations | List organizations. |
+| Get payment | Get a payment by ID. |
+| List payments | List payments. |
+| Create product | Create a new product with pricing and benefits (entitlements). |
+| Get product | Retrieve a specific product by ID. |
+| List products | List all products in your organization. |
+| Update product | Update an existing product's details, pricing, or settings. |
+| Update product benefits | Update which benefits are granted when a product is purchased. |
+| Create refund | Create a refund. |
+| List refunds | List refunds. |
+| Get subscription details | Get a subscription by ID. |
+| List subscriptions | List active subscriptions. |
+| Revoke subscription | Revoke a subscription, i.e cancel immediately. |
+| Update subscription | Update a subscription. |
+| Create webhook endpoint | Create a webhook endpoint. |
+| Delete webhook endpoint | Delete a webhook endpoint. |
+| Get webhook endpoint | Get a webhook endpoint by ID. |
+| List webhook deliveries | List webhook deliveries. Deliveries are all the attempts to deliver a webhook event to an endpoint. |
+| List webhook endpoints | List webhook endpoints. |
+| Redeliver webhook event | Schedule the re-delivery of a webhook event. |
+| Reset webhook endpoint secret | Regenerate a webhook endpoint secret. |
+| Update webhook endpoint | Update a webhook endpoint. |
 
-```toml
-[features]
-rmcp_client = true
-
-[mcp_servers.polar]
-type = "http"
-url = "https://mcp.polar.sh/mcp/polar-mcp"
-```
-
-Then run:
-
-```sh
-codex mcp login polar
-```
-
-For sandbox:
-
-```toml
-[features]
-rmcp_client = true
-
-[mcp_servers.polar_sandbox]
-type = "http"
-url = "https://mcp.polar.sh/mcp/polar-sandbox"
-```
-
-Then run:
-
-```sh
-codex mcp login polar_sandbox
-```
-
-### Claude Code
-
-Run the following command:
-
-```
-claude mcp add --transport http "Polar" "https://mcp.polar.sh/mcp/polar-mcp"
-```
-
-For sandbox:
-
-```
-claude mcp add --transport http "Polar-Sandbox" "https://mcp.polar.sh/mcp/polar-sandbox"
-```
-
-### OpenCode
-
-In `opencode.jsonc`, add:
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "Polar": {
-      "type": "remote",
-      "url": "https://mcp.polar.sh/mcp/polar-mcp"
-    }
-  }
-}
-```
-
-For sandbox:
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "Polar Sandbox": {
-      "type": "remote",
-      "url": "https://mcp.polar.sh/mcp/polar-sandbox"
-    }
-  }
-}
-```
-
-### ChatGPT
-
-MCP is only available for paid users in beta on ChatGPT web, by enabling Developer Mode.
-
-Once Developer Mode is enabled, go to _Settings_ → _Connectors_ and add the MCP server using `https://mcp.polar.sh/mcp/polar-mcp`.
-
-For sandbox, use `https://mcp.polar.sh/mcp/polar-sandbox` instead.
-
-### Claude Desktop
-
-Go to _Settings_ → _Connectors_ and click _Add custom connector_.
-
-Name it "Polar" and add `https://mcp.polar.sh/mcp/polar-mcp` as the server URL.
-
-For sandbox, use `https://mcp.polar.sh/mcp/polar-sandbox` as the server URL instead.
-
-Save, and click _Connect_ to connect to your Polar organization.
+</Accordion>

@@ -228,7 +228,7 @@ A common cause is hosting providers like Vercel that redirect between `www` and 
 
 ### Invalid signature exceptions
 
-Rolling your own webhook validation logic? Match the scheme for that endpoint
-secret: older Polar secrets need the **entire** `whsec_…` string base64-encoded
-before HMAC; secrets generated on or after 8 September 2026, 00:00 UTC follow
-Standard Webhooks as-is. Polar SDKs (version 1.0.0-alpha.19 and later) try both.
+Rolling your own webhook validation logic? Older Polar secrets need the
+**entire** `whsec_…` string base64-encoded before HMAC; secrets generated on or
+after 8 September 2026, 00:00 UTC follow Standard Webhooks as-is. Polar SDKs
+(version 1.0.0-alpha.19 and later) try both.

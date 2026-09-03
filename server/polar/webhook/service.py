@@ -1,5 +1,7 @@
+import base64
 import datetime
 import json
+import secrets
 from collections.abc import Sequence
 from typing import Literal, cast, overload
 from uuid import UUID
@@ -63,7 +65,11 @@ from polar.webhook.repository import (
 )
 from polar.worker import enqueue_job
 
-from .constants import WEBHOOK_SECRET_PREFIX
+from .constants import (
+    WEBHOOK_SECRET_KEY_BYTES,
+    WEBHOOK_SECRET_PREFIX,
+    WEBHOOK_STANDARD_SIGNATURE_CUTOFF,
+)
 from .eventstream import publish_webhook_event
 from .schemas import (
     DeprecatedWebhookEndpointCreateWithSecret,
@@ -74,6 +80,13 @@ from .schemas import (
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
 log: Logger = structlog.get_logger()
+
+
+def generate_webhook_secret() -> str:
+    if utc_now() < WEBHOOK_STANDARD_SIGNATURE_CUTOFF:
+        return generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+    key = secrets.token_bytes(WEBHOOK_SECRET_KEY_BYTES)
+    return f"{WEBHOOK_SECRET_PREFIX}{base64.b64encode(key).decode()}"
 
 
 class WebhookError(PolarError): ...
@@ -150,7 +163,7 @@ class WebhookService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
-        secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+        secret = generate_webhook_secret()
         if (
             isinstance(create_schema, DeprecatedWebhookEndpointCreateWithSecret)
             and create_schema.secret is not None
@@ -220,7 +233,7 @@ class WebhookService:
         return await repository.update(
             endpoint,
             update_dict={
-                "secret": generate_token(prefix=WEBHOOK_SECRET_PREFIX),
+                "secret": generate_webhook_secret(),
                 "secret_generated_at": utc_now(),
             },
         )

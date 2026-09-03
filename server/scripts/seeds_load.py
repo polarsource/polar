@@ -124,7 +124,7 @@ from polar.redis import Redis, create_redis
 from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
-from polar.webhook.constants import WEBHOOK_SECRET_PREFIX
+from polar.webhook.service import generate_webhook_secret
 from polar.worker import JobQueueManager
 from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,
@@ -3139,7 +3139,7 @@ def polar_self_env() -> None:
             for w in existing_webhooks:
                 await session.delete(w)
 
-            webhook_secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+            webhook_secret = generate_webhook_secret()
             webhook = WebhookEndpoint(
                 organization_id=org.id,
                 url=WEBHOOK_URL,

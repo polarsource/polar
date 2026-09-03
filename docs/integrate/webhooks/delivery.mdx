@@ -102,15 +102,22 @@ easily validate signatures. Or you can follow their
 in case you want to roll your own.
 
 <Info>
-  Polar currently signs with HMAC-SHA256 over the UTF-8 bytes of the full secret,
-  including `whsec_`. Standard Webhooks libraries therefore need that whole
-  secret **base64-encoded** before verification.
+  **Signing schemes**
 
-  Polar SDKs (version 1.0.0-alpha.19 and later) try both that original Polar key and the Standard Webhooks key
-  (base64-decode of the `whsec_` remainder). You can keep passing the `whsec_…`
-  secret as Polar shows it. Rolling your own verifier still needs the original
-  Polar encoding until Polar starts signing with the spec key.
+  Polar sends a **single** `webhook-signature`. The HMAC key depends on when the
+  endpoint secret was generated:
 
+  **Secrets generated before 8 September 2026, 00:00 UTC** use Polar's original
+  key: HMAC over the UTF-8 bytes of the full secret, including `whsec_`.
+  Standard Webhooks libraries need that whole secret **base64-encoded** before
+  verification.
+
+  **Secrets generated on or after that instant** follow
+  [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md)
+  exactly. Pass the `whsec_…` secret to a Standard Webhooks library as-is.
+
+  Polar SDKs (version 1.0.0-alpha.19 and later) try both keys. You can keep
+  passing the `whsec_…` secret as Polar shows it.
 </Info>
 
 ## IP Allowlist
@@ -221,6 +228,7 @@ A common cause is hosting providers like Vercel that redirect between `www` and 
 
 ### Invalid signature exceptions
 
-Rolling your own webhook validation logic? Make sure to base64 encode the secret
-you configured on Polar in your code before generating the signature to validate
-against.
+Rolling your own webhook validation logic? Match the scheme for that endpoint
+secret: older Polar secrets need the **entire** `whsec_…` string base64-encoded
+before HMAC; secrets generated on or after 8 September 2026, 00:00 UTC follow
+Standard Webhooks as-is. Polar SDKs (version 1.0.0-alpha.19 and later) try both.

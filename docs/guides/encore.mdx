@@ -204,7 +204,12 @@ export const webhooks = api.raw(
 ```
 
 <Warning>
-  The `standardwebhooks` library expects the secret to be base64-encoded. Polar provides a raw string (starting with `polar_whs_`), so you must base64-encode the entire secret before passing it to `new Webhook()`.
+  Polar webhook signatures use two key derivations depending on when the secret
+  was generated. Polar SDKs (version 1.0.0-alpha.19 and later) try both. If you
+  verify with `standardwebhooks` directly: secrets created **on or after 8
+  September 2026, 00:00 UTC** can be passed to `new Webhook()` as-is (`whsec_…`).
+  Older Polar secrets need the **entire** secret UTF-8 string base64-encoded
+  first.
 </Warning>
 
 ## Local Development

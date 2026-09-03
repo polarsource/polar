@@ -36,7 +36,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       preview_url: ${{ steps.deploy.outputs.preview_url }}
-      opencode_url: ${{ steps.deploy.outputs.opencode_url }}
     concurrency:
       group: preview-pr-${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.number) || github.event.inputs.pr_number }}
       cancel-in-progress: false
@@ -213,7 +212,6 @@ jobs:
 
           PREVIEW_URL=$(grep -oP 'Deployed at \K.*' /tmp/deploy.log || true)
           echo "preview_url=${PREVIEW_URL}" >> "$GITHUB_OUTPUT"
-          echo "opencode_url=${PREVIEW_URL%/}:4096" >> "$GITHUB_OUTPUT"
 
       # The preview URL is tailnet-only, so the health check runs on the
       # VM against Caddy.
@@ -295,7 +293,6 @@ jobs:
             **Preview Environment**
             URL: ${{ needs.preview.outputs.preview_url }}
             API: ${{ needs.preview.outputs.preview_url }}/v1/
-            OpenCode: ${{ needs.preview.outputs.opencode_url }}
             Logs: [backend](${{ needs.preview.outputs.preview_url }}/_logs/backend) · [frontend](${{ needs.preview.outputs.preview_url }}/_logs/frontend)
             SHA: `${{ github.event.pull_request.head.sha }}`
 

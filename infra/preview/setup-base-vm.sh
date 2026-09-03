@@ -23,7 +23,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # --- Swap ---
-echo "[1/9] Setting up swap..."
+echo "[1/8] Setting up swap..."
 if [[ ! -f /swapfile ]]; then
     fallocate -l 1G /swapfile
     chmod 600 /swapfile
@@ -39,14 +39,13 @@ mkdir -p /etc/systemd/journald.conf.d
 printf '[Journal]\nSystemMaxUse=100M\n' > /etc/systemd/journald.conf.d/preview.conf
 
 # --- System packages ---
-echo "[2/9] Installing system packages..."
+echo "[2/8] Installing system packages..."
 apt-get update
 apt-get install -y \
     redis-server \
     git \
     curl \
     jq \
-    openssl \
     rsync \
     util-linux \
     build-essential \
@@ -57,7 +56,7 @@ systemctl enable redis-server
 systemctl start redis-server
 
 # --- Caddy ---
-echo "[3/9] Installing Caddy..."
+echo "[3/8] Installing Caddy..."
 if ! command -v caddy &>/dev/null; then
     apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
@@ -67,7 +66,7 @@ if ! command -v caddy &>/dev/null; then
 fi
 
 # --- uv ---
-echo "[4/9] Installing uv..."
+echo "[4/8] Installing uv..."
 if ! command -v uv &>/dev/null; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
     cp -f /root/.local/bin/uv /usr/local/bin/uv
@@ -76,7 +75,7 @@ fi
 echo "uv $(uv --version)"
 
 # --- Node.js + pnpm ---
-echo "[5/9] Installing Node.js and pnpm..."
+echo "[5/8] Installing Node.js and pnpm..."
 if ! command -v node &>/dev/null; then
     curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
     apt-get install -y nodejs
@@ -85,20 +84,15 @@ corepack enable
 corepack prepare pnpm@latest --activate
 echo "node $(node --version), pnpm $(pnpm --version)"
 
-# --- OpenCode 2 ---
-echo "[6/9] Installing OpenCode 2..."
-npm install -g --allow-scripts=@opencode-ai/cli @opencode-ai/cli@beta
-echo "$(opencode2 --version)"
-
 # --- Tailscale ---
-echo "[7/9] Installing Tailscale..."
+echo "[6/8] Installing Tailscale..."
 if ! command -v tailscale &>/dev/null; then
     curl -fsSL https://tailscale.com/install.sh | sh
 fi
 systemctl enable --now tailscaled
 
 # --- Repo checkout with warm dependencies and prebuilt assets ---
-echo "[8/9] Cloning repo and warming dependencies..."
+echo "[7/8] Cloning repo and warming dependencies..."
 if [[ ! -d "${CHECKOUT}/.git" ]]; then
     git clone --depth 50 "$REPO_URL" "$CHECKOUT"
 fi
@@ -113,30 +107,20 @@ POLAR_SKIP_DTS=1 pnpm install --frozen-lockfile
 git -C "$CHECKOUT" rev-parse HEAD > "${CHECKOUT}/.deployed_sha"
 
 # --- Preview tools, Caddy config, systemd units ---
-echo "[9/9] Installing preview tools and services..."
+echo "[8/8] Installing preview tools and services..."
 mkdir -p "$PREVIEW_TOOLS_DIR"
 for f in deploy.sh run-preview-backend.sh log-viewer.py; do
     install -m 755 "${CHECKOUT}/infra/preview/${f}" "${PREVIEW_TOOLS_DIR}/${f}"
 done
 
-for f in polar-backend.service polar-frontend.service polar-logs.service polar-seed-simple-complement.service opencode2-server.service; do
+cp "${CHECKOUT}/infra/preview/Caddyfile" /etc/caddy/Caddyfile
+systemctl enable caddy
+systemctl restart caddy
+
+for f in polar-backend.service polar-frontend.service polar-logs.service polar-seed-simple-complement.service; do
     cp "${CHECKOUT}/infra/preview/${f}" "/etc/systemd/system/${f}"
 done
 systemctl daemon-reload
-
-opencode2 service set hostname 127.0.0.1
-opencode2 service set port 4097
-if ! jq -e '.password // empty' /root/.config/opencode/service.json >/dev/null 2>&1; then
-    opencode2 service set password "$(openssl rand -hex 32)"
-fi
-OPENCODE_AUTH=$(printf 'opencode:%s' "$(jq -r .password /root/.config/opencode/service.json)" | base64 -w0)
-sed "s|__OPENCODE_AUTH__|${OPENCODE_AUTH}|" "${CHECKOUT}/infra/preview/Caddyfile" > /etc/caddy/Caddyfile
-
-systemctl enable opencode2-server
-systemctl enable caddy
-systemctl restart opencode2-server
-systemctl restart caddy
-
 # polar-backend/-frontend are enabled but not started: they need the .env
 # files written by the first deploy
 systemctl enable polar-backend polar-frontend

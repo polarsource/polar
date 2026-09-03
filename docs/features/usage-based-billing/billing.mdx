@@ -10,7 +10,8 @@ Metered Pricing is a pricing model where you charge your customers based on the 
 There are a few different pricing models unique to Usage Based Billing:
 
 - Unit Pricing
-- Volume Pricing _(coming soon)_
+- Volume Pricing
+- Graduated Pricing
 
 ### Unit Pricing
 
@@ -27,9 +28,22 @@ This means that every unit of `prompt-tokens` consumed by a customer will be cha
 
 It's a linear pricing model, where the price per unit is fixed.
 
-### Volume Pricing _(coming soon)_
+### Volume Pricing
 
-Volume pricing is a pricing model where you charge a fixed amount for a certain volume of usage. Volume pricing is not yet available, but will be coming soon.
+Volume pricing sets the rate from the total usage over the period, and that rate applies to every unit. Crossing a threshold lowers the price on all of it.
+
+### Graduated Pricing
+
+Graduated pricing charges each range at its own rate. The total is the sum across ranges.
+
+### Defining tiers
+
+Volume and graduated take the same tiers. Define one by an upper bound and a rate. The bound is inclusive, and each tier starts where the previous one ended. The last tier is always unbounded, since usage has no ceiling. A [cap](#add-a-metered-price-to-your-product) still limits what the customer pays.
+
+**Example** with tiers at up to 1,000: \$0.10 per unit, and beyond: \$0.08 per unit:
+
+- Volume: 1,400 units = 1,400 × \$0.08 = \$112. Every unit gets the lower rate.
+- Graduated: 1,400 units = 1,000 × \$0.10 + 400 × \$0.08 = \$132. Each range keeps its own rate.
 
 ## Invoicing Customers for Usage
 
@@ -37,7 +51,7 @@ Our Usage Based Billing infrastructure is built to work with Subscription produc
 
 ### Add a metered price to your product
 
-To charge your customers for usage, you need to add a metered price to your product. You'll need to select the **Meter** and the **amount per unit**.
+To charge your customers for usage, you need to add a metered price to your product. You'll need to select the **Meter** and the **Pricing model**. A flat price per unit takes a single **amount per unit**; volume and graduated take a list of tiers.
 
 <Info>
   The price is always entered as the cost per **single unit**. How it is

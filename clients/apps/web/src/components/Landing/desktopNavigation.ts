@@ -68,7 +68,7 @@ export const navMenus: NavMenu[] = [
           },
           {
             label: 'SDK',
-            href: '/docs/integrate/sdk/typescript',
+            href: '/docs/integrate/sdk/introduction',
             target: '_blank',
           },
           {
@@ -78,7 +78,7 @@ export const navMenus: NavMenu[] = [
           },
           {
             label: 'Framework Adapters',
-            href: '/docs/integrate/sdk/adapters/nextjs',
+            href: '/docs/integrate/sdk/adapters/introduction',
             target: '_blank',
           },
         ],

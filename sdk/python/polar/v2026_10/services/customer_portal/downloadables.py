@@ -26,6 +26,7 @@ class DownloadablesSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceDownloadableRead:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -35,6 +36,8 @@ class DownloadablesSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -53,6 +56,7 @@ class DownloadablesSync(SyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -69,6 +73,7 @@ class DownloadablesSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[DownloadableRead, None, None]:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -78,6 +83,8 @@ class DownloadablesSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -95,6 +102,7 @@ class DownloadablesSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -110,6 +118,7 @@ class DownloadablesAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceDownloadableRead:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -119,6 +128,8 @@ class DownloadablesAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -137,6 +148,7 @@ class DownloadablesAsync(AsyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -153,6 +165,7 @@ class DownloadablesAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[DownloadableRead, None]:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
@@ -162,6 +175,8 @@ class DownloadablesAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -179,6 +194,7 @@ class DownloadablesAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item

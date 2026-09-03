@@ -45,6 +45,7 @@ class MetricsSync(SyncServiceBase):
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> MetricsResponse:
         """
         Get metrics about your orders and subscriptions.
@@ -64,6 +65,8 @@ class MetricsSync(SyncServiceBase):
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -88,6 +91,7 @@ class MetricsSync(SyncServiceBase):
                 "metrics": metrics,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -110,6 +114,7 @@ class MetricsSync(SyncServiceBase):
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> str:
         """
         Export metrics as a CSV file.
@@ -127,6 +132,8 @@ class MetricsSync(SyncServiceBase):
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to include in the export. If not provided, all metrics are exported.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -151,6 +158,7 @@ class MetricsSync(SyncServiceBase):
                 "metrics": metrics,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -162,6 +170,7 @@ class MetricsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> MetricsLimits:
         """
         Get the interval limits for the metrics endpoint.
@@ -170,6 +179,8 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -183,6 +194,7 @@ class MetricsSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         return parse_response_json(response, MetricsLimits)
@@ -192,6 +204,7 @@ class MetricsSync(SyncServiceBase):
         *,
         organization_id: str | list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> list[MetricDashboardSchema]:
         """
         List user-defined metric dashboards.
@@ -201,6 +214,8 @@ class MetricsSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -217,6 +232,7 @@ class MetricsSync(SyncServiceBase):
                 "organization_id": organization_id,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -230,6 +246,7 @@ class MetricsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MetricDashboardCreate],
     ) -> MetricDashboardSchema:
         """
@@ -239,6 +256,8 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -254,6 +273,7 @@ class MetricsSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -267,6 +287,7 @@ class MetricsSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> MetricDashboardSchema:
         """
         Get a user-defined metric dashboard by ID.
@@ -276,6 +297,8 @@ class MetricsSync(SyncServiceBase):
         Args:
             id: The metric dashboard ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -292,6 +315,7 @@ class MetricsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -304,6 +328,7 @@ class MetricsSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a user-defined metric dashboard.
@@ -313,6 +338,8 @@ class MetricsSync(SyncServiceBase):
         Args:
             id: The metric dashboard ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -329,6 +356,7 @@ class MetricsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -341,6 +369,7 @@ class MetricsSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MetricDashboardUpdate],
     ) -> MetricDashboardSchema:
         """
@@ -351,6 +380,8 @@ class MetricsSync(SyncServiceBase):
         Args:
             id: The metric dashboard ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -368,6 +399,7 @@ class MetricsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -393,6 +425,7 @@ class MetricsAsync(AsyncServiceBase):
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> MetricsResponse:
         """
         Get metrics about your orders and subscriptions.
@@ -412,6 +445,8 @@ class MetricsAsync(AsyncServiceBase):
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -436,6 +471,7 @@ class MetricsAsync(AsyncServiceBase):
                 "metrics": metrics,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -458,6 +494,7 @@ class MetricsAsync(AsyncServiceBase):
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> str:
         """
         Export metrics as a CSV file.
@@ -475,6 +512,8 @@ class MetricsAsync(AsyncServiceBase):
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to include in the export. If not provided, all metrics are exported.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -499,6 +538,7 @@ class MetricsAsync(AsyncServiceBase):
                 "metrics": metrics,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -510,6 +550,7 @@ class MetricsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> MetricsLimits:
         """
         Get the interval limits for the metrics endpoint.
@@ -518,6 +559,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -531,6 +574,7 @@ class MetricsAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         return parse_response_json(response, MetricsLimits)
@@ -540,6 +584,7 @@ class MetricsAsync(AsyncServiceBase):
         *,
         organization_id: str | list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> list[MetricDashboardSchema]:
         """
         List user-defined metric dashboards.
@@ -549,6 +594,8 @@ class MetricsAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -565,6 +612,7 @@ class MetricsAsync(AsyncServiceBase):
                 "organization_id": organization_id,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -578,6 +626,7 @@ class MetricsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MetricDashboardCreate],
     ) -> MetricDashboardSchema:
         """
@@ -587,6 +636,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -602,6 +653,7 @@ class MetricsAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -615,6 +667,7 @@ class MetricsAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> MetricDashboardSchema:
         """
         Get a user-defined metric dashboard by ID.
@@ -624,6 +677,8 @@ class MetricsAsync(AsyncServiceBase):
         Args:
             id: The metric dashboard ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -640,6 +695,7 @@ class MetricsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -652,6 +708,7 @@ class MetricsAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a user-defined metric dashboard.
@@ -661,6 +718,8 @@ class MetricsAsync(AsyncServiceBase):
         Args:
             id: The metric dashboard ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -677,6 +736,7 @@ class MetricsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -689,6 +749,7 @@ class MetricsAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MetricDashboardUpdate],
     ) -> MetricDashboardSchema:
         """
@@ -699,6 +760,8 @@ class MetricsAsync(AsyncServiceBase):
         Args:
             id: The metric dashboard ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -716,6 +779,7 @@ class MetricsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)

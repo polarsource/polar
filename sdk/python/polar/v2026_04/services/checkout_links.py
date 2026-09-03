@@ -39,6 +39,7 @@ class CheckoutLinksSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CheckoutLinkSortProperty] | None = ["created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceCheckoutLink:
         """
         List checkout links.
@@ -52,6 +53,8 @@ class CheckoutLinksSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -72,6 +75,7 @@ class CheckoutLinksSync(SyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -88,6 +92,7 @@ class CheckoutLinksSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CheckoutLinkSortProperty] | None = ["created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[CheckoutLink, None, None]:
         """
         List checkout links.
@@ -101,6 +106,8 @@ class CheckoutLinksSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -120,6 +127,7 @@ class CheckoutLinksSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -131,6 +139,7 @@ class CheckoutLinksSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkCreateProductPrice],
     ) -> CheckoutLink: ...
 
@@ -139,6 +148,7 @@ class CheckoutLinksSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkCreateProduct],
     ) -> CheckoutLink: ...
 
@@ -147,6 +157,7 @@ class CheckoutLinksSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkCreateProducts],
     ) -> CheckoutLink: ...
 
@@ -154,6 +165,7 @@ class CheckoutLinksSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> CheckoutLink:
         """
@@ -163,6 +175,8 @@ class CheckoutLinksSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -178,6 +192,7 @@ class CheckoutLinksSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -191,6 +206,7 @@ class CheckoutLinksSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CheckoutLink:
         """
         Get a checkout link by ID.
@@ -200,6 +216,8 @@ class CheckoutLinksSync(SyncServiceBase):
         Args:
             id: The checkout link ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -217,6 +235,7 @@ class CheckoutLinksSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -230,6 +249,7 @@ class CheckoutLinksSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a checkout link.
@@ -239,6 +259,8 @@ class CheckoutLinksSync(SyncServiceBase):
         Args:
             id: The checkout link ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -256,6 +278,7 @@ class CheckoutLinksSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -269,6 +292,7 @@ class CheckoutLinksSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkUpdate],
     ) -> CheckoutLink:
         """
@@ -279,6 +303,8 @@ class CheckoutLinksSync(SyncServiceBase):
         Args:
             id: The checkout link ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -297,6 +323,7 @@ class CheckoutLinksSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -317,6 +344,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CheckoutLinkSortProperty] | None = ["created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceCheckoutLink:
         """
         List checkout links.
@@ -330,6 +358,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -350,6 +380,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -366,6 +397,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CheckoutLinkSortProperty] | None = ["created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[CheckoutLink, None]:
         """
         List checkout links.
@@ -379,6 +411,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -398,6 +432,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -410,6 +445,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkCreateProductPrice],
     ) -> CheckoutLink: ...
 
@@ -418,6 +454,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkCreateProduct],
     ) -> CheckoutLink: ...
 
@@ -426,6 +463,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkCreateProducts],
     ) -> CheckoutLink: ...
 
@@ -433,6 +471,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> CheckoutLink:
         """
@@ -442,6 +481,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -457,6 +498,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -470,6 +512,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CheckoutLink:
         """
         Get a checkout link by ID.
@@ -479,6 +522,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
         Args:
             id: The checkout link ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -496,6 +541,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -509,6 +555,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a checkout link.
@@ -518,6 +565,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
         Args:
             id: The checkout link ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -535,6 +584,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -548,6 +598,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkUpdate],
     ) -> CheckoutLink:
         """
@@ -558,6 +609,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
         Args:
             id: The checkout link ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -576,6 +629,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)

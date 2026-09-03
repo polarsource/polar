@@ -23,6 +23,7 @@ class Oauth2Sync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OAuth2ClientConfiguration],
     ) -> typing.Any:
         """
@@ -30,6 +31,8 @@ class Oauth2Sync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -45,6 +48,7 @@ class Oauth2Sync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -58,6 +62,7 @@ class Oauth2Sync(SyncServiceBase):
         client_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Any:
         """
         Get an OAuth2 client by Client ID.
@@ -65,6 +70,8 @@ class Oauth2Sync(SyncServiceBase):
         Args:
             client_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -81,6 +88,7 @@ class Oauth2Sync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -93,6 +101,7 @@ class Oauth2Sync(SyncServiceBase):
         client_id_path: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OAuth2ClientConfigurationUpdate],
     ) -> typing.Any:
         """
@@ -101,6 +110,8 @@ class Oauth2Sync(SyncServiceBase):
         Args:
             client_id_path:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -118,6 +129,7 @@ class Oauth2Sync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -131,6 +143,7 @@ class Oauth2Sync(SyncServiceBase):
         client_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete an OAuth2 client.
@@ -138,6 +151,8 @@ class Oauth2Sync(SyncServiceBase):
         Args:
             client_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -154,6 +169,7 @@ class Oauth2Sync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -167,6 +183,7 @@ class Oauth2Async(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OAuth2ClientConfiguration],
     ) -> typing.Any:
         """
@@ -174,6 +191,8 @@ class Oauth2Async(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -189,6 +208,7 @@ class Oauth2Async(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -202,6 +222,7 @@ class Oauth2Async(AsyncServiceBase):
         client_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Any:
         """
         Get an OAuth2 client by Client ID.
@@ -209,6 +230,8 @@ class Oauth2Async(AsyncServiceBase):
         Args:
             client_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -225,6 +248,7 @@ class Oauth2Async(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -237,6 +261,7 @@ class Oauth2Async(AsyncServiceBase):
         client_id_path: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OAuth2ClientConfigurationUpdate],
     ) -> typing.Any:
         """
@@ -245,6 +270,8 @@ class Oauth2Async(AsyncServiceBase):
         Args:
             client_id_path:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -262,6 +289,7 @@ class Oauth2Async(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -275,6 +303,7 @@ class Oauth2Async(AsyncServiceBase):
         client_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete an OAuth2 client.
@@ -282,6 +311,8 @@ class Oauth2Async(AsyncServiceBase):
         Args:
             client_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -298,6 +329,7 @@ class Oauth2Async(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {

@@ -101,6 +101,17 @@ class TestBuildRequest:
             "pool": 30.0,
         }
 
+    def test_request_access_token_override(
+        self, client: SyncClientBase | AsyncClientBase
+    ) -> None:
+        request = client.build_request(
+            method="GET",
+            url="/v1/items/",
+            request_access_token="polar_at_u_override",
+        )
+
+        assert request.headers["Authorization"] == "Bearer polar_at_u_override"
+
     @pytest.mark.parametrize("client_class", [SyncClientBase, AsyncClientBase])
     def test_advanced_client_timeout(
         self,

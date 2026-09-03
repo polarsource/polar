@@ -55,6 +55,7 @@ class CustomersSync(SyncServiceBase):
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceCustomer:
         """
         List customers.
@@ -71,6 +72,8 @@ class CustomersSync(SyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -94,6 +97,7 @@ class CustomersSync(SyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -113,6 +117,7 @@ class CustomersSync(SyncServiceBase):
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[Customer, None, None]:
         """
         List customers.
@@ -129,6 +134,8 @@ class CustomersSync(SyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -151,6 +158,7 @@ class CustomersSync(SyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -162,6 +170,7 @@ class CustomersSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerIndividualCreate],
     ) -> Customer: ...
 
@@ -170,6 +179,7 @@ class CustomersSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerTeamCreate],
     ) -> Customer: ...
 
@@ -177,6 +187,7 @@ class CustomersSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> Customer:
         """
@@ -186,6 +197,8 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -201,6 +214,7 @@ class CustomersSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -214,6 +228,7 @@ class CustomersSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> str:
         """
         Export customers as a CSV file.
@@ -223,6 +238,8 @@ class CustomersSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -239,6 +256,7 @@ class CustomersSync(SyncServiceBase):
                 "organization_id": organization_id,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -251,6 +269,7 @@ class CustomersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Customer:
         """
         Get a customer by ID.
@@ -260,6 +279,8 @@ class CustomersSync(SyncServiceBase):
         Args:
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -277,6 +298,7 @@ class CustomersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -291,6 +313,7 @@ class CustomersSync(SyncServiceBase):
         *,
         anonymize: bool = False,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a customer.
@@ -315,6 +338,8 @@ class CustomersSync(SyncServiceBase):
             id: The customer ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -334,6 +359,7 @@ class CustomersSync(SyncServiceBase):
                 "anonymize": anonymize,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -347,6 +373,7 @@ class CustomersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerUpdate],
     ) -> Customer:
         """
@@ -357,6 +384,8 @@ class CustomersSync(SyncServiceBase):
         Args:
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -375,6 +404,7 @@ class CustomersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -389,6 +419,7 @@ class CustomersSync(SyncServiceBase):
         external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Customer:
         """
         Get a customer by external ID.
@@ -398,6 +429,8 @@ class CustomersSync(SyncServiceBase):
         Args:
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -415,6 +448,7 @@ class CustomersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -429,6 +463,7 @@ class CustomersSync(SyncServiceBase):
         *,
         anonymize: bool = False,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a customer by external ID.
@@ -443,6 +478,8 @@ class CustomersSync(SyncServiceBase):
             external_id: The customer external ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -462,6 +499,7 @@ class CustomersSync(SyncServiceBase):
                 "anonymize": anonymize,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -475,6 +513,7 @@ class CustomersSync(SyncServiceBase):
         external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerUpdateExternalID],
     ) -> Customer:
         """
@@ -485,6 +524,8 @@ class CustomersSync(SyncServiceBase):
         Args:
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -503,6 +544,7 @@ class CustomersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -517,6 +559,7 @@ class CustomersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerState:
         """
         Get a customer state by ID.
@@ -532,6 +575,8 @@ class CustomersSync(SyncServiceBase):
         Args:
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -549,6 +594,7 @@ class CustomersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -562,6 +608,7 @@ class CustomersSync(SyncServiceBase):
         external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerState:
         """
         Get a customer state by external ID.
@@ -577,6 +624,8 @@ class CustomersSync(SyncServiceBase):
         Args:
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -594,6 +643,7 @@ class CustomersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -609,6 +659,7 @@ class CustomersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourcePaymentMethod:
         """
         Get saved payment methods of a customer.
@@ -620,6 +671,8 @@ class CustomersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -640,6 +693,7 @@ class CustomersSync(SyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -655,6 +709,7 @@ class CustomersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[PaymentMethod, None, None]:
         """
         Get saved payment methods of a customer.
@@ -666,6 +721,8 @@ class CustomersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -684,6 +741,7 @@ class CustomersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -697,6 +755,7 @@ class CustomersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourcePaymentMethod:
         """
         Get saved payment methods of a customer by external ID.
@@ -708,6 +767,8 @@ class CustomersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -728,6 +789,7 @@ class CustomersSync(SyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -743,6 +805,7 @@ class CustomersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[PaymentMethod, None, None]:
         """
         Get saved payment methods of a customer by external ID.
@@ -754,6 +817,8 @@ class CustomersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -772,6 +837,7 @@ class CustomersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -798,6 +864,7 @@ class CustomersAsync(AsyncServiceBase):
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceCustomer:
         """
         List customers.
@@ -814,6 +881,8 @@ class CustomersAsync(AsyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -837,6 +906,7 @@ class CustomersAsync(AsyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -856,6 +926,7 @@ class CustomersAsync(AsyncServiceBase):
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[Customer, None]:
         """
         List customers.
@@ -872,6 +943,8 @@ class CustomersAsync(AsyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -894,6 +967,7 @@ class CustomersAsync(AsyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -906,6 +980,7 @@ class CustomersAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerIndividualCreate],
     ) -> Customer: ...
 
@@ -914,6 +989,7 @@ class CustomersAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerTeamCreate],
     ) -> Customer: ...
 
@@ -921,6 +997,7 @@ class CustomersAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> Customer:
         """
@@ -930,6 +1007,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -945,6 +1024,7 @@ class CustomersAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -958,6 +1038,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> str:
         """
         Export customers as a CSV file.
@@ -967,6 +1048,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -983,6 +1066,7 @@ class CustomersAsync(AsyncServiceBase):
                 "organization_id": organization_id,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -995,6 +1079,7 @@ class CustomersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Customer:
         """
         Get a customer by ID.
@@ -1004,6 +1089,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1021,6 +1108,7 @@ class CustomersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1035,6 +1123,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         anonymize: bool = False,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a customer.
@@ -1059,6 +1148,8 @@ class CustomersAsync(AsyncServiceBase):
             id: The customer ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1078,6 +1169,7 @@ class CustomersAsync(AsyncServiceBase):
                 "anonymize": anonymize,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1091,6 +1183,7 @@ class CustomersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerUpdate],
     ) -> Customer:
         """
@@ -1101,6 +1194,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -1119,6 +1214,7 @@ class CustomersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -1133,6 +1229,7 @@ class CustomersAsync(AsyncServiceBase):
         external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Customer:
         """
         Get a customer by external ID.
@@ -1142,6 +1239,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1159,6 +1258,7 @@ class CustomersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1173,6 +1273,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         anonymize: bool = False,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a customer by external ID.
@@ -1187,6 +1288,8 @@ class CustomersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1206,6 +1309,7 @@ class CustomersAsync(AsyncServiceBase):
                 "anonymize": anonymize,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1219,6 +1323,7 @@ class CustomersAsync(AsyncServiceBase):
         external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerUpdateExternalID],
     ) -> Customer:
         """
@@ -1229,6 +1334,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -1247,6 +1354,7 @@ class CustomersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -1261,6 +1369,7 @@ class CustomersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerState:
         """
         Get a customer state by ID.
@@ -1276,6 +1385,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1293,6 +1404,7 @@ class CustomersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1306,6 +1418,7 @@ class CustomersAsync(AsyncServiceBase):
         external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerState:
         """
         Get a customer state by external ID.
@@ -1321,6 +1434,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1338,6 +1453,7 @@ class CustomersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1353,6 +1469,7 @@ class CustomersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourcePaymentMethod:
         """
         Get saved payment methods of a customer.
@@ -1364,6 +1481,8 @@ class CustomersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1384,6 +1503,7 @@ class CustomersAsync(AsyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1399,6 +1519,7 @@ class CustomersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[PaymentMethod, None]:
         """
         Get saved payment methods of a customer.
@@ -1410,6 +1531,8 @@ class CustomersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -1428,6 +1551,7 @@ class CustomersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -1442,6 +1566,7 @@ class CustomersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourcePaymentMethod:
         """
         Get saved payment methods of a customer by external ID.
@@ -1453,6 +1578,8 @@ class CustomersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1473,6 +1600,7 @@ class CustomersAsync(AsyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1488,6 +1616,7 @@ class CustomersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[PaymentMethod, None]:
         """
         Get saved payment methods of a customer by external ID.
@@ -1499,6 +1628,8 @@ class CustomersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -1517,6 +1648,7 @@ class CustomersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item

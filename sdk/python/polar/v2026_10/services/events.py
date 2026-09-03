@@ -53,6 +53,7 @@ class EventsSync(SyncServiceBase):
         sorting: builtins.list[EventSortProperty] | None = ["-timestamp"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceEvent | ListResourceWithCursorPaginationEvent:
         """
         List events.
@@ -77,6 +78,8 @@ class EventsSync(SyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -108,6 +111,7 @@ class EventsSync(SyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -131,6 +135,7 @@ class EventsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceEventName:
         """
         List event names.
@@ -147,6 +152,8 @@ class EventsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -170,6 +177,7 @@ class EventsSync(SyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -189,6 +197,7 @@ class EventsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[EventName, None, None]:
         """
         List event names.
@@ -205,6 +214,8 @@ class EventsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -227,6 +238,7 @@ class EventsSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -238,6 +250,7 @@ class EventsSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Event:
         """
         Get an event by ID.
@@ -247,6 +260,8 @@ class EventsSync(SyncServiceBase):
         Args:
             id: The event ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -264,6 +279,7 @@ class EventsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -276,6 +292,7 @@ class EventsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[EventsIngest],
     ) -> EventsIngestResponse:
         """
@@ -285,6 +302,8 @@ class EventsSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -300,6 +319,7 @@ class EventsSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -330,6 +350,7 @@ class EventsAsync(AsyncServiceBase):
         sorting: builtins.list[EventSortProperty] | None = ["-timestamp"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceEvent | ListResourceWithCursorPaginationEvent:
         """
         List events.
@@ -354,6 +375,8 @@ class EventsAsync(AsyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -385,6 +408,7 @@ class EventsAsync(AsyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -408,6 +432,7 @@ class EventsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceEventName:
         """
         List event names.
@@ -424,6 +449,8 @@ class EventsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -447,6 +474,7 @@ class EventsAsync(AsyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -466,6 +494,7 @@ class EventsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[EventName, None]:
         """
         List event names.
@@ -482,6 +511,8 @@ class EventsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -504,6 +535,7 @@ class EventsAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -516,6 +548,7 @@ class EventsAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Event:
         """
         Get an event by ID.
@@ -525,6 +558,8 @@ class EventsAsync(AsyncServiceBase):
         Args:
             id: The event ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -542,6 +577,7 @@ class EventsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -554,6 +590,7 @@ class EventsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[EventsIngest],
     ) -> EventsIngestResponse:
         """
@@ -563,6 +600,8 @@ class EventsAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -578,6 +617,7 @@ class EventsAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)

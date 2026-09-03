@@ -105,6 +105,8 @@ export interface ClientOptions {
 export interface RequestOptions {
   /** Request timeout override, in seconds. */
   timeout?: number;
+  /** Access token override for this request. */
+  accessToken?: string;
 }
 
 const MAX_ABORT_SIGNAL_TIMEOUT_MS = 2_147_483_647;
@@ -165,6 +167,11 @@ export class ClientBase {
   ): Promise<Response> {
     const [fullUrl, requestInit] = request;
     const timeout = requestOptions?.timeout ?? this.options.timeout;
+    let headers = requestInit.headers;
+    if (requestOptions?.accessToken !== undefined) {
+      headers = new Headers(headers);
+      headers.set("Authorization", `Bearer ${requestOptions.accessToken}`);
+    }
     let signal = requestInit.signal;
     if (timeout !== undefined) {
       const timeoutMilliseconds = Math.ceil(timeout * 1000);
@@ -183,6 +190,7 @@ export class ClientBase {
     try {
       return await fetch(fullUrl, {
         ...requestInit,
+        headers,
         ...(signal ? { signal } : {}),
       });
     } catch (error) {

@@ -58,6 +58,14 @@ const customerState = await polar.customers.getStateExternal("customer_external_
 });
 ```
 
+Override the access token for an individual request the same way:
+
+```typescript
+const customerState = await polar.customers.getStateExternal("customer_external_id", {
+    accessToken: "polar_at_u_override",
+});
+```
+
 ## Individual API Functions
 
 To import individual API functions for tree-shaking, create a core client and pass it to the

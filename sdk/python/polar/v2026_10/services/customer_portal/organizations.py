@@ -21,6 +21,7 @@ class OrganizationsSync(SyncServiceBase):
         slug: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerOrganizationData:
         """
         Get a customer portal's organization by slug.
@@ -28,6 +29,8 @@ class OrganizationsSync(SyncServiceBase):
         Args:
             slug: The organization slug.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -45,6 +48,7 @@ class OrganizationsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -60,6 +64,7 @@ class OrganizationsAsync(AsyncServiceBase):
         slug: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerOrganizationData:
         """
         Get a customer portal's organization by slug.
@@ -67,6 +72,8 @@ class OrganizationsAsync(AsyncServiceBase):
         Args:
             slug: The organization slug.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -84,6 +91,7 @@ class OrganizationsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {

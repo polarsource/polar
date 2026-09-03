@@ -40,6 +40,7 @@ class MembersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceMember:
         """
         List the members of a customer.
@@ -53,6 +54,8 @@ class MembersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -75,6 +78,7 @@ class MembersSync(SyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -92,6 +96,7 @@ class MembersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[Member, None, None]:
         """
         List the members of a customer.
@@ -105,6 +110,8 @@ class MembersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -125,6 +132,7 @@ class MembersSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -136,6 +144,7 @@ class MembersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MemberCreateFromCustomer],
     ) -> Member:
         """
@@ -149,6 +158,8 @@ class MembersSync(SyncServiceBase):
         Args:
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -168,6 +179,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -187,6 +199,7 @@ class MembersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceMember:
         """
         List the members of a customer identified by its external ID.
@@ -200,6 +213,8 @@ class MembersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -223,6 +238,7 @@ class MembersSync(SyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -241,6 +257,7 @@ class MembersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[Member, None, None]:
         """
         List the members of a customer identified by its external ID.
@@ -254,6 +271,8 @@ class MembersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -275,6 +294,7 @@ class MembersSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -286,6 +306,7 @@ class MembersSync(SyncServiceBase):
         external_id_path: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MemberCreateFromCustomer],
     ) -> Member:
         """
@@ -296,6 +317,8 @@ class MembersSync(SyncServiceBase):
         Args:
             external_id_path: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -316,6 +339,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -333,6 +357,7 @@ class MembersSync(SyncServiceBase):
         member_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Member:
         """
         Get a member of a customer by its ID.
@@ -343,6 +368,8 @@ class MembersSync(SyncServiceBase):
             id: The customer ID.
             member_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -361,6 +388,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -375,6 +403,7 @@ class MembersSync(SyncServiceBase):
         member_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a member of a customer.
@@ -385,6 +414,8 @@ class MembersSync(SyncServiceBase):
             id: The customer ID.
             member_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -403,6 +434,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -417,6 +449,7 @@ class MembersSync(SyncServiceBase):
         member_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MemberUpdate],
     ) -> Member:
         """
@@ -430,6 +463,8 @@ class MembersSync(SyncServiceBase):
             id: The customer ID.
             member_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -449,6 +484,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -464,6 +500,7 @@ class MembersSync(SyncServiceBase):
         member_external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Member:
         """
         Get a member by external ID for a customer identified by its external ID.
@@ -474,6 +511,8 @@ class MembersSync(SyncServiceBase):
             external_id: The customer external ID.
             member_external_id: The member external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -493,6 +532,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -508,6 +548,7 @@ class MembersSync(SyncServiceBase):
         member_external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a member by external ID for a customer identified by its external ID.
@@ -518,6 +559,8 @@ class MembersSync(SyncServiceBase):
             external_id: The customer external ID.
             member_external_id: The member external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -537,6 +580,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -552,6 +596,7 @@ class MembersSync(SyncServiceBase):
         member_external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MemberUpdate],
     ) -> Member:
         """
@@ -563,6 +608,8 @@ class MembersSync(SyncServiceBase):
             external_id: The customer external ID.
             member_external_id: The member external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -583,6 +630,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -604,6 +652,7 @@ class MembersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceMember:
         """
         List the members of a customer.
@@ -617,6 +666,8 @@ class MembersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -639,6 +690,7 @@ class MembersAsync(AsyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -656,6 +708,7 @@ class MembersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[Member, None]:
         """
         List the members of a customer.
@@ -669,6 +722,8 @@ class MembersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -689,6 +744,7 @@ class MembersAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -701,6 +757,7 @@ class MembersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MemberCreateFromCustomer],
     ) -> Member:
         """
@@ -714,6 +771,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -733,6 +792,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -752,6 +812,7 @@ class MembersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceMember:
         """
         List the members of a customer identified by its external ID.
@@ -765,6 +826,8 @@ class MembersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -788,6 +851,7 @@ class MembersAsync(AsyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -806,6 +870,7 @@ class MembersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[Member, None]:
         """
         List the members of a customer identified by its external ID.
@@ -819,6 +884,8 @@ class MembersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -840,6 +907,7 @@ class MembersAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -852,6 +920,7 @@ class MembersAsync(AsyncServiceBase):
         external_id_path: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MemberCreateFromCustomer],
     ) -> Member:
         """
@@ -862,6 +931,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             external_id_path: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -882,6 +953,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -899,6 +971,7 @@ class MembersAsync(AsyncServiceBase):
         member_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Member:
         """
         Get a member of a customer by its ID.
@@ -909,6 +982,8 @@ class MembersAsync(AsyncServiceBase):
             id: The customer ID.
             member_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -927,6 +1002,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -941,6 +1017,7 @@ class MembersAsync(AsyncServiceBase):
         member_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a member of a customer.
@@ -951,6 +1028,8 @@ class MembersAsync(AsyncServiceBase):
             id: The customer ID.
             member_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -969,6 +1048,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -983,6 +1063,7 @@ class MembersAsync(AsyncServiceBase):
         member_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MemberUpdate],
     ) -> Member:
         """
@@ -996,6 +1077,8 @@ class MembersAsync(AsyncServiceBase):
             id: The customer ID.
             member_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -1015,6 +1098,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -1030,6 +1114,7 @@ class MembersAsync(AsyncServiceBase):
         member_external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Member:
         """
         Get a member by external ID for a customer identified by its external ID.
@@ -1040,6 +1125,8 @@ class MembersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             member_external_id: The member external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1059,6 +1146,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1074,6 +1162,7 @@ class MembersAsync(AsyncServiceBase):
         member_external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a member by external ID for a customer identified by its external ID.
@@ -1084,6 +1173,8 @@ class MembersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             member_external_id: The member external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1103,6 +1194,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1118,6 +1210,7 @@ class MembersAsync(AsyncServiceBase):
         member_external_id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MemberUpdate],
     ) -> Member:
         """
@@ -1129,6 +1222,8 @@ class MembersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             member_external_id: The member external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -1149,6 +1244,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)

@@ -82,6 +82,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> {{ method.response | type_annotation }}: ...
 
@@ -108,6 +109,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> {{ method.response | type_annotation }}: ...
 
@@ -132,6 +134,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
         **kwargs: typing.Any,
         {% elif method.body %}
@@ -159,6 +162,7 @@ Args:
 
 {% endfor %}
     request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+    request_access_token: Access token override for this request.
 
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
@@ -179,6 +183,7 @@ Raises:
             path_params={ {% for param in method.path_params %}"{{ param.name }}": {{ param.parameter_name }}, {% endfor %} },
             query_params={ {% for param in method.query_params %}"{{ param.name }}": {{ param.parameter_name }}, {% endfor %} },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             {% if method.body %}
             body=kwargs,
             {% endif %}
@@ -221,6 +226,7 @@ Raises:
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]: ...
 
@@ -247,6 +253,7 @@ Raises:
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]: ...
 
@@ -271,6 +278,7 @@ Raises:
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
         **kwargs: typing.Any,
         {% elif method.body %}
@@ -292,6 +300,7 @@ Args:
 
 {% endfor %}
     request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+    request_access_token: Access token override for each request.
 
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
@@ -318,6 +327,7 @@ Raises:
                 {{ param.parameter_name }}={{ param.parameter_name }},
                 {% endfor %}
                 request_timeout=request_timeout,
+                request_access_token=request_access_token,
                 {% if method.body %}
                 **kwargs,
                 {% endif %}
@@ -363,6 +373,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> {{ method.response | type_annotation }}: ...
 
@@ -389,6 +400,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> {{ method.response | type_annotation }}: ...
 
@@ -413,6 +425,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
         **kwargs: typing.Any,
         {% elif method.body %}
@@ -440,6 +453,7 @@ Args:
 
 {% endfor %}
     request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+    request_access_token: Access token override for this request.
 
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
@@ -460,6 +474,7 @@ Raises:
             path_params={ {% for param in method.path_params %}"{{ param.name }}": {{ param.parameter_name }}, {% endfor %} },
             query_params={ {% for param in method.query_params %}"{{ param.name }}": {{ param.parameter_name }}, {% endfor %} },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             {% if method.body %}
             body=kwargs,
             {% endif %}
@@ -502,6 +517,7 @@ Raises:
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}, None]: ...
 
@@ -528,6 +544,7 @@ Raises:
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
     ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}, None]: ...
 
@@ -552,6 +569,7 @@ Raises:
         {% endif %}
         {% endfor %}
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
         **kwargs: typing.Any,
         {% elif method.body %}
@@ -570,6 +588,7 @@ Raises:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}    request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+    request_access_token: Access token override for each request.
 
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
@@ -596,6 +615,7 @@ Raises:
                 {{ param.parameter_name }}={{ param.parameter_name }},
                 {% endfor %}
                 request_timeout=request_timeout,
+                request_access_token=request_access_token,
                 {% if method.body %}
                 **kwargs,
                 {% endif %}

@@ -11,6 +11,9 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     "import": {
       "types": "./dist/index.d.ts",
@@ -35,7 +38,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@polar-sh/sdk": "^0.47.0"
+    "@polar-sh/sdk": "1.0.0-alpha.17"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",

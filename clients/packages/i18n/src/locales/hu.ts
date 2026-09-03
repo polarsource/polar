@@ -118,6 +118,13 @@ export default {
       },
       firstPayment: 'Első fizetés',
       totalAfterTrial: 'Összesen a próbaidőszak után',
+      tiers: {
+        from: 'Ettől',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'A teljes használatot annak a sávnak az árával számlázzuk, amelybe beleesik',
+      },
     },
     trial: {
       hero: {

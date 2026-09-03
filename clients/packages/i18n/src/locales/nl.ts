@@ -119,6 +119,13 @@ export default {
       },
       firstPayment: 'Eerste betaling',
       totalAfterTrial: 'Totaal na proefperiode',
+      tiers: {
+        from: 'Vanaf',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'Alle verbruik wordt berekend tegen het tarief van de schaal waarin het valt',
+      },
     },
     trial: {
       hero: {

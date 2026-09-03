@@ -1,7 +1,10 @@
 import { schemas } from '@polar-sh/client'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { createMeteredPrice } from '../test-utils/makeCheckout'
+import {
+  createMeteredPrice,
+  createMeteredTiersPrice,
+} from '../test-utils/makeCheckout'
 import MeteredPriceLabel from './MeteredPriceLabel'
 
 const percentageDiscount = (basisPoints: number) =>
@@ -168,6 +171,53 @@ describe('MeteredPriceLabel', () => {
       )
 
       expect(container.textContent).toContain('/ unit')
+    })
+  })
+
+  describe('tiered price', () => {
+    it('renders the first tier rate', () => {
+      const price = createMeteredTiersPrice()
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$9.00')
+      expect(container.textContent).not.toContain('$4.50')
+      expect(container.textContent).toContain('/ unit')
+    })
+
+    it('reads the first tier by bound, not by array order', () => {
+      const price = createMeteredTiersPrice({
+        tiers: {
+          type: 'graduated',
+          tiers: [
+            { bound: null, unit_amount: '450' },
+            { bound: 1000, unit_amount: '900' },
+          ],
+        },
+      })
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$9.00')
+    })
+
+    it('discounts the first tier rate', () => {
+      const price = createMeteredTiersPrice()
+
+      render(
+        <MeteredPriceLabel
+          price={price}
+          locale="en"
+          discount={percentageDiscount(5000)}
+        />,
+      )
+
+      expect(screen.getByText('$9.00')).toHaveClass('line-through')
+      expect(screen.getByText('$4.50')).toBeInTheDocument()
     })
   })
 

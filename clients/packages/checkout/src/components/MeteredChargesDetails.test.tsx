@@ -5,6 +5,7 @@ import {
   createCheckout,
   createFixedPrice,
   createMeteredPrice,
+  createMeteredTiersPrice,
 } from '../test-utils/makeCheckout'
 import MeteredChargesDetails from './MeteredChargesDetails'
 
@@ -68,6 +69,27 @@ describe('MeteredChargesDetails', () => {
     )
 
     expect(container.innerHTML).toBe('')
+  })
+
+  it('lists the tiers under a tiered price instead of repeating its rate', () => {
+    const base = createCheckout()
+    const checkout = createCheckout({
+      prices: { prod_1: [base.product_price, createMeteredTiersPrice()] },
+    })
+
+    render(<MeteredChargesDetails checkout={checkout} locale="en" />)
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /additional metered charges may apply/i,
+      }),
+    )
+
+    expect(screen.getByTestId('detail-row-API Calls')).not.toHaveTextContent(
+      '$9.00',
+    )
+    expect(screen.getByTestId('detail-row-1–1,000')).toHaveTextContent('$9.00')
+    expect(screen.getByTestId('detail-row-1,001+')).toHaveTextContent('$4.50')
   })
 
   it('is collapsed by default', () => {

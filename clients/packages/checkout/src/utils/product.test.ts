@@ -41,6 +41,25 @@ const makeMeteredPrice = (
     ...overrides,
   }) as schemas['ProductPriceMeteredUnit']
 
+const makeMeteredTiersPrice = (
+  overrides?: Partial<schemas['ProductPriceMeteredTiers']>,
+): schemas['ProductPriceMeteredTiers'] =>
+  ({
+    id: 'price_metered_tiers',
+    amount_type: 'metered_tiers',
+    price_currency: 'usd',
+    tiers: {
+      type: 'graduated',
+      tiers: [
+        { bound: 1000, unit_amount: '100' },
+        { bound: null, unit_amount: '50' },
+      ],
+    },
+    cap_amount: null,
+    meter: { id: 'm_1', name: 'API calls' },
+    ...overrides,
+  }) as schemas['ProductPriceMeteredTiers']
+
 describe('isLegacyRecurringPrice', () => {
   it('returns true for legacy prices', () => {
     expect(isLegacyRecurringPrice(makeLegacyPrice())).toBe(true)
@@ -73,6 +92,10 @@ describe('isMeteredPrice', () => {
     expect(isMeteredPrice(makeMeteredPrice())).toBe(true)
   })
 
+  it('returns true for metered tiers prices', () => {
+    expect(isMeteredPrice(makeMeteredTiersPrice())).toBe(true)
+  })
+
   it('returns false for fixed prices', () => {
     expect(isMeteredPrice(makePrice({ amount_type: 'fixed' }))).toBe(false)
   })
@@ -88,6 +111,20 @@ describe('getMeteredPrices', () => {
     const result = getMeteredPrices(prices)
     expect(result).toHaveLength(1)
     expect(result[0].amount_type).toBe('metered_unit')
+  })
+
+  it('keeps tiered metered prices alongside flat ones', () => {
+    const prices = [
+      makePrice({}),
+      makeMeteredPrice(),
+      makeMeteredTiersPrice(),
+    ] as schemas['ProductPrice'][]
+
+    const result = getMeteredPrices(prices)
+    expect(result.map((price) => price.amount_type)).toEqual([
+      'metered_unit',
+      'metered_tiers',
+    ])
   })
 
   it('filters by currency when provided', () => {

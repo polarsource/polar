@@ -103,6 +103,33 @@ export function createMeteredPrice(
   }
 }
 
+export function createMeteredTiersPrice(
+  overrides: Partial<schemas['ProductPriceMeteredTiers']> = {},
+): schemas['ProductPriceMeteredTiers'] {
+  return {
+    ...priceDefaults,
+    id: 'price_metered_tiers_1',
+    amount_type: 'metered_tiers',
+    tiers: {
+      type: 'graduated',
+      tiers: [
+        { bound: 1000, unit_amount: '900' },
+        { bound: null, unit_amount: '450' },
+      ],
+    },
+    cap_amount: null,
+    meter_id: 'meter_1',
+    meter: {
+      id: 'meter_1',
+      name: 'API Calls',
+      unit: 'scalar',
+      custom_label: null,
+      custom_multiplier: null,
+    },
+    ...overrides,
+  }
+}
+
 const defaults: ProductCheckoutPublic = {
   // SDK CheckoutPublic required fields
   id: 'checkout_1',

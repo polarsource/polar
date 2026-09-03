@@ -119,6 +119,13 @@ export default {
       },
       firstPayment: 'Pierwsza płatność',
       totalAfterTrial: 'Suma po okresie próbnym',
+      tiers: {
+        from: 'Od',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'Całe użycie jest rozliczane według stawki dla zakresu, do którego należy',
+      },
     },
     trial: {
       hero: {

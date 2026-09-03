@@ -4,7 +4,11 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { isLegacyRecurringPrice } from '../utils/product'
+import {
+  getMeteredTiers,
+  isLegacyRecurringPrice,
+  isMeteredPrice,
+} from '../utils/product'
 import { getBasePricePerUnit } from '../utils/units'
 import AmountLabel from './AmountLabel'
 import MeteredPriceLabel from './MeteredPriceLabel'
@@ -75,11 +79,12 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         locale={locale}
       />
     )
-  } else if (price.amount_type === 'metered_unit') {
+  } else if (isMeteredPrice(price)) {
     return (
       <div className="flex flex-row gap-1 text-[min(1em,24px)]">
         {price.meter.name}
         {' — '}
+        {getMeteredTiers(price).length > 1 && t('checkout.pricing.tiers.from')}
         <MeteredPriceLabel price={price} locale={locale} />
       </div>
     )

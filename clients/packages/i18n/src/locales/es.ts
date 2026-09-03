@@ -118,6 +118,13 @@ export default {
       },
       firstPayment: 'Primer pago',
       totalAfterTrial: 'Total después de la prueba',
+      tiers: {
+        from: 'Desde',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'Todo el uso se cobra a la tarifa del tramo en el que cae',
+      },
     },
     trial: {
       hero: {

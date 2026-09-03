@@ -197,7 +197,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -394,7 +398,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -591,7 +599,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -791,7 +803,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -991,7 +1007,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1180,7 +1200,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1372,7 +1396,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1561,7 +1589,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1750,7 +1782,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1939,7 +1975,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2131,7 +2171,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2323,7 +2367,11 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2515,6 +2563,10 @@
     "checkout.footer.mandateSubscriptionDiscounted": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method the discounted amount shown above, and the regular price on each billing date after your discount ends, until you cancel, and agree to the {buyerTermsLink}.",
     "checkout.pricing.firstPayment": "First payment",
     "checkout.pricing.totalAfterTrial": "Total after trial",
-    "checkout.trial.hero.freeUntil": "Free until {date}"
+    "checkout.trial.hero.freeUntil": "Free until {date}",
+    "checkout.pricing.tiers.from": "From",
+    "checkout.pricing.tiers.range": "{from}–{to}",
+    "checkout.pricing.tiers.andAbove": "{from}+",
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
   }
 }

@@ -118,6 +118,13 @@ export default {
       },
       firstPayment: 'Första betalning',
       totalAfterTrial: 'Totalt efter provperiod',
+      tiers: {
+        from: 'Från',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'All användning debiteras med priset för det intervall det hamnar i',
+      },
     },
     trial: {
       hero: {

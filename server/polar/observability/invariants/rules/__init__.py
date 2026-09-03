@@ -8,6 +8,7 @@ from .subscriptions_canceled_deleted_customer import (
 from .subscriptions_current_period_end import SubscriptionsCurrentPeriodEndInvariant
 from .subscriptions_future_period_start import SubscriptionsFuturePeriodStartInvariant
 from .subscriptions_locked_invariant import SubscriptionsLockedInvariant
+from .unbilled_cycle_billing_entries import UnbilledCycleBillingEntriesInvariant
 
 INVARIANTS: set[type[Invariant]] = {
     NoRecentOrdersInvariant,
@@ -17,6 +18,7 @@ INVARIANTS: set[type[Invariant]] = {
     SubscriptionsCurrentPeriodEndInvariant,
     SubscriptionsFuturePeriodStartInvariant,
     SubscriptionsLockedInvariant,
+    UnbilledCycleBillingEntriesInvariant,
 }
 
 __all__ = ["INVARIANTS", "Invariant", "InvariantError"]

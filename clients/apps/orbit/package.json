@@ -32,7 +32,7 @@
     "@tailwindcss/forms": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "^22.10.5",
-    "@types/react": "19.2.13",
+    "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "tailwindcss": "catalog:",
     "ts-morph": "^25.0.1",

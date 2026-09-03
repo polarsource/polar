@@ -42,6 +42,7 @@ class OAuth2AuthorizationServerMetadata(BaseModel):
     introspection_endpoint_auth_methods_supported: list[str] | None = None
     introspection_endpoint_auth_signing_alg_values_supported: list[str] | None = None
     code_challenge_methods_supported: list[str] | None = None
+    authorization_response_iss_parameter_supported: bool | None = None
 
 
 class OpenIDProviderMetadata(OAuth2AuthorizationServerMetadata):
@@ -95,6 +96,7 @@ def get_server_metadata(
         introspection_endpoint=url_for("oauth2:introspect_token"),
         introspection_endpoint_auth_methods_supported=authorization_server.introspection_endpoint_auth_methods_supported,
         code_challenge_methods_supported=authorization_server.code_challenge_methods_supported,
+        authorization_response_iss_parameter_supported=True,
         subject_types_supported=constants.SUBJECT_TYPES_SUPPORTED,
         id_token_signing_alg_values_supported=constants.ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED,
         claims_supported=constants.CLAIMS_SUPPORTED,

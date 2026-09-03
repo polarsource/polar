@@ -786,9 +786,6 @@ class TestCreate:
         user_organization: UserOrganization,
         meter: Meter,
     ) -> None:
-        organization.feature_settings = {"metered_tiered_pricing_enabled": True}
-        session.add(organization)
-        await session.flush()
         price_schema = _tiered_metered_price_create()
 
         product = await product_service.create(
@@ -805,27 +802,6 @@ class TestCreate:
         price = product.prices[0]
         assert isinstance(price, ProductPriceMeteredTiers)
         assert price.tiers == price_schema.tiers.to_tiers()
-
-    @pytest.mark.auth
-    async def test_tiered_metered_price_requires_the_feature_flag(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-        meter: Meter,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(
-                session,
-                ProductCreateRecurring(
-                    name="Recurring tiered metered",
-                    recurring_interval=SubscriptionRecurringInterval.month,
-                    organization_id=organization.id,
-                    prices=[_tiered_metered_price_create()],
-                ),
-                auth_subject,
-            )
 
     @pytest.mark.auth
     async def test_invalid_several_static_prices(

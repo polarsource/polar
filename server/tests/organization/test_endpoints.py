@@ -1431,7 +1431,7 @@ class TestDeleteOrganization:
     ) -> None:
         # Mock payout account deletion to succeed (returns None on success)
         payout_account_delete_mock = mocker.patch(
-            "polar.organization.service.payout_account_service.delete",
+            "polar.organization.service.payout_account_service.unlink_and_maybe_delete",
             return_value=None,
         )
         mock_enqueue = mocker.patch("polar.organization.service.enqueue_job")
@@ -1464,7 +1464,7 @@ class TestDeleteOrganization:
         # Mock payout account deletion to fail with an exception
         # Mock payout account deletion to succeed (returns None on success)
         payout_account_delete_mock = mocker.patch(
-            "polar.organization.service.payout_account_service.delete",
+            "polar.organization.service.payout_account_service.unlink_and_maybe_delete",
             side_effect=PayoutAccountServiceError("Stripe account deletion failed"),
         )
         mock_enqueue = mocker.patch("polar.organization.service.enqueue_job")

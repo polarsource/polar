@@ -3733,7 +3733,7 @@ class TestRequestDeletion:
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
         payout_account_delete_mock = mocker.patch(
-            "polar.organization.service.payout_account_service.delete",
+            "polar.organization.service.payout_account_service.unlink_and_maybe_delete",
             return_value=None,
         )
 
@@ -3760,7 +3760,7 @@ class TestRequestDeletion:
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
         mocker.patch(
-            "polar.organization.service.payout_account_service.delete",
+            "polar.organization.service.payout_account_service.unlink_and_maybe_delete",
             side_effect=Exception("Stripe API error"),
         )
 

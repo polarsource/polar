@@ -19,7 +19,7 @@ from polar.product.schemas import (
     ProductPriceSeatTiers,
     ProductPriceUnitBasedCreate,
 )
-from polar.product.tiers import TiersInput, TierType
+from polar.product.tiers import BIGINT_MAX, TiersInput, TierType
 from tests.fixtures.random_objects import METER_ID
 
 # PostgreSQL int4 range limit
@@ -819,6 +819,32 @@ class TestProductPriceSeatTiers:
                     "tiers": [
                         {"min_seats": 1, "max_seats": 10, "price_per_seat": 500},
                         {"min_seats": 11, "max_seats": 10, "price_per_seat": 300},
+                    ],
+                }
+            )
+
+    def test_rate_at_bigint_max_allowed(self) -> None:
+        seat_tiers = ProductPriceSeatTiers.model_validate(
+            {
+                "seat_tier_type": "volume",
+                "tiers": [
+                    {"min_seats": 1, "max_seats": None, "price_per_seat": BIGINT_MAX},
+                ],
+            }
+        )
+        assert seat_tiers.tiers[0].price_per_seat == BIGINT_MAX
+
+    def test_rate_above_bigint_max_rejected(self) -> None:
+        with pytest.raises(ValidationError, match="less than or equal to"):
+            ProductPriceSeatTiers.model_validate(
+                {
+                    "seat_tier_type": "volume",
+                    "tiers": [
+                        {
+                            "min_seats": 1,
+                            "max_seats": None,
+                            "price_per_seat": BIGINT_MAX + 1,
+                        },
                     ],
                 }
             )

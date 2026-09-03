@@ -52,7 +52,6 @@ async def _create_integration(
     benefit: Benefit,
     *,
     bot_token: str | None = "xoxb-test-token",
-    encrypted_only: bool = False,
 ) -> SlackApp:
     installed = bot_token is not None
     integration = SlackApp(
@@ -65,15 +64,20 @@ async def _create_integration(
         team_id="T1" if installed else None,
         team_name="Test team" if installed else None,
         bot_user_id="U1" if installed else None,
-        bot_token=None if encrypted_only else bot_token,
+        bot_token=bot_token,
         authed_user_id="U2" if installed else None,
         scopes=["channels:manage"] if installed else None,
     )
-    if encrypted_only and bot_token is not None:
-        integration.id = SlackApp.generate_id()
-        integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
-            integration.id, bot_token
-        )
+    integration.id = SlackApp.generate_id()
+    integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
+        integration.id, integration.client_secret
+    )
+    integration.signing_secret_encrypted = await SlackApp.encrypt_signing_secret(
+        integration.id, integration.signing_secret
+    )
+    integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
+        integration.id, bot_token
+    )
     await save_fixture(integration)
     benefit.properties = {
         **benefit.properties,
@@ -1592,7 +1596,7 @@ class TestSlackSharedChannelGrant:
             bot_token="xoxb-test-token", channel="C123", users=["U01", "U02"]
         )
 
-    async def test_grant_uses_encrypted_only_bot_token(
+    async def test_grant_reads_bot_token_when_plaintext_absent(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -1607,9 +1611,9 @@ class TestSlackSharedChannelGrant:
             type=BenefitType.slack_shared_channel,
             properties={**_BASE_PROPERTIES, "team_invitees": ["U01", "U02"]},
         )
-        await _create_integration(
-            save_fixture, benefit, bot_token="xoxb-test-token", encrypted_only=True
-        )
+        integration = await _create_integration(save_fixture, benefit)
+        integration.bot_token = None
+        await save_fixture(integration)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 

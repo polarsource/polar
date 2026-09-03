@@ -59,6 +59,16 @@ async def _create_integration(
         authed_user_id="U2" if bot_token else None,
         scopes=["channels:manage"] if bot_token else None,
     )
+    integration.id = SlackApp.generate_id()
+    integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
+        integration.id, integration.client_secret
+    )
+    integration.signing_secret_encrypted = await SlackApp.encrypt_signing_secret(
+        integration.id, signing_secret
+    )
+    integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
+        integration.id, bot_token
+    )
     await save_fixture(integration)
     return integration
 
@@ -694,3 +704,36 @@ class TestEvents:
         assert integration is not None
         assert integration.bot_token is None
         assert integration.revoked_at is not None
+
+    async def test_event_callback_verifies_when_plaintext_signing_secret_absent(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        session: AsyncSession,
+    ) -> None:
+        integration = await _create_integration(save_fixture, organization)
+        integration.signing_secret = None
+        await save_fixture(integration)
+        payload = {
+            "type": "event_callback",
+            "api_app_id": "A0TESTAPPID",
+            "event": {"type": "tokens_revoked"},
+        }
+        body = json.dumps(payload).encode()
+        ts, sig = _slack_signature(signing_secret="ss-test-secret", body=body)
+        response = await client.post(
+            "/v1/integrations/slack/events",
+            content=body,
+            headers={
+                "x-slack-signature": sig,
+                "x-slack-request-timestamp": ts,
+                "content-type": "application/json",
+            },
+        )
+        assert response.status_code == 200
+
+        repo = SlackAppRepository.from_session(session)
+        loaded = await repo.get_by_app_id("A0TESTAPPID")
+        assert loaded is not None
+        assert loaded.revoked_at is not None

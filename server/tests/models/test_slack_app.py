@@ -68,7 +68,7 @@ class TestEncryptClassmethods:
 
 @pytest.mark.asyncio
 class TestGetSecrets:
-    async def test_prefers_encrypted(self, organization: Organization) -> None:
+    async def test_decrypts_encrypted(self, organization: Organization) -> None:
         integration = _build(organization)
         integration.id = SlackApp.generate_id()
         integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
@@ -88,20 +88,12 @@ class TestGetSecrets:
         assert await integration.get_signing_secret() == "ss-encrypted"
         assert await integration.get_bot_token() == "xoxb-encrypted"
 
-    async def test_falls_back_to_plain(self, organization: Organization) -> None:
+    async def test_none_without_encrypted(self, organization: Organization) -> None:
         integration = _build(organization)
         integration.id = SlackApp.generate_id()
         integration.client_secret = "cs-plain"
         integration.signing_secret = "ss-plain"
         integration.bot_token = "xoxb-plain"
-
-        assert await integration.get_client_secret() == "cs-plain"
-        assert await integration.get_signing_secret() == "ss-plain"
-        assert await integration.get_bot_token() == "xoxb-plain"
-
-    async def test_none_without_encrypted(self, organization: Organization) -> None:
-        integration = _build(organization)
-        integration.id = SlackApp.generate_id()
 
         assert await integration.get_client_secret() is None
         assert await integration.get_signing_secret() is None
@@ -119,7 +111,7 @@ class TestGetSecrets:
         integration.bot_token = None
 
         assert await integration.get_client_secret() == "cs-encrypted"
-        assert await integration.get_signing_secret() == "ss-plain"
+        assert await integration.get_signing_secret() is None
         assert await integration.get_bot_token() is None
 
 

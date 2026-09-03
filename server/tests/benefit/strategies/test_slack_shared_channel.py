@@ -69,11 +69,16 @@ async def _create_integration(
         authed_user_id="U2" if installed else None,
         scopes=["channels:manage"] if installed else None,
     )
-    if encrypted_only and bot_token is not None:
-        integration.id = SlackApp.generate_id()
-        integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
-            integration.id, bot_token
-        )
+    integration.id = SlackApp.generate_id()
+    integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
+        integration.id, integration.client_secret
+    )
+    integration.signing_secret_encrypted = await SlackApp.encrypt_signing_secret(
+        integration.id, integration.signing_secret
+    )
+    integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
+        integration.id, bot_token
+    )
     await save_fixture(integration)
     benefit.properties = {
         **benefit.properties,

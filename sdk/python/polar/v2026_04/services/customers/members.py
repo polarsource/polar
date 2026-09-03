@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import typing
 
 from polar.base import (
@@ -19,12 +20,117 @@ from polar.v2026_04.inputs import (
     MemberCreateFromCustomer,
     MemberUpdate,
 )
+from polar.v2026_04.literals import (
+    MemberRole,
+    MemberSortProperty,
+)
 from polar.v2026_04.outputs import (
+    ListResourceMember,
     Member,
 )
 
 
 class MembersSync(SyncServiceBase):
+    def list(
+        self,
+        id: str,
+        *,
+        role: MemberRole | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
+    ) -> ListResourceMember:
+        """
+        List the members of a customer.
+
+        **Scopes**: `members:read` `members:write`
+
+        Args:
+            id: The customer ID.
+            role: Filter by member role.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customers/{id}/members",
+            path_params={
+                "id": id,
+            },
+            query_params={
+                "role": role,
+                "page": page,
+                "limit": limit,
+                "sorting": sorting,
+            },
+            request_timeout=request_timeout,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, ListResourceMember, method_errors)
+
+    def iter_list(
+        self,
+        id: str,
+        *,
+        role: MemberRole | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
+    ) -> typing.Generator[Member, None, None]:
+        """
+        List the members of a customer.
+
+        **Scopes**: `members:read` `members:write`
+
+        Args:
+            id: The customer ID.
+            role: Filter by member role.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
+
+        Returns:
+            A generator that yields items of type Member.
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                id=id,
+                role=role,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                request_timeout=request_timeout,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def create(
         self,
         id: str,
@@ -71,6 +177,109 @@ class MembersSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, Member, method_errors)
+
+    def list_external(
+        self,
+        external_id: str,
+        *,
+        role: MemberRole | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
+    ) -> ListResourceMember:
+        """
+        List the members of a customer identified by its external ID.
+
+        **Scopes**: `members:read` `members:write`
+
+        Args:
+            external_id: The customer external ID.
+            role: Filter by member role.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customers/external/{external_id}/members",
+            path_params={
+                "external_id": external_id,
+            },
+            query_params={
+                "role": role,
+                "page": page,
+                "limit": limit,
+                "sorting": sorting,
+            },
+            request_timeout=request_timeout,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            409: AmbiguousExternalCustomerID,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, ListResourceMember, method_errors)
+
+    def iter_list_external(
+        self,
+        external_id: str,
+        *,
+        role: MemberRole | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
+    ) -> typing.Generator[Member, None, None]:
+        """
+        List the members of a customer identified by its external ID.
+
+        **Scopes**: `members:read` `members:write`
+
+        Args:
+            external_id: The customer external ID.
+            role: Filter by member role.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
+
+        Returns:
+            A generator that yields items of type Member.
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_external(
+                external_id=external_id,
+                role=role,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                request_timeout=request_timeout,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     def create_external(
         self,
@@ -386,6 +595,107 @@ class MembersSync(SyncServiceBase):
 
 
 class MembersAsync(AsyncServiceBase):
+    async def list(
+        self,
+        id: str,
+        *,
+        role: MemberRole | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
+    ) -> ListResourceMember:
+        """
+        List the members of a customer.
+
+        **Scopes**: `members:read` `members:write`
+
+        Args:
+            id: The customer ID.
+            role: Filter by member role.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customers/{id}/members",
+            path_params={
+                "id": id,
+            },
+            query_params={
+                "role": role,
+                "page": page,
+                "limit": limit,
+                "sorting": sorting,
+            },
+            request_timeout=request_timeout,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, ListResourceMember, method_errors)
+
+    async def iter_list(
+        self,
+        id: str,
+        *,
+        role: MemberRole | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
+    ) -> typing.AsyncGenerator[Member, None]:
+        """
+        List the members of a customer.
+
+        **Scopes**: `members:read` `members:write`
+
+        Args:
+            id: The customer ID.
+            role: Filter by member role.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
+
+        Returns:
+            An async generator that yields items of type Member.
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                id=id,
+                role=role,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                request_timeout=request_timeout,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def create(
         self,
         id: str,
@@ -432,6 +742,110 @@ class MembersAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, Member, method_errors)
+
+    async def list_external(
+        self,
+        external_id: str,
+        *,
+        role: MemberRole | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
+    ) -> ListResourceMember:
+        """
+        List the members of a customer identified by its external ID.
+
+        **Scopes**: `members:read` `members:write`
+
+        Args:
+            external_id: The customer external ID.
+            role: Filter by member role.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/customers/external/{external_id}/members",
+            path_params={
+                "external_id": external_id,
+            },
+            query_params={
+                "role": role,
+                "page": page,
+                "limit": limit,
+                "sorting": sorting,
+            },
+            request_timeout=request_timeout,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            409: AmbiguousExternalCustomerID,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, ListResourceMember, method_errors)
+
+    async def iter_list_external(
+        self,
+        external_id: str,
+        *,
+        role: MemberRole | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MemberSortProperty] | None = ["-created_at"],
+        request_timeout: RequestTimeout | None = None,
+    ) -> typing.AsyncGenerator[Member, None]:
+        """
+        List the members of a customer identified by its external ID.
+
+        **Scopes**: `members:read` `members:write`
+
+        Args:
+            external_id: The customer external ID.
+            role: Filter by member role.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+
+
+        Returns:
+            An async generator that yields items of type Member.
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_external(
+                external_id=external_id,
+                role=role,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                request_timeout=request_timeout,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     async def create_external(
         self,

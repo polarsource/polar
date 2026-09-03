@@ -90,7 +90,8 @@ def _validate_customer_id_params(
 @router.get(
     "/",
     summary="List Members",
-    tags=[APITag.public],
+    tags=[APITag.private],
+    deprecated=True,
     response_model=ListResource[Member],
 )
 async def list_members(
@@ -130,6 +131,75 @@ async def list_members(
 
 
 # --- Nested customer-scoped endpoints ---------------------------------------
+
+
+@customer_members_router.get(
+    "/{id}/members",
+    summary="List Members",
+    response_model=ListResource[Member],
+    responses={
+        200: {"description": "Members retrieved."},
+        404: CustomerNotFound,
+    },
+)
+async def list(
+    id: CustomerID,
+    auth_subject: auth.MemberRead,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    role: MemberRole | None = Query(None, description="Filter by member role."),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[Member]:
+    """List the members of a customer."""
+    results, count = await member_service.list_for_customer(
+        session,
+        auth_subject,
+        customer_id=id,
+        role=role,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [Member.model_validate(member) for member in results],
+        count,
+        pagination,
+    )
+
+
+@customer_members_router.get(
+    "/external/{external_id}/members",
+    summary="List Members by Customer External ID",
+    response_model=ListResource[Member],
+    responses={
+        200: {"description": "Members retrieved."},
+        404: CustomerNotFound,
+        409: AmbiguousExternalCustomer,
+    },
+)
+async def list_external(
+    external_id: ExternalCustomerID,
+    auth_subject: auth.MemberRead,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    role: MemberRole | None = Query(None, description="Filter by member role."),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[Member]:
+    """List the members of a customer identified by its external ID."""
+    results, count = await member_service.list_for_customer(
+        session,
+        auth_subject,
+        external_customer_id=external_id,
+        role=role,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [Member.model_validate(member) for member in results],
+        count,
+        pagination,
+    )
 
 
 @customer_members_router.post(

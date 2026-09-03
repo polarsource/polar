@@ -78,11 +78,15 @@ export const CustomerHeader = ({
 
     let memberId: string | undefined
     if (memberModelEnabled && customer.type === 'team') {
-      const { data: membersData } = await api.GET('/v1/members/', {
-        params: {
-          query: { customer_id: customer.id, role: 'owner', limit: 1 },
+      const { data: membersData } = await api.GET(
+        '/v1/customers/{id}/members',
+        {
+          params: {
+            path: { id: customer.id },
+            query: { role: 'owner', limit: 1 },
+          },
         },
-      })
+      )
       const ownerMember = membersData?.items?.[0]
       if (!ownerMember) {
         toast({

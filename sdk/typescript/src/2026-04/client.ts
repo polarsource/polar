@@ -15,7 +15,6 @@ import { createEventTypesService } from "./services/event_types";
 import { createEventsService } from "./services/events";
 import { createFilesService } from "./services/files";
 import { createLicenseKeysService } from "./services/license_keys";
-import { createMembersService } from "./services/members";
 import { createMetersService } from "./services/meters";
 import { createMetricsService } from "./services/metrics";
 import { createOauth2Service } from "./services/oauth2";
@@ -72,7 +71,6 @@ export function createPolar(options: PolarOptions) {
     customFields: createCustomFieldsService(client),
     discounts: createDiscountsService(client),
     customers: createCustomersService(client),
-    members: createMembersService(client),
     customerPortal: createCustomerPortalService(client),
     customerSeats: createCustomerSeatsService(client),
     customerSessions: createCustomerSessionsService(client),

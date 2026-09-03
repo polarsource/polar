@@ -19527,6 +19527,18 @@ export interface components {
        */
       discount_id: string | null
       /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       * @example null
+       */
+      seats: number | null
+      /**
+       * Units
+       * @description The number of units for unit-based subscriptions. None for non-unit subscriptions.
+       * @example null
+       */
+      units: number | null
+      /**
        * Meters
        * @description List of meters associated with the subscription.
        */

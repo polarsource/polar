@@ -77,10 +77,14 @@ async def product_metered_unit(
     )
 
 
-@pytest_asyncio.fixture
-async def product_metered_tiers(
-    save_fixture: SaveFixture, meter: Meter, organization: Organization
+async def create_graduated_metered_product(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    meter: Meter,
+    cap_amount: int | None = None,
 ) -> Product:
+    """20 units at 100, then 50 each."""
     product = await create_product(
         save_fixture,
         organization=organization,
@@ -91,6 +95,7 @@ async def product_metered_tiers(
         save_fixture,
         product=product,
         meter=meter,
+        cap_amount=cap_amount,
         tiers=Tiers.model_validate(
             {
                 "type": TierType.graduated,
@@ -104,6 +109,15 @@ async def product_metered_tiers(
     product.prices.append(price)
     product.all_prices.append(price)
     return product
+
+
+@pytest_asyncio.fixture
+async def product_metered_tiers(
+    save_fixture: SaveFixture, meter: Meter, organization: Organization
+) -> Product:
+    return await create_graduated_metered_product(
+        save_fixture, organization=organization, meter=meter
+    )
 
 
 @pytest_asyncio.fixture
@@ -466,6 +480,78 @@ class TestCreateOrderItemsFromPending:
             assert len(order_items) == 1
             # Graduated: 20 units at 100, then 30 at 50.
             assert order_items[0].amount == 20 * 100 + 30 * 50
+
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+    async def test_tiered_metered_price_stops_at_its_cap(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        product = await create_graduated_metered_product(
+            save_fixture, organization=organization, meter=meter, cap_amount=25_00
+        )
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=product.prices[0],
+            subscription=subscription,
+            tokens=100,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            # Uncapped this is 20 * 100 + 80 * 50 = 6_000.
+            assert order_items[0].amount == 25_00
+            assert "Capped at $25.00" in order_items[0].label
+
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+    async def test_credits_come_off_before_the_tiers_apply(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_tiers: Product,
+        metered_tiers_subscription: Subscription,
+    ) -> None:
+        price = product_metered_tiers.prices[0]
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_tiers_subscription,
+            tokens=50,
+        )
+        await create_credit_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_tiers_subscription,
+            meter=meter,
+            units=20,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_tiers_subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            # 30 billable units re-enter at the first tier: 20 * 100 + 10 * 50.
+            # Billing the 50 consumed units would give 3_500.
+            assert order_items[0].amount == 20 * 100 + 10 * 50
 
             await create_order(
                 save_fixture, customer=customer, order_items=list(order_items)

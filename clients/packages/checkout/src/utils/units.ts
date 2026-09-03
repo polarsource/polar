@@ -47,7 +47,7 @@ export function getUnitLabels(
 type UnitTier = schemas['Tier']
 
 function sortTiers(tiers: UnitTier[]): UnitTier[] {
-  return tiers.toSorted((a, b) => {
+  return [...tiers].sort((a, b) => {
     if (a.bound == null) return 1
     if (b.bound == null) return -1
     return a.bound - b.bound

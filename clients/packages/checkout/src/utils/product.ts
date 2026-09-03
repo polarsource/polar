@@ -32,7 +32,7 @@ export const getMeteredPrices = (
 
 export const getMeteredTiers = (price: MeteredPrice): MeteredTier[] =>
   price.amount_type === 'metered_tiers'
-    ? price.tiers.tiers.toSorted(
+    ? [...price.tiers.tiers].sort(
         (a, b) =>
           Number(a.bound == null) - Number(b.bound == null) ||
           (a.bound ?? 0) - (b.bound ?? 0),

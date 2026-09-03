@@ -154,7 +154,7 @@ const FixedSeatPrice = ({
   locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale ?? DEFAULT_LOCALE)
-  const sortedTiers = (seatPrice.seat_tiers?.tiers ?? []).toSorted(
+  const sortedTiers = [...(seatPrice.seat_tiers?.tiers ?? [])].sort(
     (a, b) => a.min_seats - b.min_seats,
   )
   const basePricePerSeat = sortedTiers[0]?.price_per_seat ?? 0

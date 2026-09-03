@@ -1596,6 +1596,37 @@ class TestSlackSharedChannelGrant:
             bot_token="xoxb-test-token", channel="C123", users=["U01", "U02"]
         )
 
+    async def test_grant_reads_bot_token_when_plaintext_absent(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={**_BASE_PROPERTIES, "team_invitees": ["U01", "U02"]},
+        )
+        integration = await _create_integration(save_fixture, benefit)
+        integration.bot_token = None
+        await save_fixture(integration)
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        client.conversations_invite.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="C123", users=["U01", "U02"]
+        )
+
     async def test_grant_skips_invite_when_team_invitees_empty(
         self,
         session: AsyncSession,

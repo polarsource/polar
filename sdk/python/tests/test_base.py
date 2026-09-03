@@ -5,7 +5,12 @@ import httpx
 import pytest
 
 from polar import PolarDeserializationError, deserialize
-from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
+from polar.base import (
+    AdditionalPropertiesMixin,
+    AsyncClientBase,
+    SyncClientBase,
+    resolve_base_url,
+)
 
 SERVERS = {
     "production": "https://api.polar.sh",
@@ -28,6 +33,12 @@ class Dog:
 Animal: typing.TypeAlias = Cat | Dog
 
 
+@dataclasses.dataclass(slots=True)
+class ExtensibleModel(AdditionalPropertiesMixin):
+    known: int
+    additional_properties: dict[str, str] = dataclasses.field(default_factory=dict)
+
+
 def test_deserialize_model() -> None:
     cat = deserialize({"type": "cat", "lives": 9}, Cat)
 
@@ -45,6 +56,15 @@ def test_deserialize_union() -> None:
 
     typing.assert_type(animal, Cat | Dog)
     assert animal == Dog(type="dog", breed="Samoyed")
+
+
+def test_deserialize_model_with_additional_properties() -> None:
+    model = deserialize({"known": 1, "custom": "value"}, ExtensibleModel)
+
+    assert model == ExtensibleModel(
+        known=1,
+        additional_properties={"custom": "value"},
+    )
 
 
 @pytest.mark.parametrize(

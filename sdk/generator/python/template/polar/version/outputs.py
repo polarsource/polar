@@ -3,6 +3,9 @@ from __future__ import annotations
 import dataclasses
 import typing
 
+{% if output_uses_additional_properties %}
+from polar.base import AdditionalPropertiesMixin
+{% endif %}
 {% if output_enum_imports %}
 from polar.{{ version }}.literals import (
 {% for enum_name in output_enum_imports %}
@@ -20,7 +23,7 @@ from polar.{{ version }}.literals import (
 
 {% else %}
 @dataclasses.dataclass(kw_only=True, slots=True)
-class {{ model.name }}:
+class {{ model.name }}{% if model.additional_properties %}(AdditionalPropertiesMixin){% endif %}:
 {% if model.description %}
     """{{ model.description }}"""
 {% endif %}
@@ -39,6 +42,9 @@ class {{ model.name }}:
 {% else %}
     ...
 {% endfor %}
+{% if model.additional_properties %}
+    additional_properties: dict[str, {{ model.additional_properties | type_annotation }}] = dataclasses.field(default_factory=dict)
+{% endif %}
 {% endif %}
 {% endfor %}
 

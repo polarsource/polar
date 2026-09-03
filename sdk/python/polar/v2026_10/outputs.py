@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 
+from polar.base import AdditionalPropertiesMixin
 from polar.v2026_10.literals import (
     BenefitType,
     BenefitVisibility,
@@ -6210,10 +6211,14 @@ class DownloadableRead:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class EventMetadataOutput:
+class EventMetadataOutput(AdditionalPropertiesMixin):
     _cost: CostMetadataOutput | None = None
 
     _llm: LLMMetadata | None = None
+
+    additional_properties: dict[str, str | int | float | bool] = dataclasses.field(
+        default_factory=dict
+    )
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)

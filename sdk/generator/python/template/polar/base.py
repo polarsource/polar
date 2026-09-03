@@ -1,3 +1,4 @@
+import abc
 import builtins
 import collections.abc
 import types
@@ -54,6 +55,20 @@ class PolarRateLimitError(PolarClientError):
     def __init__(self, status_code: typing.Literal[429], retry_after: int | None = None):
         super().__init__(status_code, "Rate limit exceeded")
         self.retry_after = retry_after
+
+
+class _AdditionalPropertiesModel(abc.ABC):
+    __slots__ = ()
+
+    @abc.abstractmethod
+    def _mark_additional_properties_model(self) -> None: ...
+
+
+class AdditionalPropertiesMixin(_AdditionalPropertiesModel):
+    __slots__ = ()
+
+    def _mark_additional_properties_model(self) -> None:
+        pass
 
 
 def resolve_base_url(

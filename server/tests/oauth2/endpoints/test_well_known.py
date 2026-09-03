@@ -16,8 +16,15 @@ async def test_jwks(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_openid_configuration(client: AsyncClient) -> None:
-    response = await client.get("/.well-known/openid-configuration")
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/.well-known/openid-configuration",
+        "/.well-known/oauth-authorization-server",
+    ],
+)
+async def test_authorization_server_metadata(client: AsyncClient, path: str) -> None:
+    response = await client.get(path)
 
     assert response.status_code == 200
 

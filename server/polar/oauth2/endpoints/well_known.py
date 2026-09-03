@@ -17,6 +17,7 @@ async def well_known_jwks() -> dict[str, Any]:
     return settings.JWKS.as_dict(is_private=False)
 
 
+@router.get("/oauth-authorization-server", name="well_known.oauth_authorization_server")
 @router.get("/openid-configuration", name="well_known.openid_configuration")
 async def well_known_openid_configuration(
     request: Request,

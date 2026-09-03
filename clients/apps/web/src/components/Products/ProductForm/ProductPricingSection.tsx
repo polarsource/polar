@@ -268,6 +268,7 @@ export const ProductPricingSection = ({
         let newPrice: ProductPriceCreate
         const baseCurrency = {
           price_currency: newCurrency as schemas['PresentmentCurrency'],
+          tax_behavior: price.tax_behavior ?? null,
         }
 
         if (price.amount_type === 'fixed') {

@@ -21,7 +21,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=16"
+    "node": ">=22"
   },
   "scripts": {
     "build": "tsup ./src/index.ts --format esm,cjs --dts --clean --sourcemap",
@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "^0.47.0",
+    "@polar-sh/sdk": "1.0.0-alpha.17",
     "@tanstack/react-start": "^1.140.0"
   },
   "devDependencies": {

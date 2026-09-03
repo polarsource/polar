@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["node_modules/**", "dist/**"],
+  "extends": ["../../packages/oxlint-config/oxlint-base.json"],
+  "overrides": [
+    {
+      "files": ["src/__tests__/**"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "typescript/no-unsafe-function-type": "off"
+      }
+    }
+  ]
+}

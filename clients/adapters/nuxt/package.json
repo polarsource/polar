@@ -1,0 +1,57 @@
+{
+  "name": "@polar-sh/nuxt",
+  "version": "0.5.8",
+  "description": "Polar.sh integration for Nuxt",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/adapters/nuxt"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/module.mjs",
+      "require": "./dist/module.cjs"
+    }
+  },
+  "main": "./dist/module.cjs",
+  "types": "./dist/types.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "nuxt-module-build build",
+    "prepare": "nuxt-module-build prepare",
+    "dev": "nuxi dev playground",
+    "dev:build": "nuxi build playground",
+    "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare playground",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit",
+    "typecheck": "nuxi prepare playground && pnpm test:types"
+  },
+  "dependencies": {
+    "@nuxt/kit": "^3.15.4",
+    "@polar-sh/adapter-utils": "workspace:*",
+    "@polar-sh/sdk": "^0.47.0"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^2.6.5",
+    "@nuxt/module-builder": "^0.8.4",
+    "@nuxt/schema": "^3.15.4",
+    "@nuxt/test-utils": "^3.21.0",
+    "@types/node": "latest",
+    "nuxt": "^3.15.4",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.4",
+    "vue-tsc": "2.1.6",
+    "zod": "^3.24.2"
+  }
+}

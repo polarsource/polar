@@ -29,6 +29,7 @@ polar/
 │   │   └── backoffice/         # Admin UI (HTMX + DaisyUI) — see server/polar/backoffice/AGENTS.md
 │   └── migrations/             # Alembic database migrations
 ├── clients/                # Turborepo + pnpm frontend — see clients/AGENTS.md
+│   ├── adapters/               # Published framework and authentication adapters
 │   ├── apps/web/               # Next.js dashboard
 │   ├── apps/app/               # Expo / React Native (iOS + Android)
 │   ├── apps/orbit/             # Orbit design-system showcase

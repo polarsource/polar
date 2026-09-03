@@ -91,5 +91,8 @@ jobs:
       - name: "🧪 Test: @polar-sh/orbit"
         run: pnpm --filter @polar-sh/orbit test
 
+      - name: "🧪 Test: Adapters"
+        run: pnpm turbo run test --filter='./adapters/*'
+
       - name: 🛠️ Build
         run: pnpm build

@@ -30,3 +30,12 @@
 	}
 	import polar
 }
+
+:4096 {
+	tls {
+		get_certificate tailscale
+	}
+	reverse_proxy 127.0.0.1:4097 {
+		header_up Authorization "Basic __OPENCODE_AUTH__"
+	}
+}

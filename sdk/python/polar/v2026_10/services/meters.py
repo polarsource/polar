@@ -43,6 +43,7 @@ class MetersSync(SyncServiceBase):
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceMeter:
         """
         List meters.
@@ -58,6 +59,8 @@ class MetersSync(SyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -80,6 +83,7 @@ class MetersSync(SyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -98,6 +102,7 @@ class MetersSync(SyncServiceBase):
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[Meter, None, None]:
         """
         List meters.
@@ -113,6 +118,8 @@ class MetersSync(SyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -134,6 +141,7 @@ class MetersSync(SyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -144,6 +152,7 @@ class MetersSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MeterCreate],
     ) -> Meter:
         """
@@ -153,6 +162,8 @@ class MetersSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -168,6 +179,7 @@ class MetersSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -181,6 +193,7 @@ class MetersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Meter:
         """
         Get a meter by ID.
@@ -190,6 +203,8 @@ class MetersSync(SyncServiceBase):
         Args:
             id: The meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -207,6 +222,7 @@ class MetersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -220,6 +236,7 @@ class MetersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MeterUpdate],
     ) -> Meter:
         """
@@ -230,6 +247,8 @@ class MetersSync(SyncServiceBase):
         Args:
             id: The meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -248,6 +267,7 @@ class MetersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -270,6 +290,7 @@ class MetersSync(SyncServiceBase):
         customer_aggregation_function: AggregationFunction | None = None,
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> MeterQuantities:
         """
         Get quantities of a meter over a time period.
@@ -287,6 +308,8 @@ class MetersSync(SyncServiceBase):
             customer_aggregation_function: If set, will first compute the quantities per customer before aggregating them using the given function. If not set, the quantities will be aggregated across all events.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -313,6 +336,7 @@ class MetersSync(SyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -334,6 +358,7 @@ class MetersAsync(AsyncServiceBase):
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceMeter:
         """
         List meters.
@@ -349,6 +374,8 @@ class MetersAsync(AsyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -371,6 +398,7 @@ class MetersAsync(AsyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -389,6 +417,7 @@ class MetersAsync(AsyncServiceBase):
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[Meter, None]:
         """
         List meters.
@@ -404,6 +433,8 @@ class MetersAsync(AsyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -425,6 +456,7 @@ class MetersAsync(AsyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -436,6 +468,7 @@ class MetersAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MeterCreate],
     ) -> Meter:
         """
@@ -445,6 +478,8 @@ class MetersAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -460,6 +495,7 @@ class MetersAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -473,6 +509,7 @@ class MetersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Meter:
         """
         Get a meter by ID.
@@ -482,6 +519,8 @@ class MetersAsync(AsyncServiceBase):
         Args:
             id: The meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -499,6 +538,7 @@ class MetersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -512,6 +552,7 @@ class MetersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[MeterUpdate],
     ) -> Meter:
         """
@@ -522,6 +563,8 @@ class MetersAsync(AsyncServiceBase):
         Args:
             id: The meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -540,6 +583,7 @@ class MetersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -562,6 +606,7 @@ class MetersAsync(AsyncServiceBase):
         customer_aggregation_function: AggregationFunction | None = None,
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> MeterQuantities:
         """
         Get quantities of a meter over a time period.
@@ -579,6 +624,8 @@ class MetersAsync(AsyncServiceBase):
             customer_aggregation_function: If set, will first compute the quantities per customer before aggregating them using the given function. If not set, the quantities will be aggregated across all events.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -605,6 +652,7 @@ class MetersAsync(AsyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {

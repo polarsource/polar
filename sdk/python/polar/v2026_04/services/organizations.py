@@ -38,6 +38,7 @@ class OrganizationsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceOrganization:
         """
         List organizations.
@@ -50,6 +51,8 @@ class OrganizationsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -69,6 +72,7 @@ class OrganizationsSync(SyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -84,6 +88,7 @@ class OrganizationsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[Organization, None, None]:
         """
         List organizations.
@@ -96,6 +101,8 @@ class OrganizationsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -114,6 +121,7 @@ class OrganizationsSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -124,6 +132,7 @@ class OrganizationsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrganizationCreate],
     ) -> Organization:
         """
@@ -133,6 +142,8 @@ class OrganizationsSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -149,6 +160,7 @@ class OrganizationsSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -163,6 +175,7 @@ class OrganizationsSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Organization:
         """
         Get an organization by ID.
@@ -172,6 +185,8 @@ class OrganizationsSync(SyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -189,6 +204,7 @@ class OrganizationsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -202,6 +218,7 @@ class OrganizationsSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrganizationUpdate],
     ) -> Organization:
         """
@@ -212,6 +229,8 @@ class OrganizationsSync(SyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -232,6 +251,7 @@ class OrganizationsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -253,6 +273,7 @@ class OrganizationsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceOrganization:
         """
         List organizations.
@@ -265,6 +286,8 @@ class OrganizationsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -284,6 +307,7 @@ class OrganizationsAsync(AsyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -299,6 +323,7 @@ class OrganizationsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[Organization, None]:
         """
         List organizations.
@@ -311,6 +336,8 @@ class OrganizationsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -329,6 +356,7 @@ class OrganizationsAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -340,6 +368,7 @@ class OrganizationsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrganizationCreate],
     ) -> Organization:
         """
@@ -349,6 +378,8 @@ class OrganizationsAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -365,6 +396,7 @@ class OrganizationsAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -379,6 +411,7 @@ class OrganizationsAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Organization:
         """
         Get an organization by ID.
@@ -388,6 +421,8 @@ class OrganizationsAsync(AsyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -405,6 +440,7 @@ class OrganizationsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -418,6 +454,7 @@ class OrganizationsAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrganizationUpdate],
     ) -> Organization:
         """
@@ -428,6 +465,8 @@ class OrganizationsAsync(AsyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -448,6 +487,7 @@ class OrganizationsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)

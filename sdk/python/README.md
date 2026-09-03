@@ -110,6 +110,15 @@ customer_state = polar.customers.get_state_external(
 )
 ```
 
+Override the access token for an individual request with `request_access_token`:
+
+```python
+customer_state = polar.customers.get_state_external(
+    "customer_external_id",
+    request_access_token="polar_at_u_override",
+)
+```
+
 Pass an `httpx.Timeout` instance to configure connect, read, write, and pool timeouts separately.
 
 ## Deserializing Data

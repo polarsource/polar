@@ -42,6 +42,7 @@ class MembersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceCustomerPortalMember:
         """
         List all members of the customer's team.
@@ -52,6 +53,8 @@ class MembersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -71,6 +74,7 @@ class MembersSync(SyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -88,6 +92,7 @@ class MembersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[CustomerPortalMember, None, None]:
         """
         List all members of the customer's team.
@@ -98,6 +103,8 @@ class MembersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -116,6 +123,7 @@ class MembersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -126,6 +134,7 @@ class MembersSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerPortalMemberCreate],
     ) -> CustomerPortalMember:
         """
@@ -139,6 +148,8 @@ class MembersSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -157,6 +168,7 @@ class MembersSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -173,6 +185,7 @@ class MembersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Remove a member from the team.
@@ -186,6 +199,8 @@ class MembersSync(SyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -206,6 +221,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -222,6 +238,7 @@ class MembersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerPortalMemberUpdate],
     ) -> CustomerPortalMember:
         """
@@ -236,6 +253,8 @@ class MembersSync(SyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -257,6 +276,7 @@ class MembersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -277,6 +297,7 @@ class MembersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceCustomerPortalMember:
         """
         List all members of the customer's team.
@@ -287,6 +308,8 @@ class MembersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -306,6 +329,7 @@ class MembersAsync(AsyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -323,6 +347,7 @@ class MembersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[CustomerPortalMember, None]:
         """
         List all members of the customer's team.
@@ -333,6 +358,8 @@ class MembersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -351,6 +378,7 @@ class MembersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -362,6 +390,7 @@ class MembersAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerPortalMemberCreate],
     ) -> CustomerPortalMember:
         """
@@ -375,6 +404,8 @@ class MembersAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -393,6 +424,7 @@ class MembersAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -409,6 +441,7 @@ class MembersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Remove a member from the team.
@@ -422,6 +455,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -442,6 +477,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -458,6 +494,7 @@ class MembersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerPortalMemberUpdate],
     ) -> CustomerPortalMember:
         """
@@ -472,6 +509,8 @@ class MembersAsync(AsyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -493,6 +532,7 @@ class MembersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)

@@ -61,6 +61,7 @@ class OrdersSync(SyncServiceBase):
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceOrder:
         """
         List orders.
@@ -84,6 +85,8 @@ class OrdersSync(SyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -114,6 +117,7 @@ class OrdersSync(SyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -142,6 +146,7 @@ class OrdersSync(SyncServiceBase):
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[Order, None, None]:
         """
         List orders.
@@ -165,6 +170,8 @@ class OrdersSync(SyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -194,6 +201,7 @@ class OrdersSync(SyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -204,6 +212,7 @@ class OrdersSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrderCreate],
     ) -> Order:
         """
@@ -217,6 +226,8 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -232,6 +243,7 @@ class OrdersSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -251,6 +263,7 @@ class OrdersSync(SyncServiceBase):
         timezone: str = "UTC",
         columns: OrderExportColumn | builtins.list[OrderExportColumn] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> str:
         """
         Export orders as a CSV file.
@@ -266,6 +279,8 @@ class OrdersSync(SyncServiceBase):
             timezone: Time zone used to render dates in the CSV.
             columns: Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -288,6 +303,7 @@ class OrdersSync(SyncServiceBase):
                 "columns": columns,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -300,6 +316,7 @@ class OrdersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Order:
         """
         Get an order by ID.
@@ -309,6 +326,8 @@ class OrdersSync(SyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -326,6 +345,7 @@ class OrdersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -339,6 +359,7 @@ class OrdersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrderUpdate],
     ) -> Order:
         """
@@ -349,6 +370,8 @@ class OrdersSync(SyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -367,6 +390,7 @@ class OrdersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -381,6 +405,7 @@ class OrdersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrderFinalize],
     ) -> Order:
         """
@@ -397,6 +422,8 @@ class OrdersSync(SyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -418,6 +445,7 @@ class OrdersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -435,6 +463,7 @@ class OrdersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> OrderInvoice:
         """
         Get an order's invoice data.
@@ -444,6 +473,8 @@ class OrdersSync(SyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -461,6 +492,7 @@ class OrdersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -474,6 +506,7 @@ class OrdersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Any:
         """
         Trigger generation of an order's invoice.
@@ -483,6 +516,8 @@ class OrdersSync(SyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -501,6 +536,7 @@ class OrdersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -515,6 +551,7 @@ class OrdersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> OrderReceipt:
         """
         Get a presigned URL to download an order's receipt PDF.
@@ -524,6 +561,8 @@ class OrdersSync(SyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -541,6 +580,7 @@ class OrdersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -572,6 +612,7 @@ class OrdersAsync(AsyncServiceBase):
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceOrder:
         """
         List orders.
@@ -595,6 +636,8 @@ class OrdersAsync(AsyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -625,6 +668,7 @@ class OrdersAsync(AsyncServiceBase):
                 "metadata": metadata,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -653,6 +697,7 @@ class OrdersAsync(AsyncServiceBase):
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[Order, None]:
         """
         List orders.
@@ -676,6 +721,8 @@ class OrdersAsync(AsyncServiceBase):
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -705,6 +752,7 @@ class OrdersAsync(AsyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -716,6 +764,7 @@ class OrdersAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrderCreate],
     ) -> Order:
         """
@@ -729,6 +778,8 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -744,6 +795,7 @@ class OrdersAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -763,6 +815,7 @@ class OrdersAsync(AsyncServiceBase):
         timezone: str = "UTC",
         columns: OrderExportColumn | builtins.list[OrderExportColumn] | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> str:
         """
         Export orders as a CSV file.
@@ -778,6 +831,8 @@ class OrdersAsync(AsyncServiceBase):
             timezone: Time zone used to render dates in the CSV.
             columns: Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -800,6 +855,7 @@ class OrdersAsync(AsyncServiceBase):
                 "columns": columns,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -812,6 +868,7 @@ class OrdersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Order:
         """
         Get an order by ID.
@@ -821,6 +878,8 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -838,6 +897,7 @@ class OrdersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -851,6 +911,7 @@ class OrdersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrderUpdate],
     ) -> Order:
         """
@@ -861,6 +922,8 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -879,6 +942,7 @@ class OrdersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -893,6 +957,7 @@ class OrdersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrderFinalize],
     ) -> Order:
         """
@@ -909,6 +974,8 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -930,6 +997,7 @@ class OrdersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -947,6 +1015,7 @@ class OrdersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> OrderInvoice:
         """
         Get an order's invoice data.
@@ -956,6 +1025,8 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -973,6 +1044,7 @@ class OrdersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -986,6 +1058,7 @@ class OrdersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Any:
         """
         Trigger generation of an order's invoice.
@@ -995,6 +1068,8 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1013,6 +1088,7 @@ class OrdersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -1027,6 +1103,7 @@ class OrdersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> OrderReceipt:
         """
         Get a presigned URL to download an order's receipt PDF.
@@ -1036,6 +1113,8 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -1053,6 +1132,7 @@ class OrdersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {

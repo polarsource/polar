@@ -81,6 +81,7 @@ class BuildRequestMixin:
         query_params: dict[str, typing.Any] | None = None,
         body: typing.Any | None = None,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> httpx.Request:
         url = url.format(**(path_params or {}))
 
@@ -95,8 +96,11 @@ class BuildRequestMixin:
                 params[k] = v
 
         timeout = self._client.timeout if request_timeout is None else request_timeout
+        headers: dict[str, str] | None = None
+        if request_access_token is not None:
+            headers = {"Authorization": f"Bearer {request_access_token}"}
         return self._client.build_request(
-            method, url, params=params, json=body, timeout=timeout
+            method, url, params=params, json=body, timeout=timeout, headers=headers
         )
 
 

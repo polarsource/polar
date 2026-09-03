@@ -17,6 +17,7 @@ class CustomerSessionSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerCustomerSession:
         """
         Introspect the current session and return its information.
@@ -25,6 +26,8 @@ class CustomerSessionSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -38,6 +41,7 @@ class CustomerSessionSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         return parse_response_json(response, CustomerCustomerSession)
@@ -46,6 +50,7 @@ class CustomerSessionSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> PortalAuthenticatedUser:
         """
         Get information about the currently authenticated portal user.
@@ -54,6 +59,8 @@ class CustomerSessionSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -67,6 +74,7 @@ class CustomerSessionSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         return parse_response_json(response, PortalAuthenticatedUser)
@@ -77,6 +85,7 @@ class CustomerSessionAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerCustomerSession:
         """
         Introspect the current session and return its information.
@@ -85,6 +94,8 @@ class CustomerSessionAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -98,6 +109,7 @@ class CustomerSessionAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         return parse_response_json(response, CustomerCustomerSession)
@@ -106,6 +118,7 @@ class CustomerSessionAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> PortalAuthenticatedUser:
         """
         Get information about the currently authenticated portal user.
@@ -114,6 +127,8 @@ class CustomerSessionAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -127,6 +142,7 @@ class CustomerSessionAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         return parse_response_json(response, PortalAuthenticatedUser)

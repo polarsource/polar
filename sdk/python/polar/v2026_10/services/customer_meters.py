@@ -34,6 +34,7 @@ class CustomerMetersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceCustomerMeter:
         """
         List customer meters.
@@ -49,6 +50,8 @@ class CustomerMetersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -71,6 +74,7 @@ class CustomerMetersSync(SyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -89,6 +93,7 @@ class CustomerMetersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[CustomerMeter, None, None]:
         """
         List customer meters.
@@ -104,6 +109,8 @@ class CustomerMetersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -125,6 +132,7 @@ class CustomerMetersSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -136,6 +144,7 @@ class CustomerMetersSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerMeter:
         """
         Get a customer meter by ID.
@@ -145,6 +154,8 @@ class CustomerMetersSync(SyncServiceBase):
         Args:
             id: The customer meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -162,6 +173,7 @@ class CustomerMetersSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -183,6 +195,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceCustomerMeter:
         """
         List customer meters.
@@ -198,6 +211,8 @@ class CustomerMetersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -220,6 +235,7 @@ class CustomerMetersAsync(AsyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -238,6 +254,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[CustomerMeter, None]:
         """
         List customer meters.
@@ -253,6 +270,8 @@ class CustomerMetersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -274,6 +293,7 @@ class CustomerMetersAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -286,6 +306,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> CustomerMeter:
         """
         Get a customer meter by ID.
@@ -295,6 +316,8 @@ class CustomerMetersAsync(AsyncServiceBase):
         Args:
             id: The customer meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -312,6 +335,7 @@ class CustomerMetersAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {

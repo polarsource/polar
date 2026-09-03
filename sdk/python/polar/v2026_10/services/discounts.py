@@ -38,6 +38,7 @@ class DiscountsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[DiscountSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceDiscount:
         """
         List discounts.
@@ -51,6 +52,8 @@ class DiscountsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -71,6 +74,7 @@ class DiscountsSync(SyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -87,6 +91,7 @@ class DiscountsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[DiscountSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[Discount, None, None]:
         """
         List discounts.
@@ -100,6 +105,8 @@ class DiscountsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -119,6 +126,7 @@ class DiscountsSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -130,6 +138,7 @@ class DiscountsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[DiscountFixedCreate],
     ) -> Discount: ...
 
@@ -138,6 +147,7 @@ class DiscountsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[DiscountPercentageCreate],
     ) -> Discount: ...
 
@@ -145,6 +155,7 @@ class DiscountsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> Discount:
         """
@@ -154,6 +165,8 @@ class DiscountsSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -169,6 +182,7 @@ class DiscountsSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -182,6 +196,7 @@ class DiscountsSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Discount:
         """
         Get a discount by ID.
@@ -191,6 +206,8 @@ class DiscountsSync(SyncServiceBase):
         Args:
             id: The discount ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -208,6 +225,7 @@ class DiscountsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -221,6 +239,7 @@ class DiscountsSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a discount.
@@ -230,6 +249,8 @@ class DiscountsSync(SyncServiceBase):
         Args:
             id: The discount ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -247,6 +268,7 @@ class DiscountsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -260,6 +282,7 @@ class DiscountsSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[DiscountUpdate],
     ) -> Discount:
         """
@@ -270,6 +293,8 @@ class DiscountsSync(SyncServiceBase):
         Args:
             id: The discount ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -288,6 +313,7 @@ class DiscountsSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -308,6 +334,7 @@ class DiscountsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[DiscountSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceDiscount:
         """
         List discounts.
@@ -321,6 +348,8 @@ class DiscountsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -341,6 +370,7 @@ class DiscountsAsync(AsyncServiceBase):
                 "sorting": sorting,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -357,6 +387,7 @@ class DiscountsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[DiscountSortProperty] | None = ["-created_at"],
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[Discount, None]:
         """
         List discounts.
@@ -370,6 +401,8 @@ class DiscountsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -389,6 +422,7 @@ class DiscountsAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -401,6 +435,7 @@ class DiscountsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[DiscountFixedCreate],
     ) -> Discount: ...
 
@@ -409,6 +444,7 @@ class DiscountsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[DiscountPercentageCreate],
     ) -> Discount: ...
 
@@ -416,6 +452,7 @@ class DiscountsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> Discount:
         """
@@ -425,6 +462,8 @@ class DiscountsAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -440,6 +479,7 @@ class DiscountsAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -453,6 +493,7 @@ class DiscountsAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> Discount:
         """
         Get a discount by ID.
@@ -462,6 +503,8 @@ class DiscountsAsync(AsyncServiceBase):
         Args:
             id: The discount ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -479,6 +522,7 @@ class DiscountsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -492,6 +536,7 @@ class DiscountsAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a discount.
@@ -501,6 +546,8 @@ class DiscountsAsync(AsyncServiceBase):
         Args:
             id: The discount ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -518,6 +565,7 @@ class DiscountsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -531,6 +579,7 @@ class DiscountsAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[DiscountUpdate],
     ) -> Discount:
         """
@@ -541,6 +590,8 @@ class DiscountsAsync(AsyncServiceBase):
         Args:
             id: The discount ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -559,6 +610,7 @@ class DiscountsAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)

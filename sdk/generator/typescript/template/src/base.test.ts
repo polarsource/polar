@@ -114,6 +114,26 @@ describe("sendRequest", () => {
     },
   );
 
+  test("uses a per-request access token override", async () => {
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
+    const client = new ClientBase({
+      baseUrl: "https://api.polar.sh",
+      version: "2026-04",
+      accessToken: "polar_at_u_xxx",
+    });
+    const headers = new Headers({
+      Authorization: "Bearer polar_at_u_xxx",
+    });
+
+    await client.sendRequest(
+      ["https://api.polar.sh/v1/items/", { headers }],
+      { accessToken: "polar_at_u_override" },
+    );
+
+    const requestHeaders = fetch.mock.calls[0][1]?.headers as Headers;
+    expect(requestHeaders.get("Authorization")).toBe("Bearer polar_at_u_override");
+  });
+
   test("does not create a timeout signal when no timeout is configured", async () => {
     const client = new ClientBase({
       baseUrl: "https://api.polar.sh",

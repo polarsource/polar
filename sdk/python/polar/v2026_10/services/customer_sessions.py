@@ -26,6 +26,7 @@ class CustomerSessionsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerSessionCustomerIDCreate],
     ) -> CustomerSession: ...
 
@@ -34,6 +35,7 @@ class CustomerSessionsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerSessionCustomerExternalIDCreate],
     ) -> CustomerSession: ...
 
@@ -41,6 +43,7 @@ class CustomerSessionsSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> CustomerSession:
         """
@@ -53,6 +56,8 @@ class CustomerSessionsSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -68,6 +73,7 @@ class CustomerSessionsSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -83,6 +89,7 @@ class CustomerSessionsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerSessionCustomerIDCreate],
     ) -> CustomerSession: ...
 
@@ -91,6 +98,7 @@ class CustomerSessionsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerSessionCustomerExternalIDCreate],
     ) -> CustomerSession: ...
 
@@ -98,6 +106,7 @@ class CustomerSessionsAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> CustomerSession:
         """
@@ -110,6 +119,8 @@ class CustomerSessionsAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -125,6 +136,7 @@ class CustomerSessionsAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)

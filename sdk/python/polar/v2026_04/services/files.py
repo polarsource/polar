@@ -39,6 +39,7 @@ class FilesSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceFileRead:
         """
         List files.
@@ -51,6 +52,8 @@ class FilesSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -70,6 +73,7 @@ class FilesSync(SyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -85,6 +89,7 @@ class FilesSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.Generator[FileRead, None, None]:
         """
         List files.
@@ -97,6 +102,8 @@ class FilesSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -115,6 +122,7 @@ class FilesSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -126,6 +134,7 @@ class FilesSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[DownloadableFileCreate],
     ) -> FileUpload: ...
 
@@ -134,6 +143,7 @@ class FilesSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[ProductMediaFileCreate],
     ) -> FileUpload: ...
 
@@ -142,6 +152,7 @@ class FilesSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrganizationAvatarFileCreate],
     ) -> FileUpload: ...
 
@@ -150,6 +161,7 @@ class FilesSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[SupportCaseAttachmentFileCreate],
     ) -> FileUpload: ...
 
@@ -157,6 +169,7 @@ class FilesSync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> FileUpload:
         """
@@ -166,6 +179,8 @@ class FilesSync(SyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -181,6 +196,7 @@ class FilesSync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -194,6 +210,7 @@ class FilesSync(SyncServiceBase):
         id_path: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[FileUploadCompleted],
     ) -> FileRead:
         """
@@ -204,6 +221,8 @@ class FilesSync(SyncServiceBase):
         Args:
             id_path: The file ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -223,6 +242,7 @@ class FilesSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -238,6 +258,7 @@ class FilesSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a file.
@@ -247,6 +268,8 @@ class FilesSync(SyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -265,6 +288,7 @@ class FilesSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         method_errors = {
@@ -279,6 +303,7 @@ class FilesSync(SyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[FilePatch],
     ) -> FileRead:
         """
@@ -289,6 +314,8 @@ class FilesSync(SyncServiceBase):
         Args:
             id: The file ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -308,6 +335,7 @@ class FilesSync(SyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = self.client.send_request(request)
@@ -328,6 +356,7 @@ class FilesAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> ListResourceFileRead:
         """
         List files.
@@ -340,6 +369,8 @@ class FilesAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -359,6 +390,7 @@ class FilesAsync(AsyncServiceBase):
                 "limit": limit,
             },
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -374,6 +406,7 @@ class FilesAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[FileRead, None]:
         """
         List files.
@@ -386,6 +419,8 @@ class FilesAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
 
 
         Returns:
@@ -404,6 +439,7 @@ class FilesAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
+            request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -416,6 +452,7 @@ class FilesAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[DownloadableFileCreate],
     ) -> FileUpload: ...
 
@@ -424,6 +461,7 @@ class FilesAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[ProductMediaFileCreate],
     ) -> FileUpload: ...
 
@@ -432,6 +470,7 @@ class FilesAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[OrganizationAvatarFileCreate],
     ) -> FileUpload: ...
 
@@ -440,6 +479,7 @@ class FilesAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[SupportCaseAttachmentFileCreate],
     ) -> FileUpload: ...
 
@@ -447,6 +487,7 @@ class FilesAsync(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Any,
     ) -> FileUpload:
         """
@@ -456,6 +497,8 @@ class FilesAsync(AsyncServiceBase):
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -471,6 +514,7 @@ class FilesAsync(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -484,6 +528,7 @@ class FilesAsync(AsyncServiceBase):
         id_path: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[FileUploadCompleted],
     ) -> FileRead:
         """
@@ -494,6 +539,8 @@ class FilesAsync(AsyncServiceBase):
         Args:
             id_path: The file ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -513,6 +560,7 @@ class FilesAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)
@@ -528,6 +576,7 @@ class FilesAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> None:
         """
         Delete a file.
@@ -537,6 +586,8 @@ class FilesAsync(AsyncServiceBase):
         Args:
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -555,6 +606,7 @@ class FilesAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         method_errors = {
@@ -569,6 +621,7 @@ class FilesAsync(AsyncServiceBase):
         id: str,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[FilePatch],
     ) -> FileRead:
         """
@@ -579,6 +632,8 @@ class FilesAsync(AsyncServiceBase):
         Args:
             id: The file ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
             **kwargs: Request body parameters
 
@@ -598,6 +653,7 @@ class FilesAsync(AsyncServiceBase):
             },
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
             body=kwargs,
         )
         response = await self.client.send_request(request)

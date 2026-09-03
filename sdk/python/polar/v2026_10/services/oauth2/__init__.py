@@ -32,10 +32,13 @@ class Oauth2Sync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> AuthorizeResponseUser | AuthorizeResponseOrganization:
         """
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -49,6 +52,7 @@ class Oauth2Sync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         return parse_response_json(
@@ -59,12 +63,15 @@ class Oauth2Sync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> TokenResponse:
         """
         Request an access token using a valid grant.
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -78,6 +85,7 @@ class Oauth2Sync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         return parse_response_json(response, TokenResponse)
@@ -86,12 +94,15 @@ class Oauth2Sync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> RevokeTokenResponse:
         """
         Revoke an access token or a refresh token.
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -105,6 +116,7 @@ class Oauth2Sync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         return parse_response_json(response, RevokeTokenResponse)
@@ -113,12 +125,15 @@ class Oauth2Sync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> IntrospectTokenResponse:
         """
         Get information about an access token.
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -132,6 +147,7 @@ class Oauth2Sync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         return parse_response_json(response, IntrospectTokenResponse)
@@ -140,12 +156,15 @@ class Oauth2Sync(SyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> UserInfoUser | UserInfoOrganization:
         """
         Get information about the authenticated user.
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -159,6 +178,7 @@ class Oauth2Sync(SyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = self.client.send_request(request)
         return parse_response_json(response, UserInfoUser | UserInfoOrganization)
@@ -175,10 +195,13 @@ class Oauth2Async(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> AuthorizeResponseUser | AuthorizeResponseOrganization:
         """
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -192,6 +215,7 @@ class Oauth2Async(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         return parse_response_json(
@@ -202,12 +226,15 @@ class Oauth2Async(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> TokenResponse:
         """
         Request an access token using a valid grant.
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -221,6 +248,7 @@ class Oauth2Async(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         return parse_response_json(response, TokenResponse)
@@ -229,12 +257,15 @@ class Oauth2Async(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> RevokeTokenResponse:
         """
         Revoke an access token or a refresh token.
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -248,6 +279,7 @@ class Oauth2Async(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         return parse_response_json(response, RevokeTokenResponse)
@@ -256,12 +288,15 @@ class Oauth2Async(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> IntrospectTokenResponse:
         """
         Get information about an access token.
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -275,6 +310,7 @@ class Oauth2Async(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         return parse_response_json(response, IntrospectTokenResponse)
@@ -283,12 +319,15 @@ class Oauth2Async(AsyncServiceBase):
         self,
         *,
         request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
     ) -> UserInfoUser | UserInfoOrganization:
         """
         Get information about the authenticated user.
 
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
 
 
         Raises:
@@ -302,6 +341,7 @@ class Oauth2Async(AsyncServiceBase):
             path_params={},
             query_params={},
             request_timeout=request_timeout,
+            request_access_token=request_access_token,
         )
         response = await self.client.send_request(request)
         return parse_response_json(response, UserInfoUser | UserInfoOrganization)

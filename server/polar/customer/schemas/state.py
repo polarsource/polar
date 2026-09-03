@@ -100,6 +100,20 @@ class CustomerStateSubscription(
     discount_id: UUID4 | None = Field(
         description="The ID of the applied discount, if any.", examples=[None]
     )
+    seats: int | None = Field(
+        description=(
+            "The number of seats for seat-based subscriptions. "
+            "None for non-seat subscriptions."
+        ),
+        examples=[None],
+    )
+    units: int | None = Field(
+        description=(
+            "The number of units for unit-based subscriptions. "
+            "None for non-unit subscriptions."
+        ),
+        examples=[None],
+    )
 
     price_id: SkipJsonSchema[UUID4] = Field(
         deprecated=True,

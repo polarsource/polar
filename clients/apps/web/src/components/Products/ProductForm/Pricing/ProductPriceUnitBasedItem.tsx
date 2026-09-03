@@ -23,6 +23,7 @@ import { useFormContext } from 'react-hook-form'
 import { getUnitLabels } from '@/utils/product'
 import { ProductFormType } from '../ProductForm'
 import { UnitLabelFields } from './UnitLabelFields'
+import { UnitMaximumField } from './UnitMaximumField'
 import { UnitTierEditor } from './UnitTierEditor'
 
 type TieringModel = 'fixed' | 'graduated' | 'volume'
@@ -199,6 +200,8 @@ export const ProductPriceUnitBasedItem: React.FC<
           </FormItem>
         )}
       />
+
+      <UnitMaximumField index={index} unitLabelPlural={pluralNoun} />
 
       {typeof minimumUnits === 'number' && minimumUnits > 1 && (
         <Alert

@@ -10,18 +10,11 @@ Use Polar's remote Model Context Protocol (MCP) server to give AI agents secure 
   Polar MCP uses OAuth. When you connect a client, your browser opens so you can sign in and authorize access to your organization. You never need to copy an API key into your agent.
 </Info>
 
-## Choose an environment
-
-Use the production server for your live organization and the sandbox server while building or testing.
-
-| Environment | Server URL |
-| --- | --- |
-| Production | `https://mcp.polar.sh/mcp/polar-mcp` |
-| Sandbox | `https://mcp.polar.sh/mcp/polar-sandbox` |
-
 ## Connect your agent
 
-Choose your client and add the production server. To connect to the sandbox instead, replace the production URL with `https://mcp.polar.sh/mcp/polar-sandbox` and use a distinct name such as `polar-sandbox`.
+Use the production server at `https://mcp.polar.sh/mcp/polar-mcp` for your live organization. While building or testing, use the sandbox server at `https://mcp.polar.sh/mcp/polar-sandbox` and give it a distinct name such as `polar-sandbox`.
+
+Choose your client and add the appropriate server.
 
 <Tabs>
   <Tab title="Cursor">

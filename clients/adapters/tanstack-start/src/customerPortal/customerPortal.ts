@@ -1,26 +1,24 @@
-import { Polar } from '@polar-sh/sdk'
-// @ts-expect-error - TODO: fix this
-import type { StartAPIMethodCallback } from '@tanstack/react-start/api'
+import { createPolar, type Environment } from '@polar-sh/sdk/2026-04'
+import type { StartRouteHandler } from '../types'
 
 export interface CustomerPortalConfig {
   accessToken: string
   getCustomerId: (req: Request) => Promise<string>
-  server: 'sandbox' | 'production'
+  environment?: Environment
   returnUrl?: string
 }
 
 export const CustomerPortal = <TPath extends string = string>({
   accessToken,
-  server,
+  environment,
   getCustomerId,
   returnUrl,
-}: CustomerPortalConfig): StartAPIMethodCallback<TPath> => {
-  const polar = new Polar({
+}: CustomerPortalConfig): StartRouteHandler<TPath> => {
+  const polar = createPolar({
     accessToken,
-    server,
+    environment,
   })
 
-  // @ts-expect-error - TODO: fix this
   return async ({ request }) => {
     const retUrl = returnUrl ? new URL(returnUrl) : undefined
 
@@ -32,11 +30,11 @@ export const CustomerPortal = <TPath extends string = string>({
 
     try {
       const result = await polar.customerSessions.create({
-        customerId,
-        returnUrl: retUrl ? decodeURI(retUrl.toString()) : undefined,
+        customer_id: customerId,
+        return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
       })
 
-      return Response.redirect(result.customerPortalUrl)
+      return Response.redirect(result.customer_portal_url)
     } catch (error) {
       console.error(error)
       return Response.error()

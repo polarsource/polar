@@ -1,14 +1,14 @@
-import { Polar } from '@polar-sh/sdk'
+import { createPolar, type Environment } from '@polar-sh/sdk/2026-04'
 import { createError, getValidatedQuery, sendRedirect } from 'h3'
 import type { H3Event } from 'h3'
 import { z } from 'zod'
 
 export interface CheckoutConfig {
-  accessToken?: string
+  accessToken: string
   successUrl?: string
   returnUrl?: string
   includeCheckoutId?: boolean
-  server?: 'sandbox' | 'production'
+  environment?: Environment
   theme?: 'light' | 'dark'
 }
 
@@ -39,10 +39,12 @@ export const Checkout = ({
   accessToken,
   successUrl,
   returnUrl,
-  server,
+  environment,
   theme,
   includeCheckoutId = true,
 }: CheckoutConfig) => {
+  const polar = createPolar({ accessToken, environment })
+
   return async (event: H3Event) => {
     const {
       products,
@@ -68,27 +70,25 @@ export const Checkout = ({
 
       const retUrl = returnUrl ? new URL(returnUrl) : undefined
 
-      const polar = new Polar({ accessToken, server })
-
       const result = await polar.checkouts.create({
         products,
-        successUrl: success ? decodeURI(success.toString()) : undefined,
-        customerId,
-        externalCustomerId: customerExternalId,
-        customerEmail,
-        customerName,
-        customerBillingAddress: customerBillingAddress
+        success_url: success ? decodeURI(success.toString()) : undefined,
+        customer_id: customerId,
+        external_customer_id: customerExternalId,
+        customer_email: customerEmail,
+        customer_name: customerName,
+        customer_billing_address: customerBillingAddress
           ? JSON.parse(customerBillingAddress)
           : undefined,
-        customerTaxId,
-        customerIpAddress,
-        customerMetadata: customerMetadata
+        customer_tax_id: customerTaxId,
+        customer_ip_address: customerIpAddress,
+        customer_metadata: customerMetadata
           ? JSON.parse(customerMetadata)
           : undefined,
-        allowDiscountCodes,
-        discountId,
+        allow_discount_codes: allowDiscountCodes,
+        discount_id: discountId,
         metadata: metadata ? JSON.parse(metadata) : undefined,
-        returnUrl: retUrl ? decodeURI(retUrl.toString()) : undefined,
+        return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
       })
 
       const redirectUrl = new URL(result.url)

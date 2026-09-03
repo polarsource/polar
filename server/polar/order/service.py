@@ -100,6 +100,7 @@ from polar.payment.service import payment as payment_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
+    UnitPrice,
     is_custom_price,
     is_fixed_price,
     is_static_price,
@@ -792,6 +793,51 @@ class OrderService:
                 ]
             )
 
+    def _validate_computed_unit_amount(
+        self, amount: int, currency: str, price: UnitPrice, units: int
+    ) -> None:
+        """
+        A tiered amount must clear the same processor bounds as one the
+        merchant sets.
+        """
+        if amount == 0:
+            return
+        noun = price.get_unit_noun(units)
+        currency_minimum = get_minimum_currency_amount(currency)
+        if amount < currency_minimum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "units"),
+                        "msg": (
+                            f"Charging {units} {noun} amounts to "
+                            f"{format_currency(amount, currency)}, below the "
+                            f"{format_currency(currency_minimum, currency)} "
+                            "minimum."
+                        ),
+                        "input": units,
+                    }
+                ]
+            )
+        currency_maximum = get_maximum_currency_amount(currency)
+        if amount > currency_maximum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "units"),
+                        "msg": (
+                            f"Charging {units} {noun} amounts to "
+                            f"{format_currency(amount, currency)}, above the "
+                            f"{format_currency(currency_maximum, currency)} "
+                            "maximum."
+                        ),
+                        "input": units,
+                    }
+                ]
+            )
+
     async def _create_order_from_checkout(
         self,
         session: AsyncSession,
@@ -1094,6 +1140,11 @@ class OrderService:
         )
 
         subtotal_amount = sum(item.amount for item in items)
+        if payload.amount is None and unit_price is not None:
+            assert payload.units is not None
+            self._validate_computed_unit_amount(
+                subtotal_amount, currency, unit_price, payload.units
+            )
         discount_amount = 0
 
         order_id = uuid.uuid4()

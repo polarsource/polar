@@ -26,14 +26,14 @@
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
     "openapi-typescript": "^7.10.1",
-    "tsup": "^8.5.1",
+    "tsup": "catalog:",
     "typescript": "latest"
   },
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
-    "date-fns": "^4.1.0",
+    "date-fns": "catalog:",
     "openapi-fetch": "^0.15.0",
     "openapi-typescript-helpers": "^0.0.15"
   }

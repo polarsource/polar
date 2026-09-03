@@ -47,7 +47,7 @@
     "@shopify/react-native-skia": "2.2.12",
     "@shopify/restyle": "^2.4.5",
     "@tanstack/react-query": "^5.90.12",
-    "date-fns": "^4.1.0",
+    "date-fns": "catalog:",
     "expo": "~54.0.29",
     "expo-asset": "~12.0.11",
     "expo-auth-session": "~7.0.10",

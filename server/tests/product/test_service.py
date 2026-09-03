@@ -57,7 +57,7 @@ from polar.product.schemas import (
 )
 from polar.product.service import product as product_service
 from polar.product.sorting import ProductSortProperty
-from polar.product.tiers import Tiers, TierType
+from polar.product.tiers import Tiers, TiersInput, TierType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -804,7 +804,7 @@ class TestCreate:
 
         price = product.prices[0]
         assert isinstance(price, ProductPriceMeteredTiers)
-        assert price.tiers == price_schema.tiers
+        assert price.tiers == price_schema.tiers.to_tiers()
 
     @pytest.mark.auth
     async def test_tiered_metered_price_requires_the_feature_flag(
@@ -1317,7 +1317,7 @@ def _tiered_metered_price_create() -> ProductPriceMeteredTiersCreate:
         amount_type=ProductPriceAmountType.metered_tiers,
         price_currency=PresentmentCurrency.usd,
         meter_id=METER_ID,
-        tiers=Tiers.model_validate(
+        tiers=TiersInput.model_validate(
             {
                 "type": "graduated",
                 "tiers": [
@@ -1362,7 +1362,7 @@ def _unit_price_create(
         price_currency=currency,
         tax_behavior=tax_behavior,
         minimum_units=minimum_units,
-        tiers=Tiers.model_validate(
+        tiers=TiersInput.model_validate(
             {
                 "type": TierType.volume,
                 "tiers": [{"bound": None, "unit_amount": str(price_per_unit)}],

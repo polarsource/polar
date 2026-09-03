@@ -5,11 +5,13 @@ import pytest
 from pydantic import ValidationError
 
 from polar.product.tiers import (
+    BIGINT_MAX,
     InvalidQuantityError,
     NonContiguousTiersError,
     SeatTiersData,
     SeatTierType,
     Tiers,
+    TiersInput,
     TierType,
     UnboundedTierNotLastError,
     seat_tiers_to_tiers,
@@ -60,15 +62,6 @@ class TestTiersValidation:
             )
         assert exc.value.errors()[0]["type"] == "duplicate_tier_bound"
 
-    def test_rate_beyond_twelve_decimal_places_raises(self) -> None:
-        # Rates are stored in a Numeric(17, 12) column; anything finer would be
-        # silently truncated on write.
-        with pytest.raises(ValidationError):
-            _tiers_data(
-                TierType.volume,
-                [{"bound": None, "unit_amount": "0.1234567890123"}],
-            )
-
     def test_serializes_decimal_rates_as_strings(self) -> None:
         tiers = _tiers_data(
             TierType.volume,
@@ -78,6 +71,42 @@ class TestTiersValidation:
         assert serialized["type"] == "volume"
         assert serialized["tiers"][0]["bound"] is None
         assert serialized["tiers"][0]["unit_amount"] == "1E-12"
+
+
+class TestTiersInput:
+    def test_rate_beyond_twelve_decimal_places_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            TiersInput.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [{"bound": None, "unit_amount": "0.1234567890123"}],
+                }
+            )
+
+    def test_accepts_a_rate_up_to_the_biginteger_range(self) -> None:
+        rate = str(BIGINT_MAX)
+        tiers = TiersInput.model_validate(
+            {"type": TierType.volume, "tiers": [{"bound": None, "unit_amount": rate}]}
+        )
+        assert tiers.tiers[0].unit_amount == Decimal(rate)
+
+    def test_rate_beyond_the_biginteger_range_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            TiersInput.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [{"bound": None, "unit_amount": str(BIGINT_MAX + 1)}],
+                }
+            )
+
+    def test_reads_a_stored_rate_it_would_reject(self) -> None:
+        payload: dict[str, Any] = {
+            "type": TierType.volume,
+            "tiers": [{"bound": None, "unit_amount": "9" * 20}],
+        }
+        with pytest.raises(ValidationError):
+            TiersInput.model_validate(payload)
+        assert Tiers.model_validate(payload).tiers[0].unit_amount == Decimal("9" * 20)
 
 
 class TestTiersCalculateVolume:

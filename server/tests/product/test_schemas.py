@@ -19,7 +19,7 @@ from polar.product.schemas import (
     ProductPriceSeatTiers,
     ProductPriceUnitBasedCreate,
 )
-from polar.product.tiers import Tiers, TierType
+from polar.product.tiers import TiersInput, TierType
 from tests.fixtures.random_objects import METER_ID
 
 # PostgreSQL int4 range limit
@@ -113,7 +113,7 @@ class TestProductPriceMeteredTiersCreate:
             amount_type=ProductPriceAmountType.metered_tiers,
             price_currency=PresentmentCurrency.usd,
             meter_id=METER_ID,
-            tiers=Tiers.model_validate(
+            tiers=TiersInput.model_validate(
                 {
                     "type": TierType.graduated,
                     "tiers": [
@@ -132,7 +132,7 @@ class TestProductPriceMeteredTiersCreate:
                 amount_type=ProductPriceAmountType.metered_tiers,
                 price_currency=PresentmentCurrency.usd,
                 meter_id=METER_ID,
-                tiers=Tiers.model_validate(
+                tiers=TiersInput.model_validate(
                     {
                         "type": TierType.volume,
                         "tiers": [{"bound": 1000, "unit_amount": "0.5"}],

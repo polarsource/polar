@@ -10,6 +10,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.exceptions import PolarError
 
+BIGINT_MAX = 9223372036854775807
+
 
 class TierType(StrEnum):
     volume = "volume"
@@ -22,12 +24,42 @@ class Tier(BaseModel):
     Each tier starts where the previous one ended. The first starts at
     zero. `bound` is None on the last tier if it's unbounded. Rates are
     in cents and may be fractional.
+
+    Rates carry no precision bound: this schema reads stored rows, and a
+    bound tightened later would stop them loading. `TierInput` holds the
+    rules new rates must meet.
+    """
+
+    bound: int | None = Field(default=None, gt=0)
+    unit_amount: Decimal = Field(ge=0, allow_inf_nan=False)
+
+
+class TierInput(BaseModel):
+    """A tier submitted through the API. Rates stop at the reach of the
+    BigInteger amount columns, with 12 decimal places.
     """
 
     bound: int | None = Field(default=None, gt=0)
     unit_amount: Decimal = Field(
-        ge=0, max_digits=17, decimal_places=12, allow_inf_nan=False
+        ge=0, le=BIGINT_MAX, max_digits=31, decimal_places=12, allow_inf_nan=False
     )
+
+
+def sort_and_check_bounds[TierT: Tier | TierInput](tiers: list[TierT]) -> list[TierT]:
+    sorted_tiers = sorted(tiers, key=lambda tier: (tier.bound is None, tier.bound or 0))
+    for current, next_tier in pairwise(sorted_tiers):
+        if current.bound is None:
+            raise PydanticCustomError(
+                "unbounded_tier_not_last",
+                "Only the last tier can be unbounded",
+            )
+        if next_tier.bound == current.bound:
+            raise PydanticCustomError(
+                "duplicate_tier_bound",
+                "Tier bound values must be unique, got {bound} twice",
+                {"bound": current.bound},
+            )
+    return sorted_tiers
 
 
 class Tiers(BaseModel):
@@ -42,22 +74,7 @@ class Tiers(BaseModel):
     @field_validator("tiers")
     @classmethod
     def validate_tiers(cls, tiers: list[Tier]) -> list[Tier]:
-        sorted_tiers = sorted(
-            tiers, key=lambda tier: (tier.bound is None, tier.bound or 0)
-        )
-        for current, next_tier in pairwise(sorted_tiers):
-            if current.bound is None:
-                raise PydanticCustomError(
-                    "unbounded_tier_not_last",
-                    "Only the last tier can be unbounded",
-                )
-            if next_tier.bound == current.bound:
-                raise PydanticCustomError(
-                    "duplicate_tier_bound",
-                    "Tier bound values must be unique, got {bound} twice",
-                    {"bound": current.bound},
-                )
-        return sorted_tiers
+        return sort_and_check_bounds(tiers)
 
     def calculate(self, quantity: Decimal | int) -> Decimal:
         if quantity < 0:
@@ -101,8 +118,29 @@ class Tiers(BaseModel):
         return self.tiers[-1].bound
 
 
+class TiersInput(BaseModel):
+    """Tiers submitted through the API. Kept apart from `Tiers` so tightening
+    a rule here never stops a stored row from loading.
+    """
+
+    type: TierType
+    tiers: list[TierInput] = Field(min_length=1)
+
+    @field_validator("tiers")
+    @classmethod
+    def validate_tiers(cls, tiers: list[TierInput]) -> list[TierInput]:
+        return sort_and_check_bounds(tiers)
+
+    @property
+    def last_bound(self) -> int | None:
+        return self.tiers[-1].bound
+
+    def to_tiers(self) -> Tiers:
+        return Tiers.model_validate(self.model_dump())
+
+
 def validate_unit_bounds(
-    tiers: Tiers,
+    tiers: Tiers | TiersInput,
     *,
     minimum_units: int | None = None,
     maximum_units: int | None = None,

@@ -32680,7 +32680,7 @@ export interface components {
       /** @description The meter associated to the price. */
       meter: components['schemas']['ProductPriceMeter']
       /** @description The pricing tiers based on consumed units. */
-      tiers: components['schemas']['Tiers-Output']
+      tiers: components['schemas']['Tiers']
     }
     /**
      * ProductPriceMeteredTiersCreate
@@ -32706,7 +32706,7 @@ export interface components {
        */
       meter_id: string
       /** @description Tiered pricing based on consumed units. */
-      tiers: components['schemas']['Tiers-Input']
+      tiers: components['schemas']['TiersInput']
       /**
        * Cap Amount
        * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
@@ -33013,7 +33013,7 @@ export interface components {
        */
       product_id: string
       /** @description Tiered pricing based on the purchased unit quantity. */
-      tiers: components['schemas']['Tiers-Output']
+      tiers: components['schemas']['Tiers']
       /**
        * Minimum Units
        * @description The minimum purchasable quantity (inclusive).
@@ -33053,7 +33053,7 @@ export interface components {
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /** @description Tiered pricing based on the purchased unit quantity. */
-      tiers: components['schemas']['Tiers-Input']
+      tiers: components['schemas']['TiersInput']
       /**
        * Minimum Units
        * @description The minimum purchasable quantity (inclusive). Defaults to 1 when not set.
@@ -37064,26 +37064,27 @@ export interface components {
      *     Each tier starts where the previous one ended. The first starts at
      *     zero. `bound` is None on the last tier if it's unbounded. Rates are
      *     in cents and may be fractional.
-     */
-    'Tier-Input': {
-      /** Bound */
-      bound?: number | null
-      /** Unit Amount */
-      unit_amount: number | string
-    }
-    /**
-     * Tier
-     * @description A per-unit rate up to and including `bound`.
      *
-     *     Each tier starts where the previous one ended. The first starts at
-     *     zero. `bound` is None on the last tier if it's unbounded. Rates are
-     *     in cents and may be fractional.
+     *     Rates carry no precision bound: this schema reads stored rows, and a
+     *     bound tightened later would stop them loading. `TierInput` holds the
+     *     rules new rates must meet.
      */
-    'Tier-Output': {
+    Tier: {
       /** Bound */
       bound?: number | null
       /** Unit Amount */
       unit_amount: string
+    }
+    /**
+     * TierInput
+     * @description A tier submitted through the API. Rates stop at the reach of the
+     *     BigInteger amount columns, with 12 decimal places.
+     */
+    TierInput: {
+      /** Bound */
+      bound?: number | null
+      /** Unit Amount */
+      unit_amount: number | string
     }
     /**
      * TierType
@@ -37096,21 +37097,20 @@ export interface components {
      *     price type. Purchasable quantity bounds live in the `minimum_units` and
      *     `maximum_units` columns, not here.
      */
-    'Tiers-Input': {
+    Tiers: {
       type: components['schemas']['TierType']
       /** Tiers */
-      tiers: components['schemas']['Tier-Input'][]
+      tiers: components['schemas']['Tier'][]
     }
     /**
-     * Tiers
-     * @description The structure of the shared tiers JSONB column, used by every tiered
-     *     price type. Purchasable quantity bounds live in the `minimum_units` and
-     *     `maximum_units` columns, not here.
+     * TiersInput
+     * @description Tiers submitted through the API. Kept apart from `Tiers` so tightening
+     *     a rule here never stops a stored row from loading.
      */
-    'Tiers-Output': {
+    TiersInput: {
       type: components['schemas']['TierType']
       /** Tiers */
-      tiers: components['schemas']['Tier-Output'][]
+      tiers: components['schemas']['TierInput'][]
     }
     /**
      * TimeInterval

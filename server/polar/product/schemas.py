@@ -88,6 +88,7 @@ from polar.product.tiers import (
     SeatTiersData,
     SeatTierType,
     Tiers,
+    TiersInput,
     UnboundedTierNotLastError,
     seat_tiers_to_tiers,
     seat_tiers_unit_bounds,
@@ -456,7 +457,7 @@ class ProductPriceMeteredTiersCreate(ProductPriceMeteredCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_tiers]
-    tiers: Tiers = Field(description="Tiered pricing based on consumed units.")
+    tiers: TiersInput = Field(description="Tiered pricing based on consumed units.")
     cap_amount: Int32 | None = Field(
         default=None,
         ge=0,
@@ -486,7 +487,7 @@ class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.unit_based]
-    tiers: Tiers = Field(
+    tiers: TiersInput = Field(
         description="Tiered pricing based on the purchased unit quantity."
     )
     minimum_units: int | None = Field(

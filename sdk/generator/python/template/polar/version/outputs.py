@@ -12,7 +12,7 @@ from polar.{{ version }}.literals import (
 {% endif %}
 
 {% for model in api.output_models %}
-{% if model.additional_properties %}
+{% if model.additional_properties and not model.fields %}
 {{ model.name }}: typing.TypeAlias = dict[str, {{ model.additional_properties | type_annotation }}]
 {% if model.description %}
 """{{ model.description }}"""

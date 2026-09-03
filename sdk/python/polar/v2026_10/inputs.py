@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing
 
+import typing_extensions
+
 from polar.v2026_10.literals import (
     BenefitVisibility,
     CountryAlpha2Input,
@@ -2086,7 +2088,9 @@ class EventCreateExternalCustomer(typing.TypedDict):
     """ID of the member in your system within the customer's organization who performed the action. Used for member-level attribution in B2B."""
 
 
-class EventMetadataInput(typing.TypedDict):
+class EventMetadataInput(
+    typing_extensions.TypedDict, extra_items=str | int | float | bool
+):
     _cost: typing.NotRequired[CostMetadataInput]
 
     _llm: typing.NotRequired[LLMMetadata]

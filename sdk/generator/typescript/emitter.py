@@ -21,6 +21,7 @@ from typescript.types import (
     collect_enum_names,
     collect_type_imports,
     collect_union_imports,
+    convert_additional_properties_to_typescript,
     convert_type_to_typescript,
 )
 from typescript.utils import format_default_value_ts, format_description
@@ -157,6 +158,9 @@ class TypeScriptEmitter(EmitterBase):
         super().setup_environment()
         self.env.filters["ts_type"] = lambda type_ref, ref_suffix="": (
             convert_type_to_typescript(type_ref, ref_suffix)
+        )
+        self.env.filters["ts_additional_properties_type"] = (
+            convert_additional_properties_to_typescript
         )
         self.env.filters["camel"] = to_camel_case
         self.env.filters["operation_name"] = operation_name

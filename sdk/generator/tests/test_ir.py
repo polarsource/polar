@@ -2772,3 +2772,72 @@ def test_ir_generation(
     ir = generate_ir(*(op.OpenAPI.model_validate(spec) for spec in specs))
 
     assert ir.model_dump(mode="json", exclude_none=True) == expected
+
+
+def test_model_preserves_additional_properties_alongside_fields() -> None:
+    spec = op.OpenAPI.model_validate(
+        {
+            "openapi": "3.1.0",
+            "info": {"title": "Test API", "version": "1.0.0"},
+            "paths": {
+                "/events": {
+                    "post": {
+                        "operationId": "events:create",
+                        "requestBody": {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/EventMetadataInput"
+                                    }
+                                }
+                            },
+                        },
+                        "responses": {"204": {"description": "Success"}},
+                    }
+                }
+            },
+            "components": {
+                "schemas": {
+                    "EventMetadataInput": {
+                        "type": "object",
+                        "title": "EventMetadataInput",
+                        "properties": {"_cost": {"type": "number"}},
+                        "additionalProperties": {
+                            "anyOf": [
+                                {"type": "string"},
+                                {"type": "number"},
+                                {"type": "boolean"},
+                            ]
+                        },
+                    }
+                }
+            },
+        }
+    )
+
+    ir = generate_ir(spec)
+
+    assert ir.versions[0].input_models[0].model_dump(
+        mode="json", exclude_none=True
+    ) == {
+        "name": "EventMetadataInput",
+        "fields": [
+            {
+                "name": "_cost",
+                "type": {"kind": "primitive", "type": "number"},
+                "required": False,
+                "has_default": False,
+                "has_example": False,
+            }
+        ],
+        "additional_properties": {
+            "kind": "union",
+            "variants": [
+                {"kind": "primitive", "type": "string"},
+                {"kind": "primitive", "type": "number"},
+                {"kind": "primitive", "type": "boolean"},
+            ],
+            "composition_kind": "anyOf",
+        },
+    }

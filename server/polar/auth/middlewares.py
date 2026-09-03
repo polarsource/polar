@@ -216,6 +216,7 @@ class AuthSubjectMiddleware:
             if token is not None:
                 await clear_cached_identity(self.redis, token)
             response = await oauth2_error_exception_handler(request, e)
+            request.state.transaction_failed = True
             return await response(scope, receive, send)
 
         scope["state"]["auth_subject"] = auth_subject

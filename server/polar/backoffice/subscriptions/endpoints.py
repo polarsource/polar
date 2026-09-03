@@ -3,12 +3,13 @@ import uuid
 from collections.abc import Generator
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from tagflow import classes, tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import (
@@ -43,7 +44,7 @@ from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .forms import CancelForm, UpdateBillingPeriodEndForm, build_update_status_form
 
-router = APIRouter()
+router = BackofficeRouter()
 
 STATUS_TRANSITIONS: dict[SubscriptionStatus, set[SubscriptionStatus]] = {
     SubscriptionStatus.past_due: {SubscriptionStatus.active},

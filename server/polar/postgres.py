@@ -2,7 +2,6 @@ from collections.abc import AsyncGenerator
 from typing import Literal
 
 from fastapi import Request
-from starlette.types import ASGIApp, Receive, Scope, Send
 
 from polar.config import settings
 from polar.kit.db.postgres import (
@@ -71,47 +70,18 @@ def create_sync_engine(process_name: ProcessName) -> Engine:
     )
 
 
-class AsyncSessionMiddleware:
-    def __init__(self, app: ASGIApp) -> None:
-        self.app = app
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] not in ("http", "websocket"):
-            return await self.app(scope, receive, send)
-
-        sessionmaker: AsyncSessionMaker = scope["state"]["async_sessionmaker"]
-        async with sessionmaker() as session:
-            scope["state"]["async_session"] = session
-            await self.app(scope, receive, send)
-
-
 async def get_db_sessionmaker(request: Request) -> AsyncSessionMaker:
     return request.state.async_sessionmaker
 
 
-async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession]:
+async def get_db_session(request: Request) -> AsyncSession:
     try:
-        session = request.state.async_session
+        return request.state.async_session
     except AttributeError as e:
         raise RuntimeError(
             "Session is not present in the request state. "
-            "Did you forget to add AsyncSessionMiddleware?"
+            "Did you forget to add TransactionalMiddleware?"
         ) from e
-
-    try:
-        yield session
-    except:
-        await session.rollback()
-        # Import deferred to avoid circular dependency with polar.worker
-        from polar.worker import JobQueueManager
-
-        # Jobs enqueued during the request reference state that was just
-        # rolled back; discard them so they aren't flushed if the exception
-        # is converted into an error response by an exception handler.
-        JobQueueManager.get().reset()
-        raise
-    else:
-        await session.commit()
 
 
 async def get_db_read_session(request: Request) -> AsyncGenerator[AsyncReadSession]:

@@ -2,7 +2,6 @@ from datetime import timedelta
 from typing import Any
 
 from fastapi import (
-    APIRouter,
     Depends,
     Form,
     HTTPException,
@@ -14,6 +13,7 @@ from sqlalchemy import select
 
 from polar.auth.scope import READ_ONLY_SCOPES
 from polar.auth.service import auth as auth_service
+from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.models import (
@@ -26,7 +26,7 @@ from polar.postgres import AsyncSession, get_db_session
 from ..dependencies import get_admin
 from ..responses import HXRedirectResponse
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 @router.post(

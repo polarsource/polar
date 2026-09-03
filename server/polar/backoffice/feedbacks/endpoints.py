@@ -2,12 +2,13 @@ from collections.abc import Sequence
 from typing import Annotated, Any
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from pydantic import UUID4, Field, ValidationError
 from sqlalchemy.orm import joinedload
 from tagflow import attr, document, tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.feedback.repository import FeedbackRepository
 from polar.integrations.plain.service import PlainServiceError, plain
 from polar.kit.pagination import PaginationParamsQuery
@@ -55,7 +56,7 @@ class UpdateSupportThreadURLForm(forms.BaseForm):
     ]
 
 
-router = APIRouter()
+router = BackofficeRouter()
 
 
 def _type_badge(feedback_type: FeedbackType) -> None:

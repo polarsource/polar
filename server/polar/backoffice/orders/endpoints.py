@@ -5,12 +5,13 @@ from typing import Annotated, Any
 import pycountry
 import structlog
 from babel.numbers import format_percent
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.currency import format_currency, get_currency_decimal_factor
 from polar.kit.pagination import PaginationParamsQuery
@@ -36,7 +37,7 @@ from ..toast import add_toast
 from .components import order_status_badge, orders_datatable, payments_datatable
 from .forms import RefundForm
 
-router = APIRouter()
+router = BackofficeRouter()
 logger = structlog.get_logger()
 
 

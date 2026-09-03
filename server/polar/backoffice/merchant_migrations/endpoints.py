@@ -5,10 +5,11 @@ from enum import StrEnum
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
 from tagflow import tag, text
 
+from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
 from polar.kit.pagination import PaginationParamsQuery
 from polar.merchant_migration.pan_transfer import (
@@ -63,7 +64,7 @@ from .status import (
     step_position,
 )
 
-router = APIRouter()
+router = BackofficeRouter()
 
 # A failed record needs reading, not scrolling: past this many, one page of
 # examples already tells us what broke.

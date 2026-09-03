@@ -10,9 +10,12 @@ import structlog
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import ClientContext, CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
 from polar.worker import JobQueueManager
+
+log: Logger = structlog.get_logger()
 
 
 class LogCorrelationIdMiddleware:
@@ -70,17 +73,49 @@ class LogCorrelationIdMiddleware:
             ClientContext.clear()
 
 
-class FlushEnqueuedWorkerJobsMiddleware:
+class TransactionalMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] not in ("http", "websocket"):
-            await self.app(scope, receive, send)
-            return
+        if scope["type"] not in ("http",):
+            return await self.app(scope, receive, send)
 
-        async with JobQueueManager.open(dramatiq.get_broker(), scope["state"]["redis"]):
-            await self.app(scope, receive, send)
+        sessionmaker: AsyncSessionMaker = scope["state"]["async_sessionmaker"]
+        async with sessionmaker() as session:
+            async with JobQueueManager.open(
+                dramatiq.get_broker(), scope["state"]["redis"]
+            ) as manager:
+                state = scope["state"]
+                state["async_session"] = session
+                finalized = False
+
+                async def rollback() -> None:
+                    nonlocal finalized
+                    if finalized:
+                        return
+
+                    await session.rollback()
+                    manager.reset()
+                    log.debug("Rolling back transaction")
+                    finalized = True
+
+                async def send_wrapper(message: Message) -> None:
+                    nonlocal finalized
+                    if message["type"] == "http.response.start" and not finalized:
+                        if state.pop("transaction_failed", False):
+                            await rollback()
+                        else:
+                            await session.commit()
+                            finalized = True
+                            log.debug("Committing transaction")
+                    await send(message)
+
+                try:
+                    await self.app(scope, receive, send_wrapper)
+                except BaseException:
+                    await rollback()
+                    raise
 
 
 class RootPathMiddleware:

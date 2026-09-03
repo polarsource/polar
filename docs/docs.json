@@ -161,6 +161,7 @@
               {
                 "group": "SDKs",
                 "pages": [
+                  "integrate/sdk/introduction",
                   "integrate/sdk/python",
                   "integrate/sdk/typescript"
                 ]
@@ -168,6 +169,7 @@
               {
                 "group": "Framework Adapters",
                 "pages": [
+                  "integrate/sdk/adapters/introduction",
                   "integrate/sdk/adapters/astro",
                   "integrate/sdk/adapters/better-auth",
                   "integrate/sdk/adapters/deno",

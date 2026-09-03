@@ -62,28 +62,23 @@ export const navMenus: NavMenu[] = [
         title: 'Integrate',
         items: [
           {
-            label: 'Next.js',
-            href: '/docs/integrate/sdk/adapters/nextjs',
+            label: 'API',
+            href: '/docs/api-reference',
             target: '_blank',
           },
           {
-            label: 'Better Auth',
-            href: '/docs/integrate/sdk/adapters/better-auth',
+            label: 'SDK',
+            href: '/docs/integrate/sdk/introduction',
             target: '_blank',
           },
           {
-            label: 'Hono',
-            href: '/docs/integrate/sdk/adapters/hono',
+            label: 'MCP',
+            href: '/docs/integrate/mcp',
             target: '_blank',
           },
           {
-            label: 'Laravel',
-            href: '/docs/integrate/sdk/adapters/laravel',
-            target: '_blank',
-          },
-          {
-            label: 'All 13 Adapters',
-            href: '/docs/integrate/sdk/adapters/hono',
+            label: 'Framework Adapters',
+            href: '/docs/integrate/sdk/adapters/introduction',
             target: '_blank',
           },
         ],

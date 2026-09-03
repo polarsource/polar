@@ -3,16 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockCustomerSessionCreate = vi.fn()
 
-vi.mock('@polar-sh/sdk', () => ({
-  Polar: vi.fn(function () {
-    return {
-      customerSessions: {
-        create: mockCustomerSessionCreate,
-      },
-    }
-  }),
+vi.mock('@polar-sh/sdk/2026-04', () => ({
+  createPolar: vi.fn(() => ({
+    customerSessions: {
+      create: mockCustomerSessionCreate,
+    },
+  })),
 }))
 
+import { createPolar } from '@polar-sh/sdk/2026-04'
 import { CustomerPortal } from './customerPortal'
 
 describe('CustomerPortal', () => {
@@ -25,12 +24,15 @@ describe('CustomerPortal', () => {
       const getCustomerId = vi.fn()
       const portal = CustomerPortal({
         accessToken: 'test-token',
-        server: 'sandbox',
         getCustomerId,
       })
 
       expect(portal).toBeDefined()
       expect(typeof portal).toBe('function')
+      expect(createPolar).toHaveBeenCalledWith({
+        accessToken: 'test-token',
+        environment: undefined,
+      })
     })
   })
 
@@ -39,7 +41,7 @@ describe('CustomerPortal', () => {
       const getCustomerId = vi.fn().mockResolvedValue('')
       const portal = CustomerPortal({
         accessToken: 'test-token',
-        server: 'production',
+        environment: 'production',
         getCustomerId,
       })
 
@@ -56,7 +58,7 @@ describe('CustomerPortal', () => {
       const getCustomerId = vi.fn().mockResolvedValue(null)
       const portal = CustomerPortal({
         accessToken: 'test-token',
-        server: 'production',
+        environment: 'production',
         getCustomerId,
       })
 
@@ -71,12 +73,12 @@ describe('CustomerPortal', () => {
     it('should create customer session and redirect when customerId is valid', async () => {
       const getCustomerId = vi.fn().mockResolvedValue('cust_123')
       mockCustomerSessionCreate.mockResolvedValue({
-        customerPortalUrl: 'https://polar.sh/portal/session_123',
+        customer_portal_url: 'https://polar.sh/portal/session_123',
       })
 
       const portal = CustomerPortal({
         accessToken: 'test-token',
-        server: 'production',
+        environment: 'production',
         getCustomerId,
       })
 
@@ -85,7 +87,34 @@ describe('CustomerPortal', () => {
 
       expect(getCustomerId).toHaveBeenCalledWith(request)
       expect(mockCustomerSessionCreate).toHaveBeenCalledWith({
-        customerId: 'cust_123',
+        customer_id: 'cust_123',
+        return_url: undefined,
+      })
+      expect(response.status).toBe(307)
+      expect(response.headers.get('location')).toBe(
+        'https://polar.sh/portal/session_123',
+      )
+    })
+
+    it('should create customer session and redirect when externalCustomerId is valid', async () => {
+      const getExternalCustomerId = vi.fn().mockResolvedValue('external_123')
+      mockCustomerSessionCreate.mockResolvedValue({
+        customer_portal_url: 'https://polar.sh/portal/session_123',
+      })
+
+      const portal = CustomerPortal({
+        accessToken: 'test-token',
+        environment: 'production',
+        getExternalCustomerId,
+      })
+
+      const request = new NextRequest('https://example.com/portal')
+      const response = await portal(request)
+
+      expect(getExternalCustomerId).toHaveBeenCalledWith(request)
+      expect(mockCustomerSessionCreate).toHaveBeenCalledWith({
+        external_customer_id: 'external_123',
+        return_url: undefined,
       })
       expect(response.status).toBe(307)
       expect(response.headers.get('location')).toBe(
@@ -100,7 +129,7 @@ describe('CustomerPortal', () => {
 
       const portal = CustomerPortal({
         accessToken: 'test-token',
-        server: 'production',
+        environment: 'production',
         getCustomerId,
       })
 
@@ -120,12 +149,12 @@ describe('CustomerPortal', () => {
       })
 
       mockCustomerSessionCreate.mockResolvedValue({
-        customerPortalUrl: 'https://polar.sh/portal/session_456',
+        customer_portal_url: 'https://polar.sh/portal/session_456',
       })
 
       const portal = CustomerPortal({
         accessToken: 'test-token',
-        server: 'sandbox',
+        environment: 'sandbox',
         getCustomerId,
       })
 
@@ -136,7 +165,8 @@ describe('CustomerPortal', () => {
 
       expect(getCustomerId).toHaveBeenCalledWith(request)
       expect(mockCustomerSessionCreate).toHaveBeenCalledWith({
-        customerId: 'user_456',
+        customer_id: 'user_456',
+        return_url: undefined,
       })
       expect(response.status).toBe(307)
     })
@@ -147,7 +177,7 @@ describe('CustomerPortal', () => {
 
       const portal = CustomerPortal({
         accessToken: 'test-token',
-        server: 'production',
+        environment: 'production',
         getCustomerId,
       })
 

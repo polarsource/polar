@@ -2,7 +2,7 @@ import {
   type WebhooksConfig,
   handleWebhookPayload,
 } from '@polar-sh/adapter-utils'
-import { WebhookVerificationError, validateEvent } from '@polar-sh/sdk/webhooks'
+import { webhooks } from '@polar-sh/sdk/2026-04'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export {
@@ -28,12 +28,27 @@ export const Webhooks = ({
       'webhook-signature': request.headers.get('webhook-signature') ?? '',
     }
 
-    let webhookPayload: ReturnType<typeof validateEvent>
+    let webhookPayload: webhooks.WebhookPayload
     try {
-      webhookPayload = validateEvent(requestBody, webhookHeaders, webhookSecret)
+      webhookPayload = await webhooks.validateEvent(
+        requestBody,
+        webhookHeaders,
+        webhookSecret,
+      )
     } catch (error) {
-      if (error instanceof WebhookVerificationError) {
+      if (error instanceof webhooks.PolarWebhookVerificationError) {
         return NextResponse.json({ received: false }, { status: 403 })
+      }
+
+      if (error instanceof webhooks.PolarWebhookUnknownTypeError) {
+        return NextResponse.json(
+          { received: error.eventType !== null },
+          { status: error.eventType !== null ? 200 : 400 },
+        )
+      }
+
+      if (error instanceof webhooks.PolarWebhookError) {
+        return NextResponse.json({ received: false }, { status: 400 })
       }
 
       throw error

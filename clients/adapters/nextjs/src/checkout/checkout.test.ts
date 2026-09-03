@@ -3,16 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockCheckoutCreate = vi.fn()
 
-vi.mock('@polar-sh/sdk', () => ({
-  Polar: vi.fn(function () {
-    return {
-      checkouts: {
-        create: mockCheckoutCreate,
-      },
-    }
-  }),
+vi.mock('@polar-sh/sdk/2026-04', () => ({
+  createPolar: vi.fn(() => ({
+    checkouts: {
+      create: mockCheckoutCreate,
+    },
+  })),
 }))
 
+import { createPolar } from '@polar-sh/sdk/2026-04'
 import { Checkout } from './checkout'
 
 describe('Checkout', () => {
@@ -24,11 +23,15 @@ describe('Checkout', () => {
     it('should create checkout function', () => {
       const checkout = Checkout({
         accessToken: 'test-token',
-        server: 'sandbox',
+        environment: 'sandbox',
       })
 
       expect(checkout).toBeDefined()
       expect(typeof checkout).toBe('function')
+      expect(createPolar).toHaveBeenCalledWith({
+        accessToken: 'test-token',
+        environment: 'sandbox',
+      })
     })
 
     it('should handle default includeCheckoutId', () => {
@@ -66,20 +69,20 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith({
         products: ['prod_123'],
-        successUrl: undefined,
-        customerId: undefined,
-        externalCustomerId: undefined,
-        customerEmail: undefined,
-        customerName: undefined,
-        customerBillingAddress: undefined,
-        customerTaxId: undefined,
-        customerIpAddress: undefined,
-        customerMetadata: undefined,
-        allowDiscountCodes: undefined,
-        discountId: undefined,
+        success_url: undefined,
+        customer_id: undefined,
+        external_customer_id: undefined,
+        customer_email: undefined,
+        customer_name: undefined,
+        customer_billing_address: undefined,
+        customer_tax_id: undefined,
+        customer_ip_address: undefined,
+        customer_metadata: undefined,
+        allow_discount_codes: undefined,
+        discount_id: undefined,
         metadata: undefined,
         seats: undefined,
-        returnUrl: undefined,
+        return_url: undefined,
       })
       expect(response.status).toBe(307)
     })
@@ -121,7 +124,7 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          successUrl: 'https://example.com/success?checkoutId={CHECKOUT_ID}',
+          success_url: 'https://example.com/success?checkoutId={CHECKOUT_ID}',
         }),
       )
     })
@@ -144,7 +147,7 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
         }),
       )
     })
@@ -202,20 +205,20 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith({
         products: ['prod_123'],
-        successUrl: undefined,
-        customerId: 'cust_123',
-        externalCustomerId: 'ext_123',
-        customerEmail: 'test@example.com',
-        customerName: 'John Doe',
-        customerBillingAddress: { street: '123 Main St', city: 'NYC' },
-        customerTaxId: 'TAX123',
-        customerIpAddress: '192.168.1.1',
-        customerMetadata: { plan: 'premium' },
-        allowDiscountCodes: true,
-        discountId: 'disc_123',
+        success_url: undefined,
+        customer_id: 'cust_123',
+        external_customer_id: 'ext_123',
+        customer_email: 'test@example.com',
+        customer_name: 'John Doe',
+        customer_billing_address: { street: '123 Main St', city: 'NYC' },
+        customer_tax_id: 'TAX123',
+        customer_ip_address: '192.168.1.1',
+        customer_metadata: { plan: 'premium' },
+        allow_discount_codes: true,
+        discount_id: 'disc_123',
         metadata: { source: 'website' },
         seats: undefined,
-        returnUrl: undefined,
+        return_url: undefined,
       })
     })
 
@@ -233,7 +236,7 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          allowDiscountCodes: false,
+          allow_discount_codes: false,
         }),
       )
     })

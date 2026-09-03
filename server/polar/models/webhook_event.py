@@ -46,8 +46,8 @@ class WebhookEvent(RecordModel):
         StringEnum(WebhookEventType), nullable=False, index=True
     )
     payload: Mapped[str | None] = mapped_column(String, nullable=True)
-    api_version: Mapped[APIVersion | None] = mapped_column(
-        APIVersionType, nullable=True, default=CURRENT_API_VERSION
+    api_version: Mapped[APIVersion] = mapped_column(
+        APIVersionType, nullable=False, default=CURRENT_API_VERSION
     )
 
     @hybrid_property

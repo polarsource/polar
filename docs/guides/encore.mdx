@@ -163,20 +163,22 @@ export const webhooks = api.raw(
       headers[key] = Array.isArray(value) ? value[0] : (value || "");
     }
 
-    // Verify the webhook signature
+    // Verify the webhook signature. Try Standard Webhooks first (secret as-is),
+    // then Polar's legacy HMAC (UTF-8 bytes of the full secret, including `whsec_`).
+    const secret = POLAR_WEBHOOK_SECRET().trim();
     let payload: any;
     try {
-      const base64Secret = Buffer.from(
-        POLAR_WEBHOOK_SECRET().trim(),
-        "utf-8"
-      ).toString("base64");
-      const wh = new Webhook(base64Secret);
-      payload = wh.verify(body, headers);
-    } catch (error: any) {
-      console.error("[Polar] Invalid webhook signature:", error?.message);
-      resp.writeHead(403);
-      resp.end(JSON.stringify({ error: "Invalid signature" }));
-      return;
+      payload = new Webhook(secret).verify(body, headers);
+    } catch {
+      try {
+        const legacySecret = Buffer.from(secret, "utf-8").toString("base64");
+        payload = new Webhook(legacySecret).verify(body, headers);
+      } catch (error: any) {
+        console.error("[Polar] Invalid webhook signature:", error?.message);
+        resp.writeHead(403);
+        resp.end(JSON.stringify({ error: "Invalid signature" }));
+        return;
+      }
     }
 
     // Handle the payload

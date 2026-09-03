@@ -55,9 +55,6 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
     event: React.ChangeEvent<HTMLInputElement>,
     onChange: (value: number | null) => void,
   ) => {
-    if (isLast) {
-      return
-    }
     onChange(parseTierBoundInput(event.target.value))
     setValue(`prices.${index}.id`, '')
   }
@@ -68,10 +65,6 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
     onBlur: () => void,
   ) => {
     onBlur()
-    if (isLast) {
-      onChange(null)
-      return
-    }
     const parsed = parseTierBoundInput(event.target.value)
     const minAllowed = previousBound + 1
     if (parsed == null) {
@@ -115,6 +108,7 @@ export const UnitTierCard: React.FC<UnitTierCardProps> = ({
                 min={previousBound + 1}
                 step={1}
                 value={field.value ?? ''}
+                disabled={isLast}
                 placeholder={isLast ? 'Unlimited' : undefined}
                 onChange={(e) => handleBoundChange(e, field.onChange)}
                 onBlur={(e) => handleBoundBlur(e, field.onChange, field.onBlur)}

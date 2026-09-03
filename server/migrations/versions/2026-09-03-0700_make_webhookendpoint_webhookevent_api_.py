@@ -1,7 +1,7 @@
 """Make WebhookEndpoint/WebhookEvent.api_version non nullable
 
 Revision ID: fec1e6242c3f
-Revises: b58196b41f41
+Revises: a17f5e02e8be
 Create Date: 2026-09-01 10:17:43.303341
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "fec1e6242c3f"
-down_revision = "b58196b41f41"
+down_revision = "a17f5e02e8be"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

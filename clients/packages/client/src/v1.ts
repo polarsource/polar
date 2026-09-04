@@ -43573,7 +43573,7 @@ export interface operations {
             | components['schemas']['PaymentActionRequired']
         }
       }
-      /** @description Subscription is already canceled or will be at the end of the period, or is not active. */
+      /** @description Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions. */
       403: {
         headers: {
           [name: string]: unknown
@@ -43582,6 +43582,7 @@ export interface operations {
           'application/json':
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['InactiveSubscription']
+            | components['schemas']['PaymentNotReady']
         }
       }
       /** @description Subscription not found. */

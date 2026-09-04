@@ -9,7 +9,11 @@ vi.mock('@polar-sh/adapter-utils', () => ({
 vi.mock('@polar-sh/sdk/2026-04', () => {
   class PolarWebhookError extends Error {}
   class PolarWebhookVerificationError extends PolarWebhookError {}
-  class PolarWebhookUnknownTypeError extends PolarWebhookError {}
+  class PolarWebhookUnknownTypeError extends PolarWebhookError {
+    constructor(public readonly eventType: string | null) {
+      super(`Unknown webhook event type: ${JSON.stringify(eventType)}`)
+    }
+  }
 
   return {
     webhooks: {
@@ -237,6 +241,24 @@ describe('webhooks plugin', () => {
 
       await expect(handler(ctx)).resolves.toEqual({ received: true })
       expect(ctx.json).toHaveBeenCalledWith({ received: true })
+      expect(handleWebhookPayload).not.toHaveBeenCalled()
+    })
+
+    it('should reject webhook events without a type', async () => {
+      vi.mocked(validateEvent).mockRejectedValue(
+        new sdkWebhooks.PolarWebhookUnknownTypeError(null),
+      )
+
+      const ctx = {
+        request: mockRequest,
+        context: { logger: { error: vi.fn() } },
+        json: vi.fn(),
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'BAD_REQUEST',
+      })
+      expect(ctx.json).not.toHaveBeenCalled()
       expect(handleWebhookPayload).not.toHaveBeenCalled()
     })
 

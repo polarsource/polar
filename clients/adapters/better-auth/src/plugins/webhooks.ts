@@ -66,7 +66,10 @@ export const webhooks =
 
             event = await sdkWebhooks.validateEvent(buf, headers, secret)
           } catch (err: unknown) {
-            if (err instanceof sdkWebhooks.PolarWebhookUnknownTypeError) {
+            if (
+              err instanceof sdkWebhooks.PolarWebhookUnknownTypeError &&
+              err.eventType !== null
+            ) {
               return ctx.json({ received: true })
             }
             if (err instanceof Error) {

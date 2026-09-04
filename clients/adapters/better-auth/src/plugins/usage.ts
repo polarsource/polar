@@ -1,4 +1,4 @@
-import type { Polar } from '@polar-sh/sdk'
+import type { models, Polar } from '@polar-sh/sdk/2026-04'
 import {
   APIError,
   createAuthEndpoint,
@@ -53,20 +53,20 @@ export const usage =
 
           try {
             const customerSession = await polar.customerSessions.create({
-              externalCustomerId:
+              external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
-                ? { externalMemberId: principal.externalMemberId }
+                ? { external_member_id: principal.externalMemberId }
                 : {}),
             })
 
-            const customerMeters =
+            const customerMeters: models.ListResourceCustomerCustomerMeter =
               await polar.customerPortal.customerMeters.list(
-                { customerSession: customerSession.token },
                 {
                   page: ctx.query?.page,
                   limit: ctx.query?.limit,
                 },
+                { accessToken: customerSession.token },
               )
 
             return ctx.json(customerMeters)
@@ -116,20 +116,21 @@ export const usage =
             : undefined
 
           try {
-            const ingestion = await polar.events.ingest({
-              events: [
-                {
-                  name: ctx.body.event,
-                  metadata: ctx.body.metadata,
-                  externalCustomerId:
-                    principal?.externalCustomerId ??
-                    ctx.context.session.user.id,
-                  ...(principal?.kind === 'team'
-                    ? { externalMemberId: principal.externalMemberId }
-                    : {}),
-                },
-              ],
-            })
+            const ingestion: models.EventsIngestResponse =
+              await polar.events.ingest({
+                events: [
+                  {
+                    name: ctx.body.event,
+                    metadata: ctx.body.metadata,
+                    external_customer_id:
+                      principal?.externalCustomerId ??
+                      ctx.context.session.user.id,
+                    ...(principal?.kind === 'team'
+                      ? { external_member_id: principal.externalMemberId }
+                      : {}),
+                  },
+                ],
+              })
 
             return ctx.json(ingestion)
           } catch (e: unknown) {

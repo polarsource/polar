@@ -84,7 +84,7 @@ describe('portal plugin', () => {
     it('should create customer portal session and return URL', async () => {
       const mockSession = {
         token: 'session-token-123',
-        customerPortalUrl: 'https://polar.sh/portal/session-123',
+        customer_portal_url: 'https://polar.sh/portal/session-123',
       }
 
       vi.mocked(mockClient.customerSessions.create).mockResolvedValue(
@@ -101,7 +101,7 @@ describe('portal plugin', () => {
       await handler(ctx)
 
       expect(mockClient.customerSessions.create).toHaveBeenCalledWith({
-        externalCustomerId: 'user-123',
+        external_customer_id: 'user-123',
       })
 
       expect(ctx.json).toHaveBeenCalledWith({
@@ -123,7 +123,7 @@ describe('portal plugin', () => {
     it('should return redirect: false when body param is false (POST)', async () => {
       const mockSession = {
         token: 'session-token-123',
-        customerPortalUrl: 'https://polar.sh/portal/session-123',
+        customer_portal_url: 'https://polar.sh/portal/session-123',
       }
 
       vi.mocked(mockClient.customerSessions.create).mockResolvedValue(
@@ -149,7 +149,7 @@ describe('portal plugin', () => {
     it('should return redirect: true when body param is true (POST)', async () => {
       const mockSession = {
         token: 'session-token-123',
-        customerPortalUrl: 'https://polar.sh/portal/session-123',
+        customer_portal_url: 'https://polar.sh/portal/session-123',
       }
 
       vi.mocked(mockClient.customerSessions.create).mockResolvedValue(
@@ -199,7 +199,7 @@ describe('portal plugin', () => {
 
       const mockSession = {
         token: 'session-token-123',
-        customerPortalUrl: 'https://polar.sh/portal/session-123',
+        customer_portal_url: 'https://polar.sh/portal/session-123',
       }
 
       vi.mocked(mockClient.customerSessions.create).mockResolvedValue(
@@ -228,7 +228,7 @@ describe('portal plugin', () => {
 
       const mockSession = {
         token: 'session-token-123',
-        customerPortalUrl: 'https://polar.sh/portal/session-123',
+        customer_portal_url: 'https://polar.sh/portal/session-123',
       }
 
       vi.mocked(mockClient.customerSessions.create).mockResolvedValue(
@@ -257,7 +257,7 @@ describe('portal plugin', () => {
 
       const mockSession = {
         token: 'session-token-123',
-        customerPortalUrl: 'https://polar.sh/portal/session-123',
+        customer_portal_url: 'https://polar.sh/portal/session-123',
       }
 
       vi.mocked(mockClient.customerSessions.create).mockResolvedValue(
@@ -286,7 +286,7 @@ describe('portal plugin', () => {
 
       const mockSession = {
         token: 'session-token-123',
-        customerPortalUrl: 'https://polar.sh/portal/session-123?foo=bar',
+        customer_portal_url: 'https://polar.sh/portal/session-123?foo=bar',
       }
 
       vi.mocked(mockClient.customerSessions.create).mockResolvedValue(
@@ -338,9 +338,9 @@ describe('portal plugin', () => {
 
       await handler(ctx)
 
-      expect(mockClient.customers.getStateExternal).toHaveBeenCalledWith({
-        externalId: 'user-123',
-      })
+      expect(mockClient.customers.getStateExternal).toHaveBeenCalledWith(
+        'user-123',
+      )
 
       expect(ctx.json).toHaveBeenCalledWith(mockState)
     })
@@ -411,12 +411,12 @@ describe('portal plugin', () => {
       await handler(ctx)
 
       expect(mockClient.customerSessions.create).toHaveBeenCalledWith({
-        externalCustomerId: 'user-123',
+        external_customer_id: 'user-123',
       })
 
       expect(mockClient.customerPortal.benefitGrants.list).toHaveBeenCalledWith(
-        { customerSession: 'session-token-123' },
         { page: 1, limit: 10 },
+        { accessToken: 'session-token-123' },
       )
 
       expect(ctx.json).toHaveBeenCalledWith(mockBenefits)
@@ -444,8 +444,8 @@ describe('portal plugin', () => {
       await handler(ctx)
 
       expect(mockClient.customerPortal.benefitGrants.list).toHaveBeenCalledWith(
-        { customerSession: 'session-token-123' },
         { page: undefined, limit: undefined },
+        { accessToken: 'session-token-123' },
       )
     })
 
@@ -499,8 +499,8 @@ describe('portal plugin', () => {
       await handler(ctx)
 
       expect(mockClient.customerPortal.subscriptions.list).toHaveBeenCalledWith(
-        { customerSession: 'session-token-123' },
         { page: 1, limit: 5, active: true },
+        { accessToken: 'session-token-123' },
       )
 
       expect(ctx.json).toHaveBeenCalledWith(mockSubscriptions)
@@ -607,8 +607,8 @@ describe('portal plugin', () => {
       await handler(ctx)
 
       expect(mockClient.customerPortal.orders.list).toHaveBeenCalledWith(
-        { customerSession: 'session-token-123' },
-        { page: 1, limit: 20, productBillingType: 'recurring' },
+        { page: 1, limit: 20, product_billing_type: 'recurring' },
+        { accessToken: 'session-token-123' },
       )
 
       expect(ctx.json).toHaveBeenCalledWith(mockOrders)
@@ -636,8 +636,8 @@ describe('portal plugin', () => {
       await handler(ctx)
 
       expect(mockClient.customerPortal.orders.list).toHaveBeenCalledWith(
-        { customerSession: 'session-token-123' },
-        expect.objectContaining({ productBillingType: 'one_time' }),
+        expect.objectContaining({ product_billing_type: 'one_time' }),
+        { accessToken: 'session-token-123' },
       )
     })
 
@@ -679,7 +679,7 @@ describe('portal plugin', () => {
       vi.mocked(resolveBillingPrincipal).mockResolvedValue(teamPrincipal)
       vi.mocked(mockClient.customerSessions.create).mockResolvedValue({
         token: 'session-token-123',
-        customerPortalUrl: 'https://polar.sh/portal/session-123',
+        customer_portal_url: 'https://polar.sh/portal/session-123',
       })
     })
 
@@ -699,8 +699,8 @@ describe('portal plugin', () => {
         authorization: 'member',
       })
       expect(mockClient.customerSessions.create).toHaveBeenCalledWith({
-        externalCustomerId: 'organization-123',
-        externalMemberId: 'user-123',
+        external_customer_id: 'organization-123',
+        external_member_id: 'user-123',
       })
     })
 
@@ -714,9 +714,9 @@ describe('portal plugin', () => {
         json: vi.fn(),
       })
 
-      expect(mockClient.customers.getStateExternal).toHaveBeenCalledWith({
-        externalId: 'organization-123',
-      })
+      expect(mockClient.customers.getStateExternal).toHaveBeenCalledWith(
+        'organization-123',
+      )
     })
 
     it.each([
@@ -740,8 +740,8 @@ describe('portal plugin', () => {
         })
 
         expect(mockClient.customerSessions.create).toHaveBeenCalledWith({
-          externalCustomerId: 'organization-123',
-          externalMemberId: 'user-123',
+          external_customer_id: 'organization-123',
+          external_member_id: 'user-123',
         })
       },
     )

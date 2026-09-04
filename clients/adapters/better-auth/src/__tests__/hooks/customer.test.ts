@@ -28,12 +28,8 @@ describe('customer hooks', () => {
   beforeEach(() => {
     mockClient = createMockPolarClient()
     vi.mocked(mockClient.customers.list).mockResolvedValue({
-      result: {
-        items: [],
-        pagination: { totalCount: 0, maxPage: 1 },
-      },
-      next: vi.fn(),
-      [Symbol.asyncIterator]: vi.fn(),
+      items: [],
+      pagination: { total_count: 0, max_page: 1 },
     })
     vi.mocked(mockClient.customers.create).mockResolvedValue(
       createMockCustomer(),
@@ -86,12 +82,8 @@ describe('customer hooks', () => {
       const mockCustomer = createMockCustomer()
 
       vi.mocked(mockClient.customers.list).mockResolvedValue({
-        result: {
-          items: [mockCustomer],
-          pagination: { totalCount: 1, maxPage: 1 },
-        },
-        next: vi.fn(),
-        [Symbol.asyncIterator]: vi.fn(),
+        items: [mockCustomer],
+        pagination: { total_count: 1, max_page: 1 },
       })
 
       const ctx = { context: { logger: { error: vi.fn() } } } as any
@@ -235,17 +227,12 @@ describe('customer hooks', () => {
       const existingCustomer = {
         ...createMockCustomer(),
         id: 'customer-456',
-        externalId: null, // No external ID set
+        external_id: null,
       }
 
-      // Mock existing customer found
       vi.mocked(mockClient.customers.list).mockResolvedValue({
-        result: {
-          items: [existingCustomer],
-          pagination: { totalCount: 1, maxPage: 1 },
-        },
-        next: vi.fn(),
-        [Symbol.asyncIterator]: vi.fn(),
+        items: [existingCustomer],
+        pagination: { total_count: 1, max_page: 1 },
       })
 
       vi.mocked(mockClient.customers.update).mockResolvedValue(existingCustomer)
@@ -259,11 +246,8 @@ describe('customer hooks', () => {
         email: 'test@example.com',
       })
 
-      expect(mockClient.customers.update).toHaveBeenCalledWith({
-        id: 'customer-456',
-        customerUpdate: {
-          externalId: 'user-123',
-        },
+      expect(mockClient.customers.update).toHaveBeenCalledWith('customer-456', {
+        external_id: 'user-123',
       })
     })
 
@@ -281,16 +265,12 @@ describe('customer hooks', () => {
       const existingCustomer = {
         ...createMockCustomer(),
         id: 'customer-456',
-        externalId: 'different-user-id',
+        external_id: 'different-user-id',
       }
 
       vi.mocked(mockClient.customers.list).mockResolvedValue({
-        result: {
-          items: [existingCustomer],
-          pagination: { totalCount: 1, maxPage: 1 },
-        },
-        next: vi.fn(),
-        [Symbol.asyncIterator]: vi.fn(),
+        items: [existingCustomer],
+        pagination: { total_count: 1, max_page: 1 },
       })
 
       vi.mocked(mockClient.customers.update).mockResolvedValue(existingCustomer)
@@ -300,11 +280,8 @@ describe('customer hooks', () => {
 
       await hook(mockUser, ctx)
 
-      expect(mockClient.customers.update).toHaveBeenCalledWith({
-        id: 'customer-456',
-        customerUpdate: {
-          externalId: 'user-123',
-        },
+      expect(mockClient.customers.update).toHaveBeenCalledWith('customer-456', {
+        external_id: 'user-123',
       })
     })
 
@@ -322,16 +299,12 @@ describe('customer hooks', () => {
       const existingCustomer = {
         ...createMockCustomer(),
         id: 'customer-456',
-        externalId: 'user-123', // Same external ID
+        external_id: 'user-123',
       }
 
       vi.mocked(mockClient.customers.list).mockResolvedValue({
-        result: {
-          items: [existingCustomer],
-          pagination: { totalCount: 1, maxPage: 1 },
-        },
-        next: vi.fn(),
-        [Symbol.asyncIterator]: vi.fn(),
+        items: [existingCustomer],
+        pagination: { total_count: 1, max_page: 1 },
       })
 
       const ctx = { context: { logger: { error: vi.fn() } } } as any
@@ -438,13 +411,13 @@ describe('customer hooks', () => {
 
       await hook(mockUser, ctx)
 
-      expect(mockClient.customers.updateExternal).toHaveBeenCalledWith({
-        externalId: 'user-123',
-        customerUpdateExternalID: {
+      expect(mockClient.customers.updateExternal).toHaveBeenCalledWith(
+        'user-123',
+        {
           email: 'updated@example.com',
           name: 'Updated User',
         },
-      })
+      )
     })
 
     it('should not update customer when createCustomerOnSignUp is disabled', async () => {

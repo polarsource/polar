@@ -1,8 +1,4 @@
-import type { Polar } from '@polar-sh/sdk'
-import type { Customer } from '@polar-sh/sdk/models/components/customer.js'
-import type { Member as PolarMember } from '@polar-sh/sdk/models/components/member.js'
-import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror.js'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound.js'
+import { errors, type models, type Polar } from '@polar-sh/sdk/2026-04'
 import type { Organization } from 'better-auth/plugins/organization'
 import {
   DEFAULT_BETTER_AUTH_CREATOR_ROLE,
@@ -59,7 +55,10 @@ export class PolarOrganizationMemberRoleMappingError extends Error {
   }
 }
 
-const assertTeamCustomer = (customer: Customer, externalCustomerId: string) => {
+const assertTeamCustomer = (
+  customer: models.Customer,
+  externalCustomerId: string,
+) => {
   if (customer.type !== 'team') {
     throw new PolarOrganizationCustomerTypeError(externalCustomerId)
   }
@@ -69,10 +68,10 @@ const isExternalIdConflict = (
   error: unknown,
   externalCustomerId: string,
 ): boolean =>
-  error instanceof HTTPValidationError &&
+  error instanceof errors.HTTPValidationError &&
   error.statusCode === 422 &&
   Boolean(
-    error.detail?.some(
+    error.error.detail?.some(
       (detail) =>
         detail.type === 'value_error' &&
         detail.loc.length === 2 &&
@@ -85,15 +84,13 @@ const isExternalIdConflict = (
 const findTeamCustomer = async (
   client: Polar,
   externalCustomerId: string,
-): Promise<Customer | null> => {
+): Promise<models.Customer | null> => {
   try {
-    const customer = await client.customers.getExternal({
-      externalId: externalCustomerId,
-    })
+    const customer = await client.customers.getExternal(externalCustomerId)
     assertTeamCustomer(customer, externalCustomerId)
     return customer
   } catch (error) {
-    if (error instanceof ResourceNotFound) {
+    if (error instanceof errors.ResourceNotFound) {
       return null
     }
     throw error
@@ -124,10 +121,10 @@ export const ensureTeamCustomer = async (
   try {
     await client.customers.create({
       ...customParams,
-      externalId: data.organization.id,
+      external_id: data.organization.id,
       name: data.organization.name,
       owner: {
-        externalId: data.owner.id,
+        external_id: data.owner.id,
         email: data.owner.email,
         name: data.owner.name,
       },
@@ -149,10 +146,10 @@ export const updateTeamCustomer = async (
   client: Polar,
   organization: Organization & Record<string, unknown>,
 ) => {
-  const updatedCustomer = await client.customers.updateExternal({
-    externalId: organization.id,
-    customerUpdateExternalID: { name: organization.name },
-  })
+  const updatedCustomer = await client.customers.updateExternal(
+    organization.id,
+    { name: organization.name },
+  )
   assertTeamCustomer(updatedCustomer, organization.id)
 }
 
@@ -160,14 +157,14 @@ const findMember = async (
   client: Polar,
   organizationId: string,
   externalMemberId: string,
-): Promise<PolarMember | null> => {
+): Promise<models.Member | null> => {
   try {
-    return await client.customers.members.getExternal({
-      externalId: organizationId,
-      memberExternalId: externalMemberId,
-    })
+    return await client.customers.members.getExternal(
+      organizationId,
+      externalMemberId,
+    )
   } catch (error) {
-    if (error instanceof ResourceNotFound) {
+    if (error instanceof errors.ResourceNotFound) {
       return null
     }
     throw error
@@ -191,14 +188,11 @@ const ensureMemberRecord = async (
     return
   }
 
-  await client.customers.members.createExternal({
-    externalId: organizationId,
-    memberCreateFromCustomer: {
-      externalId: member.userId,
-      email: member.user.email,
-      name: member.user.name,
-      role,
-    },
+  await client.customers.members.createExternal(organizationId, {
+    external_id: member.userId,
+    email: member.user.email,
+    name: member.user.name,
+    role,
   })
 }
 
@@ -248,29 +242,31 @@ const updateMemberRole = async (
   externalMemberId: string,
   role: PolarMemberRole,
 ) => {
-  await client.customers.members.updateExternal({
-    externalId: organizationId,
-    memberExternalId: externalMemberId,
-    memberUpdate: { role },
-  })
+  await client.customers.members.updateExternal(
+    organizationId,
+    externalMemberId,
+    { role },
+  )
 }
 
 const getCurrentPolarOwner = async (
   client: Polar,
   organizationId: string,
-): Promise<PolarMember> => {
+): Promise<models.Member> => {
   const customer = await findTeamCustomer(client, organizationId)
   if (!customer) {
     throw new PolarOrganizationTeamCustomerNotFoundError(organizationId)
   }
 
-  const ownerPage = await client.members.listMembers({
-    externalCustomerId: organizationId,
-    role: 'owner',
-    limit: 100,
-  })
+  const ownerPage = await client.customers.members.listExternal(
+    organizationId,
+    {
+      role: 'owner',
+      limit: 100,
+    },
+  )
 
-  const polarOwners = ownerPage.result.items
+  const polarOwners = ownerPage.items
   if (polarOwners.length !== 1) {
     throw new PolarOrganizationOwnerInvariantError(
       organizationId,
@@ -279,7 +275,7 @@ const getCurrentPolarOwner = async (
   }
 
   const currentOwner = polarOwners[0]
-  if (!currentOwner?.externalId) {
+  if (!currentOwner?.external_id) {
     throw new PolarOrganizationOwnerInvariantError(
       organizationId,
       'the current Polar owner has no external ID',
@@ -312,7 +308,7 @@ const syncOwnerTransfer = async (
   const currentOwner = await getCurrentPolarOwner(client, data.organizationId)
 
   const retainedOwner = ownerCandidates.find(
-    (candidate) => candidate.userId === currentOwner.externalId,
+    (candidate) => candidate.userId === currentOwner.external_id,
   )
 
   if (retainedOwner) {
@@ -341,7 +337,7 @@ const syncOwnerTransfer = async (
   // previous owner remains in Better Auth and maps to `member`, apply that
   // explicit role as part of this transfer.
   const previousOwner = data.members.find(
-    (member) => member.userId === currentOwner.externalId,
+    (member) => member.userId === currentOwner.external_id,
   )
 
   if (previousOwner) {
@@ -405,7 +401,7 @@ export const updateMemberRoleMirror = async (
   if (
     data.user.id === ownership.canonicalOwner.userId ||
     (ownership.transferred &&
-      data.user.id === ownership.currentOwner.externalId)
+      data.user.id === ownership.currentOwner.external_id)
   ) {
     return
   }
@@ -428,14 +424,14 @@ export const updateMemberMirror = async (
     user: BetterAuthOrganizationUser
   },
 ) => {
-  await client.customers.members.updateExternal({
-    externalId: data.organizationId,
-    memberExternalId: data.user.id,
-    memberUpdate: {
+  await client.customers.members.updateExternal(
+    data.organizationId,
+    data.user.id,
+    {
       email: data.user.email,
       name: data.user.name,
     },
-  })
+  )
 }
 
 export const promoteMemberMirrorToOwner = async (
@@ -472,12 +468,12 @@ export const removeMemberMirror = async (
   },
 ) => {
   try {
-    await client.customers.members.deleteExternal({
-      externalId: data.organizationId,
-      memberExternalId: data.externalMemberId,
-    })
+    await client.customers.members.deleteExternal(
+      data.organizationId,
+      data.externalMemberId,
+    )
   } catch (error) {
-    if (error instanceof ResourceNotFound) return
+    if (error instanceof errors.ResourceNotFound) return
 
     throw error
   }

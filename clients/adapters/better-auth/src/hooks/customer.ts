@@ -31,8 +31,9 @@ export const onBeforeUserCreate =
         }
 
         // Check if customer already exists
-        const { result: existingCustomers } =
-          await options.client.customers.list({ email: user.email })
+        const existingCustomers = await options.client.customers.list({
+          email: user.email,
+        })
         const existingCustomer = existingCustomers.items[0]
 
         // Skip creation if customer already exists
@@ -66,17 +67,15 @@ export const onAfterUserCreate =
       }
 
       try {
-        const { result: existingCustomers } =
-          await options.client.customers.list({ email: user.email })
+        const existingCustomers = await options.client.customers.list({
+          email: user.email,
+        })
         const existingCustomer = existingCustomers.items[0]
 
         if (existingCustomer) {
-          if (existingCustomer.externalId !== user.id) {
-            await options.client.customers.update({
-              id: existingCustomer.id,
-              customerUpdate: {
-                externalId: user.id,
-              },
+          if (existingCustomer.external_id !== user.id) {
+            await options.client.customers.update(existingCustomer.id, {
+              external_id: user.id,
             })
           }
         }
@@ -102,12 +101,9 @@ export const onUserUpdate =
     if (context && options.createCustomerOnSignUp) {
       try {
         if (!isAnonymousUser(user)) {
-          await options.client.customers.updateExternal({
-            externalId: user.id,
-            customerUpdateExternalID: {
-              email: user.email,
-              name: user.name,
-            },
+          await options.client.customers.updateExternal(user.id, {
+            email: user.email,
+            name: user.name,
           })
         }
       } catch (e: unknown) {
@@ -177,13 +173,12 @@ export const onUserDelete =
         }
 
         if (user.email) {
-          const { result: existingCustomers } =
-            await options.client.customers.list({ email: user.email })
+          const existingCustomers = await options.client.customers.list({
+            email: user.email,
+          })
           const existingCustomer = existingCustomers.items[0]
           if (existingCustomer) {
-            await options.client.customers.delete({
-              id: existingCustomer.id,
-            })
+            await options.client.customers.delete(existingCustomer.id)
           }
         }
       } catch (e: unknown) {

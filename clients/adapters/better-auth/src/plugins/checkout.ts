@@ -1,4 +1,4 @@
-import type { Polar } from '@polar-sh/sdk'
+import type { Polar } from '@polar-sh/sdk/2026-04'
 import {
   APIError,
   createAuthEndpoint,
@@ -234,10 +234,10 @@ export const checkout =
 
           try {
             const checkout = await polar.checkouts.create({
-              externalCustomerId:
+              external_customer_id:
                 principal?.externalCustomerId ?? session?.user.id,
               products: productIds,
-              successUrl: successUrl
+              success_url: successUrl
                 ? new URL(
                     successUrl,
                     ctx.request?.url ?? ctx.context.baseURL,
@@ -249,17 +249,17 @@ export const checkout =
                     ...ctx.body.metadata,
                   }
                 : ctx.body.metadata,
-              customFieldData: ctx.body.customFieldData,
-              allowDiscountCodes: ctx.body.allowDiscountCodes ?? true,
-              discountId: ctx.body.discountId,
+              custom_field_data: ctx.body.customFieldData,
+              allow_discount_codes: ctx.body.allowDiscountCodes ?? true,
+              discount_id: ctx.body.discountId,
               seats,
-              minSeats,
-              maxSeats,
-              embedOrigin: ctx.body.embedOrigin,
-              allowTrial: ctx.body.allowTrial,
-              trialInterval: ctx.body.trialInterval,
-              trialIntervalCount: ctx.body.trialIntervalCount,
-              returnUrl: returnUrl
+              min_seats: minSeats,
+              max_seats: maxSeats,
+              embed_origin: ctx.body.embedOrigin,
+              allow_trial: ctx.body.allowTrial,
+              trial_interval: ctx.body.trialInterval,
+              trial_interval_count: ctx.body.trialIntervalCount,
+              return_url: returnUrl
                 ? new URL(
                     returnUrl,
                     ctx.request?.url ?? ctx.context.baseURL,

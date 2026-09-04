@@ -1,7 +1,4 @@
-import type { Polar } from '@polar-sh/sdk'
-import type { CustomerSeat } from '@polar-sh/sdk/models/components/customerseat.js'
-import type { Product as PolarProduct } from '@polar-sh/sdk/models/components/product.js'
-import type { Subscription } from '@polar-sh/sdk/models/components/subscription.js'
+import type { models, Polar } from '@polar-sh/sdk/2026-04'
 import type { AuthContext, BetterAuthPlugin } from 'better-auth'
 import {
   type OrganizationOptions,
@@ -20,7 +17,7 @@ type BetterAuthOrganizationPlugin = BetterAuthPlugin & {
 }
 
 export const MANAGED_SUBSCRIPTION_STATUSES: ReadonlySet<
-  Subscription['status']
+  models.Subscription['status']
 > = new Set(['active', 'trialing', 'past_due'])
 const ACTIVE_SEAT_STATUSES = new Set(['pending', 'claimed'])
 const PRODUCT_LOOKUP_CONCURRENCY = 5
@@ -143,13 +140,11 @@ export const getOrganization = async (
 }
 
 const getMinimumSeats = (
-  prices: PolarProduct['prices'],
+  prices: models.Product['prices'],
   productId: string,
 ): number => {
   const minimums = prices.flatMap((price) =>
-    'amountType' in price && price.amountType === 'seat_based'
-      ? [price.seatTiers.minimumSeats]
-      : [],
+    price.amount_type === 'seat_based' ? [price.seat_tiers.minimum_seats] : [],
   )
   if (minimums.length === 0) {
     throw new Error(
@@ -160,23 +155,21 @@ const getMinimumSeats = (
 }
 
 interface ManagedSeatProduct {
-  product: PolarProduct
+  product: models.Product
   minimumSeats: number
 }
 
 const toManagedSeatProduct = (
-  product: PolarProduct,
-  prices: PolarProduct['prices'] = product.prices,
+  product: models.Product,
+  prices: models.Product['prices'] = product.prices,
 ): ManagedSeatProduct => ({
   product,
   minimumSeats: getMinimumSeats(prices, product.id),
 })
 
-const isRecurringSeatProduct = (product: PolarProduct): boolean =>
-  product.isRecurring &&
-  product.prices.some(
-    (price) => 'amountType' in price && price.amountType === 'seat_based',
-  )
+const isRecurringSeatProduct = (product: models.Product): boolean =>
+  product.is_recurring &&
+  product.prices.some((price) => price.amount_type === 'seat_based')
 
 export const getCheckoutSeatProducts = async (
   client: Polar,
@@ -185,7 +178,7 @@ export const getCheckoutSeatProducts = async (
   const products = await mapWithConcurrency(
     productIds,
     PRODUCT_LOOKUP_CONCURRENCY,
-    (id) => client.products.get({ id }),
+    (id) => client.products.get(id),
   )
   return products
     .filter(isRecurringSeatProduct)
@@ -195,17 +188,17 @@ export const getCheckoutSeatProducts = async (
 const listSeatSubscriptions = async (
   client: Polar,
   organizationId: string,
-): Promise<Subscription[]> => {
-  const subscriptions: Subscription[] = []
+): Promise<models.Subscription[]> => {
+  const subscriptions: models.Subscription[] = []
   for (let page = 1; ; page++) {
     const response = await client.subscriptions.list({
-      externalCustomerId: organizationId,
+      external_customer_id: organizationId,
       status: [...MANAGED_SUBSCRIPTION_STATUSES],
       limit: 100,
       page,
     })
-    subscriptions.push(...response.result.items)
-    if (page >= response.result.pagination.maxPage) break
+    subscriptions.push(...response.items)
+    if (page >= response.pagination.max_page) break
   }
   return subscriptions.filter(
     (subscription) =>
@@ -278,26 +271,26 @@ export const resolveRosterProductAllocations = async (input: {
 }
 
 const findActiveSeatForMember = (
-  seats: readonly CustomerSeat[],
+  seats: readonly models.CustomerSeat[],
   externalMemberId: string,
-): CustomerSeat | undefined =>
+): models.CustomerSeat | undefined =>
   seats.find(
     (seat) =>
       ACTIVE_SEAT_STATUSES.has(seat.status) &&
-      seat.member?.externalId === externalMemberId,
+      seat.member?.external_id === externalMemberId,
   )
 
 const assignSubscriptionSeat = async (
   client: Polar,
   subscriptionId: string,
   externalMemberId: string,
-  seats: readonly CustomerSeat[],
+  seats: readonly models.CustomerSeat[],
 ): Promise<void> => {
   if (findActiveSeatForMember(seats, externalMemberId)) return
   await client.customerSeats.assignSeat({
-    subscriptionId,
-    externalMemberId,
-    immediateClaim: true,
+    subscription_id: subscriptionId,
+    external_member_id: externalMemberId,
+    immediate_claim: true,
   })
 }
 
@@ -306,15 +299,12 @@ const updateSubscriptionSeatCount = async (
   subscriptionId: string,
   seats: number,
 ): Promise<void> => {
-  await client.subscriptions.update({
-    id: subscriptionId,
-    subscriptionUpdate: { seats },
-  })
+  await client.subscriptions.update(subscriptionId, { seats })
 }
 
 const synchronizeOrganizationSubscriptionSeats = async (
   client: Polar,
-  subscription: Subscription,
+  subscription: models.Subscription,
   allocation: ProductSeatAllocation,
 ): Promise<void> => {
   const currentQuantity = subscription.seats ?? 0
@@ -327,15 +317,15 @@ const synchronizeOrganizationSubscriptionSeats = async (
   }
 
   const { seats } = await client.customerSeats.listSeats({
-    subscriptionId: subscription.id,
+    subscription_id: subscription.id,
   })
   for (const seat of seats) {
-    const externalMemberId = seat.member?.externalId
+    const externalMemberId = seat.member?.external_id
     if (
       ACTIVE_SEAT_STATUSES.has(seat.status) &&
       (!externalMemberId || !allocation.memberIds.has(externalMemberId))
     ) {
-      await client.customerSeats.revokeSeat({ seatId: seat.id })
+      await client.customerSeats.revokeSeat(seat.id)
     }
   }
   for (const memberId of allocation.memberIds) {
@@ -354,7 +344,7 @@ export const synchronizeOrganizationSeats = async (input: {
   organizationOptions: PolarOrganizationOptions
   betterAuthOrganizationOptions?: OrganizationOptions
   excludedUserId?: string
-  subscriptions?: readonly Subscription[]
+  subscriptions?: readonly models.Subscription[]
 }): Promise<void> => {
   if (!input.organizationOptions.syncSeats) return
 
@@ -391,7 +381,7 @@ export const synchronizeOrganizationSeats = async (input: {
   })
 
   for (const subscription of managedSubscriptions) {
-    const allocation = allocations.get(subscription.productId)
+    const allocation = allocations.get(subscription.product_id)
     if (allocation) {
       await synchronizeOrganizationSubscriptionSeats(
         input.client,

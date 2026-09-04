@@ -1,4 +1,4 @@
-import type { Polar } from '@polar-sh/sdk'
+import type { Polar } from '@polar-sh/sdk/2026-04'
 
 import type { UnionToIntersection, User } from 'better-auth'
 import type { PolarOrganizationOptions } from './organization/types'

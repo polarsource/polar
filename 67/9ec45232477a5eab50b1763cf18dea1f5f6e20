@@ -14,6 +14,8 @@ server/tests/webhooks/test_webhooks.py
   s_8328894b8c4ada::t_3886934778f796 95-213
   s_8328894b8c4ada::t_14c966faea658d 1,3
   s_8328894b8c4ada::t_c230f218842925 20
+  s_8328894b8c4ada::t_22156069d239ca 488
+  s_8328894b8c4ada::t_b9d9139ef80fea 525
 server/scripts/seeds_load.py
   s_8328894b8c4ada::t_9489a402002aa5 3142
   s_8328894b8c4ada::t_b9e0e3e9cbf491 127

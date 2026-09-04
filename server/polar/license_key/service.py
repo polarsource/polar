@@ -10,6 +10,7 @@ from polar.auth.models import AuthSubject, Customer, Member
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
@@ -25,7 +26,9 @@ from polar.models import (
     User,
 )
 from polar.models.license_key import LicenseKeyStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import LicenseKeyRepository
@@ -184,9 +187,7 @@ class LicenseKeyService:
         await session.flush()
 
         if update_dict:
-            grant = await self._get_grant(session, license_key)
-            if grant is not None:
-                enqueue_job("benefit.update", benefit_grant_id=grant.id)
+            await self._send_benefit_updated_webhook(session, license_key)
 
         return license_key
 
@@ -219,8 +220,7 @@ class LicenseKeyService:
             session.add(grant)
         await session.flush()
 
-        if grant is not None:
-            enqueue_job("benefit.update", benefit_grant_id=grant.id)
+        await self._send_benefit_updated_webhook(session, license_key)
 
         log.info(
             "license_key.rotate",
@@ -231,6 +231,20 @@ class LicenseKeyService:
             previous_key_suffix=old_key[-6:],
         )
         return license_key
+
+    async def _send_benefit_updated_webhook(
+        self, session: AsyncSession, license_key: LicenseKey
+    ) -> None:
+        benefit_repository = BenefitRepository.from_session(session)
+        benefit = await benefit_repository.get_by_id(
+            license_key.benefit_id, options=benefit_repository.get_eager_options()
+        )
+        if benefit is None:
+            return
+
+        await webhook_service.send(
+            session, benefit.organization, WebhookEventType.benefit_updated, benefit
+        )
 
     async def _get_grant(
         self, session: AsyncSession, license_key: LicenseKey

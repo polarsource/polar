@@ -855,8 +855,10 @@ class WebhookService:
             {
                 "type": event,
                 "timestamp": now,
-                "api_version": CURRENT_API_VERSION,
                 "data": data,
+                # Set arbitrary version to build a base payload,
+                # each endpoint will make a copy and set their own version.
+                "api_version": CURRENT_API_VERSION,
             }
         )
 

@@ -8,6 +8,7 @@ import WebhookContextView from '@/components/Settings/Webhook/WebhookContextView
 import DeliveriesTable from '@/components/Settings/Webhook/WebhookDeliveriesTable'
 import { WebhookFilter } from '@/components/Settings/Webhook/WebhookFilter'
 import { WebhookSignatureNotice } from '@/components/Settings/Webhook/WebhookSignatureNotice'
+import { WebhookSigningSchemeStatus } from '@/components/Settings/Webhook/WebhookSigningSchemeStatus'
 import { toast } from '@/components/Toast/use-toast'
 import { getStatusRedirect } from '@/components/Toast/utils'
 import {
@@ -18,7 +19,6 @@ import {
 } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import { shouldShowWebhookSignatureNotice } from '@/utils/webhook/signatureNotice'
 import { operations, schemas } from '@polar-sh/client'
 import { Button, Switch, Text } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -160,9 +160,9 @@ export default function ClientPage({
       className="gap-y-8"
       wide
     >
-      {shouldShowWebhookSignatureNotice(organization.created_at) ? (
-        <WebhookSignatureNotice />
-      ) : null}
+      <WebhookSignatureNotice
+        organizationCreatedAt={organization.created_at}
+      />
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1">
@@ -177,6 +177,12 @@ export default function ClientPage({
               <h3 className="text-lg break-words">{endpoint.url}</h3>
             )}
             <Text color="muted">API version {endpoint.api_version}</Text>
+            <WebhookSigningSchemeStatus
+              organizationCreatedAt={organization.created_at}
+              usesStandardWebhookSignature={
+                endpoint.uses_standard_webhook_signature
+              }
+            />
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-sm text-gray-500" id="webhook-status-label">

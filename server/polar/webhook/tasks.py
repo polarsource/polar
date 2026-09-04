@@ -1,6 +1,6 @@
 import base64
 from collections.abc import Mapping
-from datetime import UTC, datetime
+from datetime import datetime
 from ssl import SSLError
 from uuid import UUID
 
@@ -27,19 +27,10 @@ from polar.worker import (
     enqueue_job,
 )
 
-from .constants import WEBHOOK_STANDARD_SIGNATURE_CUTOFF
+from .constants import uses_standard_webhook_signature
 from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
-
-
-def uses_standard_webhook_signature(secret_generated_at: datetime | None) -> bool:
-    if secret_generated_at is None:
-        return False
-    generated_at = secret_generated_at
-    if generated_at.tzinfo is None:
-        generated_at = generated_at.replace(tzinfo=UTC)
-    return generated_at >= WEBHOOK_STANDARD_SIGNATURE_CUTOFF
 
 
 def sign_webhook(
@@ -50,10 +41,12 @@ def sign_webhook(
     *,
     secret_generated_at: datetime | None,
 ) -> str:
-    if uses_standard_webhook_signature(secret_generated_at):
-        return StandardWebhook(secret).sign(msg_id, timestamp, payload)
-    b64secret = base64.b64encode(secret.encode("utf-8")).decode("utf-8")
-    return StandardWebhook(b64secret).sign(msg_id, timestamp, payload)
+    key = (
+        secret
+        if uses_standard_webhook_signature(secret_generated_at)
+        else base64.b64encode(secret.encode("utf-8")).decode("utf-8")
+    )
+    return StandardWebhook(key).sign(msg_id, timestamp, payload)
 
 
 # Safety-guard max_retries: enough for all ordering retries within the age

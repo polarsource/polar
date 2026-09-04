@@ -1,7 +1,6 @@
 'use client'
 
 import { useListWebhooksEndpoints } from '@/hooks/queries'
-import { shouldShowWebhookSignatureNotice } from '@/utils/webhook/signatureNotice'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
@@ -13,6 +12,7 @@ import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../../Modal/useModal'
 import NewWebhookModal from './NewWebhookModal'
 import { WebhookSignatureNotice } from './WebhookSignatureNotice'
+import { WebhookSigningSchemeStatus } from './WebhookSigningSchemeStatus'
 
 const WebhookSettings = (props: { org: schemas['Organization'] }) => {
   const {
@@ -27,14 +27,10 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
     page: 1,
   })
 
-  const showSignatureNotice = shouldShowWebhookSignatureNotice(
-    props.org.created_at,
-  )
-
   return (
     <>
       <Box flexDirection="column" gap="l">
-        {showSignatureNotice ? <WebhookSignatureNotice /> : null}
+        <WebhookSignatureNotice organizationCreatedAt={props.org.created_at} />
         <ListGroup>
         {endpoints.data?.items && endpoints.data.items.length > 0 ? (
           endpoints.data?.items.map((e) => {
@@ -124,6 +120,12 @@ const Endpoint = ({
           <FormattedDateTime datetime={endpoint.created_at} dateStyle="long" />
           {' · '}API version {endpoint.api_version}
         </p>
+        <WebhookSigningSchemeStatus
+          organizationCreatedAt={organization.created_at}
+          usesStandardWebhookSignature={
+            endpoint.uses_standard_webhook_signature
+          }
+        />
       </div>
       <div className="dark:text-polar-400 text-gray-500">
         <Link

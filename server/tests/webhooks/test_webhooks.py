@@ -5,6 +5,7 @@ import uuid
 from datetime import timedelta
 from typing import Annotated, cast
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -33,14 +34,15 @@ from polar.webhook.constants import (
     WEBHOOK_SECRET_KEY_BYTES,
     WEBHOOK_SECRET_PREFIX,
     WEBHOOK_STANDARD_SIGNATURE_CUTOFF,
+    uses_standard_webhook_signature,
 )
 from polar.webhook.repository import WebhookDeliveryRepository
+from polar.webhook.schemas import WebhookEndpoint as WebhookEndpointSchema
 from polar.webhook.service import generate_webhook_secret
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import (
     _webhook_event_send,
     sign_webhook,
-    uses_standard_webhook_signature,
     webhook_event_send,
 )
 from polar.webhook.webhooks import BaseWebhookPayload
@@ -114,6 +116,39 @@ class TestUsesStandardWebhookSignature:
             )
             is True
         )
+
+
+class TestWebhookEndpointSchema:
+    def _payload(self, **overrides: object) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "id": uuid4(),
+            "created_at": utc_now(),
+            "modified_at": None,
+            "url": "https://example.com/hook",
+            "name": None,
+            "format": WebhookFormat.raw,
+            "secret": "whsec_test",
+            "organization_id": uuid4(),
+            "events": [],
+            "enabled": True,
+            "secret_generated_at": None,
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_null_secret_generated_at_is_legacy(self) -> None:
+        schema = WebhookEndpointSchema.model_validate(self._payload())
+        dumped = schema.model_dump()
+        assert schema.uses_standard_webhook_signature is False
+        assert "secret_generated_at" not in dumped
+        assert dumped["uses_standard_webhook_signature"] is False
+
+    def test_at_cutoff_uses_spec(self) -> None:
+        schema = WebhookEndpointSchema.model_validate(
+            self._payload(secret_generated_at=WEBHOOK_STANDARD_SIGNATURE_CUTOFF)
+        )
+        assert schema.uses_standard_webhook_signature is True
+        assert schema.model_dump()["uses_standard_webhook_signature"] is True
 
 
 class TestGenerateWebhookSecret:

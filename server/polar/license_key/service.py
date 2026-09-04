@@ -10,7 +10,7 @@ from polar.auth.models import AuthSubject, Customer, Member
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
-from polar.benefit.repository import BenefitRepository
+from polar.benefit.strategies import BenefitGrantProperties
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
@@ -187,7 +187,9 @@ class LicenseKeyService:
         await session.flush()
 
         if update_dict:
-            await self._send_benefit_updated_webhook(session, license_key)
+            grant = await self._get_grant(session, license_key)
+            if grant is not None:
+                await self._send_grant_updated_webhook(session, grant, grant.properties)
 
         return license_key
 
@@ -212,15 +214,19 @@ class LicenseKeyService:
         old_key = license_key.key
         license_key.key = LicenseKeyCreate.generate_key(prefix=prefix)
         session.add(license_key)
+        await session.flush()
+
         if grant is not None:
+            previous_grant_properties = grant.properties
             grant.properties = {
                 **grant.properties,
                 "display_key": license_key.display_key,
             }
             session.add(grant)
-        await session.flush()
-
-        await self._send_benefit_updated_webhook(session, license_key)
+            await session.flush()
+            await self._send_grant_updated_webhook(
+                session, grant, previous_grant_properties
+            )
 
         log.info(
             "license_key.rotate",
@@ -232,19 +238,25 @@ class LicenseKeyService:
         )
         return license_key
 
-    async def _send_benefit_updated_webhook(
-        self, session: AsyncSession, license_key: LicenseKey
+    async def _send_grant_updated_webhook(
+        self,
+        session: AsyncSession,
+        grant: BenefitGrant,
+        previous_grant_properties: BenefitGrantProperties,
     ) -> None:
-        benefit_repository = BenefitRepository.from_session(session)
-        benefit = await benefit_repository.get_by_id(
-            license_key.benefit_id, options=benefit_repository.get_eager_options()
+        grant_repository = BenefitGrantRepository.from_session(session)
+        loaded = await grant_repository.get_by_id(
+            grant.id, options=grant_repository.get_eager_options()
         )
-        if benefit is None:
-            return
-
+        assert loaded is not None
+        loaded.previous_properties = previous_grant_properties
         await webhook_service.send(
-            session, benefit.organization, WebhookEventType.benefit_updated, benefit
+            session,
+            loaded.benefit.organization,
+            WebhookEventType.benefit_grant_updated,
+            loaded,
         )
+        enqueue_job("customer.state_changed", loaded.customer_id)
 
     async def _get_grant(
         self, session: AsyncSession, license_key: LicenseKey

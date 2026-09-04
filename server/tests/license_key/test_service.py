@@ -1,5 +1,6 @@
 import asyncio
 from typing import cast
+from unittest.mock import call
 from uuid import UUID
 
 import pytest
@@ -289,12 +290,15 @@ class TestUpdate:
         )
 
         assert license_key.status == status
-        enqueue_job_mock.assert_called_once_with(
-            "license_key.sync_benefit_grant", license_key_id=license_key.id
-        )
+        assert enqueue_job_mock.call_args_list == [
+            call("license_key.sync_benefit_grant", license_key_id=license_key.id),
+            call("customer.state_changed", grant.customer_id),
+        ]
         webhook_send_mock.assert_called_once()
-        assert webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_updated
-        assert webhook_send_mock.call_args[0][3].id == license_key.benefit_id
+        assert (
+            webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_grant_updated
+        )
+        assert webhook_send_mock.call_args[0][3].id == grant.id
 
     async def test_revoked_status_enqueues_sync(
         self,
@@ -310,7 +314,7 @@ class TestUpdate:
         webhook_send_mock = mocker.patch(
             "polar.license_key.service.webhook_service.send"
         )
-        license_key, _ = await _license_key_and_grant(
+        license_key, grant = await _license_key_and_grant(
             session, redis, save_fixture, customer, organization, product
         )
 
@@ -321,11 +325,15 @@ class TestUpdate:
         )
 
         assert license_key.status == LicenseKeyStatus.revoked
-        enqueue_job_mock.assert_called_once_with(
-            "license_key.sync_benefit_grant", license_key_id=license_key.id
-        )
+        assert enqueue_job_mock.call_args_list == [
+            call("license_key.sync_benefit_grant", license_key_id=license_key.id),
+            call("customer.state_changed", grant.customer_id),
+        ]
         webhook_send_mock.assert_called_once()
-        assert webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_updated
+        assert (
+            webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_grant_updated
+        )
+        assert webhook_send_mock.call_args[0][3].id == grant.id
 
     async def test_status_already_matching_grant_skips_sync(
         self,
@@ -341,7 +349,7 @@ class TestUpdate:
         webhook_send_mock = mocker.patch(
             "polar.license_key.service.webhook_service.send"
         )
-        license_key, _ = await _license_key_and_grant(
+        license_key, grant = await _license_key_and_grant(
             session, redis, save_fixture, customer, organization, product
         )
 
@@ -352,9 +360,14 @@ class TestUpdate:
         )
 
         assert license_key.status == LicenseKeyStatus.disabled
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "customer.state_changed", grant.customer_id
+        )
         webhook_send_mock.assert_called_once()
-        assert webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_updated
+        assert (
+            webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_grant_updated
+        )
+        assert webhook_send_mock.call_args[0][3].id == grant.id
 
     async def test_update_without_status_sends_webhook(
         self,
@@ -370,7 +383,7 @@ class TestUpdate:
         webhook_send_mock = mocker.patch(
             "polar.license_key.service.webhook_service.send"
         )
-        license_key, _ = await _license_key_and_grant(
+        license_key, grant = await _license_key_and_grant(
             session, redis, save_fixture, customer, organization, product
         )
 
@@ -381,10 +394,14 @@ class TestUpdate:
         )
 
         assert license_key.limit_activations == 5
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "customer.state_changed", grant.customer_id
+        )
         webhook_send_mock.assert_called_once()
-        assert webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_updated
-        assert webhook_send_mock.call_args[0][3].id == license_key.benefit_id
+        assert (
+            webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_grant_updated
+        )
+        assert webhook_send_mock.call_args[0][3].id == grant.id
 
 
 @pytest.mark.asyncio
@@ -399,6 +416,7 @@ class TestRotate:
         product: Product,
         customer: Customer,
     ) -> None:
+        enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
         webhook_send_mock = mocker.patch(
             "polar.license_key.service.webhook_service.send"
         )
@@ -435,8 +453,15 @@ class TestRotate:
         assert properties["license_key_id"] == str(rotated.id)
 
         webhook_send_mock.assert_called_once()
-        assert webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_updated
-        assert webhook_send_mock.call_args[0][3].id == license_key.benefit_id
+        assert (
+            webhook_send_mock.call_args[0][2] == WebhookEventType.benefit_grant_updated
+        )
+        sent_grant = webhook_send_mock.call_args[0][3]
+        assert sent_grant.id == grant.id
+        assert sent_grant.previous_properties["display_key"] == old_display_key
+        enqueue_job_mock.assert_called_once_with(
+            "customer.state_changed", grant.customer_id
+        )
 
     async def test_revoked_raises_bad_request(
         self,

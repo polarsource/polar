@@ -3,7 +3,9 @@ from __future__ import annotations
 import dataclasses
 import typing
 
-from polar.base import AdditionalPropertiesMixin
+import typing_extensions
+
+from polar.base import _register_extra_items_typed_dict
 from polar.v2026_04.literals import (
     BenefitType,
     BenefitVisibility,
@@ -6210,15 +6212,13 @@ class DownloadableRead:
     file: FileDownload
 
 
-@dataclasses.dataclass(kw_only=True, slots=True)
-class EventMetadataOutput(AdditionalPropertiesMixin):
-    _cost: CostMetadataOutput | None = None
+class EventMetadataOutput(
+    typing_extensions.TypedDict,
+    extra_items=str | int | float | bool,
+):
+    _cost: typing.NotRequired[CostMetadataOutput]
 
-    _llm: LLMMetadata | None = None
-
-    additional_properties: dict[str, str | int | float | bool] = dataclasses.field(
-        default_factory=dict
-    )
+    _llm: typing.NotRequired[LLMMetadata]
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -11050,3 +11050,9 @@ SystemEvent: typing.TypeAlias = (
 )
 
 Event: typing.TypeAlias = SystemEvent | UserEvent
+
+
+_register_extra_items_typed_dict(
+    EventMetadataOutput,
+    str | int | float | bool,
+)

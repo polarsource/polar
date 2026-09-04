@@ -3,12 +3,13 @@ import typing
 
 import httpx
 import pytest
+import typing_extensions
 
 from polar import PolarDeserializationError, deserialize
 from polar.base import (
-    AdditionalPropertiesMixin,
     AsyncClientBase,
     SyncClientBase,
+    _register_extra_items_typed_dict,
     resolve_base_url,
 )
 
@@ -33,10 +34,23 @@ class Dog:
 Animal: typing.TypeAlias = Cat | Dog
 
 
-@dataclasses.dataclass(slots=True)
-class ExtensibleModel(AdditionalPropertiesMixin):
+@dataclasses.dataclass
+class ExtensibleDetails:
+    name: str
+
+
+class ExtensibleModel(
+    typing_extensions.TypedDict,
+    extra_items=str | int | float | bool,
+):
     known: int
-    additional_properties: dict[str, str] = dataclasses.field(default_factory=dict)
+    details: typing.NotRequired[ExtensibleDetails]
+
+
+_register_extra_items_typed_dict(
+    ExtensibleModel,
+    str | int | float | bool,
+)
 
 
 def test_deserialize_model() -> None:
@@ -59,12 +73,28 @@ def test_deserialize_union() -> None:
 
 
 def test_deserialize_model_with_additional_properties() -> None:
-    model = deserialize({"known": 1, "custom": "value"}, ExtensibleModel)
-
-    assert model == ExtensibleModel(
-        known=1,
-        additional_properties={"custom": "value"},
+    model = deserialize(
+        {
+            "known": 1,
+            "details": {"name": "example"},
+            "custom": "value",
+            "large_integer": 9007199254740993,
+        },
+        ExtensibleModel,
     )
+
+    assert model == {
+        "known": 1,
+        "details": ExtensibleDetails(name="example"),
+        "custom": "value",
+        "large_integer": 9007199254740993,
+    }
+    assert type(typing.cast(dict[str, object], model)["large_integer"]) is int
+
+
+def test_deserialize_model_with_invalid_additional_property() -> None:
+    with pytest.raises(PolarDeserializationError):
+        deserialize({"known": 1, "invalid": ["value"]}, ExtensibleModel)
 
 
 @pytest.mark.parametrize(

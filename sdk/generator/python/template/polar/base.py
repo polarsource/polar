@@ -1,4 +1,3 @@
-import abc
 import builtins
 import collections.abc
 import types
@@ -55,20 +54,6 @@ class PolarRateLimitError(PolarClientError):
     def __init__(self, status_code: typing.Literal[429], retry_after: int | None = None):
         super().__init__(status_code, "Rate limit exceeded")
         self.retry_after = retry_after
-
-
-class _AdditionalPropertiesModel(abc.ABC):
-    __slots__ = ()
-
-    @abc.abstractmethod
-    def _mark_additional_properties_model(self) -> None: ...
-
-
-class AdditionalPropertiesMixin(_AdditionalPropertiesModel):
-    __slots__ = ()
-
-    def _mark_additional_properties_model(self) -> None:
-        pass
 
 
 def resolve_base_url(
@@ -229,6 +214,38 @@ _retort = adaptix.Retort(
         ),
     ]
 )
+
+
+def _register_extra_items_typed_dict(
+    model: typing.Any,
+    extra_items_type: typing_extensions.TypeForm[typing.Any],
+) -> None:
+    global _retort
+
+    field_types = typing.get_type_hints(model)
+    required_keys = model.__required_keys__
+
+    def load_extra_items_typed_dict(data: object) -> dict[str, typing.Any]:
+        if not isinstance(data, collections.abc.Mapping):
+            raise adaptix.load_error.TypeLoadError(collections.abc.Mapping, data)
+
+        missing_keys = required_keys - data.keys()
+        if missing_keys:
+            raise adaptix.load_error.NoRequiredFieldsLoadError(missing_keys, data)
+
+        loaded: dict[str, typing.Any] = {}
+        for key, value in data.items():
+            if not isinstance(key, str):
+                raise adaptix.load_error.TypeLoadError(str, key)
+            if key in field_types:
+                loaded[key] = _retort.load(value, field_types[key])
+            else:
+                loaded[key] = _retort.load(value, extra_items_type)
+        return loaded
+
+    _retort = _retort.extend(
+        recipe=[adaptix.loader(model, load_extra_items_typed_dict)]
+    )
 
 
 def deserialize(

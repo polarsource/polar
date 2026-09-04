@@ -185,7 +185,7 @@ class PythonEmitter(EmitterBase):
                 {
                     **self.get_version_context(api),
                     "output_enum_imports": self._get_output_enum_imports(api),
-                    "output_uses_additional_properties": any(
+                    "output_uses_extra_items": any(
                         model.fields and model.additional_properties is not None
                         for model in api.output_models
                     ),

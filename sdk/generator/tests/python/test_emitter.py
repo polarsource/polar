@@ -93,9 +93,18 @@ def test_emit_output_model_with_fields_and_additional_properties(
     PythonEmitter(APIIR(versions=[api]), "1.0.0").emit(tmp_path)
 
     outputs = (tmp_path / "polar" / "v2026_04" / "outputs.py").read_text()
-    assert "from polar.base import AdditionalPropertiesMixin" in outputs
-    assert "class EventMetadataOutput(AdditionalPropertiesMixin):" in outputs
+    assert "import typing_extensions" in outputs
+    assert "from polar.base import _register_extra_items_typed_dict" in outputs
     assert (
-        "additional_properties: dict[str, str | int | float | bool] = "
-        "dataclasses.field(default_factory=dict)"
+        "class EventMetadataOutput(\n"
+        "    typing_extensions.TypedDict,\n"
+        "    extra_items=str | int | float | bool,\n"
+        "):"
+    ) in outputs
+    assert "_cost: typing.NotRequired[CostMetadataOutput]" in outputs
+    assert (
+        "_register_extra_items_typed_dict(\n"
+        "    EventMetadataOutput,\n"
+        "    str | int | float | bool,\n"
+        ")"
     ) in outputs

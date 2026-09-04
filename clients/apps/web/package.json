@@ -112,7 +112,7 @@
     "@types/web": "^0.0.345",
     "@typescript/native": "npm:typescript@7.0.2",
     "@vitejs/plugin-react": "catalog:",
-    "@vitest/ui": "^4.1.4",
+    "@vitest/ui": "catalog:",
     "autoprefixer": "^10.5.0",
     "jsdom": "catalog:",
     "postcss": "^8.5.10",
@@ -121,6 +121,6 @@
     "tailwindcss": "catalog:",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.1.4"
+    "vitest": "catalog:"
   }
 }

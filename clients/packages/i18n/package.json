@@ -48,7 +48,7 @@
     "tsup": "catalog:",
     "tsx": "^4.21.0",
     "typescript": "latest",
-    "vitest": "^4.1.4"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "react": "^19.2.4"

@@ -56,10 +56,10 @@
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/coverage-v8": "catalog:",
     "tsup": "catalog:",
     "typescript": "latest",
-    "vitest": "^3.2.4"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "react": "^18 || ^19",

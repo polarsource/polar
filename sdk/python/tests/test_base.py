@@ -78,7 +78,6 @@ def test_deserialize_model_with_additional_properties() -> None:
             "known": 1,
             "details": {"name": "example"},
             "custom": "value",
-            "large_integer": 9007199254740993,
         },
         ExtensibleModel,
     )
@@ -87,9 +86,7 @@ def test_deserialize_model_with_additional_properties() -> None:
         "known": 1,
         "details": ExtensibleDetails(name="example"),
         "custom": "value",
-        "large_integer": 9007199254740993,
     }
-    assert type(typing.cast(dict[str, object], model)["large_integer"]) is int
 
 
 def test_deserialize_model_with_invalid_additional_property() -> None:

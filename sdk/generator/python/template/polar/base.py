@@ -222,8 +222,16 @@ def _register_extra_items_typed_dict(
 ) -> None:
     global _retort
 
-    field_types = typing.get_type_hints(model)
-    required_keys = model.__required_keys__
+    field_types = typing.get_type_hints(model, include_extras=True)
+    required_keys = set(model.__required_keys__)
+    for key, field_type in field_types.items():
+        field_origin = typing.get_origin(field_type)
+        if field_origin is typing.Required:
+            required_keys.add(key)
+        elif field_origin is typing.NotRequired:
+            required_keys.discard(key)
+        if field_origin in (typing.Required, typing.NotRequired):
+            field_types[key] = typing.get_args(field_type)[0]
 
     def load_extra_items_typed_dict(data: object) -> dict[str, typing.Any]:
         if not isinstance(data, collections.abc.Mapping):

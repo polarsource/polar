@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import typing
 
@@ -87,6 +89,12 @@ def test_deserialize_model_with_additional_properties() -> None:
         "details": ExtensibleDetails(name="example"),
         "custom": "value",
     }
+
+
+def test_deserialize_model_without_optional_fields() -> None:
+    model = deserialize({"known": 1, "custom": "value"}, ExtensibleModel)
+
+    assert model == {"known": 1, "custom": "value"}
 
 
 def test_deserialize_model_with_invalid_additional_property() -> None:

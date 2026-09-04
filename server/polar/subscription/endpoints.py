@@ -10,7 +10,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountID
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import PaymentNotReady, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -18,7 +18,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Subscription
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import APITag
-from polar.order.service import PaymentFailed
+from polar.order.service import PaymentActionRequired, PaymentFailed
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -404,16 +404,21 @@ async def create(
     responses={
         200: {"description": "Subscription updated."},
         402: {
-            "description": "Payment required to apply the subscription update.",
-            "model": PaymentFailed.schema(),
+            "description": (
+                "The charge failed, or requires customer authentication "
+                "that can't be completed off-session."
+            ),
+            "model": PaymentFailed.schema() | PaymentActionRequired.schema(),
         },
         403: {
             "description": (
                 "Subscription is already canceled or will be at the end of the "
-                "period, or is not active."
+                "period, is not active, or the organization is not ready to renew "
+                "subscriptions."
             ),
             "model": AlreadyCanceledSubscription.schema()
-            | InactiveSubscription.schema(),
+            | InactiveSubscription.schema()
+            | PaymentNotReady.schema(),
         },
         404: SubscriptionNotFound,
         409: {

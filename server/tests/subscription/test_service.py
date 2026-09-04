@@ -28,6 +28,7 @@ from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import (
     BadRequest,
+    PaymentNotReady,
     PolarRequestValidationError,
     ResourceUnavailable,
 )
@@ -4779,12 +4780,18 @@ class TestUpdate:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        mocker: MockerFixture,
         customer: Customer,
         organization: Organization,
         product: Product,
         webhook_service_send_mock: MagicMock,
         enqueue_job_mock: MagicMock,
     ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new_callable=AsyncMock,
+        )
         subscription = await create_trialing_subscription(
             save_fixture,
             product=product,
@@ -4816,11 +4823,15 @@ class TestUpdate:
             organization,
             updated,
         )
-        enqueue_job_mock.assert_any_call(
-            "order.create_subscription_order",
-            updated.id,
+        create_subscription_update_order_mock.assert_awaited_once_with(
+            session,
+            updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
-            cutoff=ANY,
+            cutoff=updated.current_period_start,
+        )
+        assert not any(
+            call.args and call.args[0] == "order.create_subscription_order"
+            for call in enqueue_job_mock.call_args_list
         )
 
     async def test_seats_update(
@@ -5057,12 +5068,18 @@ class TestUpdate:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        mocker: MockerFixture,
         customer: Customer,
         organization: Organization,
         product: Product,
         webhook_service_send_mock: MagicMock,
         enqueue_job_mock: MagicMock,
     ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new_callable=AsyncMock,
+        )
 
         subscription = await create_trialing_subscription(
             save_fixture,
@@ -5091,11 +5108,15 @@ class TestUpdate:
         assert updated.product == new_product
         assert updated.active
 
-        enqueue_job_mock.assert_any_call(
-            "order.create_subscription_order",
-            updated.id,
+        create_subscription_update_order_mock.assert_awaited_once_with(
+            session,
+            updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
-            cutoff=ANY,
+            cutoff=updated.current_period_start,
+        )
+        assert not any(
+            call.args and call.args[0] == "order.create_subscription_order"
+            for call in enqueue_job_mock.call_args_list
         )
 
         assert_webhook_sent_once(
@@ -6678,15 +6699,90 @@ class TestUpdateDiscount:
 
 @pytest.mark.asyncio
 class TestUpdateTrial:
-    async def test_trialing_subscription_ending_now(
+    async def test_trialing_subscription_ending_now_with_renewals_disabled(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
+        )
+        original_trial_end = subscription.trial_end
+        original_period_end = subscription.current_period_end
+
+        with pytest.raises(PaymentNotReady):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end="now"
+                )
+
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.trial_end == original_trial_end
+        assert subscription.current_period_end == original_period_end
+
+    async def test_trialing_subscription_ending_now_payment_failure_preserves_trial(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            side_effect=PaymentFailed(PaymentFailedReason.card_error),
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        original_trial_end = subscription.trial_end
+        original_period_end = subscription.current_period_end
+
+        nested = await session.begin_nested()
+
+        with pytest.raises(PaymentFailed):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end="now"
+                )
+
+        await nested.rollback()
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.trial_end == original_trial_end
+        assert subscription.current_period_end == original_period_end
+
+    async def test_trialing_subscription_ending_now(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        subscription.payment_method = payment_method
+        await save_fixture(subscription)
+        trigger_payment_mock = mocker.patch.object(
+            order_service, "trigger_payment", new_callable=AsyncMock
         )
 
         assert subscription.trial_end is not None
@@ -6705,6 +6801,8 @@ class TestUpdateTrial:
             updated_subscription.trial_end == updated_subscription.current_period_start
         )
         assert updated_subscription.trial_end < original_trial_end
+        await assert_order_exists(session, subscription)
+        trigger_payment_mock.assert_awaited_once()
 
     async def test_trialing_subscription_extending(
         self,
@@ -6892,10 +6990,16 @@ class TestUpdateTrial:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        mocker: MockerFixture,
         product: Product,
         product_second: Product,
         customer: Customer,
     ) -> None:
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new_callable=AsyncMock,
+        )
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )

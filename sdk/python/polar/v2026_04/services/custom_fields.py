@@ -65,7 +65,6 @@ class CustomFieldsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -121,7 +120,6 @@ class CustomFieldsSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type CustomField.
 
@@ -140,7 +138,7 @@ class CustomFieldsSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -208,7 +206,6 @@ class CustomFieldsSync(SyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -248,7 +245,6 @@ class CustomFieldsSync(SyncServiceBase):
             id: The custom field ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -291,7 +287,6 @@ class CustomFieldsSync(SyncServiceBase):
             id: The custom field ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -386,7 +381,6 @@ class CustomFieldsSync(SyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -444,7 +438,6 @@ class CustomFieldsAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -500,7 +493,6 @@ class CustomFieldsAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type CustomField.
 
@@ -519,7 +511,7 @@ class CustomFieldsAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -588,7 +580,6 @@ class CustomFieldsAsync(AsyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -628,7 +619,6 @@ class CustomFieldsAsync(AsyncServiceBase):
             id: The custom field ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -671,7 +661,6 @@ class CustomFieldsAsync(AsyncServiceBase):
             id: The custom field ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -765,7 +754,6 @@ class CustomFieldsAsync(AsyncServiceBase):
             id: The custom field ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 

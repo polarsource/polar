@@ -53,7 +53,6 @@ class DisputesSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -109,7 +108,6 @@ class DisputesSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type Dispute.
 
@@ -128,7 +126,7 @@ class DisputesSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -151,7 +149,6 @@ class DisputesSync(SyncServiceBase):
             id: The dispute ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -197,7 +194,6 @@ class DisputesSync(SyncServiceBase):
             id: The dispute ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -256,7 +252,6 @@ class DisputesAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -312,7 +307,6 @@ class DisputesAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type Dispute.
 
@@ -331,7 +325,7 @@ class DisputesAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -355,7 +349,6 @@ class DisputesAsync(AsyncServiceBase):
             id: The dispute ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -401,7 +394,6 @@ class DisputesAsync(AsyncServiceBase):
             id: The dispute ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:

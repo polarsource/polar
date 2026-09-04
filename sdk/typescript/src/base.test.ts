@@ -112,10 +112,9 @@ describe("sendRequest", () => {
       Authorization: "Bearer polar_at_u_xxx",
     });
 
-    await client.sendRequest(
-      ["https://api.polar.sh/v1/items/", { headers }],
-      { accessToken: "polar_at_u_override" },
-    );
+    await client.sendRequest(["https://api.polar.sh/v1/items/", { headers }], {
+      accessToken: "polar_at_u_override",
+    });
 
     const requestHeaders = fetch.mock.calls[0][1]?.headers as Headers;
     expect(requestHeaders.get("Authorization")).toBe("Bearer polar_at_u_override");

@@ -216,7 +216,7 @@ class TestBuildRequest:
     @pytest.mark.parametrize("client_class", [SyncClientBase, AsyncClientBase])
     def test_advanced_client_timeout(
         self,
-        client_class: type[SyncClientBase] | type[AsyncClientBase],
+        client_class: type[SyncClientBase | AsyncClientBase],
     ) -> None:
         client = client_class(
             base_url="https://api.polar.sh",

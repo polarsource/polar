@@ -40,7 +40,6 @@ class Oauth2Sync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -73,7 +72,6 @@ class Oauth2Sync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -102,7 +100,6 @@ class Oauth2Sync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -135,7 +132,6 @@ class Oauth2Sync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -164,7 +160,6 @@ class Oauth2Sync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -203,7 +198,6 @@ class Oauth2Async(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -236,7 +230,6 @@ class Oauth2Async(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -265,7 +258,6 @@ class Oauth2Async(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -298,7 +290,6 @@ class Oauth2Async(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -327,7 +318,6 @@ class Oauth2Async(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:

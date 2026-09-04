@@ -32,7 +32,6 @@ class OrganizationsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Organization not found.
             HTTPValidationError: Validation Error
@@ -73,7 +72,6 @@ class OrganizationsAsync(AsyncServiceBase):
             slug: The organization slug.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:

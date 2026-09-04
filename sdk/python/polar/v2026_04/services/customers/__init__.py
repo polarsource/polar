@@ -75,7 +75,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -137,7 +136,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type Customer.
 
@@ -158,7 +156,7 @@ class CustomersSync(SyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -198,7 +196,6 @@ class CustomersSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -241,7 +238,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -280,7 +276,6 @@ class CustomersSync(SyncServiceBase):
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -341,7 +336,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
@@ -386,7 +380,6 @@ class CustomersSync(SyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -430,7 +423,6 @@ class CustomersSync(SyncServiceBase):
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -481,7 +473,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
@@ -525,7 +516,6 @@ class CustomersSync(SyncServiceBase):
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -578,7 +568,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
@@ -627,7 +616,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
@@ -672,7 +660,6 @@ class CustomersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -724,7 +711,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type PaymentMethod.
 
@@ -741,7 +727,7 @@ class CustomersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -768,7 +754,6 @@ class CustomersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -820,7 +805,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type PaymentMethod.
 
@@ -837,7 +821,7 @@ class CustomersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -882,7 +866,6 @@ class CustomersAsync(AsyncServiceBase):
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -946,7 +929,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type Customer.
 
@@ -967,7 +949,7 @@ class CustomersAsync(AsyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -1008,7 +990,6 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -1051,7 +1032,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -1090,7 +1070,6 @@ class CustomersAsync(AsyncServiceBase):
             id: The customer ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -1151,7 +1130,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
@@ -1196,7 +1174,6 @@ class CustomersAsync(AsyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -1240,7 +1217,6 @@ class CustomersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -1291,7 +1267,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
@@ -1335,7 +1310,6 @@ class CustomersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -1388,7 +1362,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
@@ -1437,7 +1410,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
@@ -1482,7 +1454,6 @@ class CustomersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -1534,7 +1505,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type PaymentMethod.
 
@@ -1551,7 +1521,7 @@ class CustomersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -1579,7 +1549,6 @@ class CustomersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -1631,7 +1600,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type PaymentMethod.
 
@@ -1648,7 +1616,7 @@ class CustomersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item

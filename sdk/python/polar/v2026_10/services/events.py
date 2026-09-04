@@ -81,7 +81,6 @@ class EventsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -155,7 +154,6 @@ class EventsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -217,7 +215,6 @@ class EventsSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type EventName.
 
@@ -238,7 +235,7 @@ class EventsSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -261,7 +258,6 @@ class EventsSync(SyncServiceBase):
             id: The event ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -303,7 +299,6 @@ class EventsSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -376,7 +371,6 @@ class EventsAsync(AsyncServiceBase):
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -452,7 +446,6 @@ class EventsAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -514,7 +507,6 @@ class EventsAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type EventName.
 
@@ -535,7 +527,7 @@ class EventsAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -559,7 +551,6 @@ class EventsAsync(AsyncServiceBase):
             id: The event ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -601,7 +592,6 @@ class EventsAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 

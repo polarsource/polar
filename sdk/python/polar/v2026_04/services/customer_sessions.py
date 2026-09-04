@@ -9,6 +9,7 @@ from polar.base import (
     parse_response_json,
 )
 from polar.v2026_04.errors import (
+    AmbiguousExternalCustomerID,
     HTTPValidationError,
 )
 from polar.v2026_04.inputs import (
@@ -58,10 +59,10 @@ class CustomerSessionsSync(SyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
+            AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -78,6 +79,7 @@ class CustomerSessionsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            409: AmbiguousExternalCustomerID,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSession, method_errors)
@@ -121,10 +123,10 @@ class CustomerSessionsAsync(AsyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
+            AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -141,6 +143,7 @@ class CustomerSessionsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            409: AmbiguousExternalCustomerID,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSession, method_errors)

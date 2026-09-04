@@ -1995,6 +1995,7 @@ export interface Address {
    */
   country: CountryAlpha2;
 }
+
 /**
  * AddressDict
  */
@@ -2024,6 +2025,7 @@ export interface AddressDict {
    */
   country: string;
 }
+
 /**
  * AddressInput
  */
@@ -2053,6 +2055,7 @@ export interface AddressInput {
    */
   country: CountryAlpha2Input;
 }
+
 /**
  * AlreadyActiveSubscriptionError
  */
@@ -2066,6 +2069,7 @@ export interface AlreadyActiveSubscriptionError {
    */
   detail: string;
 }
+
 /**
  * AlreadyCanceledSubscription
  */
@@ -2079,6 +2083,7 @@ export interface AlreadyCanceledSubscription {
    */
   detail: string;
 }
+
 /**
  * AmbiguousExternalCustomerID
  */
@@ -2092,6 +2097,7 @@ export interface AmbiguousExternalCustomerID {
    */
   detail: string;
 }
+
 /**
  * Schema of a custom field attached to a resource.
  */
@@ -2113,6 +2119,7 @@ export interface AttachedCustomField {
    */
   required: boolean;
 }
+
 /**
  * Schema to attach a custom field to a resource.
  */
@@ -2126,6 +2133,7 @@ export interface AttachedCustomFieldCreate {
    */
   required: boolean;
 }
+
 /**
  * AuthorizeOrganization
  */
@@ -2143,6 +2151,7 @@ export interface AuthorizeOrganization {
    */
   avatar_url: string | null;
 }
+
 /**
  * AuthorizeResponseOrganization
  */
@@ -2176,6 +2185,7 @@ export interface AuthorizeResponseOrganization {
    */
   scope_display_names?: Record<string, string>;
 }
+
 /**
  * AuthorizeResponseUser
  */
@@ -2209,6 +2219,7 @@ export interface AuthorizeResponseUser {
    */
   scope_display_names?: Record<string, string>;
 }
+
 /**
  * AuthorizeUser
  */
@@ -2226,6 +2237,7 @@ export interface AuthorizeUser {
    */
   avatar_url: string | null;
 }
+
 /**
  * An event created by Polar when an order is paid via customer balance.
  */
@@ -2287,6 +2299,7 @@ export interface BalanceCreditOrderEvent {
    */
   metadata: BalanceCreditOrderMetadata;
 }
+
 /**
  * BalanceCreditOrderMetadata
  */
@@ -2332,6 +2345,7 @@ export interface BalanceCreditOrderMetadata {
    */
   exchange_rate?: number;
 }
+
 /**
  * An event created by Polar when an order is disputed.
  */
@@ -2393,6 +2407,7 @@ export interface BalanceDisputeEvent {
    */
   metadata: BalanceDisputeMetadata;
 }
+
 /**
  * BalanceDisputeMetadata
  */
@@ -2458,6 +2473,7 @@ export interface BalanceDisputeMetadata {
    */
   exchange_rate?: number;
 }
+
 /**
  * An event created by Polar when a dispute is won and funds are reinstated.
  */
@@ -2519,6 +2535,7 @@ export interface BalanceDisputeReversalEvent {
    */
   metadata: BalanceDisputeMetadata;
 }
+
 /**
  * An event created by Polar when an order is paid.
  */
@@ -2580,6 +2597,7 @@ export interface BalanceOrderEvent {
    */
   metadata: BalanceOrderMetadata;
 }
+
 /**
  * BalanceOrderMetadata
  */
@@ -2641,6 +2659,7 @@ export interface BalanceOrderMetadata {
    */
   exchange_rate?: number;
 }
+
 /**
  * An event created by Polar when an order is refunded.
  */
@@ -2702,6 +2721,7 @@ export interface BalanceRefundEvent {
    */
   metadata: BalanceRefundMetadata;
 }
+
 /**
  * BalanceRefundMetadata
  */
@@ -2771,6 +2791,7 @@ export interface BalanceRefundMetadata {
    */
   exchange_rate?: number;
 }
+
 /**
  * An event created by Polar when a refund is reverted.
  */
@@ -2832,6 +2853,7 @@ export interface BalanceRefundReversalEvent {
    */
   metadata: BalanceRefundMetadata;
 }
+
 /**
  * A benefit of type `custom`.
 
@@ -2891,6 +2913,7 @@ export interface BenefitCustom {
    */
   visibility_configurable: boolean;
 }
+
 /**
  * Schema to create a benefit of type `custom`.
  */
@@ -2930,6 +2953,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: BenefitCustomCreateProperties;
 }
+
 /**
  * Properties for creating a benefit of type `custom`.
  */
@@ -2939,6 +2963,7 @@ export interface BenefitCustomCreateProperties {
    */
   note?: (string | null) | null;
 }
+
 /**
  * Properties for a benefit of type `custom`.
  */
@@ -2948,6 +2973,7 @@ export interface BenefitCustomProperties {
    */
   note: (string | null) | null;
 }
+
 /**
  * BenefitCustomPublic
  */
@@ -2989,6 +3015,7 @@ export interface BenefitCustomPublic {
    */
   organization_id: string;
 }
+
 /**
  * BenefitCustomSubscriber
  */
@@ -3038,6 +3065,7 @@ export interface BenefitCustomSubscriber {
    */
   properties: BenefitCustomSubscriberProperties;
 }
+
 /**
  * Properties available to subscribers for a benefit of type `custom`.
  */
@@ -3047,6 +3075,7 @@ export interface BenefitCustomSubscriberProperties {
    */
   note: (string | null) | null;
 }
+
 /**
  * BenefitCustomUpdate
  */
@@ -3082,6 +3111,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: BenefitCustomProperties | null;
 }
+
 /**
  * An event created by Polar when a benefit is cycled.
  */
@@ -3143,6 +3173,7 @@ export interface BenefitCycledEvent {
    */
   metadata: BenefitGrantMetadata;
 }
+
 /**
  * A benefit of type `discord`.
 
@@ -3202,6 +3233,7 @@ export interface BenefitDiscord {
    */
   visibility_configurable: boolean;
 }
+
 /**
  * BenefitDiscordCreate
  */
@@ -3241,6 +3273,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: BenefitDiscordCreateProperties;
 }
+
 /**
  * Properties to create a benefit of type `discord`.
  */
@@ -3258,6 +3291,7 @@ export interface BenefitDiscordCreateProperties {
    */
   kick_member: boolean;
 }
+
 /**
  * Properties for a benefit of type `discord`.
  */
@@ -3279,6 +3313,7 @@ export interface BenefitDiscordProperties {
    */
   guild_token: string;
 }
+
 /**
  * BenefitDiscordPublic
  */
@@ -3320,6 +3355,7 @@ export interface BenefitDiscordPublic {
    */
   organization_id: string;
 }
+
 /**
  * BenefitDiscordSubscriber
  */
@@ -3369,6 +3405,7 @@ export interface BenefitDiscordSubscriber {
    */
   properties: BenefitDiscordSubscriberProperties;
 }
+
 /**
  * Properties available to subscribers for a benefit of type `discord`.
  */
@@ -3378,6 +3415,7 @@ export interface BenefitDiscordSubscriberProperties {
    */
   guild_id: string;
 }
+
 /**
  * BenefitDiscordUpdate
  */
@@ -3409,6 +3447,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: BenefitDiscordCreateProperties | null;
 }
+
 /**
  * BenefitDownloadableFile
  */
@@ -3490,6 +3529,7 @@ export interface BenefitDownloadableFile {
    */
   size_readable: string;
 }
+
 /**
  * BenefitDownloadables
  */
@@ -3547,6 +3587,7 @@ export interface BenefitDownloadables {
    */
   visibility_configurable: boolean;
 }
+
 /**
  * BenefitDownloadablesCreate
  */
@@ -3586,6 +3627,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: BenefitDownloadablesCreateProperties;
 }
+
 /**
  * BenefitDownloadablesCreateProperties
  */
@@ -3599,6 +3641,7 @@ export interface BenefitDownloadablesCreateProperties {
    */
   files: string[];
 }
+
 /**
  * BenefitDownloadablesProperties
  */
@@ -3612,6 +3655,7 @@ export interface BenefitDownloadablesProperties {
    */
   files: string[];
 }
+
 /**
  * BenefitDownloadablesPublic
  */
@@ -3653,6 +3697,7 @@ export interface BenefitDownloadablesPublic {
    */
   organization_id: string;
 }
+
 /**
  * BenefitDownloadablesSubscriber
  */
@@ -3702,6 +3747,7 @@ export interface BenefitDownloadablesSubscriber {
    */
   properties: BenefitDownloadablesSubscriberProperties;
 }
+
 /**
  * BenefitDownloadablesSubscriberProperties
  */
@@ -3711,6 +3757,7 @@ export interface BenefitDownloadablesSubscriberProperties {
    */
   active_files: string[];
 }
+
 /**
  * BenefitDownloadablesUpdate
  */
@@ -3742,6 +3789,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: BenefitDownloadablesCreateProperties | null;
 }
+
 /**
  * A benefit of type `feature_flag`.
 
@@ -3802,6 +3850,7 @@ export interface BenefitFeatureFlag {
    */
   visibility_configurable: boolean;
 }
+
 /**
  * Schema to create a benefit of type `feature_flag`.
  */
@@ -3841,14 +3890,17 @@ You can store up to **50 key-value pairs**.
    */
   properties: BenefitFeatureFlagCreateProperties;
 }
+
 /**
  * Properties for creating a benefit of type `feature_flag`.
  */
 export interface BenefitFeatureFlagCreateProperties extends Record<string, never> {}
+
 /**
  * Properties for a benefit of type `feature_flag`.
  */
 export interface BenefitFeatureFlagProperties extends Record<string, never> {}
+
 /**
  * BenefitFeatureFlagPublic
  */
@@ -3890,6 +3942,7 @@ export interface BenefitFeatureFlagPublic {
    */
   organization_id: string;
 }
+
 /**
  * BenefitFeatureFlagSubscriber
  */
@@ -3939,10 +3992,12 @@ export interface BenefitFeatureFlagSubscriber {
    */
   properties: BenefitFeatureFlagSubscriberProperties;
 }
+
 /**
  * Properties available to subscribers for a benefit of type `feature_flag`.
  */
 export interface BenefitFeatureFlagSubscriberProperties extends Record<string, never> {}
+
 /**
  * BenefitFeatureFlagUpdate
  */
@@ -3978,6 +4033,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: BenefitFeatureFlagProperties | null;
 }
+
 /**
  * A benefit of type `github_repository`.
 
@@ -4037,6 +4093,7 @@ export interface BenefitGitHubRepository {
    */
   visibility_configurable: boolean;
 }
+
 /**
  * BenefitGitHubRepositoryCreate
  */
@@ -4076,6 +4133,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: BenefitGitHubRepositoryCreateProperties;
 }
+
 /**
  * Properties to create a benefit of type `github_repository`.
  */
@@ -4093,6 +4151,7 @@ export interface BenefitGitHubRepositoryCreateProperties {
    */
   permission: Permission;
 }
+
 /**
  * Properties for a benefit of type `github_repository`.
  */
@@ -4110,6 +4169,7 @@ export interface BenefitGitHubRepositoryProperties {
    */
   permission: Permission;
 }
+
 /**
  * BenefitGitHubRepositoryPublic
  */
@@ -4151,6 +4211,7 @@ export interface BenefitGitHubRepositoryPublic {
    */
   organization_id: string;
 }
+
 /**
  * BenefitGitHubRepositorySubscriber
  */
@@ -4200,6 +4261,7 @@ export interface BenefitGitHubRepositorySubscriber {
    */
   properties: BenefitGitHubRepositorySubscriberProperties;
 }
+
 /**
  * Properties available to subscribers for a benefit of type `github_repository`.
  */
@@ -4213,6 +4275,7 @@ export interface BenefitGitHubRepositorySubscriberProperties {
    */
   repository_name: string;
 }
+
 /**
  * BenefitGitHubRepositoryUpdate
  */
@@ -4244,6 +4307,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: BenefitGitHubRepositoryCreateProperties | null;
 }
+
 /**
  * BenefitGrant
  */
@@ -4324,10 +4388,12 @@ export interface BenefitGrant {
     | BenefitGrantFeatureFlagProperties
     | BenefitGrantSlackSharedChannelProperties;
 }
+
 /**
  * BenefitGrantCustomProperties
  */
 export interface BenefitGrantCustomProperties extends Record<string, never> {}
+
 /**
  * BenefitGrantCustomWebhook
  */
@@ -4405,6 +4471,7 @@ export interface BenefitGrantCustomWebhook {
    */
   previous_properties?: BenefitGrantCustomProperties | null;
 }
+
 /**
  * BenefitGrantDiscordProperties
  */
@@ -4426,6 +4493,7 @@ export interface BenefitGrantDiscordProperties {
    */
   granted_account_id?: string;
 }
+
 /**
  * BenefitGrantDiscordWebhook
  */
@@ -4503,6 +4571,7 @@ export interface BenefitGrantDiscordWebhook {
    */
   previous_properties?: BenefitGrantDiscordProperties | null;
 }
+
 /**
  * BenefitGrantDownloadablesProperties
  */
@@ -4512,6 +4581,7 @@ export interface BenefitGrantDownloadablesProperties {
    */
   files?: string[];
 }
+
 /**
  * BenefitGrantDownloadablesWebhook
  */
@@ -4589,6 +4659,7 @@ export interface BenefitGrantDownloadablesWebhook {
    */
   previous_properties?: BenefitGrantDownloadablesProperties | null;
 }
+
 /**
  * BenefitGrantError
  */
@@ -4606,10 +4677,12 @@ export interface BenefitGrantError {
    */
   timestamp: string;
 }
+
 /**
  * BenefitGrantFeatureFlagProperties
  */
 export interface BenefitGrantFeatureFlagProperties extends Record<string, never> {}
+
 /**
  * BenefitGrantFeatureFlagWebhook
  */
@@ -4687,6 +4760,7 @@ export interface BenefitGrantFeatureFlagWebhook {
    */
   previous_properties?: BenefitGrantFeatureFlagProperties | null;
 }
+
 /**
  * BenefitGrantGitHubRepositoryProperties
  */
@@ -4712,6 +4786,7 @@ export interface BenefitGrantGitHubRepositoryProperties {
    */
   granted_account_id?: string;
 }
+
 /**
  * BenefitGrantGitHubRepositoryWebhook
  */
@@ -4789,6 +4864,7 @@ export interface BenefitGrantGitHubRepositoryWebhook {
    */
   previous_properties?: BenefitGrantGitHubRepositoryProperties | null;
 }
+
 /**
  * BenefitGrantLicenseKeysProperties
  */
@@ -4806,6 +4882,7 @@ export interface BenefitGrantLicenseKeysProperties {
    */
   display_key?: string;
 }
+
 /**
  * BenefitGrantLicenseKeysWebhook
  */
@@ -4883,6 +4960,7 @@ export interface BenefitGrantLicenseKeysWebhook {
    */
   previous_properties?: BenefitGrantLicenseKeysProperties | null;
 }
+
 /**
  * BenefitGrantMetadata
  */
@@ -4904,6 +4982,7 @@ export interface BenefitGrantMetadata {
    */
   member_id?: string;
 }
+
 /**
  * BenefitGrantMeterCreditProperties
  */
@@ -4921,6 +5000,7 @@ export interface BenefitGrantMeterCreditProperties {
    */
   last_credited_at?: string;
 }
+
 /**
  * BenefitGrantMeterCreditWebhook
  */
@@ -4998,6 +5078,7 @@ export interface BenefitGrantMeterCreditWebhook {
    */
   previous_properties?: BenefitGrantMeterCreditProperties | null;
 }
+
 /**
  * BenefitGrantSlackSharedChannelProperties
  */
@@ -5027,6 +5108,7 @@ export interface BenefitGrantSlackSharedChannelProperties {
    */
   connected_team_id?: string;
 }
+
 /**
  * BenefitGrantSlackSharedChannelWebhook
  */
@@ -5104,6 +5186,7 @@ export interface BenefitGrantSlackSharedChannelWebhook {
    */
   previous_properties?: BenefitGrantSlackSharedChannelProperties | null;
 }
+
 /**
  * An event created by Polar when a benefit is granted to a customer.
  */
@@ -5165,6 +5248,7 @@ export interface BenefitGrantedEvent {
    */
   metadata: BenefitGrantMetadata;
 }
+
 /**
  * BenefitLicenseKeyActivationCreateProperties
  */
@@ -5178,6 +5262,7 @@ export interface BenefitLicenseKeyActivationCreateProperties {
    */
   enable_customer_admin: boolean;
 }
+
 /**
  * BenefitLicenseKeyActivationProperties
  */
@@ -5191,6 +5276,7 @@ export interface BenefitLicenseKeyActivationProperties {
    */
   enable_customer_admin: boolean;
 }
+
 /**
  * BenefitLicenseKeyExpirationProperties
  */
@@ -5204,6 +5290,7 @@ export interface BenefitLicenseKeyExpirationProperties {
    */
   timeframe: Timeframe;
 }
+
 /**
  * BenefitLicenseKeys
  */
@@ -5261,6 +5348,7 @@ export interface BenefitLicenseKeys {
    */
   visibility_configurable: boolean;
 }
+
 /**
  * BenefitLicenseKeysCreate
  */
@@ -5300,6 +5388,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: BenefitLicenseKeysCreateProperties;
 }
+
 /**
  * BenefitLicenseKeysCreateProperties
  */
@@ -5321,6 +5410,7 @@ export interface BenefitLicenseKeysCreateProperties {
    */
   limit_usage?: number | null;
 }
+
 /**
  * BenefitLicenseKeysProperties
  */
@@ -5342,6 +5432,7 @@ export interface BenefitLicenseKeysProperties {
    */
   limit_usage: number | null;
 }
+
 /**
  * BenefitLicenseKeysPublic
  */
@@ -5383,6 +5474,7 @@ export interface BenefitLicenseKeysPublic {
    */
   organization_id: string;
 }
+
 /**
  * BenefitLicenseKeysSubscriber
  */
@@ -5432,6 +5524,7 @@ export interface BenefitLicenseKeysSubscriber {
    */
   properties: BenefitLicenseKeysSubscriberProperties;
 }
+
 /**
  * BenefitLicenseKeysSubscriberProperties
  */
@@ -5453,6 +5546,7 @@ export interface BenefitLicenseKeysSubscriberProperties {
    */
   limit_usage: number | null;
 }
+
 /**
  * BenefitLicenseKeysUpdate
  */
@@ -5488,6 +5582,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: BenefitLicenseKeysCreateProperties | null;
 }
+
 /**
  * A benefit of type `meter_unit`.
 
@@ -5547,6 +5642,7 @@ export interface BenefitMeterCredit {
    */
   visibility_configurable: boolean;
 }
+
 /**
  * Schema to create a benefit of type `meter_unit`.
  */
@@ -5586,6 +5682,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: BenefitMeterCreditCreateProperties;
 }
+
 /**
  * Properties for creating a benefit of type `meter_unit`.
  */
@@ -5603,6 +5700,7 @@ export interface BenefitMeterCreditCreateProperties {
    */
   meter_id: string;
 }
+
 /**
  * Properties for a benefit of type `meter_unit`.
  */
@@ -5620,6 +5718,7 @@ export interface BenefitMeterCreditProperties {
    */
   meter_id: string;
 }
+
 /**
  * A benefit of type `meter_credit`.
 
@@ -5667,6 +5766,7 @@ export interface BenefitMeterCreditPublic {
    */
   properties: BenefitMeterCreditPublicProperties;
 }
+
 /**
  * Properties for a benefit of type `meter_credit`.
  */
@@ -5680,6 +5780,7 @@ export interface BenefitMeterCreditPublicProperties {
    */
   meter_id: string;
 }
+
 /**
  * BenefitMeterCreditSubscriber
  */
@@ -5729,6 +5830,7 @@ export interface BenefitMeterCreditSubscriber {
    */
   properties: BenefitMeterCreditSubscriberProperties;
 }
+
 /**
  * Properties available to subscribers for a benefit of type `meter_unit`.
  */
@@ -5746,6 +5848,7 @@ export interface BenefitMeterCreditSubscriberProperties {
    */
   meter_id: string;
 }
+
 /**
  * BenefitMeterCreditUpdate
  */
@@ -5781,6 +5884,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: BenefitMeterCreditCreateProperties | null;
 }
+
 /**
  * An event created by Polar when a benefit is revoked from a customer.
  */
@@ -5842,6 +5946,7 @@ export interface BenefitRevokedEvent {
    */
   metadata: BenefitGrantMetadata;
 }
+
 /**
  * BenefitSlackSharedChannel
  */
@@ -5899,6 +6004,7 @@ export interface BenefitSlackSharedChannel {
    */
   visibility_configurable: boolean;
 }
+
 /**
  * BenefitSlackSharedChannelCreate
  */
@@ -5938,6 +6044,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: BenefitSlackSharedChannelCreateProperties;
 }
+
 /**
  * BenefitSlackSharedChannelCreateProperties
  */
@@ -5967,6 +6074,7 @@ export interface BenefitSlackSharedChannelCreateProperties {
    */
   team_invitees?: string[];
 }
+
 /**
  * BenefitSlackSharedChannelProperties
  */
@@ -5996,6 +6104,7 @@ export interface BenefitSlackSharedChannelProperties {
    */
   team_invitees?: string[];
 }
+
 /**
  * BenefitSlackSharedChannelPublic
  */
@@ -6037,6 +6146,7 @@ export interface BenefitSlackSharedChannelPublic {
    */
   organization_id: string;
 }
+
 /**
  * BenefitSlackSharedChannelSubscriber
  */
@@ -6086,10 +6196,12 @@ export interface BenefitSlackSharedChannelSubscriber {
    */
   properties: BenefitSlackSharedChannelSubscriberProperties;
 }
+
 /**
  * BenefitSlackSharedChannelSubscriberProperties
  */
 export interface BenefitSlackSharedChannelSubscriberProperties extends Record<string, never> {}
+
 /**
  * BenefitSlackSharedChannelUpdate
  */
@@ -6121,6 +6233,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: BenefitSlackSharedChannelCreateProperties | null;
 }
+
 /**
  * BenefitSubscriberOrganization
  */
@@ -6158,6 +6271,7 @@ export interface BenefitSubscriberOrganization {
    */
   allow_customer_updates: boolean;
 }
+
 /**
  * An event created by Polar when a benefit is updated.
  */
@@ -6219,6 +6333,7 @@ export interface BenefitUpdatedEvent {
    */
   metadata: BenefitGrantMetadata;
 }
+
 /**
  * CannotCreateOrganizationError
  */
@@ -6232,6 +6347,7 @@ export interface CannotCreateOrganizationError {
    */
   detail: string;
 }
+
 /**
  * Schema of a payment with a card payment method.
  */
@@ -6301,6 +6417,7 @@ export interface CardPayment {
    */
   method_metadata: CardPaymentMetadata;
 }
+
 /**
  * Additional metadata for a card payment method.
  */
@@ -6314,6 +6431,7 @@ export interface CardPaymentMetadata {
    */
   last4: string;
 }
+
 /**
  * Checkout session data retrieved using an access token.
  */
@@ -6582,6 +6700,7 @@ export interface Checkout {
    */
   customer_metadata: Record<string, string | number | boolean>;
 }
+
 /**
  * CheckoutBillingAddressFields
  */
@@ -6611,6 +6730,7 @@ export interface CheckoutBillingAddressFields {
    */
   line2: BillingAddressFieldMode;
 }
+
 /**
  * Confirm a checkout session using a Stripe confirmation token.
  */
@@ -6684,6 +6804,7 @@ export interface CheckoutConfirmStripe {
    */
   confirmation_token_id?: string | null;
 }
+
 /**
  * Create a new checkout session from a list of products.
 Customers will be able to switch between those products.
@@ -6855,6 +6976,7 @@ You can store up to **50 key-value pairs**.
     )[]
   > | null;
 }
+
 /**
  * An event created by Polar when a checkout is created.
  */
@@ -6916,6 +7038,7 @@ export interface CheckoutCreatedEvent {
    */
   metadata: CheckoutCreatedMetadata;
 }
+
 /**
  * CheckoutCreatedMetadata
  */
@@ -6933,6 +7056,7 @@ export interface CheckoutCreatedMetadata {
    */
   product_id?: string;
 }
+
 /**
  * Schema for a fixed amount discount that is applied once or forever.
  */
@@ -6970,6 +7094,7 @@ export interface CheckoutDiscountFixedOnceForeverDuration {
    */
   code: string | null;
 }
+
 /**
  * Schema for a fixed amount discount that is applied on every invoice
 for a certain number of months.
@@ -7012,6 +7137,7 @@ export interface CheckoutDiscountFixedRepeatDuration {
    */
   code: string | null;
 }
+
 /**
  * Schema for a percentage discount that is applied once or forever.
  */
@@ -7041,6 +7167,7 @@ export interface CheckoutDiscountPercentageOnceForeverDuration {
    */
   code: string | null;
 }
+
 /**
  * Schema for a percentage discount that is applied on every invoice
 for a certain number of months.
@@ -7075,6 +7202,7 @@ export interface CheckoutDiscountPercentageRepeatDuration {
    */
   code: string | null;
 }
+
 /**
  * Checkout link data.
  */
@@ -7167,6 +7295,7 @@ export interface CheckoutLink {
    */
   url: string;
 }
+
 /**
  * Schema to create a new checkout link from a a single product.
 
@@ -7236,6 +7365,7 @@ You can store up to **50 key-value pairs**.
    */
   product_id: string;
 }
+
 /**
  * Schema to create a new checkout link from a a single product price.
 
@@ -7305,6 +7435,7 @@ You can store up to **50 key-value pairs**.
    */
   product_price_id: string;
 }
+
 /**
  * Schema to create a new checkout link.
  */
@@ -7372,6 +7503,7 @@ You can store up to **50 key-value pairs**.
    */
   products: string[];
 }
+
 /**
  * Product data for a checkout link.
  */
@@ -7453,6 +7585,7 @@ export interface CheckoutLinkProduct {
    */
   medias: ProductMediaFileRead[];
 }
+
 /**
  * Schema to update an existing checkout link.
  */
@@ -7516,6 +7649,7 @@ You can store up to **50 key-value pairs**.
    */
   return_url?: string | null;
 }
+
 /**
  * CheckoutOrganization
  */
@@ -7553,6 +7687,7 @@ export interface CheckoutOrganization {
    */
   allow_customer_updates: boolean;
 }
+
 /**
  * Product data for a checkout session.
  */
@@ -7630,6 +7765,7 @@ export interface CheckoutProduct {
    */
   medias: ProductMediaFileRead[];
 }
+
 /**
  * Checkout session data retrieved using the client secret.
  */
@@ -7878,6 +8014,7 @@ export interface CheckoutPublic {
    */
   attached_custom_fields: AttachedCustomField[] | null;
 }
+
 /**
  * Checkout session data retrieved using the client secret after confirmation.
 
@@ -8133,6 +8270,7 @@ export interface CheckoutPublicConfirmed {
    */
   customer_session_token: string | null;
 }
+
 /**
  * Update an existing checkout session using an access token.
  */
@@ -8262,6 +8400,7 @@ You can store up to **50 key-value pairs**.
    */
   embed_origin?: string | null;
 }
+
 /**
  * Update an existing checkout session using the client secret.
  */
@@ -8331,10 +8470,12 @@ export interface CheckoutUpdatePublic {
    */
   allow_trial?: false | null;
 }
+
 /**
  * Context
  */
 export interface Context extends Record<string, never> {}
+
 /**
  * CostMetadataInput
  */
@@ -8348,6 +8489,7 @@ export interface CostMetadataInput {
    */
   currency: string;
 }
+
 /**
  * CostMetadataOutput
  */
@@ -8361,6 +8503,7 @@ export interface CostMetadataOutput {
    */
   currency: string;
 }
+
 /**
  * CountAggregation
  */
@@ -8370,6 +8513,7 @@ export interface CountAggregation {
    */
   func?: "count";
 }
+
 /**
  * CursorPagination
  */
@@ -8379,6 +8523,7 @@ export interface CursorPagination {
    */
   has_next_page: boolean;
 }
+
 /**
  * Schema for a custom field of type checkbox.
  */
@@ -8420,6 +8565,7 @@ export interface CustomFieldCheckbox {
    */
   properties: CustomFieldCheckboxProperties;
 }
+
 /**
  * CustomFieldCheckboxProperties
  */
@@ -8437,6 +8583,7 @@ export interface CustomFieldCheckboxProperties {
    */
   form_placeholder?: string;
 }
+
 /**
  * Schema to create a custom field of type checkbox.
  */
@@ -8476,6 +8623,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: CustomFieldCheckboxProperties;
 }
+
 /**
  * Schema to create a custom field of type date.
  */
@@ -8515,6 +8663,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: CustomFieldDateProperties;
 }
+
 /**
  * Schema to create a custom field of type number.
  */
@@ -8554,6 +8703,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: CustomFieldNumberProperties;
 }
+
 /**
  * Schema to create a custom field of type select.
  */
@@ -8593,6 +8743,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: CustomFieldSelectProperties;
 }
+
 /**
  * Schema to create a custom field of type text.
  */
@@ -8632,6 +8783,7 @@ You can store up to **50 key-value pairs**.
    */
   properties: CustomFieldTextProperties;
 }
+
 /**
  * Schema for a custom field of type date.
  */
@@ -8673,6 +8825,7 @@ export interface CustomFieldDate {
    */
   properties: CustomFieldDateProperties;
 }
+
 /**
  * CustomFieldDateProperties
  */
@@ -8698,6 +8851,7 @@ export interface CustomFieldDateProperties {
    */
   le?: number;
 }
+
 /**
  * Schema for a custom field of type number.
  */
@@ -8739,6 +8893,7 @@ export interface CustomFieldNumber {
    */
   properties: CustomFieldNumberProperties;
 }
+
 /**
  * CustomFieldNumberProperties
  */
@@ -8764,6 +8919,7 @@ export interface CustomFieldNumberProperties {
    */
   le?: number;
 }
+
 /**
  * Schema for a custom field of type select.
  */
@@ -8805,6 +8961,7 @@ export interface CustomFieldSelect {
    */
   properties: CustomFieldSelectProperties;
 }
+
 /**
  * CustomFieldSelectOption
  */
@@ -8818,6 +8975,7 @@ export interface CustomFieldSelectOption {
    */
   label: string;
 }
+
 /**
  * CustomFieldSelectProperties
  */
@@ -8839,6 +8997,7 @@ export interface CustomFieldSelectProperties {
    */
   options: CustomFieldSelectOption[];
 }
+
 /**
  * Schema for a custom field of type text.
  */
@@ -8880,6 +9039,7 @@ export interface CustomFieldText {
    */
   properties: CustomFieldTextProperties;
 }
+
 /**
  * CustomFieldTextProperties
  */
@@ -8909,6 +9069,7 @@ export interface CustomFieldTextProperties {
    */
   max_length?: number;
 }
+
 /**
  * Schema to update a custom field of type checkbox.
  */
@@ -8944,6 +9105,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: CustomFieldCheckboxProperties | null;
 }
+
 /**
  * Schema to update a custom field of type date.
  */
@@ -8979,6 +9141,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: CustomFieldDateProperties | null;
 }
+
 /**
  * Schema to update a custom field of type number.
  */
@@ -9014,6 +9177,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: CustomFieldNumberProperties | null;
 }
+
 /**
  * Schema to update a custom field of type select.
  */
@@ -9049,6 +9213,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: CustomFieldSelectProperties | null;
 }
+
 /**
  * Schema to update a custom field of type text.
  */
@@ -9084,6 +9249,7 @@ You can store up to **50 key-value pairs**.
    */
   properties?: CustomFieldTextProperties | null;
 }
+
 /**
  * CustomerBenefitGrantCustom
  */
@@ -9153,6 +9319,7 @@ export interface CustomerBenefitGrantCustom {
    */
   properties: BenefitGrantCustomProperties;
 }
+
 /**
  * CustomerBenefitGrantCustomUpdate
  */
@@ -9162,6 +9329,7 @@ export interface CustomerBenefitGrantCustomUpdate {
    */
   benefit_type: "custom";
 }
+
 /**
  * CustomerBenefitGrantDiscord
  */
@@ -9231,6 +9399,7 @@ export interface CustomerBenefitGrantDiscord {
    */
   properties: BenefitGrantDiscordProperties;
 }
+
 /**
  * CustomerBenefitGrantDiscordPropertiesUpdate
  */
@@ -9240,6 +9409,7 @@ export interface CustomerBenefitGrantDiscordPropertiesUpdate {
    */
   account_id: string | null;
 }
+
 /**
  * CustomerBenefitGrantDiscordUpdate
  */
@@ -9253,6 +9423,7 @@ export interface CustomerBenefitGrantDiscordUpdate {
    */
   properties: CustomerBenefitGrantDiscordPropertiesUpdate;
 }
+
 /**
  * CustomerBenefitGrantDownloadables
  */
@@ -9322,6 +9493,7 @@ export interface CustomerBenefitGrantDownloadables {
    */
   properties: BenefitGrantDownloadablesProperties;
 }
+
 /**
  * CustomerBenefitGrantDownloadablesUpdate
  */
@@ -9331,6 +9503,7 @@ export interface CustomerBenefitGrantDownloadablesUpdate {
    */
   benefit_type: "downloadables";
 }
+
 /**
  * CustomerBenefitGrantFeatureFlag
  */
@@ -9400,6 +9573,7 @@ export interface CustomerBenefitGrantFeatureFlag {
    */
   properties: BenefitGrantFeatureFlagProperties;
 }
+
 /**
  * CustomerBenefitGrantFeatureFlagUpdate
  */
@@ -9409,6 +9583,7 @@ export interface CustomerBenefitGrantFeatureFlagUpdate {
    */
   benefit_type: "feature_flag";
 }
+
 /**
  * CustomerBenefitGrantGitHubRepository
  */
@@ -9478,6 +9653,7 @@ export interface CustomerBenefitGrantGitHubRepository {
    */
   properties: BenefitGrantGitHubRepositoryProperties;
 }
+
 /**
  * CustomerBenefitGrantGitHubRepositoryPropertiesUpdate
  */
@@ -9487,6 +9663,7 @@ export interface CustomerBenefitGrantGitHubRepositoryPropertiesUpdate {
    */
   account_id: string | null;
 }
+
 /**
  * CustomerBenefitGrantGitHubRepositoryUpdate
  */
@@ -9500,6 +9677,7 @@ export interface CustomerBenefitGrantGitHubRepositoryUpdate {
    */
   properties: CustomerBenefitGrantGitHubRepositoryPropertiesUpdate;
 }
+
 /**
  * CustomerBenefitGrantLicenseKeys
  */
@@ -9569,6 +9747,7 @@ export interface CustomerBenefitGrantLicenseKeys {
    */
   properties: BenefitGrantLicenseKeysProperties;
 }
+
 /**
  * CustomerBenefitGrantLicenseKeysUpdate
  */
@@ -9578,6 +9757,7 @@ export interface CustomerBenefitGrantLicenseKeysUpdate {
    */
   benefit_type: "license_keys";
 }
+
 /**
  * CustomerBenefitGrantMeterCredit
  */
@@ -9647,6 +9827,7 @@ export interface CustomerBenefitGrantMeterCredit {
    */
   properties: BenefitGrantMeterCreditProperties;
 }
+
 /**
  * CustomerBenefitGrantMeterCreditUpdate
  */
@@ -9656,6 +9837,7 @@ export interface CustomerBenefitGrantMeterCreditUpdate {
    */
   benefit_type: "meter_credit";
 }
+
 /**
  * CustomerBenefitGrantSlackSharedChannel
  */
@@ -9725,6 +9907,7 @@ export interface CustomerBenefitGrantSlackSharedChannel {
    */
   properties: BenefitGrantSlackSharedChannelProperties;
 }
+
 /**
  * CustomerBenefitGrantSlackSharedChannelPropertiesUpdate
  */
@@ -9734,6 +9917,7 @@ export interface CustomerBenefitGrantSlackSharedChannelPropertiesUpdate {
    */
   invited_email: string;
 }
+
 /**
  * CustomerBenefitGrantSlackSharedChannelUpdate
  */
@@ -9747,6 +9931,7 @@ export interface CustomerBenefitGrantSlackSharedChannelUpdate {
    */
   properties: CustomerBenefitGrantSlackSharedChannelPropertiesUpdate;
 }
+
 /**
  * An event created by Polar when a customer is created.
  */
@@ -9808,6 +9993,7 @@ export interface CustomerCreatedEvent {
    */
   metadata: CustomerCreatedMetadata;
 }
+
 /**
  * CustomerCreatedMetadata
  */
@@ -9829,6 +10015,7 @@ export interface CustomerCreatedMetadata {
    */
   customer_external_id: string | null;
 }
+
 /**
  * CustomerCustomerMeter
  */
@@ -9870,6 +10057,7 @@ export interface CustomerCustomerMeter {
    */
   meter: CustomerCustomerMeterMeter;
 }
+
 /**
  * CustomerCustomerMeterMeter
  */
@@ -9891,6 +10079,7 @@ export interface CustomerCustomerMeterMeter {
    */
   name: string;
 }
+
 /**
  * CustomerCustomerSession
  */
@@ -9904,6 +10093,7 @@ export interface CustomerCustomerSession {
    */
   return_url: string | null;
 }
+
 /**
  * An event created by Polar when a customer is deleted.
  */
@@ -9965,6 +10155,7 @@ export interface CustomerDeletedEvent {
    */
   metadata: CustomerDeletedMetadata;
 }
+
 /**
  * CustomerDeletedMetadata
  */
@@ -9986,6 +10177,7 @@ export interface CustomerDeletedMetadata {
    */
   customer_external_id: string | null;
 }
+
 /**
  * CustomerEmailUpdateRequest
  */
@@ -9995,6 +10187,7 @@ export interface CustomerEmailUpdateRequest {
    */
   email: string;
 }
+
 /**
  * CustomerEmailUpdateVerifyRequest
  */
@@ -10004,6 +10197,7 @@ export interface CustomerEmailUpdateVerifyRequest {
    */
   token: string;
 }
+
 /**
  * CustomerEmailUpdateVerifyResponse
  */
@@ -10013,6 +10207,7 @@ export interface CustomerEmailUpdateVerifyResponse {
    */
   token: string;
 }
+
 /**
  * A customer in an organization.
  */
@@ -10090,6 +10285,7 @@ export interface CustomerIndividual {
    */
   avatar_url: string | null;
 }
+
 /**
  * CustomerIndividualCreate
  */
@@ -10145,6 +10341,7 @@ You can store up to **50 key-value pairs**.
    */
   email: string;
 }
+
 /**
  * An active customer meter, with current consumed and credited units.
  */
@@ -10190,6 +10387,7 @@ export interface CustomerMeter {
    */
   meter: Meter;
 }
+
 /**
  * CustomerNotReady
  */
@@ -10203,6 +10401,7 @@ export interface CustomerNotReady {
    */
   detail: string;
 }
+
 /**
  * CustomerOrder
  */
@@ -10348,6 +10547,7 @@ export interface CustomerOrder {
    */
   refundable_tax_amount: number;
 }
+
 /**
  * Schema to confirm a retry payment using either a saved payment method or a new confirmation token.
  */
@@ -10365,6 +10565,7 @@ export interface CustomerOrderConfirmPayment {
    */
   payment_processor?: PaymentProcessor;
 }
+
 /**
  * Order's invoice data.
  */
@@ -10374,6 +10575,7 @@ export interface CustomerOrderInvoice {
    */
   url: string;
 }
+
 /**
  * Response after confirming a retry payment.
  */
@@ -10391,6 +10593,7 @@ export interface CustomerOrderPaymentConfirmation {
    */
   error?: string | null;
 }
+
 /**
  * Payment status for an order.
  */
@@ -10404,6 +10607,7 @@ export interface CustomerOrderPaymentStatus {
    */
   error?: string | null;
 }
+
 /**
  * CustomerOrderProduct
  */
@@ -10485,6 +10689,7 @@ export interface CustomerOrderProduct {
    */
   organization: CustomerOrganization;
 }
+
 /**
  * Order's receipt data.
  */
@@ -10494,6 +10699,7 @@ export interface CustomerOrderReceipt {
    */
   url: string;
 }
+
 /**
  * CustomerOrderSubscription
  */
@@ -10623,6 +10829,7 @@ export interface CustomerOrderSubscription {
    */
   customer_cancellation_comment: string | null;
 }
+
 /**
  * Schema to update an order.
  */
@@ -10636,6 +10843,7 @@ export interface CustomerOrderUpdate {
    */
   billing_address?: AddressInput | null;
 }
+
 /**
  * CustomerOrganization
  */
@@ -10681,6 +10889,7 @@ export interface CustomerOrganization {
    */
   organization_features?: CustomerOrganizationFeatureSettings;
 }
+
 /**
  * Schema of an organization and related data for customer portal.
  */
@@ -10694,6 +10903,7 @@ export interface CustomerOrganizationData {
    */
   products: CustomerProduct[];
 }
+
 /**
  * Feature flags exposed to the customer portal.
  */
@@ -10707,6 +10917,7 @@ export interface CustomerOrganizationFeatureSettings {
    */
   checkout_localization_enabled?: boolean;
 }
+
 /**
  * CustomerPaymentMethodCard
  */
@@ -10744,6 +10955,7 @@ export interface CustomerPaymentMethodCard {
    */
   is_default: boolean;
 }
+
 /**
  * CustomerPaymentMethodConfirm
  */
@@ -10757,6 +10969,7 @@ export interface CustomerPaymentMethodConfirm {
    */
   set_default: boolean;
 }
+
 /**
  * CustomerPaymentMethodCreate
  */
@@ -10774,6 +10987,7 @@ export interface CustomerPaymentMethodCreate {
    */
   return_url: string;
 }
+
 /**
  * CustomerPaymentMethodCreateRequiresActionResponse
  */
@@ -10787,6 +11001,7 @@ export interface CustomerPaymentMethodCreateRequiresActionResponse {
    */
   client_secret: string;
 }
+
 /**
  * CustomerPaymentMethodCreateSucceededResponse
  */
@@ -10800,6 +11015,7 @@ export interface CustomerPaymentMethodCreateSucceededResponse {
    */
   payment_method: CustomerPaymentMethod;
 }
+
 /**
  * CustomerPaymentMethodGeneric
  */
@@ -10833,6 +11049,7 @@ export interface CustomerPaymentMethodGeneric {
    */
   is_default: boolean;
 }
+
 /**
  * CustomerPaymentMethodKrCard
  */
@@ -10870,6 +11087,7 @@ export interface CustomerPaymentMethodKrCard {
    */
   is_default: boolean;
 }
+
 /**
  * CustomerPortalCustomer
  */
@@ -10927,6 +11145,7 @@ export interface CustomerPortalCustomer {
    */
   locale?: string | null;
 }
+
 /**
  * CustomerPortalCustomerSettings
  */
@@ -10936,6 +11155,7 @@ export interface CustomerPortalCustomerSettings {
    */
   allow_email_change?: boolean;
 }
+
 /**
  * CustomerPortalCustomerUpdate
  */
@@ -10957,6 +11177,7 @@ export interface CustomerPortalCustomerUpdate {
    */
   default_payment_method_id?: string | null;
 }
+
 /**
  * A member of the customer's team as seen in the customer portal.
  */
@@ -10986,6 +11207,7 @@ export interface CustomerPortalMember {
    */
   role: MemberRole;
 }
+
 /**
  * Schema for adding a new member to the customer's team.
  */
@@ -11003,6 +11225,7 @@ export interface CustomerPortalMemberCreate {
    */
   role?: MemberRole;
 }
+
 /**
  * Schema for updating a member in the customer portal.
  */
@@ -11016,6 +11239,7 @@ export interface CustomerPortalMemberUpdate {
    */
   role?: MemberRole | null;
 }
+
 /**
  * CustomerPortalOAuthAccount
  */
@@ -11029,6 +11253,7 @@ export interface CustomerPortalOAuthAccount {
    */
   account_username: string | null;
 }
+
 /**
  * CustomerPortalSubscriptionSettings
  */
@@ -11050,6 +11275,7 @@ export interface CustomerPortalSubscriptionSettings {
    */
   pause?: boolean;
 }
+
 /**
  * CustomerPortalUsageSettings
  */
@@ -11059,6 +11285,7 @@ export interface CustomerPortalUsageSettings {
    */
   show: boolean;
 }
+
 /**
  * Schema of a product for customer portal.
  */
@@ -11136,6 +11363,7 @@ export interface CustomerProduct {
    */
   medias: ProductMediaFileRead[];
 }
+
 /**
  * CustomerSeat
  */
@@ -11201,6 +11429,7 @@ export interface CustomerSeat {
    */
   seat_metadata: Record<string, unknown> | null;
 }
+
 /**
  * CustomerSeatAssign
  */
@@ -11246,6 +11475,7 @@ export interface CustomerSeatAssign {
    */
   checkout_id?: string | null;
 }
+
 /**
  * Response after successfully claiming a seat.
  */
@@ -11259,6 +11489,7 @@ export interface CustomerSeatClaimResponse {
    */
   customer_session_token: string;
 }
+
 /**
  * A customer session that can be used to authenticate as a customer.
  */
@@ -11300,6 +11531,7 @@ export interface CustomerSession {
    */
   customer: Customer;
 }
+
 /**
  * Schema for creating a customer session using an external customer ID.
  */
@@ -11321,6 +11553,7 @@ export interface CustomerSessionCustomerExternalIDCreate {
    */
   external_customer_id: string;
 }
+
 /**
  * Schema for creating a customer session using a customer ID.
  */
@@ -11342,6 +11575,7 @@ export interface CustomerSessionCustomerIDCreate {
    */
   customer_id: string;
 }
+
 /**
  * An active benefit grant for a customer.
  */
@@ -11386,6 +11620,7 @@ export interface CustomerStateBenefitGrant {
     | BenefitGrantFeatureFlagProperties
     | BenefitGrantSlackSharedChannelProperties;
 }
+
 /**
  * A customer along with additional state information:
 
@@ -11479,6 +11714,7 @@ export interface CustomerStateIndividual {
    */
   active_meters: CustomerStateMeter[];
 }
+
 /**
  * An active meter for a customer, with latest consumed and credited units.
  */
@@ -11512,6 +11748,7 @@ export interface CustomerStateMeter {
    */
   balance: number;
 }
+
 /**
  * An active customer subscription.
  */
@@ -11593,10 +11830,19 @@ export interface CustomerStateSubscription {
    */
   discount_id: string | null;
   /**
+   * The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+   */
+  seats: number | null;
+  /**
+   * The number of units for unit-based subscriptions. None for non-unit subscriptions.
+   */
+  units: number | null;
+  /**
    * List of meters associated with the subscription.
    */
   meters: CustomerStateSubscriptionMeter[];
 }
+
 /**
  * Current consumption and spending for a subscription meter.
  */
@@ -11630,6 +11876,7 @@ export interface CustomerStateSubscriptionMeter {
    */
   meter_id: string;
 }
+
 /**
  * A team customer along with additional state information:
 
@@ -11723,6 +11970,7 @@ export interface CustomerStateTeam {
    */
   active_meters: CustomerStateMeter[];
 }
+
 /**
  * CustomerSubscription
  */
@@ -11868,6 +12116,7 @@ export interface CustomerSubscription {
    */
   pending_update: PendingSubscriptionUpdate | null;
 }
+
 /**
  * CustomerSubscriptionCancel
  */
@@ -11896,6 +12145,7 @@ Or uncancel a subscription currently set to be revoked at period end.
    */
   cancellation_comment?: string | null;
 }
+
 /**
  * CustomerSubscriptionMeter
  */
@@ -11933,6 +12183,7 @@ export interface CustomerSubscriptionMeter {
    */
   meter: CustomerSubscriptionMeterMeter;
 }
+
 /**
  * CustomerSubscriptionMeterMeter
  */
@@ -11954,6 +12205,7 @@ export interface CustomerSubscriptionMeterMeter {
    */
   name: string;
 }
+
 /**
  * CustomerSubscriptionPause
  */
@@ -11970,6 +12222,7 @@ period end.
    */
   resumes_at?: string | null;
 }
+
 /**
  * CustomerSubscriptionProduct
  */
@@ -12051,6 +12304,7 @@ export interface CustomerSubscriptionProduct {
    */
   organization: CustomerOrganization;
 }
+
 /**
  * CustomerSubscriptionResume
  */
@@ -12060,6 +12314,7 @@ export interface CustomerSubscriptionResume {
    */
   resume: true;
 }
+
 /**
  * CustomerSubscriptionUpdateClear
  */
@@ -12069,6 +12324,7 @@ export interface CustomerSubscriptionUpdateClear {
    */
   pending_update: null;
 }
+
 /**
  * CustomerSubscriptionUpdateProduct
  */
@@ -12078,6 +12334,7 @@ export interface CustomerSubscriptionUpdateProduct {
    */
   product_id: string;
 }
+
 /**
  * CustomerSubscriptionUpdateSeats
  */
@@ -12087,6 +12344,7 @@ export interface CustomerSubscriptionUpdateSeats {
    */
   seats: number;
 }
+
 /**
  * CustomerSubscriptionUpdateUnits
  */
@@ -12096,6 +12354,7 @@ export interface CustomerSubscriptionUpdateUnits {
    */
   units: number;
 }
+
 /**
  * A team customer in an organization.
  */
@@ -12173,6 +12432,7 @@ export interface CustomerTeam {
    */
   avatar_url: string | null;
 }
+
 /**
  * CustomerTeamCreate
  */
@@ -12228,6 +12488,7 @@ You can store up to **50 key-value pairs**.
    */
   email?: string | null;
 }
+
 /**
  * CustomerUpdate
  */
@@ -12275,6 +12536,7 @@ You can store up to **50 key-value pairs**.
    */
   type?: CustomerType | null;
 }
+
 /**
  * CustomerUpdateExternalID
  */
@@ -12314,6 +12576,7 @@ You can store up to **50 key-value pairs**.
    */
   locale?: string | null;
 }
+
 /**
  * An event created by Polar when a customer is updated.
  */
@@ -12375,6 +12638,7 @@ export interface CustomerUpdatedEvent {
    */
   metadata: CustomerUpdatedMetadata;
 }
+
 /**
  * CustomerUpdatedFields
  */
@@ -12404,6 +12668,7 @@ export interface CustomerUpdatedFields {
    */
   metadata?: Record<string, string | number | boolean> | null;
 }
+
 /**
  * CustomerUpdatedMetadata
  */
@@ -12429,6 +12694,7 @@ export interface CustomerUpdatedMetadata {
    */
   updated_fields: CustomerUpdatedFields;
 }
+
 /**
  * A wallet represents your balance with an organization.
 
@@ -12460,6 +12726,7 @@ export interface CustomerWallet {
    */
   currency: string;
 }
+
 /**
  * Schema to create a fixed amount discount.
  */
@@ -12540,6 +12807,7 @@ For example, to apply the discount for 2 years, set this to 24.
    */
   amounts?: Record<string, number> | null;
 }
+
 /**
  * Schema for a fixed amount discount that is applied once or forever.
  */
@@ -12617,6 +12885,7 @@ export interface DiscountFixedOnceForeverDuration {
    */
   products: DiscountProduct[];
 }
+
 /**
  * DiscountFixedOnceForeverDurationBase
  */
@@ -12690,6 +12959,7 @@ export interface DiscountFixedOnceForeverDurationBase {
    */
   organization_id: string;
 }
+
 /**
  * Schema for a fixed amount discount that is applied on every invoice
 for a certain number of months.
@@ -12772,6 +13042,7 @@ export interface DiscountFixedRepeatDuration {
    */
   products: DiscountProduct[];
 }
+
 /**
  * DiscountFixedRepeatDurationBase
  */
@@ -12849,6 +13120,7 @@ export interface DiscountFixedRepeatDurationBase {
    */
   organization_id: string;
 }
+
 /**
  * Schema to create a percentage discount.
  */
@@ -12924,6 +13196,7 @@ For example, to create a 25.5% discount, set this to 2550.
    */
   basis_points: number;
 }
+
 /**
  * Schema for a percentage discount that is applied once or forever.
  */
@@ -12993,6 +13266,7 @@ export interface DiscountPercentageOnceForeverDuration {
    */
   products: DiscountProduct[];
 }
+
 /**
  * DiscountPercentageOnceForeverDurationBase
  */
@@ -13058,6 +13332,7 @@ export interface DiscountPercentageOnceForeverDurationBase {
    */
   organization_id: string;
 }
+
 /**
  * Schema for a percentage discount that is applied on every invoice
 for a certain number of months.
@@ -13132,6 +13407,7 @@ export interface DiscountPercentageRepeatDuration {
    */
   products: DiscountProduct[];
 }
+
 /**
  * DiscountPercentageRepeatDurationBase
  */
@@ -13201,6 +13477,7 @@ export interface DiscountPercentageRepeatDurationBase {
    */
   organization_id: string;
 }
+
 /**
  * A product that a discount can be applied to.
  */
@@ -13270,6 +13547,7 @@ export interface DiscountProduct {
    */
   organization_id: string;
 }
+
 /**
  * DiscountRedemptionLimitReached
  */
@@ -13283,6 +13561,7 @@ export interface DiscountRedemptionLimitReached {
    */
   detail: string;
 }
+
 /**
  * Schema to update a discount.
  */
@@ -13358,6 +13637,7 @@ You can store up to **50 key-value pairs**.
    */
   products?: string[] | null;
 }
+
 /**
  * Schema representing a dispute.
 
@@ -13429,6 +13709,7 @@ export interface Dispute {
    */
   case_id: string | null;
 }
+
 /**
  * DisputeAutoAcceptNotEnabled
  */
@@ -13442,6 +13723,7 @@ export interface DisputeAutoAcceptNotEnabled {
    */
   detail: string;
 }
+
 /**
  * DisputeCustomer
  */
@@ -13519,6 +13801,7 @@ export interface DisputeCustomer {
    */
   avatar_url: string | null;
 }
+
 /**
  * DisputeNotOpenError
  */
@@ -13532,6 +13815,7 @@ export interface DisputeNotOpenError {
    */
   detail: string;
 }
+
 /**
  * Schema to create a file to be associated with the downloadables benefit.
  */
@@ -13569,6 +13853,7 @@ export interface DownloadableFileCreate {
    */
   version?: string | null;
 }
+
 /**
  * File to be associated with the downloadables benefit.
  */
@@ -13642,6 +13927,7 @@ export interface DownloadableFileRead {
    */
   size_readable: string;
 }
+
 /**
  * DownloadableRead
  */
@@ -13659,6 +13945,7 @@ export interface DownloadableRead {
    */
   file: FileDownload;
 }
+
 /**
  * EventCreateCustomer
  */
@@ -13696,6 +13983,7 @@ export interface EventCreateCustomer {
    */
   member_id?: string | null;
 }
+
 /**
  * EventCreateExternalCustomer
  */
@@ -13733,6 +14021,7 @@ export interface EventCreateExternalCustomer {
    */
   external_member_id?: string | null;
 }
+
 /**
  * EventMetadataInput
  */
@@ -13747,6 +14036,7 @@ export interface EventMetadataInput {
   _llm?: LLMMetadata;
   [key: string]: string | number | boolean | CostMetadataInput | LLMMetadata | undefined;
 }
+
 /**
  * EventMetadataOutput
  */
@@ -13761,6 +14051,7 @@ export interface EventMetadataOutput {
   _llm?: LLMMetadata;
   [key: string]: string | number | boolean | CostMetadataOutput | LLMMetadata | undefined;
 }
+
 /**
  * EventName
  */
@@ -13790,6 +14081,7 @@ export interface EventName {
    */
   last_seen: string;
 }
+
 /**
  * EventType
  */
@@ -13823,6 +14115,7 @@ export interface EventType {
    */
   organization_id: string;
 }
+
 /**
  * EventTypeUpdate
  */
@@ -13836,6 +14129,7 @@ export interface EventTypeUpdate {
    */
   label_property_selector?: string | null;
 }
+
 /**
  * EventTypeWithStats
  */
@@ -13885,6 +14179,7 @@ export interface EventTypeWithStats {
    */
   last_seen: string;
 }
+
 /**
  * EventsIngest
  */
@@ -13894,6 +14189,7 @@ export interface EventsIngest {
    */
   events: (EventCreateCustomer | EventCreateExternalCustomer)[];
 }
+
 /**
  * EventsIngestResponse
  */
@@ -13907,6 +14203,7 @@ export interface EventsIngestResponse {
    */
   duplicates?: number;
 }
+
 /**
  * A price that already exists for this product.
 
@@ -13918,6 +14215,7 @@ export interface ExistingProductPrice {
    */
   id: string;
 }
+
 /**
  * ExpiredCheckoutError
  */
@@ -13931,6 +14229,7 @@ export interface ExpiredCheckoutError {
    */
   detail: string;
 }
+
 /**
  * FileDownload
  */
@@ -14000,6 +14299,7 @@ export interface FileDownload {
    */
   size_readable: string;
 }
+
 /**
  * FilePatch
  */
@@ -14013,6 +14313,7 @@ export interface FilePatch {
    */
   version?: string | null;
 }
+
 /**
  * FileUpload
  */
@@ -14082,6 +14383,7 @@ export interface FileUpload {
    */
   size_readable: string;
 }
+
 /**
  * FileUploadCompleted
  */
@@ -14099,6 +14401,7 @@ export interface FileUploadCompleted {
    */
   parts: S3FileUploadCompletedPart[];
 }
+
 /**
  * Filter
  */
@@ -14112,6 +14415,7 @@ export interface Filter {
    */
   clauses: (FilterClause | Filter)[];
 }
+
 /**
  * FilterClause
  */
@@ -14129,6 +14433,7 @@ export interface FilterClause {
    */
   value: string | number | boolean;
 }
+
 /**
  * Schema of a payment with a generic payment method.
  */
@@ -14194,6 +14499,7 @@ export interface GenericPayment {
    */
   processor_metadata?: Record<string, unknown>;
 }
+
 /**
  * HTTPValidationError
  */
@@ -14203,6 +14509,7 @@ export interface HTTPValidationError {
    */
   detail?: ValidationError[];
 }
+
 /**
  * InactiveSubscription
  */
@@ -14216,6 +14523,7 @@ export interface InactiveSubscription {
    */
   detail: string;
 }
+
 /**
  * IntrospectTokenResponse
  */
@@ -14265,6 +14573,7 @@ export interface IntrospectTokenResponse {
    */
   iat: number;
 }
+
 /**
  * Schema of a payment with a South Korean card payment method.
  */
@@ -14334,6 +14643,7 @@ export interface KrCardPayment {
    */
   method_metadata: KrCardPaymentMetadata;
 }
+
 /**
  * Additional metadata for a South Korean card payment method.
  */
@@ -14347,6 +14657,7 @@ export interface KrCardPaymentMetadata {
    */
   last4: string | null;
 }
+
 /**
  * LLMMetadata
  */
@@ -14384,6 +14695,7 @@ export interface LLMMetadata {
    */
   total_tokens: number;
 }
+
 /**
  * A pay-what-you-want recurring price for a product, i.e. a subscription.
 
@@ -14451,6 +14763,7 @@ export interface LegacyRecurringProductPriceCustom {
    */
   legacy: true;
 }
+
 /**
  * A recurring price for a product, i.e. a subscription.
 
@@ -14510,6 +14823,7 @@ export interface LegacyRecurringProductPriceFixed {
    */
   legacy: true;
 }
+
 /**
  * LicenseKeyActivate
  */
@@ -14555,6 +14869,7 @@ You can store up to **50 key-value pairs**.
    */
   meta?: Record<string, string | number | boolean>;
 }
+
 /**
  * LicenseKeyActivationBase
  */
@@ -14584,6 +14899,7 @@ export interface LicenseKeyActivationBase {
    */
   modified_at: string | null;
 }
+
 /**
  * LicenseKeyActivationRead
  */
@@ -14617,6 +14933,7 @@ export interface LicenseKeyActivationRead {
    */
   license_key: LicenseKeyRead;
 }
+
 /**
  * LicenseKeyCustomer
  */
@@ -14694,6 +15011,7 @@ export interface LicenseKeyCustomer {
    */
   avatar_url: string | null;
 }
+
 /**
  * LicenseKeyDeactivate
  */
@@ -14711,6 +15029,7 @@ export interface LicenseKeyDeactivate {
    */
   activation_id: string;
 }
+
 /**
  * LicenseKeyRead
  */
@@ -14780,6 +15099,7 @@ export interface LicenseKeyRead {
    */
   expires_at: string | null;
 }
+
 /**
  * LicenseKeyUpdate
  */
@@ -14805,6 +15125,7 @@ export interface LicenseKeyUpdate {
    */
   expires_at?: string | null;
 }
+
 /**
  * LicenseKeyValidate
  */
@@ -14848,6 +15169,7 @@ You can store up to **50 key-value pairs**.
    */
   conditions?: Record<string, string | number | boolean>;
 }
+
 /**
  * LicenseKeyWithActivations
  */
@@ -14921,6 +15243,7 @@ export interface LicenseKeyWithActivations {
    */
   activations: LicenseKeyActivationBase[];
 }
+
 /**
  * ListResourceBenefit
  */
@@ -14934,6 +15257,7 @@ export interface ListResourceBenefit {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceBenefitDownloadableFile
  */
@@ -14947,6 +15271,7 @@ export interface ListResourceBenefitDownloadableFile {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceBenefitGrant
  */
@@ -14960,6 +15285,7 @@ export interface ListResourceBenefitGrant {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCheckout
  */
@@ -14973,6 +15299,7 @@ export interface ListResourceCheckout {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCheckoutLink
  */
@@ -14986,6 +15313,7 @@ export interface ListResourceCheckoutLink {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomField
  */
@@ -14999,6 +15327,7 @@ export interface ListResourceCustomField {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomer
  */
@@ -15012,6 +15341,7 @@ export interface ListResourceCustomer {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomerBenefitGrant
  */
@@ -15025,6 +15355,7 @@ export interface ListResourceCustomerBenefitGrant {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomerCustomerMeter
  */
@@ -15038,6 +15369,7 @@ export interface ListResourceCustomerCustomerMeter {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomerMeter
  */
@@ -15051,6 +15383,7 @@ export interface ListResourceCustomerMeter {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomerOrder
  */
@@ -15064,6 +15397,7 @@ export interface ListResourceCustomerOrder {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomerPaymentMethod
  */
@@ -15077,6 +15411,7 @@ export interface ListResourceCustomerPaymentMethod {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomerPortalMember
  */
@@ -15090,6 +15425,7 @@ export interface ListResourceCustomerPortalMember {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomerSubscription
  */
@@ -15103,6 +15439,7 @@ export interface ListResourceCustomerSubscription {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceCustomerWallet
  */
@@ -15116,6 +15453,7 @@ export interface ListResourceCustomerWallet {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceDiscount
  */
@@ -15129,6 +15467,7 @@ export interface ListResourceDiscount {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceDispute
  */
@@ -15142,6 +15481,7 @@ export interface ListResourceDispute {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceDownloadableRead
  */
@@ -15155,6 +15495,7 @@ export interface ListResourceDownloadableRead {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceEvent
  */
@@ -15168,6 +15509,7 @@ export interface ListResourceEvent {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceEventName
  */
@@ -15181,6 +15523,7 @@ export interface ListResourceEventName {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceEventTypeWithStats
  */
@@ -15194,6 +15537,7 @@ export interface ListResourceEventTypeWithStats {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceFileRead
  */
@@ -15207,6 +15551,7 @@ export interface ListResourceFileRead {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceLicenseKeyRead
  */
@@ -15220,6 +15565,7 @@ export interface ListResourceLicenseKeyRead {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceMember
  */
@@ -15233,6 +15579,7 @@ export interface ListResourceMember {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceMeter
  */
@@ -15246,6 +15593,7 @@ export interface ListResourceMeter {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceOrder
  */
@@ -15259,6 +15607,7 @@ export interface ListResourceOrder {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceOrganization
  */
@@ -15272,6 +15621,7 @@ export interface ListResourceOrganization {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourcePayment
  */
@@ -15285,6 +15635,7 @@ export interface ListResourcePayment {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourcePaymentMethod
  */
@@ -15298,6 +15649,7 @@ export interface ListResourcePaymentMethod {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceProduct
  */
@@ -15311,6 +15663,7 @@ export interface ListResourceProduct {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceRefund
  */
@@ -15324,6 +15677,7 @@ export interface ListResourceRefund {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceSubscription
  */
@@ -15337,6 +15691,7 @@ export interface ListResourceSubscription {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceWebhookDelivery
  */
@@ -15350,6 +15705,7 @@ export interface ListResourceWebhookDelivery {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceWebhookEndpoint
  */
@@ -15363,6 +15719,7 @@ export interface ListResourceWebhookEndpoint {
    */
   pagination: Pagination;
 }
+
 /**
  * ListResourceWithCursorPaginationEvent
  */
@@ -15376,6 +15733,7 @@ export interface ListResourceWithCursorPaginationEvent {
    */
   pagination: CursorPagination;
 }
+
 /**
  * ManualRetryLimitExceeded
  */
@@ -15389,6 +15747,7 @@ export interface ManualRetryLimitExceeded {
    */
   detail: string;
 }
+
 /**
  * A member of a customer.
  */
@@ -15426,6 +15785,7 @@ export interface Member {
    */
   role: MemberRole;
 }
+
 /**
  * Schema for creating a new member nested under a customer.
 
@@ -15449,6 +15809,7 @@ export interface MemberCreateFromCustomer {
    */
   role?: Role;
 }
+
 /**
  * Schema for creating an owner member during customer creation.
  */
@@ -15466,6 +15827,7 @@ export interface MemberOwnerCreate {
    */
   external_id?: string | null;
 }
+
 /**
  * Schema for updating a member.
  */
@@ -15483,6 +15845,7 @@ export interface MemberUpdate {
    */
   role?: MemberRole | null;
 }
+
 /**
  * MetadataOutputType
  */
@@ -15541,6 +15904,7 @@ export interface Meter {
    */
   archived_at?: string | null;
 }
+
 /**
  * MeterCreate
  */
@@ -15588,6 +15952,7 @@ You can store up to **50 key-value pairs**.
    */
   organization_id?: string | null;
 }
+
 /**
  * An event created by Polar when credits are added to a customer meter.
  */
@@ -15649,6 +16014,7 @@ export interface MeterCreditEvent {
    */
   metadata: MeterCreditedMetadata;
 }
+
 /**
  * MeterCreditedMetadata
  */
@@ -15666,6 +16032,7 @@ export interface MeterCreditedMetadata {
    */
   rollover: boolean;
 }
+
 /**
  * MeterQuantities
  */
@@ -15679,6 +16046,7 @@ export interface MeterQuantities {
    */
   total: number;
 }
+
 /**
  * MeterQuantity
  */
@@ -15692,6 +16060,7 @@ export interface MeterQuantity {
    */
   quantity: number;
 }
+
 /**
  * An event created by Polar when a customer meter is reset.
  */
@@ -15753,6 +16122,7 @@ export interface MeterResetEvent {
    */
   metadata: MeterResetMetadata;
 }
+
 /**
  * MeterResetMetadata
  */
@@ -15762,6 +16132,7 @@ export interface MeterResetMetadata {
    */
   meter_id: string;
 }
+
 /**
  * MeterUpdate
  */
@@ -15809,6 +16180,7 @@ You can store up to **50 key-value pairs**.
    */
   is_archived?: boolean | null;
 }
+
 /**
  * Information about a metric.
  */
@@ -15826,6 +16198,7 @@ export interface Metric {
    */
   type: MetricType;
 }
+
 /**
  * Schema for creating a metrics dashboard.
  */
@@ -15843,6 +16216,7 @@ export interface MetricDashboardCreate {
    */
   organization_id?: string | null;
 }
+
 /**
  * A user-defined metrics dashboard.
  */
@@ -15872,6 +16246,7 @@ export interface MetricDashboardSchema {
    */
   organization_id: string;
 }
+
 /**
  * Schema for updating a metrics dashboard.
  */
@@ -15885,6 +16260,7 @@ export interface MetricDashboardUpdate {
    */
   metrics?: string[] | null;
 }
+
 /**
  * MetricPeriod
  */
@@ -16114,6 +16490,7 @@ export interface MetricPeriod {
    */
   seat_utilization_rate?: number | null;
 }
+
 /**
  * Metrics
  */
@@ -16339,6 +16716,7 @@ export interface Metrics {
    */
   seat_utilization_rate?: Metric | null;
 }
+
 /**
  * Date interval limit to get metrics for a given interval.
  */
@@ -16352,6 +16730,7 @@ export interface MetricsIntervalLimit {
    */
   max_days: number;
 }
+
 /**
  * Date interval limits to get metrics for each interval.
  */
@@ -16377,6 +16756,7 @@ export interface MetricsIntervalsLimits {
    */
   year: MetricsIntervalLimit;
 }
+
 /**
  * Date limits to get metrics.
  */
@@ -16390,6 +16770,7 @@ export interface MetricsLimits {
    */
   intervals: MetricsIntervalsLimits;
 }
+
 /**
  * Metrics response schema.
  */
@@ -16407,6 +16788,7 @@ export interface MetricsResponse {
    */
   metrics: Metrics;
 }
+
 /**
  * MetricsTotals
  */
@@ -16632,6 +17014,7 @@ export interface MetricsTotals {
    */
   seat_utilization_rate?: number | null;
 }
+
 /**
  * MissingInvoiceBillingDetails
  */
@@ -16645,6 +17028,7 @@ export interface MissingInvoiceBillingDetails {
    */
   detail: string;
 }
+
 /**
  * NotOpenCheckout
  */
@@ -16658,6 +17042,7 @@ export interface NotOpenCheckout {
    */
   detail: string;
 }
+
 /**
  * NotPermitted
  */
@@ -16671,6 +17056,7 @@ export interface NotPermitted {
    */
   detail: string;
 }
+
 /**
  * OAuth2ClientConfiguration
  */
@@ -16720,6 +17106,7 @@ export interface OAuth2ClientConfiguration {
    */
   default_sub_type?: SubType;
 }
+
 /**
  * OAuth2ClientConfigurationUpdate
  */
@@ -16773,6 +17160,7 @@ export interface OAuth2ClientConfigurationUpdate {
    */
   client_id: string;
 }
+
 /**
  * OAuth2ClientPublic
  */
@@ -16810,6 +17198,7 @@ export interface OAuth2ClientPublic {
    */
   policy_uri: string | null;
 }
+
 /**
  * OffSessionChargesNotEnabled
  */
@@ -16823,6 +17212,7 @@ export interface OffSessionChargesNotEnabled {
    */
   detail: string;
 }
+
 /**
  * Order
  */
@@ -16999,6 +17389,7 @@ export interface Order {
    */
   refundable_tax_amount: number;
 }
+
 /**
  * Schema to create a draft order for an off-session charge.
  */
@@ -17046,6 +17437,7 @@ You can store up to **50 key-value pairs**.
    */
   description?: string | null;
 }
+
 /**
  * OrderCustomer
  */
@@ -17123,6 +17515,7 @@ export interface OrderCustomer {
    */
   avatar_url: string | null;
 }
+
 /**
  * Schema to finalize a draft order and trigger an off-session charge.
  */
@@ -17132,6 +17525,7 @@ export interface OrderFinalize {
    */
   payment_method_id?: string | null;
 }
+
 /**
  * Order's invoice data.
  */
@@ -17141,6 +17535,7 @@ export interface OrderInvoice {
    */
   url: string;
 }
+
 /**
  * An order line item.
  */
@@ -17178,6 +17573,7 @@ export interface OrderItemSchema {
    */
   product_price_id: string | null;
 }
+
 /**
  * OrderNotDraft
  */
@@ -17191,6 +17587,7 @@ export interface OrderNotDraft {
    */
   detail: string;
 }
+
 /**
  * OrderNotEligibleForInvoice
  */
@@ -17204,6 +17601,7 @@ export interface OrderNotEligibleForInvoice {
    */
   detail: string;
 }
+
 /**
  * OrderNotEligibleForRetry
  */
@@ -17217,6 +17615,7 @@ export interface OrderNotEligibleForRetry {
    */
   detail: string;
 }
+
 /**
  * An event created by Polar when an order is paid.
  */
@@ -17278,6 +17677,7 @@ export interface OrderPaidEvent {
    */
   metadata: OrderPaidMetadata;
 }
+
 /**
  * OrderPaidMetadata
  */
@@ -17339,6 +17739,7 @@ export interface OrderPaidMetadata {
    */
   recurring_interval_count?: number;
 }
+
 /**
  * OrderProduct
  */
@@ -17408,6 +17809,7 @@ export interface OrderProduct {
    */
   organization_id: string;
 }
+
 /**
  * Order's receipt data.
  */
@@ -17417,6 +17819,7 @@ export interface OrderReceipt {
    */
   url: string;
 }
+
 /**
  * An event created by Polar when an order is refunded.
  */
@@ -17478,6 +17881,7 @@ export interface OrderRefundedEvent {
    */
   metadata: OrderRefundedMetadata;
 }
+
 /**
  * OrderRefundedMetadata
  */
@@ -17495,6 +17899,7 @@ export interface OrderRefundedMetadata {
    */
   currency: string;
 }
+
 /**
  * OrderSubscription
  */
@@ -17628,6 +18033,7 @@ export interface OrderSubscription {
    */
   customer_cancellation_comment: string | null;
 }
+
 /**
  * An event created by Polar when an order is unvoided.
  */
@@ -17689,6 +18095,7 @@ export interface OrderUnvoidedEvent {
    */
   metadata: OrderUnvoidedMetadata;
 }
+
 /**
  * OrderUnvoidedMetadata
  */
@@ -17706,6 +18113,7 @@ export interface OrderUnvoidedMetadata {
    */
   currency: string;
 }
+
 /**
  * Schema to update an order.
  */
@@ -17719,6 +18127,7 @@ export interface OrderUpdate {
    */
   billing_address?: AddressInput | null;
 }
+
 /**
  * An event created by Polar when an order is voided.
  */
@@ -17780,6 +18189,7 @@ export interface OrderVoidedEvent {
    */
   metadata: OrderVoidedMetadata;
 }
+
 /**
  * OrderVoidedMetadata
  */
@@ -17797,6 +18207,7 @@ export interface OrderVoidedMetadata {
    */
   currency: string;
 }
+
 /**
  * Organization
  */
@@ -17910,6 +18321,7 @@ export interface Organization {
    */
   capabilities: OrganizationCapabilities;
 }
+
 /**
  * Schema to create a file to be used as an organization avatar.
  */
@@ -17947,6 +18359,7 @@ export interface OrganizationAvatarFileCreate {
    */
   version?: string | null;
 }
+
 /**
  * File to be used as an organization avatar.
  */
@@ -18020,6 +18433,7 @@ export interface OrganizationAvatarFileRead {
    */
   public_url: string;
 }
+
 /**
  * OrganizationCapabilities
  */
@@ -18049,6 +18463,7 @@ export interface OrganizationCapabilities {
    */
   dashboard_access: boolean;
 }
+
 /**
  * OrganizationCompanyLegalEntitySchema
  */
@@ -18062,6 +18477,7 @@ export interface OrganizationCompanyLegalEntitySchema {
    */
   registered_name: string;
 }
+
 /**
  * OrganizationCreate
  */
@@ -18129,6 +18545,7 @@ export interface OrganizationCreate {
    */
   default_tax_behavior?: TaxBehaviorOption;
 }
+
 /**
  * OrganizationCustomerEmailSettings
  */
@@ -18190,6 +18607,7 @@ export interface OrganizationCustomerEmailSettings {
    */
   subscription_updated: boolean;
 }
+
 /**
  * OrganizationCustomerPortalSettings
  */
@@ -18207,6 +18625,7 @@ export interface OrganizationCustomerPortalSettings {
    */
   customer?: CustomerPortalCustomerSettings;
 }
+
 /**
  * OrganizationDetails
  */
@@ -18252,6 +18671,7 @@ export interface OrganizationDetails {
    */
   previous_annual_revenue?: number | null;
 }
+
 /**
  * `auto_accept_below_amount` is in Polar's settlement currency (USD).
  */
@@ -18261,6 +18681,7 @@ export interface OrganizationDisputeSettings {
    */
   auto_accept_below_amount: number | null;
 }
+
 /**
  * OrganizationDisputeSettingsUpdate
  */
@@ -18270,6 +18691,7 @@ export interface OrganizationDisputeSettingsUpdate {
    */
   auto_accept_below_amount?: number | null;
 }
+
 /**
  * OrganizationFeatureSettings
  */
@@ -18282,10 +18704,6 @@ export interface OrganizationFeatureSettings {
    * If this organization has seat-based pricing enabled
    */
   seat_based_pricing_enabled?: boolean;
-  /**
-   * If this organization has tiered pricing for metered prices enabled
-   */
-  metered_tiered_pricing_enabled?: boolean;
   /**
    * If this organization has Wallets enabled
    */
@@ -18343,6 +18761,7 @@ export interface OrganizationFeatureSettings {
    */
   merchant_migration_enabled?: boolean;
 }
+
 /**
  * Feature settings that organizations can update themselves.
 
@@ -18367,6 +18786,7 @@ export interface OrganizationFeatureSettingsUpdate {
    */
   overview_metrics?: string[] | null;
 }
+
 /**
  * OrganizationIndividualLegalEntitySchema
  */
@@ -18376,6 +18796,7 @@ export interface OrganizationIndividualLegalEntitySchema {
    */
   type: "individual";
 }
+
 /**
  * OrganizationNotReadyForPayments
  */
@@ -18389,6 +18810,7 @@ export interface OrganizationNotReadyForPayments {
    */
   detail: string;
 }
+
 /**
  * OrganizationSocialLink
  */
@@ -18402,6 +18824,7 @@ export interface OrganizationSocialLink {
    */
   url: string;
 }
+
 /**
  * OrganizationSubscriptionSettings
  */
@@ -18427,6 +18850,7 @@ export interface OrganizationSubscriptionSettings {
    */
   allow_customer_updates: boolean;
 }
+
 /**
  * OrganizationUpdate
  */
@@ -18496,6 +18920,7 @@ export interface OrganizationUpdate {
    */
   sso_enforced?: boolean | null;
 }
+
 /**
  * Pagination
  */
@@ -18509,6 +18934,7 @@ export interface Pagination {
    */
   max_page: number;
 }
+
 /**
  * PauseResumeNotAllowed
  */
@@ -18522,6 +18948,7 @@ export interface PauseResumeNotAllowed {
    */
   detail: string;
 }
+
 /**
  * PaymentActionRequired
  */
@@ -18535,6 +18962,7 @@ export interface PaymentActionRequired {
    */
   detail: string;
 }
+
 /**
  * PaymentAlreadyInProgress
  */
@@ -18548,6 +18976,7 @@ export interface PaymentAlreadyInProgress {
    */
   detail: string;
 }
+
 /**
  * PaymentError
  */
@@ -18561,6 +18990,7 @@ export interface PaymentError {
    */
   detail: string;
 }
+
 /**
  * PaymentFailed
  */
@@ -18574,6 +19004,7 @@ export interface PaymentFailed {
    */
   detail: string;
 }
+
 /**
  * PaymentMethodCard
  */
@@ -18607,6 +19038,7 @@ export interface PaymentMethodCard {
    */
   method_metadata: PaymentMethodCardMetadata;
 }
+
 /**
  * PaymentMethodCardMetadata
  */
@@ -18632,6 +19064,7 @@ export interface PaymentMethodCardMetadata {
    */
   wallet?: string | null;
 }
+
 /**
  * PaymentMethodGeneric
  */
@@ -18661,6 +19094,7 @@ export interface PaymentMethodGeneric {
    */
   type: string;
 }
+
 /**
  * PaymentMethodInUseByActiveSubscription
  */
@@ -18674,6 +19108,7 @@ export interface PaymentMethodInUseByActiveSubscription {
    */
   detail: string;
 }
+
 /**
  * PaymentMethodKrCard
  */
@@ -18707,6 +19142,7 @@ export interface PaymentMethodKrCard {
    */
   method_metadata: PaymentMethodKrCardMetadata;
 }
+
 /**
  * PaymentMethodKrCardMetadata
  */
@@ -18720,6 +19156,7 @@ export interface PaymentMethodKrCardMetadata {
    */
   last4: string | null;
 }
+
 /**
  * PaymentMethodRequired
  */
@@ -18733,6 +19170,7 @@ export interface PaymentMethodRequired {
    */
   detail: string;
 }
+
 /**
  * PaymentMethodSetupFailed
  */
@@ -18746,6 +19184,7 @@ export interface PaymentMethodSetupFailed {
    */
   detail: string;
 }
+
 /**
  * PaymentNotReady
  */
@@ -18759,6 +19198,7 @@ export interface PaymentNotReady {
    */
   detail: string;
 }
+
 /**
  * Pending update to be applied to a subscription at the beginning of the next period.
  */
@@ -18792,6 +19232,7 @@ export interface PendingSubscriptionUpdate {
    */
   units: number | null;
 }
+
 /**
  * Information about the authenticated portal user.
  */
@@ -18821,6 +19262,7 @@ export interface PortalAuthenticatedUser {
    */
   role?: string | null;
 }
+
 /**
  * A product.
  */
@@ -18906,6 +19348,7 @@ export interface Product {
    */
   attached_custom_fields: AttachedCustomField[];
 }
+
 /**
  * Schema to update the benefits granted by a product.
  */
@@ -18915,6 +19358,7 @@ export interface ProductBenefitsUpdate {
    */
   benefits: string[];
 }
+
 /**
  * ProductCreateOneTime
  */
@@ -18977,6 +19421,7 @@ You can store up to **50 key-value pairs**.
    */
   recurring_interval_count?: null;
 }
+
 /**
  * ProductCreateRecurring
  */
@@ -19055,6 +19500,7 @@ You can store up to **50 key-value pairs**.
    */
   meter_interval_count?: number | null;
 }
+
 /**
  * Schema to create a file to be used as a product media file.
  */
@@ -19092,6 +19538,7 @@ export interface ProductMediaFileCreate {
    */
   version?: string | null;
 }
+
 /**
  * File to be used as a product media file.
  */
@@ -19165,6 +19612,7 @@ export interface ProductMediaFileRead {
    */
   public_url: string;
 }
+
 /**
  * A pay-what-you-want price for a product.
  */
@@ -19218,6 +19666,7 @@ export interface ProductPriceCustom {
    */
   preset_amount: number | null;
 }
+
 /**
  * Schema to create a pay-what-you-want price.
  */
@@ -19517,6 +19966,7 @@ export interface ProductPriceCustomCreate {
    */
   preset_amount?: number | null;
 }
+
 /**
  * A fixed price for a product.
  */
@@ -19562,6 +20012,7 @@ export interface ProductPriceFixed {
    */
   price_amount: number;
 }
+
 /**
  * Schema to create a fixed price.
  */
@@ -19711,6 +20162,7 @@ Minimum amounts per currency:
    */
   price_amount: number;
 }
+
 /**
  * A meter associated to a metered price.
  */
@@ -19736,6 +20188,7 @@ export interface ProductPriceMeter {
    */
   custom_multiplier: number | null;
 }
+
 /**
  * A metered, usage-based, price for a product, billed from tiers.
  */
@@ -19791,8 +20244,9 @@ export interface ProductPriceMeteredTiers {
   /**
    * tiers
    */
-  tiers: TiersOutput;
+  tiers: Tiers;
 }
+
 /**
  * Schema to create a metered price billed from tiers on consumed units.
  */
@@ -19822,6 +20276,7 @@ export interface ProductPriceMeteredTiersCreate {
    */
   cap_amount?: number | null;
 }
+
 /**
  * A metered, usage-based, price for a product, with a fixed unit price.
  */
@@ -19879,6 +20334,7 @@ export interface ProductPriceMeteredUnit {
    */
   unit_amount: string;
 }
+
 /**
  * Schema to create a metered price with a fixed unit price.
  */
@@ -19908,6 +20364,7 @@ export interface ProductPriceMeteredUnitCreate {
    */
   cap_amount?: number | null;
 }
+
 /**
  * A seat-based price for a product.
  */
@@ -19953,6 +20410,7 @@ export interface ProductPriceSeatBased {
    */
   seat_tiers: ProductPriceSeatTiersOutput;
 }
+
 /**
  * Schema to create a seat-based price with volume-based tiers.
  */
@@ -19974,6 +20432,7 @@ export interface ProductPriceSeatBasedCreate {
    */
   seat_tiers: ProductPriceSeatTiersInput;
 }
+
 /**
  * A pricing tier for seat-based pricing.
  */
@@ -19991,6 +20450,7 @@ export interface ProductPriceSeatTier {
    */
   price_per_seat: number;
 }
+
 /**
  * List of pricing tiers for seat-based pricing.
 
@@ -20008,6 +20468,7 @@ export interface ProductPriceSeatTiersInput {
    */
   tiers: ProductPriceSeatTier[];
 }
+
 /**
  * List of pricing tiers for seat-based pricing.
 
@@ -20033,6 +20494,7 @@ export interface ProductPriceSeatTiersOutput {
    */
   maximum_seats: number | null;
 }
+
 /**
  * A unit-based price for a product: the buyer picks a quantity of units,
 pays for it up-front. On subscriptions, quantity changes are prorated.
@@ -20077,7 +20539,7 @@ export interface ProductPriceUnitBased {
   /**
    * tiers
    */
-  tiers: TiersOutput;
+  tiers: Tiers;
   /**
    * The minimum purchasable quantity (inclusive).
    */
@@ -20091,6 +20553,7 @@ export interface ProductPriceUnitBased {
    */
   maximum_units: number | null;
 }
+
 /**
  * Schema to create a unit-based price: the buyer picks a quantity of units,
 pays for it up-front. On subscriptions, quantity changes are prorated.
@@ -20121,6 +20584,7 @@ export interface ProductPriceUnitBasedCreate {
    */
   unit_label?: Record<string, Record<string, string>> | null;
 }
+
 /**
  * Schema to update a product.
  */
@@ -20196,6 +20660,7 @@ You can store up to **50 key-value pairs**.
    */
   attached_custom_fields?: AttachedCustomFieldCreate[] | null;
 }
+
 /**
  * PropertyAggregation
  */
@@ -20209,6 +20674,7 @@ export interface PropertyAggregation {
    */
   property: string;
 }
+
 /**
  * Refund
  */
@@ -20274,6 +20740,7 @@ export interface Refund {
    */
   dispute: RefundDispute | null;
 }
+
 /**
  * RefundCreate
  */
@@ -20318,6 +20785,7 @@ subscription itself is revoked, i.e fully canceled.
    */
   revoke_benefits?: boolean;
 }
+
 /**
  * Dispute associated with a refund,
 in case we prevented a dispute by issuing a refund.
@@ -20380,6 +20848,7 @@ export interface RefundDispute {
    */
   payment_id: string;
 }
+
 /**
  * RefundedAlready
  */
@@ -20393,6 +20862,7 @@ export interface RefundedAlready {
    */
   detail: string;
 }
+
 /**
  * ResourceNotFound
  */
@@ -20406,10 +20876,12 @@ export interface ResourceNotFound {
    */
   detail: string;
 }
+
 /**
  * RevokeTokenResponse
  */
 export interface RevokeTokenResponse extends Record<string, never> {}
+
 /**
  * RotateNotPermitted
  */
@@ -20423,6 +20895,7 @@ export interface RotateNotPermitted {
    */
   detail: string;
 }
+
 /**
  * S3DownloadURL
  */
@@ -20440,6 +20913,7 @@ export interface S3DownloadURL {
    */
   expires_at: string;
 }
+
 /**
  * S3FileCreateMultipart
  */
@@ -20449,6 +20923,7 @@ export interface S3FileCreateMultipart {
    */
   parts: S3FileCreatePart[];
 }
+
 /**
  * S3FileCreatePart
  */
@@ -20470,6 +20945,7 @@ export interface S3FileCreatePart {
    */
   checksum_sha256_base64?: string | null;
 }
+
 /**
  * S3FileUploadCompletedPart
  */
@@ -20487,6 +20963,7 @@ export interface S3FileUploadCompletedPart {
    */
   checksum_sha256_base64: string | null;
 }
+
 /**
  * S3FileUploadMultipart
  */
@@ -20504,6 +20981,7 @@ export interface S3FileUploadMultipart {
    */
   parts: S3FileUploadPart[];
 }
+
 /**
  * S3FileUploadPart
  */
@@ -20537,6 +21015,7 @@ export interface S3FileUploadPart {
    */
   headers?: Record<string, string>;
 }
+
 /**
  * SSOEnforcementRequiresConnection
  */
@@ -20550,6 +21029,7 @@ export interface SSOEnforcementRequiresConnection {
    */
   detail: string;
 }
+
 /**
  * SeatAssign
  */
@@ -20591,6 +21071,7 @@ export interface SeatAssign {
    */
   immediate_claim?: boolean;
 }
+
 /**
  * SeatClaim
  */
@@ -20600,6 +21081,7 @@ export interface SeatClaim {
    */
   invitation_token: string;
 }
+
 /**
  * Read-only information about a seat claim invitation.
 Safe for email scanners - no side effects when fetched.
@@ -20630,6 +21112,7 @@ export interface SeatClaimInfo {
    */
   can_claim: boolean;
 }
+
 /**
  * SeatsList
  */
@@ -20647,6 +21130,7 @@ export interface SeatsList {
    */
   total_seats: number;
 }
+
 /**
  * Subscription
  */
@@ -20815,6 +21299,7 @@ export interface Subscription {
    */
   pending_update: PendingSubscriptionUpdate | null;
 }
+
 /**
  * An event created by Polar when a subscription billing period is updated.
  */
@@ -20876,6 +21361,7 @@ export interface SubscriptionBillingPeriodUpdatedEvent {
    */
   metadata: SubscriptionBillingPeriodUpdatedMetadata;
 }
+
 /**
  * SubscriptionBillingPeriodUpdatedMetadata
  */
@@ -20893,6 +21379,7 @@ export interface SubscriptionBillingPeriodUpdatedMetadata {
    */
   new_period_end: string;
 }
+
 /**
  * SubscriptionCancel
  */
@@ -20936,6 +21423,7 @@ Or uncancel a subscription currently set to be revoked at period end.
    */
   cancel_at_period_end: boolean;
 }
+
 /**
  * An event created by Polar when a subscription is canceled.
  */
@@ -20997,6 +21485,7 @@ export interface SubscriptionCanceledEvent {
    */
   metadata: SubscriptionCanceledMetadata;
 }
+
 /**
  * SubscriptionCanceledMetadata
  */
@@ -21046,6 +21535,7 @@ export interface SubscriptionCanceledMetadata {
    */
   cancel_at_period_end?: boolean;
 }
+
 /**
  * Create a subscription for an existing customer.
  */
@@ -21073,6 +21563,7 @@ You can store up to **50 key-value pairs**.
    */
   customer_id: string;
 }
+
 /**
  * Create a subscription for an existing customer identified by an external ID.
  */
@@ -21100,6 +21591,7 @@ You can store up to **50 key-value pairs**.
    */
   external_customer_id: string;
 }
+
 /**
  * An event created by Polar when a subscription is created.
  */
@@ -21161,6 +21653,7 @@ export interface SubscriptionCreatedEvent {
    */
   metadata: SubscriptionCreatedMetadata;
 }
+
 /**
  * SubscriptionCreatedMetadata
  */
@@ -21194,6 +21687,7 @@ export interface SubscriptionCreatedMetadata {
    */
   started_at: string;
 }
+
 /**
  * SubscriptionCustomer
  */
@@ -21271,6 +21765,7 @@ export interface SubscriptionCustomer {
    */
   avatar_url: string | null;
 }
+
 /**
  * An event created by Polar when a subscription is cycled.
  */
@@ -21332,6 +21827,7 @@ export interface SubscriptionCycledEvent {
    */
   metadata: SubscriptionCycledMetadata;
 }
+
 /**
  * SubscriptionCycledMetadata
  */
@@ -21361,6 +21857,7 @@ export interface SubscriptionCycledMetadata {
    */
   recurring_interval_count?: number;
 }
+
 /**
  * SubscriptionLocked
  */
@@ -21374,6 +21871,7 @@ export interface SubscriptionLocked {
    */
   detail: string;
 }
+
 /**
  * Current consumption and spending for a subscription meter.
  */
@@ -21411,6 +21909,7 @@ export interface SubscriptionMeter {
    */
   meter: Meter;
 }
+
 /**
  * An event created by Polar when a subscription becomes past due.
  */
@@ -21472,6 +21971,7 @@ export interface SubscriptionPastDueEvent {
    */
   metadata: SubscriptionPastDueMetadata;
 }
+
 /**
  * SubscriptionPastDueMetadata
  */
@@ -21505,6 +22005,7 @@ export interface SubscriptionPastDueMetadata {
    */
   recurring_interval_count?: number;
 }
+
 /**
  * SubscriptionPause
  */
@@ -21524,6 +22025,7 @@ Must be after the current period end.
    */
   resumes_at?: string | null;
 }
+
 /**
  * An event created by Polar when a subscription is paused.
  */
@@ -21585,6 +22087,7 @@ export interface SubscriptionPausedEvent {
    */
   metadata: SubscriptionPausedMetadata;
 }
+
 /**
  * SubscriptionPausedMetadata
  */
@@ -21622,6 +22125,7 @@ export interface SubscriptionPausedMetadata {
    */
   resumes_at?: string;
 }
+
 /**
  * An event created by Polar when a subscription changes the product.
  */
@@ -21683,6 +22187,7 @@ export interface SubscriptionProductUpdatedEvent {
    */
   metadata: SubscriptionProductUpdatedMetadata;
 }
+
 /**
  * SubscriptionProductUpdatedMetadata
  */
@@ -21700,6 +22205,7 @@ export interface SubscriptionProductUpdatedMetadata {
    */
   new_product_id: string;
 }
+
 /**
  * An event created by Polar when a past due subscription is recovered.
  */
@@ -21761,6 +22267,7 @@ export interface SubscriptionReactivatedEvent {
    */
   metadata: SubscriptionReactivatedMetadata;
 }
+
 /**
  * SubscriptionReactivatedMetadata
  */
@@ -21790,6 +22297,7 @@ export interface SubscriptionReactivatedMetadata {
    */
   recurring_interval_count?: number;
 }
+
 /**
  * An event created by Polar when a canceled subscription is reinstated.
  */
@@ -21851,6 +22359,7 @@ export interface SubscriptionReinstatedEvent {
    */
   metadata: SubscriptionReinstatedMetadata;
 }
+
 /**
  * SubscriptionReinstatedMetadata
  */
@@ -21880,6 +22389,7 @@ export interface SubscriptionReinstatedMetadata {
    */
   recurring_interval_count?: number;
 }
+
 /**
  * SubscriptionResume
  */
@@ -21889,6 +22399,7 @@ export interface SubscriptionResume {
    */
   resume: true;
 }
+
 /**
  * An event created by Polar when a paused subscription is resumed.
  */
@@ -21950,6 +22461,7 @@ export interface SubscriptionResumedEvent {
    */
   metadata: SubscriptionResumedMetadata;
 }
+
 /**
  * SubscriptionResumedMetadata
  */
@@ -21979,6 +22491,7 @@ export interface SubscriptionResumedMetadata {
    */
   recurring_interval_count?: number;
 }
+
 /**
  * SubscriptionRevoke
  */
@@ -22020,6 +22533,7 @@ conversation, i.e support.
    */
   revoke: true;
 }
+
 /**
  * An event created by Polar when a subscription is revoked from a customer.
  */
@@ -22081,6 +22595,7 @@ export interface SubscriptionRevokedEvent {
    */
   metadata: SubscriptionRevokedMetadata;
 }
+
 /**
  * SubscriptionRevokedMetadata
  */
@@ -22110,6 +22625,7 @@ export interface SubscriptionRevokedMetadata {
    */
   recurring_interval_count?: number;
 }
+
 /**
  * An event created by Polar when a the seats on a subscription is changed.
  */
@@ -22171,6 +22687,7 @@ export interface SubscriptionSeatsUpdatedEvent {
    */
   metadata: SubscriptionSeatsUpdatedMetadata;
 }
+
 /**
  * SubscriptionSeatsUpdatedMetadata
  */
@@ -22192,6 +22709,7 @@ export interface SubscriptionSeatsUpdatedMetadata {
    */
   proration_behavior: string;
 }
+
 /**
  * An event created by Polar when a subscription cancellation is reversed.
  */
@@ -22253,6 +22771,7 @@ export interface SubscriptionUncanceledEvent {
    */
   metadata: SubscriptionUncanceledMetadata;
 }
+
 /**
  * SubscriptionUncanceledMetadata
  */
@@ -22282,6 +22801,7 @@ export interface SubscriptionUncanceledMetadata {
    */
   recurring_interval_count: number;
 }
+
 /**
  * An event created by Polar when the units on a subscription are changed.
  */
@@ -22343,6 +22863,7 @@ export interface SubscriptionUnitsUpdatedEvent {
    */
   metadata: SubscriptionUnitsUpdatedMetadata;
 }
+
 /**
  * SubscriptionUnitsUpdatedMetadata
  */
@@ -22364,6 +22885,7 @@ export interface SubscriptionUnitsUpdatedMetadata {
    */
   proration_behavior: string;
 }
+
 /**
  * SubscriptionUpdateBase
  */
@@ -22399,6 +22921,7 @@ You can store up to **50 key-value pairs**.
    */
   trial_end?: string | "now" | null;
 }
+
 /**
  * SubscriptionUpdateBillingPeriod
  */
@@ -22410,6 +22933,7 @@ It is not possible to update the current billing period on a canceled subscripti
    */
   current_billing_period_end: string;
 }
+
 /**
  * SubscriptionUpdateClear
  */
@@ -22419,6 +22943,7 @@ export interface SubscriptionUpdateClear {
    */
   pending_update: null;
 }
+
 /**
  * An event created by Polar when a pending subscription update is cleared without being applied.
  */
@@ -22480,6 +23005,7 @@ export interface SubscriptionUpdateClearedEvent {
    */
   metadata: SubscriptionUpdateClearedMetadata;
 }
+
 /**
  * SubscriptionUpdateClearedMetadata
  */
@@ -22489,6 +23015,7 @@ export interface SubscriptionUpdateClearedMetadata {
    */
   subscription_id: string;
 }
+
 /**
  * SubscriptionUpdateSeats
  */
@@ -22502,6 +23029,7 @@ export interface SubscriptionUpdateSeats {
    */
   proration_behavior?: SubscriptionProrationBehavior | null;
 }
+
 /**
  * SubscriptionUpdateUnits
  */
@@ -22515,6 +23043,7 @@ export interface SubscriptionUpdateUnits {
    */
   proration_behavior?: SubscriptionProrationBehavior | null;
 }
+
 /**
  * An event created by Polar when a subscription is updated.
  */
@@ -22576,6 +23105,7 @@ export interface SubscriptionUpdatedEvent {
    */
   metadata: SubscriptionUpdatedMetadata;
 }
+
 /**
  * SubscriptionUpdatedMetadata
  */
@@ -22613,6 +23143,7 @@ export interface SubscriptionUpdatedMetadata {
    */
   subscription_id: string;
 }
+
 /**
  * Schema to create a file attached to a support case.
  */
@@ -22650,6 +23181,7 @@ export interface SupportCaseAttachmentFileCreate {
    */
   version?: string | null;
 }
+
 /**
  * File attached to a support case (private; fetched via presigned URL).
  */
@@ -22719,12 +23251,32 @@ export interface SupportCaseAttachmentFileRead {
    */
   size_readable: string;
 }
+
 /**
  * A per-unit rate up to and including `bound`.
 
 Each tier starts where the previous one ended. The first starts at
 zero. `bound` is None on the last tier if it's unbounded. Rates are
 in cents and may be fractional.
+
+Rates carry no precision bound: this schema reads stored rows, and a
+bound tightened later would stop them loading. `TierInput` holds the
+rules new rates must meet.
+ */
+export interface Tier {
+  /**
+   * bound
+   */
+  bound?: number | null;
+  /**
+   * unit_amount
+   */
+  unit_amount: string;
+}
+
+/**
+ * A tier submitted through the API. Rates stop at the reach of the
+BigInteger amount columns, with 12 decimal places.
  */
 export interface TierInput {
   /**
@@ -22736,27 +23288,26 @@ export interface TierInput {
    */
   unit_amount: number | string;
 }
-/**
- * A per-unit rate up to and including `bound`.
 
-Each tier starts where the previous one ended. The first starts at
-zero. `bound` is None on the last tier if it's unbounded. Rates are
-in cents and may be fractional.
- */
-export interface TierOutput {
-  /**
-   * bound
-   */
-  bound?: number | null;
-  /**
-   * unit_amount
-   */
-  unit_amount: string;
-}
 /**
  * The structure of the shared tiers JSONB column, used by every tiered
 price type. Purchasable quantity bounds live in the `minimum_units` and
 `maximum_units` columns, not here.
+ */
+export interface Tiers {
+  /**
+   * type
+   */
+  type: TierType;
+  /**
+   * tiers
+   */
+  tiers: Tier[];
+}
+
+/**
+ * Tiers submitted through the API. Kept apart from `Tiers` so tightening
+a rule here never stops a stored row from loading.
  */
 export interface TiersInput {
   /**
@@ -22768,21 +23319,7 @@ export interface TiersInput {
    */
   tiers: TierInput[];
 }
-/**
- * The structure of the shared tiers JSONB column, used by every tiered
-price type. Purchasable quantity bounds live in the `minimum_units` and
-`maximum_units` columns, not here.
- */
-export interface TiersOutput {
-  /**
-   * type
-   */
-  type: TierType;
-  /**
-   * tiers
-   */
-  tiers: TierOutput[];
-}
+
 /**
  * TokenResponse
  */
@@ -22812,6 +23349,7 @@ export interface TokenResponse {
    */
   id_token?: string | null;
 }
+
 /**
  * TrialAlreadyRedeemed
  */
@@ -22825,6 +23363,7 @@ export interface TrialAlreadyRedeemed {
    */
   detail: string;
 }
+
 /**
  * Unauthorized
  */
@@ -22838,6 +23377,7 @@ export interface Unauthorized {
    */
   detail: string;
 }
+
 /**
  * UniqueAggregation
  */
@@ -22851,6 +23391,7 @@ export interface UniqueAggregation {
    */
   property: string;
 }
+
 /**
  * UpdateSubscriptionSeatsNotAllowed
  */
@@ -22864,6 +23405,7 @@ export interface UpdateSubscriptionSeatsNotAllowed {
    */
   detail: string;
 }
+
 /**
  * UpdateSubscriptionUnitsNotAllowed
  */
@@ -22877,6 +23419,7 @@ export interface UpdateSubscriptionUnitsNotAllowed {
    */
   detail: string;
 }
+
 /**
  * An event you created through the ingestion API.
  */
@@ -22938,6 +23481,7 @@ export interface UserEvent {
    */
   metadata: EventMetadataOutput;
 }
+
 /**
  * UserInfoOrganization
  */
@@ -22951,6 +23495,7 @@ export interface UserInfoOrganization {
    */
   name?: string | null;
 }
+
 /**
  * UserInfoUser
  */
@@ -22972,6 +23517,7 @@ export interface UserInfoUser {
    */
   email_verified?: boolean | null;
 }
+
 /**
  * ValidatedLicenseKey
  */
@@ -23045,6 +23591,7 @@ export interface ValidatedLicenseKey {
    */
   activation?: LicenseKeyActivationBase | null;
 }
+
 /**
  * ValidationError
  */
@@ -23070,6 +23617,7 @@ export interface ValidationError {
    */
   ctx?: Context;
 }
+
 /**
  * A webhook delivery for a webhook event.
  */
@@ -23103,6 +23651,7 @@ export interface WebhookDelivery {
    */
   webhook_event: WebhookEvent;
 }
+
 /**
  * A webhook endpoint.
  */
@@ -23148,6 +23697,7 @@ export interface WebhookEndpoint {
    */
   enabled: boolean;
 }
+
 /**
  * WebhookEndpointCreate
  */
@@ -23173,6 +23723,7 @@ export interface WebhookEndpointCreate {
    */
   organization_id?: string | null;
 }
+
 /**
  * WebhookEndpointUpdate
  */
@@ -23198,6 +23749,7 @@ export interface WebhookEndpointUpdate {
    */
   enabled?: boolean | null;
 }
+
 /**
  * A webhook event.
 

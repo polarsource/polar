@@ -62,7 +62,6 @@ class MetersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -121,7 +120,6 @@ class MetersSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type Meter.
 
@@ -141,7 +139,7 @@ class MetersSync(SyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -163,7 +161,6 @@ class MetersSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -204,7 +201,6 @@ class MetersSync(SyncServiceBase):
             id: The meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -248,7 +244,6 @@ class MetersSync(SyncServiceBase):
             id: The meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -309,7 +304,6 @@ class MetersSync(SyncServiceBase):
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -377,7 +371,6 @@ class MetersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -436,7 +429,6 @@ class MetersAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type Meter.
 
@@ -456,7 +448,7 @@ class MetersAsync(AsyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -479,7 +471,6 @@ class MetersAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -520,7 +511,6 @@ class MetersAsync(AsyncServiceBase):
             id: The meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -564,7 +554,6 @@ class MetersAsync(AsyncServiceBase):
             id: The meter ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -625,7 +614,6 @@ class MetersAsync(AsyncServiceBase):
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:

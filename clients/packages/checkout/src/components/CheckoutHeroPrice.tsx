@@ -9,16 +9,27 @@ import CheckoutTrialHeroPrice from './CheckoutTrialHeroPrice'
 export interface CheckoutHeroPriceProps {
   checkout: ProductCheckoutPublic
   locale?: AcceptedLocale
+  compact?: boolean
 }
 
-const CheckoutHeroPrice = ({ checkout, locale }: CheckoutHeroPriceProps) => {
+const CheckoutHeroPrice = ({
+  checkout,
+  locale,
+  compact,
+}: CheckoutHeroPriceProps) => {
   const { product, product_price } = checkout
 
   const hasTrial =
     checkout.active_trial_interval && checkout.active_trial_interval_count
 
   if (hasTrial) {
-    return <CheckoutTrialHeroPrice checkout={checkout} locale={locale} />
+    return (
+      <CheckoutTrialHeroPrice
+        checkout={checkout}
+        locale={locale}
+        compact={compact}
+      />
+    )
   }
 
   return (

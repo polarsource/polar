@@ -1,3 +1,4 @@
+import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import type { StatusColor } from '@polar-sh/orbit'
 import { notFound } from 'next/navigation'
@@ -45,3 +46,12 @@ export const CheckoutStatusDisplayColor: Record<
   expired: 'gray',
   failed: 'red',
 }
+
+export const isOrderSummaryCollapsible = (
+  checkout: ProductCheckoutPublic,
+): boolean =>
+  checkout.products.length === 1 &&
+  !checkout.is_free_product_price &&
+  (checkout.prices[checkout.product.id] ?? []).every(
+    (price) => price.amount_type === 'fixed' && !('legacy' in price),
+  )

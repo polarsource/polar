@@ -55,7 +55,7 @@ def test_deserialize_union() -> None:
     ],
 )
 def test_deserialize_int_float_union_preserves_json_type(
-    value: int | float, expected_type: type[int] | type[float]
+    value: object, expected_type: type
 ) -> None:
     result = deserialize(value, int | float)
     assert type(result) is expected_type

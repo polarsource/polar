@@ -1,0 +1,19 @@
+server/tests/webhooks/test_webhooks.py
+  s_8328894b8c4ada::t_6761f1dbbcffb6 129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "1a1d060c657d16e02c898e0f638b0fa82c80b65b",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

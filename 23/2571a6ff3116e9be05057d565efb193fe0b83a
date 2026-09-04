@@ -1,0 +1,18 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/webhooks/endpoints/[id]/EndpointsPage.tsx
+  h_cc2173b7b86bcc 163
+clients/apps/web/src/components/Settings/Webhook/WebhookSettings.tsx
+  h_cc2173b7b86bcc 35-49,51-53,55-67
+clients/apps/web/src/components/Settings/Webhook/WebhookSigningSchemeStatus.tsx
+  h_cc2173b7b86bcc 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "232571a6ff3116e9be05057d565efb193fe0b83a",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

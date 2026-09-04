@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -20,10 +21,8 @@ class TestListBillingContacts:
             role: str | None = None,
             limit: int = 10,
             **kwargs: object,
-        ):
-            calls.append(
-                {"customer_id": customer_id, "role": role, "limit": limit}
-            )
+        ) -> AsyncIterator[object]:
+            calls.append({"customer_id": customer_id, "role": role, "limit": limit})
             if role == "owner":
                 yield owner
             elif role == "billing_manager":

@@ -111,11 +111,7 @@ export const SlackSharedChannelCells = ({
   )
 }
 
-export const FeatureFlagCells = ({
-  benefit,
-}: {
-  benefit: schemas['BenefitFeatureFlag']
-}) => {
+export const MetadataCells = ({ benefit }: { benefit: schemas['Benefit'] }) => {
   const entries = Object.entries(benefit.metadata)
 
   if (entries.length === 0) {

@@ -149,7 +149,6 @@ const BenefitForm = ({
       {type === 'meter_credit' && (
         <MeterCreditBenefitForm organization={organization} />
       )}
-      {type === 'feature_flag' && <FeatureFlagBenefitForm />}
       {type === 'slack_shared_channel' && (
         <SlackSharedChannelBenefitForm
           organization={organization}
@@ -157,6 +156,7 @@ const BenefitForm = ({
           benefitId={benefitId}
         />
       )}
+      <BenefitMetadataForm />
     </>
   )
 }
@@ -197,8 +197,8 @@ const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
   )
 }
 
-const FeatureFlagBenefitForm = () => {
-  const { control } = useFormContext<schemas['BenefitFeatureFlagCreate']>()
+const BenefitMetadataForm = () => {
+  const { control } = useFormContext<schemas['BenefitCreate']>()
 
   return (
     <FormField

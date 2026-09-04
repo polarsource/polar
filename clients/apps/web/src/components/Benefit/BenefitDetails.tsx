@@ -5,9 +5,9 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   DiscordCells,
-  FeatureFlagCells,
   GitHubRepositoryCells,
   LicenseKeysCells,
+  MetadataCells,
   MeterCreditCells,
   SlackSharedChannelCells,
 } from './BenefitDetailCells'
@@ -23,8 +23,6 @@ const getBenefitTypeCells = ({
   switch (benefit.type) {
     case 'discord':
       return <DiscordCells benefit={benefit} />
-    case 'feature_flag':
-      return <FeatureFlagCells benefit={benefit} />
     case 'github_repository':
       return <GitHubRepositoryCells benefit={benefit} />
     case 'license_keys':
@@ -35,6 +33,7 @@ const getBenefitTypeCells = ({
       return <SlackSharedChannelCells benefit={benefit} />
     case 'custom':
     case 'downloadables':
+    case 'feature_flag':
       return null
     default:
       benefit satisfies never
@@ -68,7 +67,15 @@ export const BenefitDetails = ({
   benefit: schemas['Benefit']
   organization: schemas['Organization']
 }) => {
-  const cells = getBenefitTypeCells({ benefit, organization })
+  const typeCells = getBenefitTypeCells({ benefit, organization })
+  const hasMetadata = Object.keys(benefit.metadata).length > 0
+  const cells =
+    typeCells || hasMetadata ? (
+      <>
+        {typeCells}
+        <MetadataCells benefit={benefit} />
+      </>
+    ) : null
   const prose = getBenefitProse(benefit)
 
   if (!cells && !prose) {

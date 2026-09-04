@@ -13,7 +13,7 @@ import type {
   StripeElements,
   StripeError,
 } from '@stripe/stripe-js'
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { setValidationErrors } from '../utils/form'
@@ -23,6 +23,22 @@ const stub = (): never => {
   throw new Error(
     'You forgot to wrap your component in <CheckoutFormProvider>.',
   )
+}
+
+interface Deferred<T> {
+  promise: Promise<T>
+  resolve: (value: T) => void
+  reject: (reason: unknown) => void
+}
+
+const createDeferred = <T,>(): Deferred<T> => {
+  let resolve!: (value: T) => void
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
 }
 
 export interface CheckoutFormContextProps {
@@ -80,16 +96,11 @@ export const CheckoutFormProvider = ({
     [checkout, setError],
   )
 
-  const update = useCallback(
+  const performUpdate = useCallback(
     async (
       checkoutUpdatePublic: schemas['CheckoutUpdatePublic'],
     ): Promise<schemas['CheckoutPublic']> => {
-      setIsUpdatePending(true)
-      const { ok, value, error } = await updateOuter(
-        checkoutUpdatePublic,
-      ).finally(() => {
-        setIsUpdatePending(false)
-      })
+      const { ok, value, error } = await updateOuter(checkoutUpdatePublic)
       if (ok) {
         return value
       } else {
@@ -116,6 +127,62 @@ export const CheckoutFormProvider = ({
       }
     },
     [updateOuter, setError, setDiscountError],
+  )
+
+  // Keep at most one checkout update PATCH in flight at a time. The backend
+  // locks the checkout row with `FOR UPDATE NOWAIT` and returns a 409
+  // (CheckoutLocked) if a second update overlaps the first, so we serialize
+  // here. Calls made while a request is in flight are coalesced into a single
+  // trailing request (last write wins per field) that flushes once the current
+  // one settles; all coalesced callers resolve with that request's result.
+  const inFlightRef = useRef(false)
+  const pendingRef = useRef<{
+    payload: schemas['CheckoutUpdatePublic']
+    deferred: Deferred<schemas['CheckoutPublic']>
+  } | null>(null)
+
+  const pump = useCallback(async (): Promise<void> => {
+    if (inFlightRef.current) {
+      return
+    }
+    const batch = pendingRef.current
+    if (!batch) {
+      setIsUpdatePending(false)
+      return
+    }
+    pendingRef.current = null
+    inFlightRef.current = true
+    try {
+      batch.deferred.resolve(await performUpdate(batch.payload))
+    } catch (error) {
+      batch.deferred.reject(error)
+    } finally {
+      inFlightRef.current = false
+      void pump()
+    }
+  }, [performUpdate])
+
+  const update = useCallback(
+    (
+      checkoutUpdatePublic: schemas['CheckoutUpdatePublic'],
+    ): Promise<schemas['CheckoutPublic']> => {
+      if (pendingRef.current) {
+        pendingRef.current.payload = {
+          ...pendingRef.current.payload,
+          ...checkoutUpdatePublic,
+        }
+      } else {
+        pendingRef.current = {
+          payload: checkoutUpdatePublic,
+          deferred: createDeferred<schemas['CheckoutPublic']>(),
+        }
+      }
+      setIsUpdatePending(true)
+      const { promise } = pendingRef.current.deferred
+      void pump()
+      return promise
+    },
+    [pump],
   )
 
   const _confirm = useCallback(

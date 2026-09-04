@@ -196,7 +196,26 @@ class AsyncServiceBase:
         return cls(service.client)
 
 
-_retort = adaptix.Retort()
+def _load_exact_float(data: object) -> float:
+    if type(data) is float:
+        return data
+    raise adaptix.load_error.TypeLoadError(float, data)
+
+
+# Adaptix's float loader also accepts int, and union cases are tried in an
+# order that puts float first, so int | float would always coerce to float.
+# P[Union][float] targets float only as a member of that union (not standalone
+# float fields, which should still coerce JSON ints).
+_retort = adaptix.Retort(
+    recipe=[
+        adaptix.loader(
+            adaptix.P[int | float][float]
+            | adaptix.P[int | float | None][float]
+            | adaptix.P[str | int | float | bool][float],
+            _load_exact_float,
+        ),
+    ]
+)
 
 
 def deserialize(data: object, model: typing_extensions.TypeForm[_ModelT]) -> _ModelT:

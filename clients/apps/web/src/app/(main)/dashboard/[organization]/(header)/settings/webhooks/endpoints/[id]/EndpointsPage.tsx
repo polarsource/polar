@@ -7,6 +7,7 @@ import { useModal } from '@/components/Modal/useModal'
 import WebhookContextView from '@/components/Settings/Webhook/WebhookContextView'
 import DeliveriesTable from '@/components/Settings/Webhook/WebhookDeliveriesTable'
 import { WebhookFilter } from '@/components/Settings/Webhook/WebhookFilter'
+import { WebhookSignatureNotice } from '@/components/Settings/Webhook/WebhookSignatureNotice'
 import { toast } from '@/components/Toast/use-toast'
 import { getStatusRedirect } from '@/components/Toast/utils'
 import {
@@ -17,6 +18,7 @@ import {
 } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
+import { shouldShowWebhookSignatureNotice } from '@/utils/webhook/signatureNotice'
 import { operations, schemas } from '@polar-sh/client'
 import { Button, Switch, Text } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -158,6 +160,9 @@ export default function ClientPage({
       className="gap-y-8"
       wide
     >
+      {shouldShowWebhookSignatureNotice(organization.created_at) ? (
+        <WebhookSignatureNotice />
+      ) : null}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1">

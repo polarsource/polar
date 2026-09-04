@@ -1,7 +1,9 @@
 'use client'
 
 import { useListWebhooksEndpoints } from '@/hooks/queries'
+import { shouldShowWebhookSignatureNotice } from '@/utils/webhook/signatureNotice'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ListGroup } from '@polar-sh/orbit'
@@ -10,6 +12,7 @@ import Link from 'next/link'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../../Modal/useModal'
 import NewWebhookModal from './NewWebhookModal'
+import { WebhookSignatureNotice } from './WebhookSignatureNotice'
 
 const WebhookSettings = (props: { org: schemas['Organization'] }) => {
   const {
@@ -24,9 +27,15 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
     page: 1,
   })
 
+  const showSignatureNotice = shouldShowWebhookSignatureNotice(
+    props.org.created_at,
+  )
+
   return (
     <>
-      <ListGroup>
+      <Box flexDirection="column" gap="l">
+        {showSignatureNotice ? <WebhookSignatureNotice /> : null}
+        <ListGroup>
         {endpoints.data?.items && endpoints.data.items.length > 0 ? (
           endpoints.data?.items.map((e) => {
             return (
@@ -60,7 +69,8 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
             </a>
           </div>
         </ListGroup.Item>
-      </ListGroup>
+        </ListGroup>
+      </Box>
       <InlineModal
         isShown={isNewWebhookModalShown}
         hide={hideNewWebhookModal}

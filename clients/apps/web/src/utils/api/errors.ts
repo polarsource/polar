@@ -13,7 +13,8 @@ export const setValidationErrors = <TFieldValues extends FieldValues>(
     if (discriminators && discriminators.includes(loc[0] as string)) {
       loc = loc.slice(1)
     }
-    setError(loc.join('.') as FieldPath<TFieldValues>, {
+    const fieldPath = (loc.join('.') || 'root') as FieldPath<TFieldValues>
+    setError(fieldPath, {
       type: error.type,
       message: error.msg,
     })

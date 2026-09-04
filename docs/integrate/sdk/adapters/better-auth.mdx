@@ -11,6 +11,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 
 - [Automatic Customer creation on signup](#automatic-customer-creation-on-signup)
 - [Sync customer deletion](#sync-customer-deletion)
+- [Experimental Organization Synchronization](#experimental-organization-synchronization)
 - [Reference System to associate purchases with organizations](#3-2-orders)
 - [Checkout Integration](#checkout-plugin)
 - [Event Ingestion & Customer Meters for flexible Usage Based Billing](#usage-plugin)
@@ -187,6 +188,134 @@ const auth = betterAuth({
   }, // [!code ++]
 });
 ```
+
+## Experimental Organization Synchronization
+
+If you're using Better Auth's `organization` plugin, the adapter can synchronize organizations and members with Polar team customers.
+
+<Warning>
+  This integration is experimental. It does not migrate existing subscriptions, orders, benefits, or seats. If your application already handles organization billing, do not enable organization synchronization without a reviewed billing cutover plan, as it can leave Better Auth and Polar inconsistent.
+</Warning>
+
+If you're not familiar with the concept of seat-based billing in Polar, visit the [docs](/features/seat-based-pricing).
+
+Enable organization synchronization by adding Better Auth's `organization()` plugin and setting `experimental_organizationSync.enabled` to `true`:
+
+```typescript icon="square-js" Enable Organization Synchronization
+import { betterAuth } from "better-auth";
+import { organization } from "better-auth/plugins";
+import { polar, checkout } from "@polar-sh/better-auth";
+
+const auth = betterAuth({
+  plugins: [
+    organization(),
+    polar({
+      client: polarClient,
+      experimental_organizationSync: {
+        enabled: true,
+      },
+      use: [checkout()],
+    }),
+  ],
+});
+```
+
+For every organization that's created, the adapter creates a corresponding Customer in Polar with `type: 'team'` and assigns the creator as the `Owner`.
+Using the hooks provided by better-auth, your DB and Polar will be kept in sync in the following scenarios:
+
+- User joins via invite
+- User is directly added
+- User self-leaves the organization
+- User gets removed
+
+### Role handling
+
+By default, we map Better Auth organization roles to the following Polar roles:
+
+| Better Auth member | Polar member |
+| --- | --- |
+| Organization creator (canonical owner) | `owner` |
+| Non-creator with the `owner` or `admin` role | `billing_manager` |
+| Any other role | `member` |
+
+To customize this mapping, provide a `mapBetterAuthRoleToPolarRole` function in the organization synchronization options. The function receives the raw role, a parsed set of roles, the organization ID, and the Better Auth user. It must return either `member` or `billing_manager`:
+
+```typescript icon="square-js" Custom Organization Role Mapping
+polar({
+  client: polarClient,
+  experimental_organizationSync: {
+    enabled: true,
+    mapBetterAuthRoleToPolarRole: ({ roles }) => {
+      if (roles.has("finance")) {
+        return "billing_manager";
+      }
+
+      return "member";
+    },
+  },
+  use: [checkout()],
+});
+```
+
+The organization creator selected as Polar's canonical owner is always mapped to `owner` and is not passed to this function.
+
+
+### Automatic Organization Seat Management
+
+By default if an organization is subscribed to seat-based product, the syncing does not mean they get assigned a seat to that product.
+This is because that could mean updating the number of seats in the subscription, which results in a larger bill at the end of the month.
+
+If you do want this behavior, you can set `syncSeats` to `true` and then the adapter will automatically increase the number of seats in your subscription (if there aren't enough) as poeple join and they will instantly be assigned a seat. When people leave the organization, the number of purchased seats will automatically be reduced.
+
+The `webhooks` plugin is required to provision seats after checkout and to keep them up to date:
+
+```typescript icon="square-js" Enable Automatic Seat Management
+import { polar, checkout, webhooks } from "@polar-sh/better-auth";
+
+polar({
+  client: polarClient,
+  experimental_organizationSync: {
+    enabled: true,
+    syncSeats: true,
+  },
+  use: [
+    checkout(),
+    webhooks({
+      secret: process.env.POLAR_WEBHOOK_SECRET,
+    }),
+  ],
+});
+```
+
+When an organization has multiple recurring seat products, every member receives every eligible product by default. Use `selectSeatProductsForMember` to select the products assigned to each member. The function receives the Better Auth member and the available products, and should return the product IDs to assign. Return an empty array when a member should not receive a seat:
+
+```typescript icon="square-js" Select Seat Products Per Member
+polar({
+  client: polarClient,
+  experimental_organizationSync: {
+    enabled: true,
+    syncSeats: true,
+    selectSeatProductsForMember: async ({ member, products }) => {
+      const roles = new Set(member.role.split(",").map((role) => role.trim()));
+
+      return products
+        .filter((product) => {
+          if (product.metadata.seatAudience === "everyone") return true;
+          return roles.has(product.metadata.seatAudience);
+        })
+        .map((product) => product.id);
+    },
+  },
+  use: [
+    checkout(),
+    webhooks({
+      secret: process.env.POLAR_WEBHOOK_SECRET,
+    }),
+  ],
+});
+```
+
+In this example, each recurring seat product uses a `seatAudience` metadata value such as `everyone`, `admin`, or `finance` to control which members receive it.
 
 ## Checkout Plugin
 

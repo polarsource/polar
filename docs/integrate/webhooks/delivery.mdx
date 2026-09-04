@@ -95,29 +95,27 @@ to be set to the secret you configured during the endpoint setup.
 
 ### Custom validation
 
-We follow the [Standard Webhooks](https://www.standardwebhooks.com/)
-standard which offers [many libraries across languages](https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries) to
-easily validate signatures. Or you can follow their
-[specification](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md)
-in case you want to roll your own.
+Use a [Standard Webhooks library](https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries)
+or follow the
+[specification](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md).
+
+Secrets generated on or after 8 September 2026, 00:00 UTC are Standard Webhooks.
+Older secrets are Polar HMAC.
 
 <Info>
   **Signing schemes**
 
-  Polar sends a **single** `webhook-signature`. The HMAC key depends on when the
-  endpoint secret was generated:
+  Polar sends one `webhook-signature`. The HMAC key is which secret you have.
 
-  **Secrets generated before 8 September 2026, 00:00 UTC** use Polar's original
-  key: HMAC over the UTF-8 bytes of the full secret, including `whsec_`.
-  Standard Webhooks libraries need that whole secret **base64-encoded** before
-  verification.
+  **Before 8 September 2026, 00:00 UTC:** Polar HMAC. Key is the UTF-8 bytes of
+  the full `whsec_…` string. Base64-encode that string before you hand it to a
+  Standard Webhooks library.
 
-  **Secrets generated on or after that instant** follow
-  [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md)
-  exactly. Pass the `whsec_…` secret to a Standard Webhooks library as-is.
+  **On or after that instant:** [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md).
+  Pass the `whsec_…` secret to the library as-is.
 
-  Polar SDKs (version 1.0.0-alpha.19 and later) try both keys. You can keep
-  passing the `whsec_…` secret as Polar shows it.
+  Polar SDKs 1.0.0-alpha.19 and later try both keys. Pass the `whsec_…` secret
+  from the dashboard.
 </Info>
 
 ## IP Allowlist
@@ -228,7 +226,7 @@ A common cause is hosting providers like Vercel that redirect between `www` and 
 
 ### Invalid signature exceptions
 
-Rolling your own webhook validation logic? Older Polar secrets need the
-**entire** `whsec_…` string base64-encoded before HMAC; secrets generated on or
-after 8 September 2026, 00:00 UTC follow Standard Webhooks as-is. Polar SDKs
-(version 1.0.0-alpha.19 and later) try both.
+Rolling your own validation? Older secrets are Polar HMAC: base64-encode the
+entire `whsec_…` string. Secrets generated on or after 8 September 2026, 00:00
+UTC are Standard Webhooks: pass the secret as-is. Polar SDKs 1.0.0-alpha.19 and
+later try both.

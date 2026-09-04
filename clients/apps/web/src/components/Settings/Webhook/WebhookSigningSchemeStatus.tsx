@@ -18,7 +18,7 @@ export const WebhookSigningSchemeStatus = ({
       color={usesStandardWebhookSignature ? 'green' : 'gray'}
       status={
         usesStandardWebhookSignature
-          ? 'Standards-compliant signing'
+          ? 'Standard Webhooks'
           : 'Legacy signing'
       }
     />

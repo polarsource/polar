@@ -5,9 +5,12 @@ description: "Get notifications asynchronously when events occur instead of
 having to poll for updates"
 ---
 
-Our webhook implementation follows the [Standard Webhooks](https://www.standardwebhooks.com/) specification
-and our SDKs offer:
-- Built-in webhook signature validation for security
+Secrets generated on or after 8 September 2026, 00:00 UTC follow
+[Standard Webhooks](https://www.standardwebhooks.com/). Older secrets use Polar HMAC.
+See [Handle incoming webhooks](/integrate/webhooks/delivery#custom-validation).
+
+Our SDKs offer:
+- Built-in webhook signature validation
 - Fully typed webhook payloads
 
 In addition, our webhooks offer built-in support for **Slack** & **Discord**

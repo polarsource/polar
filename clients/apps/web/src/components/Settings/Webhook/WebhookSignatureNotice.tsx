@@ -17,13 +17,20 @@ export const WebhookSignatureNotice = ({
   return (
     <Alert
       variant="info"
-      title="Webhook signature changes"
+      title="Webhook signatures"
       description={
         <>
-          We're changing how we sign webhook requests starting September 8 2026.
-          The new signatures will only apply to new endpoints and new endpoint secrets.
-          Before adding new webhook endpoints and/or resetting webhook secrets ensure you've read up
-          on the change in <a href={DOCS_HREF} target="_blank" className="underline">our docs</a>.
+          New endpoints and reset secrets use Standard Webhooks from 8 September
+          2026, 00:00 UTC. Read the{' '}
+          <a
+            href={DOCS_HREF}
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            delivery docs
+          </a>{' '}
+          before you add an endpoint or reset a secret.
         </>
       }
     />

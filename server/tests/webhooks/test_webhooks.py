@@ -126,6 +126,7 @@ class TestWebhookEndpointSchema:
             "modified_at": None,
             "url": "https://example.com/hook",
             "name": None,
+            "api_version": CURRENT_API_VERSION,
             "format": WebhookFormat.raw,
             "secret": "whsec_test",
             "organization_id": uuid4(),

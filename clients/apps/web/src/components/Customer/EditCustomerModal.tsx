@@ -1,3 +1,9 @@
+import { MetadataForm } from '@/components/Metadata/MetadataForm'
+import {
+  WithMetadataEntries,
+  entriesToMetadata,
+  metadataToEntries,
+} from '@/components/Metadata/utils'
 import revalidate from '@/app/actions'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
@@ -19,11 +25,8 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-import { CustomerMetadataForm } from './CustomerMetadataForm'
 
-export type CustomerUpdateForm = Omit<schemas['CustomerUpdate'], 'metadata'> & {
-  metadata: { key: string; value: string | number | boolean }[]
-}
+type CustomerUpdateForm = WithMetadataEntries<schemas['CustomerUpdate']>
 
 export const EditCustomerModal = ({
   customer,
@@ -45,10 +48,7 @@ export const EditCustomerModal = ({
       name: customer.name || '',
       email: customer.email ?? '',
       external_id: customer.external_id || '',
-      metadata: Object.entries(customer.metadata).map(([key, value]) => ({
-        key,
-        value,
-      })),
+      metadata: metadataToEntries(customer.metadata),
     },
   })
 
@@ -60,10 +60,7 @@ export const EditCustomerModal = ({
   const handleUpdateCustomer = (customerUpdate: CustomerUpdateForm) => {
     const data = {
       ...customerUpdate,
-      metadata: customerUpdate.metadata?.reduce(
-        (acc, { key, value }) => ({ ...acc, [key]: value }),
-        {},
-      ),
+      metadata: entriesToMetadata(customerUpdate.metadata),
     }
 
     updateCustomer.mutateAsync(data).then(({ error }) => {
@@ -170,11 +167,7 @@ export const EditCustomerModal = ({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="metadata"
-                render={() => <CustomerMetadataForm />}
-              />
+              <MetadataForm label="Metadata" />
             </div>
             <Button
               type="submit"

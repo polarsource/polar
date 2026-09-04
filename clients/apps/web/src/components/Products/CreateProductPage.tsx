@@ -1,3 +1,4 @@
+import { entriesToMetadata } from '@/components/Metadata/utils'
 import { useToast } from '@/components/Toast/use-toast'
 import {
   useBenefits,
@@ -136,10 +137,7 @@ export const CreateProductPage = ({
           ...productCreateRest,
           prices: productCreateRest.prices.map(formPriceToApiPrice),
           medias: mediaIds,
-          metadata: metadata.reduce(
-            (acc, { key, value }) => ({ ...acc, [key]: value }),
-            {},
-          ),
+          metadata: entriesToMetadata(metadata),
         } as schemas['ProductCreate'])
 
         if (error) {

@@ -112,6 +112,7 @@ const Endpoint = ({
         <p className="dark:text-polar-400 pl-4 text-sm text-gray-500">
           Added on{' '}
           <FormattedDateTime datetime={endpoint.created_at} dateStyle="long" />
+          {' · '}API version {endpoint.api_version}
         </p>
       </div>
       <div className="dark:text-polar-400 text-gray-500">

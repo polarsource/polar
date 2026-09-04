@@ -5,7 +5,13 @@ import idna
 from pydantic import UUID4, AfterValidator, AnyUrl, BeforeValidator, Field
 from pydantic.json_schema import SkipJsonSchema
 
-from polar.kit.schemas import HttpsUrl, IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    HttpsUrl,
+    IDSchema,
+    MergeJSONSchema,
+    Schema,
+    TimestampedSchema,
+)
 from polar.kit.versioning import APIVersion
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
@@ -84,7 +90,11 @@ def _is_available_version(api_version: APIVersion) -> APIVersion:
     return api_version
 
 
-AvailableAPIVersion = Annotated[APIVersion, AfterValidator(_is_available_version)]
+AvailableAPIVersion = Annotated[
+    APIVersion,
+    MergeJSONSchema({"enum": [str(version) for version in sorted(VERSIONS)]}),
+    AfterValidator(_is_available_version),
+]
 
 
 class WebhookEndpoint(IDSchema, TimestampedSchema):

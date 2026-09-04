@@ -18,9 +18,8 @@ import {
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { operations, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Switch, Text } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import { Switch } from '@polar-sh/orbit'
 import { useParams, useRouter } from 'next/navigation'
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs'
 import { useCallback, useState } from 'react'
@@ -172,6 +171,7 @@ export default function ClientPage({
             ) : (
               <h3 className="text-lg break-words">{endpoint.url}</h3>
             )}
+            <Text color="muted">API version {endpoint.api_version}</Text>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-sm text-gray-500" id="webhook-status-label">

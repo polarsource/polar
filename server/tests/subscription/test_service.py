@@ -28,6 +28,7 @@ from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import (
     BadRequest,
+    PaymentNotReady,
     PolarRequestValidationError,
     ResourceUnavailable,
 )
@@ -4786,9 +4787,9 @@ class TestUpdate:
         webhook_service_send_mock: MagicMock,
         enqueue_job_mock: MagicMock,
     ) -> None:
-        create_subscription_cycle_order_mock = mocker.patch.object(
+        create_subscription_update_order_mock = mocker.patch.object(
             subscription_service,
-            "_create_subscription_cycle_order",
+            "_create_subscription_update_order",
             new_callable=AsyncMock,
         )
         subscription = await create_trialing_subscription(
@@ -4822,7 +4823,7 @@ class TestUpdate:
             organization,
             updated,
         )
-        create_subscription_cycle_order_mock.assert_awaited_once_with(
+        create_subscription_update_order_mock.assert_awaited_once_with(
             session,
             updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
@@ -5074,9 +5075,9 @@ class TestUpdate:
         webhook_service_send_mock: MagicMock,
         enqueue_job_mock: MagicMock,
     ) -> None:
-        create_subscription_cycle_order_mock = mocker.patch.object(
+        create_subscription_update_order_mock = mocker.patch.object(
             subscription_service,
-            "_create_subscription_cycle_order",
+            "_create_subscription_update_order",
             new_callable=AsyncMock,
         )
 
@@ -5107,7 +5108,7 @@ class TestUpdate:
         assert updated.product == new_product
         assert updated.active
 
-        create_subscription_cycle_order_mock.assert_awaited_once_with(
+        create_subscription_update_order_mock.assert_awaited_once_with(
             session,
             updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
@@ -6698,6 +6699,37 @@ class TestUpdateDiscount:
 
 @pytest.mark.asyncio
 class TestUpdateTrial:
+    async def test_trialing_subscription_ending_now_with_renewals_disabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        original_trial_end = subscription.trial_end
+        original_period_end = subscription.current_period_end
+
+        with pytest.raises(PaymentNotReady):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end="now"
+                )
+
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.trial_end == original_trial_end
+        assert subscription.current_period_end == original_period_end
+
     async def test_trialing_subscription_ending_now_payment_failure_preserves_trial(
         self,
         session: AsyncSession,
@@ -6708,7 +6740,7 @@ class TestUpdateTrial:
     ) -> None:
         mocker.patch.object(
             subscription_service,
-            "_create_subscription_cycle_order",
+            "_create_subscription_update_order",
             side_effect=PaymentFailed(PaymentFailedReason.card_error),
         )
         subscription = await create_trialing_subscription(
@@ -6965,7 +6997,7 @@ class TestUpdateTrial:
     ) -> None:
         mocker.patch.object(
             subscription_service,
-            "_create_subscription_cycle_order",
+            "_create_subscription_update_order",
             new_callable=AsyncMock,
         )
         subscription = await create_trialing_subscription(

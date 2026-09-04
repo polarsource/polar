@@ -23,6 +23,7 @@ from polar.models.order import OrderStatus
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -1239,6 +1240,7 @@ class TestSubscriptionUpdateTrial:
     async def test_end_trial_payment_failure_returns_402(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
         user_organization: UserOrganization,
@@ -1247,7 +1249,7 @@ class TestSubscriptionUpdateTrial:
     ) -> None:
         mocker.patch.object(
             subscription_service,
-            "_create_subscription_cycle_order",
+            "_create_subscription_update_order",
             new=AsyncMock(side_effect=PaymentFailed(PaymentFailedReason.card_error)),
         )
         subscription = await create_subscription(
@@ -1259,11 +1261,21 @@ class TestSubscriptionUpdateTrial:
             trial_start=utc_now(),
             trial_end=utc_now() + timedelta(days=14),
         )
+        original_trial_end = subscription.trial_end
+        original_period_end = subscription.current_period_end
+        nested = await session.begin_nested()
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}", json={"trial_end": "now"}
         )
 
         assert response.status_code == 402
+        await nested.rollback()
+        repository = SubscriptionRepository.from_session(session)
+        persisted_subscription = await repository.get_by_id(subscription.id)
+        assert persisted_subscription is not None
+        assert persisted_subscription.status == SubscriptionStatus.trialing
+        assert persisted_subscription.trial_end == original_trial_end
+        assert persisted_subscription.current_period_end == original_period_end
 
     @pytest.mark.auth
     async def test_extend_trial_seat_based_subscription(

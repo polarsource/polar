@@ -10,7 +10,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountID
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import PaymentNotReady, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -413,10 +413,12 @@ async def create(
         403: {
             "description": (
                 "Subscription is already canceled or will be at the end of the "
-                "period, or is not active."
+                "period, is not active, or the organization is not ready to renew "
+                "subscriptions."
             ),
             "model": AlreadyCanceledSubscription.schema()
-            | InactiveSubscription.schema(),
+            | InactiveSubscription.schema()
+            | PaymentNotReady.schema(),
         },
         404: SubscriptionNotFound,
         409: {

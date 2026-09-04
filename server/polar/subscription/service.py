@@ -56,6 +56,7 @@ from polar.event.system import (
 )
 from polar.exceptions import (
     BadRequest,
+    PaymentNotReady,
     PolarError,
     PolarRequestValidationError,
     ResourceUnavailable,
@@ -505,12 +506,7 @@ class SubscriptionUpdateContext:
     def set_billing_effect(
         self, effect: Literal["invoice", "cycle", "cycle_sync"]
     ) -> None:
-        if effect == "cycle_sync":
-            self._billing_effect = "cycle_sync"
-        elif effect == "cycle" and self._billing_effect != "cycle_sync":
-            self._billing_effect = "cycle"
-        elif effect == "invoice" and self._billing_effect is None:
-            self._billing_effect = "invoice"
+        self._billing_effect = effect
 
     def add_event_metadata(
         self, **metadata: Unpack[SubscriptionUpdatedMetadataFields]
@@ -1249,7 +1245,7 @@ class SubscriptionService:
             billing_reason = OrderBillingReasonInternal.subscription_cycle
 
         if payment_mode == PaymentMode.sync:
-            await self._create_subscription_cycle_order(
+            await self._create_subscription_update_order(
                 session, subscription, billing_reason, cutoff=cycle_at
             )
         else:
@@ -2210,6 +2206,10 @@ class SubscriptionService:
         if subscription.trialing:
             # End trial immediately
             if trial_end == "now":
+                if not subscription.organization.can_renew_subscriptions:
+                    raise PaymentNotReady(
+                        "Organization is not ready to renew subscriptions"
+                    )
                 subscription.trial_end = subscription.current_period_end = utc_now()
                 ctx.set_billing_effect("cycle_sync")
             # Set new trial end date
@@ -4331,24 +4331,14 @@ class SubscriptionService:
             await repository.update(subscription)
 
     async def _create_subscription_update_order(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> Order:
-        from polar.order.service import order as order_service
-
-        return await order_service.create_subscription_order(
-            session,
-            subscription,
-            OrderBillingReasonInternal.subscription_update,
-            payment_mode=PaymentMode.sync,
-        )
-
-    async def _create_subscription_cycle_order(
         self,
         session: AsyncSession,
         subscription: Subscription,
-        billing_reason: OrderBillingReasonInternal,
+        billing_reason: OrderBillingReasonInternal = (
+            OrderBillingReasonInternal.subscription_update
+        ),
         *,
-        cutoff: datetime,
+        cutoff: datetime | None = None,
     ) -> Order:
         from polar.order.service import order as order_service
 

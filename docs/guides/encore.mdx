@@ -163,20 +163,22 @@ export const webhooks = api.raw(
       headers[key] = Array.isArray(value) ? value[0] : (value || "");
     }
 
-    // Verify the webhook signature
+    // Verify the webhook signature. Try Standard Webhooks first (secret as-is),
+    // then Polar's legacy HMAC (UTF-8 bytes of the full secret, including `whsec_`).
+    const secret = POLAR_WEBHOOK_SECRET().trim();
     let payload: any;
     try {
-      const base64Secret = Buffer.from(
-        POLAR_WEBHOOK_SECRET().trim(),
-        "utf-8"
-      ).toString("base64");
-      const wh = new Webhook(base64Secret);
-      payload = wh.verify(body, headers);
-    } catch (error: any) {
-      console.error("[Polar] Invalid webhook signature:", error?.message);
-      resp.writeHead(403);
-      resp.end(JSON.stringify({ error: "Invalid signature" }));
-      return;
+      payload = new Webhook(secret).verify(body, headers);
+    } catch {
+      try {
+        const legacySecret = Buffer.from(secret, "utf-8").toString("base64");
+        payload = new Webhook(legacySecret).verify(body, headers);
+      } catch (error: any) {
+        console.error("[Polar] Invalid webhook signature:", error?.message);
+        resp.writeHead(403);
+        resp.end(JSON.stringify({ error: "Invalid signature" }));
+        return;
+      }
     }
 
     // Handle the payload
@@ -204,7 +206,12 @@ export const webhooks = api.raw(
 ```
 
 <Warning>
-  The `standardwebhooks` library expects the secret to be base64-encoded. Polar provides a raw string (starting with `polar_whs_`), so you must base64-encode the entire secret before passing it to `new Webhook()`.
+  Polar webhook signatures use two key derivations depending on when the secret
+  was generated. Polar SDKs (version 1.0.0-alpha.19 and later) try both. If you
+  verify with `standardwebhooks` directly: secrets created **on or after 8
+  September 2026, 00:00 UTC** can be passed to `new Webhook()` as-is (`whsec_…`).
+  Older Polar secrets need the **entire** secret UTF-8 string base64-encoded
+  first.
 </Warning>
 
 ## Local Development

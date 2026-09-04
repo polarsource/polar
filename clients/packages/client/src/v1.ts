@@ -38863,6 +38863,11 @@ export interface components {
        * @description Whether the webhook endpoint is enabled and will receive events.
        */
       enabled: boolean
+      /**
+       * Uses Standard Webhook Signature
+       * @description Whether Polar signs deliveries to this endpoint with Standard Webhooks. False means Polar's original HMAC over the UTF-8 bytes of the full secret.
+       */
+      readonly uses_standard_webhook_signature: boolean
     }
     /** DeprecatedWebhookEndpointCreateWithSecret */
     WebhookEndpointCreate: {

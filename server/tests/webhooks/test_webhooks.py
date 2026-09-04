@@ -1,7 +1,11 @@
+import base64
 import json
+import secrets
 import uuid
+from datetime import timedelta
 from typing import Annotated, cast
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -26,9 +30,21 @@ from polar.models.webhook_endpoint import (
 )
 from polar.models.webhook_event import WebhookEvent
 from polar.version import CURRENT_API_VERSION
+from polar.webhook.constants import (
+    WEBHOOK_SECRET_KEY_BYTES,
+    WEBHOOK_SECRET_PREFIX,
+    WEBHOOK_STANDARD_SIGNATURE_CUTOFF,
+    uses_standard_webhook_signature,
+)
 from polar.webhook.repository import WebhookDeliveryRepository
+from polar.webhook.schemas import WebhookEndpoint as WebhookEndpointSchema
+from polar.webhook.service import generate_webhook_secret
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook.tasks import _webhook_event_send, webhook_event_send
+from polar.webhook.tasks import (
+    _webhook_event_send,
+    sign_webhook,
+    webhook_event_send,
+)
 from polar.webhook.webhooks import BaseWebhookPayload
 from tests.fixtures.database import SaveFixture
 from tests.kit.test_versioning import CURRENT_VERSION, NEXT_VERSION
@@ -76,6 +92,159 @@ def test_versioned_raw_payload() -> None:
     assert "shared_field" in next_payload_data["data"]
     assert "current_field" not in next_payload_data["data"]
     assert "next_field" in next_payload_data["data"]
+
+
+class TestUsesStandardWebhookSignature:
+    def test_none_keeps_legacy(self) -> None:
+        assert uses_standard_webhook_signature(None) is False
+
+    def test_before_cutoff_keeps_legacy(self) -> None:
+        assert (
+            uses_standard_webhook_signature(
+                WEBHOOK_STANDARD_SIGNATURE_CUTOFF - timedelta(microseconds=1)
+            )
+            is False
+        )
+
+    def test_at_or_after_cutoff_uses_spec(self) -> None:
+        assert (
+            uses_standard_webhook_signature(WEBHOOK_STANDARD_SIGNATURE_CUTOFF) is True
+        )
+        assert (
+            uses_standard_webhook_signature(
+                WEBHOOK_STANDARD_SIGNATURE_CUTOFF + timedelta(days=1)
+            )
+            is True
+        )
+
+
+class TestWebhookEndpointSchema:
+    def _payload(self, **overrides: object) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "id": uuid4(),
+            "created_at": utc_now(),
+            "modified_at": None,
+            "url": "https://example.com/hook",
+            "name": None,
+            "api_version": CURRENT_API_VERSION,
+            "format": WebhookFormat.raw,
+            "secret": "whsec_test",
+            "organization_id": uuid4(),
+            "events": [],
+            "enabled": True,
+            "secret_generated_at": None,
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_null_secret_generated_at_is_legacy(self) -> None:
+        schema = WebhookEndpointSchema.model_validate(self._payload())
+        dumped = schema.model_dump()
+        assert schema.uses_standard_webhook_signature is False
+        assert "secret_generated_at" not in dumped
+        assert dumped["uses_standard_webhook_signature"] is False
+
+    def test_at_cutoff_uses_spec(self) -> None:
+        schema = WebhookEndpointSchema.model_validate(
+            self._payload(secret_generated_at=WEBHOOK_STANDARD_SIGNATURE_CUTOFF)
+        )
+        assert schema.uses_standard_webhook_signature is True
+        assert schema.model_dump()["uses_standard_webhook_signature"] is True
+
+
+class TestGenerateWebhookSecret:
+    def test_always_prefixed(self) -> None:
+        secret = generate_webhook_secret()
+        assert secret.startswith(WEBHOOK_SECRET_PREFIX)
+
+    def test_spec_format_after_cutoff(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from polar.webhook import service
+
+        monkeypatch.setattr(
+            service,
+            "utc_now",
+            lambda: WEBHOOK_STANDARD_SIGNATURE_CUTOFF + timedelta(seconds=1),
+        )
+        secret = generate_webhook_secret()
+        remainder = secret.removeprefix(WEBHOOK_SECRET_PREFIX)
+        decoded = base64.b64decode(remainder)
+        assert len(decoded) == WEBHOOK_SECRET_KEY_BYTES
+
+    def test_polar_token_before_cutoff(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from polar.webhook import service
+
+        monkeypatch.setattr(
+            service,
+            "utc_now",
+            lambda: WEBHOOK_STANDARD_SIGNATURE_CUTOFF - timedelta(seconds=1),
+        )
+        secret = generate_webhook_secret()
+        remainder = secret.removeprefix(WEBHOOK_SECRET_PREFIX)
+        assert len(remainder) == 43
+
+
+class TestSignWebhook:
+    def test_legacy_matches_utf8_hmac(self) -> None:
+        secret = "whsec_legacyPolarToken"
+        payload = '{"foo":"bar"}'
+        timestamp = utc_now()
+        signature = sign_webhook(
+            secret,
+            "msg_1",
+            timestamp,
+            payload,
+            secret_generated_at=None,
+        )
+        StandardWebhook(secret.encode("utf-8")).verify(
+            payload.encode(),
+            {
+                "webhook-id": "msg_1",
+                "webhook-timestamp": str(int(timestamp.timestamp())),
+                "webhook-signature": signature,
+            },
+        )
+
+    def test_before_cutoff_stays_legacy_even_when_stamped(self) -> None:
+        secret = "whsec_legacyPolarToken"
+        payload = '{"foo":"bar"}'
+        timestamp = utc_now()
+        signature = sign_webhook(
+            secret,
+            "msg_1",
+            timestamp,
+            payload,
+            secret_generated_at=WEBHOOK_STANDARD_SIGNATURE_CUTOFF
+            - timedelta(microseconds=1),
+        )
+        StandardWebhook(secret.encode("utf-8")).verify(
+            payload.encode(),
+            {
+                "webhook-id": "msg_1",
+                "webhook-timestamp": str(int(timestamp.timestamp())),
+                "webhook-signature": signature,
+            },
+        )
+
+    def test_spec_matches_standard_webhooks_library(self) -> None:
+        key = secrets.token_bytes(WEBHOOK_SECRET_KEY_BYTES)
+        secret = f"{WEBHOOK_SECRET_PREFIX}{base64.b64encode(key).decode()}"
+        payload = '{"foo":"bar"}'
+        timestamp = utc_now()
+        signature = sign_webhook(
+            secret,
+            "msg_1",
+            timestamp,
+            payload,
+            secret_generated_at=WEBHOOK_STANDARD_SIGNATURE_CUTOFF,
+        )
+        StandardWebhook(secret).verify(
+            payload.encode(),
+            {
+                "webhook-id": "msg_1",
+                "webhook-timestamp": str(int(timestamp.timestamp())),
+                "webhook-signature": signature,
+            },
+        )
 
 
 @pytest.mark.asyncio
@@ -325,4 +494,77 @@ async def test_webhook_standard_webhooks_compatible(
     # Check that the generated signature is correct
     request = route_mock.calls.last.request
     w = StandardWebhook(secret.encode("utf-8"))
+    assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
+
+
+@pytest.mark.asyncio
+async def test_webhook_legacy_signature_when_secret_generated_before_cutoff(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    respx_mock: respx.MockRouter,
+    organization: Organization,
+) -> None:
+    secret = "whsec_postColumnButPreSpec"
+    route_mock = respx_mock.post("https://example.com/hook").mock(
+        return_value=httpx.Response(200)
+    )
+
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret=secret,
+        secret_generated_at=WEBHOOK_STANDARD_SIGNATURE_CUTOFF - timedelta(days=1),
+    )
+    await save_fixture(endpoint)
+
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
+        payload='{"foo":"bar"}',
+    )
+    await save_fixture(event)
+
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
+
+    request = route_mock.calls.last.request
+    w = StandardWebhook(secret.encode("utf-8"))
+    assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
+
+
+@pytest.mark.asyncio
+async def test_webhook_spec_signature_when_secret_generated_at_cutoff(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    respx_mock: respx.MockRouter,
+    organization: Organization,
+) -> None:
+    key = secrets.token_bytes(WEBHOOK_SECRET_KEY_BYTES)
+    secret = f"{WEBHOOK_SECRET_PREFIX}{base64.b64encode(key).decode()}"
+    route_mock = respx_mock.post("https://example.com/hook").mock(
+        return_value=httpx.Response(200)
+    )
+
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret=secret,
+        secret_generated_at=WEBHOOK_STANDARD_SIGNATURE_CUTOFF,
+    )
+    await save_fixture(endpoint)
+
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
+        payload='{"foo":"bar"}',
+    )
+    await save_fixture(event)
+
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
+
+    request = route_mock.calls.last.request
+    w = StandardWebhook(secret)
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None

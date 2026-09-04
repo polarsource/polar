@@ -1,5 +1,6 @@
 import base64
 from collections.abc import Mapping
+from datetime import datetime
 from ssl import SSLError
 from uuid import UUID
 
@@ -26,9 +27,26 @@ from polar.worker import (
     enqueue_job,
 )
 
+from .constants import uses_standard_webhook_signature
 from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
+
+
+def sign_webhook(
+    secret: str,
+    msg_id: str,
+    timestamp: datetime,
+    payload: str,
+    *,
+    secret_generated_at: datetime | None,
+) -> str:
+    key = (
+        secret
+        if uses_standard_webhook_signature(secret_generated_at)
+        else base64.b64encode(secret.encode("utf-8")).decode("utf-8")
+    )
+    return StandardWebhook(key).sign(msg_id, timestamp, payload)
 
 
 # Safety-guard max_retries: enough for all ordering retries within the age
@@ -106,14 +124,13 @@ async def _webhook_event_send(
         session.add(event)
 
     ts = utc_now()
-
-    b64secret = base64.b64encode(event.webhook_endpoint.secret.encode("utf-8")).decode(
-        "utf-8"
+    signature = sign_webhook(
+        event.webhook_endpoint.secret,
+        str(event.id),
+        ts,
+        event.payload,
+        secret_generated_at=event.webhook_endpoint.secret_generated_at,
     )
-
-    # Sign the payload
-    wh = StandardWebhook(b64secret)
-    signature = wh.sign(str(event.id), ts, event.payload)
 
     headers: Mapping[str, str] = {
         "user-agent": "polar.sh webhooks",

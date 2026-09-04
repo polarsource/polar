@@ -1,8 +1,16 @@
 import ipaddress
+from datetime import datetime
 from typing import Annotated
 
 import idna
-from pydantic import UUID4, AfterValidator, AnyUrl, BeforeValidator, Field
+from pydantic import (
+    UUID4,
+    AfterValidator,
+    AnyUrl,
+    BeforeValidator,
+    Field,
+    computed_field,
+)
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import (
@@ -16,6 +24,9 @@ from polar.kit.versioning import APIVersion
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
 from polar.version import CURRENT_API_VERSION, VERSIONS
+from polar.webhook.constants import (
+    uses_standard_webhook_signature as secret_uses_standard_webhook_signature,
+)
 
 LOCALHOST_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]"}
 
@@ -121,6 +132,19 @@ class WebhookEndpoint(IDSchema, TimestampedSchema):
     enabled: bool = Field(
         description="Whether the webhook endpoint is enabled and will receive events."
     )
+    secret_generated_at: SkipJsonSchema[datetime | None] = Field(
+        default=None, exclude=True
+    )
+
+    @computed_field(  # type: ignore[prop-decorator]
+        description=(
+            "Whether Polar signs deliveries to this endpoint with Standard Webhooks. "
+            "False means Polar's original HMAC over the UTF-8 bytes of the full secret."
+        ),
+    )
+    @property
+    def uses_standard_webhook_signature(self) -> bool:
+        return secret_uses_standard_webhook_signature(self.secret_generated_at)
 
 
 class WebhookEndpointCreate(Schema):

@@ -368,7 +368,9 @@ The next thing we do is to create a folder named Handler inside the app folder. 
 * PolarSignature.php
 * ProcessWebhook.php
 
-Inside app/Handler/PolarSignature.php, what we want to do is to validate that the request came from Polar. Add the code to that file.
+Inside app/Handler/PolarSignature.php, validate that the request came from Polar.
+Try Standard Webhooks first (secret as-is), then Polar's legacy HMAC (base64-encode the
+full `whsec_…` string). Add the code to that file.
 
 ```php
 // app/Handler/PolarSignature.php
@@ -377,7 +379,6 @@ Inside app/Handler/PolarSignature.php, what we want to do is to validate that th
 namespace App\Handler;
 
 use Illuminate\Http\Request;
-use Spatie\WebhookClient\Exceptions\WebhookFailed;
 use Spatie\WebhookClient\WebhookConfig;
 use Spatie\WebhookClient\SignatureValidator\SignatureValidator;
 
@@ -385,14 +386,26 @@ class PolarSignature implements SignatureValidator
 {
     public function isValid(Request $request, WebhookConfig $config): bool
     {
-        $signingSecret = base64_encode($config->signingSecret);
-        $wh = new \StandardWebhooks\Webhook($signingSecret);
-
-        return boolval( $wh->verify($request->getContent(), array(
+        $headers = array(
             "webhook-id" => $request->header("webhook-id"),
             "webhook-signature" => $request->header("webhook-signature"),
             "webhook-timestamp" => $request->header("webhook-timestamp"),
-        )));
+        );
+        $body = $request->getContent();
+        $secret = $config->signingSecret;
+
+        try {
+            (new \StandardWebhooks\Webhook($secret))->verify($body, $headers);
+            return true;
+        } catch (\Throwable) {
+            try {
+                $legacySecret = base64_encode($secret);
+                (new \StandardWebhooks\Webhook($legacySecret))->verify($body, $headers);
+                return true;
+            } catch (\Throwable) {
+                return false;
+            }
+        }
     }
 }
 ```

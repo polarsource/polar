@@ -409,8 +409,8 @@ class PolarSelfClient:
         ) as span:
             for role in ("owner", "billing_manager"):
                 try:
-                    async for contact in self._sdk.members.iter_list_members(
-                        customer_id=customer_id,
+                    async for contact in self._sdk.customers.members.iter_list(
+                        customer_id,
                         role=role,
                         limit=100,
                     ):

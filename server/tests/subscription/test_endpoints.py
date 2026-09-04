@@ -1,9 +1,11 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.enums import SubscriptionRecurringInterval
@@ -19,7 +21,9 @@ from polar.models import (
 from polar.models.customer_seat import SeatStatus
 from polar.models.order import OrderStatus
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
+from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
+from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -1231,6 +1235,36 @@ class TestSubscriptionUpdateSeats:
 
 @pytest.mark.asyncio
 class TestSubscriptionUpdateTrial:
+    @pytest.mark.auth
+    async def test_end_trial_payment_failure_returns_402(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_cycle_order",
+            new=AsyncMock(side_effect=PaymentFailed(PaymentFailedReason.card_error)),
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trialing,
+            started_at=utc_now(),
+            trial_start=utc_now(),
+            trial_end=utc_now() + timedelta(days=14),
+        )
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}", json={"trial_end": "now"}
+        )
+
+        assert response.status_code == 402
+
     @pytest.mark.auth
     async def test_extend_trial_seat_based_subscription(
         self,

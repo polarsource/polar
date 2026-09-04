@@ -18,7 +18,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Subscription
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import APITag
-from polar.order.service import PaymentFailed
+from polar.order.service import PaymentActionRequired, PaymentFailed
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -404,8 +404,11 @@ async def create(
     responses={
         200: {"description": "Subscription updated."},
         402: {
-            "description": "Payment required to apply the subscription update.",
-            "model": PaymentFailed.schema(),
+            "description": (
+                "The charge failed, or requires customer authentication "
+                "that can't be completed off-session."
+            ),
+            "model": PaymentFailed.schema() | PaymentActionRequired.schema(),
         },
         403: {
             "description": (

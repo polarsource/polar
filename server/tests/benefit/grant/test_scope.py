@@ -8,11 +8,19 @@ from polar.benefit.grant.scope import (
     MemberNotFound,
     resolve_member,
 )
+from polar.enums import SubscriptionRecurringInterval
 from polar.models import Account, Member
+from polar.models.customer_seat import SeatStatus
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_organization
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_customer_seat,
+    create_organization,
+    create_product,
+    create_subscription,
+)
 
 
 @pytest.mark.asyncio
@@ -73,6 +81,91 @@ class TestResolveMember:
         )
 
         assert result is None
+
+    async def test_phase_1_links_direct_purchase_to_owner_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "member_model_enabled": False,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+        )
+
+        assert result is not None
+        assert result.customer_id == customer.id
+        assert result.role == MemberRole.owner
+
+    async def test_phase_1_seat_holder_resolves_the_seat_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "member_model_enabled": False,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        buyer = await create_customer(
+            save_fixture, organization=organization, email="buyer@example.com"
+        )
+        holder = await create_customer(
+            save_fixture, organization=organization, email="holder@example.com"
+        )
+        seat_member = Member(
+            customer_id=buyer.id,
+            organization_id=organization.id,
+            email=holder.email,
+            name="Seat holder",
+            role=MemberRole.member,
+        )
+        await save_fixture(seat_member)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=buyer
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            customer=holder,
+            status=SeatStatus.claimed,
+            member=seat_member,
+        )
+
+        result = await resolve_member(
+            session,
+            customer_id=holder.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=True,
+            subscription_id=subscription.id,
+        )
+
+        assert result is not None
+        assert result.id == seat_member.id
+        assert result.customer_id == buyer.id
 
     async def test_explicit_member_id_returns_member(
         self,

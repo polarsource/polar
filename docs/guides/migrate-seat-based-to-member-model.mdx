@@ -26,6 +26,8 @@ The migration happens in **two phases** so you can update your integration befor
 
 In this phase, Polar creates `Member` records for all your existing seat holders and populates `member_id` on seats and benefit grants. **Nothing breaks** because `customer_id` on seats still points to the seat holder, and no customers are deleted.
 
+This applies to new records too, not just the initial backfill.
+
 This gives you time to start reading the new `member` and `member_id` fields and update your code before the breaking change.
 
 ### Phase 2: Member model enabled (breaking)
@@ -278,11 +280,10 @@ if (event.type === 'customer_seat.claimed') {
 if (event.type === 'benefit_grant.created') {
   const grant = event.data;
 
+  // For a seat-based grant the member is the seat holder.
   if (grant.member) {
-    // Seat-based grant: member is the end user
     await grantAccess(grant.member.id, grant.member.email);
   } else {
-    // Direct purchase: customer is the end user
     await grantAccess(grant.customer_id);
   }
 }

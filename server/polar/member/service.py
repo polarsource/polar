@@ -23,6 +23,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models.customer import Customer, CustomerType
+from polar.models.customer_seat import CustomerSeat
 from polar.models.member import Member, MemberRole
 from polar.models.organization import Organization as OrgModel
 from polar.models.webhook_endpoint import WebhookEventType
@@ -505,6 +506,30 @@ class MemberService:
                     created_member,
                 )
             return created_member
+
+    async def get_or_create_for_seat(
+        self, session: AsyncSession, seat: CustomerSeat, organization: OrgModel
+    ) -> Member | None:
+        """Get or create the member sitting on a seat.
+
+        The member lives under the buyer, not under the seat holder.
+        """
+        if seat.member_id is not None:
+            return await MemberRepository.from_session(session).get_by_id(
+                seat.member_id
+            )
+
+        seat_repository = CustomerSeatRepository.from_session(session)
+        buyer_customer_id = await seat_repository.get_buyer_customer_id(seat)
+        if seat.email is None or buyer_customer_id is None:
+            return None
+
+        return await self.get_or_create_by_email(
+            session,
+            customer_id=buyer_customer_id,
+            organization_id=organization.id,
+            email=seat.email,
+        )
 
     async def get_or_create_by_email(
         self,

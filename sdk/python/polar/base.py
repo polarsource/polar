@@ -218,6 +218,46 @@ _retort = adaptix.Retort(
 )
 
 
+def _register_extra_items_typed_dict(
+    model: typing.Any,
+    extra_items_type: typing_extensions.TypeForm[typing.Any],
+) -> None:
+    global _retort
+
+    field_types = typing.get_type_hints(model, include_extras=True)
+    required_keys = set(model.__required_keys__)
+    for key, field_type in field_types.items():
+        field_origin = typing.get_origin(field_type)
+        if field_origin is typing.Required:
+            required_keys.add(key)
+        elif field_origin is typing.NotRequired:
+            required_keys.discard(key)
+        if field_origin in (typing.Required, typing.NotRequired):
+            field_types[key] = typing.get_args(field_type)[0]
+
+    def load_extra_items_typed_dict(data: object) -> dict[str, typing.Any]:
+        if not isinstance(data, collections.abc.Mapping):
+            raise adaptix.load_error.TypeLoadError(collections.abc.Mapping, data)
+
+        missing_keys = required_keys - data.keys()
+        if missing_keys:
+            raise adaptix.load_error.NoRequiredFieldsLoadError(missing_keys, data)
+
+        loaded: dict[str, typing.Any] = {}
+        for key, value in data.items():
+            if not isinstance(key, str):
+                raise adaptix.load_error.TypeLoadError(str, key)
+            if key in field_types:
+                loaded[key] = _retort.load(value, field_types[key])
+            else:
+                loaded[key] = _retort.load(value, extra_items_type)
+        return loaded
+
+    _retort = _retort.extend(
+        recipe=[adaptix.loader(model, load_extra_items_typed_dict)]
+    )
+
+
 def deserialize(data: object, model: typing_extensions.TypeForm[_ModelT]) -> _ModelT:
     try:
         return typing.cast(_ModelT, _retort.load(data, model))

@@ -13745,6 +13745,7 @@ export interface EventMetadataInput {
    * _llm
    */
   _llm?: LLMMetadata;
+  [key: string]: string | number | boolean | CostMetadataInput | LLMMetadata | undefined;
 }
 /**
  * EventMetadataOutput
@@ -13758,6 +13759,7 @@ export interface EventMetadataOutput {
    * _llm
    */
   _llm?: LLMMetadata;
+  [key: string]: string | number | boolean | CostMetadataOutput | LLMMetadata | undefined;
 }
 /**
  * EventName

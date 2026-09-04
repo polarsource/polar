@@ -4,6 +4,7 @@ from generator.ir import (
     EnumRef,
     LiteralType,
     MapType,
+    Model,
     ModelRef,
     NullableType,
     PrimitiveType,
@@ -94,6 +95,18 @@ def convert_type_to_typescript(
         return f"Record<string, {value_type}>"
 
     return "unknown"
+
+
+def convert_additional_properties_to_typescript(model: Model) -> str:
+    assert model.additional_properties is not None
+
+    type_refs = [model.additional_properties, *(field.type for field in model.fields)]
+    types = dict.fromkeys(
+        convert_type_to_typescript(type_ref) for type_ref in type_refs
+    )
+    if any(not field.required for field in model.fields):
+        types["undefined"] = None
+    return " | ".join(types)
 
 
 def collect_type_imports(type_ref: TypeRef | None, api: APIVersion) -> set[str]:

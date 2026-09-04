@@ -711,7 +711,7 @@ def _schema_to_model(
             normalize_model_name=normalize_model_name,
         )
     additional_properties = None
-    if not schema.properties and schema.additionalProperties is not None:
+    if schema.additionalProperties is not None:
         if isinstance(schema.additionalProperties, bool):
             if schema.additionalProperties:
                 additional_properties = PrimitiveType(kind="primitive", type="unknown")

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import typing
+{% if input_uses_extra_items %}
+
+import typing_extensions
+{% endif %}
 
 {% if input_enum_imports %}
 from polar.{{ version }}.literals import (
@@ -11,14 +15,14 @@ from polar.{{ version }}.literals import (
 {% endif %}
 
 {% for model in api.input_models %}
-{% if model.additional_properties %}
+{% if model.additional_properties and not model.fields %}
 {{ model.name }}: typing.TypeAlias = dict[str, {{ model.additional_properties | type_annotation }}]
 {% if model.description %}
 """{{ model.description }}"""
 {% endif %}
 
 {% else %}
-class {{ model.name }}(typing.TypedDict):
+class {{ model.name }}({% if model.additional_properties %}typing_extensions.TypedDict, extra_items={{ model.additional_properties | type_annotation }}{% else %}typing.TypedDict{% endif %}):
 {% if model.description %}
     """{{ model.description }}"""
 {% endif %}

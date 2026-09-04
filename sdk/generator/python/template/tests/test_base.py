@@ -1,11 +1,19 @@
+from __future__ import annotations
+
 import dataclasses
 import typing
 
 import httpx
 import pytest
+import typing_extensions
 
 from polar import deserialize, PolarDeserializationError
-from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
+from polar.base import (
+    AsyncClientBase,
+    SyncClientBase,
+    _register_extra_items_typed_dict,
+    resolve_base_url,
+)
 
 SERVERS = {
     "production": "https://api.polar.sh",
@@ -28,6 +36,25 @@ class Dog:
 Animal: typing.TypeAlias = Cat | Dog
 
 
+@dataclasses.dataclass
+class ExtensibleDetails:
+    name: str
+
+
+class ExtensibleModel(
+    typing_extensions.TypedDict,
+    extra_items=str | int | float | bool,
+):
+    known: int
+    details: typing.NotRequired[ExtensibleDetails]
+
+
+_register_extra_items_typed_dict(
+    ExtensibleModel,
+    str | int | float | bool,
+)
+
+
 def test_deserialize_model() -> None:
     cat = deserialize({"type": "cat", "lives": 9}, Cat)
 
@@ -45,6 +72,34 @@ def test_deserialize_union() -> None:
 
     typing.assert_type(animal, Cat | Dog)
     assert animal == Dog(type="dog", breed="Samoyed")
+
+
+def test_deserialize_model_with_additional_properties() -> None:
+    model = deserialize(
+        {
+            "known": 1,
+            "details": {"name": "example"},
+            "custom": "value",
+        },
+        ExtensibleModel,
+    )
+
+    assert model == {
+        "known": 1,
+        "details": ExtensibleDetails(name="example"),
+        "custom": "value",
+    }
+
+
+def test_deserialize_model_without_optional_fields() -> None:
+    model = deserialize({"known": 1, "custom": "value"}, ExtensibleModel)
+
+    assert model == {"known": 1, "custom": "value"}
+
+
+def test_deserialize_model_with_invalid_additional_property() -> None:
+    with pytest.raises(PolarDeserializationError):
+        deserialize({"known": 1, "invalid": ["value"]}, ExtensibleModel)
 
 
 @pytest.mark.parametrize(

@@ -444,7 +444,7 @@ class SubscriptionUpdateContext:
         self._previous_is_canceled = subscription.canceled
         self._notify_customer = notify_customer
 
-        self._billing_effect: Literal["invoice", "cycle"] | None = None
+        self._billing_effect: Literal["invoice", "cycle", "cycle_sync"] | None = None
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
         self._has_changes = True
 
@@ -464,6 +464,13 @@ class SubscriptionUpdateContext:
         match self._billing_effect:
             case "cycle":
                 await self.service.cycle(self.session, self, self.subscription)
+            case "cycle_sync":
+                await self.service.cycle(
+                    self.session,
+                    self,
+                    self.subscription,
+                    payment_mode=PaymentMode.sync,
+                )
             case "invoice":
                 await self.service._create_subscription_update_order(
                     self.session, self.subscription
@@ -495,10 +502,14 @@ class SubscriptionUpdateContext:
     def mark_unchanged(self) -> None:
         self._has_changes = False
 
-    def set_billing_effect(self, effect: Literal["invoice", "cycle"]) -> None:
-        if effect == "cycle":
+    def set_billing_effect(
+        self, effect: Literal["invoice", "cycle", "cycle_sync"]
+    ) -> None:
+        if effect == "cycle_sync":
+            self._billing_effect = "cycle_sync"
+        elif effect == "cycle" and self._billing_effect != "cycle_sync":
             self._billing_effect = "cycle"
-        elif effect == "invoice" and self._billing_effect != "cycle":
+        elif effect == "invoice" and self._billing_effect is None:
             self._billing_effect = "invoice"
 
     def add_event_metadata(
@@ -1085,6 +1096,8 @@ class SubscriptionService:
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         update_cycle_dates: bool = True,
+        *,
+        payment_mode: PaymentMode = PaymentMode.background,
     ) -> Subscription:
         if not subscription.billable:
             raise NotBillableSubscription(subscription)
@@ -1235,12 +1248,17 @@ class SubscriptionService:
         else:
             billing_reason = OrderBillingReasonInternal.subscription_cycle
 
-        enqueue_job(
-            "order.create_subscription_order",
-            subscription.id,
-            billing_reason,
-            cutoff=cycle_at.isoformat(),
-        )
+        if payment_mode == PaymentMode.sync:
+            await self._create_subscription_cycle_order(
+                session, subscription, billing_reason, cutoff=cycle_at
+            )
+        else:
+            enqueue_job(
+                "order.create_subscription_order",
+                subscription.id,
+                billing_reason,
+                cutoff=cycle_at.isoformat(),
+            )
 
         return subscription
 
@@ -2193,8 +2211,7 @@ class SubscriptionService:
             # End trial immediately
             if trial_end == "now":
                 subscription.trial_end = subscription.current_period_end = utc_now()
-                # Make sure to cycle the subscription immediately to update status and trigger order
-                ctx.set_billing_effect("cycle")
+                ctx.set_billing_effect("cycle_sync")
             # Set new trial end date
             else:
                 subscription.trial_end = subscription.current_period_end = trial_end
@@ -4322,6 +4339,24 @@ class SubscriptionService:
             session,
             subscription,
             OrderBillingReasonInternal.subscription_update,
+            payment_mode=PaymentMode.sync,
+        )
+
+    async def _create_subscription_cycle_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        billing_reason: OrderBillingReasonInternal,
+        *,
+        cutoff: datetime,
+    ) -> Order:
+        from polar.order.service import order as order_service
+
+        return await order_service.create_subscription_order(
+            session,
+            subscription,
+            billing_reason,
+            cutoff=cutoff,
             payment_mode=PaymentMode.sync,
         )
 

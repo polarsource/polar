@@ -1,3 +1,7 @@
+import {
+  WithMetadataEntries,
+  entriesToMetadata,
+} from '@/components/Metadata/utils'
 import { useCreateBenefit } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { enums, schemas } from '@polar-sh/client'
@@ -17,6 +21,8 @@ export type CreateBenefitModalParams = {
   guild_token?: string
   slack_integration_id?: string
 }
+
+type BenefitCreateForm = WithMetadataEntries<schemas['BenefitCreate']>
 
 interface CreateBenefitModalContentProps {
   organization: schemas['Organization']
@@ -48,17 +54,18 @@ const CreateBenefitModalContent = ({
 
   const benefitType = type ? type : 'feature_flag'
 
-  const form = useForm<schemas['BenefitCreate']>({
+  const form = useForm<BenefitCreateForm>({
     defaultValues: {
       organization_id: organization.id,
       type: benefitType,
       description: description ? description : undefined,
       visibility: getDefaultBenefitVisibility(benefitType),
+      metadata: [],
       properties: {
         ...properties,
         ...(slack_integration_id ? { slack_integration_id } : {}),
       },
-    } as schemas['BenefitCreate'],
+    } as BenefitCreateForm,
   })
 
   const { toast } = useToast()
@@ -70,9 +77,12 @@ const CreateBenefitModalContent = ({
   } = form
 
   const handleCreateNewBenefit = useCallback(
-    async (subscriptionBenefitCreate: schemas['BenefitCreate']) => {
+    async (subscriptionBenefitCreate: BenefitCreateForm) => {
       const { data: benefit, error } =
-        await createSubscriptionBenefit.mutateAsync(subscriptionBenefitCreate)
+        await createSubscriptionBenefit.mutateAsync({
+          ...subscriptionBenefitCreate,
+          metadata: entriesToMetadata(subscriptionBenefitCreate.metadata),
+        })
       if (error) {
         if (error.detail) {
           setValidationErrors(

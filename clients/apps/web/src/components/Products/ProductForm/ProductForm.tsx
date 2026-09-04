@@ -1,6 +1,7 @@
 import { Section } from '@/components/Layout/Section'
 import { schemas } from '@polar-sh/client'
-import { ProductMetadataForm } from '../ProductMetadataForm'
+import { MetadataForm } from '@/components/Metadata/MetadataForm'
+import { MetadataFormValues } from '@/components/Metadata/utils'
 import { ProductCheckoutSection } from './ProductCheckoutSection'
 import { ProductCustomerPortalSection } from './ProductCustomerPortalSection'
 import { ProductInfoSection } from './ProductInfoSection'
@@ -37,8 +38,8 @@ export type ProductFormType = Omit<
   'metadata' | 'prices'
 > &
   ProductFullMediasMixin &
-  ProductMeterCycleMixin & {
-    metadata: { key: string; value: string | number | boolean }[]
+  ProductMeterCycleMixin &
+  MetadataFormValues & {
     prices: ProductFormPrice[]
   }
 
@@ -69,7 +70,7 @@ const ProductForm = ({
         title="Metadata"
         description="Optional metadata to associate with the product"
       >
-        <ProductMetadataForm />
+        <MetadataForm />
       </Section>
 
       <ProductCustomerPortalSection />

@@ -52,7 +52,7 @@ For existing subscriptions, you can add, extend or cancel a customer's trial per
 
 To add or extend a trial, set a new trial end date in the future. If the subscription was active, its status will be changed to **trialing**, and the billing will be postponed until the end of the trial.
 
-To cancel a trial, click on the **End trial** button. The subscription will become active immediately, and the customer will be charged immediately for a new billing cycle.
+To cancel a trial, click on the **End trial** button. Polar charges the customer immediately for a new billing cycle and only changes the subscription to **active** if payment succeeds. If payment fails, the subscription remains **trialing** with its original trial end.
 
 <img
   className="block dark:hidden"

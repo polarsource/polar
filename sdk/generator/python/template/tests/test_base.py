@@ -48,6 +48,52 @@ def test_deserialize_union() -> None:
 
 
 @pytest.mark.parametrize(
+    ("value", "expected_type"),
+    [
+        (42, int),
+        (99.5, float),
+    ],
+)
+def test_deserialize_int_float_union_preserves_json_type(
+    value: int | float, expected_type: type[int] | type[float]
+) -> None:
+    result = deserialize(value, int | float)
+    assert type(result) is expected_type
+    assert result == value
+
+
+def test_deserialize_int_float_optional_field() -> None:
+    @dataclasses.dataclass
+    class Metric:
+        orders: int | float | None = None
+        revenue: int | float | None = None
+
+    result = deserialize({"orders": 42, "revenue": 99.5}, Metric)
+    assert type(result.orders) is int
+    assert result.orders == 42
+    assert type(result.revenue) is float
+    assert result.revenue == 99.5
+
+
+def test_deserialize_json_scalar_union_preserves_int() -> None:
+    result = deserialize(
+        {"count": 1, "ratio": 1.5, "name": "x", "ok": True},
+        dict[str, str | int | float | bool],
+    )
+    assert type(result["count"]) is int
+    assert result["count"] == 1
+    assert type(result["ratio"]) is float
+    assert type(result["name"]) is str
+    assert type(result["ok"]) is bool
+
+
+def test_deserialize_float_still_coerces_int() -> None:
+    result = deserialize(7, float)
+    assert type(result) is float
+    assert result == 7.0
+
+
+@pytest.mark.parametrize(
     ("environment", "base_url", "expected"),
     [
         ("production", None, "https://api.polar.sh"),

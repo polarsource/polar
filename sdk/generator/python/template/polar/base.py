@@ -194,7 +194,22 @@ class AsyncServiceBase:
         return cls(service.client)
 
 
-_retort = adaptix.Retort()
+def _load_exact_float(data: object) -> float:
+    if type(data) is float:
+        return data
+    raise adaptix.load_error.TypeLoadError(float, data)
+
+
+_retort = adaptix.Retort(
+    recipe=[
+        adaptix.loader(
+            adaptix.P[int | float][float]
+            | adaptix.P[int | float | None][float]
+            | adaptix.P[str | int | float | bool][float],
+            _load_exact_float,
+        ),
+    ]
+)
 
 
 def deserialize(

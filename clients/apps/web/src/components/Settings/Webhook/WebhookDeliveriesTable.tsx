@@ -287,6 +287,9 @@ const ExpandedRow = (props: DataTableCellContext<DeliveryRow, unknown>) => {
         <div>Event Timestamp</div>
         <code className="text-xs">{delivery.webhook_event.created_at}</code>
 
+        <div>Event API Version</div>
+        <code className="text-xs">{delivery.webhook_event.api_version}</code>
+
         <div>Delivery ID</div>
         <code className="text-xs">{delivery.id}</code>
 

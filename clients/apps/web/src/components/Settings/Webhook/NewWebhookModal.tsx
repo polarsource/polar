@@ -10,7 +10,13 @@ import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
-import { FieldEvents, FieldFormat, FieldName, FieldUrl } from './WebhookForm'
+import {
+  FieldApiVersion,
+  FieldEvents,
+  FieldFormat,
+  FieldName,
+  FieldUrl,
+} from './WebhookForm'
 
 export default function NewWebhookModal({
   organization,
@@ -73,6 +79,7 @@ export default function NewWebhookModal({
             <FieldName />
             <FieldUrl />
             <FieldFormat />
+            <FieldApiVersion />
             <FieldEvents />
 
             <Button

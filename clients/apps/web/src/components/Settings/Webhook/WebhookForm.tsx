@@ -169,6 +169,46 @@ export const FieldFormat = () => {
   )
 }
 
+export const FieldApiVersion = () => {
+  const { control } = useFormContext<CreateOrUpdate>()
+
+  return (
+    <FormField
+      control={control}
+      name="api_version"
+      rules={{
+        required: 'This field is required',
+      }}
+      render={({ field }) => (
+        <FormItem className="flex flex-col gap-1">
+          <div className="flex flex-row items-center justify-between">
+            <FormLabel>API Version</FormLabel>
+          </div>
+          <FormControl>
+            <Select
+              {...field}
+              value={field.value || undefined}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an API version" />
+              </SelectTrigger>
+              <SelectContent>
+                {enums.webhookEndpointCreateApi_versionValues.map((version) => (
+                  <SelectItem key={version} value={version}>
+                    {version}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+
 export const FieldEvents = () => {
   const { control } = useFormContext<CreateOrUpdate>()
 

@@ -2,6 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
+  FieldApiVersion,
   FieldEvents,
   FieldFormat,
   FieldName,
@@ -10,7 +11,7 @@ import {
 import { toast } from '@/components/Toast/use-toast'
 import { useEditWebhookEndpoint } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import { schemas } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
@@ -21,10 +22,18 @@ export default function WebhookContextView({
 }: {
   endpoint: schemas['WebhookEndpoint']
 }) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { secret, ...endpointWithoutSecret } = endpoint
+  const apiVersion = enums.webhookEndpointCreateApi_versionValues.find(
+    (version) => version === endpoint.api_version,
+  )
   const form = useForm<schemas['WebhookEndpointUpdate']>({
-    defaultValues: endpointWithoutSecret,
+    defaultValues: {
+      url: endpoint.url,
+      name: endpoint.name,
+      api_version: apiVersion,
+      format: endpoint.format,
+      events: endpoint.events,
+      enabled: endpoint.enabled,
+    },
   })
 
   const { handleSubmit } = form
@@ -62,6 +71,7 @@ export default function WebhookContextView({
             <FieldName />
             <FieldUrl />
             <FieldFormat />
+            <FieldApiVersion />
             <FieldEvents />
 
             <Button

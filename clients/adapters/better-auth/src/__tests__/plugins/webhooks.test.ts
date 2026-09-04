@@ -6,9 +6,20 @@ vi.mock('@polar-sh/adapter-utils', () => ({
   handleWebhookPayload: vi.fn(),
 }))
 
-vi.mock('@polar-sh/sdk/webhooks', () => ({
-  validateEvent: vi.fn(),
-}))
+vi.mock('@polar-sh/sdk/2026-04', () => {
+  class PolarWebhookError extends Error {}
+  class PolarWebhookVerificationError extends PolarWebhookError {}
+  class PolarWebhookUnknownTypeError extends PolarWebhookError {}
+
+  return {
+    webhooks: {
+      validateEvent: vi.fn(),
+      PolarWebhookError,
+      PolarWebhookVerificationError,
+      PolarWebhookUnknownTypeError,
+    },
+  }
+})
 
 vi.mock('better-auth/api', () => ({
   APIError: class APIError extends Error {
@@ -29,7 +40,10 @@ vi.mock('better-auth/api', () => ({
 const { handleWebhookPayload } = (await vi.importMock(
   '@polar-sh/adapter-utils',
 )) as any
-const { validateEvent } = (await vi.importMock('@polar-sh/sdk/webhooks')) as any
+const { webhooks: sdkWebhooks } = (await vi.importMock(
+  '@polar-sh/sdk/2026-04',
+)) as any
+const { validateEvent } = sdkWebhooks
 const { createAuthEndpoint } = (await vi.importMock('better-auth/api')) as any
 
 describe('webhooks plugin', () => {
@@ -195,7 +209,7 @@ describe('webhooks plugin', () => {
 
     it('should handle invalid webhook signature', async () => {
       vi.mocked(validateEvent).mockImplementation(() => {
-        throw new Error('Invalid signature')
+        throw new sdkWebhooks.PolarWebhookVerificationError('Invalid signature')
       })
 
       const ctx = {
@@ -203,10 +217,43 @@ describe('webhooks plugin', () => {
         context: { logger: { error: vi.fn() } },
       }
 
-      await expect(handler(ctx)).rejects.toThrow(
-        'Webhook Error: Invalid signature',
-      )
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'FORBIDDEN',
+        message: 'Webhook Error: Invalid signature',
+      })
       expect(ctx.context.logger.error).toHaveBeenCalledWith('Invalid signature')
+    })
+
+    it('should acknowledge unknown event types', async () => {
+      vi.mocked(validateEvent).mockRejectedValue(
+        new sdkWebhooks.PolarWebhookUnknownTypeError('future.event'),
+      )
+
+      const ctx = {
+        request: mockRequest,
+        context: { logger: { error: vi.fn() } },
+        json: vi.fn().mockReturnValue({ received: true }),
+      }
+
+      await expect(handler(ctx)).resolves.toEqual({ received: true })
+      expect(ctx.json).toHaveBeenCalledWith({ received: true })
+      expect(handleWebhookPayload).not.toHaveBeenCalled()
+    })
+
+    it('should reject invalid known payloads', async () => {
+      vi.mocked(validateEvent).mockRejectedValue(
+        new sdkWebhooks.PolarWebhookError('Invalid payload'),
+      )
+
+      const ctx = {
+        request: mockRequest,
+        context: { logger: { error: vi.fn() } },
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'BAD_REQUEST',
+        message: 'Webhook Error: Invalid payload',
+      })
     })
 
     it('should handle missing webhook headers', async () => {
@@ -217,7 +264,9 @@ describe('webhooks plugin', () => {
       } as any
 
       vi.mocked(validateEvent).mockImplementation(() => {
-        throw new Error('Missing required headers')
+        throw new sdkWebhooks.PolarWebhookVerificationError(
+          'Missing required headers',
+        )
       })
 
       const ctx = {

@@ -1,4 +1,4 @@
-import type { Polar } from '@polar-sh/sdk'
+import type { Polar } from '@polar-sh/sdk/2026-04'
 import type { AuthContext, BetterAuthPlugin, User } from 'better-auth'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import type {

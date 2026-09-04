@@ -1,4 +1,4 @@
-import type { Polar } from '@polar-sh/sdk'
+import type { models, Polar } from '@polar-sh/sdk/2026-04'
 import { APIError } from 'better-auth/api'
 import { createAuthEndpoint, sessionMiddleware } from 'better-auth/api'
 import * as z from 'zod/v4'
@@ -64,15 +64,15 @@ export const portal =
 
           try {
             const customerSession = await polar.customerSessions.create({
-              externalCustomerId:
+              external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
-                ? { externalMemberId: principal.externalMemberId }
+                ? { external_member_id: principal.externalMemberId }
                 : {}),
-              returnUrl: retUrl ? decodeURI(retUrl.toString()) : undefined,
+              return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
             })
 
-            const portalUrl = new URL(customerSession.customerPortalUrl)
+            const portalUrl = new URL(customerSession.customer_portal_url)
 
             if (theme) {
               portalUrl.searchParams.set('theme', theme)
@@ -121,10 +121,10 @@ export const portal =
             : undefined
 
           try {
-            const state = await polar.customers.getStateExternal({
-              externalId:
+            const state: models.CustomerState =
+              await polar.customers.getStateExternal(
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
-            })
+              )
 
             return ctx.json(state)
           } catch (e: unknown) {
@@ -173,20 +173,21 @@ export const portal =
 
           try {
             const customerSession = await polar.customerSessions.create({
-              externalCustomerId:
+              external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
-                ? { externalMemberId: principal.externalMemberId }
+                ? { external_member_id: principal.externalMemberId }
                 : {}),
             })
 
-            const benefits = await polar.customerPortal.benefitGrants.list(
-              { customerSession: customerSession.token },
-              {
-                page: ctx.query?.page,
-                limit: ctx.query?.limit,
-              },
-            )
+            const benefits: models.ListResourceCustomerBenefitGrant =
+              await polar.customerPortal.benefitGrants.list(
+                {
+                  page: ctx.query?.page,
+                  limit: ctx.query?.limit,
+                },
+                { accessToken: customerSession.token },
+              )
 
             return ctx.json(benefits)
           } catch (e: unknown) {
@@ -243,14 +244,15 @@ export const portal =
 
           if (ctx.query?.referenceId) {
             try {
-              const subscriptions = await polar.subscriptions.list({
-                page: ctx.query?.page,
-                limit: ctx.query?.limit,
-                active: ctx.query?.active,
-                metadata: {
-                  referenceId: ctx.query?.referenceId,
-                },
-              })
+              const subscriptions: models.ListResourceSubscription =
+                await polar.subscriptions.list({
+                  page: ctx.query?.page,
+                  limit: ctx.query?.limit,
+                  active: ctx.query?.active,
+                  metadata: {
+                    referenceId: ctx.query?.referenceId,
+                  },
+                })
 
               return ctx.json(subscriptions)
             } catch (e: unknown) {
@@ -269,21 +271,22 @@ export const portal =
 
           try {
             const customerSession = await polar.customerSessions.create({
-              externalCustomerId:
+              external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
-                ? { externalMemberId: principal.externalMemberId }
+                ? { external_member_id: principal.externalMemberId }
                 : {}),
             })
 
-            const subscriptions = await polar.customerPortal.subscriptions.list(
-              { customerSession: customerSession.token },
-              {
-                page: ctx.query?.page,
-                limit: ctx.query?.limit,
-                active: ctx.query?.active,
-              },
-            )
+            const subscriptions: models.ListResourceCustomerSubscription =
+              await polar.customerPortal.subscriptions.list(
+                {
+                  page: ctx.query?.page,
+                  limit: ctx.query?.limit,
+                  active: ctx.query?.active,
+                },
+                { accessToken: customerSession.token },
+              )
 
             return ctx.json(subscriptions)
           } catch (e: unknown) {
@@ -333,21 +336,22 @@ export const portal =
 
           try {
             const customerSession = await polar.customerSessions.create({
-              externalCustomerId:
+              external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
-                ? { externalMemberId: principal.externalMemberId }
+                ? { external_member_id: principal.externalMemberId }
                 : {}),
             })
 
-            const orders = await polar.customerPortal.orders.list(
-              { customerSession: customerSession.token },
-              {
-                page: ctx.query?.page,
-                limit: ctx.query?.limit,
-                productBillingType: ctx.query?.productBillingType,
-              },
-            )
+            const orders: models.ListResourceCustomerOrder =
+              await polar.customerPortal.orders.list(
+                {
+                  page: ctx.query?.page,
+                  limit: ctx.query?.limit,
+                  product_billing_type: ctx.query?.productBillingType,
+                },
+                { accessToken: customerSession.token },
+              )
 
             return ctx.json(orders)
           } catch (e: unknown) {

@@ -1,6 +1,6 @@
-import { Polar } from '@polar-sh/sdk'
+import { createPolar } from '@polar-sh/sdk/2026-04'
 
-export const polarSDK = new Polar({
+export const polarSDK = createPolar({
   accessToken: process.env['POLAR_ACCESS_TOKEN'] as string,
-  server: 'sandbox',
+  environment: 'sandbox',
 })

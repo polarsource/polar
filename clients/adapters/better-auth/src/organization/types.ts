@@ -1,10 +1,8 @@
-import type { CustomerTeamCreate } from '@polar-sh/sdk/models/components/customerteamcreate.js'
-import type { MemberRole } from '@polar-sh/sdk/models/components/memberrole.js'
-import type { Product as PolarProduct } from '@polar-sh/sdk/models/components/product.js'
+import type { models } from '@polar-sh/sdk/2026-04'
 import type { User } from 'better-auth'
 import type { Member, Organization } from 'better-auth/plugins/organization'
 
-export type PolarMemberRole = (typeof MemberRole)[keyof typeof MemberRole]
+export type PolarMemberRole = models.MemberRole
 export type PolarNonOwnerMemberRole = Exclude<PolarMemberRole, 'owner'>
 
 export type BetterAuthOrganizationUser = User & Record<string, unknown>
@@ -58,15 +56,15 @@ export interface PolarOrganizationRoleSyncOptions extends BetterAuthRoleMappingO
 }
 
 export type PolarOrganizationCustomerCreateParams = Omit<
-  CustomerTeamCreate,
-  'externalId' | 'name' | 'owner' | 'type'
+  models.CustomerTeamCreate,
+  'external_id' | 'name' | 'owner' | 'type'
 >
 
 export interface SelectSeatProductsForMemberInput {
   organization: Organization & Record<string, unknown>
   member: Member & Record<string, unknown>
   user: BetterAuthOrganizationUser
-  products: PolarProduct[]
+  products: models.Product[]
 }
 
 export type SelectSeatProductsForMember = (

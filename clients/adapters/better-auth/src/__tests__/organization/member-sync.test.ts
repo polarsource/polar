@@ -1,6 +1,5 @@
-import type { Member as PolarMember } from '@polar-sh/sdk/models/components/member.js'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { errors, type models } from '@polar-sh/sdk/2026-04'
 import {
   PolarOrganizationOwnerInvariantError,
   ensureMemberMirror,
@@ -11,18 +10,17 @@ import {
 import type { BetterAuthOrganizationMemberMirror } from '../../organization/types'
 import { createMockPolarClient } from '../utils/mocks'
 
+type PolarMember = models.Member
+const { ResourceNotFound } = errors
+
 const organizationId = 'organization-123'
 const createdAt = new Date('2025-01-01T00:00:00.000Z')
 
 const notFound = (resource = 'Resource') =>
-  new ResourceNotFound(
-    { error: 'ResourceNotFound', detail: `${resource} not found` },
-    {
-      response: new Response('', { status: 404 }),
-      request: new Request('https://api.polar.sh/v1/customers'),
-      body: '',
-    },
-  )
+  new ResourceNotFound(404, {
+    error: 'ResourceNotFound',
+    detail: `${resource} not found`,
+  })
 
 const betterAuthMember = (
   userId: string,
@@ -51,12 +49,12 @@ const polarMember = (
   overrides: Partial<PolarMember> = {},
 ): PolarMember => ({
   id: `polar-member-${userId}`,
-  createdAt,
-  modifiedAt: null,
-  customerId: `customer-${organizationId}`,
+  created_at: createdAt.toISOString(),
+  modified_at: null,
+  customer_id: `customer-${organizationId}`,
   email: `${userId}@example.com`,
   name: userId,
-  externalId: userId,
+  external_id: userId,
   role,
   ...overrides,
 })
@@ -68,57 +66,54 @@ const createHarness = (
   const members = new Map<string, PolarMember>()
   for (const [orgId, organizationMembers] of Object.entries(initialMembers)) {
     for (const member of organizationMembers) {
-      members.set(`${orgId}:${member.externalId}`, member)
+      members.set(`${orgId}:${member.external_id}`, member)
     }
   }
 
   vi.mocked(client.customers.getExternal).mockImplementation(
-    async ({ externalId }) => ({
+    async (externalId) => ({
       id: `customer-${externalId}`,
-      createdAt,
-      modifiedAt: null,
+      created_at: createdAt.toISOString(),
+      modified_at: null,
       metadata: {},
-      externalId,
+      external_id: externalId,
       email: null,
-      emailVerified: false,
+      email_verified: false,
       type: 'team',
       name: 'Acme',
-      billingName: null,
-      billingAddress: null,
-      taxId: null,
-      organizationId: 'polar-organization',
-      deletedAt: null,
-      avatarUrl: null,
+      billing_name: null,
+      billing_address: null,
+      tax_id: null,
+      organization_id: 'polar-organization',
+      deleted_at: null,
+      first_user_event_at: null,
+      avatar_url: null,
     }),
   )
-  vi.mocked(client.members.listMembers).mockImplementation(
-    async ({ externalCustomerId, role }) => ({
-      result: {
-        items: [...members.entries()]
-          .filter(
-            ([key, member]) =>
-              key.startsWith(`${externalCustomerId}:`) &&
-              (!role || member.role === role),
-          )
-          .map(([, member]) => member),
-        pagination: {
-          totalCount: members.size,
-          maxPage: 1,
-        },
+  vi.mocked(client.customers.members.listExternal).mockImplementation(
+    async (externalCustomerId, { role } = {}) => ({
+      items: [...members.entries()]
+        .filter(
+          ([key, member]) =>
+            key.startsWith(`${externalCustomerId}:`) &&
+            (!role || member.role === role),
+        )
+        .map(([, member]) => member),
+      pagination: {
+        total_count: members.size,
+        max_page: 1,
       },
-      next: vi.fn(),
-      async *[Symbol.asyncIterator]() {},
     }),
   )
   vi.mocked(client.customers.members.getExternal).mockImplementation(
-    async ({ externalId, memberExternalId }) => {
+    async (externalId, memberExternalId) => {
       const member = members.get(`${externalId}:${memberExternalId}`)
       if (!member) throw notFound('Member')
       return member
     },
   )
   vi.mocked(client.customers.members.createExternal).mockImplementation(
-    async ({ externalId, memberCreateFromCustomer }) => {
+    async (externalId, memberCreateFromCustomer) => {
       const existingByEmail = [...members.entries()].find(
         ([key, member]) =>
           key.startsWith(`${externalId}:`) &&
@@ -128,21 +123,21 @@ const createHarness = (
       if (existingByEmail) return existingByEmail
 
       const member = polarMember(
-        memberCreateFromCustomer.externalId ?? 'missing-external-id',
+        memberCreateFromCustomer.external_id ?? 'missing-external-id',
         memberCreateFromCustomer.role ?? 'member',
         {
-          customerId: `customer-${externalId}`,
+          customer_id: `customer-${externalId}`,
           email: memberCreateFromCustomer.email,
           name: memberCreateFromCustomer.name ?? null,
-          externalId: memberCreateFromCustomer.externalId ?? null,
+          external_id: memberCreateFromCustomer.external_id ?? null,
         },
       )
-      members.set(`${externalId}:${member.externalId}`, member)
+      members.set(`${externalId}:${member.external_id}`, member)
       return member
     },
   )
   vi.mocked(client.customers.members.updateExternal).mockImplementation(
-    async ({ externalId, memberExternalId, memberUpdate }) => {
+    async (externalId, memberExternalId, memberUpdate) => {
       const key = `${externalId}:${memberExternalId}`
       const existing = members.get(key)
       if (!existing) throw notFound('Member')
@@ -159,14 +154,14 @@ const createHarness = (
           memberUpdate.name === undefined ? existing.name : memberUpdate.name,
         email: memberUpdate.email ?? existing.email,
         role: memberUpdate.role ?? existing.role,
-        modifiedAt: new Date(),
+        modified_at: new Date().toISOString(),
       }
       members.set(key, updated)
       return updated
     },
   )
   vi.mocked(client.customers.members.deleteExternal).mockImplementation(
-    async ({ externalId, memberExternalId }) => {
+    async (externalId, memberExternalId) => {
       const key = `${externalId}:${memberExternalId}`
       if (!members.delete(key)) throw notFound('Member')
     },
@@ -232,7 +227,7 @@ describe('organization member and owner synchronization', () => {
       [organizationId]: [polarMember('first-owner', 'owner')],
       [secondOrganizationId]: [
         polarMember('second-owner', 'owner', {
-          customerId: `customer-${secondOrganizationId}`,
+          customer_id: `customer-${secondOrganizationId}`,
         }),
       ],
     })
@@ -329,7 +324,7 @@ describe('organization member and owner synchronization', () => {
       vi
         .mocked(harness.client.customers.members.updateExternal)
         .mock.calls.some(
-          ([call]) => call.memberExternalId === unrelated.userId,
+          ([, memberExternalId]) => memberExternalId === unrelated.userId,
         ),
     ).toBe(false)
   })
@@ -354,7 +349,7 @@ describe('organization member and owner synchronization', () => {
 
     const promotion = vi
       .mocked(harness.client.customers.members.updateExternal)
-      .mock.calls.findIndex(([call]) => call.memberUpdate.role === 'owner')
+      .mock.calls.findIndex(([, , update]) => update.role === 'owner')
     expect(promotion).toBeGreaterThanOrEqual(0)
     expect(
       vi.mocked(harness.client.customers.members.updateExternal).mock

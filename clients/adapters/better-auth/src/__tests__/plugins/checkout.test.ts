@@ -109,11 +109,11 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['prod-123', 'prod-456'],
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
 
@@ -141,7 +141,7 @@ describe('checkout plugin', () => {
       vi.mocked(mockClient.customers.getExternal).mockResolvedValue(
         createMockCustomer({
           type: 'team',
-          externalId: 'organization-123',
+          external_id: 'organization-123',
         }),
       )
 
@@ -167,7 +167,7 @@ describe('checkout plugin', () => {
       })
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'organization-123',
+          external_customer_id: 'organization-123',
           metadata: { source: 'app' },
         }),
       )
@@ -202,7 +202,7 @@ describe('checkout plugin', () => {
       vi.mocked(mockClient.customers.getExternal).mockResolvedValue(
         createMockCustomer({
           type: 'team',
-          externalId: 'organization-123',
+          external_id: 'organization-123',
         }),
       )
       vi.mocked(mockClient.checkouts.create).mockResolvedValue(
@@ -311,8 +311,8 @@ describe('checkout plugin', () => {
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
           seats: 10,
-          minSeats: 5,
-          maxSeats: 25,
+          min_seats: 5,
+          max_seats: 25,
         }),
       )
     })
@@ -336,11 +336,11 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['prod-123'],
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
     })
@@ -364,11 +364,11 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['prod-123'],
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
     })
@@ -403,11 +403,11 @@ describe('checkout plugin', () => {
       expect(asyncProducts).toHaveBeenCalled()
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['async-prod-123'],
-          successUrl: undefined,
+          success_url: undefined,
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
     })
@@ -449,11 +449,11 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['prod-123'],
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
           metadata: { referenceId: 'ref-123', key: 'value' },
-          customFieldData: { field: 'data' },
+          custom_field_data: { field: 'data' },
         }),
       )
     })
@@ -479,11 +479,11 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: undefined,
+          external_customer_id: undefined,
           products: ['prod-123'],
-          successUrl: undefined,
+          success_url: undefined,
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
     })
@@ -548,7 +548,7 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
         }),
       )
     })

@@ -15,7 +15,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 ## Installation
 
 ```bash
-pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk
+pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk@next
 ```
 
 ## Preparation
@@ -40,14 +40,14 @@ The Polar plugin comes with a handful additional plugins which adds functionalit
 import { betterAuth } from "better-auth";
 import { organization } from "better-auth/plugins";
 import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-04";
 
-const polarClient = new Polar({
+const polarClient = createPolar({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
     // Use 'sandbox' if you're using the Polar Sandbox environment
     // Remember that access tokens, products, etc. are completely separated between environments.
     // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
-    server: 'sandbox'
+    environment: 'sandbox'
 });
 
 const auth = betterAuth({
@@ -118,15 +118,15 @@ export const authClient = createAuthClient({
 ```typescript
 import { betterAuth } from 'better-auth'
 import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth'
-import { Polar } from '@polar-sh/sdk'
+import { createPolar } from '@polar-sh/sdk/2026-04'
 import { organization } from 'better-auth/plugins'
 
-const polarClient = new Polar({
+const polarClient = createPolar({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
   // Use 'sandbox' if you're using the Polar Sandbox environment
   // Remember that access tokens, products, etc. are completely separated between environments.
   // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
-  server: 'sandbox',
+  environment: 'sandbox',
 })
 
 const auth = betterAuth({
@@ -158,6 +158,8 @@ const auth = betterAuth({
   ],
 })
 ```
+
+The SDK v1 models returned by the state, benefits, subscriptions, orders, and meters endpoints use `snake_case` fields. Webhook callback payloads use the same `snake_case` model fields.
 
 ### Required Options
 

@@ -51,7 +51,6 @@ class WebhooksSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -98,7 +97,6 @@ class WebhooksSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type WebhookEndpoint.
 
@@ -114,7 +112,7 @@ class WebhooksSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -136,7 +134,6 @@ class WebhooksSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -177,7 +174,6 @@ class WebhooksSync(SyncServiceBase):
             id: The webhook endpoint ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -222,7 +218,6 @@ class WebhooksSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
@@ -264,7 +259,6 @@ class WebhooksSync(SyncServiceBase):
             id: The webhook endpoint ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -309,7 +303,6 @@ class WebhooksSync(SyncServiceBase):
             id: The webhook endpoint ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -370,7 +363,6 @@ class WebhooksSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -439,7 +431,6 @@ class WebhooksSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type WebhookDelivery.
 
@@ -461,7 +452,7 @@ class WebhooksSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -484,7 +475,6 @@ class WebhooksSync(SyncServiceBase):
             id: The webhook event ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -535,7 +525,6 @@ class WebhooksAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -582,7 +571,6 @@ class WebhooksAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type WebhookEndpoint.
 
@@ -598,7 +586,7 @@ class WebhooksAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -621,7 +609,6 @@ class WebhooksAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -662,7 +649,6 @@ class WebhooksAsync(AsyncServiceBase):
             id: The webhook endpoint ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -707,7 +693,6 @@ class WebhooksAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
@@ -749,7 +734,6 @@ class WebhooksAsync(AsyncServiceBase):
             id: The webhook endpoint ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -794,7 +778,6 @@ class WebhooksAsync(AsyncServiceBase):
             id: The webhook endpoint ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -855,7 +838,6 @@ class WebhooksAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -924,7 +906,6 @@ class WebhooksAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type WebhookDelivery.
 
@@ -946,7 +927,7 @@ class WebhooksAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -970,7 +951,6 @@ class WebhooksAsync(AsyncServiceBase):
             id: The webhook event ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:

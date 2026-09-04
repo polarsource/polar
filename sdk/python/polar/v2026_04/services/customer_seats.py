@@ -61,7 +61,6 @@ class CustomerSeatsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerSeatsListSeats401Error: Authentication required
             CustomerSeatsListSeats403Error: Not permitted or seat-based pricing not enabled
@@ -104,7 +103,6 @@ class CustomerSeatsSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -153,7 +151,6 @@ class CustomerSeatsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerSeatsRevokeSeat401Error: Authentication required
             CustomerSeatsRevokeSeat403Error: Not permitted or seat-based pricing not enabled
@@ -196,7 +193,6 @@ class CustomerSeatsSync(SyncServiceBase):
             seat_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -243,7 +239,6 @@ class CustomerSeatsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerSeatsGetClaimInfo400Error: Invalid or expired invitation token
             CustomerSeatsGetClaimInfo403Error: Seat-based pricing not enabled for organization
@@ -283,7 +278,6 @@ class CustomerSeatsSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -332,7 +326,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerSeatsListSeats401Error: Authentication required
             CustomerSeatsListSeats403Error: Not permitted or seat-based pricing not enabled
@@ -375,7 +368,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -424,7 +416,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerSeatsRevokeSeat401Error: Authentication required
             CustomerSeatsRevokeSeat403Error: Not permitted or seat-based pricing not enabled
@@ -467,7 +458,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
             seat_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -514,7 +504,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerSeatsGetClaimInfo400Error: Invalid or expired invitation token
             CustomerSeatsGetClaimInfo403Error: Seat-based pricing not enabled for organization
@@ -554,7 +543,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 

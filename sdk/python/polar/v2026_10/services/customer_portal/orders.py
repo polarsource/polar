@@ -67,7 +67,6 @@ class OrdersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -126,7 +125,6 @@ class OrdersSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type CustomerOrder.
 
@@ -146,7 +144,7 @@ class OrdersSync(SyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -167,7 +165,6 @@ class OrdersSync(SyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -209,7 +206,6 @@ class OrdersSync(SyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -254,7 +250,6 @@ class OrdersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Order not found.
             HTTPValidationError: Validation Error
@@ -293,7 +288,6 @@ class OrdersSync(SyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -338,7 +332,6 @@ class OrdersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Order not found.
             HTTPValidationError: Validation Error
@@ -377,7 +370,6 @@ class OrdersSync(SyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -419,7 +411,6 @@ class OrdersSync(SyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -486,7 +477,6 @@ class OrdersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -545,7 +535,6 @@ class OrdersAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type CustomerOrder.
 
@@ -565,7 +554,7 @@ class OrdersAsync(AsyncServiceBase):
                 limit=limit,
                 sorting=sorting,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -587,7 +576,6 @@ class OrdersAsync(AsyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -629,7 +617,6 @@ class OrdersAsync(AsyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -674,7 +661,6 @@ class OrdersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Order not found.
             HTTPValidationError: Validation Error
@@ -713,7 +699,6 @@ class OrdersAsync(AsyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -758,7 +743,6 @@ class OrdersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Order not found.
             HTTPValidationError: Validation Error
@@ -797,7 +781,6 @@ class OrdersAsync(AsyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -839,7 +822,6 @@ class OrdersAsync(AsyncServiceBase):
             id: The order ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 

@@ -5134,6 +5134,12 @@ class CustomerStateSubscription:
     discount_id: str | None
     """The ID of the applied discount, if any."""
 
+    seats: int | None
+    """The number of seats for seat-based subscriptions. None for non-seat subscriptions."""
+
+    units: int | None
+    """The number of units for unit-based subscriptions. None for non-unit subscriptions."""
+
     meters: list[CustomerStateSubscriptionMeter]
     """List of meters associated with the subscription."""
 
@@ -8558,9 +8564,6 @@ class OrganizationFeatureSettings:
     seat_based_pricing_enabled: bool = False
     """If this organization has seat-based pricing enabled"""
 
-    metered_tiered_pricing_enabled: bool = False
-    """If this organization has tiered pricing for metered prices enabled"""
-
     wallets_enabled: bool = False
     """If this organization has Wallets enabled"""
 
@@ -9060,7 +9063,7 @@ class ProductPriceMeteredTiers:
 
     meter: ProductPriceMeter
 
-    tiers: TiersOutput
+    tiers: Tiers
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9200,7 +9203,7 @@ class ProductPriceUnitBased:
     product_id: str
     """The ID of the product owning the price."""
 
-    tiers: TiersOutput
+    tiers: Tiers
 
     minimum_units: int | None
     """The minimum purchasable quantity (inclusive)."""
@@ -10615,12 +10618,16 @@ class SupportCaseAttachmentFileRead:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class TierOutput:
+class Tier:
     """A per-unit rate up to and including `bound`.
 
     Each tier starts where the previous one ended. The first starts at
     zero. `bound` is None on the last tier if it's unbounded. Rates are
-    in cents and may be fractional."""
+    in cents and may be fractional.
+
+    Rates carry no precision bound: this schema reads stored rows, and a
+    bound tightened later would stop them loading. `TierInput` holds the
+    rules new rates must meet."""
 
     bound: int | None = None
 
@@ -10628,14 +10635,14 @@ class TierOutput:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class TiersOutput:
+class Tiers:
     """The structure of the shared tiers JSONB column, used by every tiered
     price type. Purchasable quantity bounds live in the `minimum_units` and
     `maximum_units` columns, not here."""
 
     type: TierType
 
-    tiers: list[TierOutput]
+    tiers: list[Tier]
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)

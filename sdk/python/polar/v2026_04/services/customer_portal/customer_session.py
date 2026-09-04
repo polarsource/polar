@@ -29,7 +29,6 @@ class CustomerSessionSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -60,7 +59,6 @@ class CustomerSessionSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -97,7 +95,6 @@ class CustomerSessionAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -128,7 +125,6 @@ class CustomerSessionAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:

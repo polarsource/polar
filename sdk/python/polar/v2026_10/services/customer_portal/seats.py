@@ -56,7 +56,6 @@ class SeatsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerPortalSeatsListSeats401Error: Authentication required
             CustomerPortalSeatsListSeats403Error: Not permitted or seat-based pricing not enabled
@@ -97,7 +96,6 @@ class SeatsSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -144,7 +142,6 @@ class SeatsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerPortalSeatsRevokeSeat401Error: Authentication required
             CustomerPortalSeatsRevokeSeat403Error: Not permitted or seat-based pricing not enabled
@@ -185,7 +182,6 @@ class SeatsSync(SyncServiceBase):
             seat_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -238,7 +234,6 @@ class SeatsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerPortalSeatsListClaimedSubscriptions401Error: Authentication required
             HTTPValidationError: Validation Error
@@ -286,7 +281,6 @@ class SeatsSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type CustomerSubscription.
 
@@ -302,7 +296,7 @@ class SeatsSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -327,7 +321,6 @@ class SeatsAsync(AsyncServiceBase):
             order_id: Order ID
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -370,7 +363,6 @@ class SeatsAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -417,7 +409,6 @@ class SeatsAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerPortalSeatsRevokeSeat401Error: Authentication required
             CustomerPortalSeatsRevokeSeat403Error: Not permitted or seat-based pricing not enabled
@@ -458,7 +449,6 @@ class SeatsAsync(AsyncServiceBase):
             seat_id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -511,7 +501,6 @@ class SeatsAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerPortalSeatsListClaimedSubscriptions401Error: Authentication required
             HTTPValidationError: Validation Error
@@ -559,7 +548,6 @@ class SeatsAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type CustomerSubscription.
 
@@ -575,7 +563,7 @@ class SeatsAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item

@@ -3776,11 +3776,8 @@ class SupportCaseAttachmentFileCreate(typing.TypedDict):
 
 
 class TierInput(typing.TypedDict):
-    """A per-unit rate up to and including `bound`.
-
-    Each tier starts where the previous one ended. The first starts at
-    zero. `bound` is None on the last tier if it's unbounded. Rates are
-    in cents and may be fractional."""
+    """A tier submitted through the API. Rates stop at the reach of the
+    BigInteger amount columns, with 12 decimal places."""
 
     bound: typing.NotRequired[int | None]
 
@@ -3788,9 +3785,8 @@ class TierInput(typing.TypedDict):
 
 
 class TiersInput(typing.TypedDict):
-    """The structure of the shared tiers JSONB column, used by every tiered
-    price type. Purchasable quantity bounds live in the `minimum_units` and
-    `maximum_units` columns, not here."""
+    """Tiers submitted through the API. Kept apart from `Tiers` so tightening
+    a rule here never stops a stored row from loading."""
 
     type: TierType
 

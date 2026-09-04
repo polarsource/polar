@@ -55,7 +55,6 @@ class FilesSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -105,7 +104,6 @@ class FilesSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type FileRead.
 
@@ -122,7 +120,7 @@ class FilesSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -181,7 +179,6 @@ class FilesSync(SyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -222,7 +219,6 @@ class FilesSync(SyncServiceBase):
             id_path: The file ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -271,7 +267,6 @@ class FilesSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             NotPermitted: You don't have the permission to delete this file.
             ResourceNotFound: File not found.
@@ -315,7 +310,6 @@ class FilesSync(SyncServiceBase):
             id: The file ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -372,7 +366,6 @@ class FilesAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -422,7 +415,6 @@ class FilesAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type FileRead.
 
@@ -439,7 +431,7 @@ class FilesAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -499,7 +491,6 @@ class FilesAsync(AsyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -540,7 +531,6 @@ class FilesAsync(AsyncServiceBase):
             id_path: The file ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -589,7 +579,6 @@ class FilesAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             NotPermitted: You don't have the permission to delete this file.
             ResourceNotFound: File not found.
@@ -633,7 +622,6 @@ class FilesAsync(AsyncServiceBase):
             id: The file ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 

@@ -52,7 +52,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -82,7 +81,6 @@ class CustomersSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -123,7 +121,6 @@ class CustomersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -169,7 +166,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type CustomerPaymentMethod.
 
@@ -184,7 +180,7 @@ class CustomersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -204,7 +200,6 @@ class CustomersSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -246,7 +241,6 @@ class CustomersSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -291,7 +285,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PaymentMethodInUseByActiveSubscription: Payment method is still needed to bill a subscription.
             ResourceNotFound: Payment method not found.
@@ -332,7 +325,6 @@ class CustomersSync(SyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -372,7 +364,6 @@ class CustomersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerPortalCustomersCheckEmailUpdate401Error: Invalid or expired verification token.
             HTTPValidationError: Validation Error
@@ -410,7 +401,6 @@ class CustomersSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -457,7 +447,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -487,7 +476,6 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -528,7 +516,6 @@ class CustomersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -574,7 +561,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type CustomerPaymentMethod.
 
@@ -589,7 +575,7 @@ class CustomersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -610,7 +596,6 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -652,7 +637,6 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -697,7 +681,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             PaymentMethodInUseByActiveSubscription: Payment method is still needed to bill a subscription.
             ResourceNotFound: Payment method not found.
@@ -738,7 +721,6 @@ class CustomersAsync(AsyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -778,7 +760,6 @@ class CustomersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerPortalCustomersCheckEmailUpdate401Error: Invalid or expired verification token.
             HTTPValidationError: Validation Error
@@ -816,7 +797,6 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 

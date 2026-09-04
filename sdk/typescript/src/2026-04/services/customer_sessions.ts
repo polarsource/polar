@@ -5,7 +5,7 @@ import type {
   CustomerSessionCustomerIDCreate,
 } from "../models";
 
-import { HTTPValidationError } from "../errors";
+import { AmbiguousExternalCustomerID, HTTPValidationError } from "../errors";
 
 export const createCustomerSessions = (client: ClientBase) => {
   /**
@@ -22,6 +22,7 @@ export const createCustomerSessions = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {AmbiguousExternalCustomerID} The external customer ID matches customers in several accessible organizations.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
@@ -39,6 +40,7 @@ export const createCustomerSessions = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<CustomerSession>(response, "json", {
+      409: AmbiguousExternalCustomerID,
       422: HTTPValidationError,
     });
   };

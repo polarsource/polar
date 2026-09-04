@@ -21444,6 +21444,16 @@
               }
             }
           },
+          "409": {
+            "description": "The external customer ID matches customers in several accessible organizations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AmbiguousExternalCustomerID"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -51785,6 +51795,36 @@
               null
             ]
           },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats",
+            "description": "The number of seats for seat-based subscriptions. None for non-seat subscriptions.",
+            "examples": [
+              null
+            ]
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "The number of units for unit-based subscriptions. None for non-unit subscriptions.",
+            "examples": [
+              null
+            ]
+          },
           "meters": {
             "items": {
               "$ref": "#/components/schemas/CustomerStateSubscriptionMeter"
@@ -51814,6 +51854,8 @@
           "ends_at",
           "product_id",
           "discount_id",
+          "seats",
+          "units",
           "meters"
         ],
         "title": "CustomerStateSubscription",
@@ -72989,12 +73031,6 @@
             "description": "If this organization has seat-based pricing enabled",
             "default": false
           },
-          "metered_tiered_pricing_enabled": {
-            "type": "boolean",
-            "title": "Metered Tiered Pricing Enabled",
-            "description": "If this organization has tiered pricing for metered prices enabled",
-            "default": false
-          },
           "wallets_enabled": {
             "type": "boolean",
             "title": "Wallets Enabled",
@@ -80316,7 +80352,7 @@
             "description": "The meter associated to the price."
           },
           "tiers": {
-            "$ref": "#/components/schemas/Tiers-Output",
+            "$ref": "#/components/schemas/Tiers",
             "description": "The pricing tiers based on consumed units."
           }
         },
@@ -80369,7 +80405,7 @@
             "description": "The ID of the meter associated to the price."
           },
           "tiers": {
-            "$ref": "#/components/schemas/Tiers-Input",
+            "$ref": "#/components/schemas/TiersInput",
             "description": "Tiered pricing based on consumed units."
           },
           "cap_amount": {
@@ -80717,6 +80753,7 @@
           },
           "price_per_seat": {
             "type": "integer",
+            "maximum": 9.223372036854776e+18,
             "minimum": 0.0,
             "title": "Price Per Seat",
             "description": "Price per seat in cents for this tier"
@@ -80879,7 +80916,7 @@
             "description": "The ID of the product owning the price."
           },
           "tiers": {
-            "$ref": "#/components/schemas/Tiers-Output",
+            "$ref": "#/components/schemas/Tiers",
             "description": "Tiered pricing based on the purchased unit quantity."
           },
           "minimum_units": {
@@ -80978,7 +81015,7 @@
             "description": "The tax behavior of the price. If not set, it will default to the organization's default tax behavior."
           },
           "tiers": {
-            "$ref": "#/components/schemas/Tiers-Input",
+            "$ref": "#/components/schemas/TiersInput",
             "description": "Tiered pricing based on the purchased unit quantity."
           },
           "minimum_units": {
@@ -88691,7 +88728,34 @@
         "title": "TextBlock",
         "description": "Plain narrated text."
       },
-      "Tier-Input": {
+      "Tier": {
+        "properties": {
+          "bound": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound"
+          },
+          "unit_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Unit Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_amount"
+        ],
+        "title": "Tier",
+        "description": "A per-unit rate up to and including `bound`.\n\nEach tier starts where the previous one ended. The first starts at\nzero. `bound` is None on the last tier if it's unbounded. Rates are\nin cents and may be fractional.\n\nRates carry no precision bound: this schema reads stored rows, and a\nbound tightened later would stop them loading. `TierInput` holds the\nrules new rates must meet."
+      },
+      "TierInput": {
         "properties": {
           "bound": {
             "anyOf": [
@@ -88709,11 +88773,12 @@
             "anyOf": [
               {
                 "type": "number",
+                "maximum": 9.223372036854776e+18,
                 "minimum": 0.0
               },
               {
                 "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,19}|(?=[\\d.]{1,32}0*$)\\d{0,19}\\.\\d{0,12}0*$)"
               }
             ],
             "title": "Unit Amount"
@@ -88723,35 +88788,8 @@
         "required": [
           "unit_amount"
         ],
-        "title": "Tier",
-        "description": "A per-unit rate up to and including `bound`.\n\nEach tier starts where the previous one ended. The first starts at\nzero. `bound` is None on the last tier if it's unbounded. Rates are\nin cents and may be fractional."
-      },
-      "Tier-Output": {
-        "properties": {
-          "bound": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bound"
-          },
-          "unit_amount": {
-            "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)",
-            "title": "Unit Amount"
-          }
-        },
-        "type": "object",
-        "required": [
-          "unit_amount"
-        ],
-        "title": "Tier",
-        "description": "A per-unit rate up to and including `bound`.\n\nEach tier starts where the previous one ended. The first starts at\nzero. `bound` is None on the last tier if it's unbounded. Rates are\nin cents and may be fractional."
+        "title": "TierInput",
+        "description": "A tier submitted through the API. Rates stop at the reach of the\nBigInteger amount columns, with 12 decimal places."
       },
       "TierType": {
         "type": "string",
@@ -88761,14 +88799,14 @@
         ],
         "title": "TierType"
       },
-      "Tiers-Input": {
+      "Tiers": {
         "properties": {
           "type": {
             "$ref": "#/components/schemas/TierType"
           },
           "tiers": {
             "items": {
-              "$ref": "#/components/schemas/Tier-Input"
+              "$ref": "#/components/schemas/Tier"
             },
             "type": "array",
             "minItems": 1,
@@ -88783,14 +88821,14 @@
         "title": "Tiers",
         "description": "The structure of the shared tiers JSONB column, used by every tiered\nprice type. Purchasable quantity bounds live in the `minimum_units` and\n`maximum_units` columns, not here."
       },
-      "Tiers-Output": {
+      "TiersInput": {
         "properties": {
           "type": {
             "$ref": "#/components/schemas/TierType"
           },
           "tiers": {
             "items": {
-              "$ref": "#/components/schemas/Tier-Output"
+              "$ref": "#/components/schemas/TierInput"
             },
             "type": "array",
             "minItems": 1,
@@ -88802,8 +88840,8 @@
           "type",
           "tiers"
         ],
-        "title": "Tiers",
-        "description": "The structure of the shared tiers JSONB column, used by every tiered\nprice type. Purchasable quantity bounds live in the `minimum_units` and\n`maximum_units` columns, not here."
+        "title": "TiersInput",
+        "description": "Tiers submitted through the API. Kept apart from `Tiers` so tightening\na rule here never stops a stored row from loading."
       },
       "TimeInterval": {
         "type": "string",

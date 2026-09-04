@@ -56,7 +56,6 @@ class MembersSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerPortalMembersListMembers401Error: Authentication required
             CustomerPortalMembersListMembers403Error: Not permitted - requires owner or billing manager role
@@ -106,7 +105,6 @@ class MembersSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type CustomerPortalMember.
 
@@ -123,7 +121,7 @@ class MembersSync(SyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -149,7 +147,6 @@ class MembersSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -200,7 +197,6 @@ class MembersSync(SyncServiceBase):
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -254,7 +250,6 @@ class MembersSync(SyncServiceBase):
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -311,7 +306,6 @@ class MembersAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             CustomerPortalMembersListMembers401Error: Authentication required
             CustomerPortalMembersListMembers403Error: Not permitted - requires owner or billing manager role
@@ -361,7 +355,6 @@ class MembersAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type CustomerPortalMember.
 
@@ -378,7 +371,7 @@ class MembersAsync(AsyncServiceBase):
                 page=page,
                 limit=limit,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -405,7 +398,6 @@ class MembersAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -456,7 +448,6 @@ class MembersAsync(AsyncServiceBase):
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -510,7 +501,6 @@ class MembersAsync(AsyncServiceBase):
             id:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 

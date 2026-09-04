@@ -97,7 +97,6 @@ class SubscriptionsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -188,7 +187,6 @@ class SubscriptionsSync(SyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             A generator that yields items of type Subscription.
 
@@ -218,7 +216,7 @@ class SubscriptionsSync(SyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             yield from response.items
             if page >= response.pagination.max_page:
@@ -263,7 +261,6 @@ class SubscriptionsSync(SyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -322,7 +319,6 @@ class SubscriptionsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -370,7 +366,6 @@ class SubscriptionsSync(SyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Subscription not found.
             HTTPValidationError: Validation Error
@@ -411,7 +406,6 @@ class SubscriptionsSync(SyncServiceBase):
             id: The subscription ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -550,7 +544,6 @@ class SubscriptionsSync(SyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
-
             **kwargs: Request body parameters
 
         Raises:
@@ -636,7 +629,6 @@ class SubscriptionsAsync(AsyncServiceBase):
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -729,7 +721,6 @@ class SubscriptionsAsync(AsyncServiceBase):
             request_access_token: Access token override for each request.
 
 
-
         Returns:
             An async generator that yields items of type Subscription.
 
@@ -759,7 +750,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 sorting=sorting,
                 metadata=metadata,
                 request_timeout=request_timeout,
-            request_access_token=request_access_token,
+                request_access_token=request_access_token,
             )
             for item in response.items:
                 yield item
@@ -805,7 +796,6 @@ class SubscriptionsAsync(AsyncServiceBase):
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 
@@ -864,7 +854,6 @@ class SubscriptionsAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -912,7 +901,6 @@ class SubscriptionsAsync(AsyncServiceBase):
             request_access_token: Access token override for this request.
 
 
-
         Raises:
             ResourceNotFound: Subscription not found.
             HTTPValidationError: Validation Error
@@ -953,7 +941,6 @@ class SubscriptionsAsync(AsyncServiceBase):
             id: The subscription ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
 
         Raises:
@@ -1091,7 +1078,6 @@ class SubscriptionsAsync(AsyncServiceBase):
             id: The subscription ID.
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
-
 
             **kwargs: Request body parameters
 

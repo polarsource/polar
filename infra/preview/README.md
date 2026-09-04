@@ -38,7 +38,20 @@ is installed but not joined (clones would duplicate the node identity), and no s
 are baked in. `polar-backend`/`polar-frontend` are gated on `ConditionPathExists` for
 their env files, so fresh clones boot idle until the first deploy.
 
-Update (after dependency drift or infra/preview changes — do this every few weeks):
+The **Preview Base Refresh** workflow (`.github/workflows/preview-base.yml`) refreshes
+the base nightly at **02:17 UTC**, and can also be run manually with
+`workflow_dispatch` on `main`. It uses the existing `POLAR_PREVIEW_SSH_KEY` secret
+and `POLAR_PREVIEW_BASE_VM` variable (default: `polar-base`). The SSH key must have
+shell access with passwordless sudo on the base VM.
+
+Each run checks out current `origin/main` and runs `setup-base-vm.sh`, updating
+dependencies, prebuilt assets, the local Turbo cache, preview tools, and
+`.deployed_sha`. Refresh jobs are serialized and take an exclusive lock on the VM;
+the remote command has a 75-minute timeout. Failures are reported by the workflow.
+The refresh happens in place, so a preview cloned during the refresh may still
+need to finish dependency installation. Existing preview VMs are unaffected.
+
+To refresh manually over SSH:
 
 ```bash
 ssh polar-base.exe.xyz "cd /srv/polar && sudo git fetch origin main && sudo git checkout -f origin/main && sudo bash infra/preview/setup-base-vm.sh"

@@ -1,0 +1,54 @@
+name: Preview Base Refresh
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  refresh:
+    name: Refresh preview base VM
+    if: github.repository == 'polarsource/polar' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    concurrency:
+      group: preview-base-${{ vars.POLAR_PREVIEW_BASE_VM || 'polar-base' }}
+      cancel-in-progress: false
+    env:
+      BASE_VM: ${{ vars.POLAR_PREVIEW_BASE_VM || 'polar-base' }}
+    steps:
+      - name: Set up SSH key
+        env:
+          SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$SSH_KEY" > "$RUNNER_TEMP/preview-base-key"
+
+      - name: Refresh from main
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30 \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+            -i "$RUNNER_TEMP/preview-base-key" "vm+${BASE_VM}@vm.exe.xyz" \
+            'sudo -n timeout --kill-after=60s 75m flock --nonblock /run/lock/polar-base-refresh.lock bash -se' <<'REFRESH'
+          set -euo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          export NEEDRESTART_MODE=a
+          cd /srv/polar
+          git fetch origin main:refs/remotes/origin/main
+          git checkout -f origin/main
+          bash infra/preview/setup-base-vm.sh
+          test "$(git rev-parse HEAD)" = "$(cat .deployed_sha)"
+          test -x server/emails/bin/react-email-pkg
+          test -s server/polar/backoffice/static/styles.css
+          test -s server/polar/backoffice/static/scripts.js
+          git log -1 --format='Refreshed preview base to %H (%s)'
+          REFRESH
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/preview-base-key"

@@ -723,7 +723,8 @@ class OrderService:
         fixed/free/unit-based static prices.
 
         `amount`, when provided, overrides the charge (the merchant sets a custom
-        price for this order); otherwise the price's own amount is used — the
+        price for this order); it excludes `units`, so it only ever applies to
+        fixed and free prices. Otherwise the price's own amount is used — the
         configured amount for fixed prices, the tiered amount for `units` units
         for unit-based prices, 0 for free prices. `label` overrides the line
         item's description, defaulting to the product name and its unit count.

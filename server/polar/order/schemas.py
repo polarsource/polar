@@ -10,6 +10,7 @@ from pydantic import (
     Field,
     computed_field,
     field_serializer,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -329,7 +330,7 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "A custom amount to charge, in the smallest currency unit. Overrides "
             "the product's price; defaults to the product's configured price "
             "(0 for free products). A positive amount must be at least the "
-            "currency's minimum."
+            "currency's minimum. Can't be combined with `units`."
         ),
     )
     units: Int32 | None = Field(
@@ -338,7 +339,7 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
         description=(
             "The number of units to charge for. Required when the product has "
             "unit-based pricing, and rejected otherwise. The amount comes from "
-            "the price's tiers, unless `amount` overrides it."
+            "the price's tiers. Can't be combined with `amount`."
         ),
     )
     # `BeforeValidator` runs the strip/empty→None normalization *before* the
@@ -353,6 +354,12 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "product name."
         ),
     )
+
+    @model_validator(mode="after")
+    def _validate_amount_and_units(self) -> "OrderCreate":
+        if self.amount is not None and self.units is not None:
+            raise ValueError("amount and units can't be set together")
+        return self
 
 
 class OrderUpdateBase(Schema):

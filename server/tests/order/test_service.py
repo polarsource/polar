@@ -7098,32 +7098,6 @@ class TestCreateDraftOrder:
                 session, off_session_organization, payload
             )
 
-    async def test_amount_overrides_unit_price(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        off_session_organization: Organization,
-        customer: Customer,
-    ) -> None:
-        product = await create_product_unit_based(
-            save_fixture,
-            organization=off_session_organization,
-            price_per_unit=2900,
-            recurring_interval=None,
-        )
-        payload = OrderCreate(
-            customer_id=customer.id,
-            product_id=product.id,
-            units=3,
-            amount=5000,
-        )
-        order = await order_service.create_draft_order(
-            session, off_session_organization, payload
-        )
-        assert order.units == 3
-        assert order.subtotal_amount == 5000
-        assert order.items[0].label == "Product (3 units)"
-
     async def test_computed_unit_amount_below_currency_minimum_rejected(
         self,
         save_fixture: SaveFixture,

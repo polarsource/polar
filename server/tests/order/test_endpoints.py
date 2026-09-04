@@ -857,6 +857,33 @@ class TestCreateOrder:
         assert body["units"] == 3
         assert body["net_amount"] == 8700
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_amount_and_units_rejected(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            price_per_unit=2900,
+            recurring_interval=None,
+        )
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "customer_id": str(customer.id),
+                "product_id": str(product.id),
+                "units": 3,
+                "amount": 5000,
+            },
+        )
+        assert response.status_code == 422
+
 
 @pytest.mark.asyncio
 class TestFinalizeOrderEndpoint:

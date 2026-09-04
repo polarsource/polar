@@ -17,24 +17,24 @@
   "dependencies": {
     "@polar-sh/orbit": "workspace:*",
     "@polar-sh/ui": "workspace:*",
-    "@stylexjs/stylex": "^0.18.2",
-    "lucide-react": "^0.577.0",
+    "@stylexjs/stylex": "catalog:",
+    "lucide-react": "catalog:",
     "next": "^16.2.6",
-    "next-themes": "^0.4.6",
+    "next-themes": "catalog:",
     "react": "19.2.5",
     "react-dom": "19.2.5",
-    "shiki": "^3.23.0"
+    "shiki": "catalog:"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
-    "@stylexjs/babel-plugin": "^0.18.2",
-    "@stylexjs/postcss-plugin": "^0.18.2",
-    "@tailwindcss/forms": "^0.5.11",
-    "@tailwindcss/postcss": "^4.2.2",
+    "@stylexjs/babel-plugin": "catalog:",
+    "@stylexjs/postcss-plugin": "catalog:",
+    "@tailwindcss/forms": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
     "@types/node": "^22.10.5",
-    "@types/react": "19.2.13",
-    "@types/react-dom": "19.2.3",
-    "tailwindcss": "^4.2.2",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "tailwindcss": "catalog:",
     "ts-morph": "^25.0.1",
     "typescript": "5.9.3"
   }

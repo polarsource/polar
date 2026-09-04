@@ -39,13 +39,13 @@
   ],
   "devDependencies": {
     "@ai-sdk/google": "^2.0.69",
-    "@ai-sdk/openai": "^3.0.53",
+    "@ai-sdk/openai": "catalog:",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
-    "ai": "^6.0.167",
+    "ai": "catalog:",
     "dotenv": "^16.6.1",
     "react": "^19.2.5",
-    "tsup": "^8.5.1",
+    "tsup": "catalog:",
     "tsx": "^4.21.0",
     "typescript": "latest",
     "vitest": "^4.1.4"

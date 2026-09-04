@@ -32,39 +32,39 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
       <Box flexDirection="column" gap="l">
         <WebhookSignatureNotice organizationCreatedAt={props.org.created_at} />
         <ListGroup>
-        {endpoints.data?.items && endpoints.data.items.length > 0 ? (
-          endpoints.data?.items.map((e) => {
-            return (
-              <ListGroup.Item key={e.id}>
-                <Endpoint organization={props.org} endpoint={e} />
-              </ListGroup.Item>
-            )
-          })
-        ) : (
+          {endpoints.data?.items && endpoints.data.items.length > 0 ? (
+            endpoints.data?.items.map((e) => {
+              return (
+                <ListGroup.Item key={e.id}>
+                  <Endpoint organization={props.org} endpoint={e} />
+                </ListGroup.Item>
+              )
+            })
+          ) : (
+            <ListGroup.Item>
+              <p className="dark:text-polar-400 text-sm text-gray-500">
+                {`${props.org.name} doesn't have any webhooks yet`}
+              </p>
+            </ListGroup.Item>
+          )}
           <ListGroup.Item>
-            <p className="dark:text-polar-400 text-sm text-gray-500">
-              {`${props.org.name} doesn't have any webhooks yet`}
-            </p>
-          </ListGroup.Item>
-        )}
-        <ListGroup.Item>
-          <div className="flex flex-row items-center gap-x-4">
-            <Button asChild onClick={showNewWebhookModal}>
-              Add Endpoint
-            </Button>
-            <a
-              href="https://polar.sh/docs/integrate/webhooks/endpoints"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0"
-            >
-              <Button className="gap-x-2" asChild variant="ghost">
-                <span>Documentation</span>
-                <ArrowUpRightIcon className="h-4 w-4" />
+            <div className="flex flex-row items-center gap-x-4">
+              <Button asChild onClick={showNewWebhookModal}>
+                Add Endpoint
               </Button>
-            </a>
-          </div>
-        </ListGroup.Item>
+              <a
+                href="https://polar.sh/docs/integrate/webhooks/endpoints"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0"
+              >
+                <Button className="gap-x-2" asChild variant="ghost">
+                  <span>Documentation</span>
+                  <ArrowUpRightIcon className="h-4 w-4" />
+                </Button>
+              </a>
+            </div>
+          </ListGroup.Item>
         </ListGroup>
       </Box>
       <InlineModal

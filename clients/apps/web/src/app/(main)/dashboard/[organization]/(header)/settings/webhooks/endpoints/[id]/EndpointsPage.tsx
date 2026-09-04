@@ -160,9 +160,7 @@ export default function ClientPage({
       className="gap-y-8"
       wide
     >
-      <WebhookSignatureNotice
-        organizationCreatedAt={organization.created_at}
-      />
+      <WebhookSignatureNotice organizationCreatedAt={organization.created_at} />
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1">

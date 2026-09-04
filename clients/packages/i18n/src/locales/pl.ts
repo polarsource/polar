@@ -263,6 +263,7 @@ export default {
       description:
         'Już skorzystano z bezpłatnego okresu próbnego tego produktu, więc opłata zostanie naliczona dzisiaj. Kontynuuj poniżej, aby dokończyć zakup.',
     },
+    orderSummary: 'Podsumowanie zamówienia',
   },
   intervals: {
     short: {

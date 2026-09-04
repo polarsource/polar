@@ -36,6 +36,7 @@ from polar.integrations.slack.payload import (
     get_branded_slack_payload,
 )
 from polar.kit.schemas import IDSchema, Schema
+from polar.kit.versioning import APIVersion, api_version_context
 from polar.member.schemas import Member as MemberSchema
 from polar.models import (
     Benefit,
@@ -128,6 +129,7 @@ class SkipEvent(PolarError):
 class BaseWebhookPayload(Schema):
     type: WebhookEventType
     timestamp: datetime
+    api_version: APIVersion
     data: IDSchema
 
     def get_payload(self, format: WebhookFormat, target: User | Organization) -> str:
@@ -142,7 +144,8 @@ class BaseWebhookPayload(Schema):
                 assert_never(format)
 
     def get_raw_payload(self) -> str:
-        return self.model_dump_json()
+        with api_version_context(self.api_version):
+            return self.model_dump_json()
 
     def get_discord_payload(self, target: User | Organization) -> str:
         # Generic Discord payload, override in subclasses for more specific payloads

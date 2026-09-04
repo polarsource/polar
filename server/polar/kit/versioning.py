@@ -14,10 +14,10 @@ from collections.abc import (
 
 from fastapi import APIRouter, FastAPI
 from fastapi.routing import APIRoute, RouteContext, iter_route_contexts
-from pydantic import Field, GetJsonSchemaHandler
+from pydantic import Field, GetCoreSchemaHandler, GetJsonSchemaHandler
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
-from pydantic_core import CoreSchema, PydanticOmit
+from pydantic_core import CoreSchema, PydanticOmit, core_schema
 from sqlalchemy import CHAR, Dialect, TypeDecorator
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import JSONResponse
@@ -63,6 +63,27 @@ class APIVersion:
         headers = Headers(scope=scope)
         raw_version = headers.get(VERSION_HEADER)
         return cls.parse(raw_version) if raw_version else default
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        _source_type: typing.Any,
+        _handler: GetCoreSchemaHandler,
+    ) -> CoreSchema:
+        from_string_schema = core_schema.no_info_after_validator_function(
+            cls.parse,
+            core_schema.str_schema(),
+        )
+        return core_schema.json_or_python_schema(
+            json_schema=from_string_schema,
+            python_schema=core_schema.union_schema(
+                [
+                    core_schema.is_instance_schema(cls),
+                    from_string_schema,
+                ]
+            ),
+            serialization=core_schema.to_string_ser_schema(),
+        )
 
 
 class APIVersionType(TypeDecorator[typing.Any]):

@@ -20632,6 +20632,12 @@ export interface components {
        * @description An optional name for the webhook endpoint to help organize and identify it.
        */
       name?: string | null
+      /**
+       * Api Version
+       * @description The API version that'll be used in event payloads.
+       * @default 2026-04
+       */
+      api_version: string
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -20654,6 +20660,11 @@ export interface components {
        * @description An optional name for the webhook endpoint to help organize and identify it.
        */
       name?: string | null
+      /**
+       * Api Version
+       * @description The API version that'll be used in event payloads.
+       */
+      api_version?: string | null
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
@@ -38320,6 +38331,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       /** Benefit */
       data: components['schemas']['Benefit']
     }
@@ -38341,6 +38354,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       /** BenefitGrantWebhook */
       data: components['schemas']['BenefitGrantWebhook']
     }
@@ -38363,6 +38378,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       /** BenefitGrantWebhook */
       data: components['schemas']['BenefitGrantWebhook']
     }
@@ -38384,6 +38401,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       /** BenefitGrantWebhook */
       data: components['schemas']['BenefitGrantWebhook']
     }
@@ -38405,6 +38424,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       /** BenefitGrantWebhook */
       data: components['schemas']['BenefitGrantWebhook']
     }
@@ -38426,6 +38447,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       /** Benefit */
       data: components['schemas']['Benefit']
     }
@@ -38447,6 +38470,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Checkout']
     }
     /**
@@ -38470,6 +38495,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Checkout']
     }
     /**
@@ -38490,6 +38517,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Checkout']
     }
     /**
@@ -38515,6 +38544,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Customer']
     }
     /**
@@ -38535,6 +38566,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Customer']
     }
     /**
@@ -38556,6 +38589,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['CustomerSeat']
     }
     /**
@@ -38576,6 +38611,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['CustomerSeat']
     }
     /**
@@ -38596,6 +38633,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['CustomerSeat']
     }
     /**
@@ -38622,6 +38661,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['CustomerState']
     }
     /**
@@ -38646,6 +38687,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Customer']
     }
     /**
@@ -38706,6 +38749,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       /** Discount */
       data: components['schemas']['Discount']
     }
@@ -38727,6 +38772,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       /** Discount */
       data: components['schemas']['Discount']
     }
@@ -38748,6 +38795,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       /** Discount */
       data: components['schemas']['Discount']
     }
@@ -38784,6 +38833,11 @@ export interface components {
        * @description An optional name for the webhook endpoint to help organize and identify it.
        */
       name?: string | null
+      /**
+       * Api Version
+       * @description The API version that'll be used in event payloads.
+       */
+      api_version: string
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -38823,6 +38877,12 @@ export interface components {
        * @description An optional name for the webhook endpoint to help organize and identify it.
        */
       name?: string | null
+      /**
+       * Api Version
+       * @description The API version that'll be used in event payloads.
+       * @default 2026-04
+       */
+      api_version: string
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -38845,6 +38905,11 @@ export interface components {
        * @description An optional name for the webhook endpoint to help organize and identify it.
        */
       name?: string | null
+      /**
+       * Api Version
+       * @description The API version that'll be used in event payloads.
+       */
+      api_version?: string | null
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
@@ -38897,6 +38962,11 @@ export interface components {
        * @description Whether this event was skipped because the webhook endpoint was disabled.
        */
       skipped: boolean
+      /**
+       * Api Version
+       * @description The API version used in the payload of this event.
+       */
+      api_version: string
       /**
        * Payload
        * @description The payload of the webhook event.
@@ -38984,6 +39054,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Member']
     }
     /**
@@ -39007,6 +39079,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Member']
     }
     /**
@@ -39030,6 +39104,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Member']
     }
     /**
@@ -39060,6 +39136,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Order']
     }
     /**
@@ -39082,6 +39160,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Order']
     }
     /**
@@ -39102,6 +39182,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Order']
     }
     /**
@@ -39127,6 +39209,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Order']
     }
     /**
@@ -39147,6 +39231,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Organization']
     }
     /**
@@ -39167,6 +39253,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Product']
     }
     /**
@@ -39187,6 +39275,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Product']
     }
     /**
@@ -39207,6 +39297,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Refund']
     }
     /**
@@ -39227,6 +39319,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Refund']
     }
     /**
@@ -39248,6 +39342,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /**
@@ -39269,6 +39365,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /**
@@ -39291,6 +39389,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /**
@@ -39319,6 +39419,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /**
@@ -39344,6 +39446,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /**
@@ -39367,6 +39471,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /**
@@ -39389,6 +39495,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /**
@@ -39412,6 +39520,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /**
@@ -39436,6 +39546,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /**
@@ -39460,6 +39572,8 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
+      /** Api Version */
+      api_version: string
       data: components['schemas']['Subscription']
     }
     /** MetadataQuery */

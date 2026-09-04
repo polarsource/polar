@@ -102,7 +102,7 @@ class S3FileUploadPart(S3FileCreatePart):
     url: str
     expires_at: datetime
 
-    headers: dict[str, str] = {}
+    headers: dict[str, str]
 
     @classmethod
     def generate_headers(cls, sha256_base64: str | None) -> dict[str, str]:
@@ -193,7 +193,7 @@ class S3FileUploadCompleteResponse(Schema):
 
 class S3DownloadURL(Schema):
     url: str
-    headers: dict[str, str] = {}
+    headers: dict[str, str]
     expires_at: datetime
 
 

@@ -16,7 +16,6 @@ from pydantic import (
 
 from polar.auth.scope import (
     SCOPES_SUPPORTED,
-    SCOPES_SUPPORTED_DISPLAY_NAMES,
     Scope,
     scope_to_list,
 )
@@ -101,10 +100,8 @@ class AuthorizeResponseBase(Schema):
     organizations: list[AuthorizeOrganization]
     # Whether the resolved request (param or client default) is for an
     # organization, so the consent screen forces a single-org selection.
-    requires_single_organization: bool = False
-    scope_display_names: dict[str, str] = Field(
-        default={s.value: name for s, name in SCOPES_SUPPORTED_DISPLAY_NAMES.items()}
-    )
+    requires_single_organization: bool
+    scope_display_names: dict[str, str]
 
 
 class AuthorizeResponseUser(AuthorizeResponseBase):

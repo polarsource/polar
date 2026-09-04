@@ -49,8 +49,8 @@ class CustomerSelectionOption(IDSchema):
 class CustomerSelectionRequiredResponse(Schema):
     """Response when multiple customers match the email."""
 
-    error: str = "customer_selection_required"
-    detail: str = "Multiple customers found for this email. Please select one."
+    error: str
+    detail: str
     customers: list[CustomerSelectionOption] = Field(
         description="List of customers to choose from."
     )

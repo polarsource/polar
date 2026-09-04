@@ -58,6 +58,8 @@ async def request(
         return JSONResponse(
             status_code=409,
             content=CustomerSelectionRequiredResponse(
+                error="customer_selection_required",
+                detail="Multiple customers found for this email. Please select one.",
                 customers=[
                     CustomerSelectionOption(id=c.id, name=c.name) for c in e.customers
                 ],

@@ -220,9 +220,7 @@ class EventsIngest(Schema):
 
 class EventsIngestResponse(Schema):
     inserted: int = Field(description="Number of events inserted.")
-    duplicates: int = Field(
-        default=0, description="Number of duplicate events skipped."
-    )
+    duplicates: int = Field(description="Number of duplicate events skipped.")
 
 
 class BaseEvent(IDSchema):
@@ -256,7 +254,7 @@ class BaseEvent(IDSchema):
         ),
     )
     child_count: int = Field(
-        default=0, description="Number of direct child events linked to this event."
+        description="Number of direct child events linked to this event."
     )
     parent_id: UUID4 | None = Field(
         default=None,
@@ -820,7 +818,6 @@ class CustomerStat(Schema):
     )
     share: Decimal = Field(
         description="This customer's share of the total cost across all customers (0–1).",
-        default=Decimal(0),
     )
 
 

@@ -156,7 +156,7 @@ FileReadAdapter: TypeAdapter[FileRead] = TypeAdapter[FileRead](FileRead)
 
 class FileUpload(S3FileUpload):
     version: str | None
-    is_uploaded: bool = False
+    is_uploaded: bool
     service: FileServiceTypes
 
 
@@ -192,6 +192,7 @@ class FileDownload(S3FileDownload):
             **file_dict,
             download=S3DownloadURL(
                 url=url,
+                headers={},
                 expires_at=expires_at,
             ),
         )

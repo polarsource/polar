@@ -132,8 +132,8 @@ async def list_orders(
         for order in items
     ]
     columns = [
-        DataTableColumn(key="customer", label="Customer"),
-        DataTableColumn(key="product", label="Product"),
+        DataTableColumn(key="customer", label="Customer", format=ColumnFormat.text),
+        DataTableColumn(key="product", label="Product", format=ColumnFormat.text),
         DataTableColumn(key="amount", label="Amount", format=ColumnFormat.currency),
         DataTableColumn(key="status", label="Status", format=ColumnFormat.badge),
         DataTableColumn(key="date", label="Date", format=ColumnFormat.datetime),
@@ -191,8 +191,8 @@ async def list_subscriptions(
         for sub in items
     ]
     columns = [
-        DataTableColumn(key="customer", label="Customer"),
-        DataTableColumn(key="product", label="Product"),
+        DataTableColumn(key="customer", label="Customer", format=ColumnFormat.text),
+        DataTableColumn(key="product", label="Product", format=ColumnFormat.text),
         DataTableColumn(key="amount", label="Amount", format=ColumnFormat.currency),
         DataTableColumn(key="status", label="Status", format=ColumnFormat.badge),
         DataTableColumn(key="started", label="Started", format=ColumnFormat.datetime),
@@ -282,8 +282,8 @@ async def list_churned_subscriptions(
         for sub in items
     ]
     columns = [
-        DataTableColumn(key="customer", label="Customer"),
-        DataTableColumn(key="product", label="Product"),
+        DataTableColumn(key="customer", label="Customer", format=ColumnFormat.text),
+        DataTableColumn(key="product", label="Product", format=ColumnFormat.text),
         DataTableColumn(key="amount", label="Amount", format=ColumnFormat.currency),
         DataTableColumn(key="reason", label="Reason", format=ColumnFormat.badge),
         DataTableColumn(key="ended", label="Ended", format=ColumnFormat.datetime),
@@ -353,8 +353,8 @@ async def list_customers(
     ]
     columns = [
         DataTableColumn(key="avatar", label="", format=ColumnFormat.avatar),
-        DataTableColumn(key="email", label="Email"),
-        DataTableColumn(key="name", label="Name"),
+        DataTableColumn(key="email", label="Email", format=ColumnFormat.text),
+        DataTableColumn(key="name", label="Name", format=ColumnFormat.text),
         DataTableColumn(key="created", label="Created", format=ColumnFormat.datetime),
     ]
     return _emit_entities(
@@ -413,7 +413,7 @@ async def list_products(
         for item in items
     ]
     columns = [
-        DataTableColumn(key="name", label="Name"),
+        DataTableColumn(key="name", label="Name", format=ColumnFormat.text),
         DataTableColumn(key="price", label="Price", format=ColumnFormat.currency),
         DataTableColumn(key="recurring", label="Billing", format=ColumnFormat.badge),
     ]
@@ -536,7 +536,7 @@ async def list_checkouts(
         for item in items
     ]
     columns = [
-        DataTableColumn(key="customer", label="Customer"),
+        DataTableColumn(key="customer", label="Customer", format=ColumnFormat.text),
         DataTableColumn(key="amount", label="Amount", format=ColumnFormat.currency),
         DataTableColumn(key="status", label="Status", format=ColumnFormat.badge),
         DataTableColumn(key="created", label="Created", format=ColumnFormat.datetime),
@@ -584,7 +584,7 @@ async def list_refunds(
     ]
     columns = [
         DataTableColumn(key="amount", label="Amount", format=ColumnFormat.currency),
-        DataTableColumn(key="reason", label="Reason"),
+        DataTableColumn(key="reason", label="Reason", format=ColumnFormat.text),
         DataTableColumn(key="status", label="Status", format=ColumnFormat.badge),
         DataTableColumn(key="created", label="Created", format=ColumnFormat.datetime),
     ]
@@ -824,9 +824,9 @@ async def top_products_by_revenue(
         for name, revenue, orders in ranked
     ]
     columns = [
-        DataTableColumn(key="product", label="Product"),
+        DataTableColumn(key="product", label="Product", format=ColumnFormat.text),
         DataTableColumn(key="revenue", label="Revenue", format=ColumnFormat.currency),
-        DataTableColumn(key="orders", label="Orders"),
+        DataTableColumn(key="orders", label="Orders", format=ColumnFormat.text),
     ]
     top = rows[0]
     summary = _emit_entities(
@@ -913,11 +913,11 @@ async def top_customers_by_revenue(
     ]
     columns = [
         DataTableColumn(key="avatar", label="", format=ColumnFormat.avatar),
-        DataTableColumn(key="customer", label="Customer"),
+        DataTableColumn(key="customer", label="Customer", format=ColumnFormat.text),
         DataTableColumn(
             key="revenue", label="Net revenue", format=ColumnFormat.currency
         ),
-        DataTableColumn(key="orders", label="Orders"),
+        DataTableColumn(key="orders", label="Orders", format=ColumnFormat.text),
     ]
     top = rows[0]
     summary = _emit_entities(
@@ -1002,10 +1002,10 @@ async def top_customers_by_cost(
     ]
     columns = [
         DataTableColumn(key="avatar", label="", format=ColumnFormat.avatar),
-        DataTableColumn(key="customer", label="Customer"),
+        DataTableColumn(key="customer", label="Customer", format=ColumnFormat.text),
         DataTableColumn(key="cost", label="Cost", format=ColumnFormat.currency),
-        DataTableColumn(key="share", label="Share of costs"),
-        DataTableColumn(key="events", label="Events"),
+        DataTableColumn(key="share", label="Share of costs", format=ColumnFormat.text),
+        DataTableColumn(key="events", label="Events", format=ColumnFormat.text),
     ]
     top = rows[0]
     summary = _emit_entities(

@@ -20,8 +20,8 @@ from .deps import AssistantDeps
 from .tools import _scope_denial
 
 _SECTION_COLUMNS = [
-    DataTableColumn(key="title", label="Item"),
-    DataTableColumn(key="detail", label="Detail"),
+    DataTableColumn(key="title", label="Item", format=ColumnFormat.text),
+    DataTableColumn(key="detail", label="Detail", format=ColumnFormat.text),
     DataTableColumn(key="amount", label="Amount", format=ColumnFormat.currency),
 ]
 

@@ -6,6 +6,7 @@ from fastapi.openapi.constants import REF_TEMPLATE
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
+from polar.auth.scope import SCOPES_SUPPORTED_DISPLAY_NAMES
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
 from polar.authz.service import get_accessible_org_ids
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -197,6 +198,10 @@ async def authorize(
             "sub": grant.sub,
             "organizations": organizations,
             "requires_single_organization": grant.requires_single_organization,
+            "scope_display_names": {
+                scope.value: name
+                for scope, name in SCOPES_SUPPORTED_DISPLAY_NAMES.items()
+            },
         }
     )
 

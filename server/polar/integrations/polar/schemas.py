@@ -61,8 +61,8 @@ class OrganizationPlan(Schema):
     recurring_interval: str | None = None
     price: OrganizationPlanPrice | None = None
     transaction_fee: OrganizationPlanFee | None = None
-    highlight: bool = False
-    custom: bool = False
+    highlight: bool
+    custom: bool
     features: list[str] = Field(default_factory=list)
 
     @classmethod
@@ -245,7 +245,7 @@ class OrganizationSubscription(Schema):
     recurring_interval_count: int | None = None
     current_period_start: datetime | None = None
     current_period_end: datetime | None = None
-    cancel_at_period_end: bool = False
+    cancel_at_period_end: bool
     canceled_at: datetime | None = None
     started_at: datetime | None = None
     ends_at: datetime | None = None
@@ -460,7 +460,7 @@ class OrganizationPaymentMethodCardMetadata(Schema):
 
 class OrganizationPaymentMethodCard(Schema):
     id: str
-    type: Literal["card"] = "card"
+    type: Literal["card"]
     default: bool
     method_metadata: OrganizationPaymentMethodCardMetadata
 
@@ -556,6 +556,7 @@ def organization_payment_method_from_sdk(
         metadata = method.method_metadata
         return OrganizationPaymentMethodCard(
             id=method.id,
+            type="card",
             default=is_default,
             method_metadata=OrganizationPaymentMethodCardMetadata(
                 brand=metadata.brand,

@@ -70,7 +70,7 @@ class ColumnFormat(StrEnum):
 class DataTableColumn(Schema):
     key: str
     label: str
-    format: ColumnFormat = ColumnFormat.text
+    format: ColumnFormat
 
 
 class DataTableBlock(Schema):

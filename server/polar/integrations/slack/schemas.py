@@ -105,9 +105,7 @@ class SlackWorkspaceUser(Schema):
     image_url: str | None = Field(
         default=None, description="Avatar URL (image_72), if available."
     )
-    is_admin: bool = Field(
-        default=False, description="Whether the user is a workspace admin."
-    )
+    is_admin: bool = Field(description="Whether the user is a workspace admin.")
 
 
 class SlackWorkspaceUsersResponse(Schema):

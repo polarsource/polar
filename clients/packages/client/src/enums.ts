@@ -21,4 +21,5 @@ export {
   trialIntervalValues,
   uniqueAggregationFuncValues,
   webhookEventTypeValues,
+  webhookEndpointCreateApi_versionValues,
 } from './v1'

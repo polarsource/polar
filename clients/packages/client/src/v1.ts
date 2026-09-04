@@ -20636,8 +20636,9 @@ export interface components {
        * Api Version
        * @description The API version that'll be used in event payloads.
        * @default 2026-04
+       * @enum {string}
        */
-      api_version: string
+      api_version: '2026-04' | '2026-10'
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -20664,7 +20665,7 @@ export interface components {
        * Api Version
        * @description The API version that'll be used in event payloads.
        */
-      api_version?: string | null
+      api_version?: ('2026-04' | '2026-10') | null
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
@@ -38881,8 +38882,9 @@ export interface components {
        * Api Version
        * @description The API version that'll be used in event payloads.
        * @default 2026-04
+       * @enum {string}
        */
-      api_version: string
+      api_version: '2026-04' | '2026-10'
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -38909,7 +38911,7 @@ export interface components {
        * Api Version
        * @description The API version that'll be used in event payloads.
        */
-      api_version?: string | null
+      api_version?: ('2026-04' | '2026-10') | null
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
@@ -68973,6 +68975,12 @@ export const customerWalletSortPropertyValues: ReadonlyArray<
 export const dataTableBlockTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DataTableBlock']['type']
 > = ['data_table']
+export const deprecatedWebhookEndpointCreateWithSecretApi_versionValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DeprecatedWebhookEndpointCreateWithSecret']['api_version']
+> = ['2026-04', '2026-10']
+export const deprecatedWebhookEndpointUpdateWithSecretApi_versionAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DeprecatedWebhookEndpointUpdateWithSecret']['api_version']
+> = ['2026-04', '2026-10']
 export const discountDurationValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']
@@ -71822,6 +71830,12 @@ export const walletSortPropertyValues: ReadonlyArray<
 export const walletTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WalletType']
 > = ['usage', 'billing']
+export const webhookEndpointCreateApi_versionValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['WebhookEndpointCreate']['api_version']
+> = ['2026-04', '2026-10']
+export const webhookEndpointUpdateApi_versionAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['WebhookEndpointUpdate']['api_version']
+> = ['2026-04', '2026-10']
 export const webhookEventTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEventType']
 > = [

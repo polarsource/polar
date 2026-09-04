@@ -30,4 +30,10 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
+  checkout_collapsed_order_summary: {
+    description:
+      'Collapse the order summary on mobile hosted checkouts so the CTA moves above the fold',
+    variants: ['control', 'treatment'] as const,
+    defaultVariant: 'control',
+  },
 } as const

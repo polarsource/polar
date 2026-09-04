@@ -257,6 +257,7 @@ export default {
       description:
         '이 제품의 무료 체험을 이미 사용하셨으므로 오늘 결제가 진행됩니다. 아래에서 계속하여 구매를 완료하세요.',
     },
+    orderSummary: '주문 요약',
   },
   intervals: {
     short: {

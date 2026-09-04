@@ -260,6 +260,7 @@ export default {
       description:
         'Bu ürün için ücretsiz denemeyi zaten kullandınız, bu yüzden bugün ücretlendirileceksiniz. Satın alma işleminizi tamamlamak için aşağıdan devam edin.',
     },
+    orderSummary: 'Sipariş özeti',
   },
   intervals: {
     short: {

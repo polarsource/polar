@@ -2,7 +2,10 @@ import { act } from '@testing-library/react'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { describe, expect, it, vi } from 'vitest'
 import { renderWithCheckout } from '../test-utils/renderWithCheckout'
+import type { CheckoutFormContextProps } from './CheckoutFormProvider'
 import type { CheckoutContextProps } from './CheckoutProvider'
+
+type CheckoutResult = Awaited<ReturnType<CheckoutFormContextProps['update']>>
 
 type UpdateResult = Awaited<ReturnType<CheckoutContextProps['update']>>
 type ConfirmResult = Awaited<ReturnType<CheckoutContextProps['confirm']>>
@@ -205,6 +208,95 @@ describe('CheckoutFormProvider', () => {
         expect(getCtx().form.formState.errors).toEqual({})
       },
     )
+  })
+
+  describe('update (single-flight)', () => {
+    interface Deferred<T> {
+      promise: Promise<T>
+      resolve: (value: T) => void
+    }
+
+    const createDeferred = <T,>(): Deferred<T> => {
+      let resolve!: (value: T) => void
+      const promise = new Promise<T>((res) => {
+        resolve = res
+      })
+      return { promise, resolve }
+    }
+
+    it('never overlaps requests and coalesces pending calls into one trailing request', async () => {
+      const outer: Deferred<UpdateResult>[] = []
+      const update = vi.fn<CheckoutContextProps['update']>(() => {
+        const deferred = createDeferred<UpdateResult>()
+        outer.push(deferred)
+        return deferred.promise
+      })
+
+      const getCtx = renderWithCheckout({ update })
+
+      // First call starts immediately.
+      await act(async () => {
+        void getCtx().update({ customer_email: 'a@example.com' })
+      })
+      expect(update).toHaveBeenCalledTimes(1)
+
+      // Two calls made while the first is in flight must not fire a request yet.
+      let bResult: CheckoutResult | undefined
+      let cResult: CheckoutResult | undefined
+      await act(async () => {
+        void getCtx()
+          .update({ customer_name: 'B' })
+          .then((value) => {
+            bResult = value
+          })
+        void getCtx()
+          .update({ customer_tax_id: 'C' })
+          .then((value) => {
+            cResult = value
+          })
+      })
+      expect(update).toHaveBeenCalledTimes(1)
+
+      // Resolving the first flushes a single coalesced request with both fields.
+      await act(async () => {
+        outer[0].resolve({ ok: true, value: { id: 'ch_1' } } as UpdateResult)
+      })
+      expect(update).toHaveBeenCalledTimes(2)
+      expect(update).toHaveBeenLastCalledWith({
+        customer_name: 'B',
+        customer_tax_id: 'C',
+      })
+
+      // Both coalesced callers resolve with the trailing request's result.
+      await act(async () => {
+        outer[1].resolve({ ok: true, value: { id: 'ch_2' } } as UpdateResult)
+      })
+      expect(bResult).toMatchObject({ id: 'ch_2' })
+      expect(cResult).toMatchObject({ id: 'ch_2' })
+    })
+
+    it('re-arms the fast path once the queue drains', async () => {
+      const outer: Deferred<UpdateResult>[] = []
+      const update = vi.fn<CheckoutContextProps['update']>(() => {
+        const deferred = createDeferred<UpdateResult>()
+        outer.push(deferred)
+        return deferred.promise
+      })
+
+      const getCtx = renderWithCheckout({ update })
+
+      await act(async () => {
+        void getCtx().update({ customer_email: 'a@example.com' })
+        outer[0].resolve({ ok: true, value: { id: 'ch_1' } } as UpdateResult)
+      })
+      expect(update).toHaveBeenCalledTimes(1)
+
+      // A later call, after the first settled, fires immediately rather than queueing.
+      await act(async () => {
+        void getCtx().update({ customer_name: 'B' })
+      })
+      expect(update).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe('confirm (free checkout path)', () => {

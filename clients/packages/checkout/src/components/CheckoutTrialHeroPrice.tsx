@@ -4,6 +4,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
 import { DEFAULT_LOCALE, useTranslations } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
+import { cn } from '@polar-sh/ui/lib/utils'
 import type { ProductCheckoutPublic } from '../guards'
 import { isTemporaryDiscount } from '../utils/discount'
 import { isLegacyRecurringPrice } from '../utils/product'
@@ -52,7 +53,7 @@ const CheckoutTrialHeroPrice = ({
 
   if (isTemporaryDiscount(checkout.discount)) {
     return (
-      <div className="flex flex-col gap-y-1">
+      <div className={cn('flex flex-col', !compact && 'gap-y-1')}>
         <span>{trialLabel}</span>
         {!compact && checkout.trial_end && (
           <span className="dark:text-polar-500 text-sm text-gray-500">
@@ -93,9 +94,14 @@ const CheckoutTrialHeroPrice = ({
       : null
 
   return (
-    <div className="flex flex-col gap-y-1">
+    <div className={cn('flex flex-col', !compact && 'gap-y-1')}>
       <span>{trialLabel}</span>
-      <span className="dark:text-polar-500 text-sm text-gray-500">
+      <span
+        className={cn(
+          'dark:text-polar-500 text-gray-500',
+          compact ? 'text-xs' : 'text-sm',
+        )}
+      >
         {t('checkout.trial.hero.then')}{' '}
         <strong className="font-semibold">{priceStr}</strong>
         {dateStr

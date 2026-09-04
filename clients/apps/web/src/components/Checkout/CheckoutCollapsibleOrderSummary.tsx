@@ -25,13 +25,16 @@ export const CheckoutCollapsibleOrderSummary = (
         aria-expanded={expanded}
         aria-controls={summaryId}
         onClick={() => setExpanded((value) => !value)}
-        className="dark:border-polar-700 dark:bg-polar-950 -mx-4 flex cursor-pointer flex-row items-center justify-between gap-x-4 border-y border-gray-200 bg-gray-50 px-4 py-4 text-left md:hidden"
+        className="dark:border-polar-700 dark:bg-polar-950 -mx-4 flex cursor-pointer flex-row items-center justify-between gap-x-4 border-y border-gray-200 bg-gray-50 px-4 py-4 text-left min-[480px]:mx-0 min-[480px]:rounded-2xl min-[480px]:border-x md:hidden"
       >
-        <span className="flex flex-row items-center gap-x-2 font-medium">
+        <span className="flex flex-row items-center gap-x-1 font-medium">
           {t('checkout.orderSummary')}
           <ChevronDown
             size={16}
-            className={cn('transition-transform', expanded && 'rotate-180')}
+            className={cn(
+              'translate-y-px transition-transform',
+              expanded && 'rotate-180',
+            )}
           />
         </span>
         <span className="shrink-0 text-right font-medium">

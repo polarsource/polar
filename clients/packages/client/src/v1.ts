@@ -8181,79 +8181,9 @@ export interface components {
       scopes: components['schemas']['Scope'][]
       /** Organizations */
       organizations: components['schemas']['AuthorizeOrganization'][]
-      /**
-       * Requires Single Organization
-       * @default false
-       */
+      /** Requires Single Organization */
       requires_single_organization: boolean
-      /**
-       * Scope Display Names
-       * @default {
-       *       "openid": "OpenID",
-       *       "profile": "Read your profile",
-       *       "email": "Read your email address",
-       *       "user:read": "Read your user account",
-       *       "user:write": "Manage your user account",
-       *       "organizations:read": "Read your organizations",
-       *       "organizations:write": "Create or modify organizations",
-       *       "custom_fields:read": "Read custom fields",
-       *       "custom_fields:write": "Create or modify custom fields",
-       *       "discounts:read": "Read discounts",
-       *       "discounts:write": "Create or modify discounts",
-       *       "checkout_links:read": "Read checkout links",
-       *       "checkout_links:write": "Create or modify checkout links",
-       *       "checkouts:read": "Read checkout sessions",
-       *       "checkouts:write": "Create or modify checkout sessions",
-       *       "transactions:read": "Read transactions",
-       *       "transactions:write": "Create or modify transactions",
-       *       "payouts:read": "Read payouts",
-       *       "payouts:write": "Create or modify payouts",
-       *       "products:read": "Read products",
-       *       "products:write": "Create or modify products",
-       *       "benefits:read": "Read benefits",
-       *       "benefits:write": "Create or modify benefits",
-       *       "events:read": "Read events",
-       *       "events:write": "Create events",
-       *       "meters:read": "Read meters",
-       *       "meters:write": "Create or modify meters",
-       *       "files:read": "Read file uploads",
-       *       "files:write": "Create or modify file uploads",
-       *       "subscriptions:read": "Read subscriptions made on your organizations",
-       *       "subscriptions:write": "Create or modify subscriptions made on your organizations",
-       *       "customers:read": "Read customers",
-       *       "customers:write": "Create or modify customers",
-       *       "members:read": "Read members",
-       *       "members:write": "Create or modify members",
-       *       "wallets:read": "Read wallets",
-       *       "wallets:write": "Create or modify wallets",
-       *       "disputes:read": "Read disputes",
-       *       "disputes:write": "Create or modify disputes",
-       *       "customer_meters:read": "Read customer meters",
-       *       "customer_sessions:write": "Create or modify customer sessions",
-       *       "member_sessions:write": "Create or modify member sessions",
-       *       "customer_seats:read": "Read customer seats",
-       *       "customer_seats:write": "Create or modify customer seats",
-       *       "orders:read": "Read orders made on your organizations",
-       *       "orders:write": "Modify orders made on your organizations",
-       *       "refunds:read": "Read refunds made on your organizations",
-       *       "refunds:write": "Create or modify refunds",
-       *       "payments:read": "Read payments made on your organizations",
-       *       "metrics:read": "Read metrics",
-       *       "metrics:write": "Create or modify metric definitions",
-       *       "webhooks:read": "Read webhooks",
-       *       "webhooks:write": "Create or modify webhooks",
-       *       "license_keys:read": "Read license keys",
-       *       "license_keys:write": "Modify license keys",
-       *       "customer_portal:read": "Read your orders, subscriptions and benefits",
-       *       "customer_portal:write": "Create or modify your orders, subscriptions and benefits",
-       *       "notifications:read": "Read notifications",
-       *       "notifications:write": "Mark notifications as read",
-       *       "notification_recipients:read": "Read notification recipients",
-       *       "notification_recipients:write": "Create or modify notification recipients",
-       *       "organization_access_tokens:read": "Read organization access tokens",
-       *       "organization_access_tokens:write": "Create or modify organization access tokens"
-       *     }
-       */
+      /** Scope Display Names */
       scope_display_names: {
         [key: string]: string
       }
@@ -8271,79 +8201,9 @@ export interface components {
       scopes: components['schemas']['Scope'][]
       /** Organizations */
       organizations: components['schemas']['AuthorizeOrganization'][]
-      /**
-       * Requires Single Organization
-       * @default false
-       */
+      /** Requires Single Organization */
       requires_single_organization: boolean
-      /**
-       * Scope Display Names
-       * @default {
-       *       "openid": "OpenID",
-       *       "profile": "Read your profile",
-       *       "email": "Read your email address",
-       *       "user:read": "Read your user account",
-       *       "user:write": "Manage your user account",
-       *       "organizations:read": "Read your organizations",
-       *       "organizations:write": "Create or modify organizations",
-       *       "custom_fields:read": "Read custom fields",
-       *       "custom_fields:write": "Create or modify custom fields",
-       *       "discounts:read": "Read discounts",
-       *       "discounts:write": "Create or modify discounts",
-       *       "checkout_links:read": "Read checkout links",
-       *       "checkout_links:write": "Create or modify checkout links",
-       *       "checkouts:read": "Read checkout sessions",
-       *       "checkouts:write": "Create or modify checkout sessions",
-       *       "transactions:read": "Read transactions",
-       *       "transactions:write": "Create or modify transactions",
-       *       "payouts:read": "Read payouts",
-       *       "payouts:write": "Create or modify payouts",
-       *       "products:read": "Read products",
-       *       "products:write": "Create or modify products",
-       *       "benefits:read": "Read benefits",
-       *       "benefits:write": "Create or modify benefits",
-       *       "events:read": "Read events",
-       *       "events:write": "Create events",
-       *       "meters:read": "Read meters",
-       *       "meters:write": "Create or modify meters",
-       *       "files:read": "Read file uploads",
-       *       "files:write": "Create or modify file uploads",
-       *       "subscriptions:read": "Read subscriptions made on your organizations",
-       *       "subscriptions:write": "Create or modify subscriptions made on your organizations",
-       *       "customers:read": "Read customers",
-       *       "customers:write": "Create or modify customers",
-       *       "members:read": "Read members",
-       *       "members:write": "Create or modify members",
-       *       "wallets:read": "Read wallets",
-       *       "wallets:write": "Create or modify wallets",
-       *       "disputes:read": "Read disputes",
-       *       "disputes:write": "Create or modify disputes",
-       *       "customer_meters:read": "Read customer meters",
-       *       "customer_sessions:write": "Create or modify customer sessions",
-       *       "member_sessions:write": "Create or modify member sessions",
-       *       "customer_seats:read": "Read customer seats",
-       *       "customer_seats:write": "Create or modify customer seats",
-       *       "orders:read": "Read orders made on your organizations",
-       *       "orders:write": "Modify orders made on your organizations",
-       *       "refunds:read": "Read refunds made on your organizations",
-       *       "refunds:write": "Create or modify refunds",
-       *       "payments:read": "Read payments made on your organizations",
-       *       "metrics:read": "Read metrics",
-       *       "metrics:write": "Create or modify metric definitions",
-       *       "webhooks:read": "Read webhooks",
-       *       "webhooks:write": "Create or modify webhooks",
-       *       "license_keys:read": "Read license keys",
-       *       "license_keys:write": "Modify license keys",
-       *       "customer_portal:read": "Read your orders, subscriptions and benefits",
-       *       "customer_portal:write": "Create or modify your orders, subscriptions and benefits",
-       *       "notifications:read": "Read notifications",
-       *       "notifications:write": "Mark notifications as read",
-       *       "notification_recipients:read": "Read notification recipients",
-       *       "notification_recipients:write": "Create or modify notification recipients",
-       *       "organization_access_tokens:read": "Read organization access tokens",
-       *       "organization_access_tokens:write": "Create or modify organization access tokens"
-       *     }
-       */
+      /** Scope Display Names */
       scope_display_names: {
         [key: string]: string
       }
@@ -8495,7 +8355,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -8593,7 +8452,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -8701,7 +8559,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -8776,7 +8633,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -8882,7 +8738,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -8992,7 +8847,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -9363,7 +9217,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -9839,7 +9692,7 @@ export interface components {
        * Archived
        * @default {}
        */
-      archived: {
+      archived?: {
         [key: string]: boolean
       }
       /** Files */
@@ -11402,7 +11255,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -12089,7 +11941,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -12224,14 +12075,14 @@ export interface components {
        * Private
        * @default true
        */
-      private: boolean
+      private?: boolean
       /** Welcome Message */
       welcome_message?: string | null
       /**
        * Archive On Revoke
        * @default true
        */
-      archive_on_revoke: boolean
+      archive_on_revoke?: boolean
       /** Team Invitees */
       team_invitees?: string[]
     }
@@ -12253,7 +12104,7 @@ export interface components {
        * @description Create the channel as private (recommended).
        * @default true
        */
-      private: boolean
+      private?: boolean
       /**
        * Welcome Message
        * @description Optional message posted to the channel right after creation.
@@ -12264,7 +12115,7 @@ export interface components {
        * @description Archive the channel when the benefit is revoked.
        * @default true
        */
-      archive_on_revoke: boolean
+      archive_on_revoke?: boolean
       /**
        * Team Invitees
        * @description Slack user IDs from the merchant workspace to invite to every channel created for this benefit.
@@ -12527,7 +12378,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -12783,12 +12633,12 @@ export interface components {
        * Customer Name
        * @default Sample Customer
        */
-      customer_name: string
+      customer_name?: string
       /**
        * Customer Email
        * @default customer@example.com
        */
-      customer_email: string
+      customer_email?: string
       /** Customer Metadata */
       customer_metadata?: {
         [key: string]: string | number | boolean
@@ -13242,7 +13092,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -13568,13 +13417,13 @@ export interface components {
        * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
        * @default true
        */
-      allow_discount_codes: boolean
+      allow_discount_codes?: boolean
       /**
        * Require Billing Address
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
        * @default false
        */
-      require_billing_address: boolean
+      require_billing_address?: boolean
       /**
        * Discount Id
        * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
@@ -13653,13 +13502,13 @@ export interface components {
        * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
        * @default true
        */
-      allow_discount_codes: boolean
+      allow_discount_codes?: boolean
       /**
        * Require Billing Address
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
        * @default false
        */
-      require_billing_address: boolean
+      require_billing_address?: boolean
       /**
        * Discount Id
        * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
@@ -13736,13 +13585,13 @@ export interface components {
        * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
        * @default true
        */
-      allow_discount_codes: boolean
+      allow_discount_codes?: boolean
       /**
        * Require Billing Address
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
        * @default false
        */
-      require_billing_address: boolean
+      require_billing_address?: boolean
       /**
        * Discount Id
        * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
@@ -14043,13 +13892,13 @@ export interface components {
        * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
        * @default true
        */
-      allow_discount_codes: boolean
+      allow_discount_codes?: boolean
       /**
        * Require Billing Address
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
        * @default false
        */
-      require_billing_address: boolean
+      require_billing_address?: boolean
       /** Amount */
       amount?: number | null
       /**
@@ -14087,7 +13936,7 @@ export interface components {
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        * @default true
        */
-      allow_trial: boolean
+      allow_trial?: boolean
       /**
        * Customer Id
        * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
@@ -14098,7 +13947,7 @@ export interface components {
        * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
        * @default false
        */
-      is_business_customer: boolean
+      is_business_customer?: boolean
       /**
        * External Customer Id
        * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
@@ -14302,13 +14151,13 @@ export interface components {
        * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
        * @default true
        */
-      allow_discount_codes: boolean
+      allow_discount_codes?: boolean
       /**
        * Require Billing Address
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
        * @default false
        */
-      require_billing_address: boolean
+      require_billing_address?: boolean
       /** Amount */
       amount?: number | null
       /**
@@ -14346,7 +14195,7 @@ export interface components {
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        * @default true
        */
-      allow_trial: boolean
+      allow_trial?: boolean
       /**
        * Customer Id
        * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
@@ -14357,7 +14206,7 @@ export interface components {
        * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
        * @default false
        */
-      is_business_customer: boolean
+      is_business_customer?: boolean
       /**
        * External Customer Id
        * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
@@ -14471,13 +14320,13 @@ export interface components {
        * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
        * @default true
        */
-      allow_discount_codes: boolean
+      allow_discount_codes?: boolean
       /**
        * Require Billing Address
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
        * @default false
        */
-      require_billing_address: boolean
+      require_billing_address?: boolean
       /** Amount */
       amount?: number | null
       /**
@@ -14515,7 +14364,7 @@ export interface components {
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        * @default true
        */
-      allow_trial: boolean
+      allow_trial?: boolean
       /**
        * Customer Id
        * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
@@ -14526,7 +14375,7 @@ export interface components {
        * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
        * @default false
        */
-      is_business_customer: boolean
+      is_business_customer?: boolean
       /**
        * External Customer Id
        * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
@@ -17322,7 +17171,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -17515,7 +17363,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -17725,7 +17572,7 @@ export interface components {
        * @default individual
        * @constant
        */
-      type: 'individual'
+      type?: 'individual'
       /**
        * Email
        * Format: email
@@ -18013,7 +17860,7 @@ export interface components {
        * @description Payment processor used.
        * @default stripe
        */
-      payment_processor: components['schemas']['PaymentProcessor']
+      payment_processor?: components['schemas']['PaymentProcessor']
     }
     /**
      * CustomerOrderInvoice
@@ -18413,13 +18260,13 @@ export interface components {
        * @description Whether the member model is enabled for this organization.
        * @default false
        */
-      member_model_enabled: boolean
+      member_model_enabled?: boolean
       /**
        * Checkout Localization Enabled
        * @description Whether localization is enabled for this organization.
        * @default false
        */
-      checkout_localization_enabled: boolean
+      checkout_localization_enabled?: boolean
     }
     CustomerPaymentMethod:
       | components['schemas']['PaymentMethodCard']
@@ -18686,7 +18533,7 @@ export interface components {
        * @example billing_manager
        * @example member
        */
-      role: components['schemas']['MemberRole']
+      role?: components['schemas']['MemberRole']
     }
     /**
      * CustomerPortalMemberUpdate
@@ -18943,7 +18790,7 @@ export interface components {
        * @description If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
        * @default false
        */
-      immediate_claim: boolean
+      immediate_claim?: boolean
       /**
        * Checkout Id
        * @description Checkout ID. Resolves to the subscription or order produced by the checkout.
@@ -18985,15 +18832,9 @@ export interface components {
      * @description Response when multiple customers match the email.
      */
     CustomerSelectionRequiredResponse: {
-      /**
-       * Error
-       * @default customer_selection_required
-       */
+      /** Error */
       error: string
-      /**
-       * Detail
-       * @default Multiple customers found for this email. Please select one.
-       */
+      /** Detail */
       detail: string
       /**
        * Customers
@@ -19186,7 +19027,6 @@ export interface components {
       /**
        * Share
        * @description This customer's share of the total cost across all customers (0–1).
-       * @default 0
        */
       share: string
     }
@@ -20462,7 +20302,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -20615,7 +20454,6 @@ export interface components {
       key: string
       /** Label */
       label: string
-      /** @default text */
       format: components['schemas']['ColumnFormat']
     }
     /** DeprecatedWebhookEndpointCreateWithSecret */
@@ -20784,7 +20622,7 @@ export interface components {
        * @deprecated
        * @default usd
        */
-      currency: components['schemas']['PresentmentCurrency'] | null
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /** Amounts */
       amounts?: {
         [key: string]: number
@@ -22559,7 +22397,6 @@ export interface components {
       /**
        * Duplicates
        * @description Number of duplicate events skipped.
-       * @default 0
        */
       duplicates: number
     }
@@ -22749,10 +22586,7 @@ export interface components {
       upload: components['schemas']['S3FileUploadMultipart']
       /** Version */
       version: string | null
-      /**
-       * Is Uploaded
-       * @default false
-       */
+      /** Is Uploaded */
       is_uploaded: boolean
       service: components['schemas']['FileServiceTypes']
       /** Size Readable */
@@ -23721,7 +23555,7 @@ export interface components {
        * Usage
        * @default 0
        */
-      usage: number
+      usage?: number
       /** Limit Activations */
       limit_activations?: number | null
       /** Limit Usage */
@@ -24239,7 +24073,7 @@ export interface components {
        * Currency
        * @default usd
        */
-      currency: string
+      currency?: string
       /** Formatted Amount */
       readonly formatted_amount: string
     }
@@ -24306,7 +24140,7 @@ export interface components {
        * Tier Price Recurring Interval Count
        * @default 1
        */
-      tier_price_recurring_interval_count: number
+      tier_price_recurring_interval_count?: number
       /** Tier Organization Name */
       tier_organization_name: string
       /** Tier Organization Slug */
@@ -24317,7 +24151,7 @@ export interface components {
        * Currency
        * @default usd
        */
-      currency: string
+      currency?: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
       /** Formatted Price With Interval */
@@ -24352,12 +24186,12 @@ export interface components {
        * Customer Name
        * @default
        */
-      customer_name: string
+      customer_name?: string
       /**
        * Organization Name
        * @default
        */
-      organization_name: string
+      organization_name?: string
       /** Customer Email */
       customer_email?: string | null
       /** Billing Address Country */
@@ -24381,7 +24215,7 @@ export interface components {
        * Currency
        * @default usd
        */
-      currency: string
+      currency?: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
       /** Formatted Billing Reason */
@@ -24420,7 +24254,7 @@ export interface components {
        * Customer Name
        * @default
        */
-      customer_name: string
+      customer_name?: string
       /** Customer Email */
       customer_email?: string | null
       /** Organization Slug */
@@ -24433,12 +24267,12 @@ export interface components {
        * Recurring Interval Count
        * @default 1
        */
-      recurring_interval_count: number
+      recurring_interval_count?: number
       /**
        * Currency
        * @default usd
        */
-      currency: string
+      currency?: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
       /** Formatted Recurring Interval */
@@ -24534,7 +24368,7 @@ export interface components {
        * @example member
        * @enum {string}
        */
-      role: 'member' | 'billing_manager'
+      role?: 'member' | 'billing_manager'
       /**
        * Customer Id
        * Format: uuid4
@@ -24571,7 +24405,7 @@ export interface components {
        * @example member
        * @enum {string}
        */
-      role: 'member' | 'billing_manager'
+      role?: 'member' | 'billing_manager'
     }
     /** MemberOrganization */
     MemberOrganization: {
@@ -25107,7 +24941,7 @@ export interface components {
        * @description The unit of the meter.
        * @default scalar
        */
-      unit: components['schemas']['MeterUnit']
+      unit?: components['schemas']['MeterUnit']
       /**
        * Custom Label
        * @description The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.
@@ -25183,7 +25017,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -25293,7 +25126,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -26027,7 +25859,7 @@ export interface components {
        * @default client_secret_post
        * @enum {string}
        */
-      token_endpoint_auth_method:
+      token_endpoint_auth_method?:
         | 'client_secret_basic'
         | 'client_secret_post'
         | 'none'
@@ -26038,19 +25870,19 @@ export interface components {
        *       "refresh_token"
        *     ]
        */
-      grant_types: ('authorization_code' | 'refresh_token')[]
+      grant_types?: ('authorization_code' | 'refresh_token')[]
       /**
        * Response Types
        * @default [
        *       "code"
        *     ]
        */
-      response_types: 'code'[]
+      response_types?: 'code'[]
       /**
        * Scope
        * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
-      scope: string
+      scope?: string
       /** Client Name */
       client_name: string
       /** Client Uri */
@@ -26062,7 +25894,7 @@ export interface components {
       /** Policy Uri */
       policy_uri?: string | null
       /** @default user */
-      default_sub_type: components['schemas']['SubType']
+      default_sub_type?: components['schemas']['SubType']
       /**
        * Created At
        * Format: date-time
@@ -26092,7 +25924,7 @@ export interface components {
        * @default client_secret_post
        * @enum {string}
        */
-      token_endpoint_auth_method:
+      token_endpoint_auth_method?:
         | 'client_secret_basic'
         | 'client_secret_post'
         | 'none'
@@ -26103,19 +25935,19 @@ export interface components {
        *       "refresh_token"
        *     ]
        */
-      grant_types: ('authorization_code' | 'refresh_token')[]
+      grant_types?: ('authorization_code' | 'refresh_token')[]
       /**
        * Response Types
        * @default [
        *       "code"
        *     ]
        */
-      response_types: 'code'[]
+      response_types?: 'code'[]
       /**
        * Scope
        * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
-      scope: string
+      scope?: string
       /** Client Name */
       client_name: string
       /** Client Uri */
@@ -26127,7 +25959,7 @@ export interface components {
       /** Policy Uri */
       policy_uri?: string | null
       /** @default user */
-      default_sub_type: components['schemas']['SubType']
+      default_sub_type?: components['schemas']['SubType']
     }
     /** OAuth2ClientConfigurationUpdate */
     OAuth2ClientConfigurationUpdate: {
@@ -26138,7 +25970,7 @@ export interface components {
        * @default client_secret_post
        * @enum {string}
        */
-      token_endpoint_auth_method:
+      token_endpoint_auth_method?:
         | 'client_secret_basic'
         | 'client_secret_post'
         | 'none'
@@ -26149,19 +25981,19 @@ export interface components {
        *       "refresh_token"
        *     ]
        */
-      grant_types: ('authorization_code' | 'refresh_token')[]
+      grant_types?: ('authorization_code' | 'refresh_token')[]
       /**
        * Response Types
        * @default [
        *       "code"
        *     ]
        */
-      response_types: 'code'[]
+      response_types?: 'code'[]
       /**
        * Scope
        * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
-      scope: string
+      scope?: string
       /** Client Name */
       client_name: string
       /** Client Uri */
@@ -26173,7 +26005,7 @@ export interface components {
       /** Policy Uri */
       policy_uri?: string | null
       /** @default user */
-      default_sub_type: components['schemas']['SubType']
+      default_sub_type?: components['schemas']['SubType']
       /** Client Id */
       client_id: string
     }
@@ -26867,7 +26699,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -27054,7 +26885,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -27331,7 +27161,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -27444,7 +27273,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -28456,12 +28284,12 @@ export interface components {
        * @description Default presentment currency for the organization
        * @default usd
        */
-      default_presentment_currency: components['schemas']['PresentmentCurrency']
+      default_presentment_currency?: components['schemas']['PresentmentCurrency']
       /**
        * @description Default tax behavior applied on products.
        * @default location
        */
-      default_tax_behavior: components['schemas']['TaxBehaviorOption']
+      default_tax_behavior?: components['schemas']['TaxBehaviorOption']
     }
     /** OrganizationCustomerEmailSettings */
     OrganizationCustomerEmailSettings: {
@@ -28584,7 +28412,7 @@ export interface components {
        * @description Switching from another platform?
        * @default false
        */
-      switching: boolean
+      switching?: boolean
       /**
        * Switching From
        * @description Which platform the organization is migrating from.
@@ -28640,31 +28468,31 @@ export interface components {
        * @description If this organization has issue funding enabled
        * @default false
        */
-      issue_funding_enabled: boolean
+      issue_funding_enabled?: boolean
       /**
        * Seat Based Pricing Enabled
        * @description If this organization has seat-based pricing enabled
        * @default false
        */
-      seat_based_pricing_enabled: boolean
+      seat_based_pricing_enabled?: boolean
       /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false
        */
-      wallets_enabled: boolean
+      wallets_enabled?: boolean
       /**
        * Member Model Enabled
        * @description If this organization has the Member model enabled
        * @default false
        */
-      member_model_enabled: boolean
+      member_model_enabled?: boolean
       /**
        * Checkout Localization Enabled
        * @description If this organization has checkout localization enabled
        * @default false
        */
-      checkout_localization_enabled: boolean
+      checkout_localization_enabled?: boolean
       /**
        * Overview Metrics
        * @description Ordered list of metric slugs shown on the dashboard overview.
@@ -28675,61 +28503,61 @@ export interface components {
        * @description If this organization has access to reset proration behavior.
        * @default false
        */
-      reset_proration_behavior_enabled: boolean
+      reset_proration_behavior_enabled?: boolean
       /**
        * Off Session Charges Enabled
        * @description If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method).
        * @default false
        */
-      off_session_charges_enabled: boolean
+      off_session_charges_enabled?: boolean
       /**
        * Meter Cycling Enabled
        * @description If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).
        * @default false
        */
-      meter_cycling_enabled: boolean
+      meter_cycling_enabled?: boolean
       /**
        * Slack Benefit Enabled
        * @description Enables the slack shared channel benefit
        * @default false
        */
-      slack_benefit_enabled: boolean
+      slack_benefit_enabled?: boolean
       /**
        * Preview Access Enabled
        * @description If this organization has preview access to new features enabled
        * @default false
        */
-      preview_access_enabled: boolean
+      preview_access_enabled?: boolean
       /**
        * Disputes Enabled
        * @description If this organization has the disputes dashboard enabled
        * @default false
        */
-      disputes_enabled: boolean
+      disputes_enabled?: boolean
       /**
        * Sso Enabled
        * @description If this organization has single sign-on configuration enabled
        * @default false
        */
-      sso_enabled: boolean
+      sso_enabled?: boolean
       /**
        * Dispute Auto Accept Enabled
        * @description If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`.
        * @default false
        */
-      dispute_auto_accept_enabled: boolean
+      dispute_auto_accept_enabled?: boolean
       /**
        * Compass Enabled
        * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
        * @default false
        */
-      compass_enabled: boolean
+      compass_enabled?: boolean
       /**
        * Merchant Migration Enabled
        * @description If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
        * @default false
        */
-      merchant_migration_enabled: boolean
+      merchant_migration_enabled?: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -28744,19 +28572,19 @@ export interface components {
        * @description If this organization has seat-based pricing enabled
        * @default false
        */
-      seat_based_pricing_enabled: boolean
+      seat_based_pricing_enabled?: boolean
       /**
        * Member Model Enabled
        * @description If this organization has the Member model enabled
        * @default false
        */
-      member_model_enabled: boolean
+      member_model_enabled?: boolean
       /**
        * Checkout Localization Enabled
        * @description If this organization has checkout localization enabled
        * @default false
        */
-      checkout_localization_enabled: boolean
+      checkout_localization_enabled?: boolean
       /**
        * Overview Metrics
        * @description Ordered list of metric slugs shown on the dashboard overview.
@@ -29246,7 +29074,6 @@ export interface components {
       id: string
       /**
        * Type
-       * @default card
        * @constant
        */
       type: 'card'
@@ -29334,15 +29161,9 @@ export interface components {
       recurring_interval?: string | null
       price?: components['schemas']['OrganizationPlanPrice'] | null
       transaction_fee?: components['schemas']['OrganizationPlanFee'] | null
-      /**
-       * Highlight
-       * @default false
-       */
+      /** Highlight */
       highlight: boolean
-      /**
-       * Custom
-       * @default false
-       */
+      /** Custom */
       custom: boolean
       /** Features */
       features?: string[]
@@ -29595,7 +29416,7 @@ export interface components {
        * @default oidc
        * @constant
        */
-      type: 'oidc'
+      type?: 'oidc'
       /**
        * Configuration
        * @description Provider-specific configuration of the connection.
@@ -29608,7 +29429,7 @@ export interface components {
        * @description Whether the connection can be used to sign in.
        * @default false
        */
-      enabled: boolean
+      enabled?: boolean
     }
     /**
      * OrganizationSSOConnectionType
@@ -29762,10 +29583,7 @@ export interface components {
       current_period_start?: string | null
       /** Current Period End */
       current_period_end?: string | null
-      /**
-       * Cancel At Period End
-       * @default false
-       */
+      /** Cancel At Period End */
       cancel_at_period_end: boolean
       /** Canceled At */
       canceled_at?: string | null
@@ -31825,7 +31643,7 @@ export interface components {
        * @description The visibility of the product.
        * @default public
        */
-      visibility: components['schemas']['ProductVisibility']
+      visibility?: components['schemas']['ProductVisibility']
       /**
        * ProductPriceCreateList
        * @description List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products.
@@ -31897,7 +31715,7 @@ export interface components {
        * @description The visibility of the product.
        * @default public
        */
-      visibility: components['schemas']['ProductVisibility']
+      visibility?: components['schemas']['ProductVisibility']
       /**
        * ProductPriceCreateList
        * @description List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products.
@@ -31939,7 +31757,7 @@ export interface components {
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        * @default 1
        */
-      recurring_interval_count: number
+      recurring_interval_count?: number
       /** @description Optional meter cycle, independent of the billing interval. When set, overage settlement, meter resets and meter-credit grants run on this cadence rather than the billing interval — e.g. yearly billing with monthly credits. It must evenly divide the billing interval. If `None`, metered concerns follow the billing interval. **Once set, it can't be changed.** */
       meter_interval?: components['schemas']['RecurringInterval'] | null
       /**
@@ -32115,7 +31933,7 @@ export interface components {
        * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: components['schemas']['PresentmentCurrency']
+      price_currency?: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
@@ -32250,7 +32068,7 @@ export interface components {
        *     - Other currencies: 50 minor units
        * @default 50
        */
-      minimum_amount: number
+      minimum_amount?: number
       /**
        * Maximum Amount
        * @description The maximum amount the customer can pay. Maximum per currency:
@@ -32472,7 +32290,7 @@ export interface components {
        * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: components['schemas']['PresentmentCurrency']
+      price_currency?: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
@@ -32715,7 +32533,7 @@ export interface components {
        * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: components['schemas']['PresentmentCurrency']
+      price_currency?: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
@@ -32812,7 +32630,7 @@ export interface components {
        * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: components['schemas']['PresentmentCurrency']
+      price_currency?: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
@@ -32896,7 +32714,7 @@ export interface components {
        * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: components['schemas']['PresentmentCurrency']
+      price_currency?: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /** @description Tiered pricing based on seat quantity */
@@ -32936,7 +32754,7 @@ export interface components {
        * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
        * @default volume
        */
-      seat_tier_type: components['schemas']['SeatTierType']
+      seat_tier_type?: components['schemas']['SeatTierType']
       /**
        * Tiers
        * @description List of pricing tiers
@@ -32956,7 +32774,7 @@ export interface components {
        * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
        * @default volume
        */
-      seat_tier_type: components['schemas']['SeatTierType']
+      seat_tier_type?: components['schemas']['SeatTierType']
       /**
        * Tiers
        * @description List of pricing tiers
@@ -33068,7 +32886,7 @@ export interface components {
        * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: components['schemas']['PresentmentCurrency']
+      price_currency?: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /** @description Tiered pricing based on the purchased unit quantity. */
@@ -33331,7 +33149,7 @@ export interface components {
        *     subscription itself is revoked, i.e fully canceled.
        * @default false
        */
-      revoke_benefits: boolean
+      revoke_benefits?: boolean
     }
     /**
      * RefundDispute
@@ -33536,10 +33354,7 @@ export interface components {
     S3DownloadURL: {
       /** Url */
       url: string
-      /**
-       * Headers
-       * @default {}
-       */
+      /** Headers */
       headers: {
         [key: string]: string
       }
@@ -33600,10 +33415,7 @@ export interface components {
        * Format: date-time
        */
       expires_at: string
-      /**
-       * Headers
-       * @default {}
-       */
+      /** Headers */
       headers: {
         [key: string]: string
       }
@@ -33848,7 +33660,7 @@ export interface components {
        * @description If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
        * @default false
        */
-      immediate_claim: boolean
+      immediate_claim?: boolean
     }
     /** SeatClaim */
     SeatClaim: {
@@ -34109,7 +33921,6 @@ export interface components {
       /**
        * Is Admin
        * @description Whether the user is a workspace admin.
-       * @default false
        */
       is_admin: boolean
     }
@@ -34564,7 +34375,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -34709,7 +34519,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -35000,7 +34809,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -35181,7 +34989,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -35359,7 +35166,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -35470,7 +35276,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -35564,7 +35369,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -35657,7 +35461,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -35747,7 +35550,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -35846,7 +35648,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -35980,7 +35781,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -36070,7 +35870,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -36192,7 +35991,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -36282,7 +36080,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -36437,7 +36234,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -36541,7 +36337,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -37670,7 +37465,6 @@ export interface components {
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
-       * @default 0
        */
       child_count: number
       /**
@@ -37789,7 +37583,7 @@ export interface components {
        * @description Whether the current session is restricted to a specific organization. Such sessions cannot access other organizations or create new ones. Populated by `GET /v1/users/me`.
        * @default false
        */
-      organization_scoped: boolean
+      organization_scoped?: boolean
       /** Email Hash */
       readonly email_hash: string | null
     }
@@ -39517,17 +39311,17 @@ export interface components {
        * @default user
        * @enum {string}
        */
-      sub_type: 'user' | 'organization'
+      sub_type?: 'user' | 'organization'
       /**
        * Sub
        * @default null
        */
-      sub: string | null
+      sub?: string | null
       /**
        * Scope
        * @default null
        */
-      scope: string | null
+      scope?: string | null
     }
     /** RevokeTokenRequest */
     RevokeTokenRequest: {
@@ -39537,7 +39331,7 @@ export interface components {
        * Token Type Hint
        * @default null
        */
-      token_type_hint: ('access_token' | 'refresh_token') | null
+      token_type_hint?: ('access_token' | 'refresh_token') | null
       /** Client Id */
       client_id: string
       /** Client Secret */
@@ -39551,7 +39345,7 @@ export interface components {
        * Token Type Hint
        * @default null
        */
-      token_type_hint: ('access_token' | 'refresh_token') | null
+      token_type_hint?: ('access_token' | 'refresh_token') | null
       /** Client Id */
       client_id: string
       /** Client Secret */

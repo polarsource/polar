@@ -459,11 +459,15 @@ class OrganizationRepository(
         next_number = result.scalar_one()
         return next_number - 1
 
-    async def delete_payout_account(self, payout_account: UUID) -> None:
-        """Reset Organization.payout_account_id to None for any organization linked to the payout account."""
+    async def remove_payout_account(
+        self, organization_id: UUID, payout_account_id: UUID
+    ) -> None:
         stmt = (
             update(Organization)
-            .where(Organization.payout_account_id == payout_account)
+            .where(
+                Organization.id == organization_id,
+                Organization.payout_account_id == payout_account_id,
+            )
             .values(payout_account_id=None)
         )
         await self.session.execute(stmt)

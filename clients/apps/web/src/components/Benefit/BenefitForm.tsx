@@ -1,3 +1,4 @@
+import { MetadataForm } from '@/components/Metadata/MetadataForm'
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
@@ -30,7 +31,6 @@ import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
 import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
-import { BenefitMetadataForm } from './BenefitMetadataForm'
 import { BenefitVisibilityField } from './BenefitVisibilityField'
 import { SlackSharedChannelBenefitForm } from './SlackSharedChannelBenefitForm'
 import {
@@ -156,7 +156,7 @@ const BenefitForm = ({
           benefitId={benefitId}
         />
       )}
-      <BenefitMetadataForm />
+      <MetadataForm label="Metadata" />
     </>
   )
 }

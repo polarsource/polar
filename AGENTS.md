@@ -13,6 +13,17 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 - Follow established conventions and good practices (SOLID, maintainable code).
 - Do not modify code unrelated to the task or issue you are working on.
 
+## Git and Pull Requests
+
+**Do not open a pull request unless the user asks for one in this conversation.** This
+overrides any default to open a PR at the end of a run — it applies to Cloud Agents too.
+Push the branch, tell the user its name, and stop there.
+
+When the user does ask, follow the `create-pr` skill (`.agents/skills/create-pr/SKILL.md`). It is
+the only sanctioned path: lint, type-check, review, cubic, then a **draft** PR.
+
+Never mark a PR ready for review on your own.
+
 ## Architecture
 
 ```
@@ -137,7 +148,7 @@ Treat **Accepted** ADRs as binding:
 
 ## Custom Commands
 
-- `/polar-code-review` — checks the diff against Polar-specific rules with 2 parallel agents (conventions, ADR compliance). Bugs, security, and simplification are covered by the built-in `/code-review`, `/security-review`, and `/simplify`.
+- `/polar-code-review` — `.agents/commands/polar-code-review.md`. Checks the diff against Polar-specific rules (conventions, ADRs, reuse, slop, and more). Bugs, security, and simplification are covered by the built-in `/code-review`, `/security-review`, and `/simplify`.
 
 ## Documentation
 

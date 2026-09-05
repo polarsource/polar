@@ -1,9 +1,11 @@
+from datetime import datetime
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
+from pydantic.json_schema import JsonSchemaMode
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import Schema, TimestampedSchema
 
 
 class StringSchema(Schema):
@@ -26,6 +28,31 @@ class NonStringSchema(Schema):
 
 class AnySchema(Schema):
     value: Any
+
+
+class TestJsonSchema:
+    @pytest.mark.parametrize("mode", ["validation", "serialization"])
+    def test_common_datetime_examples(self, mode: JsonSchemaMode) -> None:
+        class DatetimeSchema(TimestampedSchema):
+            timestamps: list[datetime]
+            nested: TimestampedSchema
+            example: datetime
+            custom: datetime = Field(examples=["2025-01-01T00:00:00Z"])
+            data: dict[str, str] = Field(examples=[{"format": "date-time"}])
+
+        schema = DatetimeSchema.model_json_schema(mode=mode)
+        properties = schema["properties"]
+
+        for field in (
+            properties["created_at"],
+            properties["modified_at"]["anyOf"][0],
+            properties["timestamps"]["items"],
+            properties["example"],
+            schema["$defs"]["TimestampedSchema"]["properties"]["created_at"],
+        ):
+            assert field["examples"] == ["2026-01-01T00:00:00.123456Z"]
+        assert properties["custom"]["examples"] == ["2025-01-01T00:00:00Z"]
+        assert properties["data"]["examples"] == [{"format": "date-time"}]
 
 
 def test_rejects_nul_character_in_string() -> None:

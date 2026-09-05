@@ -1,0 +1,44 @@
+name: Trigger a database backup
+
+on:
+  # Scheduled run disabled during Depot trial to avoid colliding with GitHub Actions. Manual dispatch only.
+  workflow_dispatch:
+
+permissions:
+  contents: none
+
+jobs:
+  backup:
+    runs-on: depot-ubuntu-latest
+
+    steps:
+    - name: Trigger the backup
+      run: |
+          curl -X POST "https://api.render.com/v1/postgres/${{ secrets.RENDER_DATABASE_ID }}/backup" \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          --fail \
+          --silent \
+          --output /dev/null
+
+    - name: Notify Slack on failure
+      if: failure()
+      uses: slackapi/slack-github-action@v4.0.0
+      with:
+        method: chat.postMessage
+        token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+        errors: true
+        payload: |
+          {
+            "channel": "C093CJXJXPT",
+            "text": "Database backup trigger failed",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": ":rotating_light: *Database backup trigger failed* — the daily Render PITR snapshot could not be triggered.\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                }
+              }
+            ]
+          }

@@ -1,0 +1,55 @@
+name: preview
+on:
+  # Auto-run disabled during Depot trial to avoid colliding with GitHub Actions. Manual dispatch only.
+  workflow_dispatch:
+
+jobs:
+  update:
+    name: EAS Update
+    runs-on: depot-ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/clients
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Check for EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "You must provide an EXPO_TOKEN secret linked to this project's Expo account in this repo's secrets. Learn more: https://docs.expo.dev/eas-update/github-actions"
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v9
+        with:
+          working-directory: ${{ github.workspace }}/clients/apps/app
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Create preview
+        uses: expo/expo-github-action/preview@v9
+        with:
+          working-directory: ${{ github.workspace }}/clients/apps/app
+          command: eas update --auto

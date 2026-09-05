@@ -1,4 +1,5 @@
-import type { Polar } from '@polar-sh/sdk/2026-04'
+import { createCheckouts } from '@polar-sh/sdk/2026-04/services/checkouts'
+import type { PolarCore } from '@polar-sh/sdk/2026-04'
 import {
   APIError,
   createAuthEndpoint,
@@ -86,7 +87,7 @@ export type CheckoutParams = z.infer<typeof CheckoutParams>
 export const checkout =
   (checkoutOptions: CheckoutOptions = {}) =>
   (
-    polar: Polar,
+    polar: PolarCore,
     rootOptions?: Pick<PolarOptions, 'experimental_organizationSync'>,
   ) => {
     return {
@@ -233,7 +234,7 @@ export const checkout =
           const returnUrl = ctx.body.returnUrl ?? checkoutOptions.returnUrl
 
           try {
-            const checkout = await polar.checkouts.create({
+            const checkout = await createCheckouts(polar)({
               external_customer_id:
                 principal?.externalCustomerId ?? session?.user.id,
               products: productIds,

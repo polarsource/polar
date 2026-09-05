@@ -1,4 +1,5 @@
-import { createPolar, type Environment } from '@polar-sh/sdk/2026-04'
+import { createCheckouts } from '@polar-sh/sdk/2026-04/services/checkouts'
+import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
 import { createError, getValidatedQuery, sendRedirect } from 'h3'
 import type { H3Event } from 'h3'
 import { z } from 'zod'
@@ -43,7 +44,7 @@ export const Checkout = ({
   theme,
   includeCheckoutId = true,
 }: CheckoutConfig) => {
-  const polar = createPolar({ accessToken, environment })
+  const polar = createPolarCore({ accessToken, environment })
 
   return async (event: H3Event) => {
     const {
@@ -70,7 +71,7 @@ export const Checkout = ({
 
       const retUrl = returnUrl ? new URL(returnUrl) : undefined
 
-      const result = await polar.checkouts.create({
+      const result = await createCheckouts(polar)({
         products,
         success_url: success ? decodeURI(success.toString()) : undefined,
         customer_id: customerId,

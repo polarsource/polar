@@ -1,4 +1,4 @@
-import type { Polar } from '@polar-sh/sdk/2026-04'
+import type { PolarCore } from '@polar-sh/sdk/2026-04'
 
 import type { UnionToIntersection, User } from 'better-auth'
 import type { PolarOrganizationOptions } from './organization/types'
@@ -19,7 +19,7 @@ export type Product = {
 }
 
 export type PolarPlugin = (
-  client: Polar,
+  client: PolarCore,
   options?: PolarOptions,
 ) => ReturnType<
   | ReturnType<typeof checkout>
@@ -34,9 +34,9 @@ export type PolarEndpoints = UnionToIntersection<ReturnType<PolarPlugin>>
 
 export interface PolarOptions {
   /**
-   * Polar Client
+   * Polar core client created with createPolarCore
    */
-  client: Polar
+  client: PolarCore
   /**
    * Enable customer creation when a user signs up
    */

@@ -84,7 +84,7 @@
     "@radix-ui/react-select": "catalog:",
     "@stripe/react-stripe-js": "catalog:",
     "@stripe/stripe-js": "catalog:",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",

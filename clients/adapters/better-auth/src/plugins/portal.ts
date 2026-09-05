@@ -1,4 +1,10 @@
-import type { models, Polar } from '@polar-sh/sdk/2026-04'
+import { listBenefitGrants as listBenefitGrantsCustomerPortal } from '@polar-sh/sdk/2026-04/services/customer_portal/benefit_grants'
+import { listSubscriptions as listSubscriptionsCustomerPortal } from '@polar-sh/sdk/2026-04/services/customer_portal/subscriptions'
+import { getStateExternalCustomers } from '@polar-sh/sdk/2026-04/services/customers'
+import { listOrders as listOrdersCustomerPortal } from '@polar-sh/sdk/2026-04/services/customer_portal/orders'
+import { createCustomerSessions } from '@polar-sh/sdk/2026-04/services/customer_sessions'
+import { listSubscriptions } from '@polar-sh/sdk/2026-04/services/subscriptions'
+import type { models, PolarCore } from '@polar-sh/sdk/2026-04'
 import { APIError } from 'better-auth/api'
 import { createAuthEndpoint, sessionMiddleware } from 'better-auth/api'
 import * as z from 'zod/v4'
@@ -20,7 +26,7 @@ export interface PortalConfig {
 export const portal =
   ({ returnUrl, theme }: PortalConfig = {}) =>
   (
-    polar: Polar,
+    polar: PolarCore,
     rootOptions?: Pick<PolarOptions, 'experimental_organizationSync'>,
   ) => {
     const retUrl = returnUrl ? new URL(returnUrl) : undefined
@@ -63,7 +69,7 @@ export const portal =
             : undefined
 
           try {
-            const customerSession = await polar.customerSessions.create({
+            const customerSession = await createCustomerSessions(polar)({
               external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
@@ -121,10 +127,9 @@ export const portal =
             : undefined
 
           try {
-            const state: models.CustomerState =
-              await polar.customers.getStateExternal(
-                principal?.externalCustomerId ?? ctx.context.session.user.id,
-              )
+            const state: models.CustomerState = await getStateExternalCustomers(
+              polar,
+            )(principal?.externalCustomerId ?? ctx.context.session.user.id)
 
             return ctx.json(state)
           } catch (e: unknown) {
@@ -172,7 +177,7 @@ export const portal =
             : undefined
 
           try {
-            const customerSession = await polar.customerSessions.create({
+            const customerSession = await createCustomerSessions(polar)({
               external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
@@ -181,7 +186,7 @@ export const portal =
             })
 
             const benefits: models.ListResourceCustomerBenefitGrant =
-              await polar.customerPortal.benefitGrants.list(
+              await listBenefitGrantsCustomerPortal(polar)(
                 {
                   page: ctx.query?.page,
                   limit: ctx.query?.limit,
@@ -245,7 +250,7 @@ export const portal =
           if (ctx.query?.referenceId) {
             try {
               const subscriptions: models.ListResourceSubscription =
-                await polar.subscriptions.list({
+                await listSubscriptions(polar)({
                   page: ctx.query?.page,
                   limit: ctx.query?.limit,
                   active: ctx.query?.active,
@@ -270,7 +275,7 @@ export const portal =
           }
 
           try {
-            const customerSession = await polar.customerSessions.create({
+            const customerSession = await createCustomerSessions(polar)({
               external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
@@ -279,7 +284,7 @@ export const portal =
             })
 
             const subscriptions: models.ListResourceCustomerSubscription =
-              await polar.customerPortal.subscriptions.list(
+              await listSubscriptionsCustomerPortal(polar)(
                 {
                   page: ctx.query?.page,
                   limit: ctx.query?.limit,
@@ -335,7 +340,7 @@ export const portal =
             : undefined
 
           try {
-            const customerSession = await polar.customerSessions.create({
+            const customerSession = await createCustomerSessions(polar)({
               external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
@@ -344,7 +349,7 @@ export const portal =
             })
 
             const orders: models.ListResourceCustomerOrder =
-              await polar.customerPortal.orders.list(
+              await listOrdersCustomerPortal(polar)(
                 {
                   page: ctx.query?.page,
                   limit: ctx.query?.limit,

@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockCustomerSessionCreate = vi.fn()
 
 vi.mock('@polar-sh/sdk/2026-04', () => ({
-  createPolar: vi.fn(() => ({
-    customerSessions: {
-      create: mockCustomerSessionCreate,
-    },
-  })),
+  createPolarCore: vi.fn(() => ({})),
 }))
 
-import { createPolar } from '@polar-sh/sdk/2026-04'
+vi.mock('@polar-sh/sdk/2026-04/services/customer_sessions', () => ({
+  createCustomerSessions: vi.fn(() => mockCustomerSessionCreate),
+}))
+
+import { createPolarCore } from '@polar-sh/sdk/2026-04'
 import { CustomerPortal } from './customerPortal'
 
 describe('CustomerPortal', () => {
@@ -29,7 +29,7 @@ describe('CustomerPortal', () => {
 
       expect(portal).toBeDefined()
       expect(typeof portal).toBe('function')
-      expect(createPolar).toHaveBeenCalledWith({
+      expect(createPolarCore).toHaveBeenCalledWith({
         accessToken: 'test-token',
         environment: undefined,
       })

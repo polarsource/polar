@@ -1,4 +1,16 @@
-import { errors, type models, type Polar } from '@polar-sh/sdk/2026-04'
+import {
+  createExternalMembers,
+  deleteExternalMembers,
+  updateExternalMembers,
+  listExternalMembers,
+  getExternalMembers,
+} from '@polar-sh/sdk/2026-04/services/customers/members'
+import {
+  updateExternalCustomers,
+  getExternalCustomers,
+  createCustomers,
+} from '@polar-sh/sdk/2026-04/services/customers'
+import { errors, type models, type PolarCore } from '@polar-sh/sdk/2026-04'
 import type { Organization } from 'better-auth/plugins/organization'
 import {
   DEFAULT_BETTER_AUTH_CREATOR_ROLE,
@@ -82,11 +94,11 @@ const isExternalIdConflict = (
   )
 
 const findTeamCustomer = async (
-  client: Polar,
+  client: PolarCore,
   externalCustomerId: string,
 ): Promise<models.Customer | null> => {
   try {
-    const customer = await client.customers.getExternal(externalCustomerId)
+    const customer = await getExternalCustomers(client)(externalCustomerId)
     assertTeamCustomer(customer, externalCustomerId)
     return customer
   } catch (error) {
@@ -98,13 +110,13 @@ const findTeamCustomer = async (
 }
 
 export const isTeamCustomerSynchronized = async (
-  client: Polar,
+  client: PolarCore,
   externalCustomerId: string,
 ): Promise<boolean> =>
   (await findTeamCustomer(client, externalCustomerId)) !== null
 
 export const ensureTeamCustomer = async (
-  client: Polar,
+  client: PolarCore,
   organizationOptions: PolarOrganizationOptions,
   data: PolarOrganizationCustomerData,
 ) => {
@@ -119,7 +131,7 @@ export const ensureTeamCustomer = async (
     : {}
 
   try {
-    await client.customers.create({
+    await createCustomers(client)({
       ...customParams,
       external_id: data.organization.id,
       name: data.organization.name,
@@ -143,10 +155,10 @@ export const ensureTeamCustomer = async (
 }
 
 export const updateTeamCustomer = async (
-  client: Polar,
+  client: PolarCore,
   organization: Organization & Record<string, unknown>,
 ) => {
-  const updatedCustomer = await client.customers.updateExternal(
+  const updatedCustomer = await updateExternalCustomers(client)(
     organization.id,
     { name: organization.name },
   )
@@ -154,15 +166,12 @@ export const updateTeamCustomer = async (
 }
 
 const findMember = async (
-  client: Polar,
+  client: PolarCore,
   organizationId: string,
   externalMemberId: string,
 ): Promise<models.Member | null> => {
   try {
-    return await client.customers.members.getExternal(
-      organizationId,
-      externalMemberId,
-    )
+    return await getExternalMembers(client)(organizationId, externalMemberId)
   } catch (error) {
     if (error instanceof errors.ResourceNotFound) {
       return null
@@ -177,7 +186,7 @@ type MemberRoleData = Pick<
 >
 
 const ensureMemberRecord = async (
-  client: Polar,
+  client: PolarCore,
   organizationId: string,
   member: MemberRoleData,
   role: PolarNonOwnerMemberRole,
@@ -188,7 +197,7 @@ const ensureMemberRecord = async (
     return
   }
 
-  await client.customers.members.createExternal(organizationId, {
+  await createExternalMembers(client)(organizationId, {
     external_id: member.userId,
     email: member.user.email,
     name: member.user.name,
@@ -237,20 +246,18 @@ export const byEarliestMembership = (
 }
 
 const updateMemberRole = async (
-  client: Polar,
+  client: PolarCore,
   organizationId: string,
   externalMemberId: string,
   role: PolarMemberRole,
 ) => {
-  await client.customers.members.updateExternal(
-    organizationId,
-    externalMemberId,
-    { role },
-  )
+  await updateExternalMembers(client)(organizationId, externalMemberId, {
+    role,
+  })
 }
 
 const getCurrentPolarOwner = async (
-  client: Polar,
+  client: PolarCore,
   organizationId: string,
 ): Promise<models.Member> => {
   const customer = await findTeamCustomer(client, organizationId)
@@ -258,13 +265,10 @@ const getCurrentPolarOwner = async (
     throw new PolarOrganizationTeamCustomerNotFoundError(organizationId)
   }
 
-  const ownerPage = await client.customers.members.listExternal(
-    organizationId,
-    {
-      role: 'owner',
-      limit: 100,
-    },
-  )
+  const ownerPage = await listExternalMembers(client)(organizationId, {
+    role: 'owner',
+    limit: 100,
+  })
 
   const polarOwners = ownerPage.items
   if (polarOwners.length !== 1) {
@@ -286,7 +290,7 @@ const getCurrentPolarOwner = async (
 
 /** Transfer ownership only when the current Polar owner is no longer a Better Auth owner. */
 const syncOwnerTransfer = async (
-  client: Polar,
+  client: PolarCore,
   options: PolarOrganizationRoleSyncOptions,
   data: {
     organizationId: string
@@ -361,7 +365,7 @@ const syncOwnerTransfer = async (
 }
 
 export const ensureMemberMirror = async (
-  client: Polar,
+  client: PolarCore,
   options: PolarOrganizationRoleSyncOptions,
   data: {
     organizationId: string
@@ -384,7 +388,7 @@ export const ensureMemberMirror = async (
 }
 
 export const updateMemberRoleMirror = async (
-  client: Polar,
+  client: PolarCore,
   options: PolarOrganizationRoleSyncOptions,
   data: {
     organizationId: string
@@ -418,24 +422,20 @@ export const updateMemberRoleMirror = async (
 }
 
 export const updateMemberMirror = async (
-  client: Polar,
+  client: PolarCore,
   data: {
     organizationId: string
     user: BetterAuthOrganizationUser
   },
 ) => {
-  await client.customers.members.updateExternal(
-    data.organizationId,
-    data.user.id,
-    {
-      email: data.user.email,
-      name: data.user.name,
-    },
-  )
+  await updateExternalMembers(client)(data.organizationId, data.user.id, {
+    email: data.user.email,
+    name: data.user.name,
+  })
 }
 
 export const promoteMemberMirrorToOwner = async (
-  client: Polar,
+  client: PolarCore,
   data: {
     organizationId: string
     externalMemberId: string
@@ -461,14 +461,14 @@ export const promoteMemberMirrorToOwner = async (
 }
 
 export const removeMemberMirror = async (
-  client: Polar,
+  client: PolarCore,
   data: {
     organizationId: string
     externalMemberId: string
   },
 ) => {
   try {
-    await client.customers.members.deleteExternal(
+    await deleteExternalMembers(client)(
       data.organizationId,
       data.externalMemberId,
     )

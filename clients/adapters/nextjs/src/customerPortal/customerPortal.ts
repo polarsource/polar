@@ -1,4 +1,5 @@
-import { createPolar, type Environment } from '@polar-sh/sdk/2026-04'
+import { createCustomerSessions } from '@polar-sh/sdk/2026-04/services/customer_sessions'
+import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
 import { type NextRequest, NextResponse } from 'next/server'
 
 interface CustomerPortalBaseConfig {
@@ -30,7 +31,7 @@ export type CustomerPortalConfig =
 export const CustomerPortal = (config: CustomerPortalConfig) => {
   const { accessToken, environment, returnUrl } = config
 
-  const polar = createPolar({
+  const polar = createPolarCore({
     accessToken,
     environment,
   })
@@ -51,7 +52,7 @@ export const CustomerPortal = (config: CustomerPortalConfig) => {
       }
 
       try {
-        const { customer_portal_url } = await polar.customerSessions.create({
+        const { customer_portal_url } = await createCustomerSessions(polar)({
           return_url: decodedReturnUrl,
           external_customer_id: externalCustomerId,
         })
@@ -73,7 +74,7 @@ export const CustomerPortal = (config: CustomerPortalConfig) => {
     }
 
     try {
-      const { customer_portal_url } = await polar.customerSessions.create({
+      const { customer_portal_url } = await createCustomerSessions(polar)({
         return_url: decodedReturnUrl,
         customer_id: customerId,
       })

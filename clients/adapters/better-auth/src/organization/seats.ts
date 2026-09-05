@@ -1,4 +1,14 @@
-import type { models, Polar } from '@polar-sh/sdk/2026-04'
+import {
+  assignSeatCustomerSeats,
+  revokeSeatCustomerSeats,
+  listSeatsCustomerSeats,
+} from '@polar-sh/sdk/2026-04/services/customer_seats'
+import {
+  updateSubscriptions,
+  listSubscriptions,
+} from '@polar-sh/sdk/2026-04/services/subscriptions'
+import { getProducts } from '@polar-sh/sdk/2026-04/services/products'
+import type { models, PolarCore } from '@polar-sh/sdk/2026-04'
 import type { AuthContext, BetterAuthPlugin } from 'better-auth'
 import {
   type OrganizationOptions,
@@ -172,13 +182,13 @@ const isRecurringSeatProduct = (product: models.Product): boolean =>
   product.prices.some((price) => price.amount_type === 'seat_based')
 
 export const getCheckoutSeatProducts = async (
-  client: Polar,
+  client: PolarCore,
   productIds: readonly string[],
 ): Promise<ManagedSeatProduct[]> => {
   const products = await mapWithConcurrency(
     productIds,
     PRODUCT_LOOKUP_CONCURRENCY,
-    (id) => client.products.get(id),
+    (id) => getProducts(client)(id),
   )
   return products
     .filter(isRecurringSeatProduct)
@@ -186,12 +196,12 @@ export const getCheckoutSeatProducts = async (
 }
 
 const listSeatSubscriptions = async (
-  client: Polar,
+  client: PolarCore,
   organizationId: string,
 ): Promise<models.Subscription[]> => {
   const subscriptions: models.Subscription[] = []
   for (let page = 1; ; page++) {
-    const response = await client.subscriptions.list({
+    const response = await listSubscriptions(client)({
       external_customer_id: organizationId,
       status: [...MANAGED_SUBSCRIPTION_STATUSES],
       limit: 100,
@@ -281,13 +291,13 @@ const findActiveSeatForMember = (
   )
 
 const assignSubscriptionSeat = async (
-  client: Polar,
+  client: PolarCore,
   subscriptionId: string,
   externalMemberId: string,
   seats: readonly models.CustomerSeat[],
 ): Promise<void> => {
   if (findActiveSeatForMember(seats, externalMemberId)) return
-  await client.customerSeats.assignSeat({
+  await assignSeatCustomerSeats(client)({
     subscription_id: subscriptionId,
     external_member_id: externalMemberId,
     immediate_claim: true,
@@ -295,15 +305,15 @@ const assignSubscriptionSeat = async (
 }
 
 const updateSubscriptionSeatCount = async (
-  client: Polar,
+  client: PolarCore,
   subscriptionId: string,
   seats: number,
 ): Promise<void> => {
-  await client.subscriptions.update(subscriptionId, { seats })
+  await updateSubscriptions(client)(subscriptionId, { seats })
 }
 
 const synchronizeOrganizationSubscriptionSeats = async (
-  client: Polar,
+  client: PolarCore,
   subscription: models.Subscription,
   allocation: ProductSeatAllocation,
 ): Promise<void> => {
@@ -316,7 +326,7 @@ const synchronizeOrganizationSubscriptionSeats = async (
     await updateSubscriptionSeatCount(client, subscription.id, targetQuantity)
   }
 
-  const { seats } = await client.customerSeats.listSeats({
+  const { seats } = await listSeatsCustomerSeats(client)({
     subscription_id: subscription.id,
   })
   for (const seat of seats) {
@@ -325,7 +335,7 @@ const synchronizeOrganizationSubscriptionSeats = async (
       ACTIVE_SEAT_STATUSES.has(seat.status) &&
       (!externalMemberId || !allocation.memberIds.has(externalMemberId))
     ) {
-      await client.customerSeats.revokeSeat(seat.id)
+      await revokeSeatCustomerSeats(client)(seat.id)
     }
   }
   for (const memberId of allocation.memberIds) {
@@ -339,7 +349,7 @@ const synchronizeOrganizationSubscriptionSeats = async (
 
 export const synchronizeOrganizationSeats = async (input: {
   authContext: AuthContext
-  client: Polar
+  client: PolarCore
   organizationId: string
   organizationOptions: PolarOrganizationOptions
   betterAuthOrganizationOptions?: OrganizationOptions

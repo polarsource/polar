@@ -1,4 +1,9 @@
-import type { models, Polar } from '@polar-sh/sdk/2026-04'
+import {
+  createPolarCore,
+  type models,
+  type Polar,
+  type PolarCore,
+} from '@polar-sh/sdk/2026-04'
 import type { User } from 'better-auth'
 import { type Mock, vi } from 'vitest'
 
@@ -8,10 +13,10 @@ type PolarClientMocks<T> = T extends (...args: infer Args) => unknown
     ? { [Key in keyof T]: PolarClientMocks<T[Key]> }
     : T
 
-type MockPolarClient = Polar & PolarClientMocks<Polar>
+type MockPolarClient = PolarCore & Polar & PolarClientMocks<Polar>
 
 export const createMockPolarClient = (): MockPolarClient =>
-  ({
+  Object.assign(createPolarCore({ accessToken: 'test-token' }), {
     products: {
       get: vi.fn().mockResolvedValue({ is_recurring: false, prices: [] }),
       list: vi.fn(),

@@ -1,4 +1,5 @@
-import { createPolar, type Environment } from '@polar-sh/sdk/2026-04'
+import { createCustomerSessions } from '@polar-sh/sdk/2026-04/services/customer_sessions'
+import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
 import type { StartRouteHandler } from '../types'
 
 export interface CustomerPortalConfig {
@@ -14,7 +15,7 @@ export const CustomerPortal = <TPath extends string = string>({
   getCustomerId,
   returnUrl,
 }: CustomerPortalConfig): StartRouteHandler<TPath> => {
-  const polar = createPolar({
+  const polar = createPolarCore({
     accessToken,
     environment,
   })
@@ -29,7 +30,7 @@ export const CustomerPortal = <TPath extends string = string>({
     }
 
     try {
-      const result = await polar.customerSessions.create({
+      const result = await createCustomerSessions(polar)({
         customer_id: customerId,
         return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
       })

@@ -29,6 +29,8 @@ POLAR_ACCESS_TOKEN=...
 
 ### Configuring BetterAuth Server
 
+The `client` option requires a core client created with `createPolarCore` from `@polar-sh/sdk/2026-04`. The adapter imports standalone SDK functions so your bundler can include only the API operations it uses.
+
 The Polar plugin comes with a handful additional plugins which adds functionality to your stack.
 
 - Checkout - Enables a seamless checkout integration
@@ -40,9 +42,9 @@ The Polar plugin comes with a handful additional plugins which adds functionalit
 import { betterAuth } from "better-auth";
 import { organization } from "better-auth/plugins";
 import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { createPolar } from "@polar-sh/sdk/2026-04";
+import { createPolarCore } from "@polar-sh/sdk/2026-04";
 
-const polarClient = createPolar({
+const polarClient = createPolarCore({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
     // Use 'sandbox' if you're using the Polar Sandbox environment
     // Remember that access tokens, products, etc. are completely separated between environments.
@@ -118,10 +120,10 @@ export const authClient = createAuthClient({
 ```typescript
 import { betterAuth } from 'better-auth'
 import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth'
-import { createPolar } from '@polar-sh/sdk/2026-04'
+import { createPolarCore } from '@polar-sh/sdk/2026-04'
 import { organization } from 'better-auth/plugins'
 
-const polarClient = createPolar({
+const polarClient = createPolarCore({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
   // Use 'sandbox' if you're using the Polar Sandbox environment
   // Remember that access tokens, products, etc. are completely separated between environments.
@@ -163,7 +165,32 @@ The SDK v1 models returned by the state, benefits, subscriptions, orders, and me
 
 ### Required Options
 
-- `client`: Polar SDK client instance
+- `client`: Polar SDK core client instance, created with `createPolarCore`
+
+### Upgrading to the core client
+
+Replace `createPolar` with `createPolarCore` when constructing the client passed to the plugin:
+
+```diff
+-import { createPolar } from '@polar-sh/sdk/2026-04'
++import { createPolarCore } from '@polar-sh/sdk/2026-04'
+
+-const polarClient = createPolar({
++const polarClient = createPolarCore({
+   accessToken: process.env.POLAR_ACCESS_TOKEN,
+   environment: 'sandbox',
+ })
+```
+
+Custom plugins passed through `use` now receive a `PolarCore`. Replace service calls such as `client.customers.getStateExternal(userId)` with the corresponding standalone function:
+
+```typescript
+import { getStateExternalCustomers } from '@polar-sh/sdk/2026-04/services/customers'
+
+const customerState = await getStateExternalCustomers(client)(userId)
+```
+
+The core client has no service properties such as `customers` or `checkouts`. Keep using the full `createPolar` client separately if other application code needs that interface.
 
 ### Optional Options
 

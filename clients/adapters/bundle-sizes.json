@@ -1,0 +1,86 @@
+{
+  "date": "2026-09-05",
+  "baselineCommit": "02758b53b425e35500b2c939367a33b1425b03cc",
+  "before": {
+    "label": "before",
+    "node": "v24.20.0",
+    "esbuild": "0.27.1",
+    "sdk": "1.0.0-alpha.20",
+    "measurements": {
+      "adapter-utils": {
+        "minifiedBytes": 4422,
+        "gzipBytes": 936
+      },
+      "better-auth": {
+        "minifiedBytes": 58743,
+        "gzipBytes": 13059
+      },
+      "better-auth/with-client": {
+        "minifiedBytes": 114016,
+        "gzipBytes": 20112
+      },
+      "better-auth/client": {
+        "minifiedBytes": 4310,
+        "gzipBytes": 1747
+      },
+      "nextjs": {
+        "minifiedBytes": 78067,
+        "gzipBytes": 10919
+      },
+      "nuxt/module": {
+        "minifiedBytes": 252,
+        "gzipBytes": 206
+      },
+      "nuxt/runtime": {
+        "minifiedBytes": 77378,
+        "gzipBytes": 10852
+      },
+      "tanstack-start": {
+        "minifiedBytes": 77684,
+        "gzipBytes": 10816
+      }
+    },
+    "clientFactory": "createPolar"
+  },
+  "after": {
+    "label": "after",
+    "node": "v24.20.0",
+    "esbuild": "0.27.1",
+    "sdk": "1.0.0-alpha.20",
+    "clientFactory": "createPolarCore",
+    "measurements": {
+      "adapter-utils": {
+        "minifiedBytes": 4422,
+        "gzipBytes": 936
+      },
+      "better-auth": {
+        "minifiedBytes": 64388,
+        "gzipBytes": 13780
+      },
+      "better-auth/with-client": {
+        "minifiedBytes": 67038,
+        "gzipBytes": 14794
+      },
+      "better-auth/client": {
+        "minifiedBytes": 4310,
+        "gzipBytes": 1747
+      },
+      "nextjs": {
+        "minifiedBytes": 14102,
+        "gzipBytes": 4336
+      },
+      "nuxt/module": {
+        "minifiedBytes": 252,
+        "gzipBytes": 206
+      },
+      "nuxt/runtime": {
+        "minifiedBytes": 13431,
+        "gzipBytes": 4259
+      },
+      "tanstack-start": {
+        "minifiedBytes": 13748,
+        "gzipBytes": 4237
+      }
+    }
+  }
+}

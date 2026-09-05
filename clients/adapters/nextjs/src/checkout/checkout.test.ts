@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockCheckoutCreate = vi.fn()
 
 vi.mock('@polar-sh/sdk/2026-04', () => ({
-  createPolar: vi.fn(() => ({
-    checkouts: {
-      create: mockCheckoutCreate,
-    },
-  })),
+  createPolarCore: vi.fn(() => ({})),
 }))
 
-import { createPolar } from '@polar-sh/sdk/2026-04'
+vi.mock('@polar-sh/sdk/2026-04/services/checkouts', () => ({
+  createCheckouts: vi.fn(() => mockCheckoutCreate),
+}))
+
+import { createPolarCore } from '@polar-sh/sdk/2026-04'
 import { Checkout } from './checkout'
 
 describe('Checkout', () => {
@@ -28,7 +28,7 @@ describe('Checkout', () => {
 
       expect(checkout).toBeDefined()
       expect(typeof checkout).toBe('function')
-      expect(createPolar).toHaveBeenCalledWith({
+      expect(createPolarCore).toHaveBeenCalledWith({
         accessToken: 'test-token',
         environment: 'sandbox',
       })

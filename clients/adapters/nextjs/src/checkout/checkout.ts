@@ -1,4 +1,5 @@
-import { createPolar, type Environment } from '@polar-sh/sdk/2026-04'
+import { createCheckouts } from '@polar-sh/sdk/2026-04/services/checkouts'
+import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -19,7 +20,7 @@ export const Checkout = ({
   theme,
   includeCheckoutId = true,
 }: CheckoutConfig) => {
-  const polar = createPolar({
+  const polar = createPolarCore({
     accessToken,
     environment,
   })
@@ -44,7 +45,7 @@ export const Checkout = ({
     const retUrl = returnUrl ? new URL(returnUrl) : undefined
 
     try {
-      const result = await polar.checkouts.create({
+      const result = await createCheckouts(polar)({
         products,
         success_url: success ? decodeURI(success.toString()) : undefined,
         customer_id: url.searchParams.get('customerId') ?? undefined,

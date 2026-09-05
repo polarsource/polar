@@ -1,8 +1,9 @@
+import { getSubscriptions } from '@polar-sh/sdk/2026-04/services/subscriptions'
 import {
   handleWebhookPayload,
   type WebhooksConfig,
 } from '@polar-sh/adapter-utils'
-import { type Polar, webhooks as sdkWebhooks } from '@polar-sh/sdk/2026-04'
+import { type PolarCore, webhooks as sdkWebhooks } from '@polar-sh/sdk/2026-04'
 import { APIError, createAuthEndpoint } from 'better-auth/api'
 import { DEFAULT_BETTER_AUTH_CREATOR_ROLE } from '../organization/roles'
 import {
@@ -28,7 +29,7 @@ export interface WebhooksOptions extends Omit<
 
 export const webhooks =
   (options: WebhooksOptions) =>
-  (polar: Polar, rootOptions?: WebhookRootOptions) => {
+  (polar: PolarCore, rootOptions?: WebhookRootOptions) => {
     return {
       polarWebhooks: createAuthEndpoint(
         '/polar/webhooks',
@@ -109,7 +110,7 @@ export const webhooks =
                 where: [{ field: 'id', value: organizationId }],
               })
               if (organization) {
-                const subscription = await polar.subscriptions.get(
+                const subscription = await getSubscriptions(polar)(
                   event.data.id,
                 )
                 if (

@@ -1,3 +1,10 @@
+import {
+  updateExternalCustomers,
+  createCustomers,
+  deleteCustomers,
+  updateCustomers,
+  listCustomers,
+} from '@polar-sh/sdk/2026-04/services/customers'
 import type { AuthContext, GenericEndpointContext, User } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import {
@@ -31,14 +38,14 @@ export const onBeforeUserCreate =
         }
 
         // Check if customer already exists
-        const existingCustomers = await options.client.customers.list({
+        const existingCustomers = await listCustomers(options.client)({
           email: user.email,
         })
         const existingCustomer = existingCustomers.items[0]
 
         // Skip creation if customer already exists
         if (!existingCustomer) {
-          await options.client.customers.create({
+          await createCustomers(options.client)({
             ...params,
             email: user.email,
             name: user.name,
@@ -67,14 +74,14 @@ export const onAfterUserCreate =
       }
 
       try {
-        const existingCustomers = await options.client.customers.list({
+        const existingCustomers = await listCustomers(options.client)({
           email: user.email,
         })
         const existingCustomer = existingCustomers.items[0]
 
         if (existingCustomer) {
           if (existingCustomer.external_id !== user.id) {
-            await options.client.customers.update(existingCustomer.id, {
+            await updateCustomers(options.client)(existingCustomer.id, {
               external_id: user.id,
             })
           }
@@ -101,7 +108,7 @@ export const onUserUpdate =
     if (context && options.createCustomerOnSignUp) {
       try {
         if (!isAnonymousUser(user)) {
-          await options.client.customers.updateExternal(user.id, {
+          await updateExternalCustomers(options.client)(user.id, {
             email: user.email,
             name: user.name,
           })
@@ -173,12 +180,12 @@ export const onUserDelete =
         }
 
         if (user.email) {
-          const existingCustomers = await options.client.customers.list({
+          const existingCustomers = await listCustomers(options.client)({
             email: user.email,
           })
           const existingCustomer = existingCustomers.items[0]
           if (existingCustomer) {
-            await options.client.customers.delete(existingCustomer.id)
+            await deleteCustomers(options.client)(existingCustomer.id)
           }
         }
       } catch (e: unknown) {

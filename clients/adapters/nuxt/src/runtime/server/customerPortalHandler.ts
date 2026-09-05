@@ -1,4 +1,5 @@
-import { createPolar, type Environment } from '@polar-sh/sdk/2026-04'
+import { createCustomerSessions } from '@polar-sh/sdk/2026-04/services/customer_sessions'
+import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
 import { createError, sendRedirect } from 'h3'
 import type { H3Event } from 'h3'
 
@@ -15,7 +16,7 @@ export const CustomerPortal = ({
   getCustomerId,
   returnUrl,
 }: CustomerPortalConfig) => {
-  const polar = createPolar({ accessToken, environment })
+  const polar = createPolarCore({ accessToken, environment })
 
   return async (event: H3Event) => {
     const retUrl = returnUrl ? new URL(returnUrl) : undefined
@@ -33,7 +34,7 @@ export const CustomerPortal = ({
     }
 
     try {
-      const result = await polar.customerSessions.create({
+      const result = await createCustomerSessions(polar)({
         customer_id: customerId,
         return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
       })

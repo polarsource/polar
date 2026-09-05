@@ -202,6 +202,7 @@ class TestCalculateChargePreview:
 
         assert preview.net_amount == 1000
         assert preview.tax_amount == 200
+        assert preview.tax_behavior == TaxBehavior.exclusive
         assert preview.total_amount == 1200
 
     async def test_inclusive_tax_carved_out_of_net(
@@ -231,6 +232,7 @@ class TestCalculateChargePreview:
 
         assert preview.net_amount == 800
         assert preview.tax_amount == 200
+        assert preview.tax_behavior == TaxBehavior.inclusive
         assert preview.total_amount == 1000
 
     async def test_metered_amount_included_in_subtotal(

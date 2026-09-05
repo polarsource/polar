@@ -82,6 +82,7 @@ export const CurrentPeriodOverview = ({
   const prorations = subscriptionPreview?.prorations ?? []
   const hasProrations = prorations.length > 0
   const hasTaxes = subscriptionPreview && subscriptionPreview.tax_amount > 0
+  const isTaxInclusive = subscriptionPreview?.tax_behavior === 'inclusive'
   const hasDiscount =
     subscriptionPreview && subscriptionPreview.discount_amount > 0
 
@@ -234,7 +235,10 @@ export const CurrentPeriodOverview = ({
             <span>Subtotal</span>
             <span>
               {formatCurrency('compact')(
-                subscriptionPreview.subtotal_amount,
+                isTaxInclusive
+                  ? subscriptionPreview.total_amount -
+                      subscriptionPreview.tax_amount
+                  : subscriptionPreview.subtotal_amount,
                 subscription.currency,
               )}
             </span>
@@ -255,7 +259,7 @@ export const CurrentPeriodOverview = ({
 
         {hasTaxes && (
           <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-            <span>Taxes</span>
+            <span>{isTaxInclusive ? 'Taxes (included)' : 'Taxes'}</span>
             <span>
               {formatCurrency('compact')(
                 subscriptionPreview.tax_amount,

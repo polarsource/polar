@@ -29,7 +29,9 @@ POLAR_ACCESS_TOKEN=...
 
 ### Configuring BetterAuth Server
 
-The `client` option requires a core client created with `createPolarCore` from `@polar-sh/sdk/2026-04`. The adapter imports standalone SDK functions so your bundler can include only the API operations it uses.
+Create a Polar core client with `createPolarCore` and pass it to the `polar` plugin. The adapter uses standalone SDK functions to keep bundles small.
+
+If you previously passed a client created with `createPolar`, switch that call to `createPolarCore` with the same options.
 
 The Polar plugin comes with a handful additional plugins which adds functionality to your stack.
 
@@ -167,36 +169,23 @@ The SDK v1 models returned by the state, benefits, subscriptions, orders, and me
 
 - `client`: Polar SDK core client instance, created with `createPolarCore`
 
-### Upgrading to the core client
-
-Replace `createPolar` with `createPolarCore` when constructing the client passed to the plugin:
-
-```diff
--import { createPolar } from '@polar-sh/sdk/2026-04'
-+import { createPolarCore } from '@polar-sh/sdk/2026-04'
-
--const polarClient = createPolar({
-+const polarClient = createPolarCore({
-   accessToken: process.env.POLAR_ACCESS_TOKEN,
-   environment: 'sandbox',
- })
-```
-
-Custom plugins passed through `use` now receive a `PolarCore`. Replace service calls such as `client.customers.getStateExternal(userId)` with the corresponding standalone function:
-
-```typescript
-import { getStateExternalCustomers } from '@polar-sh/sdk/2026-04/services/customers'
-
-const customerState = await getStateExternalCustomers(client)(userId)
-```
-
-The core client has no service properties such as `customers` or `checkouts`. Keep using the full `createPolar` client separately if other application code needs that interface.
-
 ### Optional Options
 
 - `createCustomerOnSignUp`: Automatically create a Polar customer when a user signs up
 - `getCustomerCreateParams`: Custom function to provide additional personal-customer creation metadata
 - `experimental_organizationSync`: Experimental Better Auth organization synchronization configuration. Set `experimental_organizationSync.enabled` to `true`; `experimental_organizationSync.getTeamCustomerCreateParams` can add team-customer fields such as metadata or billing details. Automatic seat management is separately opt-in through `experimental_organizationSync.syncSeats`, and `experimental_organizationSync.selectSeatProductsForMember` can customize per-member product-seat allocation when it is enabled.
+
+### Calling the Polar SDK
+
+The core client has no service properties such as `customers` or `checkouts`. Import the operation you need and pass the core client to it:
+
+```typescript
+import { getStateExternalCustomers } from '@polar-sh/sdk/2026-04/services/customers'
+
+const customerState = await getStateExternalCustomers(polarClient)(userId)
+```
+
+Custom plugins passed through `use` also receive a `PolarCore` and call SDK operations this way.
 
 ### Customers
 

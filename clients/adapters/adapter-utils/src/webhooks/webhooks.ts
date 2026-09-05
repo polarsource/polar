@@ -1,106 +1,135 @@
-import type { WebhookBenefitCreatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitcreatedpayload'
-import type { WebhookBenefitGrantCreatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantcreatedpayload'
-import type { WebhookBenefitGrantRevokedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantrevokedpayload'
-import type { WebhookBenefitGrantUpdatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantupdatedpayload'
-import type { WebhookBenefitUpdatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitupdatedpayload'
-import type { WebhookCheckoutCreatedPayload } from '@polar-sh/sdk/models/components/webhookcheckoutcreatedpayload'
-import type { WebhookCheckoutUpdatedPayload } from '@polar-sh/sdk/models/components/webhookcheckoutupdatedpayload'
-import type { WebhookCustomerCreatedPayload } from '@polar-sh/sdk/models/components/webhookcustomercreatedpayload'
-import type { WebhookCustomerDeletedPayload } from '@polar-sh/sdk/models/components/webhookcustomerdeletedpayload'
-import type { WebhookCustomerSeatAssignedPayload } from '@polar-sh/sdk/models/components/webhookcustomerseatassignedpayload'
-import type { WebhookCustomerSeatClaimedPayload } from '@polar-sh/sdk/models/components/webhookcustomerseatclaimedpayload'
-import type { WebhookCustomerSeatRevokedPayload } from '@polar-sh/sdk/models/components/webhookcustomerseatrevokedpayload'
-import type { WebhookCustomerStateChangedPayload } from '@polar-sh/sdk/models/components/webhookcustomerstatechangedpayload'
-import type { WebhookCustomerUpdatedPayload } from '@polar-sh/sdk/models/components/webhookcustomerupdatedpayload'
-import type { WebhookMemberCreatedPayload } from '@polar-sh/sdk/models/components/webhookmembercreatedpayload'
-import type { WebhookMemberDeletedPayload } from '@polar-sh/sdk/models/components/webhookmemberdeletedpayload'
-import type { WebhookMemberUpdatedPayload } from '@polar-sh/sdk/models/components/webhookmemberupdatedpayload'
-import type { WebhookOrderCreatedPayload } from '@polar-sh/sdk/models/components/webhookordercreatedpayload'
-import type { WebhookOrderPaidPayload } from '@polar-sh/sdk/models/components/webhookorderpaidpayload'
-import type { WebhookOrderRefundedPayload } from '@polar-sh/sdk/models/components/webhookorderrefundedpayload'
-import type { WebhookOrderUpdatedPayload } from '@polar-sh/sdk/models/components/webhookorderupdatedpayload'
-import type { WebhookOrganizationUpdatedPayload } from '@polar-sh/sdk/models/components/webhookorganizationupdatedpayload'
-import type { WebhookProductCreatedPayload } from '@polar-sh/sdk/models/components/webhookproductcreatedpayload'
-import type { WebhookProductUpdatedPayload } from '@polar-sh/sdk/models/components/webhookproductupdatedpayload'
-import type { WebhookRefundCreatedPayload } from '@polar-sh/sdk/models/components/webhookrefundcreatedpayload'
-import type { WebhookRefundUpdatedPayload } from '@polar-sh/sdk/models/components/webhookrefundupdatedpayload'
-import type { WebhookSubscriptionActivePayload } from '@polar-sh/sdk/models/components/webhooksubscriptionactivepayload'
-import type { WebhookSubscriptionCanceledPayload } from '@polar-sh/sdk/models/components/webhooksubscriptioncanceledpayload'
-import type { WebhookSubscriptionCreatedPayload } from '@polar-sh/sdk/models/components/webhooksubscriptioncreatedpayload'
-import type { WebhookSubscriptionRevokedPayload } from '@polar-sh/sdk/models/components/webhooksubscriptionrevokedpayload'
-import type { WebhookSubscriptionUncanceledPayload } from '@polar-sh/sdk/models/components/webhooksubscriptionuncanceledpayload'
-import type { WebhookSubscriptionUpdatedPayload } from '@polar-sh/sdk/models/components/webhooksubscriptionupdatedpayload'
-import type { validateEvent } from '@polar-sh/sdk/webhooks'
+import type { webhooks } from '@polar-sh/sdk/2026-04'
 import type { Entitlements } from '../entitlement/entitlement'
 
 export interface WebhooksConfig {
   webhookSecret: string
   entitlements?: typeof Entitlements
-  onPayload?: (payload: ReturnType<typeof validateEvent>) => Promise<void>
-  onCheckoutCreated?: (payload: WebhookCheckoutCreatedPayload) => Promise<void>
-  onCheckoutUpdated?: (payload: WebhookCheckoutUpdatedPayload) => Promise<void>
-  onOrderCreated?: (payload: WebhookOrderCreatedPayload) => Promise<void>
-  onOrderUpdated?: (payload: WebhookOrderUpdatedPayload) => Promise<void>
-  onOrderPaid?: (payload: WebhookOrderPaidPayload) => Promise<void>
-  onOrderRefunded?: (payload: WebhookOrderRefundedPayload) => Promise<void>
-  onRefundCreated?: (payload: WebhookRefundCreatedPayload) => Promise<void>
-  onRefundUpdated?: (payload: WebhookRefundUpdatedPayload) => Promise<void>
+  onPayload?: (payload: webhooks.WebhookPayload) => Promise<void>
+  onCheckoutCreated?: (
+    payload: webhooks.WebhookCheckoutCreatedPayload,
+  ) => Promise<void>
+  onCheckoutExpired?: (
+    payload: webhooks.WebhookCheckoutExpiredPayload,
+  ) => Promise<void>
+  onCheckoutUpdated?: (
+    payload: webhooks.WebhookCheckoutUpdatedPayload,
+  ) => Promise<void>
+  onOrderCreated?: (
+    payload: webhooks.WebhookOrderCreatedPayload,
+  ) => Promise<void>
+  onOrderUpdated?: (
+    payload: webhooks.WebhookOrderUpdatedPayload,
+  ) => Promise<void>
+  onOrderPaid?: (payload: webhooks.WebhookOrderPaidPayload) => Promise<void>
+  onOrderRefunded?: (
+    payload: webhooks.WebhookOrderRefundedPayload,
+  ) => Promise<void>
+  onRefundCreated?: (
+    payload: webhooks.WebhookRefundCreatedPayload,
+  ) => Promise<void>
+  onRefundUpdated?: (
+    payload: webhooks.WebhookRefundUpdatedPayload,
+  ) => Promise<void>
   onSubscriptionCreated?: (
-    payload: WebhookSubscriptionCreatedPayload,
+    payload: webhooks.WebhookSubscriptionCreatedPayload,
   ) => Promise<void>
   onSubscriptionUpdated?: (
-    payload: WebhookSubscriptionUpdatedPayload,
+    payload: webhooks.WebhookSubscriptionUpdatedPayload,
   ) => Promise<void>
   onSubscriptionActive?: (
-    payload: WebhookSubscriptionActivePayload,
+    payload: webhooks.WebhookSubscriptionActivePayload,
   ) => Promise<void>
   onSubscriptionCanceled?: (
-    payload: WebhookSubscriptionCanceledPayload,
+    payload: webhooks.WebhookSubscriptionCanceledPayload,
+  ) => Promise<void>
+  onSubscriptionCycled?: (
+    payload: webhooks.WebhookSubscriptionCycledPayload,
+  ) => Promise<void>
+  onSubscriptionPastDue?: (
+    payload: webhooks.WebhookSubscriptionPastDuePayload,
+  ) => Promise<void>
+  onSubscriptionPaused?: (
+    payload: webhooks.WebhookSubscriptionPausedPayload,
+  ) => Promise<void>
+  onSubscriptionResumed?: (
+    payload: webhooks.WebhookSubscriptionResumedPayload,
   ) => Promise<void>
   onSubscriptionRevoked?: (
-    payload: WebhookSubscriptionRevokedPayload,
+    payload: webhooks.WebhookSubscriptionRevokedPayload,
   ) => Promise<void>
   onSubscriptionUncanceled?: (
-    payload: WebhookSubscriptionUncanceledPayload,
+    payload: webhooks.WebhookSubscriptionUncanceledPayload,
   ) => Promise<void>
-  onProductCreated?: (payload: WebhookProductCreatedPayload) => Promise<void>
-  onProductUpdated?: (payload: WebhookProductUpdatedPayload) => Promise<void>
+  onProductCreated?: (
+    payload: webhooks.WebhookProductCreatedPayload,
+  ) => Promise<void>
+  onProductUpdated?: (
+    payload: webhooks.WebhookProductUpdatedPayload,
+  ) => Promise<void>
   onOrganizationUpdated?: (
-    payload: WebhookOrganizationUpdatedPayload,
+    payload: webhooks.WebhookOrganizationUpdatedPayload,
   ) => Promise<void>
-  onBenefitCreated?: (payload: WebhookBenefitCreatedPayload) => Promise<void>
-  onBenefitUpdated?: (payload: WebhookBenefitUpdatedPayload) => Promise<void>
+  onBenefitCreated?: (
+    payload: webhooks.WebhookBenefitCreatedPayload,
+  ) => Promise<void>
+  onBenefitUpdated?: (
+    payload: webhooks.WebhookBenefitUpdatedPayload,
+  ) => Promise<void>
   onBenefitGrantCreated?: (
-    payload: WebhookBenefitGrantCreatedPayload,
+    payload: webhooks.WebhookBenefitGrantCreatedPayload,
+  ) => Promise<void>
+  onBenefitGrantCycled?: (
+    payload: webhooks.WebhookBenefitGrantCycledPayload,
   ) => Promise<void>
   onBenefitGrantUpdated?: (
-    payload: WebhookBenefitGrantUpdatedPayload,
+    payload: webhooks.WebhookBenefitGrantUpdatedPayload,
   ) => Promise<void>
   onBenefitGrantRevoked?: (
-    payload: WebhookBenefitGrantRevokedPayload,
+    payload: webhooks.WebhookBenefitGrantRevokedPayload,
   ) => Promise<void>
-  onCustomerCreated?: (payload: WebhookCustomerCreatedPayload) => Promise<void>
-  onCustomerUpdated?: (payload: WebhookCustomerUpdatedPayload) => Promise<void>
-  onCustomerDeleted?: (payload: WebhookCustomerDeletedPayload) => Promise<void>
+  onCustomerCreated?: (
+    payload: webhooks.WebhookCustomerCreatedPayload,
+  ) => Promise<void>
+  onCustomerUpdated?: (
+    payload: webhooks.WebhookCustomerUpdatedPayload,
+  ) => Promise<void>
+  onCustomerDeleted?: (
+    payload: webhooks.WebhookCustomerDeletedPayload,
+  ) => Promise<void>
   onCustomerStateChanged?: (
-    payload: WebhookCustomerStateChangedPayload,
+    payload: webhooks.WebhookCustomerStateChangedPayload,
   ) => Promise<void>
   onCustomerSeatAssigned?: (
-    payload: WebhookCustomerSeatAssignedPayload,
+    payload: webhooks.WebhookCustomerSeatAssignedPayload,
   ) => Promise<void>
   onCustomerSeatClaimed?: (
-    payload: WebhookCustomerSeatClaimedPayload,
+    payload: webhooks.WebhookCustomerSeatClaimedPayload,
   ) => Promise<void>
   onCustomerSeatRevoked?: (
-    payload: WebhookCustomerSeatRevokedPayload,
+    payload: webhooks.WebhookCustomerSeatRevokedPayload,
   ) => Promise<void>
-  onMemberCreated?: (payload: WebhookMemberCreatedPayload) => Promise<void>
-  onMemberUpdated?: (payload: WebhookMemberUpdatedPayload) => Promise<void>
-  onMemberDeleted?: (payload: WebhookMemberDeletedPayload) => Promise<void>
+  onDiscountCreated?: (
+    payload: webhooks.WebhookDiscountCreatedPayload,
+  ) => Promise<void>
+  onDiscountUpdated?: (
+    payload: webhooks.WebhookDiscountUpdatedPayload,
+  ) => Promise<void>
+  onDiscountDeleted?: (
+    payload: webhooks.WebhookDiscountDeletedPayload,
+  ) => Promise<void>
+  onMemberCreated?: (
+    payload: webhooks.WebhookMemberCreatedPayload,
+  ) => Promise<void>
+  onMemberUpdated?: (
+    payload: webhooks.WebhookMemberUpdatedPayload,
+  ) => Promise<void>
+  onMemberDeleted?: (
+    payload: webhooks.WebhookMemberDeletedPayload,
+  ) => Promise<void>
 }
 
 export const handleWebhookPayload = async (
-  payload: ReturnType<typeof validateEvent>,
+  payload: webhooks.WebhookPayload,
   {
     webhookSecret: _webhookSecret,
     entitlements,
@@ -118,6 +147,11 @@ export const handleWebhookPayload = async (
     case 'checkout.created':
       if (eventHandlers.onCheckoutCreated) {
         promises.push(eventHandlers.onCheckoutCreated(payload))
+      }
+      break
+    case 'checkout.expired':
+      if (eventHandlers.onCheckoutExpired) {
+        promises.push(eventHandlers.onCheckoutExpired(payload))
       }
       break
     case 'checkout.updated':
@@ -160,6 +194,26 @@ export const handleWebhookPayload = async (
         promises.push(eventHandlers.onSubscriptionCanceled(payload))
       }
       break
+    case 'subscription.cycled':
+      if (eventHandlers.onSubscriptionCycled) {
+        promises.push(eventHandlers.onSubscriptionCycled(payload))
+      }
+      break
+    case 'subscription.past_due':
+      if (eventHandlers.onSubscriptionPastDue) {
+        promises.push(eventHandlers.onSubscriptionPastDue(payload))
+      }
+      break
+    case 'subscription.paused':
+      if (eventHandlers.onSubscriptionPaused) {
+        promises.push(eventHandlers.onSubscriptionPaused(payload))
+      }
+      break
+    case 'subscription.resumed':
+      if (eventHandlers.onSubscriptionResumed) {
+        promises.push(eventHandlers.onSubscriptionResumed(payload))
+      }
+      break
     case 'subscription.uncanceled':
       if (eventHandlers.onSubscriptionUncanceled) {
         promises.push(eventHandlers.onSubscriptionUncanceled(payload))
@@ -198,6 +252,11 @@ export const handleWebhookPayload = async (
     case 'benefit_grant.created':
       if (eventHandlers.onBenefitGrantCreated) {
         promises.push(eventHandlers.onBenefitGrantCreated(payload))
+      }
+      break
+    case 'benefit_grant.cycled':
+      if (eventHandlers.onBenefitGrantCycled) {
+        promises.push(eventHandlers.onBenefitGrantCycled(payload))
       }
       break
     case 'benefit_grant.updated':
@@ -243,6 +302,21 @@ export const handleWebhookPayload = async (
     case 'customer_seat.revoked':
       if (eventHandlers.onCustomerSeatRevoked) {
         promises.push(eventHandlers.onCustomerSeatRevoked(payload))
+      }
+      break
+    case 'discount.created':
+      if (eventHandlers.onDiscountCreated) {
+        promises.push(eventHandlers.onDiscountCreated(payload))
+      }
+      break
+    case 'discount.updated':
+      if (eventHandlers.onDiscountUpdated) {
+        promises.push(eventHandlers.onDiscountUpdated(payload))
+      }
+      break
+    case 'discount.deleted':
+      if (eventHandlers.onDiscountDeleted) {
+        promises.push(eventHandlers.onDiscountDeleted(payload))
       }
       break
     case 'member.created':

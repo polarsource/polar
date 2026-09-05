@@ -1,14 +1,9 @@
-import type { CustomerSeat } from '@polar-sh/sdk/models/components/customerseat.js'
-import type { CustomerTeam } from '@polar-sh/sdk/models/components/customerteam.js'
-import type { Member as PolarMember } from '@polar-sh/sdk/models/components/member.js'
-import type { Product } from '@polar-sh/sdk/models/components/product.js'
-import type { Subscription } from '@polar-sh/sdk/models/components/subscription.js'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound.js'
 import { betterAuth } from 'better-auth'
 import { type MemoryDB, memoryAdapter } from 'better-auth/adapters/memory'
 import { organization } from 'better-auth/plugins'
 import { memberAc } from 'better-auth/plugins/organization/access'
 import { describe, expect, it, vi } from 'vitest'
+import { errors, type models } from '@polar-sh/sdk/2026-04'
 import type {
   PolarOrganizationOptions,
   SelectSeatProductsForMember,
@@ -18,28 +13,31 @@ import { portal } from '../../plugins/portal'
 import { polar } from '../../server'
 import { createMockCheckout, createMockPolarClient } from '../utils/mocks'
 
+type CustomerSeat = models.CustomerSeat
+type CustomerTeam = models.CustomerTeam
+type PolarMember = models.Member
+type Product = models.Product
+type Subscription = models.Subscription
+const { ResourceNotFound } = errors
+
 const baseURL = 'http://localhost:3000'
 
 const notFound = () =>
-  new ResourceNotFound(
-    { error: 'ResourceNotFound', detail: 'Customer not found' },
-    {
-      response: new Response('', { status: 404 }),
-      request: new Request('https://api.polar.sh/v1/customers'),
-      body: '',
-    },
-  )
+  new ResourceNotFound(404, {
+    error: 'ResourceNotFound',
+    detail: 'Customer not found',
+  })
 
 const createSeatProduct = (id = 'product-pro'): Product =>
   ({
     id,
     name: 'Seat product',
     metadata: {},
-    isRecurring: true,
+    is_recurring: true,
     prices: [
       {
-        amountType: 'seat_based',
-        seatTiers: { minimumSeats: 1 },
+        amount_type: 'seat_based',
+        seat_tiers: { minimum_seats: 1 },
       },
     ],
   }) as Product
@@ -74,7 +72,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     ? createSeatProduct()
     : ({
         id: 'product-pro',
-        isRecurring: false,
+        is_recurring: false,
         prices: [],
       } as unknown as Product)
   let nextSeatId = 1
@@ -82,7 +80,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     `${organizationId}:${userId}`
 
   vi.mocked(client.customers.getExternal).mockImplementation(
-    async ({ externalId }) => {
+    async (externalId) => {
       const customer = customers.get(externalId)
       if (!customer) throw notFound()
       return customer
@@ -94,52 +92,53 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
       throw new Error('Integration harness only supports team customers')
     }
     const customer: CustomerTeam = {
-      id: `polar-${input.externalId}`,
-      createdAt: new Date(),
-      modifiedAt: null,
+      id: `polar-${input.external_id}`,
+      created_at: new Date().toISOString(),
+      modified_at: null,
       metadata: input.metadata ?? {},
-      externalId: input.externalId,
+      external_id: input.external_id,
       email: null,
-      emailVerified: false,
+      email_verified: false,
       type: 'team',
       name: input.name,
-      billingName: null,
-      billingAddress: null,
-      taxId: null,
-      organizationId: 'polar-organization',
-      deletedAt: null,
-      avatarUrl: null,
+      billing_name: null,
+      billing_address: null,
+      tax_id: null,
+      organization_id: 'polar-organization',
+      deleted_at: null,
+      first_user_event_at: null,
+      avatar_url: null,
     }
-    customers.set(input.externalId, customer)
-    members.set(memberKey(input.externalId, input.owner.externalId), {
-      id: `polar-member-${input.owner.externalId}`,
-      createdAt: new Date(),
-      modifiedAt: null,
-      customerId: customer.id,
+    customers.set(input.external_id, customer)
+    members.set(memberKey(input.external_id, input.owner.external_id), {
+      id: `polar-member-${input.owner.external_id}`,
+      created_at: new Date().toISOString(),
+      modified_at: null,
+      customer_id: customer.id,
       email: input.owner.email,
       name: input.owner.name ?? null,
-      externalId: input.owner.externalId,
+      external_id: input.owner.external_id,
       role: 'owner',
     })
     return customer
   })
 
   vi.mocked(client.customers.updateExternal).mockImplementation(
-    async ({ externalId, customerUpdateExternalID }) => {
+    async (externalId, customerUpdateExternalID) => {
       const customer = customers.get(externalId)
       if (!customer) throw notFound()
       const updatedCustomer: CustomerTeam = {
         ...customer,
         name: customerUpdateExternalID.name ?? customer.name,
-        modifiedAt: new Date(),
+        modified_at: new Date().toISOString(),
       }
       customers.set(externalId, updatedCustomer)
       return updatedCustomer
     },
   )
 
-  vi.mocked(client.members.listMembers).mockImplementation(
-    async ({ externalCustomerId, role }) => {
+  vi.mocked(client.customers.members.listExternal).mockImplementation(
+    async (externalCustomerId, { role } = {}) => {
       const items = [...members.entries()]
         .filter(
           ([key, member]) =>
@@ -148,18 +147,14 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
         )
         .map(([, member]) => member)
       return {
-        result: {
-          items,
-          pagination: { totalCount: items.length, maxPage: 1 },
-        },
-        next: vi.fn(),
-        async *[Symbol.asyncIterator]() {},
+        items,
+        pagination: { total_count: items.length, max_page: 1 },
       }
     },
   )
 
   vi.mocked(client.customers.members.getExternal).mockImplementation(
-    async ({ externalId, memberExternalId }) => {
+    async (externalId, memberExternalId) => {
       const member = members.get(memberKey(externalId, memberExternalId))
       if (!member) throw notFound()
       return member
@@ -167,21 +162,21 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
   )
 
   vi.mocked(client.customers.members.createExternal).mockImplementation(
-    async ({ externalId, memberCreateFromCustomer }) => {
+    async (externalId, memberCreateFromCustomer) => {
       const customer = customers.get(externalId)
       if (!customer) throw notFound()
-      const externalMemberId = memberCreateFromCustomer.externalId
+      const externalMemberId = memberCreateFromCustomer.external_id
       if (!externalMemberId) {
         throw new Error('Integration member requires an external ID')
       }
       const member: PolarMember = {
         id: `polar-member-${externalMemberId}`,
-        createdAt: new Date(),
-        modifiedAt: null,
-        customerId: customer.id,
+        created_at: new Date().toISOString(),
+        modified_at: null,
+        customer_id: customer.id,
         email: memberCreateFromCustomer.email,
         name: memberCreateFromCustomer.name ?? null,
-        externalId: externalMemberId,
+        external_id: externalMemberId,
         role: memberCreateFromCustomer.role ?? 'member',
       }
       members.set(memberKey(externalId, externalMemberId), member)
@@ -190,7 +185,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
   )
 
   vi.mocked(client.customers.members.updateExternal).mockImplementation(
-    async ({ externalId, memberExternalId, memberUpdate }) => {
+    async (externalId, memberExternalId, memberUpdate) => {
       const key = memberKey(externalId, memberExternalId)
       const member = members.get(key)
       if (!member) throw notFound()
@@ -212,7 +207,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
         email: memberUpdate.email ?? member.email,
         name: memberUpdate.name === undefined ? member.name : memberUpdate.name,
         role: memberUpdate.role ?? member.role,
-        modifiedAt: new Date(),
+        modified_at: new Date().toISOString(),
       }
       members.set(key, updatedMember)
       return updatedMember
@@ -220,7 +215,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
   )
 
   vi.mocked(client.customers.members.deleteExternal).mockImplementation(
-    async ({ externalId, memberExternalId }) => {
+    async (externalId, memberExternalId) => {
       if (!members.delete(memberKey(externalId, memberExternalId))) {
         throw notFound()
       }
@@ -229,48 +224,55 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
 
   vi.mocked(client.products.get).mockImplementation(async () => checkoutProduct)
   vi.mocked(client.subscriptions.list).mockImplementation(
-    async ({ externalCustomerId }) => {
+    async ({ external_customer_id: externalCustomerId } = {}) => {
       const items = [...subscriptions.values()].filter(
         (subscription) =>
           subscription.customer.type === 'team' &&
-          subscription.customer.externalId === externalCustomerId,
+          subscription.customer.external_id === externalCustomerId,
       )
       return {
-        result: {
-          items,
-          pagination: { totalCount: items.length, maxPage: 1 },
-        },
+        items,
+        pagination: { total_count: items.length, max_page: 1 },
       } as never
     },
   )
   vi.mocked(client.subscriptions.update).mockImplementation(
-    async ({ id, subscriptionUpdate }: any) => {
+    async (id, subscriptionUpdate) => {
       const current = subscriptions.get(id)
       if (!current) throw new Error(`Subscription "${id}" was not seeded`)
       const updated = {
         ...current,
-        seats: subscriptionUpdate.seats ?? current.seats,
+        seats:
+          'seats' in subscriptionUpdate
+            ? subscriptionUpdate.seats
+            : current.seats,
       } as Subscription
       subscriptions.set(id, updated)
       return updated
     },
   )
   vi.mocked(client.customerSeats.listSeats).mockImplementation(
-    async ({ subscriptionId }: any) => {
+    async (query) => {
+      const subscriptionId = query?.subscription_id
+      if (!subscriptionId) throw new Error('Subscription ID is required')
       const seats = subscriptionSeats.get(subscriptionId) ?? []
       return {
         seats,
-        availableSeats: 0,
-        totalSeats: seats.filter((seat) => seat.status !== 'revoked').length,
+        available_seats: 0,
+        total_seats: seats.filter((seat) => seat.status !== 'revoked').length,
       }
     },
   )
   vi.mocked(client.customerSeats.assignSeat).mockImplementation(
-    async ({ subscriptionId, externalMemberId }: any) => {
+    async ({
+      subscription_id: subscriptionId,
+      external_member_id: externalMemberId,
+    }) => {
+      if (!subscriptionId) throw new Error('Subscription ID is required')
       const assigned = {
         id: `seat-${nextSeatId++}`,
         status: 'claimed',
-        member: { externalId: externalMemberId },
+        member: { external_id: externalMemberId },
       } as CustomerSeat
       subscriptionSeats.set(subscriptionId, [
         ...(subscriptionSeats.get(subscriptionId) ?? []),
@@ -280,7 +282,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     },
   )
   vi.mocked(client.customerSeats.revokeSeat).mockImplementation(
-    async ({ seatId }: any) => {
+    async (seatId) => {
       for (const [subscriptionId, seats] of subscriptionSeats) {
         subscriptionSeats.set(
           subscriptionId,
@@ -304,14 +306,14 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     const product = createSeatProduct()
     const subscription = {
       id,
-      productId: product.id,
+      product_id: product.id,
       product,
       prices: product.prices,
       status: 'active',
       seats: input.seats ?? input.memberIds.length,
       customer: {
         type: 'team',
-        externalId: input.organizationId,
+        external_id: input.organizationId,
       },
     } as Subscription
     subscriptions.set(id, subscription)
@@ -322,7 +324,7 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
           ({
             id: `seat-${nextSeatId++}`,
             status: 'claimed',
-            member: { externalId: externalMemberId },
+            member: { external_id: externalMemberId },
           }) as CustomerSeat,
       ),
     )
@@ -445,10 +447,10 @@ describe('Better Auth organization integration', () => {
     expect(client.customers.create).toHaveBeenCalledOnce()
     expect(client.customers.create).toHaveBeenCalledWith({
       type: 'team',
-      externalId: createdOrganization.id,
+      external_id: createdOrganization.id,
       name: 'Acme',
       owner: {
-        externalId: user.id,
+        external_id: user.id,
         email: 'owner@example.com',
         name: 'Owner',
       },
@@ -482,10 +484,10 @@ describe('Better Auth organization integration', () => {
     }
 
     expect(client.customers.updateExternal).toHaveBeenCalledOnce()
-    expect(client.customers.updateExternal).toHaveBeenCalledWith({
-      externalId: createdOrganization.id,
-      customerUpdateExternalID: { name: 'Acme Corporation' },
-    })
+    expect(client.customers.updateExternal).toHaveBeenCalledWith(
+      createdOrganization.id,
+      { name: 'Acme Corporation' },
+    )
     expect(client.customers.members.updateExternal).not.toHaveBeenCalled()
   })
 
@@ -517,15 +519,15 @@ describe('Better Auth organization integration', () => {
     })
 
     expect(client.customers.members.createExternal).toHaveBeenCalledOnce()
-    expect(client.customers.members.createExternal).toHaveBeenCalledWith({
-      externalId: createdOrganization.id,
-      memberCreateFromCustomer: {
-        externalId: addedUser.user.id,
+    expect(client.customers.members.createExternal).toHaveBeenCalledWith(
+      createdOrganization.id,
+      {
+        external_id: addedUser.user.id,
         email: 'admin@example.com',
         name: 'Admin',
         role: 'billing_manager',
       },
-    })
+    )
     expect(client.customers.members.updateExternal).not.toHaveBeenCalled()
   })
 
@@ -574,15 +576,15 @@ describe('Better Auth organization integration', () => {
     }
 
     expect(client.customers.members.createExternal).toHaveBeenCalledOnce()
-    expect(client.customers.members.createExternal).toHaveBeenCalledWith({
-      externalId: createdOrganization.id,
-      memberCreateFromCustomer: {
-        externalId: invitedUser.user.id,
+    expect(client.customers.members.createExternal).toHaveBeenCalledWith(
+      createdOrganization.id,
+      {
+        external_id: invitedUser.user.id,
         email: 'invited@example.com',
         name: 'Invited Admin',
         role: 'billing_manager',
       },
-    })
+    )
   })
 
   it('updates the affected Polar member when its Better Auth role changes', async () => {
@@ -627,11 +629,11 @@ describe('Better Auth organization integration', () => {
     }
 
     expect(client.customers.members.updateExternal).toHaveBeenCalledOnce()
-    expect(client.customers.members.updateExternal).toHaveBeenCalledWith({
-      externalId: createdOrganization.id,
-      memberExternalId: addedUser.user.id,
-      memberUpdate: { role: 'billing_manager' },
-    })
+    expect(client.customers.members.updateExternal).toHaveBeenCalledWith(
+      createdOrganization.id,
+      addedUser.user.id,
+      { role: 'billing_manager' },
+    )
   })
 
   it('transfers Polar ownership when the current Better Auth owner is demoted', async () => {
@@ -703,20 +705,8 @@ describe('Better Auth organization integration', () => {
     expect(
       vi.mocked(client.customers.members.updateExternal).mock.calls,
     ).toEqual([
-      [
-        {
-          externalId: createdOrganization.id,
-          memberExternalId: successor.user.id,
-          memberUpdate: { role: 'owner' },
-        },
-      ],
-      [
-        {
-          externalId: createdOrganization.id,
-          memberExternalId: owner.user.id,
-          memberUpdate: { role: 'member' },
-        },
-      ],
+      [createdOrganization.id, successor.user.id, { role: 'owner' }],
+      [createdOrganization.id, owner.user.id, { role: 'member' }],
     ])
   })
 
@@ -777,16 +767,16 @@ describe('Better Auth organization integration', () => {
     }
 
     expect(client.customers.members.updateExternal).toHaveBeenCalledOnce()
-    expect(client.customers.members.updateExternal).toHaveBeenCalledWith({
-      externalId: createdOrganization.id,
-      memberExternalId: successor.user.id,
-      memberUpdate: { role: 'owner' },
-    })
+    expect(client.customers.members.updateExternal).toHaveBeenCalledWith(
+      createdOrganization.id,
+      successor.user.id,
+      { role: 'owner' },
+    )
     expect(client.customers.members.deleteExternal).toHaveBeenCalledOnce()
-    expect(client.customers.members.deleteExternal).toHaveBeenCalledWith({
-      externalId: createdOrganization.id,
-      memberExternalId: owner.user.id,
-    })
+    expect(client.customers.members.deleteExternal).toHaveBeenCalledWith(
+      createdOrganization.id,
+      owner.user.id,
+    )
 
     expect(
       vi.mocked(client.customers.members.updateExternal).mock
@@ -827,9 +817,9 @@ describe('Better Auth organization integration', () => {
 
     expect(client.customers.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        externalId: createdOrganization.id,
+        external_id: createdOrganization.id,
         owner: {
-          externalId: founder.user.id,
+          external_id: founder.user.id,
           email: 'founder@example.com',
           name: 'Founder',
         },
@@ -838,7 +828,7 @@ describe('Better Auth organization integration', () => {
     expect(client.checkouts.create).toHaveBeenCalledOnce()
     expect(client.checkouts.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        externalCustomerId: createdOrganization.id,
+        external_customer_id: createdOrganization.id,
         products: ['product-pro'],
       }),
     )
@@ -878,15 +868,15 @@ describe('Better Auth organization integration', () => {
       throw new Error('Better Auth returned no finance member')
     }
 
-    expect(client.customers.members.createExternal).toHaveBeenCalledWith({
-      externalId: createdOrganization.id,
-      memberCreateFromCustomer: {
-        externalId: financeUser.user.id,
+    expect(client.customers.members.createExternal).toHaveBeenCalledWith(
+      createdOrganization.id,
+      {
+        external_id: financeUser.user.id,
         email: 'finance@example.com',
         name: 'Finance',
         role: 'billing_manager',
       },
-    })
+    )
     vi.mocked(client.customers.members.updateExternal).mockClear()
 
     const roleUpdateResponse = await post(
@@ -905,11 +895,11 @@ describe('Better Auth organization integration', () => {
     }
 
     expect(client.customers.members.updateExternal).toHaveBeenCalledOnce()
-    expect(client.customers.members.updateExternal).toHaveBeenCalledWith({
-      externalId: createdOrganization.id,
-      memberExternalId: financeUser.user.id,
-      memberUpdate: { role: 'member' },
-    })
+    expect(client.customers.members.updateExternal).toHaveBeenCalledWith(
+      createdOrganization.id,
+      financeUser.user.id,
+      { role: 'member' },
+    )
   })
 
   it('allows checkout for a custom role mapped to Polar billing manager', async () => {
@@ -957,7 +947,7 @@ describe('Better Auth organization integration', () => {
     expect(client.checkouts.create).toHaveBeenCalledOnce()
     expect(client.checkouts.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        externalCustomerId: createdOrganization.id,
+        external_customer_id: createdOrganization.id,
         products: ['product-pro'],
       }),
     )
@@ -1013,7 +1003,7 @@ describe('Better Auth organization integration', () => {
     expect(client.checkouts.create).toHaveBeenCalledOnce()
     expect(client.checkouts.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        externalCustomerId: createdOrganization.id,
+        external_customer_id: createdOrganization.id,
         products: ['product-pro'],
       }),
     )
@@ -1075,23 +1065,19 @@ describe('Better Auth organization integration', () => {
     ).toEqual(
       expect.arrayContaining([
         [
+          firstOrganization.id,
+          user.user.id,
           {
-            externalId: firstOrganization.id,
-            memberExternalId: user.user.id,
-            memberUpdate: {
-              email: 'owner@example.com',
-              name: 'Updated Name',
-            },
+            email: 'owner@example.com',
+            name: 'Updated Name',
           },
         ],
         [
+          secondOrganization.id,
+          user.user.id,
           {
-            externalId: secondOrganization.id,
-            memberExternalId: user.user.id,
-            memberUpdate: {
-              email: 'owner@example.com',
-              name: 'Updated Name',
-            },
+            email: 'owner@example.com',
+            name: 'Updated Name',
           },
         ],
       ]),
@@ -1157,18 +1143,8 @@ describe('Better Auth organization integration', () => {
       vi.mocked(client.customers.members.deleteExternal).mock.calls,
     ).toEqual(
       expect.arrayContaining([
-        [
-          {
-            externalId: firstOrganization.id,
-            memberExternalId: deletedUser.user.id,
-          },
-        ],
-        [
-          {
-            externalId: secondOrganization.id,
-            memberExternalId: deletedUser.user.id,
-          },
-        ],
+        [firstOrganization.id, deletedUser.user.id],
+        [secondOrganization.id, deletedUser.user.id],
       ]),
     )
     expect(client.customers.members.updateExternal).not.toHaveBeenCalled()
@@ -1216,7 +1192,7 @@ describe('Better Auth organization integration', () => {
     vi.mocked(client.checkouts.create).mockResolvedValue(createMockCheckout())
     vi.mocked(client.subscriptions.list).mockResolvedValue({
       items: [],
-      pagination: { total: 0, maxPage: 1 },
+      pagination: { total_count: 0, max_page: 1 },
     })
     const auth = betterAuth({
       baseURL,
@@ -1279,7 +1255,7 @@ describe('Better Auth organization integration', () => {
     }
     expect(client.checkouts.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        externalCustomerId: user.id,
+        external_customer_id: user.id,
         products: ['product-pro'],
         metadata: { referenceId },
       }),
@@ -1319,7 +1295,7 @@ describe('Better Auth organization integration', () => {
     vi.mocked(client.checkouts.create).mockResolvedValue(createMockCheckout())
     vi.mocked(client.subscriptions.list).mockResolvedValue({
       items: [],
-      pagination: { total: 0, maxPage: 1 },
+      pagination: { total_count: 0, max_page: 1 },
     })
     const createAuth = (enableOrganizationSync: boolean) =>
       betterAuth({
@@ -1468,7 +1444,7 @@ describe('Better Auth organization integration', () => {
     expect(client.checkouts.create).toHaveBeenCalledOnce()
     expect(client.checkouts.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        externalCustomerId: user.id,
+        external_customer_id: user.id,
         products: ['product-pro'],
         metadata: { referenceId: createdOrganization.id },
       }),
@@ -1634,7 +1610,7 @@ describe('organization seat integration', () => {
 
     expect(response.ok).toBe(true)
     expect(client.checkouts.create).toHaveBeenCalledWith(
-      expect.objectContaining({ seats: 3, minSeats: 3, maxSeats: 3 }),
+      expect.objectContaining({ seats: 3, min_seats: 3, max_seats: 3 }),
     )
   })
 
@@ -1670,14 +1646,13 @@ describe('organization seat integration', () => {
       },
     })
 
-    expect(client.subscriptions.update).toHaveBeenCalledWith({
-      id: subscription.id,
-      subscriptionUpdate: { seats: 2 },
+    expect(client.subscriptions.update).toHaveBeenCalledWith(subscription.id, {
+      seats: 2,
     })
     expect(client.customerSeats.assignSeat).toHaveBeenCalledWith({
-      subscriptionId: subscription.id,
-      externalMemberId: added.user.id,
-      immediateClaim: true,
+      subscription_id: subscription.id,
+      external_member_id: added.user.id,
+      immediate_claim: true,
     })
     expect(
       vi.mocked(client.subscriptions.update).mock.invocationCallOrder[0],
@@ -1731,14 +1706,13 @@ describe('organization seat integration', () => {
     )
 
     expect(acceptanceResponse.ok).toBe(true)
-    expect(client.subscriptions.update).toHaveBeenCalledWith({
-      id: subscription.id,
-      subscriptionUpdate: { seats: 2 },
+    expect(client.subscriptions.update).toHaveBeenCalledWith(subscription.id, {
+      seats: 2,
     })
     expect(client.customerSeats.assignSeat).toHaveBeenCalledWith({
-      subscriptionId: subscription.id,
-      externalMemberId: invited.user.id,
-      immediateClaim: true,
+      subscription_id: subscription.id,
+      external_member_id: invited.user.id,
+      immediate_claim: true,
     })
   })
 
@@ -1789,14 +1763,13 @@ describe('organization seat integration', () => {
       owner.sessionCookie,
     )
     expect(promoteResponse.ok).toBe(true)
-    expect(client.subscriptions.update).toHaveBeenCalledWith({
-      id: subscription.id,
-      subscriptionUpdate: { seats: 2 },
+    expect(client.subscriptions.update).toHaveBeenCalledWith(subscription.id, {
+      seats: 2,
     })
     expect(client.customerSeats.assignSeat).toHaveBeenCalledWith({
-      subscriptionId: subscription.id,
-      externalMemberId: user.user.id,
-      immediateClaim: true,
+      subscription_id: subscription.id,
+      external_member_id: user.user.id,
+      immediate_claim: true,
     })
     clearSeatWrites(client)
 
@@ -1812,9 +1785,8 @@ describe('organization seat integration', () => {
 
     expect(demoteResponse.ok).toBe(true)
     expect(client.customerSeats.revokeSeat).toHaveBeenCalledOnce()
-    expect(client.subscriptions.update).toHaveBeenCalledWith({
-      id: subscription.id,
-      subscriptionUpdate: { seats: 1 },
+    expect(client.subscriptions.update).toHaveBeenCalledWith(subscription.id, {
+      seats: 1,
     })
     expect(
       vi.mocked(client.customerSeats.revokeSeat).mock.invocationCallOrder[0],
@@ -1876,21 +1848,16 @@ describe('organization seat integration', () => {
     expect(response.ok).toBe(true)
     expect(vi.mocked(client.subscriptions.update).mock.calls).toEqual(
       expect.arrayContaining(
-        subscriptions.map((subscription) => [
-          {
-            id: subscription.id,
-            subscriptionUpdate: { seats: 2 },
-          },
-        ]),
+        subscriptions.map((subscription) => [subscription.id, { seats: 2 }]),
       ),
     )
     expect(vi.mocked(client.customerSeats.assignSeat).mock.calls).toEqual(
       expect.arrayContaining(
         subscriptions.map((subscription) => [
           {
-            subscriptionId: subscription.id,
-            externalMemberId: user.user.id,
-            immediateClaim: true,
+            subscription_id: subscription.id,
+            external_member_id: user.user.id,
+            immediate_claim: true,
           },
         ]),
       ),
@@ -1944,15 +1911,14 @@ describe('organization seat integration', () => {
     )
 
     expect(response.ok).toBe(true)
-    expect(client.subscriptions.update).toHaveBeenCalledWith({
-      id: subscription.id,
-      subscriptionUpdate: { seats: 2 },
+    expect(client.subscriptions.update).toHaveBeenCalledWith(subscription.id, {
+      seats: 2,
     })
     expect(client.customerSeats.assignSeat).toHaveBeenCalledTimes(2)
     expect(
       vi
         .mocked(client.customerSeats.assignSeat)
-        .mock.calls.map(([input]) => input.externalMemberId),
+        .mock.calls.map(([input]) => input.external_member_id),
     ).toEqual(expect.arrayContaining([owner.user.id, member.user.id]))
   })
 
@@ -1994,7 +1960,7 @@ describe('organization seat integration', () => {
     })
     const removedSeat = subscriptionSeats
       .get(subscription.id)
-      ?.find((seat) => seat.member?.externalId === user.user.id)
+      ?.find((seat) => seat.member?.external_id === user.user.id)
     if (!removedSeat) throw new Error('Member seat was not seeded')
     clearSeatWrites(client)
     vi.mocked(client.customers.members.deleteExternal).mockClear()
@@ -2007,12 +1973,9 @@ describe('organization seat integration', () => {
       },
     })
 
-    expect(client.customerSeats.revokeSeat).toHaveBeenCalledWith({
-      seatId: removedSeat.id,
-    })
-    expect(client.subscriptions.update).toHaveBeenCalledWith({
-      id: subscription.id,
-      subscriptionUpdate: { seats: 1 },
+    expect(client.customerSeats.revokeSeat).toHaveBeenCalledWith(removedSeat.id)
+    expect(client.subscriptions.update).toHaveBeenCalledWith(subscription.id, {
+      seats: 1,
     })
     expect(
       vi.mocked(client.customerSeats.revokeSeat).mock.invocationCallOrder[0],
@@ -2078,9 +2041,8 @@ describe('organization seat integration', () => {
 
     expect(leaveResponse.ok).toBe(true)
     expect(client.customerSeats.revokeSeat).toHaveBeenCalledOnce()
-    expect(client.subscriptions.update).toHaveBeenCalledWith({
-      id: subscription.id,
-      subscriptionUpdate: { seats: 1 },
+    expect(client.subscriptions.update).toHaveBeenCalledWith(subscription.id, {
+      seats: 1,
     })
     expect(
       vi.mocked(client.customerSeats.revokeSeat).mock.invocationCallOrder[0],
@@ -2154,7 +2116,8 @@ describe('organization seat integration', () => {
         const seat = subscriptionSeats
           .get(subscription.id)
           ?.find(
-            (candidate) => candidate.member?.externalId === deletedUser.user.id,
+            (candidate) =>
+              candidate.member?.external_id === deletedUser.user.id,
           )
         if (!seat) throw new Error('Deleted user seat was not seeded')
         return seat.id
@@ -2173,15 +2136,13 @@ describe('organization seat integration', () => {
     expect(
       vi
         .mocked(client.customerSeats.revokeSeat)
-        .mock.calls.map(([input]) => input.seatId),
+        .mock.calls.map(([seatId]) => seatId),
     ).toEqual(expect.arrayContaining(deletedSeatIds))
     expect(vi.mocked(client.subscriptions.update).mock.calls).toEqual(
       expect.arrayContaining(
         [firstSubscription, secondSubscription].map((subscription) => [
-          {
-            id: subscription.id,
-            subscriptionUpdate: { seats: 1 },
-          },
+          subscription.id,
+          { seats: 1 },
         ]),
       ),
     )
@@ -2191,16 +2152,16 @@ describe('organization seat integration', () => {
     ] as const) {
       const revokeIndex = vi
         .mocked(client.customerSeats.revokeSeat)
-        .mock.calls.findIndex(([input]) => input.seatId === seatId)
+        .mock.calls.findIndex(([input]) => input === seatId)
       const updateIndex = vi
         .mocked(client.subscriptions.update)
-        .mock.calls.findIndex(([input]) => input.id === subscription.id)
+        .mock.calls.findIndex(([input]) => input === subscription.id)
       const deleteIndex = vi
         .mocked(client.customers.members.deleteExternal)
         .mock.calls.findIndex(
-          ([input]) =>
-            input.externalId === organization.id &&
-            input.memberExternalId === deletedUser.user.id,
+          ([externalId, memberExternalId]) =>
+            externalId === organization.id &&
+            memberExternalId === deletedUser.user.id,
         )
       expect(
         vi.mocked(client.customerSeats.revokeSeat).mock.invocationCallOrder[

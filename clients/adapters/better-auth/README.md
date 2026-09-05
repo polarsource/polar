@@ -15,7 +15,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 ## Installation
 
 ```bash
-pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk
+pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk@next
 ```
 
 ## Preparation
@@ -29,6 +29,10 @@ POLAR_ACCESS_TOKEN=...
 
 ### Configuring BetterAuth Server
 
+Create a Polar core client with `createPolarCore` and pass it to the `polar` plugin. The adapter uses standalone SDK functions to keep bundles small.
+
+If you previously passed a client created with `createPolar`, switch that call to `createPolarCore` with the same options.
+
 The Polar plugin comes with a handful additional plugins which adds functionality to your stack.
 
 - Checkout - Enables a seamless checkout integration
@@ -40,14 +44,14 @@ The Polar plugin comes with a handful additional plugins which adds functionalit
 import { betterAuth } from "better-auth";
 import { organization } from "better-auth/plugins";
 import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
+import { createPolarCore } from "@polar-sh/sdk/2026-04";
 
-const polarClient = new Polar({
+const polarClient = createPolarCore({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
     // Use 'sandbox' if you're using the Polar Sandbox environment
     // Remember that access tokens, products, etc. are completely separated between environments.
     // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
-    server: 'sandbox'
+    environment: 'sandbox'
 });
 
 const auth = betterAuth({
@@ -118,15 +122,15 @@ export const authClient = createAuthClient({
 ```typescript
 import { betterAuth } from 'better-auth'
 import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth'
-import { Polar } from '@polar-sh/sdk'
+import { createPolarCore } from '@polar-sh/sdk/2026-04'
 import { organization } from 'better-auth/plugins'
 
-const polarClient = new Polar({
+const polarClient = createPolarCore({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
   // Use 'sandbox' if you're using the Polar Sandbox environment
   // Remember that access tokens, products, etc. are completely separated between environments.
   // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
-  server: 'sandbox',
+  environment: 'sandbox',
 })
 
 const auth = betterAuth({
@@ -159,15 +163,29 @@ const auth = betterAuth({
 })
 ```
 
+The SDK v1 models returned by the state, benefits, subscriptions, orders, and meters endpoints use `snake_case` fields. Webhook callback payloads use the same `snake_case` model fields.
+
 ### Required Options
 
-- `client`: Polar SDK client instance
+- `client`: Polar SDK core client instance, created with `createPolarCore`
 
 ### Optional Options
 
 - `createCustomerOnSignUp`: Automatically create a Polar customer when a user signs up
 - `getCustomerCreateParams`: Custom function to provide additional personal-customer creation metadata
 - `experimental_organizationSync`: Experimental Better Auth organization synchronization configuration. Set `experimental_organizationSync.enabled` to `true`; `experimental_organizationSync.getTeamCustomerCreateParams` can add team-customer fields such as metadata or billing details. Automatic seat management is separately opt-in through `experimental_organizationSync.syncSeats`, and `experimental_organizationSync.selectSeatProductsForMember` can customize per-member product-seat allocation when it is enabled.
+
+### Calling the Polar SDK
+
+The core client has no service properties such as `customers` or `checkouts`. Import the operation you need and pass the core client to it:
+
+```typescript
+import { getStateExternalCustomers } from '@polar-sh/sdk/2026-04/services/customers'
+
+const customerState = await getStateExternalCustomers(polarClient)(userId)
+```
+
+Custom plugins passed through `use` also receive a `PolarCore` and call SDK operations this way.
 
 ### Customers
 

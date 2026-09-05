@@ -1,4 +1,4 @@
-import type { Polar } from '@polar-sh/sdk'
+import type { PolarCore } from '@polar-sh/sdk/2026-04'
 import type { AuthContext, BetterAuthPlugin, User } from 'better-auth'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import type {
@@ -139,7 +139,7 @@ export const listBetterAuthMembershipsForUser = (
 
 export const synchronizeUserOrganizationProfiles = async (
   authContext: AuthContext,
-  client: Polar,
+  client: PolarCore,
   user: User,
   organizationOptions: PolarOrganizationOptions,
 ) => {
@@ -174,7 +174,7 @@ export const synchronizeUserOrganizationProfiles = async (
  */
 export const removeOrganizationMemberMirror = async (input: {
   authContext: AuthContext
-  client: Polar
+  client: PolarCore
   organizationId: string
   userId: string
   role: string
@@ -311,7 +311,7 @@ export const createOrganizationLifecycleHooks = (
 
 export const synchronizeUserDeletionMemberships = async (
   authContext: AuthContext,
-  client: Polar,
+  client: PolarCore,
   user: User,
   options: PolarOrganizationOptions,
 ) => {

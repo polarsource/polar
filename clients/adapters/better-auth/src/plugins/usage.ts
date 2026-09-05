@@ -1,4 +1,7 @@
-import type { Polar } from '@polar-sh/sdk'
+import { listCustomerMeters as listCustomerMetersCustomerPortal } from '@polar-sh/sdk/2026-04/services/customer_portal/customer_meters'
+import { createCustomerSessions } from '@polar-sh/sdk/2026-04/services/customer_sessions'
+import { ingestEvents } from '@polar-sh/sdk/2026-04/services/events'
+import type { models, PolarCore } from '@polar-sh/sdk/2026-04'
 import {
   APIError,
   createAuthEndpoint,
@@ -18,7 +21,7 @@ export interface UsageOptions {
 export const usage =
   (_usageOptions?: UsageOptions) =>
   (
-    polar: Polar,
+    polar: PolarCore,
     rootOptions?: Pick<PolarOptions, 'experimental_organizationSync'>,
   ) => {
     return {
@@ -52,21 +55,21 @@ export const usage =
             : undefined
 
           try {
-            const customerSession = await polar.customerSessions.create({
-              externalCustomerId:
+            const customerSession = await createCustomerSessions(polar)({
+              external_customer_id:
                 principal?.externalCustomerId ?? ctx.context.session.user.id,
               ...(principal?.kind === 'team'
-                ? { externalMemberId: principal.externalMemberId }
+                ? { external_member_id: principal.externalMemberId }
                 : {}),
             })
 
-            const customerMeters =
-              await polar.customerPortal.customerMeters.list(
-                { customerSession: customerSession.token },
+            const customerMeters: models.ListResourceCustomerCustomerMeter =
+              await listCustomerMetersCustomerPortal(polar)(
                 {
                   page: ctx.query?.page,
                   limit: ctx.query?.limit,
                 },
+                { accessToken: customerSession.token },
               )
 
             return ctx.json(customerMeters)
@@ -116,16 +119,18 @@ export const usage =
             : undefined
 
           try {
-            const ingestion = await polar.events.ingest({
+            const ingestion: models.EventsIngestResponse = await ingestEvents(
+              polar,
+            )({
               events: [
                 {
                   name: ctx.body.event,
                   metadata: ctx.body.metadata,
-                  externalCustomerId:
+                  external_customer_id:
                     principal?.externalCustomerId ??
                     ctx.context.session.user.id,
                   ...(principal?.kind === 'team'
-                    ? { externalMemberId: principal.externalMemberId }
+                    ? { external_member_id: principal.externalMemberId }
                     : {}),
                 },
               ],

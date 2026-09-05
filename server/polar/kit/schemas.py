@@ -26,6 +26,27 @@ from slugify import slugify
 class Schema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        schema = handler.resolve_ref_schema(handler(core_schema))
+        # Add a common datetime example to all inherited JSON schemas.
+        pending: list[Any] = [schema]
+        while pending:
+            node = pending.pop()
+            if isinstance(node, dict):
+                if node.get("format") == "date-time":
+                    node.setdefault("examples", ["2026-01-01T00:00:00.123456Z"])
+                for key, value in node.items():
+                    if key in {"properties", "patternProperties", "$defs"}:
+                        pending.extend(value.values())
+                    elif key not in {"examples", "example", "default", "enum", "const"}:
+                        pending.append(value)
+            elif isinstance(node, list):
+                pending.extend(node)
+        return schema
+
     @field_validator("*", mode="after")
     @classmethod
     def _reject_nul_characters(cls, value: Any) -> Any:

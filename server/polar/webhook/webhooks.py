@@ -204,8 +204,7 @@ class BaseWebhookPayload(Schema):
     def __get_pydantic_json_schema__(
         cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
     ) -> JsonSchemaValue:
-        json_schema = handler(core_schema)
-        json_schema = handler.resolve_ref_schema(json_schema)
+        json_schema = super().__get_pydantic_json_schema__(core_schema, handler)
 
         # Force the example of the `type` field to be the event type literal value
         type_field_annotation = cls.model_fields["type"].annotation

@@ -62,38 +62,23 @@ Choose your client and add the appropriate server.
   </Tab>
 
   <Tab title="Codex">
-    Add the following to `~/.codex/config.toml`, or to `.codex/config.toml` for a trusted project:
-
-    ```toml
-    [mcp_servers.polar]
-    url = "https://mcp.polar.sh/mcp/polar-mcp"
-    ```
-
-    Then authenticate with OAuth:
+    Run:
 
     ```bash
-    codex mcp login polar
+    codex mcp add "polar" --url "https://mcp.polar.sh/mcp/polar-mcp"
     ```
 
-    Use `/mcp` in Codex to confirm that the server is connected.
+    Complete the OAuth authorization when prompted.
   </Tab>
 
   <Tab title="OpenCode">
-    Add the following to `opencode.jsonc`:
+    Run:
 
-    ```jsonc
-    {
-      "$schema": "https://opencode.ai/config.json",
-      "mcp": {
-        "polar": {
-          "type": "remote",
-          "url": "https://mcp.polar.sh/mcp/polar-mcp"
-        }
-      }
-    }
+    ```bash
+    opencode mcp add polar --url https://mcp.polar.sh/mcp/polar-mcp
     ```
 
-    OpenCode will ask you to authorize Polar when it first connects.
+    Complete the OAuth authorization when prompted.
   </Tab>
 
   <Tab title="Other clients">

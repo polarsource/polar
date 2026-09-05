@@ -41,6 +41,6 @@
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "catalog:",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.4"
+    "vitest": "catalog:"
   }
 }

@@ -12,6 +12,7 @@ import pytest
 import respx
 from dramatiq import Retry
 from pydantic import Field
+from pydantic.json_schema import JsonSchemaMode
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
@@ -45,7 +46,7 @@ from polar.webhook.tasks import (
     sign_webhook,
     webhook_event_send,
 )
-from polar.webhook.webhooks import BaseWebhookPayload
+from polar.webhook.webhooks import BaseWebhookPayload, WebhookCustomerCreatedPayload
 from tests.fixtures.database import SaveFixture
 from tests.kit.test_versioning import CURRENT_VERSION, NEXT_VERSION
 
@@ -53,6 +54,17 @@ from tests.kit.test_versioning import CURRENT_VERSION, NEXT_VERSION
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.webhook.service.enqueue_job")
+
+
+class TestWebhookJsonSchema:
+    @pytest.mark.parametrize("mode", ["validation", "serialization"])
+    def test_datetime_and_event_type_examples(self, mode: JsonSchemaMode) -> None:
+        schema = WebhookCustomerCreatedPayload.model_json_schema(mode=mode)
+
+        assert schema["properties"]["timestamp"]["examples"] == [
+            "2026-01-01T00:00:00.123456Z"
+        ]
+        assert schema["properties"]["type"]["examples"] == ["customer.created"]
 
 
 def test_versioned_raw_payload() -> None:

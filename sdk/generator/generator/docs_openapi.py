@@ -14,6 +14,7 @@ HTTP_METHODS = frozenset(
     {"delete", "get", "head", "options", "patch", "post", "put", "trace"}
 )
 DOCS_OPENAPI_PATH = ROOT / "docs" / "openapi"
+DATETIME_EXAMPLE = "2025-01-03T13:37:00.123456Z"
 
 
 def generate_private_operations_overlay(
@@ -62,6 +63,29 @@ def generate_private_operations_overlay(
     }
 
 
+def generate_datetime_examples_overlay(
+    schema: dict[str, typing.Any],
+) -> dict[str, typing.Any]:
+    schemas = schema.get("components", {}).get("schemas", {})
+    actions = [
+        {
+            "target": _json_path(["components", "schemas", *path]),
+            "update": {"examples": [DATETIME_EXAMPLE]},
+        }
+        for path in _iter_datetime_schemas_without_examples(schemas)
+    ]
+
+    version = schema.get("info", {}).get("version", "0.0.0")
+    return {
+        "overlay": "1.1.0",
+        "info": {
+            "title": "Add examples with fractional seconds to date-time schemas",
+            "version": version,
+        },
+        "actions": actions,
+    }
+
+
 def apply_overlay(
     openapi_path: pathlib.Path,
     overlay_path: pathlib.Path,
@@ -98,6 +122,8 @@ def generate_docs_openapi(
             samples_overlay_path = temporary_path / "samples.overlay.json"
             samples_path = temporary_path / "samples.json"
             private_overlay_path = temporary_path / "private.overlay.json"
+            private_path = temporary_path / "private.json"
+            datetime_overlay_path = temporary_path / "datetime.overlay.json"
             final_path = temporary_path / "openapi.json"
 
             samples_overlay = generate_code_samples_overlay(
@@ -114,6 +140,47 @@ def generate_docs_openapi(
                 json.dumps(private_overlay, indent=2, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
-            apply_overlay(samples_path, private_overlay_path, final_path)
+            apply_overlay(samples_path, private_overlay_path, private_path)
+
+            datetime_overlay = generate_datetime_examples_overlay(openapi_spec_dict)
+            datetime_overlay_path.write_text(
+                json.dumps(datetime_overlay, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            apply_overlay(private_path, datetime_overlay_path, final_path)
 
             final_path.replace(output_path / openapi_file.name)
+
+
+def _iter_datetime_schemas_without_examples(
+    node: typing.Any, path: tuple[str | int, ...] = ()
+) -> typing.Iterator[tuple[str | int, ...]]:
+    if isinstance(node, list):
+        for index, item in enumerate(node):
+            yield from _iter_datetime_schemas_without_examples(item, (*path, index))
+        return
+    if not isinstance(node, dict):
+        return
+    if _is_datetime_schema(node):
+        if "examples" not in node and "example" not in node:
+            yield path
+        return
+    for key, value in node.items():
+        yield from _iter_datetime_schemas_without_examples(value, (*path, key))
+
+
+def _is_datetime_schema(schema: dict[str, typing.Any]) -> bool:
+    if schema.get("format") == "date-time":
+        return True
+    return any(
+        isinstance(member, dict) and member.get("format") == "date-time"
+        for keyword in ("anyOf", "oneOf")
+        for member in schema.get(keyword, [])
+    )
+
+
+def _json_path(path: typing.Sequence[str | int]) -> str:
+    return "$" + "".join(
+        f"[{segment}]" if isinstance(segment, int) else f"[{json.dumps(segment)}]"
+        for segment in path
+    )

@@ -57,19 +57,19 @@ class CustomerStateSubscription(
     )
     current_period_start: datetime = Field(
         description="The start timestamp of the current billing period.",
-        examples=["2025-02-03T13:37:00Z"],
+        examples=["2025-02-03T13:37:00.123456Z"],
     )
     current_period_end: datetime = Field(
         description="The end timestamp of the current billing period.",
-        examples=["2025-03-03T13:37:00Z"],
+        examples=["2025-03-03T13:37:00.123456Z"],
     )
     trial_start: datetime | None = Field(
         description="The start timestamp of the trial period, if any.",
-        examples=["2025-02-03T13:37:00Z"],
+        examples=["2025-02-03T13:37:00.123456Z"],
     )
     trial_end: datetime | None = Field(
         description="The end timestamp of the trial period, if any.",
-        examples=["2025-03-03T13:37:00Z"],
+        examples=["2025-03-03T13:37:00.123456Z"],
     )
     cancel_at_period_end: bool = Field(
         description=(
@@ -87,7 +87,7 @@ class CustomerStateSubscription(
     )
     started_at: datetime | None = Field(
         description="The timestamp when the subscription started.",
-        examples=["2025-01-03T13:37:00Z"],
+        examples=["2025-01-03T13:37:00.123456Z"],
     )
     ends_at: datetime | None = Field(
         description="The timestamp when the subscription will end.",
@@ -138,7 +138,7 @@ class CustomerStateBenefitGrant(TimestampedSchema, IDSchema):
     )
     granted_at: datetime = Field(
         description="The timestamp when the benefit was granted.",
-        examples=["2025-01-03T13:37:00Z"],
+        examples=["2025-01-03T13:37:00.123456Z"],
     )
     benefit_id: UUID4 = Field(
         description="The ID of the benefit concerned by this grant.",

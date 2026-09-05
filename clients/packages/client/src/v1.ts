@@ -19220,7 +19220,7 @@ export interface components {
        * Granted At
        * Format: date-time
        * @description The timestamp when the benefit was granted.
-       * @example 2025-01-03T13:37:00Z
+       * @example 2025-01-03T13:37:00.123456Z
        */
       granted_at: string
       /**
@@ -19467,26 +19467,26 @@ export interface components {
        * Current Period Start
        * Format: date-time
        * @description The start timestamp of the current billing period.
-       * @example 2025-02-03T13:37:00Z
+       * @example 2025-02-03T13:37:00.123456Z
        */
       current_period_start: string
       /**
        * Current Period End
        * Format: date-time
        * @description The end timestamp of the current billing period.
-       * @example 2025-03-03T13:37:00Z
+       * @example 2025-03-03T13:37:00.123456Z
        */
       current_period_end: string
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
-       * @example 2025-02-03T13:37:00Z
+       * @example 2025-02-03T13:37:00.123456Z
        */
       trial_start: string | null
       /**
        * Trial End
        * @description The end timestamp of the trial period, if any.
-       * @example 2025-03-03T13:37:00Z
+       * @example 2025-03-03T13:37:00.123456Z
        */
       trial_end: string | null
       /**
@@ -19504,7 +19504,7 @@ export interface components {
       /**
        * Started At
        * @description The timestamp when the subscription started.
-       * @example 2025-01-03T13:37:00Z
+       * @example 2025-01-03T13:37:00.123456Z
        */
       started_at: string | null
       /**

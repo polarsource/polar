@@ -232,22 +232,6 @@ class OrganizationDeletionCheckResult(BaseModel):
 class OrganizationError(PolarError): ...
 
 
-class InvalidAccount(OrganizationError):
-    def __init__(self, account_id: UUID) -> None:
-        self.account_id = account_id
-        message = (
-            f"The account {account_id} does not exist or you don't have access to it."
-        )
-        super().__init__(message)
-
-
-class AccountAlreadySet(OrganizationError):
-    def __init__(self, organization_slug: str) -> None:
-        self.organization_slug = organization_slug
-        message = f"The account for organization '{organization_slug}' has already been set up by the owner. Contact support to change the owner of the account."
-        super().__init__(message, 403)
-
-
 class CannotChangeOwnerError(OrganizationError):
     def __init__(self, reason: str) -> None:
         super().__init__(f"Cannot change organization owner: {reason}")

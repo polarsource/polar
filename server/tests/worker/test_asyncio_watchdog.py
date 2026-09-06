@@ -18,7 +18,8 @@ def event_loop_thread() -> Iterator[tuple[asyncio.AbstractEventLoop, threading.T
     yield loop, thread
     loop.call_soon_threadsafe(loop.stop)
     thread.join(timeout=2)
-    loop.close()
+    if not thread.is_alive():
+        loop.close()
 
 
 def _block(

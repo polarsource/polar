@@ -36377,7 +36377,7 @@ export interface components {
       discount_id?: string | null
       /**
        * Trial End
-       * @description Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.
+       * @description Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails.
        */
       trial_end?: string | 'now' | null
     }
@@ -43151,16 +43151,18 @@ export interface operations {
           'application/json': components['schemas']['Subscription']
         }
       }
-      /** @description Payment required to apply the subscription update. */
+      /** @description The charge failed, or requires customer authentication that can't be completed off-session. */
       402: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PaymentFailed']
+          'application/json':
+            | components['schemas']['PaymentFailed']
+            | components['schemas']['PaymentActionRequired']
         }
       }
-      /** @description Subscription is already canceled or will be at the end of the period, or is not active. */
+      /** @description Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions. */
       403: {
         headers: {
           [name: string]: unknown
@@ -43169,6 +43171,7 @@ export interface operations {
           'application/json':
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['InactiveSubscription']
+            | components['schemas']['PaymentNotReady']
         }
       }
       /** @description Subscription not found. */

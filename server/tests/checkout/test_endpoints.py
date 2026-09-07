@@ -1105,3 +1105,70 @@ class TestClientOpened:
             updated_checkout.analytics_metadata.get("opened_at") == original_opened_at
         )
         assert updated_checkout.analytics_metadata.get("distinct_id") == "original-id"
+
+
+@pytest.mark.asyncio
+class TestClientEmbedPolicy:
+    async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
+        response = await client.get(f"{api_prefix}/client/123/embed-policy")
+
+        assert response.status_code == 404
+
+    async def test_configured(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        checkout_open: Checkout,
+    ) -> None:
+        organization.embed_hosts = ["example.com", "*.shop.example.com"]
+        await save_fixture(organization)
+
+        response = await client.get(
+            f"{api_prefix}/client/{checkout_open.client_secret}/embed-policy",
+            headers={
+                "Referer": "https://example.com/pricing",
+                "Sec-Fetch-Dest": "iframe",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["frame_ancestors"] == [
+            "https://example.com",
+            "https://*.shop.example.com",
+        ]
+
+    async def test_not_configured(
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        response = await client.get(
+            f"{api_prefix}/client/{checkout_open.client_secret}/embed-policy"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["frame_ancestors"] == ["'none'"]
+
+    async def test_expired_checkout_keeps_its_policy(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.expired,
+            expires_at=utc_now() - timedelta(days=1),
+        )
+
+        response = await client.get(
+            f"{api_prefix}/client/{checkout.client_secret}/embed-policy"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["frame_ancestors"] == ["https://example.com"]

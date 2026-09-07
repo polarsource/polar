@@ -1,7 +1,9 @@
 from typing import Annotated
 
-from fastapi import Depends, Path, Query, Request
+import structlog
+from fastapi import Depends, Header, Path, Query, Request
 from pydantic import UUID4
+from sqlalchemy.orm import joinedload
 from sse_starlette.sse import EventSourceResponse
 
 from polar.auth.permission import OrganizationPermission
@@ -18,6 +20,11 @@ from polar.kit.schemas import (
 from polar.models import Checkout
 from polar.models.checkout import CheckoutStatus
 from polar.openapi import APITag
+from polar.organization.embed_hosts import (
+    csp_frame_ancestors,
+    match_origin,
+    parse_origin,
+)
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -30,10 +37,12 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth, ip_geolocation, sorting
+from .repository import CheckoutRepository
 from .schemas import Checkout as CheckoutSchema
 from .schemas import (
     CheckoutConfirm,
     CheckoutCreate,
+    CheckoutEmbedPolicy,
     CheckoutOpened,
     CheckoutPublic,
     CheckoutPublicConfirmed,
@@ -49,6 +58,8 @@ from .service import (
     TrialAlreadyRedeemed,
 )
 from .service import checkout as checkout_service
+
+log = structlog.get_logger()
 
 inner_router = APIRouter(tags=["checkouts", APITag.public])
 
@@ -302,6 +313,48 @@ async def client_opened(
     return await checkout_service.mark_opened(
         session, checkout, checkout_opened.distinct_id
     )
+
+
+@inner_router.get(
+    "/client/{client_secret}/embed-policy",
+    response_model=CheckoutEmbedPolicy,
+    summary="Get Checkout Session Embed Policy from Client",
+    responses={404: CheckoutNotFound},
+    tags=[APITag.private],
+    include_in_schema=False,
+)
+async def client_embed_policy(
+    client_secret: CheckoutClientSecret,
+    referer: Annotated[str | None, Header()] = None,
+    sec_fetch_dest: Annotated[str | None, Header()] = None,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> CheckoutEmbedPolicy:
+    """Get the hosts allowed to embed a checkout session, as CSP sources."""
+    repository = CheckoutRepository.from_session(session)
+    checkout = await repository.get_by_client_secret(
+        client_secret, options=(joinedload(Checkout.organization),)
+    )
+    if checkout is None:
+        raise ResourceNotFound()
+
+    hosts = checkout.organization.embed_hosts
+    parsed = parse_origin(referer) if referer is not None else None
+    frame_origin = str(parsed) if parsed is not None else None
+    allowed = (
+        match_origin(frame_origin, hosts) is not None
+        if frame_origin is not None
+        else None
+    )
+    log.info(
+        "Embedded checkout framing policy resolved",
+        organization_id=str(checkout.organization_id),
+        frame_origin=frame_origin,
+        fetch_dest=sec_fetch_dest,
+        allowed=allowed,
+        embed_hosts=hosts,
+    )
+
+    return CheckoutEmbedPolicy(frame_ancestors=csp_frame_ancestors(hosts))
 
 
 @inner_router.get("/client/{client_secret}/stream", include_in_schema=False)

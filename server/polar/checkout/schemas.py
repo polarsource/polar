@@ -819,3 +819,9 @@ class CheckoutPublicConfirmed(CheckoutPublic):
 
     status: Literal[CheckoutStatus.confirmed]
     customer_session_token: str | None
+
+
+class CheckoutEmbedPolicy(Schema):
+    """The `frame-ancestors` sources admitting the hosts allowed to embed."""
+
+    frame_ancestors: list[str]

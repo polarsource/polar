@@ -53,23 +53,22 @@ class OrganizationListView:
     async def get_status_counts(
         self, deleted: DeletedFilter = "exclude"
     ) -> dict[OrganizationStatus, int]:
-        """Get count of organizations by status for tab badges."""
+        """Get count of organizations by status for tab badges.
+
+        ``count()`` rather than ``count(id)`` so Postgres can answer from the
+        partial status index instead of scanning the organizations table.
+        """
         stmt = select(
             Organization.status,
-            func.count(Organization.id).label("count"),
+            func.count().label("count"),
         ).group_by(Organization.status)
         stmt = apply_deleted_filter(stmt, deleted)
         result = await self.session.execute(stmt)
         return {row.status: row.count for row in result}  # type: ignore[misc]
 
     async def get_distinct_countries(self) -> list[str]:
-        """Get list of distinct countries from organizations with payout accounts."""
-        stmt = (
-            select(PayoutAccount.country)
-            .join(Organization, Organization.payout_account_id == PayoutAccount.id)
-            .distinct()
-            .order_by(PayoutAccount.country)
-        )
+        """Get list of distinct countries across payout accounts."""
+        stmt = select(PayoutAccount.country).distinct().order_by(PayoutAccount.country)
         result = await self.session.execute(stmt)
         return [row[0] for row in result.all()]
 

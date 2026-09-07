@@ -1,8 +1,9 @@
 """Shared query for backoffice support-case lists.
 
 Both the dedicated Cases list and an organization's Support Cases tab read the
-same polymorphic ``SupportCase`` set. The organization is resolved per type:
-appeals link through their review, disputes through their dispute → order.
+same polymorphic ``SupportCase`` set. Every case carries its organization id
+directly, so no query needs to reach through the appeal's review or the
+dispute's order to find the owning org.
 """
 
 from collections.abc import Sequence
@@ -12,12 +13,10 @@ from uuid import UUID
 
 from sqlalchemy import Select, and_, func, or_, select
 
-from polar.models import Dispute, Order, Organization, User
+from polar.models import Dispute, Organization, User
 from polar.models.dispute import DisputeStatus
-from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     DisputeSupportCase,
-    ReviewAppealSupportCase,
     SupportCase,
     SupportCaseMessage,
     SupportCaseMessageType,
@@ -114,23 +113,14 @@ def cases_statement(
             Dispute.evidence_due_by.label("evidence_due_by"),
             Dispute.past_due.label("evidence_past_due"),
         )
-        .outerjoin(
-            OrganizationReview,
-            ReviewAppealSupportCase.organization_review_id == OrganizationReview.id,
-        )
+        .join(Organization, Organization.id == SupportCase.organization_id)
         .outerjoin(Dispute, DisputeSupportCase.dispute_id == Dispute.id)
-        .outerjoin(Order, Dispute.order_id == Order.id)
-        .join(
-            Organization,
-            Organization.id
-            == func.coalesce(OrganizationReview.organization_id, Order.organization_id),
-        )
         .outerjoin(User, SupportCase.assigned_user_id == User.id)
         .where(SupportCase.deleted_at.is_(None))
     )
 
     if organization_id is not None:
-        statement = statement.where(Organization.id == organization_id)
+        statement = statement.where(SupportCase.organization_id == organization_id)
     if status == "open":
         statement = statement.where(is_open)
     elif status == "closed":
@@ -170,18 +160,8 @@ def open_case_organization_ids(
     type. With ``awaiting_reply``, only those whose open case is waiting on a
     platform reply. ``organization_ids`` narrows the scan to a known page.
     """
-    organization_id = func.coalesce(
-        OrganizationReview.organization_id, Order.organization_id
-    )
     statement = (
-        select(organization_id)
-        .select_from(SupportCase)
-        .outerjoin(
-            OrganizationReview,
-            ReviewAppealSupportCase.organization_review_id == OrganizationReview.id,
-        )
-        .outerjoin(Dispute, DisputeSupportCase.dispute_id == Dispute.id)
-        .outerjoin(Order, Dispute.order_id == Order.id)
+        select(SupportCase.organization_id)
         .where(
             SupportCase.deleted_at.is_(None),
             SupportCaseMessageRepository.is_open_expression(),
@@ -193,7 +173,7 @@ def open_case_organization_ids(
             SupportCaseMessageRepository.awaiting_platform_expression()
         )
     if organization_ids is not None:
-        statement = statement.where(organization_id.in_(organization_ids))
+        statement = statement.where(SupportCase.organization_id.in_(organization_ids))
     return statement
 
 

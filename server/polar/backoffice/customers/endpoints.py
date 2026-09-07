@@ -314,19 +314,20 @@ async def get(
                                         size="sm",
                                     ):
                                         text("Restore")
-                                with button(
-                                    hx_get=str(
-                                        request.url_for(
-                                            "customers:edit_email",
-                                            id=customer.id,
-                                        )
-                                    ),
-                                    hx_target="#modal",
-                                    variant="secondary",
-                                    size="sm",
-                                    ghost=True,
-                                ):
-                                    text("Edit Email")
+                                if not customer.deleted_at:
+                                    with button(
+                                        hx_get=str(
+                                            request.url_for(
+                                                "customers:edit_email",
+                                                id=customer.id,
+                                            )
+                                        ),
+                                        hx_target="#modal",
+                                        variant="secondary",
+                                        size="sm",
+                                        ghost=True,
+                                    ):
+                                        text("Edit Email")
                         with description_list.DescriptionList[Customer](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
@@ -507,7 +508,7 @@ async def get(
                 with tag.div(classes="flex items-center gap-4 mb-4"):
                     with tag.h2(classes="text-2xl font-bold"):
                         text(f"Members ({len(members)})")
-                    if not members:
+                    if not members and not customer.deleted_at:
                         with button(
                             hx_get=str(
                                 request.url_for(
@@ -576,6 +577,7 @@ async def get(
                                     )
                                 ),
                                 target="#modal",
+                                hidden=lambda r, i: bool(customer.deleted_at),
                             ),
                         ),
                     ).render(request, subscriptions):
@@ -607,7 +609,10 @@ async def get(
                                         )
                                     ),
                                     target="#modal",
-                                    hidden=lambda r, i: i.subscription_id is not None,
+                                    hidden=lambda r, i: (
+                                        i.subscription_id is not None
+                                        or bool(customer.deleted_at)
+                                    ),
                                 ),
                             ),
                         ],
@@ -622,7 +627,7 @@ async def get(
                 with tag.div(classes="flex justify-between items-center mb-4"):
                     with tag.h2(classes="text-2xl font-bold"):
                         text(f"Granted Benefits ({len(benefit_grants)})")
-                    if benefit_grants:
+                    if benefit_grants and not customer.deleted_at:
                         with button(
                             hx_get=str(
                                 request.url_for(

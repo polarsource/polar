@@ -10,12 +10,19 @@ from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
-from polar.models import Customer, User, WalletTransaction
+from polar.models import Customer, Organization, Product, User, WalletTransaction
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_order, create_payment, create_refund
+from tests.fixtures.random_objects import (
+    create_benefit,
+    create_benefit_grant,
+    create_order,
+    create_payment,
+    create_refund,
+    create_subscription,
+)
 
 
 @pytest_asyncio.fixture
@@ -36,6 +43,13 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_db_session, None)
         backoffice_app.dependency_overrides.pop(get_db_read_session, None)
         backoffice_app.dependency_overrides.pop(get_admin, None)
+
+
+@pytest_asyncio.fixture
+async def deleted_customer(customer: Customer, session: AsyncSession) -> Customer:
+    customer.deleted_at = datetime.now(UTC)
+    await session.flush()
+    return customer
 
 
 @pytest.mark.asyncio
@@ -310,3 +324,186 @@ class TestWalletTransactions:
         )
 
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestDeletedCustomerHiddenButtons:
+    """Mutating buttons must be hidden on the soft-deleted customer detail page.
+
+    ``customers:get`` renders for soft-deleted customers (``include_deleted=True``)
+    so admins can restore them, but five mutating endpoints look up the customer
+    without ``include_deleted=True`` and return 404 for deleted customers. Hiding
+    the buttons (mirroring the existing ``Add Transaction`` guard) avoids dead,
+    no-op actions that only flash the loading spinner.
+    """
+
+    async def test_edit_email_hidden_for_deleted_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        deleted_customer: Customer,
+    ) -> None:
+        response = await backoffice_client.get(f"/customers/{deleted_customer.id}")
+
+        assert response.status_code == 200
+        assert "Edit Email" not in response.text
+        assert f"/customers/{deleted_customer.id}/edit_email" not in response.text
+
+    async def test_edit_email_shown_for_live_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        customer: Customer,
+    ) -> None:
+        response = await backoffice_client.get(f"/customers/{customer.id}")
+
+        assert response.status_code == 200
+        assert "Edit Email" in response.text
+
+    async def test_header_generate_portal_link_hidden_for_deleted_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        deleted_customer: Customer,
+    ) -> None:
+        response = await backoffice_client.get(f"/customers/{deleted_customer.id}")
+
+        assert response.status_code == 200
+        assert "Generate Portal Link" not in response.text
+        assert "/generate_portal_link_modal" not in response.text
+
+    async def test_header_generate_portal_link_shown_for_live_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        customer: Customer,
+    ) -> None:
+        response = await backoffice_client.get(f"/customers/{customer.id}")
+
+        assert response.status_code == 200
+        # No members by default -> header button renders for a live customer
+        assert "Generate Portal Link" in response.text
+
+    async def test_grant_benefits_subscription_hidden_for_deleted_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        deleted_customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=deleted_customer
+        )
+
+        response = await backoffice_client.get(f"/customers/{deleted_customer.id}")
+
+        assert response.status_code == 200
+        assert f"subscriptions/{subscription.id}/grant_benefits" not in response.text
+
+    async def test_grant_benefits_subscription_shown_for_live_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await session.flush()
+
+        response = await backoffice_client.get(f"/customers/{customer.id}")
+
+        assert response.status_code == 200
+        assert f"subscriptions/{subscription.id}/grant_benefits" in response.text
+
+    async def test_grant_benefits_order_hidden_for_deleted_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        deleted_customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, customer=deleted_customer)
+
+        response = await backoffice_client.get(f"/customers/{deleted_customer.id}")
+
+        assert response.status_code == 200
+        assert f"orders/{order.id}/grant_benefits" not in response.text
+
+    async def test_grant_benefits_order_shown_for_live_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        await session.flush()
+
+        response = await backoffice_client.get(f"/customers/{customer.id}")
+
+        assert response.status_code == 200
+        assert f"orders/{order.id}/grant_benefits" in response.text
+
+    async def test_grant_benefits_order_still_hidden_for_subscription_linked_order(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture, customer=customer, subscription=subscription
+        )
+        await session.flush()
+
+        response = await backoffice_client.get(f"/customers/{customer.id}")
+
+        assert response.status_code == 200
+        assert f"orders/{order.id}/grant_benefits" not in response.text
+
+    async def test_revoke_benefits_hidden_for_deleted_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        deleted_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(save_fixture, organization=organization)
+        await create_benefit_grant(
+            save_fixture, deleted_customer, benefit, granted=True
+        )
+
+        response = await backoffice_client.get(f"/customers/{deleted_customer.id}")
+
+        assert response.status_code == 200
+        assert "Revoke Benefits" not in response.text
+        assert "/revoke_benefits" not in response.text
+
+    async def test_revoke_benefits_shown_for_live_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(save_fixture, organization=organization)
+        await create_benefit_grant(save_fixture, customer, benefit, granted=True)
+        await session.flush()
+
+        response = await backoffice_client.get(f"/customers/{customer.id}")
+
+        assert response.status_code == 200
+        assert "Revoke Benefits" in response.text
+
+    async def test_restore_shown_for_deleted_customer(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        deleted_customer: Customer,
+    ) -> None:
+        response = await backoffice_client.get(f"/customers/{deleted_customer.id}")
+
+        assert response.status_code == 200
+        assert "Restore" in response.text

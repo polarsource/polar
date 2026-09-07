@@ -9,19 +9,10 @@ from .access import AdminSession
 from .dependencies import get_admin
 
 
-async def get_backoffice_web_session(
-    admin_session: Annotated[AdminSession, Depends(get_admin)],
-) -> UserSession:
-    assert isinstance(admin_session, UserSession)
-    return admin_session
-
-
-BackofficeWebSession = Annotated[UserSession, Depends(get_backoffice_web_session)]
-
-
 async def get_backoffice_web_user(
-    admin_session: BackofficeWebSession,
+    admin_session: Annotated[AdminSession, Depends(get_admin)],
 ) -> AuthSubject[User]:
+    assert isinstance(admin_session, UserSession)
     return AuthSubject(
         admin_session.user,
         set(admin_session.scopes),
@@ -34,3 +25,8 @@ async def get_backoffice_web_user(
 
 
 BackofficeWebUser = Annotated[AuthSubject[User], Depends(get_backoffice_web_user)]
+
+
+def get_backoffice_web_session(auth_subject: AuthSubject[User]) -> UserSession:
+    assert isinstance(auth_subject.session, UserSession)
+    return auth_subject.session

@@ -13,7 +13,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from ..access import RETURN_COOKIE, validate_private_token
-from ..auth import BackofficeWebSession, BackofficeWebUser
+from ..auth import BackofficeWebUser, get_backoffice_web_session
 from .cookies import get_admin_token, restore_admin_cookies, set_impersonation_cookies
 from .handoff import impersonation_handoff as handoff_service
 from .service import impersonation as impersonation_service
@@ -36,7 +36,6 @@ router = APIRouter(
 async def start(
     request: Request,
     auth_subject: BackofficeWebUser,
-    admin_session: BackofficeWebSession,
     code: str,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
@@ -44,7 +43,7 @@ async def start(
     if not settings.BACKOFFICE_PRIVATE_URL:
         raise ResourceNotFound()
     handoff = await handoff_service.consume(redis, code)
-    if handoff.admin_user_id != admin_session.user_id:
+    if handoff.admin_user_id != auth_subject.subject.id:
         raise NotPermitted("The dashboard and backoffice admins must match")
     token = await oauth2_token_service.get(
         session, handoff.oauth_token_id, options=[joinedload(OAuth2Token.client)]
@@ -52,8 +51,9 @@ async def start(
     if token is None:
         raise NotPermitted("Backoffice authorization has been revoked")
     admin = validate_private_token(token)
-    if admin.user_id != admin_session.user_id:
+    if admin.user_id != auth_subject.subject.id:
         raise NotPermitted("The dashboard and backoffice admins must match")
+    admin_session = get_backoffice_web_session(auth_subject)
     admin_token = get_admin_token(request, admin_session)
     (
         token_value,

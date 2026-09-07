@@ -34217,6 +34217,41 @@ export interface components {
        */
       client_id_last_4: string
       /**
+       * Team Id
+       * @description Slack workspace ID, if installed.
+       */
+      team_id: string | null
+      /**
+       * Team Name
+       * @description Slack workspace name, if installed.
+       */
+      team_name: string | null
+      /**
+       * Bot User Id
+       * @description Installed bot user ID, if any.
+       */
+      bot_user_id: string | null
+      /**
+       * Authed User Id
+       * @description Slack user ID that authorized the app, if installed.
+       */
+      authed_user_id: string | null
+      /**
+       * Scopes
+       * @description Granted Slack bot scopes, if any.
+       */
+      scopes: string[] | null
+      /**
+       * Installed At
+       * @description Timestamp when the Slack app was installed.
+       */
+      installed_at: string | null
+      /**
+       * Revoked At
+       * @description Timestamp when the Slack app was revoked or uninstalled.
+       */
+      revoked_at: string | null
+      /**
        * Client Secret Last 4
        * @description Last four characters of the client secret (display only).
        */
@@ -34226,6 +34261,86 @@ export interface components {
        * @description Last four characters of the signing secret (display only).
        */
       signing_secret_last_4: string
+    }
+    /** SlackIntegrationCredentialsUpdate */
+    SlackIntegrationCredentialsUpdate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description Organization the integration belongs to.
+       */
+      organization_id: string
+      /**
+       * Display Name
+       * @description Display name used by the bot user in your Slack workspace. Reflected in the manifest.
+       */
+      display_name: string
+      /**
+       * Slack App Id
+       * @description App ID from your Slack app's Basic Information page.
+       */
+      slack_app_id: string
+      /**
+       * Client Id
+       * @description Client ID from your Slack app's Basic Information page.
+       */
+      client_id: string
+      /**
+       * Client Secret
+       * @description Client Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
+       */
+      client_secret?: string | null
+      /**
+       * Signing Secret
+       * @description Signing Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
+       */
+      signing_secret?: string | null
+    }
+    /** SlackIntegrationListItem */
+    SlackIntegrationListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description ID of the Slack integration.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description Organization that owns the Slack integration.
+       */
+      organization_id: string
+      /**
+       * Display Name
+       * @description Display name used by the Slack app.
+       */
+      display_name: string
+      /**
+       * Slack App Id
+       * @description Slack app ID.
+       */
+      slack_app_id: string
+      /**
+       * Client Id
+       * @description Slack client ID.
+       */
+      client_id: string
+      /**
+       * Client Id Last 4
+       * @description Last four characters of the Client ID (display only).
+       */
+      client_id_last_4: string
       /**
        * Team Id
        * @description Slack workspace ID, if installed.
@@ -34262,40 +34377,6 @@ export interface components {
        */
       revoked_at: string | null
     }
-    /** SlackIntegrationCredentialsUpdate */
-    SlackIntegrationCredentialsUpdate: {
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description Organization the integration belongs to.
-       */
-      organization_id: string
-      /**
-       * Display Name
-       * @description Display name used by the bot user in your Slack workspace. Reflected in the manifest.
-       */
-      display_name: string
-      /**
-       * Slack App Id
-       * @description App ID from your Slack app's Basic Information page.
-       */
-      slack_app_id: string
-      /**
-       * Client Id
-       * @description Client ID from your Slack app's Basic Information page.
-       */
-      client_id: string
-      /**
-       * Client Secret
-       * @description Client Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
-       */
-      client_secret?: string | null
-      /**
-       * Signing Secret
-       * @description Signing Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
-       */
-      signing_secret?: string | null
-    }
     /** SlackIntegrationManifest */
     SlackIntegrationManifest: {
       /**
@@ -34318,7 +34399,7 @@ export interface components {
        * Integrations
        * @description Slack apps configured for the organization.
        */
-      integrations: components['schemas']['SlackIntegration'][]
+      integrations: components['schemas']['SlackIntegrationListItem'][]
     }
     /** SlackWorkspaceUser */
     SlackWorkspaceUser: {

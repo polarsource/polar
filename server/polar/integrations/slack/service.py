@@ -118,8 +118,6 @@ class SlackAppService:
                 display_name=update.display_name,
                 slack_app_id=update.slack_app_id,
                 client_id=update.client_id,
-                client_secret=client_secret,
-                signing_secret=signing_secret,
             )
             integration.id = SlackApp.generate_id()
             integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
@@ -133,11 +131,9 @@ class SlackAppService:
         update_dict: dict[str, Any] = {
             "display_name": update.display_name,
             "client_id": update.client_id,
-            "client_secret": client_secret,
             "client_secret_encrypted": await SlackApp.encrypt_client_secret(
                 existing.id, client_secret
             ),
-            "signing_secret": signing_secret,
             "signing_secret_encrypted": await SlackApp.encrypt_signing_secret(
                 existing.id, signing_secret
             ),
@@ -152,7 +148,6 @@ class SlackAppService:
                     "team_id": None,
                     "team_name": None,
                     "bot_user_id": None,
-                    "bot_token": None,
                     "bot_token_encrypted": None,
                     "authed_user_id": None,
                     "scopes": None,
@@ -284,7 +279,6 @@ class SlackAppService:
                 "team_id": team.get("id"),
                 "team_name": team.get("name"),
                 "bot_user_id": result.get("bot_user_id"),
-                "bot_token": bot_token,
                 "bot_token_encrypted": await SlackApp.encrypt_bot_token(
                     integration.id, bot_token
                 ),
@@ -317,7 +311,6 @@ class SlackAppService:
             await repository.update(
                 integration,
                 update_dict={
-                    "bot_token": None,
                     "bot_token_encrypted": None,
                     "revoked_at": utc_now(),
                 },

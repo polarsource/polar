@@ -143,6 +143,8 @@ class TestSetCredentials:
         assert integration.slack_app_id == "A0NEWAPPID0"
         assert integration.bot_token is None
         assert integration.team_id is None
+        assert await integration.get_client_secret() == "cs-test-secret"
+        assert await integration.get_signing_secret() == "ss-test-secret"
 
     async def test_rotating_secrets_preserves_oauth_state(
         self,
@@ -170,10 +172,10 @@ class TestSetCredentials:
         )
 
         # Same client_id and slack_app_id, only secrets rotated: keep install.
-        assert integration.bot_token == "xoxb-test-token"
+        assert await integration.get_bot_token() == "xoxb-test-token"
         assert integration.team_id == "T1"
-        assert integration.client_secret == "cs-new-secret"
-        assert integration.signing_secret == "ss-new-secret"
+        assert await integration.get_client_secret() == "cs-new-secret"
+        assert await integration.get_signing_secret() == "ss-new-secret"
 
     async def test_changing_client_id_resets_oauth_state(
         self,
@@ -200,7 +202,7 @@ class TestSetCredentials:
             session, organization.id, update, redirect_uri=_REDIRECT_URI
         )
 
-        assert integration.bot_token is None
+        assert await integration.get_bot_token() is None
         assert integration.team_id is None
         assert integration.client_id == "999.888"
 
@@ -307,7 +309,7 @@ class TestCompleteInstall:
             session, created.id, code="abc", redirect_uri=_REDIRECT_URI
         )
 
-        assert integration.bot_token == "xoxb-new-token"
+        assert await integration.get_bot_token() == "xoxb-new-token"
         assert integration.team_id == "T1"
         assert integration.team_name == "Test team"
         assert integration.scopes == ["channels:manage", "chat:write"]
@@ -395,7 +397,7 @@ class TestHandleEvent:
         repo = SlackAppRepository.from_session(session)
         integration = await repo.get_by_app_id("A0TESTAPPID")
         assert integration is not None
-        assert integration.bot_token is None
+        assert await integration.get_bot_token() is None
         assert integration.revoked_at is not None
 
     async def test_app_uninstalled_clears_bot_token(
@@ -417,7 +419,7 @@ class TestHandleEvent:
         repo = SlackAppRepository.from_session(session)
         integration = await repo.get_by_app_id("A0TESTAPPID")
         assert integration is not None
-        assert integration.bot_token is None
+        assert await integration.get_bot_token() is None
 
     async def test_unknown_app_is_noop(
         self,

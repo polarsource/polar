@@ -26,7 +26,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast } from '../Toast/use-toast'
@@ -76,21 +76,18 @@ export const SlackSharedChannelBenefitForm = ({
     !!resolvedIntegrationId &&
     resolvedIntegration === undefined &&
     selectedIntegrationFromList === undefined
-  const selectedIntegration = useMemo(() => {
-    if (selectedIntegrationId === CREATE_NEW_SLACK_APP) {
-      return null
-    }
-    return resolvedIntegration ?? selectedIntegrationFromList ?? null
-  }, [resolvedIntegration, selectedIntegrationFromList, selectedIntegrationId])
+  const selectedIntegration =
+    selectedIntegrationId === CREATE_NEW_SLACK_APP
+      ? null
+      : (resolvedIntegration ?? selectedIntegrationFromList ?? null)
 
   const showIntegrationSelect = !update && (integrations?.length ?? 0) > 0
   const setupNewIntegration =
     selectedIntegrationId === CREATE_NEW_SLACK_APP ||
     (!showIntegrationSelect && !selectedIntegration)
-  const integration = selectedIntegration ?? null
 
-  const connected = !!integration?.team_id && !integration.revoked_at
-  const integrationId = integration?.id
+  const connected = !!selectedIntegration?.team_id && !selectedIntegration.revoked_at
+  const integrationId = selectedIntegration?.id
 
   useEffect(() => {
     if (!connected || !integrationId || linkedIntegrationId === integrationId) {
@@ -164,8 +161,8 @@ export const SlackSharedChannelBenefitForm = ({
         />
       )}
 
-      {connected && integration ? (
-        <SlackConnectedBanner integration={integration} />
+      {connected && selectedIntegration ? (
+        <SlackConnectedBanner integration={selectedIntegration} />
       ) : !selectedIntegrationId && !setupNewIntegration ? (
         <FormDescription>
           Select an existing Slack app or create a new one.
@@ -173,10 +170,10 @@ export const SlackSharedChannelBenefitForm = ({
       ) : (
         <>
           <SlackIntegrationSetupPanel
-            key={setupNewIntegration ? 'new' : (integration?.id ?? 'new')}
+            key={setupNewIntegration ? 'new' : (resolvedIntegration?.id ?? 'new')}
             organizationId={organization.id}
             defaultDisplayName={organization.name}
-            integration={setupNewIntegration ? null : integration}
+            integration={setupNewIntegration ? null : (resolvedIntegration ?? null)}
             returnTo={returnTo}
           />
           <FormDescription>
@@ -186,7 +183,7 @@ export const SlackSharedChannelBenefitForm = ({
         </>
       )}
 
-      {!connected || !integration ? null : (
+      {!connected || !selectedIntegration ? null : (
         <>
           <FormField
             control={control}
@@ -326,7 +323,7 @@ const SlackIntegrationSelect = ({
   value,
   onChange,
 }: {
-  integrations: schemas['SlackIntegration'][]
+  integrations: schemas['SlackIntegrationListItem'][]
   value?: string
   onChange: (value: string) => void
 }) => {
@@ -365,7 +362,7 @@ const SlackIntegrationSelect = ({
 const SlackConnectedBanner = ({
   integration,
 }: {
-  integration: schemas['SlackIntegration']
+  integration: schemas['SlackIntegrationListItem']
 }) => {
   const disconnect = useDeleteSlackIntegration()
   const [showConfirm, setShowConfirm] = useState(false)

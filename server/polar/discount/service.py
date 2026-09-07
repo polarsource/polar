@@ -19,6 +19,7 @@ from polar.discount.repository import (
     DiscountRepository,
 )
 from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.email import EmailNotValidError, unalias_email
 from polar.kit.pagination import PaginationParams, paginate
@@ -309,10 +310,14 @@ class DiscountService(ResourceServiceReader[Discount]):
         exclude = {"products"}
         if isinstance(discount, DiscountFixed):
             exclude.add("basis_points")
-            if discount_update.amount and discount_update.currency:
-                discount.amounts = {discount_update.currency: discount_update.amount}
-                exclude.add("amount")
-                exclude.add("currency")
+            # `amount` and `currency` are read-only `@property` descriptors on
+            # `DiscountFixed` (derived from `amounts`), so they must never reach
+            # the generic `setattr` loop below.
+            exclude.add("amount")
+            exclude.add("currency")
+            if discount_update.amount is not None:
+                currency = discount_update.currency or PresentmentCurrency.usd
+                discount.amounts = {currency: discount_update.amount}
         else:
             exclude.add("amount")
             exclude.add("currency")

@@ -451,6 +451,40 @@ class TestUpdateDiscount:
         assert updated is not None
         assert updated.max_redemptions_per_customer == 5
 
+    @pytest.mark.parametrize(
+        ("payload", "expected_amounts"),
+        [
+            ({"amount": 0, "currency": "usd"}, {"usd": 0}),
+            ({"amount": 2000, "currency": "usd"}, {"usd": 2000}),
+            # `amount` without `currency` mirrors create: currency defaults to USD.
+            ({"amount": 2000}, {"usd": 2000}),
+        ],
+    )
+    @pytest.mark.auth
+    async def test_update_deprecated_amount(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        discount_fixed_once: Discount,
+        payload: dict[str, Any],
+        expected_amounts: dict[str, int],
+    ) -> None:
+        response = await client.patch(
+            f"/v1/discounts/{discount_fixed_once.id}",
+            json=payload,
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["amounts"] == expected_amounts
+
+        repository = DiscountRepository.from_session(session)
+        updated = await repository.get_by_id(discount_fixed_once.id)
+        assert updated is not None
+        assert isinstance(updated, DiscountFixed)
+        assert updated.amounts == expected_amounts
+
 
 @pytest.mark.asyncio
 class TestDeleteDiscount:

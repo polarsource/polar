@@ -474,6 +474,83 @@ class TestUpdate:
 
         assert updated_discount.ends_at == updated_ends_at
 
+    @pytest.mark.parametrize(
+        ("payload", "expected_amounts"),
+        [
+            # `amount=0` is valid (schema `ge=0`); the deprecated `amount` must
+            # still translate to `amounts` even though `0` is falsy.
+            ({"amount": 0, "currency": PresentmentCurrency.usd}, {"usd": 0}),
+            # `amount` supplied without `currency` mirrors `create`: currency
+            # defaults to USD (DiscountFixedCreate defaults currency to usd;
+            # DiscountUpdate does not, so this previously crashed).
+            ({"amount": 2000}, {"usd": 2000}),
+            # `currency` supplied without `amount`: a half-supplied deprecated
+            # pair that must not crash; it is a safe no-op leaving `amounts`
+            # untouched.
+            ({"currency": PresentmentCurrency.eur}, {"usd": 1000}),
+        ],
+    )
+    @pytest.mark.auth
+    async def test_update_deprecated_amount_currency(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        payload: dict[str, Any],
+        expected_amounts: dict[str, int],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(**payload),
+            auth_subject=auth_subject,
+        )
+
+        assert isinstance(updated_discount, DiscountFixed)
+        assert updated_discount.amounts == expected_amounts
+
+    @pytest.mark.auth
+    async def test_update_amounts(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(
+                amounts={
+                    PresentmentCurrency.usd: 2000,
+                    PresentmentCurrency.eur: 1800,
+                }
+            ),
+            auth_subject=auth_subject,
+        )
+
+        assert isinstance(updated_discount, DiscountFixed)
+        assert updated_discount.amounts == {"usd": 2000, "eur": 1800}
+
     @pytest.mark.auth
     async def test_update_name(
         self,

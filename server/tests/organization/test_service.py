@@ -3523,6 +3523,156 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is True
         assert result.blocked_reasons == []
 
+    async def test_not_blocked_with_void_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """A voided (never-collected) order does not block self-serve deletion.
+
+        Voided orders carry ``total_amount > 0`` but are not paid by any
+        definition in the codebase (``OrderStatus.paid_statuses()`` nor
+        ``Order.paid``), so they must not be counted as paid orders.
+        """
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.void,
+            subtotal_amount=1000,
+        )
+
+        repository = OrganizationRepository.from_session(session)
+        count = await repository.count_paid_orders_by_organization(organization.id)
+        assert count == 0
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_not_blocked_with_draft_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """A draft (never-finalized) order does not block self-serve deletion."""
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.draft,
+            subtotal_amount=1000,
+        )
+
+        repository = OrganizationRepository.from_session(session)
+        count = await repository.count_paid_orders_by_organization(organization.id)
+        assert count == 0
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_blocked_with_pending_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """A pending (in-flight) order still blocks self-serve deletion.
+
+        A pending payment can settle to paid later; soft-deleting the org first
+        would orphan that payment, so pending orders must remain counted.
+        """
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=1000,
+        )
+
+        repository = OrganizationRepository.from_session(session)
+        count = await repository.count_paid_orders_by_organization(organization.id)
+        assert count == 1
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is False
+        assert "has_orders" in [r.value for r in result.blocked_reasons]
+
+    async def test_blocked_with_refunded_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """A fully refunded order still blocks self-serve deletion.
+
+        A refunded order is a real payment that happened (and can still be
+        disputed), so it is conservatively counted, consistent with the broad
+        ``Order.paid`` definition.
+        """
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.refunded,
+            subtotal_amount=1000,
+        )
+
+        repository = OrganizationRepository.from_session(session)
+        count = await repository.count_paid_orders_by_organization(organization.id)
+        assert count == 1
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is False
+        assert "has_orders" in [r.value for r in result.blocked_reasons]
+
+    async def test_blocked_with_paid_and_void_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """A single paid order blocks deletion even when void orders are present."""
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.void,
+            subtotal_amount=1000,
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            subtotal_amount=1000,
+        )
+
+        repository = OrganizationRepository.from_session(session)
+        count = await repository.count_paid_orders_by_organization(organization.id)
+        assert count == 1
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is False
+        assert "has_orders" in [r.value for r in result.blocked_reasons]
+
     async def test_blocked_with_paid_active_subscriptions(
         self,
         session: AsyncSession,

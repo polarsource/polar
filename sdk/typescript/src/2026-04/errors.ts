@@ -31,6 +31,7 @@ import type {
   SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
   SubscriptionLocked as SubscriptionLockedModel,
   Unauthorized as UnauthorizedModel,
+  UpdateSubscriptionPlanNotAllowed as UpdateSubscriptionPlanNotAllowedModel,
   UpdateSubscriptionSeatsNotAllowed as UpdateSubscriptionSeatsNotAllowedModel,
   UpdateSubscriptionUnitsNotAllowed as UpdateSubscriptionUnitsNotAllowedModel,
 } from "./models";
@@ -794,6 +795,7 @@ export class ManualRetryLimitExceeded extends PolarClientError<ManualRetryLimitE
 export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
   | AlreadyCanceledSubscriptionModel
   | PauseResumeNotAllowedModel
+  | UpdateSubscriptionPlanNotAllowedModel
   | UpdateSubscriptionSeatsNotAllowedModel
   | UpdateSubscriptionUnitsNotAllowedModel
 > {
@@ -802,6 +804,7 @@ export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
     public readonly error:
       | AlreadyCanceledSubscriptionModel
       | PauseResumeNotAllowedModel
+      | UpdateSubscriptionPlanNotAllowedModel
       | UpdateSubscriptionSeatsNotAllowedModel
       | UpdateSubscriptionUnitsNotAllowedModel,
   ) {

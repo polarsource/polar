@@ -231,6 +231,7 @@ async def preview_change(
             ),
             "model": AlreadyCanceledSubscription.schema()
             | PauseResumeNotAllowed.schema()
+            | UpdateSubscriptionPlanNotAllowed.schema()
             | UpdateSubscriptionSeatsNotAllowed.schema()
             | UpdateSubscriptionUnitsNotAllowed.schema(),
         },

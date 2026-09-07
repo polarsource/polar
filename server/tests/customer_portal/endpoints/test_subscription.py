@@ -209,6 +209,38 @@ class TestCustomerSubscriptionProductUpdate:
         updated_subscription = response.json()
         assert updated_subscription["product"]["id"] == str(product_second.id)
 
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_update_plan_not_allowed(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        product_second: Product,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "update_plan": False,
+            },
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={"product_id": str(product_second.id)},
+        )
+
+        assert response.status_code == 403
+        error = response.json()
+        assert error["error"] == "UpdateSubscriptionPlanNotAllowed"
+        assert "not allowed" in error["detail"].lower()
+
 
 @pytest.mark.asyncio
 class TestCustomerSubscriptionUpdateUnknownFields:

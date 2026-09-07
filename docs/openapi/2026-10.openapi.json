@@ -20541,6 +20541,9 @@
                       "$ref": "#/components/schemas/PauseResumeNotAllowed"
                     },
                     {
+                      "$ref": "#/components/schemas/UpdateSubscriptionPlanNotAllowed"
+                    },
+                    {
                       "$ref": "#/components/schemas/UpdateSubscriptionSeatsNotAllowed"
                     },
                     {

@@ -98,6 +98,9 @@ from polar.v2026_10.outputs import (
     Unauthorized as UnauthorizedModel,
 )
 from polar.v2026_10.outputs import (
+    UpdateSubscriptionPlanNotAllowed as UpdateSubscriptionPlanNotAllowedModel,
+)
+from polar.v2026_10.outputs import (
     UpdateSubscriptionSeatsNotAllowed as UpdateSubscriptionSeatsNotAllowedModel,
 )
 from polar.v2026_10.outputs import (
@@ -695,12 +698,14 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
     error_type = (
         AlreadyCanceledSubscriptionModel
         | PauseResumeNotAllowedModel
+        | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel
     )
     error: (
         AlreadyCanceledSubscriptionModel
         | PauseResumeNotAllowedModel
+        | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel
     )
@@ -710,6 +715,7 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         status_code: int,
         error: AlreadyCanceledSubscriptionModel
         | PauseResumeNotAllowedModel
+        | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel,
     ) -> None:

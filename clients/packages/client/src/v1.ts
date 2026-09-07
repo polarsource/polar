@@ -54442,6 +54442,7 @@ export interface operations {
           'application/json':
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['PauseResumeNotAllowed']
+            | components['schemas']['UpdateSubscriptionPlanNotAllowed']
             | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
             | components['schemas']['UpdateSubscriptionUnitsNotAllowed']
         }

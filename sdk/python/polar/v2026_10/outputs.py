@@ -10682,6 +10682,13 @@ class UniqueAggregation:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class UpdateSubscriptionPlanNotAllowed:
+    error: typing.Literal["UpdateSubscriptionPlanNotAllowed"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class UpdateSubscriptionSeatsNotAllowed:
     error: typing.Literal["UpdateSubscriptionSeatsNotAllowed"]
 

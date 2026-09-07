@@ -15457,6 +15457,17 @@ export interface components {
       /** Title */
       title?: string | null
     }
+    /** ConcurrentRoleModification */
+    ConcurrentRoleModification: {
+      /**
+       * Error
+       * @example ConcurrentRoleModification
+       * @constant
+       */
+      error: 'ConcurrentRoleModification'
+      /** Detail */
+      detail: string
+    }
     /**
      * ConfidenceLevel
      * @description How much we trust an insight, derived from sample size and baseline variance.
@@ -41583,6 +41594,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConcurrentRoleModification']
         }
       }
       /** @description Validation Error */

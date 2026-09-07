@@ -23393,6 +23393,20 @@ export interface UniqueAggregation {
 }
 
 /**
+ * UpdateSubscriptionPlanNotAllowed
+ */
+export interface UpdateSubscriptionPlanNotAllowed {
+  /**
+   * error
+   */
+  error: "UpdateSubscriptionPlanNotAllowed";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * UpdateSubscriptionSeatsNotAllowed
  */
 export interface UpdateSubscriptionSeatsNotAllowed {

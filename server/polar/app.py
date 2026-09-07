@@ -13,6 +13,7 @@ from polar.auth.exception_handlers import (
 )
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.backoffice import app as backoffice_app
+from polar.backoffice.private import configure_private_backoffice
 from polar.checkout import ip_geolocation
 from polar.checkout_link.app import app as checkout_link_redirect_app
 from polar.config import settings
@@ -226,16 +227,21 @@ def create_app() -> FastAPI:
         PolarAuthRedirectionError, auth_redirection_error_exception_handler
     )
 
+    if settings.BACKOFFICE_MODE == "private":
+        configure_private_backoffice(app, backoffice_app)
+        return app
+
     # /.well-known
     app.include_router(well_known_router)
 
     # /healthz
     app.include_router(health_router)
 
-    if settings.BACKOFFICE_HOST is None:
-        app.mount("/backoffice", backoffice_app)
-    else:
-        app.host(settings.BACKOFFICE_HOST, backoffice_app)
+    if settings.BACKOFFICE_MODE == "public":
+        if settings.BACKOFFICE_HOST is None:
+            app.mount("/backoffice", backoffice_app)
+        else:
+            app.host(settings.BACKOFFICE_HOST, backoffice_app)
 
     if settings.CHECKOUT_LINK_HOST is not None:
         app.host(settings.CHECKOUT_LINK_HOST, checkout_link_redirect_app)

@@ -2,7 +2,9 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
+from tagflow import tag, text
 
+from .access import is_private_backoffice
 from .components import layout as layout_component
 from .navigation import NAVIGATION
 
@@ -48,4 +50,8 @@ def layout(
         navigation=NAVIGATION,
         active_route_name=active_route_name,
     ):
+        if is_private_backoffice(request):
+            with tag.form(action="/auth/logout", method="post", hx_boost="false"):
+                with tag.button(type="submit", classes="btn btn-ghost btn-sm"):
+                    text(f"Sign out ({request.headers['tailscale-user-login']})")
         yield

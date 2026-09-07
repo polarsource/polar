@@ -119,6 +119,9 @@ class Settings(BaseSettings):
     # generate URLs to the backend accessible from the outside.
     BASE_URL: str = "http://127.0.0.1:8000"
     BACKOFFICE_HOST: str | None = None
+    BACKOFFICE_MODE: Literal["public", "private", "disabled"] = "public"
+    BACKOFFICE_PRIVATE_URL: str | None = None
+    BACKOFFICE_OAUTH_CLIENT_ID: str | None = None
     CHECKOUT_LINK_HOST: str | None = None  # e.g., "buy.polar.sh" in production
 
     # URL to frontend app.
@@ -620,6 +623,31 @@ class Settings(BaseSettings):
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     @model_validator(mode="after")
+    def validate_private_backoffice(self) -> "Settings":
+        if self.BACKOFFICE_MODE == "private" and (
+            not self.BACKOFFICE_PRIVATE_URL or not self.BACKOFFICE_OAUTH_CLIENT_ID
+        ):
+            raise ValueError("Private backoffice requires a URL and OAuth client ID")
+        if self.BACKOFFICE_PRIVATE_URL:
+            url = urlparse(self.BACKOFFICE_PRIVATE_URL)
+            if (
+                url.scheme != "https"
+                or not url.hostname
+                or not url.hostname.endswith(".ts.net")
+                or url.port is not None
+                or url.username is not None
+                or url.password is not None
+                or url.path not in ("", "/")
+                or url.query
+                or url.fragment
+            ):
+                raise ValueError(
+                    "BACKOFFICE_PRIVATE_URL must be an HTTPS ts.net origin"
+                )
+            self.BACKOFFICE_PRIVATE_URL = f"https://{url.hostname}"
+        return self
+
+    @model_validator(mode="after")
     def apply_vercel_defaults(self) -> "Settings":
         """Derive URL and cookie defaults from the deployment's own URL on Vercel.
 
@@ -803,6 +831,11 @@ class Settings(BaseSettings):
         return urlparse(self.FRONTEND_BASE_URL).hostname or "polar.sh"
 
     def generate_backoffice_url(self, path: str) -> str:
+        if (
+            self.BACKOFFICE_MODE in {"private", "disabled"}
+            and self.BACKOFFICE_PRIVATE_URL
+        ):
+            return f"{self.BACKOFFICE_PRIVATE_URL}{path}"
         if self.BACKOFFICE_HOST is None:
             return self.generate_external_url(f"/backoffice{path}")
         return f"https://{self.BACKOFFICE_HOST}{path}"

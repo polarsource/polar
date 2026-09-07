@@ -69,7 +69,6 @@ from polar.models.support_case import (
 )
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
-from polar.models.user_session import UserSession
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import (
@@ -112,6 +111,7 @@ from polar.support_case.schemas import ReviewAppealSupportCaseMessageCreate
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
+from ..access import AdminSession
 from ..components import button, input, modal
 from ..dependencies import get_admin
 from ..layout import layout
@@ -823,7 +823,7 @@ async def get_organization_detail(
     files_page: int = Query(1, ge=1),
     files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> None:
     """
     Organization detail view with three-column layout.
@@ -1232,7 +1232,7 @@ async def approve_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Approve organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -1405,7 +1405,7 @@ async def deny_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Deny organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -1559,7 +1559,7 @@ async def approve_denied_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Approve a denied organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -1718,7 +1718,7 @@ async def deny_appeal_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Deny an organization's appeal dialog and action."""
     repository = OrganizationRepository(session)
@@ -1882,7 +1882,7 @@ async def appeal_case_approve_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Approve the appeal: reactivate the organization and close the case."""
     organization, case = await _load_org_with_appeal_case(session, organization_id)
@@ -2010,7 +2010,7 @@ async def appeal_case_deny_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Deny the appeal: keep the organization denied and close the case.
 
@@ -2115,7 +2115,7 @@ async def unblock_approve_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Unblock and approve organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -2338,7 +2338,7 @@ async def reset_onboarding_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(organization_id, include_blocked=True)
@@ -2501,7 +2501,7 @@ async def snooze_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Snooze an organization under review."""
     repository = OrganizationRepository(session)
@@ -2663,7 +2663,7 @@ async def unsnooze(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse:
     """Unsnooze an organization back to review (direct action, no modal)."""
     repository = OrganizationRepository(session)
@@ -2697,7 +2697,7 @@ async def startup_program_mark_invited(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Invite the organization to the Startup Program.
 
@@ -2745,7 +2745,7 @@ async def startup_program_uninvite(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Revoke an organization's unused Startup Program discount.
 
@@ -2906,7 +2906,7 @@ async def offboard_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Set organization to offboarding status dialog and action."""
     repository = OrganizationRepository(session)
@@ -4315,7 +4315,7 @@ async def resync_stripe_account(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse:
     repository = OrganizationRepository(session)
     organization = await repository.get_by_id_with_payout_account(organization_id)
@@ -4842,7 +4842,7 @@ async def set_capability(
     capability: str,
     value: bool,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: AdminSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Render the capability override modal (GET) or apply it (POST)."""
     if capability not in CAPABILITY_NAMES:

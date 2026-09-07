@@ -37,10 +37,16 @@ export const UpdateSubscriptionTrialForm = ({
 
   const minDate = useMemo<Date | undefined>(() => {
     if (subscription.status === 'trialing') {
-      return new Date()
+      const tomorrow = new Date()
+      tomorrow.setHours(0, 0, 0, 0)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      return tomorrow
     }
     if (subscription.current_period_end) {
-      return new Date(subscription.current_period_end)
+      const next = new Date(subscription.current_period_end)
+      next.setHours(0, 0, 0, 0)
+      next.setDate(next.getDate() + 1)
+      return next
     }
     return undefined
   }, [subscription])

@@ -34,6 +34,10 @@ const checkoutQuerySchema = z.object({
     .optional(),
   discount_id: z.string().nonempty().optional(),
   metadata: z.string().nonempty().optional(),
+  seats: z
+    .string()
+    .transform((value) => Number.parseInt(value, 10))
+    .optional(),
 })
 
 export const Checkout = ({
@@ -60,6 +64,7 @@ export const Checkout = ({
       allow_discount_codes: allowDiscountCodes,
       discount_id: discountId,
       metadata,
+      seats,
     } = await getValidatedQuery(event, checkoutQuerySchema.parse)
 
     try {
@@ -89,6 +94,7 @@ export const Checkout = ({
         allow_discount_codes: allowDiscountCodes,
         discount_id: discountId,
         metadata: metadata ? JSON.parse(metadata) : undefined,
+        seats,
         return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
       })
 

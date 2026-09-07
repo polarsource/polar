@@ -518,3 +518,58 @@ class TestEditOrganization:
         assert response.status_code == 303
         assert organization.name == "A New Organization Name"
         enqueue_update_customer_slug_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestOverviewLazyCards:
+    async def test_overview_defers_slow_cards(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}?section=overview"
+        )
+
+        assert response.status_code == 200
+        assert 'hx-trigger="load"' in response.text
+        assert 'hx-target="this"' in response.text
+        assert (
+            f"/organizations/{organization.id}/overview/payment-metrics"
+            in response.text
+        )
+        assert (
+            f"/organizations/{organization.id}/overview/setup-checklist"
+            in response.text
+        )
+        assert "Total Payments" not in response.text
+        assert "Checkout Links" not in response.text
+
+    async def test_payment_metrics_fragment(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/payment-metrics"
+        )
+
+        assert response.status_code == 200
+        assert "Payment Metrics" in response.text
+        assert "Total Payments" in response.text
+        assert "<html" not in response.text
+
+    async def test_setup_checklist_fragment(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert response.status_code == 200
+        assert "Setup &amp; Checklist" in response.text
+        assert "Checkout Links" in response.text
+        assert "Payout Account" in response.text
+        assert "<html" not in response.text

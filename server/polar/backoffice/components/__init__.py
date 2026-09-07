@@ -12,7 +12,7 @@ from ._evidence_due_label import evidence_due_label
 from ._layout import layout
 from ._metric_card import metric_card
 from ._modal import modal
-from ._state import card, empty_state, loading_state
+from ._state import card, empty_state, lazy_card, loading_state
 from ._status_badge import status_badge
 from ._support_tier_badge import support_tier_badge
 from ._tab_nav import Tab, tab_nav
@@ -32,6 +32,7 @@ __all__ = [
     "evidence_due_label",
     "input",
     "layout",
+    "lazy_card",
     "loading_state",
     "metric_card",
     "modal",

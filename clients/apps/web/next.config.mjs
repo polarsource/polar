@@ -439,10 +439,6 @@ const nextConfig = {
         source: '/checkout/:path*',
         headers: [
           {
-            key: 'Content-Security-Policy',
-            value: embeddedCSP(),
-          },
-          {
             key: 'Permissions-Policy',
             value: `payment=*, publickey-credentials-get=*, camera=(), microphone=(), geolocation=()`,
           },

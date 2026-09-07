@@ -55,3 +55,10 @@ export const docsCSP = () =>
   api.mintlifytrieve.com www.googletagmanager.com cdn.segment.com plausible.io us.posthog.com browser.sentry-cdn.com;
   frame-src 'self' *.mintlify.dev https://polar-public-assets.s3.us-east-2.amazonaws.com;
 `)
+
+export const checkoutCSP = (frameAncestors) =>
+  flatten(`
+  ${baseCSP()}
+  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL} polar:;
+  frame-ancestors ${frameAncestors};
+`)

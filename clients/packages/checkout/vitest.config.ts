@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
+    fsModuleCache: true,
     env: {
       TZ: 'UTC',
     },

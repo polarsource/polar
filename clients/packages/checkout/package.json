@@ -43,6 +43,10 @@
     "./providers": {
       "types": "./dist/providers/index.d.ts",
       "default": "./src/providers/index.ts"
+    },
+    "./test-utils": {
+      "types": "./src/test-utils/index.ts",
+      "default": "./src/test-utils/index.ts"
     }
   },
   "publishConfig": {
@@ -85,6 +89,7 @@
     "@stripe/react-stripe-js": "catalog:",
     "@stripe/stripe-js": "catalog:",
     "@testing-library/jest-dom": "^7.0.1",
+    "@types/node": "^24.12.2",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",

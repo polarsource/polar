@@ -31,12 +31,18 @@ const ImpersonationBanner = () => {
         You are currently impersonating another user
       </div>
       <div className="flex-[1_0_0] text-right">
-        <a
-          href={`${process.env.NEXT_PUBLIC_BACKOFFICE_URL}/impersonation/end`}
-          className="font-bold hover:opacity-50"
+        <form
+          action={`${process.env.NEXT_PUBLIC_BACKOFFICE_URL}/impersonation/end`}
+          method="post"
+          className="inline"
         >
-          Exit impersonation
-        </a>
+          <button
+            type="submit"
+            className="cursor-pointer p-0 font-bold hover:opacity-50"
+          >
+            Exit impersonation
+          </button>
+        </form>
       </div>
     </div>
   )

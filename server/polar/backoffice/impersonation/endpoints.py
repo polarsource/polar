@@ -128,7 +128,7 @@ async def start_impersonation(
     return response
 
 
-@router.get("/end", name="backoffice:end_impersonation")
+@router.post("/end", name="backoffice:end_impersonation")
 async def end_impersonation(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
@@ -171,10 +171,14 @@ async def end_impersonation(
 
     if impersonated_org_id:
         response = RedirectResponse(
-            settings.generate_backoffice_url(f"/organizations/{impersonated_org_id}")
+            settings.generate_backoffice_url(f"/organizations/{impersonated_org_id}"),
+            status_code=status.HTTP_303_SEE_OTHER,
         )
     else:
-        response = RedirectResponse(settings.generate_backoffice_url("/"))
+        response = RedirectResponse(
+            settings.generate_backoffice_url("/"),
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
 
     # Restore admin session
     response.set_cookie(

@@ -365,8 +365,17 @@ class EmbedCheckout {
   private handleSuccess(detail: EmbedCheckoutMessageSuccess): void {
     this.closable = true
     if (detail.redirect) {
-      const url = new URL(detail.successURL, window.location.href)
-      if (url.protocol === 'https:' || url.protocol === 'http:') {
+      let url: URL | undefined
+      try {
+        url = new URL(detail.successURL)
+      } catch {
+        try {
+          url = new URL(detail.successURL, window.location.href)
+        } catch {
+          url = undefined
+        }
+      }
+      if (url && (url.protocol === 'https:' || url.protocol === 'http:')) {
         window.location.href = url.href
       }
     }

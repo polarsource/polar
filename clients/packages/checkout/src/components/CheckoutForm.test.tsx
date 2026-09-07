@@ -4,7 +4,15 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import type { ProductCheckoutPublic } from '../guards'
 import {
   CheckoutFormContext,

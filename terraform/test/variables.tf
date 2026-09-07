@@ -74,6 +74,12 @@ variable "backend_resend_api_key" {
   sensitive   = true
 }
 
+variable "resend_active_users_segment_id" {
+  description = "Resend ACTIVE_USERS segment ID; empty disables contact synchronization"
+  type        = string
+  default     = ""
+}
+
 variable "backend_resend_webhook_secret" {
   description = "Resend Webhook Secret for test"
   type        = string

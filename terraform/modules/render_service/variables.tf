@@ -121,6 +121,7 @@ variable "environment_groups" {
       POLAR_DISCORD_CLIENT_SECRET                = string
       POLAR_DISCORD_PROXY_URL                    = string
       POLAR_RESEND_API_KEY                       = string
+      POLAR_RESEND_ACTIVE_USERS_SEGMENT_ID       = optional(string)
       POLAR_RESEND_WEBHOOK_SECRET                = string
       POLAR_FIRECRAWL_API_KEY                    = string
       POLAR_LOGO_DEV_PUBLISHABLE_KEY             = string

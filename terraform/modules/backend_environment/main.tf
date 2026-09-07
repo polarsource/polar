@@ -62,6 +62,9 @@ locals {
       POLAR_NUMERAL_API_KEY       = var.backend_secrets.numeral_api_key
       POLAR_TURNSTILE_SECRET      = var.backend_secrets.turnstile_secret
     },
+    var.backend_secrets.resend_active_users_segment_id != "" ? {
+      POLAR_RESEND_ACTIVE_USERS_SEGMENT_ID = var.backend_secrets.resend_active_users_segment_id
+    } : {},
     var.backend_config.user_session_cookie_key != "" ? {
       POLAR_USER_SESSION_COOKIE_KEY = var.backend_config.user_session_cookie_key
     } : {},

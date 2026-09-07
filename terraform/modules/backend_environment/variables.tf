@@ -69,6 +69,7 @@ variable "backend_secrets" {
     discord_webhook_url            = optional(string, "")
     posthog_project_api_key        = optional(string, "")
     resend_api_key                 = string
+    resend_active_users_segment_id = optional(string, "")
     resend_webhook_secret          = optional(string, "")
     logo_dev_publishable_key       = optional(string, "")
     secret                         = string

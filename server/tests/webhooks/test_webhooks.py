@@ -462,6 +462,109 @@ async def test_webhook_delivery_http_error(
 
 
 @pytest.mark.asyncio
+async def test_redeliver_idna_failure_preserves_succeeded_true(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    mocker: MockerFixture,
+) -> None:
+    """A redeliver whose endpoint URL is a malformed-punycode (xn--) hostname
+    makes httpx raise a raw idna.IDNAError at URL-parse time. The
+    idna.IDNAError except branch must mirror the httpx permanent-failure
+    branch's guard from commit 1d4df3765c and preserve a previously-succeeded
+    event's history."""
+    mocker.patch("polar.webhook.tasks.enqueue_job")
+
+    # Simulate a legacy endpoint whose URL is malformed punycode. Such a row
+    # could only have been written before validate_hostname (commit 2989ade840)
+    # landed; we write it directly via the fixture the way an old migration
+    # would have left it.
+    endpoint = WebhookEndpoint(
+        url="https://xn--.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret="mysecret",
+    )
+    await save_fixture(endpoint)
+
+    # A previously-succeeded event on this endpoint, with its historical
+    # successful delivery recorded.
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
+        payload='{"foo":"bar"}',
+        succeeded=True,
+    )
+    await save_fixture(event)
+    await save_fixture(
+        WebhookDelivery(
+            webhook_event_id=event.id,
+            webhook_endpoint_id=endpoint.id,
+            succeeded=True,
+        )
+    )
+
+    # Redeliver. httpx raises idna.IDNAError from the real client.post call
+    # (httpx 0.28.1 raises idna.IDNAError for an xn-- host via the un-wrapped
+    # idna.decode at _urls.py:191). The except idna.IDNAError branch is the
+    # one under test.
+    await _webhook_event_send(
+        session=session, webhook_event_id=event.id, redeliver=True
+    )
+
+    await session.refresh(event)
+    delivery_repository = WebhookDeliveryRepository.from_session(session)
+    deliveries = await delivery_repository.get_all_by_event(event.id)
+    assert len(deliveries) == 2
+    assert deliveries[-1].succeeded is False  # new delivery records the failure
+    # The previously-succeeded event's history must be preserved, exactly as
+    # the httpx permanent-failure branch does (commit 1d4df3765c).
+    assert event.succeeded is True
+
+
+@pytest.mark.asyncio
+async def test_idna_failure_marks_unsucceeded_event_false(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    mocker: MockerFixture,
+) -> None:
+    """When the IDNA branch fires on an event that has not previously
+    succeeded, event.succeeded must still be set to False — the guard added
+    for redelivery only protects historical succeeded=True state."""
+    enqueue_job_mock = mocker.patch("polar.webhook.tasks.enqueue_job")
+
+    endpoint = WebhookEndpoint(
+        url="https://xn--.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret="mysecret",
+    )
+    await save_fixture(endpoint)
+
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        api_version=CURRENT_API_VERSION,
+        payload='{"foo":"bar"}',
+    )
+    await save_fixture(event)
+
+    await _webhook_event_send(
+        session=session, webhook_event_id=event.id, redeliver=True
+    )
+
+    await session.refresh(event)
+    assert event.succeeded is False
+    enqueue_job_mock.assert_called_once_with(
+        "webhook_event.failed",
+        webhook_event_id=event.id,
+        webhook_endpoint_id=endpoint.id,
+    )
+
+
+@pytest.mark.asyncio
 async def test_webhook_standard_webhooks_compatible(
     session: AsyncSession,
     save_fixture: SaveFixture,

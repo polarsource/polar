@@ -219,7 +219,8 @@ async def _webhook_event_send(
     except idna.IDNAError as e:
         bound_log.warning("Unexpected error while sending a webhook", error=e)
         delivery.succeeded = False
-        event.succeeded = False
+        if event.succeeded is not True:
+            event.succeeded = False
         delivery.response = str(e)
         enqueue_job(
             "webhook_event.failed",

@@ -4,6 +4,7 @@ import pytest
 
 from polar.organization.embed_hosts import (
     InvalidEmbedHost,
+    csp_frame_ancestors,
     is_shared_host,
     match_origin,
     parse_origin,
@@ -345,3 +346,48 @@ class TestIsSharedHost:
     )
     def test_everything_else(self, entry: str) -> None:
         assert is_shared_host(entry) is False
+
+
+class TestCspFrameAncestors:
+    @pytest.mark.parametrize(
+        ("entry", "expected"),
+        [
+            ("example.com", ["https://example.com"]),
+            ("*.example.com", ["https://*.example.com"]),
+            ("example.com:8443", ["https://example.com:8443"]),
+            ("chrome-extension://abcdef", ["chrome-extension://abcdef"]),
+        ],
+    )
+    def test_source(self, entry: str, expected: list[str]) -> None:
+        assert csp_frame_ancestors([entry]) == expected
+
+    @pytest.mark.parametrize(
+        ("entry", "expected"),
+        [
+            ("localhost", ["https://localhost", "http://localhost"]),
+            ("localhost:3000", ["https://localhost:3000", "http://localhost:3000"]),
+            ("app.localhost", ["https://app.localhost", "http://app.localhost"]),
+            ("192.168.1.10", ["https://192.168.1.10", "http://192.168.1.10"]),
+            ("*.local", ["https://*.local", "http://*.local"]),
+        ],
+    )
+    def test_local_host_carries_both_schemes(
+        self, entry: str, expected: list[str]
+    ) -> None:
+        """`HostPattern.matches` admits HTTP on a local host, so the header must too."""
+        assert csp_frame_ancestors([entry]) == expected
+
+    def test_entries_keep_their_order(self) -> None:
+        assert csp_frame_ancestors(["example.com", "*.myshop.com"]) == [
+            "https://example.com",
+            "https://*.myshop.com",
+        ]
+
+    @pytest.mark.parametrize("entry", ["[::1]:3000", "[2001:db8::1]"])
+    def test_ipv6_literal_dropped(self, entry: str) -> None:
+        """CSP's host-source grammar has no form for an IPv6 literal."""
+        assert csp_frame_ancestors([entry]) == ["'none'"]
+
+    @pytest.mark.parametrize("hosts", [[], ["not a host"]])
+    def test_nothing_to_admit(self, hosts: list[str]) -> None:
+        assert csp_frame_ancestors(hosts) == ["'none'"]

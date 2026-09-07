@@ -1046,6 +1046,72 @@ class TestOAuth2Consent:
         assert response.json()["error"] == "invalid_request"
 
     @pytest.mark.auth
+    async def test_state_echoed_on_invalid_scope_redirect(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email invalid_scope_xyz",
+            "sub_type": "user",
+            "state": "xyz123",
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        query = parse_qs(urlparse(location).query)
+        assert query["error"] == ["invalid_scope"]
+        assert query["state"] == ["xyz123"]
+        assert query["iss"] == [settings.BASE_URL]
+
+    @pytest.mark.auth
+    async def test_state_echoed_on_unsupported_response_type_redirect(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "token",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+            "state": "abc456",
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        query = parse_qs(urlparse(location).query)
+        assert query["error"] == ["unsupported_response_type"]
+        assert query["state"] == ["abc456"]
+
+    @pytest.mark.auth
+    async def test_state_echoed_on_invalid_request_json(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "organization",
+            "state": "jsonstate",
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error"] == "invalid_request"
+        assert body["state"] == "jsonstate"
+
+    @pytest.mark.auth
     async def test_organization_deny(
         self,
         client: AsyncClient,

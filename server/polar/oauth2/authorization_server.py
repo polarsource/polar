@@ -444,6 +444,7 @@ class AuthorizationServer(_AuthorizationServer):
         try:
             grant: AuthorizationCodeGrant = self.get_authorization_grant(oauth2_request)
         except UnsupportedResponseTypeError as error:
+            error.state = oauth2_request.payload.state
             return self.handle_error_response(oauth2_request, error)
 
         try:
@@ -452,6 +453,7 @@ class AuthorizationServer(_AuthorizationServer):
                 redirect_uri, grant_user
             )
         except OAuth2Error as error:
+            error.state = oauth2_request.payload.state
             return self.handle_error_response(oauth2_request, error)
 
         if save_consent:

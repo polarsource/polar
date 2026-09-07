@@ -129,38 +129,37 @@ export const CheckoutFormProvider = ({
     [updateOuter, setError, setDiscountError],
   )
 
-  // Keep at most one checkout update PATCH in flight at a time. The backend
-  // locks the checkout row with `FOR UPDATE NOWAIT` and returns a 409
-  // (CheckoutLocked) if a second update overlaps the first, so we serialize
-  // here. Calls made while a request is in flight are coalesced into a single
-  // trailing request (last write wins per field) that flushes once the current
-  // one settles; all coalesced callers resolve with that request's result.
+  // Debounce edits and serialize PATCHes to avoid CheckoutLocked responses.
   const inFlightRef = useRef(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingRef = useRef<{
     payload: schemas['CheckoutUpdatePublic']
     deferred: Deferred<schemas['CheckoutPublic']>
   } | null>(null)
 
-  const pump = useCallback(async (): Promise<void> => {
-    if (inFlightRef.current) {
-      return
-    }
-    const batch = pendingRef.current
-    if (!batch) {
-      setIsUpdatePending(false)
-      return
-    }
-    pendingRef.current = null
-    inFlightRef.current = true
-    try {
-      batch.deferred.resolve(await performUpdate(batch.payload))
-    } catch (error) {
-      batch.deferred.reject(error)
-    } finally {
-      inFlightRef.current = false
-      void pump()
-    }
-  }, [performUpdate])
+  const pump = useCallback(
+    async function pump(): Promise<void> {
+      if (inFlightRef.current || debounceRef.current !== null) {
+        return
+      }
+      const batch = pendingRef.current
+      if (!batch) {
+        setIsUpdatePending(false)
+        return
+      }
+      pendingRef.current = null
+      inFlightRef.current = true
+      try {
+        batch.deferred.resolve(await performUpdate(batch.payload))
+      } catch (error) {
+        batch.deferred.reject(error)
+      } finally {
+        inFlightRef.current = false
+        void pump()
+      }
+    },
+    [performUpdate],
+  )
 
   const update = useCallback(
     (
@@ -179,7 +178,13 @@ export const CheckoutFormProvider = ({
       }
       setIsUpdatePending(true)
       const { promise } = pendingRef.current.deferred
-      void pump()
+      if (debounceRef.current !== null) {
+        clearTimeout(debounceRef.current)
+      }
+      debounceRef.current = setTimeout(() => {
+        debounceRef.current = null
+        void pump()
+      }, 100)
       return promise
     },
     [pump],

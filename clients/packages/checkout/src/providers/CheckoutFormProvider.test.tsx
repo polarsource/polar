@@ -1,6 +1,6 @@
 import { act } from '@testing-library/react'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderWithCheckout } from '../test-utils/renderWithCheckout'
 import type { CheckoutFormContextProps } from './CheckoutFormProvider'
 import type { CheckoutContextProps } from './CheckoutProvider'
@@ -211,6 +211,9 @@ describe('CheckoutFormProvider', () => {
   })
 
   describe('update (single-flight)', () => {
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
+
     interface Deferred<T> {
       promise: Promise<T>
       resolve: (value: T) => void
@@ -234,9 +237,9 @@ describe('CheckoutFormProvider', () => {
 
       const getCtx = renderWithCheckout({ update })
 
-      // First call starts immediately.
       await act(async () => {
         void getCtx().update({ customer_email: 'a@example.com' })
+        await vi.advanceTimersByTimeAsync(100)
       })
       expect(update).toHaveBeenCalledTimes(1)
 
@@ -254,6 +257,7 @@ describe('CheckoutFormProvider', () => {
           .then((value) => {
             cResult = value
           })
+        await vi.advanceTimersByTimeAsync(100)
       })
       expect(update).toHaveBeenCalledTimes(1)
 
@@ -275,7 +279,7 @@ describe('CheckoutFormProvider', () => {
       expect(cResult).toMatchObject({ id: 'ch_2' })
     })
 
-    it('re-arms the fast path once the queue drains', async () => {
+    it('debounces again once the queue drains', async () => {
       const outer: Deferred<UpdateResult>[] = []
       const update = vi.fn<CheckoutContextProps['update']>(() => {
         const deferred = createDeferred<UpdateResult>()
@@ -287,15 +291,81 @@ describe('CheckoutFormProvider', () => {
 
       await act(async () => {
         void getCtx().update({ customer_email: 'a@example.com' })
+        await vi.advanceTimersByTimeAsync(100)
         outer[0].resolve({ ok: true, value: { id: 'ch_1' } } as UpdateResult)
       })
       expect(update).toHaveBeenCalledTimes(1)
 
-      // A later call, after the first settled, fires immediately rather than queueing.
       await act(async () => {
         void getCtx().update({ customer_name: 'B' })
       })
+      expect(update).toHaveBeenCalledTimes(1)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100)
+      })
       expect(update).toHaveBeenCalledTimes(2)
+      await act(async () => {
+        outer[1].resolve({ ok: true, value: { id: 'ch_2' } } as UpdateResult)
+      })
+      expect(getCtx().isUpdatePending).toBe(false)
+    })
+
+    it('combines name blur and rapid checkbox toggles using the final value', async () => {
+      const update = vi.fn<CheckoutContextProps['update']>(
+        async () => ({ ok: true, value: { id: 'ch_1' } }) as UpdateResult,
+      )
+      const getCtx = renderWithCheckout({ update })
+      const results: CheckoutResult[] = []
+
+      await act(async () => {
+        void getCtx()
+          .update({ customer_name: 'Buyer' })
+          .then((v) => results.push(v))
+        void getCtx()
+          .update({ is_business_customer: true })
+          .then((v) => results.push(v))
+        await vi.advanceTimersByTimeAsync(50)
+        void getCtx()
+          .update({ is_business_customer: false })
+          .then((v) => results.push(v))
+        await vi.advanceTimersByTimeAsync(99)
+      })
+      expect(update).not.toHaveBeenCalled()
+      expect(getCtx().isUpdatePending).toBe(true)
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1)
+      })
+      expect(update).toHaveBeenCalledExactlyOnceWith({
+        customer_name: 'Buyer',
+        is_business_customer: false,
+      })
+      expect(results).toEqual([{ id: 'ch_1' }, { id: 'ch_1' }, { id: 'ch_1' }])
+      expect(getCtx().isUpdatePending).toBe(false)
+    })
+
+    it('waits for the remaining debounce when an in-flight request finishes', async () => {
+      const first = createDeferred<UpdateResult>()
+      const update = vi
+        .fn<CheckoutContextProps['update']>()
+        .mockReturnValueOnce(first.promise)
+        .mockResolvedValue({ ok: true, value: { id: 'ch_2' } } as UpdateResult)
+      const getCtx = renderWithCheckout({ update })
+
+      await act(async () => {
+        void getCtx().update({ customer_name: 'Buyer' })
+        await vi.advanceTimersByTimeAsync(100)
+        void getCtx().update({ is_business_customer: true })
+        await vi.advanceTimersByTimeAsync(50)
+        first.resolve({ ok: true, value: { id: 'ch_1' } } as UpdateResult)
+      })
+      expect(update).toHaveBeenCalledTimes(1)
+      expect(getCtx().isUpdatePending).toBe(true)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50)
+      })
+      expect(update).toHaveBeenCalledTimes(2)
+      expect(getCtx().isUpdatePending).toBe(false)
     })
   })
 

@@ -9,6 +9,9 @@
   },
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
       "types": "./dist/types.d.ts",
@@ -40,7 +43,7 @@
   "dependencies": {
     "@nuxt/kit": "^3.15.4",
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "^0.47.0"
+    "@polar-sh/sdk": "1.0.0-alpha.20"
   },
   "devDependencies": {
     "@nuxt/devtools": "^2.6.5",

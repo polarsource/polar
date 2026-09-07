@@ -1,5 +1,3 @@
-import type { Member as PolarMember } from '@polar-sh/sdk/models/components/member.js'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound.js'
 import type { AuthContext } from 'better-auth'
 import { organization as betterAuthOrganization } from 'better-auth/plugins'
 import type {
@@ -9,9 +7,13 @@ import type {
   OrganizationOptions,
 } from 'better-auth/plugins/organization'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { errors, type models } from '@polar-sh/sdk/2026-04'
 import { installOrganizationHooks } from '../../organization/hooks'
 import { createTestPolarOptions } from '../utils/helpers'
 import { createMockPolarClient, createMockUser } from '../utils/mocks'
+
+type PolarMember = models.Member
+const { ResourceNotFound } = errors
 
 const organization: Organization = {
   id: 'organization-123',
@@ -35,53 +37,46 @@ const member: Member = {
   createdAt: new Date(),
 }
 
-const teamCustomer = {
+const teamCustomer: models.CustomerTeam = {
   id: 'customer-123',
-  createdAt: new Date(),
-  modifiedAt: null,
+  created_at: new Date().toISOString(),
+  modified_at: null,
   metadata: {},
-  externalId: organization.id,
+  external_id: organization.id,
   email: null,
-  emailVerified: false,
+  email_verified: false,
   type: 'team' as const,
   name: organization.name,
-  billingName: null,
-  billingAddress: null,
-  taxId: null,
-  organizationId: 'polar-organization-123',
-  deletedAt: null,
-  avatarUrl: null,
+  billing_name: null,
+  billing_address: null,
+  tax_id: null,
+  organization_id: 'polar-organization-123',
+  deleted_at: null,
+  first_user_event_at: null,
+  avatar_url: null,
 }
 
 const polarOwner: PolarMember = {
   id: 'polar-member-123',
-  createdAt: new Date(),
-  modifiedAt: null,
-  customerId: teamCustomer.id,
+  created_at: new Date().toISOString(),
+  modified_at: null,
+  customer_id: teamCustomer.id,
   email: owner.email,
   name: owner.name,
-  externalId: owner.id,
+  external_id: owner.id,
   role: 'owner' as const,
 }
 
 const memberPage = (items: PolarMember[]) => ({
-  result: {
-    items,
-    pagination: { totalCount: items.length, maxPage: 1 },
-  },
-  next: vi.fn(),
-  async *[Symbol.asyncIterator]() {},
+  items,
+  pagination: { total_count: items.length, max_page: 1 },
 })
 
 const notFound = () =>
-  new ResourceNotFound(
-    { error: 'ResourceNotFound', detail: 'Customer not found' },
-    {
-      response: new Response('', { status: 404 }),
-      request: new Request('https://api.polar.sh/v1/customers'),
-      body: '',
-    },
-  )
+  new ResourceNotFound(404, {
+    error: 'ResourceNotFound',
+    detail: 'Customer not found',
+  })
 
 const createContext = (
   organizationOptions: OrganizationOptions | null,
@@ -155,7 +150,7 @@ describe('organization hook installation', () => {
       .mockRejectedValueOnce(notFound())
       .mockResolvedValue(teamCustomer)
     vi.mocked(client.customers.create).mockResolvedValue(teamCustomer)
-    vi.mocked(client.members.listMembers).mockResolvedValue(
+    vi.mocked(client.customers.members.listExternal).mockResolvedValue(
       memberPage([polarOwner]),
     )
     vi.mocked(client.customers.members.getExternal).mockResolvedValue(
@@ -179,7 +174,7 @@ describe('organization hook installation', () => {
 
     expect(applicationHook).toHaveBeenCalledOnce()
     expect(client.customers.create).toHaveBeenCalledOnce()
-    expect(client.members.listMembers).not.toHaveBeenCalled()
+    expect(client.customers.members.listExternal).not.toHaveBeenCalled()
     const applicationCallOrder = applicationHook.mock.invocationCallOrder[0]
     const polarCallOrder = vi.mocked(client.customers.create).mock
       .invocationCallOrder[0]
@@ -239,10 +234,10 @@ describe('organization hook installation', () => {
     )
 
     expect(applicationHook).toHaveBeenCalledOnce()
-    expect(client.customers.updateExternal).toHaveBeenCalledWith({
-      externalId: organization.id,
-      customerUpdateExternalID: { name: 'New name' },
-    })
+    expect(client.customers.updateExternal).toHaveBeenCalledWith(
+      organization.id,
+      { name: 'New name' },
+    )
   })
 
   it('fails when an adapter returns no updated organization', async () => {
@@ -287,7 +282,7 @@ describe('organization hook installation', () => {
     expect(applicationHook).toHaveBeenCalledOnce()
     expect(client.customers.getExternal).not.toHaveBeenCalled()
     expect(client.customers.members.createExternal).not.toHaveBeenCalled()
-    expect(client.members.listMembers).not.toHaveBeenCalled()
+    expect(client.customers.members.listExternal).not.toHaveBeenCalled()
   })
 
   it('uses one idempotent roster path for direct additions and invitations', async () => {
@@ -317,18 +312,18 @@ describe('organization hook installation', () => {
     const invitedPolarMember = {
       ...polarOwner,
       id: 'polar-invited-member',
-      externalId: invitedUser.id,
+      external_id: invitedUser.id,
       email: invitedUser.email,
       name: invitedUser.name,
       role: 'billing_manager' as const,
     }
     let invitedExists = false
     vi.mocked(client.customers.getExternal).mockResolvedValue(teamCustomer)
-    vi.mocked(client.members.listMembers).mockResolvedValue(
+    vi.mocked(client.customers.members.listExternal).mockResolvedValue(
       memberPage([polarOwner]),
     )
     vi.mocked(client.customers.members.getExternal).mockImplementation(
-      async ({ memberExternalId }) => {
+      async (_organizationId, memberExternalId) => {
         if (memberExternalId === owner.id) return polarOwner
         if (invitedExists) return invitedPolarMember
         throw notFound()
@@ -373,15 +368,15 @@ describe('organization hook installation', () => {
     expect(afterAddMember).toHaveBeenCalledOnce()
     expect(afterAcceptInvitation).toHaveBeenCalledOnce()
     expect(client.customers.members.createExternal).toHaveBeenCalledOnce()
-    expect(client.customers.members.createExternal).toHaveBeenCalledWith({
-      externalId: organization.id,
-      memberCreateFromCustomer: {
-        externalId: invitedUser.id,
+    expect(client.customers.members.createExternal).toHaveBeenCalledWith(
+      organization.id,
+      {
+        external_id: invitedUser.id,
         email: invitedUser.email,
         name: invitedUser.name,
         role: 'billing_manager',
       },
-    })
+    )
   })
 
   it('runs the application role-update hook before Polar synchronization', async () => {
@@ -390,7 +385,7 @@ describe('organization hook installation', () => {
       organizationHooks: { afterUpdateMemberRole },
     })
     vi.mocked(client.customers.getExternal).mockResolvedValue(teamCustomer)
-    vi.mocked(client.members.listMembers).mockResolvedValue(
+    vi.mocked(client.customers.members.listExternal).mockResolvedValue(
       memberPage([polarOwner]),
     )
 
@@ -430,7 +425,7 @@ describe('organization hook installation', () => {
       organizationHooks: { afterRemoveMember },
     })
     vi.mocked(client.customers.getExternal).mockResolvedValue(teamCustomer)
-    vi.mocked(client.members.listMembers).mockResolvedValue(
+    vi.mocked(client.customers.members.listExternal).mockResolvedValue(
       memberPage([polarOwner]),
     )
     vi.mocked(client.customers.members.deleteExternal).mockResolvedValue(
@@ -453,10 +448,10 @@ describe('organization hook installation', () => {
     )
 
     expect(afterRemoveMember).toHaveBeenCalledOnce()
-    expect(client.customers.members.deleteExternal).toHaveBeenCalledWith({
-      externalId: organization.id,
-      memberExternalId: departingUser.id,
-    })
+    expect(client.customers.members.deleteExternal).toHaveBeenCalledWith(
+      organization.id,
+      departingUser.id,
+    )
     expect(afterRemoveMember.mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(client.customers.members.deleteExternal).mock
         .invocationCallOrder[0] ?? 0,

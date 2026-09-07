@@ -1,3 +1,10 @@
+import {
+  updateExternalCustomers,
+  createCustomers,
+  deleteCustomers,
+  updateCustomers,
+  listCustomers,
+} from '@polar-sh/sdk/2026-04/services/customers'
 import type { AuthContext, GenericEndpointContext, User } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import {
@@ -31,13 +38,14 @@ export const onBeforeUserCreate =
         }
 
         // Check if customer already exists
-        const { result: existingCustomers } =
-          await options.client.customers.list({ email: user.email })
+        const existingCustomers = await listCustomers(options.client)({
+          email: user.email,
+        })
         const existingCustomer = existingCustomers.items[0]
 
         // Skip creation if customer already exists
         if (!existingCustomer) {
-          await options.client.customers.create({
+          await createCustomers(options.client)({
             ...params,
             email: user.email,
             name: user.name,
@@ -66,17 +74,15 @@ export const onAfterUserCreate =
       }
 
       try {
-        const { result: existingCustomers } =
-          await options.client.customers.list({ email: user.email })
+        const existingCustomers = await listCustomers(options.client)({
+          email: user.email,
+        })
         const existingCustomer = existingCustomers.items[0]
 
         if (existingCustomer) {
-          if (existingCustomer.externalId !== user.id) {
-            await options.client.customers.update({
-              id: existingCustomer.id,
-              customerUpdate: {
-                externalId: user.id,
-              },
+          if (existingCustomer.external_id !== user.id) {
+            await updateCustomers(options.client)(existingCustomer.id, {
+              external_id: user.id,
             })
           }
         }
@@ -102,12 +108,9 @@ export const onUserUpdate =
     if (context && options.createCustomerOnSignUp) {
       try {
         if (!isAnonymousUser(user)) {
-          await options.client.customers.updateExternal({
-            externalId: user.id,
-            customerUpdateExternalID: {
-              email: user.email,
-              name: user.name,
-            },
+          await updateExternalCustomers(options.client)(user.id, {
+            email: user.email,
+            name: user.name,
           })
         }
       } catch (e: unknown) {
@@ -177,13 +180,12 @@ export const onUserDelete =
         }
 
         if (user.email) {
-          const { result: existingCustomers } =
-            await options.client.customers.list({ email: user.email })
+          const existingCustomers = await listCustomers(options.client)({
+            email: user.email,
+          })
           const existingCustomer = existingCustomers.items[0]
           if (existingCustomer) {
-            await options.client.customers.delete({
-              id: existingCustomer.id,
-            })
+            await deleteCustomers(options.client)(existingCustomer.id)
           }
         }
       } catch (e: unknown) {

@@ -35,7 +35,7 @@ export default defineEventHandler((event) => {
     accessToken: polarAccessToken,
     successUrl: polarCheckoutSuccessUrl,
     returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Checkout
-    server: polarServer as 'sandbox' | 'production',
+    environment: polarServer as 'sandbox' | 'production',
     theme: 'dark', // Enforces the theme - System-preferred theme will be set if left omitted
   })
 
@@ -48,10 +48,10 @@ export default defineEventHandler((event) => {
 Pass query params to this route.
 
 - products `?products=123`
-- customerId (optional) `?products=123&customerId=xxx`
-- customerExternalId (optional) `?products=123&customerExternalId=xxx`
-- customerEmail (optional) `?products=123&customerEmail=janedoe@gmail.com`
-- customerName (optional) `?products=123&customerName=Jane`
+- customer_id (optional) `?products=123&customer_id=xxx`
+- external_customer_id (optional) `?products=123&external_customer_id=xxx`
+- customer_email (optional) `?products=123&customer_email=janedoe@gmail.com`
+- customer_name (optional) `?products=123&customer_name=Jane`
 - metadata (optional) `URL-Encoded JSON string`
 
 ## Customer Portal
@@ -67,7 +67,7 @@ export default defineEventHandler((event) => {
 
   const customerPortalHandler = CustomerPortal({
     accessToken: polarAccessToken,
-    server: polarServer as 'sandbox' | 'production',
+    environment: polarServer as 'sandbox' | 'production',
     getCustomerId: (event) => {
       return Promise.resolve('9d89909b-216d-475e-8005-053dba7cff07')
     },

@@ -1,20 +1,23 @@
-import { Polar } from '@polar-sh/sdk'
+import { createCustomerSessions } from '@polar-sh/sdk/2026-04/services/customer_sessions'
+import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
 import { createError, sendRedirect } from 'h3'
 import type { H3Event } from 'h3'
 
 export interface CustomerPortalConfig {
   accessToken: string
-  server?: 'sandbox' | 'production'
+  environment?: Environment
   getCustomerId: (event: H3Event) => Promise<string>
   returnUrl?: string
 }
 
 export const CustomerPortal = ({
   accessToken,
-  server,
+  environment,
   getCustomerId,
   returnUrl,
 }: CustomerPortalConfig) => {
+  const polar = createPolarCore({ accessToken, environment })
+
   return async (event: H3Event) => {
     const retUrl = returnUrl ? new URL(returnUrl) : undefined
 
@@ -31,17 +34,12 @@ export const CustomerPortal = ({
     }
 
     try {
-      const polar = new Polar({
-        accessToken,
-        server,
+      const result = await createCustomerSessions(polar)({
+        customer_id: customerId,
+        return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
       })
 
-      const result = await polar.customerSessions.create({
-        customerId,
-        returnUrl: retUrl ? decodeURI(retUrl.toString()) : undefined,
-      })
-
-      return sendRedirect(event, result.customerPortalUrl)
+      return sendRedirect(event, result.customer_portal_url)
     } catch (error) {
       console.error('Failed to redirect to customer portal', error)
       throw createError({

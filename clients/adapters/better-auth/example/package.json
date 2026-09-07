@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@polar-sh/better-auth": "workspace:*",
-    "@polar-sh/sdk": "^0.46.6",
+    "@polar-sh/sdk": "1.0.0-alpha.20",
     "better-auth": "1.4.6",
     "better-sqlite3": "^11.10.0",
     "next": "16.0.8",
@@ -19,7 +19,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.17",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^20",
+    "@types/node": "^22",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",

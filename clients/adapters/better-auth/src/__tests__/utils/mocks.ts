@@ -1,5 +1,9 @@
-import type { Polar } from '@polar-sh/sdk'
-import type { Customer } from '@polar-sh/sdk/models/components/customer.js'
+import {
+  createPolarCore,
+  type models,
+  type Polar,
+  type PolarCore,
+} from '@polar-sh/sdk/2026-04'
 import type { User } from 'better-auth'
 import { type Mock, vi } from 'vitest'
 
@@ -9,12 +13,12 @@ type PolarClientMocks<T> = T extends (...args: infer Args) => unknown
     ? { [Key in keyof T]: PolarClientMocks<T[Key]> }
     : T
 
-type MockPolarClient = Polar & PolarClientMocks<Polar>
+type MockPolarClient = PolarCore & Polar & PolarClientMocks<Polar>
 
 export const createMockPolarClient = (): MockPolarClient =>
-  ({
+  Object.assign(createPolarCore({ accessToken: 'test-token' }), {
     products: {
-      get: vi.fn().mockResolvedValue({ isRecurring: false, prices: [] }),
+      get: vi.fn().mockResolvedValue({ is_recurring: false, prices: [] }),
       list: vi.fn(),
     },
     checkouts: {
@@ -31,14 +35,12 @@ export const createMockPolarClient = (): MockPolarClient =>
       getStateExternal: vi.fn(),
       list: vi.fn(),
       members: {
+        listExternal: vi.fn(),
         createExternal: vi.fn(),
         deleteExternal: vi.fn(),
         getExternal: vi.fn(),
         updateExternal: vi.fn(),
       },
-    },
-    members: {
-      listMembers: vi.fn(),
     },
     customerSessions: {
       create: vi.fn(),
@@ -64,18 +66,16 @@ export const createMockPolarClient = (): MockPolarClient =>
     subscriptions: {
       get: vi.fn(),
       list: vi.fn().mockResolvedValue({
-        result: {
-          items: [],
-          pagination: { totalCount: 0, maxPage: 1 },
-        },
+        items: [],
+        pagination: { total_count: 0, max_page: 1 },
       }),
       update: vi.fn(),
     },
     customerSeats: {
       listSeats: vi.fn().mockResolvedValue({
         seats: [],
-        availableSeats: 0,
-        totalSeats: 0,
+        available_seats: 0,
+        total_seats: 0,
       }),
       assignSeat: vi.fn(),
       revokeSeat: vi.fn(),
@@ -137,49 +137,59 @@ export const createMockBetterAuthContext = (): any => ({
 
 export const createMockProduct = () => ({
   id: 'product-123',
+  created_at: new Date().toISOString(),
+  modified_at: new Date().toISOString(),
+  trial_interval: null,
+  trial_interval_count: null,
   name: 'Test Product',
   description: 'A test product',
-  isRecurring: false,
-  isArchived: false,
-  organizationId: 'org-123',
-  createdAt: new Date().toISOString(),
-  modifiedAt: new Date().toISOString(),
+  visibility: 'public' as const,
+  recurring_interval: null,
+  recurring_interval_count: null,
+  meter_interval: null,
+  meter_interval_count: null,
+  is_recurring: false,
+  is_archived: false,
+  organization_id: 'org-123',
+  metadata: {},
   prices: [],
   benefits: [],
   medias: [],
+  attached_custom_fields: [],
 })
 
 export const createMockCheckout = () => ({
   id: 'checkout-123',
   url: 'https://polar.sh/checkout/checkout-123',
-  customerId: 'customer-123',
-  customerEmail: 'test@example.com',
-  productId: 'product-123',
-  productPriceId: 'price-123',
-  successUrl: 'https://example.com/success',
-  createdAt: new Date().toISOString(),
-  modifiedAt: new Date().toISOString(),
-  expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+  customer_id: 'customer-123',
+  customer_email: 'test@example.com',
+  product_id: 'product-123',
+  product_price_id: 'price-123',
+  success_url: 'https://example.com/success',
+  created_at: new Date().toISOString(),
+  modified_at: new Date().toISOString(),
+  expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
 })
 
 export const createMockCustomer = (
-  overrides: Partial<Customer> = {},
-): Customer =>
+  overrides: Partial<models.Customer> = {},
+): models.Customer =>
   ({
     id: 'customer-123',
     type: 'individual',
     email: 'test@example.com',
-    emailVerified: true,
+    email_verified: true,
     name: 'Test Customer',
-    billingName: null,
-    billingAddress: null,
-    taxId: null,
-    organizationId: 'org-123',
-    avatarUrl: '',
-    createdAt: new Date(),
-    modifiedAt: new Date(),
-    externalId: 'external-id-123',
-    deletedAt: null,
+    billing_name: null,
+    billing_address: null,
+    tax_id: null,
+    organization_id: 'org-123',
+    avatar_url: '',
+    created_at: new Date().toISOString(),
+    modified_at: new Date().toISOString(),
+    external_id: 'external-id-123',
+    deleted_at: null,
+    first_user_event_at: null,
     metadata: {},
     ...overrides,
-  }) as Customer
+  }) as models.Customer

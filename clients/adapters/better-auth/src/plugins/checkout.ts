@@ -1,4 +1,5 @@
-import type { Polar } from '@polar-sh/sdk'
+import { createCheckouts } from '@polar-sh/sdk/2026-04/services/checkouts'
+import type { PolarCore } from '@polar-sh/sdk/2026-04'
 import {
   APIError,
   createAuthEndpoint,
@@ -43,9 +44,9 @@ export interface CheckoutOptions {
 export const CheckoutParams = z.object({
   products: z.union([z.array(z.string()), z.string()]).optional(),
   slug: z.string().optional(),
-  referenceId: z.string().optional(),
-  organizationId: z.string().min(1).optional(),
-  customFieldData: z
+  reference_id: z.string().optional(),
+  organization_id: z.string().min(1).optional(),
+  custom_field_data: z
     .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
     .optional(),
   metadata: z
@@ -57,28 +58,28 @@ export const CheckoutParams = z.object({
       message: 'Metadata keys must be at most 40 characters',
     })
     .optional(),
-  allowDiscountCodes: z.coerce.boolean().optional(),
-  discountId: z.string().optional(),
+  allow_discount_codes: z.coerce.boolean().optional(),
+  discount_id: z.string().optional(),
   seats: z.number().int().min(1).max(10_000).optional(),
-  minSeats: z.number().int().min(1).max(10_000).optional(),
-  maxSeats: z.number().int().min(1).max(10_000).optional(),
+  min_seats: z.number().int().min(1).max(10_000).optional(),
+  max_seats: z.number().int().min(1).max(10_000).optional(),
   redirect: z.coerce.boolean().optional(),
-  embedOrigin: z.url().optional(),
-  successUrl: z
+  embed_origin: z.url().optional(),
+  success_url: z
     .string()
     .refine((val) => val.startsWith('/') || URL.canParse(val), {
       message: 'Must be a valid URL or a relative path starting with /',
     })
     .optional(),
-  returnUrl: z
+  return_url: z
     .string()
     .refine((val) => val.startsWith('/') || URL.canParse(val), {
       message: 'Must be a valid URL or a relative path starting with /',
     })
     .optional(),
-  allowTrial: z.boolean().optional(),
-  trialInterval: z.enum(['day', 'week', 'month', 'year']).optional(),
-  trialIntervalCount: z.number().int().min(1).max(1000).optional(),
+  allow_trial: z.boolean().optional(),
+  trial_interval: z.enum(['day', 'week', 'month', 'year']).optional(),
+  trial_interval_count: z.number().int().min(1).max(1000).optional(),
 })
 
 export type CheckoutParams = z.infer<typeof CheckoutParams>
@@ -86,7 +87,7 @@ export type CheckoutParams = z.infer<typeof CheckoutParams>
 export const checkout =
   (checkoutOptions: CheckoutOptions = {}) =>
   (
-    polar: Polar,
+    polar: PolarCore,
     rootOptions?: Pick<PolarOptions, 'experimental_organizationSync'>,
   ) => {
     return {
@@ -138,11 +139,11 @@ export const checkout =
             }
           }
 
-          const principal = ctx.body.organizationId
+          const principal = ctx.body.organization_id
             ? await resolveBillingPrincipal({
                 context: ctx.context,
                 session,
-                organizationId: ctx.body.organizationId,
+                organizationId: ctx.body.organization_id,
                 organizationEnabled:
                   rootOptions?.experimental_organizationSync?.enabled,
                 authorization: 'billing',
@@ -163,13 +164,13 @@ export const checkout =
           ) {
             throw new APIError('BAD_REQUEST', {
               message:
-                'Polar team customer was not found for this Better Auth organization. Use referenceId for an existing unsynchronized organization.',
+                'Polar team customer was not found for this Better Auth organization. Use reference_id for an existing unsynchronized organization.',
             })
           }
 
           let seats = ctx.body.seats
-          let minSeats = ctx.body.minSeats
-          let maxSeats = ctx.body.maxSeats
+          let minSeats = ctx.body.min_seats
+          let maxSeats = ctx.body.max_seats
           const organizationOptions = rootOptions?.experimental_organizationSync
           if (
             principal?.kind === 'team' &&
@@ -229,37 +230,37 @@ export const checkout =
             }
           }
 
-          const successUrl = ctx.body.successUrl ?? checkoutOptions.successUrl
-          const returnUrl = ctx.body.returnUrl ?? checkoutOptions.returnUrl
+          const successUrl = ctx.body.success_url ?? checkoutOptions.successUrl
+          const returnUrl = ctx.body.return_url ?? checkoutOptions.returnUrl
 
           try {
-            const checkout = await polar.checkouts.create({
-              externalCustomerId:
+            const checkout = await createCheckouts(polar)({
+              external_customer_id:
                 principal?.externalCustomerId ?? session?.user.id,
               products: productIds,
-              successUrl: successUrl
+              success_url: successUrl
                 ? new URL(
                     successUrl,
                     ctx.request?.url ?? ctx.context.baseURL,
                   ).toString()
                 : undefined,
-              metadata: ctx.body.referenceId
+              metadata: ctx.body.reference_id
                 ? {
-                    referenceId: ctx.body.referenceId,
+                    referenceId: ctx.body.reference_id,
                     ...ctx.body.metadata,
                   }
                 : ctx.body.metadata,
-              customFieldData: ctx.body.customFieldData,
-              allowDiscountCodes: ctx.body.allowDiscountCodes ?? true,
-              discountId: ctx.body.discountId,
+              custom_field_data: ctx.body.custom_field_data,
+              allow_discount_codes: ctx.body.allow_discount_codes ?? true,
+              discount_id: ctx.body.discount_id,
               seats,
-              minSeats,
-              maxSeats,
-              embedOrigin: ctx.body.embedOrigin,
-              allowTrial: ctx.body.allowTrial,
-              trialInterval: ctx.body.trialInterval,
-              trialIntervalCount: ctx.body.trialIntervalCount,
-              returnUrl: returnUrl
+              min_seats: minSeats,
+              max_seats: maxSeats,
+              embed_origin: ctx.body.embed_origin,
+              allow_trial: ctx.body.allow_trial,
+              trial_interval: ctx.body.trial_interval,
+              trial_interval_count: ctx.body.trial_interval_count,
+              return_url: returnUrl
                 ? new URL(
                     returnUrl,
                     ctx.request?.url ?? ctx.context.baseURL,

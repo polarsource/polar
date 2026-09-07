@@ -18,7 +18,7 @@ export const APIRoute = createAPIFileRoute('/api/checkout')({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
     successUrl: process.env.SUCCESS_URL,
     returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Checkout
-    server: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+    environment: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
     theme: 'dark', // Enforces the theme - System-preferred theme will be set if left omitted
   }),
 })
@@ -29,10 +29,10 @@ export const APIRoute = createAPIFileRoute('/api/checkout')({
 Pass query params to this route.
 
 - products `?products=123`
-- customerId (optional) `?products=123&customerId=xxx`
-- customerExternalId (optional) `?products=123&customerExternalId=xxx`
-- customerEmail (optional) `?products=123&customerEmail=janedoe@gmail.com`
-- customerName (optional) `?products=123&customerName=Jane`
+- customer_id (optional) `?products=123&customer_id=xxx`
+- external_customer_id (optional) `?products=123&external_customer_id=xxx`
+- customer_email (optional) `?products=123&customer_email=janedoe@gmail.com`
+- customer_name (optional) `?products=123&customer_name=Jane`
 - seats (optional) `?products=123&seats=5` - Number of seats for seat-based products
 - metadata (optional) `URL-Encoded JSON string`
 
@@ -51,7 +51,7 @@ export const APIRoute = createAPIFileRoute('/api/portal')({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
     getCustomerId: async (request: Request) => '', // Fuction to resolve a Polar Customer ID
     returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Customer Portal
-    server: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+    environment: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
   }),
 })
 ```

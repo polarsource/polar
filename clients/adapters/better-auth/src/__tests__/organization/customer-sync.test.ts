@@ -1,15 +1,16 @@
-import type { CustomerIndividual } from '@polar-sh/sdk/models/components/customerindividual.js'
-import type { CustomerTeam } from '@polar-sh/sdk/models/components/customerteam.js'
-import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror.js'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound.js'
 import type { Organization } from 'better-auth/plugins/organization'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { errors, type models } from '@polar-sh/sdk/2026-04'
 import {
   PolarOrganizationCustomerTypeError,
   ensureTeamCustomer,
   updateTeamCustomer,
 } from '../../organization/sync'
 import { createMockPolarClient, createMockUser } from '../utils/mocks'
+
+type CustomerIndividual = models.CustomerIndividual
+type CustomerTeam = models.CustomerTeam
+const { HTTPValidationError, ResourceNotFound } = errors
 
 const organization: Organization = {
   id: 'organization-123',
@@ -23,52 +24,48 @@ const createTeamCustomer = (
   overrides: Partial<CustomerTeam> = {},
 ): CustomerTeam => ({
   id: 'customer-123',
-  createdAt: new Date(),
-  modifiedAt: null,
+  created_at: new Date().toISOString(),
+  modified_at: null,
   metadata: {},
-  externalId: organization.id,
+  external_id: organization.id,
   email: null,
-  emailVerified: false,
+  email_verified: false,
   type: 'team',
   name: organization.name,
-  billingName: null,
-  billingAddress: null,
-  taxId: null,
-  organizationId: 'polar-organization-123',
-  deletedAt: null,
-  avatarUrl: null,
+  billing_name: null,
+  billing_address: null,
+  tax_id: null,
+  organization_id: 'polar-organization-123',
+  deleted_at: null,
+  first_user_event_at: null,
+  avatar_url: null,
   ...overrides,
 })
 
 const createIndividualCustomer = (): CustomerIndividual => ({
   id: 'customer-123',
-  createdAt: new Date(),
-  modifiedAt: null,
+  created_at: new Date().toISOString(),
+  modified_at: null,
   metadata: {},
-  externalId: organization.id,
+  external_id: organization.id,
   email: 'owner@example.com',
-  emailVerified: false,
+  email_verified: false,
   type: 'individual',
   name: 'Owner',
-  billingName: null,
-  billingAddress: null,
-  taxId: null,
-  organizationId: 'polar-organization-123',
-  deletedAt: null,
-  avatarUrl: null,
-})
-
-const sdkErrorMetadata = (status: number) => ({
-  response: new Response('', { status }),
-  request: new Request('https://api.polar.sh/v1/customers'),
-  body: '',
+  billing_name: null,
+  billing_address: null,
+  tax_id: null,
+  organization_id: 'polar-organization-123',
+  deleted_at: null,
+  first_user_event_at: null,
+  avatar_url: null,
 })
 
 const notFound = () =>
-  new ResourceNotFound(
-    { error: 'ResourceNotFound', detail: 'Customer not found' },
-    sdkErrorMetadata(404),
-  )
+  new ResourceNotFound(404, {
+    error: 'ResourceNotFound',
+    detail: 'Customer not found',
+  })
 
 const validationError = (
   {
@@ -84,10 +81,9 @@ const validationError = (
   } = {},
   status = 422,
 ) =>
-  new HTTPValidationError(
-    { detail: [{ loc, msg, type, input }] },
-    sdkErrorMetadata(status),
-  )
+  new HTTPValidationError(status as 422, {
+    detail: [{ loc, msg, type, input }],
+  })
 
 describe('organization customer synchronization', () => {
   const owner = createMockUser({
@@ -117,10 +113,10 @@ describe('organization customer synchronization', () => {
 
     expect(client.customers.create).toHaveBeenCalledWith({
       type: 'team',
-      externalId: organization.id,
+      external_id: organization.id,
       name: organization.name,
       owner: {
-        externalId: owner.id,
+        external_id: owner.id,
         email: owner.email,
         name: owner.name,
       },
@@ -150,10 +146,10 @@ describe('organization customer synchronization', () => {
     vi.mocked(client.customers.create).mockResolvedValue(createTeamCustomer())
     const getTeamCustomerCreateParams = vi.fn().mockResolvedValue({
       type: 'individual',
-      externalId: 'other-organization',
+      external_id: 'other-organization',
       name: 'Other name',
       owner: {
-        externalId: 'other-user',
+        external_id: 'other-user',
         email: 'other@example.com',
       },
       metadata: { source: 'better-auth' },
@@ -167,10 +163,10 @@ describe('organization customer synchronization', () => {
 
     expect(client.customers.create).toHaveBeenCalledWith({
       type: 'team',
-      externalId: organization.id,
+      external_id: organization.id,
       name: organization.name,
       owner: {
-        externalId: owner.id,
+        external_id: owner.id,
         email: owner.email,
         name: owner.name,
       },
@@ -266,9 +262,9 @@ describe('organization customer synchronization', () => {
       name: 'New name',
     })
 
-    expect(client.customers.updateExternal).toHaveBeenCalledWith({
-      externalId: organization.id,
-      customerUpdateExternalID: { name: 'New name' },
-    })
+    expect(client.customers.updateExternal).toHaveBeenCalledWith(
+      organization.id,
+      { name: 'New name' },
+    )
   })
 })

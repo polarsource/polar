@@ -14,7 +14,7 @@ export const polarClient = () => {
     getActions: ($fetch) => {
       return {
         checkoutEmbed: async (
-          data: Omit<CheckoutParams, 'redirect' | 'embedOrigin'>,
+          data: Omit<CheckoutParams, 'redirect' | 'embed_origin'>,
           fetchOptions?: BetterFetchOption,
         ): Promise<PolarEmbedCheckoutType> => {
           const res = await $fetch('/checkout', {
@@ -22,7 +22,7 @@ export const polarClient = () => {
             body: {
               ...data,
               redirect: false,
-              embedOrigin: window.location.origin,
+              embed_origin: window.location.origin,
             },
             ...fetchOptions,
           })

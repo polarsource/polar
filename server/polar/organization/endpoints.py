@@ -100,6 +100,7 @@ from polar.user_organization.schemas import (
 )
 from polar.user_organization.service import (
     CannotRemoveOrganizationOwner,
+    ConcurrentRoleModification,
     InvalidOwnerRoleAssignment,
     OwnerRoleCannotBeRemoved,
     UserNotMemberOfOrganization,
@@ -701,6 +702,7 @@ async def remove_member(
             "model": NotPermitted.schema(),
         },
         404: OrganizationNotFound,
+        409: {"model": ConcurrentRoleModification.schema()},
     },
 )
 async def set_member_role(

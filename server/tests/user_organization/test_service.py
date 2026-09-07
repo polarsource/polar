@@ -19,6 +19,7 @@ from polar.models.user_organization import OrganizationRole
 from polar.user_organization.service import (
     AlreadyOwner,
     CannotRemoveOrganizationOwner,
+    ConcurrentRoleModification,
     InvalidOwnerRoleAssignment,
     NewOwnerNotVerified,
     OrganizationNotFound,
@@ -457,6 +458,193 @@ class TestConcurrentDemotion:
 
             assert results.count(True) == 1
             assert remaining == 1
+        finally:
+            async with sessionmaker() as cleanup_session:
+                await cleanup_session.execute(
+                    delete(UserOrganization).where(
+                        UserOrganization.organization_id == organization.id
+                    )
+                )
+                await cleanup_session.execute(
+                    delete(Organization).where(Organization.id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Account).where(Account.id == account.id)
+                )
+                await cleanup_session.execute(
+                    delete(User).where(User.id.in_([owner.id, admin.id]))
+                )
+                await cleanup_session.commit()
+            await engine.dispose()
+
+
+async def _attempt_set_role(
+    sessionmaker: AsyncSessionMaker,
+    *,
+    user_id: UUID,
+    organization_id: UUID,
+    role: OrganizationRole,
+) -> tuple[bool, type[BaseException] | None]:
+    async with sessionmaker() as session:
+        try:
+            await user_organization_service.set_role(
+                session,
+                user_id=user_id,
+                organization_id=organization_id,
+                role=role,
+            )
+        except BaseException as e:
+            await session.rollback()
+            return (False, type(e))
+        await session.commit()
+        return (True, None)
+
+
+async def _attempt_transfer_ownership(
+    sessionmaker: AsyncSessionMaker,
+    *,
+    new_owner_user_id: UUID,
+    organization_id: UUID,
+) -> tuple[bool, type[BaseException] | None]:
+    async with sessionmaker() as session:
+        try:
+            await user_organization_service.transfer_ownership(
+                session,
+                new_owner_user_id=new_owner_user_id,
+                organization_id=organization_id,
+            )
+        except BaseException as e:
+            await session.rollback()
+            return (False, type(e))
+        await session.commit()
+        return (True, None)
+
+
+def _install_gated_assert(
+    mocker: MockerFixture,
+    *,
+    staged_event: asyncio.Event,
+    proceed_event: asyncio.Event,
+) -> None:
+    """
+    Park the first `_assert_admin_capability_after_loss` call between
+    `set_role`'s unlocked read and its UPDATE, pinning the TOCTOU
+    interleaving so the concurrent transfer commits in between.
+    """
+    original_assert = type(
+        user_organization_service
+    )._assert_admin_capability_after_loss
+    call_count = 0
+
+    async def gated_assert(
+        session: Any, *, user_id: UUID, organization_id: UUID
+    ) -> None:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            staged_event.set()
+            await proceed_event.wait()
+        await original_assert(
+            user_organization_service,
+            session,
+            user_id=user_id,
+            organization_id=organization_id,
+        )
+
+    mocker.patch.object(
+        user_organization_service,
+        "_assert_admin_capability_after_loss",
+        side_effect=gated_assert,
+    )
+
+
+async def _owner_count(session: Any, organization_id: UUID) -> int:
+    return (
+        await session.execute(
+            select(func.count(UserOrganization.user_id)).where(
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.role == OrganizationRole.owner,
+                UserOrganization.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one()
+
+
+@pytest.mark.asyncio
+class TestSetRoleTransferOwnershipRace:
+    async def test_set_role_aborts_when_concurrent_transfer_promotes_target(
+        self, worker_id: str, mocker: MockerFixture
+    ) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_set_role_transfer_toctou",
+            pool_size=4,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+
+        async with sessionmaker() as setup_session:
+            save_fixture = save_fixture_factory(setup_session)
+            owner = await create_user(save_fixture)
+            admin = await create_user(save_fixture)
+            admin.identity_verification_status = IdentityVerificationStatus.verified
+            await save_fixture(admin)
+            account = await create_account(save_fixture, owner)
+            organization = await create_organization(save_fixture, account)
+            setup_session.add(
+                UserOrganization(
+                    user=owner, organization=organization, role=OrganizationRole.owner
+                )
+            )
+            setup_session.add(
+                UserOrganization(
+                    user=admin, organization=organization, role=OrganizationRole.admin
+                )
+            )
+            await setup_session.commit()
+
+        staged_event = asyncio.Event()
+        proceed_event = asyncio.Event()
+        _install_gated_assert(
+            mocker, staged_event=staged_event, proceed_event=proceed_event
+        )
+
+        try:
+            # `set_role(admin -> member)` reads `admin`, then parks at the
+            # gated guard while `transfer_ownership` promotes `admin` to owner.
+            set_role_task = asyncio.create_task(
+                _attempt_set_role(
+                    sessionmaker,
+                    user_id=admin.id,
+                    organization_id=organization.id,
+                    role=OrganizationRole.member,
+                )
+            )
+            await staged_event.wait()
+
+            succeeded_transfer, transfer_exc = await _attempt_transfer_ownership(
+                sessionmaker,
+                new_owner_user_id=admin.id,
+                organization_id=organization.id,
+            )
+            proceed_event.set()
+
+            succeeded_set_role, set_role_exc = await set_role_task
+
+            async with sessionmaker() as verify_session:
+                admin_uo = await user_organization_service.get_by_user_and_org(
+                    verify_session, admin.id, organization.id
+                )
+                owner_count = await _owner_count(verify_session, organization.id)
+
+            assert succeeded_transfer is True, transfer_exc
+            # The stale demotion matches no rows and is rejected, so the
+            # transfer-promoted owner survives and the org keeps one owner.
+            assert succeeded_set_role is False
+            assert set_role_exc is ConcurrentRoleModification
+            assert admin_uo is not None
+            assert admin_uo.role == OrganizationRole.owner
+            assert owner_count == 1
         finally:
             async with sessionmaker() as cleanup_session:
                 await cleanup_session.execute(

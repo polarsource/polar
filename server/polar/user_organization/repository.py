@@ -57,6 +57,17 @@ class UserOrganizationRepository:
         result = await self.session.execute(statement)
         return [(row[0], row[1]) for row in result.all()]
 
+    async def lock_members_for_update(self, organization_id: UUID) -> None:
+        await self.session.execute(
+            select(UserOrganization.user_id)
+            .where(
+                UserOrganization.organization_id == organization_id,
+                ~UserOrganization.is_deleted,
+            )
+            .order_by(UserOrganization.user_id)
+            .with_for_update()
+        )
+
     async def demote_current_owner(self, organization_id: UUID) -> UUID | None:
         """Demote whoever currently holds `owner` on the org to `admin`.
 

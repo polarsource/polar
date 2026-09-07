@@ -15,7 +15,7 @@ from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
 from polar.locker import Locker
-from polar.models import Account, Organization, Payout, Transaction, User
+from polar.models import Account, Organization, Payout, PayoutAttempt, Transaction, User
 from polar.models.organization import OrganizationStatus, PayoutAccountNotReady
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
@@ -27,6 +27,7 @@ from polar.payout.service import (
     InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
     OrganizationCannotPayout,
+    PayoutAlreadyTriggered,
     PayoutCanceled,
     PayoutHeld,
     PayoutIntervalLimitReached,
@@ -701,6 +702,195 @@ class TestTriggerStripePayout:
 
         stripe_service_mock.retrieve_balance.assert_not_called()
         stripe_service_mock.create_payout.assert_not_called()
+
+    async def test_duplicate_full_amount_trigger_raises(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # Two concurrent *Retry Payout* submissions each enqueue a trigger that
+        # pays the full amount. The task's FOR UPDATE lock serializes them, so
+        # the second observes the first's committed attempt; the guard must
+        # turn the second into a no-op (PayoutAlreadyTriggered) instead of
+        # minting a second Stripe payout (over-payment).
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            account_amount=1000,
+            amount=1000,
+            status=PayoutStatus.failed,
+            attempts=[PayoutAttemptStatus.failed],
+        )
+        stripe_service_mock.retrieve_balance.return_value = ("usd", 2000)
+        stripe_service_mock.create_payout.return_value = MagicMock(id="po_test_0")
+
+        attempt1 = await payout_service.trigger_stripe_payout(session, payout, 1000)
+
+        assert attempt1.processor_id == "po_test_0"
+        assert attempt1.status == PayoutAttemptStatus.pending
+        assert stripe_service_mock.create_payout.call_count == 1
+
+        # Task 2 observes Task 1's committed attempt after the FOR UPDATE lock.
+        await session.refresh(payout, attribute_names=["attempts"])
+
+        with pytest.raises(PayoutAlreadyTriggered):
+            await payout_service.trigger_stripe_payout(session, payout, 1000)
+
+        # No second Stripe payout, and the balance check is never revisited.
+        assert stripe_service_mock.create_payout.call_count == 1
+        assert stripe_service_mock.retrieve_balance.call_count == 1
+
+    async def test_sub_amount_retry_of_unpaid_remainder_proceeds(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # A partially-succeeded payout (600 paid, 400 top-up failed) retrying the
+        # remaining 400 must still proceed: the guard excludes failed attempts,
+        # so already_covered (600) + 400 == account_amount (1000) is allowed.
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            account_amount=1000,
+            amount=1000,
+            status=PayoutStatus.succeeded,
+            attempts=[],
+        )
+        await save_fixture(
+            PayoutAttempt(
+                payout=payout,
+                processor=PayoutAccountType.stripe,
+                status=PayoutAttemptStatus.succeeded,
+                amount=600,
+                currency="usd",
+                processor_id="po_existing_600",
+                paid_at=utc_now(),
+            )
+        )
+        await save_fixture(
+            PayoutAttempt(
+                payout=payout,
+                processor=PayoutAccountType.stripe,
+                status=PayoutAttemptStatus.failed,
+                amount=400,
+                currency="usd",
+                failed_reason="previous top-up failed",
+            )
+        )
+        stripe_service_mock.retrieve_balance.return_value = ("usd", 1000)
+        stripe_service_mock.create_payout.return_value = MagicMock(id="po_test_0")
+
+        await session.refresh(payout, attribute_names=["attempts"])
+
+        attempt = await payout_service.trigger_stripe_payout(session, payout, 400)
+
+        assert stripe_service_mock.create_payout.call_count == 1
+        assert stripe_service_mock.create_payout.call_args.kwargs["amount"] == 400
+        assert attempt.amount == 400
+        assert attempt.status == PayoutAttemptStatus.pending
+        assert attempt.processor_id == "po_test_0"
+
+    async def test_partial_in_flight_blocks_recover_but_allows_remainder(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # A payout with an in-flight (pending) 600 attempt: retrying the full
+        # 1000 (re-covering the in-flight 600) must raise, but retrying the
+        # remaining 400 must still proceed.
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            account_amount=1000,
+            amount=1000,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+        await save_fixture(
+            PayoutAttempt(
+                payout=payout,
+                processor=PayoutAccountType.stripe,
+                status=PayoutAttemptStatus.pending,
+                amount=600,
+                currency="usd",
+            )
+        )
+        stripe_service_mock.retrieve_balance.return_value = ("usd", 1000)
+        stripe_service_mock.create_payout.return_value = MagicMock(id="po_test_0")
+
+        await session.refresh(payout, attribute_names=["attempts"])
+
+        # Re-covering the in-flight 600 with a full 1000 retry raises before any
+        # Stripe call.
+        with pytest.raises(PayoutAlreadyTriggered):
+            await payout_service.trigger_stripe_payout(session, payout, 1000)
+        stripe_service_mock.create_payout.assert_not_called()
+        stripe_service_mock.retrieve_balance.assert_not_called()
+
+        # Retrying the remaining 400 proceeds.
+        attempt = await payout_service.trigger_stripe_payout(session, payout, 400)
+
+        assert stripe_service_mock.create_payout.call_count == 1
+        assert stripe_service_mock.create_payout.call_args.kwargs["amount"] == 400
+        assert attempt.amount == 400
+
+    async def test_trigger_default_amount_no_attempts_proceeds(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # The cron-driven happy path: a payout with no attempts, account_amount
+        # unset (defaults to payout.account_amount), proceeds. Guards that the
+        # new check doesn't accidentally block the first trigger.
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            account_amount=1000,
+            amount=1000,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+        stripe_service_mock.retrieve_balance.return_value = ("usd", 1000)
+        stripe_service_mock.create_payout.return_value = MagicMock(id="po_test_0")
+
+        attempt = await payout_service.trigger_stripe_payout(session, payout)
+
+        assert stripe_service_mock.create_payout.call_count == 1
+        assert attempt.amount == 1000
+        assert attempt.status == PayoutAttemptStatus.pending
+        assert attempt.processor_id == "po_test_0"
 
 
 @pytest.mark.asyncio

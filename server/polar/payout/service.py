@@ -700,6 +700,22 @@ class PayoutService:
         else:
             account_amount = payout.account_amount
 
+        # Two concurrent *Retry Payout* submissions enqueue two trigger_payout
+        # tasks; the task's FOR UPDATE lock serializes them, so the second
+        # observes the first's committed attempt. Block a trigger that would
+        # re-pay an amount already covered by an in-flight or succeeded attempt
+        # instead of minting a second Stripe payout (over-payment). The task
+        # swallows PayoutAlreadyTriggered, so this becomes a no-op. Failed
+        # attempts are excluded, so legitimate retries — including sub-amount
+        # retries of an unpaid remainder — still proceed.
+        already_covered = sum(
+            attempt.amount
+            for attempt in payout.attempts
+            if attempt.status != PayoutAttemptStatus.failed
+        )
+        if already_covered + account_amount > payout.account_amount:
+            raise PayoutAlreadyTriggered(payout)
+
         _, balance = await stripe_service.retrieve_balance(payout_account.stripe_id)
         if balance < account_amount:
             log.info(

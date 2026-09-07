@@ -40,6 +40,9 @@ class LogCorrelationIdMiddleware:
         root_span = scope.get("logfire.span")
         if root_span is not None and root_span.is_recording():
             root_span.set_attribute("correlation_id", correlation_id)
+            api_version = scope.get("state", {}).get("api_version")
+            if api_version is not None:
+                root_span.set_attribute("api_version", str(api_version))
 
         # Capture client identification headers (sent by the mobile app)
         # so we can correlate API traffic to specific client builds for

@@ -54,14 +54,17 @@ class HttpMetricsMiddleware:
             if path_template is not None:
                 duration = time.perf_counter() - start_time
                 method = scope.get("method", "UNKNOWN")
+                api_version = str(scope.get("state", {}).get("api_version", ""))
 
                 HTTP_REQUEST_TOTAL.labels(
                     endpoint=path_template,
                     method=method,
                     status_code=status_code,
+                    api_version=api_version,
                 ).inc()
 
                 HTTP_REQUEST_DURATION_SECONDS.labels(
                     endpoint=path_template,
                     method=method,
+                    api_version=api_version,
                 ).observe(duration)

@@ -50018,6 +50018,15 @@ export interface operations {
           'application/json': components['schemas']['ValidatedLicenseKey']
         }
       }
+      /** @description Not authorized to manage license key. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
       /** @description License key not found. */
       404: {
         headers: {
@@ -50058,6 +50067,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['LicenseKeyActivationRead']
+        }
+      }
+      /** @description Not authorized to manage license key. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
         }
       }
       /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
@@ -50108,6 +50126,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Not authorized to manage license key. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
       }
       /** @description License key not found. */
       404: {

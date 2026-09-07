@@ -13,6 +13,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import {
   FormControl,
   FormField,
+  FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
@@ -172,12 +173,7 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                   },
                 }}
                 render={({ field }) => (
-                  <Box
-                    flexDirection="column"
-                    gap="s"
-                    width={{ base: '100%', sm: 192 }}
-                    flexShrink={0}
-                  >
+                  <FormItem className="w-full shrink-0 sm:w-48">
                     <Box display={{ base: 'flex', sm: 'none' }}>
                       <Text variant="caption" color="muted">
                         Key
@@ -204,7 +200,7 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                       </Box>
                     </Box>
                     <FormMessage />
-                  </Box>
+                  </FormItem>
                 )}
               />
               <Box
@@ -218,7 +214,7 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                   name={`metadata.${index}.value`}
                   rules={{ validate: validateMetadataValue }}
                   render={({ field }) => (
-                    <Box flexDirection="column" gap="s" flex={1} minWidth={0}>
+                    <FormItem className="min-w-0 flex-1">
                       <Box display={{ base: 'flex', sm: 'none' }}>
                         <Text variant="caption" color="muted">
                           Value
@@ -255,7 +251,7 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                         />
                       </Box>
                       <FormMessage />
-                    </Box>
+                    </FormItem>
                   )}
                 />
                 <Box

@@ -1677,7 +1677,8 @@ class TestUpdateSSOEnforced:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # A non-SSO session must not be able to turn on enforcement.
+        # A non-SSO session (no SSO provenance) must not be able to turn on
+        # enforcement, even when an enabled connection exists.
         await self._create_connection(save_fixture, organization)
 
         response = await client.patch(
@@ -1695,8 +1696,9 @@ class TestUpdateSSOEnforced:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # Scoped session but no enabled connection would lock the org out.
-        auth_subject.organization_ids = frozenset({organization.id})
+        # An SSO-provenanced session but no enabled connection would lock the
+        # org out: the provenance guard passes, then the connection guard fires.
+        auth_subject.sso_organization_ids = frozenset({organization.id})
 
         response = await client.patch(
             f"/v1/organizations/{organization.id}",
@@ -1706,7 +1708,7 @@ class TestUpdateSSOEnforced:
         assert response.status_code == 409
 
     @pytest.mark.auth
-    async def test_enable_from_scoped_session(
+    async def test_enable_from_non_sso_scoped_session_forbidden(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -1714,8 +1716,33 @@ class TestUpdateSSOEnforced:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        # An org-scoped but non-SSO-provenanced credential — such as an OAuth2
+        # user token minted from a regular cookie session — must NOT satisfy
+        # the guard. Only `organization_ids` is set (no SSO provenance), which
+        # is exactly the shape of a non-SSO org-scoped OAuth2 token.
         await self._create_connection(save_fixture, organization)
         auth_subject.organization_ids = frozenset({organization.id})
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": True},
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_enable_from_sso_session(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # An SSO-provenanced session (the dashboard flow after completing SSO)
+        # may enforce SSO once an enabled connection exists.
+        await self._create_connection(save_fixture, organization)
+        auth_subject.sso_organization_ids = frozenset({organization.id})
 
         response = await client.patch(
             f"/v1/organizations/{organization.id}",
@@ -1726,7 +1753,29 @@ class TestUpdateSSOEnforced:
         assert response.json()["sso_enforced"] is True
 
     @pytest.mark.auth
-    async def test_disable_from_scoped_session(
+    async def test_enable_from_sso_session_for_other_org_forbidden(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # SSO provenance is per-organization: a session proven for one org must
+        # not satisfy the guard for a different org.
+        await self._create_connection(save_fixture, organization)
+        auth_subject.sso_organization_ids = frozenset({organization_second.id})
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": True},
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_disable_from_sso_session(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -1734,9 +1783,13 @@ class TestUpdateSSOEnforced:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        # Disabling enforcement does not require SSO provenance (the guard only
+        # fires when enabling), but the session must still be scoped to reach
+        # the now-enforced org.
         organization.sso_enforced = True
         await save_fixture(organization)
         auth_subject.organization_ids = frozenset({organization.id})
+        auth_subject.sso_organization_ids = frozenset({organization.id})
 
         response = await client.patch(
             f"/v1/organizations/{organization.id}",

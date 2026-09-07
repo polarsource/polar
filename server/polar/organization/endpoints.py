@@ -365,9 +365,16 @@ async def update(
         # Only allow enforcing SSO from a session already authenticated through
         # this organization's SSO — proof it works — and only while an enabled
         # connection exists, so an admin can't lock everyone out.
+        #
+        # Gate on SSO provenance (``sso_organization_ids``), not on org-scoping
+        # (``organization_ids``): the latter is also carried by OAuth2 user
+        # tokens minted from a regular (non-SSO) cookie session, which would let
+        # an admin enforce SSO without ever completing an SSO login. Only a
+        # ``UserSession`` whose down-scope originated from an SSO completion
+        # populates ``sso_organization_ids``.
         if (
-            authz.auth_subject.organization_ids is None
-            or authz.organization.id not in authz.auth_subject.organization_ids
+            authz.auth_subject.sso_organization_ids is None
+            or authz.organization.id not in authz.auth_subject.sso_organization_ids
         ):
             raise NotPermitted(
                 "You must be signed in through SSO for this organization to enforce it."

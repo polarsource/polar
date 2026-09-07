@@ -48,6 +48,14 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
     # restricts access to those organizations, always intersected with the
     # subject's current membership.
     organization_ids: frozenset[UUID] | None
+    # Organizations this credential has *proven SSO* for — i.e. the down-scope
+    # originated from an SSO completion, not merely an org-scoped OAuth2 token
+    # or a backoffice impersonation session. Populated only for ``UserSession``
+    # credentials, from the ``UserSessionOrganization`` rows marked ``sso=True``;
+    # ``None`` for every other credential (OAuth2 tokens, PATs, OATs, …). The
+    # ``sso_enforced`` guard gates on this rather than on ``organization_ids``
+    # so an admin can only enforce SSO after actually completing an SSO login.
+    sso_organization_ids: frozenset[UUID] | None
 
     def __init__(
         self,
@@ -55,11 +63,13 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
         scopes: set[Scope],
         session: Session | None,
         organization_ids: frozenset[UUID] | None = None,
+        sso_organization_ids: frozenset[UUID] | None = None,
     ) -> None:
         self.subject = subject
         self.scopes = scopes
         self.session = session
         self.organization_ids = organization_ids
+        self.sso_organization_ids = sso_organization_ids
 
     @cached_property
     def rate_limit_key(self) -> tuple[str, RateLimitGroup]:

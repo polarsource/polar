@@ -43,6 +43,11 @@ class AuthService:
             user_agent=request.headers.get("User-Agent", ""),
             scopes=list(Scope),
             organization_ids=organization_ids,
+            # An SSO completion is the only login path that scopes the session
+            # to an organization; mark the down-scope as SSO-provenanced so the
+            # "proof SSO works" guard on sso_enforced can distinguish it from a
+            # non-SSO scoped credential (e.g. backoffice impersonation).
+            sso=factor == "sso" and organization_ids is not None,
         )
 
         return_url = get_safe_return_url(return_to)
@@ -131,6 +136,7 @@ class AuthService:
         scopes: list[Scope],
         expire_in: timedelta = settings.USER_SESSION_TTL,
         organization_ids: frozenset[UUID] | None = None,
+        sso: bool = False,
     ) -> tuple[str, UserSession]:
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
@@ -144,7 +150,7 @@ class AuthService:
         )
         if organization_ids is not None:
             user_session.organization_scopes = [
-                UserSessionOrganization(organization_id=organization_id)
+                UserSessionOrganization(organization_id=organization_id, sso=sso)
                 for organization_id in organization_ids
             ]
         session.add(user_session)

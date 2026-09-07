@@ -186,11 +186,24 @@ async def get_auth_subject(
             )
             or None
         )
+        # SSO provenance travels only on web sessions: only an SSO completion
+        # marks its UserSessionOrganization rows ``sso=True``. OAuth2 tokens and
+        # every other credential carry no SSO provenance (``None``), so the
+        # sso_enforced guard rejects them even when they are org-scoped.
+        sso_organization_ids = (
+            frozenset(
+                scope.organization_id
+                for scope in user_session.organization_scopes
+                if scope.sso
+            )
+            or None
+        )
         return AuthSubject(
             user_session.user,
             set(user_session.scopes),
             user_session,
             organization_ids,
+            sso_organization_ids,
         )
 
     return AuthSubject(Anonymous(), set(), None)

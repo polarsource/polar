@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import Depends, HTTPException, Query, Request
-from pydantic import UUID4
+from pydantic import UUID4, AnyUrl
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, tag, text
@@ -11,6 +11,7 @@ from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.webhook.repository import WebhookEndpointRepository
+from polar.webhook.schemas import validate_hostname
 from polar.webhook.sorting import WebhookSortProperty
 
 from ..components import button, confirmation_dialog, datatable, description_list, input
@@ -264,6 +265,20 @@ async def toggle_enabled(
 
     if webhook is None:
         raise HTTPException(status_code=404)
+
+    is_enabling = not webhook.enabled
+    if is_enabling:
+        try:
+            validate_hostname(AnyUrl(webhook.url))
+        except ValueError:
+            await add_toast(
+                request,
+                "Cannot enable a webhook with a localhost or private IP URL. Please update the URL first.",
+                "error",
+            )
+            with tag.div(id="modal"):
+                pass
+            return
 
     webhook = await repository.update(
         webhook, update_dict={"enabled": not webhook.enabled}

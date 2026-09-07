@@ -75,6 +75,6 @@
   },
   "dependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/checkout": "^0.2.0"
+    "@polar-sh/checkout": "workspace:*"
   }
 }

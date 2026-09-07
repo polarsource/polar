@@ -198,8 +198,8 @@ importers:
         specifier: workspace:*
         version: link:../adapter-utils
       '@polar-sh/checkout':
-        specifier: ^0.2.0
-        version: 0.2.1(@stripe/react-stripe-js@5.6.1(@stripe/stripe-js@8.11.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@stripe/stripe-js@8.11.0)(react@19.2.5)
+        specifier: workspace:*
+        version: link:../../packages/checkout
     devDependencies:
       '@polar-sh/sdk':
         specifier: 1.0.0-alpha.20
@@ -5085,13 +5085,6 @@ packages:
   '@pnpm/npm-conf@3.0.2':
     resolution: {integrity: sha512-h104Kh26rR8tm+a3Qkc5S4VLYint3FE48as7+/5oCEcKR2idC/pF1G6AhIXKI+eHPJa/3J9i5z0Al47IeGHPkA==}
     engines: {node: '>=12'}
-
-  '@polar-sh/checkout@0.2.1':
-    resolution: {integrity: sha512-AEKKw3o4ykApECA4bU6a2YC0+aQKTFUasca4ZgCDIjG8AHlu3SjW3Taxh2nfeYAczhah0m0axVF9AV8VfdYzfw==}
-    peerDependencies:
-      '@stripe/react-stripe-js': ^3.6.0 || ^4.0.2
-      '@stripe/stripe-js': ^7.1.0
-      react: ^18 || ^19
 
   '@polar-sh/sdk@0.46.1':
     resolution: {integrity: sha512-bFoEX2wxa5rWe2jTrJrf2Knelf/3zW1O2wGoqYoJfuRVvUgGSml1TB1v6NO+tDkT5d1bMfUFXBKxFYnuegG1iw==}
@@ -20213,13 +20206,6 @@ snapshots:
       '@pnpm/config.env-replace': 1.1.0
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
-
-  '@polar-sh/checkout@0.2.1(@stripe/react-stripe-js@5.6.1(@stripe/stripe-js@8.11.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@stripe/stripe-js@8.11.0)(react@19.2.5)':
-    dependencies:
-      '@stripe/react-stripe-js': 5.6.1(@stripe/stripe-js@8.11.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@stripe/stripe-js': 8.11.0
-      date-fns: 4.1.0
-      react: 19.2.5
 
   '@polar-sh/sdk@0.46.1':
     dependencies:

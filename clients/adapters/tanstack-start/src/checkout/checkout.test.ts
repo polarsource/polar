@@ -37,6 +37,48 @@ describe('Checkout', () => {
     expect(response.status).toBe(302)
   })
 
+  it.each([
+    ['%2541', '%41'],
+    ['%2500', '%00'],
+    ['%7Bx%7D', '{x}'],
+  ])('preserves URL escapes %s', async (encoded, decoded) => {
+    mockCheckoutCreate.mockResolvedValue({
+      url: 'https://polar.sh/checkout/123',
+    })
+    const checkout = Checkout({
+      accessToken: 'test-token',
+      successUrl: `https://example.com/success?data=${encoded}`,
+      returnUrl: `https://example.com/return?data=${encoded}`,
+      includeCheckoutId: true,
+      theme: 'dark',
+    })
+    const response = await checkout({
+      request: new Request('https://example.com/checkout?products=prod_123'),
+    })
+
+    const { success_url, return_url } = mockCheckoutCreate.mock.calls[0][0]
+    expect(success_url).toBe(
+      `https://example.com/success?data=${encoded}&checkout_id={CHECKOUT_ID}`,
+    )
+    const page = new URL(success_url.replaceAll('{CHECKOUT_ID}', 'chk_123'))
+    expect(page.searchParams.get('data')).toBe(decoded)
+    expect(page.searchParams.get('checkout_id')).toBe('chk_123')
+    expect(return_url).toBe(`https://example.com/return?data=${encoded}`)
+    expect(new URL(return_url).searchParams.get('data')).toBe(decoded)
+    expect(response.status).toBe(302)
+    expect(response.headers.get('location')).toBe(
+      'https://polar.sh/checkout/123?theme=dark',
+    )
+  })
+
+  it('returns 400 when no products are provided', async () => {
+    const checkout = Checkout({ accessToken: 'test-token' })
+    const response = await checkout({
+      request: new Request('https://example.com/checkout'),
+    })
+    expect(response.status).toBe(400)
+  })
+
   it('should return a valid HTTP 500 with a JSON body when checkout creation fails', async () => {
     mockCheckoutCreate.mockRejectedValue(new Error('API Error'))
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

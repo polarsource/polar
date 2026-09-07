@@ -51,6 +51,32 @@ describe('Checkout', () => {
     })
   })
 
+  describe('URL escape preservation', () => {
+    it.each([
+      ['%2541', '%41'],
+      ['%2500', '%00'],
+      ['%7Bx%7D', '{x}'],
+    ])('preserves URL escapes %s', async (encoded, decoded) => {
+      const checkout = Checkout({
+        accessToken: 'test-token',
+        successUrl: `https://example.com/success?data=${encoded}`,
+        returnUrl: `https://example.com/return?data=${encoded}`,
+        includeCheckoutId: true,
+      })
+      await checkout(makeEvent('/api/checkout?products=prod_123'))
+
+      const { success_url, return_url } = mockCheckoutCreate.mock.calls[0][0]
+      expect(success_url).toBe(
+        `https://example.com/success?data=${encoded}&checkout_id={CHECKOUT_ID}`,
+      )
+      const page = new URL(success_url.replaceAll('{CHECKOUT_ID}', 'chk_123'))
+      expect(page.searchParams.get('data')).toBe(decoded)
+      expect(page.searchParams.get('checkout_id')).toBe('chk_123')
+      expect(return_url).toBe(`https://example.com/return?data=${encoded}`)
+      expect(new URL(return_url).searchParams.get('data')).toBe(decoded)
+    })
+  })
+
   describe('seats', () => {
     it('forwards seats to polar.checkouts.create when ?seats=5 is provided', async () => {
       const checkout = Checkout({ accessToken: 'test-token' })

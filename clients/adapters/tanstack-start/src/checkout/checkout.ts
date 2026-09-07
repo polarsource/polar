@@ -46,7 +46,9 @@ export const Checkout = <TPath extends string = string>({
     try {
       const result = await createCheckouts(polar)({
         products,
-        success_url: success ? decodeURI(success.toString()) : undefined,
+        success_url: success
+          ? success.toString().replaceAll('%7BCHECKOUT_ID%7D', '{CHECKOUT_ID}')
+          : undefined,
         customer_id: url.searchParams.get('customer_id') ?? undefined,
         external_customer_id:
           url.searchParams.get('external_customer_id') ?? undefined,
@@ -73,7 +75,9 @@ export const Checkout = <TPath extends string = string>({
         seats: url.searchParams.has('seats')
           ? Number.parseInt(url.searchParams.get('seats') ?? '1', 10)
           : undefined,
-        return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
+        return_url: retUrl
+          ? retUrl.toString().replaceAll('%7BCHECKOUT_ID%7D', '{CHECKOUT_ID}')
+          : undefined,
       })
 
       const redirectUrl = new URL(result.url)

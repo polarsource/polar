@@ -78,7 +78,9 @@ export const Checkout = ({
 
       const result = await createCheckouts(polar)({
         products,
-        success_url: success ? decodeURI(success.toString()) : undefined,
+        success_url: success
+          ? success.toString().replaceAll('%7BCHECKOUT_ID%7D', '{CHECKOUT_ID}')
+          : undefined,
         customer_id: customerId,
         external_customer_id: customerExternalId,
         customer_email: customerEmail,
@@ -95,7 +97,9 @@ export const Checkout = ({
         discount_id: discountId,
         metadata: metadata ? JSON.parse(metadata) : undefined,
         seats,
-        return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
+        return_url: retUrl
+          ? retUrl.toString().replaceAll('%7BCHECKOUT_ID%7D', '{CHECKOUT_ID}')
+          : undefined,
       })
 
       const redirectUrl = new URL(result.url)

@@ -62,6 +62,7 @@ beforeAll(() => {
 afterEach(() => {
   captureOptions.mockClear()
   mockLoadStripe.mockClear()
+  vi.useRealTimers()
 })
 
 function FormWrapper({
@@ -304,63 +305,8 @@ describe('CheckoutForm', () => {
     })
   })
 
-  it('displays validation error on billing address state field', async () => {
-    let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
-    const checkout = createCheckout({
-      // oxlint-disable-next-line typescript/no-explicit-any
-      payment_processor: 'dummy' as any,
-      billing_address_fields: {
-        country: 'required',
-        state: 'required',
-        city: 'optional',
-        postal_code: 'optional',
-        line1: 'optional',
-        line2: 'disabled',
-      },
-    })
-
-    render(
-      <FormWrapper
-        checkout={checkout}
-        {...defaultProps}
-        onForm={(f) => {
-          form = f
-        }}
-        defaultValues={{
-          customer_billing_address: {
-            country: 'US',
-            state: 'California',
-          },
-        }}
-        locale="en"
-      />,
-    )
-
-    await act(async () => {
-      form!.setError('customer_billing_address.state', {
-        type: 'value_error',
-        message: 'Invalid US state',
-      })
-    })
-
-    expect(screen.getByText('Invalid US state')).toBeInTheDocument()
-  })
-
-  describe('debounced country changes', () => {
-    beforeEach(() => {
-      vi.useFakeTimers({ shouldAdvanceTime: true })
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
-    const waitForDebounce = () =>
-      act(async () => {
-        await vi.advanceTimersByTimeAsync(600)
-      })
-
-    it('resets state field when country changes', async () => {
+  it('resets state field when country changes', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
     const update = vi.fn(async () => createCheckout())
     const checkout = createCheckout({
@@ -408,7 +354,9 @@ describe('CheckoutForm', () => {
       form!.setValue('customer_billing_address.country', 'US')
     })
 
-    await waitForDebounce()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600)
+    })
 
     // Only state should be reset
     expect(form!.getValues('customer_billing_address.state')).toBe('')
@@ -419,7 +367,50 @@ describe('CheckoutForm', () => {
     expect(form!.getValues('customer_billing_address.line1')).toBe('Foo St')
   })
 
+  it('displays validation error on billing address state field', async () => {
+    let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
+    const checkout = createCheckout({
+      // oxlint-disable-next-line typescript/no-explicit-any
+      payment_processor: 'dummy' as any,
+      billing_address_fields: {
+        country: 'required',
+        state: 'required',
+        city: 'optional',
+        postal_code: 'optional',
+        line1: 'optional',
+        line2: 'disabled',
+      },
+    })
+
+    render(
+      <FormWrapper
+        checkout={checkout}
+        {...defaultProps}
+        onForm={(f) => {
+          form = f
+        }}
+        defaultValues={{
+          customer_billing_address: {
+            country: 'US',
+            state: 'California',
+          },
+        }}
+        locale="en"
+      />,
+    )
+
+    await act(async () => {
+      form!.setError('customer_billing_address.state', {
+        type: 'value_error',
+        message: 'Invalid US state',
+      })
+    })
+
+    expect(screen.getByText('Invalid US state')).toBeInTheDocument()
+  })
+
   it('clears billing address errors when country changes', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
     const checkout = createCheckout({
       // oxlint-disable-next-line typescript/no-explicit-any
@@ -464,12 +455,18 @@ describe('CheckoutForm', () => {
       form!.setValue('customer_billing_address.country', 'CA')
     })
 
-    await waitForDebounce()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600)
+    })
 
     expect(screen.queryByText('Invalid US state')).not.toBeInTheDocument()
   })
 
   describe('tax ID handling on country change', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+    })
+
     const businessCheckout = (
       overrides: Partial<ProductCheckoutPublic> = {},
     ): ProductCheckoutPublic =>
@@ -511,6 +508,11 @@ describe('CheckoutForm', () => {
       )
       return { form, update }
     }
+
+    const waitForDebounce = () =>
+      act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
 
     it('clears an applied tax ID on the server and form when the country changes', async () => {
       const update = vi.fn(async () => createCheckout())
@@ -641,7 +643,6 @@ describe('CheckoutForm', () => {
         customer_billing_address: { country: 'US' },
         customer_tax_id: null,
       })
-    })
     })
   })
 

@@ -19,7 +19,10 @@ from polar.subscription.schemas import (
     SubscriptionChargePreview,
     SubscriptionID,
 )
-from polar.subscription.service import AlreadyCanceledSubscription
+from polar.subscription.service import (
+    AlreadyCanceledSubscription,
+    SubscriptionNotScheduledToCancel,
+)
 from polar.subscription.service import subscription as subscription_service
 
 from .. import auth
@@ -236,8 +239,12 @@ async def preview_change(
         },
         404: SubscriptionNotFound,
         409: {
-            "description": "The subscription has no payment method to charge.",
-            "model": PaymentMethodRequired.schema(),
+            "description": (
+                "The subscription has no payment method to charge, "
+                "or is not scheduled to be canceled."
+            ),
+            "model": PaymentMethodRequired.schema()
+            | SubscriptionNotScheduledToCancel.schema(),
         },
     },
 )

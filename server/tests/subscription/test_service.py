@@ -27,7 +27,6 @@ from polar.enums import (
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import (
-    BadRequest,
     PolarRequestValidationError,
     ResourceUnavailable,
 )
@@ -96,6 +95,7 @@ from polar.subscription.service import (
     NotPausedSubscription,
     SeatsAlreadyAssigned,
     SubscriptionMeterCycleLag,
+    SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -3286,7 +3286,7 @@ class TestUncancel:
             customer=customer,
         )
 
-        with pytest.raises(BadRequest):
+        with pytest.raises(SubscriptionNotScheduledToCancel):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -3336,7 +3336,7 @@ class TestUncancel:
         )
         assert subscription.cancel_at_period_end is False
 
-        with pytest.raises(BadRequest):
+        with pytest.raises(SubscriptionNotScheduledToCancel):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:

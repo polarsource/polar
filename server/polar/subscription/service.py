@@ -55,7 +55,6 @@ from polar.event.system import (
     build_system_event,
 )
 from polar.exceptions import (
-    BadRequest,
     PolarError,
     PolarRequestValidationError,
     ResourceUnavailable,
@@ -212,6 +211,13 @@ class NoScheduledPause(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
         message = "This subscription is not scheduled to be paused."
+        super().__init__(message, 409)
+
+
+class SubscriptionNotScheduledToCancel(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription is not scheduled to be canceled, so it cannot be uncanceled."
         super().__init__(message, 409)
 
 
@@ -2558,7 +2564,7 @@ class SubscriptionService:
             raise ResourceUnavailable()
 
         if not subscription.can_uncancel():
-            raise BadRequest()
+            raise SubscriptionNotScheduledToCancel(subscription)
 
         subscription.cancel_at_period_end = False
         subscription.ends_at = None

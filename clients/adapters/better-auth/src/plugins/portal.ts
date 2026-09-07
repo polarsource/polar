@@ -215,7 +215,7 @@ export const portal =
           query: z
             .object({
               organizationId: z.string().min(1).optional(),
-              referenceId: z.string().optional(),
+              reference_id: z.string().optional(),
               page: z.coerce.number().optional(),
               limit: z.coerce.number().optional(),
               active: z.coerce.boolean().optional(),
@@ -241,13 +241,13 @@ export const portal =
               })
             : undefined
 
-          if (ctx.query?.organizationId && ctx.query.referenceId) {
+          if (ctx.query?.organizationId && ctx.query.reference_id) {
             throw new APIError('BAD_REQUEST', {
-              message: 'organizationId cannot be combined with referenceId',
+              message: 'organizationId cannot be combined with reference_id',
             })
           }
 
-          if (ctx.query?.referenceId) {
+          if (ctx.query?.reference_id) {
             try {
               const subscriptions: models.ListResourceSubscription =
                 await listSubscriptions(polar)({
@@ -255,7 +255,7 @@ export const portal =
                   limit: ctx.query?.limit,
                   active: ctx.query?.active,
                   metadata: {
-                    referenceId: ctx.query?.referenceId,
+                    referenceId: ctx.query?.reference_id,
                   },
                 })
 
@@ -264,12 +264,12 @@ export const portal =
               console.log(e)
               if (e instanceof Error) {
                 ctx.context.logger.error(
-                  `Polar subscriptions list with referenceId failed. Error: ${e.message}`,
+                  `Polar subscriptions list with reference_id failed. Error: ${e.message}`,
                 )
               }
 
               throw new APIError('INTERNAL_SERVER_ERROR', {
-                message: 'Subscriptions list with referenceId failed',
+                message: 'Subscriptions list with reference_id failed',
               })
             }
           }

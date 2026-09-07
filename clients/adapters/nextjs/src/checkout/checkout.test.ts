@@ -106,7 +106,7 @@ describe('Checkout', () => {
       )
     })
 
-    it('should include successUrl with checkoutId when configured', async () => {
+    it('should include successUrl with checkout_id when configured', async () => {
       mockCheckoutCreate.mockResolvedValue({
         url: 'https://polar.sh/checkout/123',
       })
@@ -124,12 +124,12 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          success_url: 'https://example.com/success?checkoutId={CHECKOUT_ID}',
+          success_url: 'https://example.com/success?checkout_id={CHECKOUT_ID}',
         }),
       )
     })
 
-    it('should include successUrl without checkoutId when disabled', async () => {
+    it('should include successUrl without checkout_id when disabled', async () => {
       mockCheckoutCreate.mockResolvedValue({
         url: 'https://polar.sh/checkout/123',
       })
@@ -187,16 +187,16 @@ describe('Checkout', () => {
 
       const requestUrl = new URL('https://example.com/checkout')
       requestUrl.searchParams.set('products', 'prod_123')
-      requestUrl.searchParams.set('customerId', 'cust_123')
-      requestUrl.searchParams.set('customerExternalId', 'ext_123')
-      requestUrl.searchParams.set('customerEmail', 'test@example.com')
-      requestUrl.searchParams.set('customerName', 'John Doe')
-      requestUrl.searchParams.set('customerBillingAddress', billingAddress)
-      requestUrl.searchParams.set('customerTaxId', 'TAX123')
-      requestUrl.searchParams.set('customerIpAddress', '192.168.1.1')
-      requestUrl.searchParams.set('customerMetadata', customerMetadata)
-      requestUrl.searchParams.set('allowDiscountCodes', 'true')
-      requestUrl.searchParams.set('discountId', 'disc_123')
+      requestUrl.searchParams.set('customer_id', 'cust_123')
+      requestUrl.searchParams.set('external_customer_id', 'ext_123')
+      requestUrl.searchParams.set('customer_email', 'test@example.com')
+      requestUrl.searchParams.set('customer_name', 'John Doe')
+      requestUrl.searchParams.set('customer_billing_address', billingAddress)
+      requestUrl.searchParams.set('customer_tax_id', 'TAX123')
+      requestUrl.searchParams.set('customer_ip_address', '192.168.1.1')
+      requestUrl.searchParams.set('customer_metadata', customerMetadata)
+      requestUrl.searchParams.set('allow_discount_codes', 'true')
+      requestUrl.searchParams.set('discount_id', 'disc_123')
       requestUrl.searchParams.set('metadata', metadata)
 
       const request = new NextRequest(requestUrl.toString())
@@ -222,14 +222,14 @@ describe('Checkout', () => {
       })
     })
 
-    it('should handle allowDiscountCodes as false', async () => {
+    it('should handle allow_discount_codes as false', async () => {
       mockCheckoutCreate.mockResolvedValue({
         url: 'https://polar.sh/checkout/123',
       })
 
       const checkout = Checkout({ accessToken: 'test-token' })
       const request = new NextRequest(
-        'https://example.com/checkout?products=prod_123&allowDiscountCodes=false',
+        'https://example.com/checkout?products=prod_123&allow_discount_codes=false',
       )
 
       await checkout(request)

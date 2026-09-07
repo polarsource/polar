@@ -150,7 +150,7 @@ describe('checkout plugin', () => {
         context: mockContext,
         body: {
           products: ['prod-123'],
-          organizationId: 'organization-123',
+          organization_id: 'organization-123',
           metadata: { source: 'app' },
         },
         json: vi.fn(),
@@ -214,7 +214,7 @@ describe('checkout plugin', () => {
         context: mockContext,
         body: {
           products: ['prod-123'],
-          organizationId: 'organization-123',
+          organization_id: 'organization-123',
         },
         json: vi.fn(),
       })
@@ -246,7 +246,7 @@ describe('checkout plugin', () => {
           context: mockContext,
           body: {
             products: ['prod-123'],
-            organizationId: 'organization-123',
+            organization_id: 'organization-123',
           },
         }),
       ).rejects.toThrow('Organization billing access requires a billing role')
@@ -267,7 +267,7 @@ describe('checkout plugin', () => {
           context: mockContext,
           body: {
             products: ['prod-123'],
-            organizationId: 'organization-123',
+            organization_id: 'organization-123',
           },
         }),
       ).rejects.toThrow(
@@ -279,16 +279,16 @@ describe('checkout plugin', () => {
       expect(mockClient.checkouts.create).not.toHaveBeenCalled()
     })
 
-    it('parses organizationId as an explicit checkout field', () => {
+    it('parses organization_id as an explicit checkout field', () => {
       const parsed = CheckoutParams.parse({
         products: ['prod-123'],
-        organizationId: 'organization-123',
+        organization_id: 'organization-123',
       })
 
-      expect(parsed.organizationId).toBe('organization-123')
+      expect(parsed.organization_id).toBe('organization-123')
     })
 
-    it('forwards seat-based pricing parameters', async () => {
+    it('parses and forwards snake_case checkout parameters', async () => {
       const mockCheckout = createMockCheckout()
       vi.mocked(getSessionFromCtx).mockResolvedValue({
         user: { id: 'user-123' },
@@ -297,12 +297,22 @@ describe('checkout plugin', () => {
 
       const ctx = {
         ...mockContext,
-        body: {
+        body: CheckoutParams.parse({
           products: ['prod-123'],
           seats: 10,
-          minSeats: 5,
-          maxSeats: 25,
-        },
+          min_seats: 5,
+          max_seats: 25,
+          allow_discount_codes: false,
+          discount_id: 'discount-123',
+          custom_field_data: { company: 'Acme' },
+          success_url: '/checkout/success',
+          return_url: '/pricing',
+          embed_origin: 'https://example.com',
+          allow_trial: true,
+          trial_interval: 'month',
+          trial_interval_count: 2,
+        }),
+        request: { url: 'https://example.com/api/auth/checkout' },
         json: vi.fn(),
       }
 
@@ -313,6 +323,15 @@ describe('checkout plugin', () => {
           seats: 10,
           min_seats: 5,
           max_seats: 25,
+          allow_discount_codes: false,
+          discount_id: 'discount-123',
+          custom_field_data: { company: 'Acme' },
+          success_url: 'https://example.com/checkout/success',
+          return_url: 'https://example.com/pricing',
+          embed_origin: 'https://example.com',
+          allow_trial: true,
+          trial_interval: 'month',
+          trial_interval_count: 2,
         }),
       )
     })
@@ -436,9 +455,9 @@ describe('checkout plugin', () => {
         ...mockContext,
         body: {
           products: ['prod-123'],
-          referenceId: 'ref-123',
+          reference_id: 'ref-123',
           metadata: { key: 'value' },
-          customFieldData: { field: 'data' },
+          custom_field_data: { field: 'data' },
         },
         json: vi
           .fn()

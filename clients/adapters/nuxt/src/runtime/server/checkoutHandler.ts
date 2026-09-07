@@ -18,21 +18,21 @@ const checkoutQuerySchema = z.object({
     .string()
     .transform((value) => value.split(','))
     .pipe(z.string().array()),
-  customerId: z.string().nonempty().optional(),
-  customerExternalId: z.string().nonempty().optional(),
-  customerEmail: z.string().email().optional(),
-  customerName: z.string().nonempty().optional(),
-  customerBillingAddress: z.string().nonempty().optional(),
-  customerTaxId: z.string().nonempty().optional(),
-  customerIpAddress: z.string().nonempty().optional(),
-  customerMetadata: z.string().nonempty().optional(),
-  allowDiscountCodes: z
+  customer_id: z.string().nonempty().optional(),
+  external_customer_id: z.string().nonempty().optional(),
+  customer_email: z.string().email().optional(),
+  customer_name: z.string().nonempty().optional(),
+  customer_billing_address: z.string().nonempty().optional(),
+  customer_tax_id: z.string().nonempty().optional(),
+  customer_ip_address: z.string().nonempty().optional(),
+  customer_metadata: z.string().nonempty().optional(),
+  allow_discount_codes: z
     .string()
     .toLowerCase()
     .transform((x) => x === 'true')
     .pipe(z.boolean())
     .optional(),
-  discountId: z.string().nonempty().optional(),
+  discount_id: z.string().nonempty().optional(),
   metadata: z.string().nonempty().optional(),
 })
 
@@ -49,16 +49,16 @@ export const Checkout = ({
   return async (event: H3Event) => {
     const {
       products,
-      customerId,
-      customerExternalId,
-      customerEmail,
-      customerName,
-      customerBillingAddress,
-      customerTaxId,
-      customerIpAddress,
-      customerMetadata,
-      allowDiscountCodes,
-      discountId,
+      customer_id: customerId,
+      external_customer_id: customerExternalId,
+      customer_email: customerEmail,
+      customer_name: customerName,
+      customer_billing_address: customerBillingAddress,
+      customer_tax_id: customerTaxId,
+      customer_ip_address: customerIpAddress,
+      customer_metadata: customerMetadata,
+      allow_discount_codes: allowDiscountCodes,
+      discount_id: discountId,
       metadata,
     } = await getValidatedQuery(event, checkoutQuerySchema.parse)
 
@@ -66,7 +66,7 @@ export const Checkout = ({
       const success = successUrl ? new URL(successUrl) : undefined
 
       if (success && includeCheckoutId) {
-        success.searchParams.set('checkoutId', '{CHECKOUT_ID}')
+        success.searchParams.set('checkout_id', '{CHECKOUT_ID}')
       }
 
       const retUrl = returnUrl ? new URL(returnUrl) : undefined

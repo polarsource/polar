@@ -520,7 +520,7 @@ describe('portal plugin', () => {
         context: {
           session: { user: { id: 'user-123' } },
         },
-        query: { referenceId: 'ref-123', page: 1, limit: 10 },
+        query: { reference_id: 'ref-123', page: 1, limit: 10 },
         json: vi.fn(),
       }
 
@@ -546,11 +546,11 @@ describe('portal plugin', () => {
           session: { user: { id: 'user-123' } },
           logger: { error: vi.fn() },
         },
-        query: { referenceId: 'ref-123' },
+        query: { reference_id: 'ref-123' },
       }
 
       await expect(handler(ctx)).rejects.toThrow(
-        'Subscriptions list with referenceId failed',
+        'Subscriptions list with reference_id failed',
       )
     })
 
@@ -746,7 +746,7 @@ describe('portal plugin', () => {
       },
     )
 
-    it('rejects organizationId with the legacy referenceId path', async () => {
+    it('rejects organizationId with the legacy reference_id path', async () => {
       const endpoints = portal()(mockClient) as any
 
       await expect(
@@ -754,10 +754,10 @@ describe('portal plugin', () => {
           context,
           query: {
             organizationId: 'organization-123',
-            referenceId: 'reference-123',
+            reference_id: 'reference-123',
           },
         }),
-      ).rejects.toThrow('organizationId cannot be combined with referenceId')
+      ).rejects.toThrow('organizationId cannot be combined with reference_id')
       expect(mockClient.subscriptions.list).not.toHaveBeenCalled()
       expect(mockClient.customerSessions.create).not.toHaveBeenCalled()
     })

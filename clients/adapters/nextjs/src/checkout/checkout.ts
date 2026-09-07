@@ -39,7 +39,7 @@ export const Checkout = ({
     const success = successUrl ? new URL(successUrl) : undefined
 
     if (success && includeCheckoutId) {
-      success.searchParams.set('checkoutId', '{CHECKOUT_ID}')
+      success.searchParams.set('checkout_id', '{CHECKOUT_ID}')
     }
 
     const retUrl = returnUrl ? new URL(returnUrl) : undefined
@@ -48,24 +48,24 @@ export const Checkout = ({
       const result = await createCheckouts(polar)({
         products,
         success_url: success ? decodeURI(success.toString()) : undefined,
-        customer_id: url.searchParams.get('customerId') ?? undefined,
+        customer_id: url.searchParams.get('customer_id') ?? undefined,
         external_customer_id:
-          url.searchParams.get('customerExternalId') ?? undefined,
-        customer_email: url.searchParams.get('customerEmail') ?? undefined,
-        customer_name: url.searchParams.get('customerName') ?? undefined,
-        customer_billing_address: url.searchParams.has('customerBillingAddress')
-          ? JSON.parse(url.searchParams.get('customerBillingAddress') ?? '{}')
+          url.searchParams.get('external_customer_id') ?? undefined,
+        customer_email: url.searchParams.get('customer_email') ?? undefined,
+        customer_name: url.searchParams.get('customer_name') ?? undefined,
+        customer_billing_address: url.searchParams.has('customer_billing_address')
+          ? JSON.parse(url.searchParams.get('customer_billing_address') ?? '{}')
           : undefined,
-        customer_tax_id: url.searchParams.get('customerTaxId') ?? undefined,
+        customer_tax_id: url.searchParams.get('customer_tax_id') ?? undefined,
         customer_ip_address:
-          url.searchParams.get('customerIpAddress') ?? undefined,
-        customer_metadata: url.searchParams.has('customerMetadata')
-          ? JSON.parse(url.searchParams.get('customerMetadata') ?? '{}')
+          url.searchParams.get('customer_ip_address') ?? undefined,
+        customer_metadata: url.searchParams.has('customer_metadata')
+          ? JSON.parse(url.searchParams.get('customer_metadata') ?? '{}')
           : undefined,
-        allow_discount_codes: url.searchParams.has('allowDiscountCodes')
-          ? url.searchParams.get('allowDiscountCodes') === 'true'
+        allow_discount_codes: url.searchParams.has('allow_discount_codes')
+          ? url.searchParams.get('allow_discount_codes') === 'true'
           : undefined,
-        discount_id: url.searchParams.get('discountId') ?? undefined,
+        discount_id: url.searchParams.get('discount_id') ?? undefined,
         metadata: url.searchParams.has('metadata')
           ? JSON.parse(url.searchParams.get('metadata') ?? '{}')
           : undefined,

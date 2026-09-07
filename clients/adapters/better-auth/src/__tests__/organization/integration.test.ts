@@ -804,7 +804,7 @@ describe('Better Auth organization integration', () => {
       '/checkout',
       {
         slug: 'pro',
-        organizationId: createdOrganization.id,
+        organization_id: createdOrganization.id,
         redirect: false,
       },
       founder.sessionCookie,
@@ -937,7 +937,7 @@ describe('Better Auth organization integration', () => {
       '/checkout',
       {
         slug: 'pro',
-        organizationId: createdOrganization.id,
+        organization_id: createdOrganization.id,
         redirect: false,
       },
       financeUser.sessionCookie,
@@ -988,7 +988,7 @@ describe('Better Auth organization integration', () => {
       '/checkout',
       {
         slug: 'pro',
-        organizationId: createdOrganization.id,
+        organization_id: createdOrganization.id,
         redirect: false,
       },
       owner.sessionCookie,
@@ -1013,7 +1013,7 @@ describe('Better Auth organization integration', () => {
       '/checkout',
       {
         slug: 'pro',
-        organizationId: createdOrganization.id,
+        organization_id: createdOrganization.id,
         redirect: false,
       },
       member.sessionCookie,
@@ -1023,7 +1023,7 @@ describe('Better Auth organization integration', () => {
       '/checkout',
       {
         slug: 'pro',
-        organizationId: createdOrganization.id,
+        organization_id: createdOrganization.id,
         redirect: false,
       },
       outsider.sessionCookie,
@@ -1247,7 +1247,7 @@ describe('Better Auth organization integration', () => {
 
     const checkoutResponse = await post(
       '/checkout',
-      { slug: 'pro', referenceId, redirect: false },
+      { slug: 'pro', reference_id: referenceId, redirect: false },
       sessionCookie,
     )
     if (!checkoutResponse.ok) {
@@ -1263,7 +1263,7 @@ describe('Better Auth organization integration', () => {
 
     const subscriptionsResponse = await auth.handler(
       new Request(
-        `${baseURL}/api/auth/customer/subscriptions/list?referenceId=${referenceId}&active=true`,
+        `${baseURL}/api/auth/customer/subscriptions/list?reference_id=${referenceId}&active=true`,
         { headers: { cookie: sessionCookie } },
       ),
     )
@@ -1433,7 +1433,7 @@ describe('Better Auth organization integration', () => {
       '/checkout',
       {
         slug: 'pro',
-        referenceId: createdOrganization.id,
+        reference_id: createdOrganization.id,
         redirect: false,
       },
       sessionCookie,
@@ -1452,7 +1452,7 @@ describe('Better Auth organization integration', () => {
 
     const subscriptionsResponse = await auth.handler(
       new Request(
-        `${baseURL}/api/auth/customer/subscriptions/list?referenceId=${createdOrganization.id}&active=true`,
+        `${baseURL}/api/auth/customer/subscriptions/list?reference_id=${createdOrganization.id}&active=true`,
         { headers: { cookie: sessionCookie } },
       ),
     )
@@ -1475,7 +1475,7 @@ describe('Better Auth organization integration', () => {
       '/checkout',
       {
         slug: 'pro',
-        organizationId: createdOrganization.id,
+        organization_id: createdOrganization.id,
         redirect: false,
       },
       sessionCookie,
@@ -1547,7 +1547,7 @@ describe('organization seat integration', () => {
       '/checkout',
       {
         slug: 'pro',
-        organizationId: createdOrganization.id,
+        organization_id: createdOrganization.id,
         seats: 7,
         redirect: false,
       },
@@ -1602,7 +1602,7 @@ describe('organization seat integration', () => {
       '/checkout',
       {
         slug: 'pro',
-        organizationId: createdOrganization.id,
+        organization_id: createdOrganization.id,
         redirect: false,
       },
       owner.sessionCookie,

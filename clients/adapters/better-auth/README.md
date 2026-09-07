@@ -309,6 +309,22 @@ Checkouts will automatically carry the authenticated User as the customer to the
 
 If `authenticatedUsersOnly` is `false` - then it will be possible to trigger checkout sessions without any associated customer.
 
+### Checkout Request Fields
+
+Arguments to `authClient.checkout()` and `authClient.checkoutEmbed()` use snake_case, matching the Polar SDK request fields:
+
+- `products`: a product ID or array of product IDs.
+- `custom_field_data`, `metadata`: objects containing custom field values or metadata.
+- `allow_discount_codes`, `discount_id`: discount settings.
+- `seats`, `min_seats`, `max_seats`: seat-based pricing settings.
+- `success_url`, `return_url`: absolute URLs or paths relative to the auth server. These override the plugin's `successUrl` and `returnUrl` configuration.
+- `allow_trial`, `trial_interval`, `trial_interval_count`: trial settings.
+- `embed_origin`: embedding origin; automatically supplied by `checkoutEmbed()`.
+
+Adapter-specific fields are `slug` (configured product lookup), `organization_id` (team-customer billing), `reference_id` (metadata-based billing), and `redirect` (whether to redirect, defaulting to `true`). The response contains `url` and `redirect`.
+
+For the major-version migration, rename camelCase checkout arguments such as `discountId`, `successUrl`, and `organizationId` to `discount_id`, `success_url`, and `organization_id`. Plugin configuration options remain camelCase.
+
 ### Checkout Embed
 
 You can use the `checkoutEmbed` method to instead open the Checkout as an Embed on your site.
@@ -363,33 +379,33 @@ const organizationId = (await authClient.organization.list()).data?.[0]?.id
 
 await authClient.checkout({
   slug: 'pro',
-  referenceId: organizationId,
+  reference_id: organizationId,
 })
 ```
 
-The checkout remains attached to the authenticated user's personal Polar customer. `referenceId` is copied to the checkout, order, and subscription metadata, allowing subscriptions to be queried by organization ID:
+The checkout remains attached to the authenticated user's personal Polar customer. The `reference_id` argument is stored as `metadata.referenceId` on the checkout, order, and subscription, allowing subscriptions to be queried by organization ID:
 
 ```typescript
 const { data: subscriptions } = await authClient.customer.subscriptions.list({
   query: {
-    referenceId: organizationId,
+    reference_id: organizationId,
     active: true,
   },
 })
 ```
 
-This is metadata-based tracking, not Polar team-customer billing. The adapter does not authorize Better Auth organization membership for `referenceId`, so your application must verify membership before using the result to grant access.
+This is metadata-based tracking, not Polar team-customer billing. The adapter does not authorize Better Auth organization membership for `reference_id`, so your application must verify membership before using the result to grant access.
 
-If this is already how your application handles organization billing, keep using it and do not enable `experimental_organizationSync`. Existing billing objects are not migrated to the team customer, so mixing an established `referenceId` setup with experimental team-customer billing can produce an inconsistent billing state. Only applications with an explicit, reviewed cutover plan should enable `experimental_organizationSync` and use `organizationId`:
+If this is already how your application handles organization billing, keep using it and do not enable `experimental_organizationSync`. Existing billing objects are not migrated to the team customer, so mixing an established `referenceId` setup with experimental team-customer billing can produce an inconsistent billing state. Only applications with an explicit, reviewed cutover plan should enable `experimental_organizationSync` and use `organization_id` for checkout:
 
 ```typescript
 await authClient.checkout({
   slug: 'pro',
-  organizationId,
+  organization_id: organizationId,
 })
 ```
 
-Do not send both `organizationId` and `referenceId` when listing subscriptions; that combination is rejected.
+Do not send both `organizationId` and `reference_id` when listing subscriptions; that combination is rejected.
 
 ## Portal Plugin
 
@@ -503,7 +519,7 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
 
 **Metadata-based organization filtering**
 
-When Polar organization synchronization is not enabled, pass the Better Auth organization ID as `referenceId`. This performs a Polar metadata query and does not authorize Better Auth organization membership.
+When Polar organization synchronization is not enabled, pass the Better Auth organization ID as `reference_id`. This filters on the existing `metadata.referenceId` key and does not authorize Better Auth organization membership.
 
 ```typescript
 const { data: subscriptions } = await authClient.customer.subscriptions.list({
@@ -511,7 +527,7 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
     page: 1,
     limit: 10,
     active: true,
-    referenceId: organizationId,
+    reference_id: organizationId,
   },
 })
 ```

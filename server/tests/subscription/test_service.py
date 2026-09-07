@@ -5797,6 +5797,172 @@ class TestUpdateProduct:
         assert call_kwargs["product_id"] == new_seat_product.id
         assert call_kwargs["subscription_id"] == subscription.id
 
+    @pytest.mark.parametrize(
+        "proration_behavior",
+        [
+            SubscriptionProrationBehavior.invoice,
+            SubscriptionProrationBehavior.next_period,
+        ],
+    )
+    async def test_seat_to_seat_rejects_below_target_minimum(
+        self,
+        proration_behavior: SubscriptionProrationBehavior,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        old_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        new_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        new_seat_price = ProductPriceSeatUnit(
+            price_currency=PresentmentCurrency.usd,
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 5, "max_seats": None, "price_per_seat": 2000},
+                ],
+            },
+            product=new_seat_product,
+        )
+        await save_fixture(new_seat_price)
+        new_seat_product.prices.append(new_seat_price)
+        await save_fixture(new_seat_product)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=old_seat_product, customer=customer, seats=3
+        )
+
+        with pytest.raises(BelowMinimumSeats) as exc_info:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_seat_product.id,
+                    proration_behavior=proration_behavior,
+                )
+
+        assert exc_info.value.minimum_seats == 5
+        assert exc_info.value.requested_seats == 3
+        assert exc_info.value.errors()[0]["loc"] == ("body", "product_id")
+        assert subscription.seats == 3
+
+    @pytest.mark.parametrize(
+        "proration_behavior",
+        [
+            SubscriptionProrationBehavior.invoice,
+            SubscriptionProrationBehavior.next_period,
+        ],
+    )
+    async def test_seat_to_seat_rejects_above_target_maximum(
+        self,
+        proration_behavior: SubscriptionProrationBehavior,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        old_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        new_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        new_seat_price = ProductPriceSeatUnit(
+            price_currency=PresentmentCurrency.usd,
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
+                ],
+            },
+            product=new_seat_product,
+        )
+        await save_fixture(new_seat_price)
+        new_seat_product.prices.append(new_seat_price)
+        await save_fixture(new_seat_product)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=old_seat_product, customer=customer, seats=50
+        )
+
+        with pytest.raises(AboveMaximumSeats) as exc_info:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_seat_product.id,
+                    proration_behavior=proration_behavior,
+                )
+
+        assert exc_info.value.maximum_seats == 10
+        assert exc_info.value.requested_seats == 50
+        assert exc_info.value.errors()[0]["loc"] == ("body", "product_id")
+        assert subscription.seats == 50
+
+    async def test_seat_to_seat_in_bounds_next_period_defers(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new=AsyncMock(),
+        )
+        old_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        new_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=old_seat_product, customer=customer, seats=3
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+
+        assert updated.pending_update is not None
+        assert updated.seats == 3
+
     async def test_unavailable_currency(
         self,
         session: AsyncSession,

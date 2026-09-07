@@ -276,40 +276,70 @@ class SeatsAlreadyAssigned(PolarRequestValidationError):
 
 class BelowMinimumSeats(PolarRequestValidationError):
     def __init__(
-        self, subscription: Subscription, minimum_seats: int, requested_seats: int
+        self,
+        subscription: Subscription,
+        minimum_seats: int,
+        requested_seats: int,
+        *,
+        product_id: uuid.UUID | None = None,
     ) -> None:
         self.subscription = subscription
         self.minimum_seats = minimum_seats
         self.requested_seats = requested_seats
-        super().__init__(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body", "seats"),
-                    "msg": f"Minimum {minimum_seats} seats required.",
-                    "input": requested_seats,
-                }
-            ]
-        )
+        # A product change keeps the live seat count, so the offending input is
+        # the target product, not a submitted seat count.
+        error: ValidationError
+        if product_id is not None:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "product_id"),
+                "msg": (
+                    f"Current seat count of {requested_seats} is below the "
+                    f"minimum of {minimum_seats} seats for this product."
+                ),
+                "input": product_id,
+            }
+        else:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "seats"),
+                "msg": f"Minimum {minimum_seats} seats required.",
+                "input": requested_seats,
+            }
+        super().__init__([error])
 
 
 class AboveMaximumSeats(PolarRequestValidationError):
     def __init__(
-        self, subscription: Subscription, maximum_seats: int, requested_seats: int
+        self,
+        subscription: Subscription,
+        maximum_seats: int,
+        requested_seats: int,
+        *,
+        product_id: uuid.UUID | None = None,
     ) -> None:
         self.subscription = subscription
         self.maximum_seats = maximum_seats
         self.requested_seats = requested_seats
-        super().__init__(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body", "seats"),
-                    "msg": f"Maximum {maximum_seats} seats allowed.",
-                    "input": requested_seats,
-                }
-            ]
-        )
+        error: ValidationError
+        if product_id is not None:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "product_id"),
+                "msg": (
+                    f"Current seat count of {requested_seats} is above the "
+                    f"maximum of {maximum_seats} seats for this product."
+                ),
+                "input": product_id,
+            }
+        else:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "seats"),
+                "msg": f"Maximum {maximum_seats} seats allowed.",
+                "input": requested_seats,
+            }
+        super().__init__([error])
 
 
 class NotAUnitBasedSubscription(PolarRequestValidationError):
@@ -1940,7 +1970,7 @@ class SubscriptionService:
                 proration_behavior = organization.proration_behavior
 
             is_initial_seat_transition = self._promote_seats_for_seat_transition(
-                subscription, currency_prices, proration_behavior
+                subscription, currency_prices, proration_behavior, product_id
             )
             self._promote_units_for_unit_transition(
                 subscription, currency_prices, proration_behavior, product_id
@@ -3155,7 +3185,7 @@ class SubscriptionService:
                 allowed_visibilities=allowed_visibilities,
             )
             self._promote_seats_for_seat_transition(
-                subscription, currency_prices, proration_behavior
+                subscription, currency_prices, proration_behavior, product_id
             )
             self._promote_units_for_unit_transition(
                 subscription, currency_prices, proration_behavior, product_id
@@ -3273,6 +3303,7 @@ class SubscriptionService:
         subscription: Subscription,
         currency_prices: PriceSet,
         proration_behavior: SubscriptionProrationBehavior,
+        product_id: uuid.UUID,
     ) -> bool:
         """Promote `subscription.seats` to the new product's first seat-price tier
         minimum, so the proration debit and `apply_update`'s product-branch rebuild
@@ -3280,13 +3311,26 @@ class SubscriptionService:
         seat auto-claim has to run immediately, or the billing customer loses benefit
         access. Returns whether this was a non-seat → seat transition.
         """
-        if any(is_seat_price(price) for price in subscription.prices):
-            return False
-
         seat_price = next(
             (price for price in currency_prices if is_seat_price(price)), None
         )
         if seat_price is None:
+            return False
+
+        if any(is_seat_price(price) for price in subscription.prices):
+            seats = subscription.seats
+            if seats is None:
+                return False
+            minimum_seats = seat_price.get_minimum_seats()
+            if seats < minimum_seats:
+                raise BelowMinimumSeats(
+                    subscription, minimum_seats, seats, product_id=product_id
+                )
+            maximum_seats = seat_price.get_maximum_seats()
+            if maximum_seats is not None and seats > maximum_seats:
+                raise AboveMaximumSeats(
+                    subscription, maximum_seats, seats, product_id=product_id
+                )
             return False
 
         if proration_behavior == SubscriptionProrationBehavior.next_period:

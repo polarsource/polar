@@ -50,6 +50,8 @@ const isEmbedCheckoutMessage = (
   return message.type === POLAR_CHECKOUT_EVENT
 }
 
+let polarNoScrollCount = 0
+
 /**
  * Represents an embedded checkout instance.
  */
@@ -58,6 +60,7 @@ class EmbedCheckout {
   private loader: HTMLDivElement
   private loaded: boolean
   private closable: boolean
+  private closed: boolean
   private eventTarget: EventTarget
   private windowMessageListener: (event: MessageEvent) => void
 
@@ -66,6 +69,7 @@ class EmbedCheckout {
     this.loader = loader
     this.loaded = false
     this.closable = true
+    this.closed = false
     this.eventTarget = new EventTarget()
     this.windowMessageListener = this.handleWindowMessage.bind(this)
     window.addEventListener('message', this.windowMessageListener)
@@ -145,6 +149,7 @@ class EmbedCheckout {
     loader.appendChild(spinner)
 
     // Insert into the DOM
+    polarNoScrollCount++
     document.body.classList.add('polar-no-scroll')
     document.body.appendChild(loader)
 
@@ -230,7 +235,13 @@ class EmbedCheckout {
     window.removeEventListener('message', this.windowMessageListener)
     if (document.body.contains(this.iframe))
       document.body.removeChild(this.iframe)
-    document.body.classList.remove('polar-no-scroll')
+    if (!this.closed) {
+      this.closed = true
+      polarNoScrollCount = Math.max(0, polarNoScrollCount - 1)
+      if (polarNoScrollCount === 0) {
+        document.body.classList.remove('polar-no-scroll')
+      }
+    }
   }
 
   /**
@@ -364,7 +375,10 @@ class EmbedCheckout {
    * Dispatches a cancelable `CustomEvent` to consumer listeners first, then
    * runs the default action unless a listener called `event.preventDefault()`.
    */
-  private handleWindowMessage({ data, origin }: MessageEvent): void {
+  private handleWindowMessage({ data, origin, source }: MessageEvent): void {
+    if (source !== this.iframe.contentWindow) {
+      return
+    }
     if (
       // oxlint-disable-next-line typescript/ban-ts-comment
       // @ts-ignore

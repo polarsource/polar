@@ -56,6 +56,7 @@ from polar.models.organization import (
     STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
+    OrganizationCustomerPortalSettings,
     OrganizationDetails,
     OrganizationDisputeSettings,
     OrganizationStatus,
@@ -589,6 +590,23 @@ class OrganizationService:
                 },
             )
 
+        if update_schema.customer_portal_settings is not None:
+            new_portal = update_schema.customer_portal_settings
+            merged: dict[str, Any] = {
+                **organization.customer_portal_settings,
+                **new_portal,
+            }
+            if "subscription" in new_portal and isinstance(
+                merged.get("subscription"), dict
+            ):
+                merged["subscription"] = {
+                    **organization.customer_portal_settings.get("subscription", {}),
+                    **new_portal["subscription"],
+                }
+            organization.customer_portal_settings = cast(
+                OrganizationCustomerPortalSettings, merged
+            )
+
         if update_schema.default_presentment_currency is not None:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
@@ -606,6 +624,7 @@ class OrganizationService:
                 "feature_settings",
                 "subscription_settings",
                 "dispute_settings",
+                "customer_portal_settings",
                 "details",
             },
         )

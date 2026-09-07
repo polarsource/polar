@@ -279,6 +279,7 @@ export const handleWebhookPayload = async (
 
   switch (payload.type) {
     case 'benefit_grant.created':
+    case 'benefit_grant.updated':
     case 'benefit_grant.revoked':
       if (entitlements) {
         for (const handler of entitlements.handlers) {

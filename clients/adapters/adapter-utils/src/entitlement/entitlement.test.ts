@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import type { Benefit } from '@polar-sh/sdk/models/components/benefit'
 import type { WebhookBenefitGrantCreatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantcreatedpayload'
 import type { WebhookBenefitGrantRevokedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantrevokedpayload'
+import type { WebhookBenefitGrantUpdatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantupdatedpayload'
 import { EntitlementStrategy } from './entitlement'
 
 describe('EntitlementStrategy', () => {
@@ -103,5 +104,98 @@ describe('EntitlementStrategy', () => {
       customer: payload.data.customer,
       properties: payload.data.properties,
     })
+  })
+
+  it('should run grant on benefit_grant.updated', () => {
+    const onGrant = vi.fn()
+    const onRevoke = vi.fn()
+
+    const entitlement = new EntitlementStrategy<{ test: string }>()
+      .grant(onGrant)
+      .revoke(onRevoke)
+
+    const payload = {
+      type: 'benefit_grant.updated',
+      timestamp: new Date(),
+      data: {
+        id: '123',
+        createdAt: new Date(),
+        modifiedAt: new Date(),
+        isGranted: true,
+        benefitId: '123',
+        customerId: '123',
+        subscriptionId: '123',
+        orderId: '123',
+        userId: '123',
+        isRevoked: false,
+        properties: { test: 'updated' },
+        customer: {
+          email: 'test@test.com',
+          id: '123',
+          createdAt: new Date(),
+          modifiedAt: new Date(),
+          deletedAt: null,
+          metadata: {},
+          emailVerified: true,
+          billingAddress: {
+            line1: '123',
+            line2: '123',
+            city: '123',
+            state: '123',
+            postalCode: '123',
+            country: 'US',
+          },
+          name: 'Test',
+          taxId: ['123'],
+          organizationId: '123',
+          avatarUrl: '123',
+        },
+        benefit: {
+          id: '123',
+          createdAt: new Date(),
+          modifiedAt: new Date(),
+          selectable: true,
+          description: 'test',
+        } as unknown as Benefit,
+      },
+    } as unknown as WebhookBenefitGrantUpdatedPayload
+
+    entitlement.handler('test')(payload)
+
+    expect(onGrant).toHaveBeenCalledWith({
+      payload,
+      customer: payload.data.customer,
+      properties: payload.data.properties,
+    })
+
+    expect(onRevoke).not.toHaveBeenCalled()
+  })
+
+  it('should not run callbacks when the benefit slug does not match', () => {
+    const onGrant = vi.fn()
+    const onRevoke = vi.fn()
+
+    const entitlement = new EntitlementStrategy<{ test: string }>()
+      .grant(onGrant)
+      .revoke(onRevoke)
+
+    const payload = {
+      type: 'benefit_grant.updated',
+      timestamp: new Date(),
+      data: {
+        id: '123',
+        createdAt: new Date(),
+        modifiedAt: new Date(),
+        isGranted: true,
+        benefitId: '123',
+        customerId: '123',
+        benefit: { description: 'other-benefit' },
+      },
+    } as unknown as WebhookBenefitGrantUpdatedPayload
+
+    entitlement.handler('test')(payload)
+
+    expect(onGrant).not.toHaveBeenCalled()
+    expect(onRevoke).not.toHaveBeenCalled()
   })
 })

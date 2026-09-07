@@ -313,4 +313,53 @@ describe('webhooks', () => {
 
     expect(onRevoke).not.toHaveBeenCalled()
   })
+
+  it('should run entitlement grant methods on benefit_grant.updated', async () => {
+    const onGrant = vi.fn()
+    const onRevoke = vi.fn()
+
+    const entitlementStrategy = new EntitlementStrategy()
+      .grant(onGrant)
+      .revoke(onRevoke)
+
+    const payload = {
+      type: 'benefit_grant.updated',
+      data: {
+        customer: { id: 'cust-1' },
+        benefit: { description: 'benefit-1', properties: {} },
+        properties: { tier: 'gold' },
+      },
+    } as any
+
+    await handleWebhookPayload(payload, {
+      webhookSecret: 'test',
+      entitlements: Entitlements.use('benefit-1', entitlementStrategy),
+    })
+
+    expect(onGrant).toHaveBeenCalledOnce()
+    expect(onGrant).toHaveBeenCalledWith({
+      customer: { id: 'cust-1' },
+      properties: { tier: 'gold' },
+      payload,
+    })
+
+    expect(onRevoke).not.toHaveBeenCalled()
+  })
+
+  it('should not run entitlement handlers on benefit_grant.updated when no entitlements are configured', async () => {
+    const onBenefitGrantUpdated = vi.fn()
+
+    await handleWebhookPayload(
+      { type: 'benefit_grant.updated', data: {} } as any,
+      {
+        webhookSecret: 'test',
+        onBenefitGrantUpdated,
+      },
+    )
+
+    expect(onBenefitGrantUpdated).toHaveBeenCalledWith({
+      type: 'benefit_grant.updated',
+      data: {},
+    })
+  })
 })

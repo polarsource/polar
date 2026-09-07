@@ -1,19 +1,24 @@
 import type { Customer } from '@polar-sh/sdk/models/components/customer'
 import type { WebhookBenefitGrantCreatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantcreatedpayload'
 import type { WebhookBenefitGrantRevokedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantrevokedpayload'
+import type { WebhookBenefitGrantUpdatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantupdatedpayload'
 
 export type EntitlementProperties = Record<string, string>
 
 export type EntitlementHandler = (
   payload:
     | WebhookBenefitGrantCreatedPayload
+    | WebhookBenefitGrantUpdatedPayload
     | WebhookBenefitGrantRevokedPayload,
 ) => Promise<void>
 
 export interface EntitlementContext<T extends EntitlementProperties> {
   customer: Customer
   properties: T
-  payload: WebhookBenefitGrantCreatedPayload | WebhookBenefitGrantRevokedPayload
+  payload:
+    | WebhookBenefitGrantCreatedPayload
+    | WebhookBenefitGrantUpdatedPayload
+    | WebhookBenefitGrantRevokedPayload
 }
 
 export class EntitlementStrategy<T extends EntitlementProperties> {
@@ -39,11 +44,13 @@ export class EntitlementStrategy<T extends EntitlementProperties> {
     return async (
       payload:
         | WebhookBenefitGrantCreatedPayload
+        | WebhookBenefitGrantUpdatedPayload
         | WebhookBenefitGrantRevokedPayload,
     ) => {
       if (payload.data.benefit.description === slug) {
         switch (payload.type) {
           case 'benefit_grant.created':
+          case 'benefit_grant.updated':
             await Promise.all(
               this.grantCallbacks.map((callback) =>
                 callback({

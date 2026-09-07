@@ -553,7 +553,7 @@ class SeatService:
         await self._publish_seat_claimed_event(seat, product_id)
         await self._enqueue_benefit_grant(seat, product_id)
 
-        if seat.member_id is not None:
+        if member_model_enabled and seat.member_id is not None:
             member_repository = MemberRepository.from_session(session)
             claim_member = await member_repository.get_by_id(seat.member_id)
             if claim_member:
@@ -561,12 +561,12 @@ class SeatService:
                     session, claim_member
                 )
             else:
-                (
-                    session_token,
-                    _,
-                ) = await customer_session_service.create_customer_session(
-                    session, session_customer
-                )
+                # The seat's member was deleted between assignment and claim.
+                # In member-model mode, `session_customer` is the billing
+                # (purchaser) customer, so issuing a customer session here
+                # would hand the seat-claimer purchaser-scope access. Reject
+                # the claim instead — the member must be re-created to claim.
+                raise InvalidInvitationToken(invitation_token)
         else:
             session_token, _ = await customer_session_service.create_customer_session(
                 session, session_customer

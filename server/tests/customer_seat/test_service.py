@@ -1950,6 +1950,157 @@ class TestClaimSeat:
         assert len(session_token) > 0
         assert session_token.startswith("polar_mst_")
 
+    @pytest.mark.asyncio
+    async def test_claim_seat_member_model_soft_deleted_member_rejects(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Claiming a seat whose member was soft-deleted in member-model mode
+        must reject the claim rather than escalating to a purchaser-scope
+        customer session.
+
+        Regression test for a privilege-escalation bug where the fallback
+        minted a `polar_cst_` for the billing (purchaser) customer when the
+        seat's linked member was missing, granting the seat-claimer full
+        portal-write access as the purchaser.
+        """
+        from polar.member.repository import MemberRepository
+
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        seat = await seat_service.assign_seat(
+            session,
+            subscription,
+            email="seat@example.com",
+            external_member_id="ext-member-claim",
+        )
+        await session.flush()
+        assert seat.member_id is not None
+        invitation_token = seat.invitation_token
+        assert invitation_token is not None
+
+        # Simulate the post-delete, pre-revoke-job DB state: the member is
+        # soft-deleted but the seat's invitation token is still valid.
+        member_repository = MemberRepository.from_session(session)
+        member = await member_repository.get_by_id(seat.member_id)
+        assert member is not None
+        await member_repository.soft_delete(member)
+        await session.flush()
+
+        with (
+            patch(
+                "polar.customer_seat.service.customer_session_service.create_customer_session"
+            ) as mock_create_customer_session,
+            patch(
+                "polar.customer_seat.service.member_session_service.create_member_session"
+            ) as mock_create_member_session,
+        ):
+            with pytest.raises(InvalidInvitationToken):
+                await seat_service.claim_seat(session, invitation_token)
+
+            # No session of either kind must be minted for the rejected claim;
+            # in particular, no purchaser-scope customer session may leak.
+            mock_create_customer_session.assert_not_called()
+            mock_create_member_session.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_claim_seat_legacy_model_soft_deleted_member_issues_self_session(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """In legacy mode (no member_model_enabled), `session_customer` is the
+        seat-holder's own customer, so falling back to a customer session is a
+        self-session, not an escalation. Deleting the linked member before
+        the claim must therefore still issue the seat-holder's own
+        `polar_cst_` token, never the billing (purchaser) customer's.
+        """
+        from polar.customer_session.service import (
+            customer_session as customer_session_service,
+        )
+        from polar.member.repository import MemberRepository
+
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"seat_based_pricing_enabled": True},
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        # Legacy assignment by email: creates the seat-holder's own customer
+        # and a member under the billing customer.
+        seat = await seat_service.assign_seat(
+            session,
+            subscription,
+            email="seat-holder@example.com",
+        )
+        await session.flush()
+        assert seat.customer_id is not None
+        assert seat.member_id is not None
+        invitation_token = seat.invitation_token
+        assert invitation_token is not None
+
+        seat_holder_customer_id = seat.customer_id
+        assert seat_holder_customer_id != billing_customer.id
+
+        member_repository = MemberRepository.from_session(session)
+        member = await member_repository.get_by_id(seat.member_id)
+        assert member is not None
+        await member_repository.soft_delete(member)
+        await session.flush()
+
+        claimed_seat, session_token = await seat_service.claim_seat(
+            session, invitation_token
+        )
+
+        assert claimed_seat.status == SeatStatus.claimed
+        assert session_token.startswith("polar_cst_")
+
+        customer_session = await customer_session_service.get_by_token(
+            session, session_token
+        )
+        assert customer_session is not None
+        # Self-session for the seat-holder's own customer — NOT the purchaser.
+        assert customer_session.customer_id == seat_holder_customer_id
+        assert customer_session.customer_id != billing_customer.id
+
 
 class TestRevokeSeat:
     @pytest.mark.asyncio

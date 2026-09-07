@@ -714,7 +714,8 @@ class OrganizationService:
         """Check if an organization can be deleted immediately.
 
         An organization can be deleted immediately if it has:
-        - No paid orders (excludes $0 orders from free/discounted products)
+        - No paid or pending orders (excludes $0 orders from free/discounted
+          products, and void/draft orders that never collected money)
         - No paid active subscriptions (excludes inherently free or
           permanently discounted subscriptions)
 

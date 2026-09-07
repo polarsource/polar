@@ -338,10 +338,16 @@ class OrganizationRepository(
         return result.unique().scalar_one_or_none()
 
     async def count_paid_orders_by_organization(self, organization_id: UUID) -> int:
-        """Count non-zero orders for all customers of this organization.
+        """Count paid or in-flight orders for all customers of this organization.
 
         Excludes $0 orders (e.g. free products or fully discounted orders)
         so that test accounts with only free activity can self-serve delete.
+
+        Also excludes ``void`` (never collected) and ``draft`` (never finalized)
+        orders, which carry ``total_amount > 0`` but are not paid by any
+        definition in the codebase (``OrderStatus.paid_statuses()`` nor
+        ``Order.paid``). ``pending`` is kept so an in-flight payment that later
+        settles does not land on a soft-deleted org.
         """
         statement = (
             select(func.count(Order.id))
@@ -350,6 +356,14 @@ class OrganizationRepository(
                 Order.organization_id == organization_id,
                 ~Customer.is_deleted,
                 Order.total_amount > 0,
+                Order.status.in_(
+                    [
+                        OrderStatus.paid,
+                        OrderStatus.refunded,
+                        OrderStatus.partially_refunded,
+                        OrderStatus.pending,
+                    ]
+                ),
             )
         )
         result = await self.session.execute(statement)

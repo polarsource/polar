@@ -84,7 +84,7 @@ export const Checkout = <TPath extends string = string>({
       })
 
       const discountCode = url.searchParams.get('discount_code')
-      if (discountCode && !url.searchParams.get('discount_id')) {
+      if (discountCode?.trim() && !url.searchParams.get('discount_id')) {
         await clientUpdateCheckouts(polar)(result.client_secret, {
           discount_code: discountCode,
         })

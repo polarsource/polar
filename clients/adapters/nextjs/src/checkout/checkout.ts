@@ -1,4 +1,7 @@
-import { createCheckouts } from '@polar-sh/sdk/2026-04/services/checkouts'
+import {
+  clientUpdateCheckouts,
+  createCheckouts,
+} from '@polar-sh/sdk/2026-04/services/checkouts'
 import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -80,6 +83,13 @@ export const Checkout = ({
           ? retUrl.toString().replaceAll('%7BCHECKOUT_ID%7D', '{CHECKOUT_ID}')
           : undefined,
       })
+
+      const discountCode = url.searchParams.get('discount_code')
+      if (discountCode && !url.searchParams.get('discount_id')) {
+        await clientUpdateCheckouts(polar)(result.client_secret, {
+          discount_code: discountCode,
+        })
+      }
 
       const redirectUrl = new URL(result.url)
 

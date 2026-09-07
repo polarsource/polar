@@ -23,6 +23,7 @@ export const createMockPolarClient = (): MockPolarClient =>
     },
     checkouts: {
       create: vi.fn(),
+      clientUpdate: vi.fn(),
       get: vi.fn(),
     },
     customers: {
@@ -160,6 +161,7 @@ export const createMockProduct = () => ({
 
 export const createMockCheckout = () => ({
   id: 'checkout-123',
+  client_secret: 'checkout_secret',
   url: 'https://polar.sh/checkout/checkout-123',
   customer_id: 'customer-123',
   customer_email: 'test@example.com',

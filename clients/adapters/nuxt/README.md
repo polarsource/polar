@@ -52,6 +52,7 @@ Pass query params to this route.
 - external_customer_id (optional) `?products=123&external_customer_id=xxx`
 - customer_email (optional) `?products=123&customer_email=janedoe@gmail.com`
 - customer_name (optional) `?products=123&customer_name=Jane`
+- discount_code (optional) `?products=123&discount_code=SAVE20` - Apply a discount code before redirecting. Discount codes must be enabled; `discount_id` takes precedence when both are supplied.
 - metadata (optional) `URL-Encoded JSON string`
 
 ## Customer Portal

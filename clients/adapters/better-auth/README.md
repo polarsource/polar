@@ -316,6 +316,7 @@ Arguments to `authClient.checkout()` and `authClient.checkoutEmbed()` use snake_
 - `products`: a product ID or array of product IDs.
 - `custom_field_data`, `metadata`: objects containing custom field values or metadata.
 - `allow_discount_codes`, `discount_id`: discount settings.
+- `discount_code`: apply a human-readable code before returning the checkout URL, including for `checkoutEmbed()`. Discount codes must be enabled; `discount_id` takes precedence when both are supplied.
 - `seats`, `min_seats`, `max_seats`: seat-based pricing settings.
 - `success_url`, `return_url`: absolute URLs or paths relative to the auth server. These override the plugin's `successUrl` and `returnUrl` configuration.
 - `allow_trial`, `trial_interval`, `trial_interval_count`: trial settings.

@@ -3,10 +3,13 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 // `vi.hoisted` makes the mock fns available to the `vi.mock` factories, which
 // vitest hoists above ordinary top-level `const` declarations (so a plain
 // `const` would hit a TDZ ReferenceError when the factory runs at import time).
-const { mockCheckoutCreate, mockSendRedirect } = vi.hoisted(() => ({
-  mockCheckoutCreate: vi.fn(),
-  mockSendRedirect: vi.fn(),
-}))
+const { mockCheckoutCreate, mockCheckoutUpdate, mockSendRedirect } = vi.hoisted(
+  () => ({
+    mockCheckoutCreate: vi.fn(),
+    mockCheckoutUpdate: vi.fn(),
+    mockSendRedirect: vi.fn(),
+  }),
+)
 
 vi.mock('@polar-sh/sdk/2026-04', () => ({
   createPolarCore: vi.fn(() => ({})),
@@ -14,6 +17,7 @@ vi.mock('@polar-sh/sdk/2026-04', () => ({
 
 vi.mock('@polar-sh/sdk/2026-04/services/checkouts', () => ({
   createCheckouts: () => mockCheckoutCreate,
+  clientUpdateCheckouts: () => mockCheckoutUpdate,
 }))
 
 vi.mock('h3', async () => {
@@ -45,6 +49,7 @@ describe('Checkout', () => {
 
   beforeEach(() => {
     mockCheckoutCreate.mockClear()
+    mockCheckoutUpdate.mockClear()
     mockSendRedirect.mockClear()
     mockCheckoutCreate.mockResolvedValue({
       url: 'https://polar.sh/checkout/checkout_123',
@@ -188,6 +193,50 @@ describe('Checkout', () => {
   })
 
   describe('redirect', () => {
+    it.each([
+      ['discount_code=SAVE%2B20%25', 'SAVE+20%', undefined],
+      ['discount_code=SAVE20&discount_id=disc_123', undefined, 'disc_123'],
+      ['discount_code=', undefined, undefined],
+    ])('handles discount prefill for %s', async (query, code, discountId) => {
+      mockCheckoutCreate.mockResolvedValue({
+        url: 'https://polar.sh/checkout/123',
+        client_secret: 'checkout_secret',
+      })
+      const checkout = Checkout({ accessToken: 'test-token', theme: 'dark' })
+      await checkout(makeEvent(`/api/checkout?products=prod_123&${query}`))
+
+      expect(mockCheckoutCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ discount_id: discountId }),
+      )
+      if (code) {
+        expect(mockCheckoutUpdate).toHaveBeenCalledExactlyOnceWith(
+          'checkout_secret',
+          { discount_code: code },
+        )
+      } else {
+        expect(mockCheckoutUpdate).not.toHaveBeenCalled()
+      }
+      expect(mockSendRedirect.mock.calls[0][1]).toBe(
+        'https://polar.sh/checkout/123?theme=dark',
+      )
+    })
+
+    it('does not redirect when applying a discount code fails', async () => {
+      mockCheckoutUpdate.mockRejectedValueOnce(
+        new Error('Invalid discount code'),
+      )
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const checkout = Checkout({ accessToken: 'test-token' })
+
+      await expect(
+        checkout(
+          makeEvent('/api/checkout?products=prod_123&discount_code=INVALID'),
+        ),
+      ).rejects.toThrow('Invalid discount code')
+      expect(mockSendRedirect).not.toHaveBeenCalled()
+      consoleSpy.mockRestore()
+    })
+
     it('redirects to the URL returned by polar.checkouts.create', async () => {
       const checkout = Checkout({ accessToken: 'test-token' })
       const event = makeEvent('/api/checkout?products=prod_123&seats=5')

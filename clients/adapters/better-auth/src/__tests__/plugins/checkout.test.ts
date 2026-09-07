@@ -90,6 +90,72 @@ describe('checkout plugin', () => {
       handler = endpoints.checkout.handler
     })
 
+    it.each([
+      { discount_code: 'SAVE+20%', redirect: true },
+      {
+        discount_code: 'SAVE20',
+        redirect: false,
+        embed_origin: 'https://example.com',
+      },
+      { discount_code: 'SAVE20', discount_id: 'disc_123' },
+      { discount_code: '' },
+    ])('handles discount prefill for %j', async (discountParams) => {
+      const mockCheckout = createMockCheckout()
+      vi.mocked(getSessionFromCtx).mockResolvedValue(null)
+      vi.mocked(mockClient.checkouts.create).mockResolvedValue(mockCheckout)
+      const ctx = {
+        ...mockContext,
+        body: CheckoutParams.parse({
+          products: ['prod-123'],
+          ...discountParams,
+        }),
+        json: vi.fn(),
+      }
+
+      await handler(ctx)
+
+      expect(mockClient.checkouts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          discount_id: ctx.body.discount_id,
+          embed_origin: ctx.body.embed_origin,
+        }),
+      )
+      if (ctx.body.discount_code && !ctx.body.discount_id) {
+        expect(
+          mockClient.checkouts.clientUpdate,
+        ).toHaveBeenCalledExactlyOnceWith(mockCheckout.client_secret, {
+          discount_code: ctx.body.discount_code,
+        })
+      } else {
+        expect(mockClient.checkouts.clientUpdate).not.toHaveBeenCalled()
+      }
+      expect(ctx.json).toHaveBeenCalledWith({
+        url: `${mockCheckout.url}?theme=dark`,
+        redirect: ctx.body.redirect ?? true,
+      })
+    })
+
+    it('does not return a checkout URL when applying a discount code fails', async () => {
+      vi.mocked(getSessionFromCtx).mockResolvedValue(null)
+      vi.mocked(mockClient.checkouts.create).mockResolvedValue(
+        createMockCheckout(),
+      )
+      vi.mocked(mockClient.checkouts.clientUpdate).mockRejectedValueOnce(
+        new Error('Invalid discount code'),
+      )
+      const ctx = {
+        ...mockContext,
+        body: { products: ['prod-123'], discount_code: 'INVALID' },
+        context: { logger: { error: vi.fn() } },
+        json: vi.fn(),
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'INTERNAL_SERVER_ERROR',
+      })
+      expect(ctx.json).not.toHaveBeenCalled()
+    })
+
     it('should create checkout with product IDs', async () => {
       const mockCheckout = createMockCheckout()
       vi.mocked(getSessionFromCtx).mockResolvedValue({

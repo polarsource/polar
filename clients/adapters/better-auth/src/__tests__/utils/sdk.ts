@@ -5,6 +5,8 @@ type MockPolarClient = ReturnType<typeof createMockPolarClient>
 
 vi.mock('@polar-sh/sdk/2026-04/services/checkouts', () => ({
   createCheckouts: (client: MockPolarClient) => client.checkouts.create,
+  clientUpdateCheckouts: (client: MockPolarClient) =>
+    client.checkouts.clientUpdate,
 }))
 
 vi.mock('@polar-sh/sdk/2026-04/services/customer_sessions', () => ({

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockCheckoutCreate = vi.fn()
+const mockCheckoutUpdate = vi.fn()
 
 vi.mock('@polar-sh/sdk/2026-04', () => ({
   createPolarCore: vi.fn(() => ({})),
@@ -9,6 +10,7 @@ vi.mock('@polar-sh/sdk/2026-04', () => ({
 
 vi.mock('@polar-sh/sdk/2026-04/services/checkouts', () => ({
   createCheckouts: vi.fn(() => mockCheckoutCreate),
+  clientUpdateCheckouts: () => mockCheckoutUpdate,
 }))
 
 import { createPolarCore } from '@polar-sh/sdk/2026-04'
@@ -44,6 +46,58 @@ describe('Checkout', () => {
   })
 
   describe('request handling', () => {
+    it.each([
+      ['discount_code=SAVE%2B20%25', 'SAVE+20%', undefined],
+      ['discount_code=SAVE20&discount_id=disc_123', undefined, 'disc_123'],
+      ['discount_code=', undefined, undefined],
+    ])('handles discount prefill for %s', async (query, code, discountId) => {
+      mockCheckoutCreate.mockResolvedValue({
+        url: 'https://polar.sh/checkout/123',
+        client_secret: 'checkout_secret',
+      })
+      const checkout = Checkout({ accessToken: 'test-token', theme: 'dark' })
+      const response = await checkout(
+        new NextRequest(
+          `https://example.com/checkout?products=prod_123&${query}`,
+        ),
+      )
+
+      expect(mockCheckoutCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ discount_id: discountId }),
+      )
+      if (code) {
+        expect(mockCheckoutUpdate).toHaveBeenCalledExactlyOnceWith(
+          'checkout_secret',
+          { discount_code: code },
+        )
+      } else {
+        expect(mockCheckoutUpdate).not.toHaveBeenCalled()
+      }
+      expect(response.headers.get('location')).toBe(
+        'https://polar.sh/checkout/123?theme=dark',
+      )
+    })
+
+    it('does not redirect when applying a discount code fails', async () => {
+      mockCheckoutCreate.mockResolvedValue({
+        url: 'https://polar.sh/checkout/123',
+        client_secret: 'checkout_secret',
+      })
+      mockCheckoutUpdate.mockRejectedValueOnce(
+        new Error('Invalid discount code'),
+      )
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const response = await Checkout({ accessToken: 'test-token' })(
+        new NextRequest(
+          'https://example.com/checkout?products=prod_123&discount_code=INVALID',
+        ),
+      )
+
+      expect(response.ok).toBe(false)
+      expect(response.headers.get('location')).toBeNull()
+      consoleSpy.mockRestore()
+    })
+
     it('should return 400 when no products provided', async () => {
       const checkout = Checkout({ accessToken: 'test-token' })
       const request = new NextRequest('https://example.com/checkout')

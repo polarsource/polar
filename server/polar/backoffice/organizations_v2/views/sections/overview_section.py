@@ -23,7 +23,7 @@ from polar.organization_review.thresholds import (
     thresholds_for_prompt,
 )
 
-from ....components import button, card
+from ....components import button, card, lazy_card
 from ....components._metric_card import Variant
 from ._shared import (
     RISK_LEVEL_BADGE,
@@ -803,13 +803,17 @@ class OverviewSection(ChecklistMixin):
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
-    def render(
-        self,
-        request: Request,
-        setup_data: dict[str, int | bool] | None = None,
-        payment_stats: dict[str, int | float] | None = None,
-    ) -> Generator[None]:
-        """Render the overview section with AI review as primary content."""
+    def render(self, request: Request) -> Generator[None]:
+        payment_metrics_url = str(
+            request.url_for(
+                "organizations:overview_payment_metrics", organization_id=self.org.id
+            )
+        )
+        setup_checklist_url = str(
+            request.url_for(
+                "organizations:overview_setup_checklist", organization_id=self.org.id
+            )
+        )
 
         # Two-column: AI review (primary, wider) + supporting evidence stacked
         with tag.div(classes="flex flex-col lg:flex-row gap-6"):
@@ -820,11 +824,8 @@ class OverviewSection(ChecklistMixin):
 
             # Right: supporting evidence stacked (~40%)
             with tag.div(classes="lg:w-2/5 space-y-6"):
-                with self.payment_card(payment_stats):
-                    pass
-
-                with self.setup_checklist_card(setup_data):
-                    pass
+                lazy_card(title="Payment Metrics", url=payment_metrics_url)
+                lazy_card(title="Setup & Checklist", url=setup_checklist_url)
 
                 with self.organization_profile_card(request):
                     pass

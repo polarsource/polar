@@ -68,7 +68,6 @@ from polar.models.support_case import (
     SupportCaseType,
 )
 from polar.models.transaction import TransactionType
-from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
@@ -928,148 +927,9 @@ async def get_organization_detail(
         has_risk_signals=has_risk_signals,
     )
 
-    # Fetch analytics data for overview section
-    setup_data = None
-    payment_stats = None
-    orders_count = 0
-    unrefunded_orders_count = 0
     parsed_agent_report = None
     agent_reviewed_at = None
     if section == "overview":
-        setup_analytics = OrganizationSetupAnalyticsService(session)
-        payment_analytics = PaymentAnalyticsService(session)
-
-        # Get setup metrics
-        checkout_links_count = await setup_analytics.get_checkout_links_count(
-            organization_id
-        )
-        webhooks_count = await setup_analytics.get_webhooks_count(organization_id)
-        api_keys_count = await setup_analytics.get_organization_tokens_count(
-            organization_id
-        )
-        products_count = await setup_analytics.get_products_count(organization_id)
-        benefits_count = await setup_analytics.get_benefits_count(organization_id)
-        enabled_benefits_count = await setup_analytics.get_enabled_benefits_count(
-            organization_id
-        )
-
-        user_verified_result = await session.execute(
-            select(User.identity_verification_status)
-            .join(UserOrganization, User.id == UserOrganization.user_id)
-            .where(UserOrganization.organization_id == organization_id)
-            .limit(1)
-        )
-        user_verified_row = user_verified_result.first()
-        user_verified = (
-            user_verified_row[0] == IdentityVerificationStatus.verified
-            if user_verified_row
-            else False
-        )
-
-        payouts_enabled = await setup_analytics.check_payout_account_enabled(
-            organization
-        )
-        payment_ready = organization.can_accept_payments
-
-        setup_score = OrganizationSetupAnalyticsService.calculate_setup_score(
-            checkout_links_count,
-            webhooks_count,
-            api_keys_count,
-            products_count,
-            benefits_count,
-            user_verified,
-            payouts_enabled,
-        )
-
-        # Calculate total transfer sum (balance transactions)
-        total_transfer_sum = await transaction_service.get_transactions_sum(
-            session, organization.account_id, type=TransactionType.balance
-        )
-
-        setup_data = {
-            "setup_score": setup_score,
-            "checkout_links_count": checkout_links_count,
-            "webhooks_count": webhooks_count,
-            "api_keys_count": api_keys_count,
-            "products_count": products_count,
-            "benefits_count": benefits_count,
-            "enabled_benefits_count": enabled_benefits_count,
-            "user_verified": user_verified,
-            "payouts_enabled": payouts_enabled,
-            "payment_ready": payment_ready,
-            "next_review_threshold": organization.next_review_threshold,
-            "total_transfer_sum": total_transfer_sum,
-        }
-
-        # Get payment metrics
-        (
-            payment_count,
-            total_amount,
-        ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
-        account_balance = await transaction_service.get_transactions_sum(
-            session, organization.account_id
-        )
-        refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
-            organization_id
-        )
-        failed_count = await payment_analytics.get_failed_payments_count(
-            organization_id
-        )
-        risk_scores = await payment_analytics.get_risk_scores(organization_id)
-        (
-            dispute_count,
-            dispute_amount,
-            chargeback_count,
-            chargeback_amount,
-        ) = await payment_analytics.get_dispute_stats(organization_id)
-
-        total_attempts = payment_count + failed_count
-        auth_rate = (
-            (payment_count / total_attempts * 100) if total_attempts > 0 else 100.0
-        )
-        refund_rate = (refunds_count / payment_count * 100) if payment_count > 0 else 0
-        dispute_rate = (dispute_count / payment_count * 100) if payment_count > 0 else 0
-        chargeback_rate = (
-            (chargeback_count / payment_count * 100) if payment_count > 0 else 0
-        )
-
-        p50_risk, p90_risk = payment_analytics.calculate_risk_percentiles(risk_scores)
-
-        (
-            held_payout_count,
-            held_payout_amount,
-        ) = await PayoutRepository.from_session(session).get_held_stats_by_account(
-            organization.account_id
-        )
-
-        payment_stats = {
-            "payment_count": payment_count,
-            "total_amount": total_amount,
-            "total_net_amount": total_transfer_sum,
-            "account_balance": account_balance,
-            "refunds_count": refunds_count,
-            "refunds_amount": refunds_amount,
-            "refund_rate": refund_rate,
-            "auth_rate": auth_rate,
-            "failed_count": failed_count,
-            "dispute_count": dispute_count,
-            "dispute_amount": dispute_amount,
-            "dispute_rate": dispute_rate,
-            "chargeback_count": chargeback_count,
-            "chargeback_amount": chargeback_amount,
-            "chargeback_rate": chargeback_rate,
-            "p50_risk": p50_risk,
-            "p90_risk": p90_risk,
-            "risk_scores_count": len(risk_scores),
-            "next_review_threshold": organization.next_review_threshold,
-            "held_payout_count": held_payout_count,
-            "held_payout_amount": held_payout_amount,
-        }
-
-        orders_count, unrefunded_orders_count = await count_test_sales(
-            session, organization_id
-        )
-
         parsed_agent_report = agent_review.parsed_report if agent_review else None
         agent_reviewed_at = agent_review.reviewed_at if agent_review else None
 
@@ -1087,16 +947,12 @@ async def get_organization_detail(
             if section == "overview":
                 overview = OverviewSection(
                     organization,
-                    orders_count=orders_count,
-                    unrefunded_orders_count=unrefunded_orders_count,
                     agent_report=parsed_agent_report,
                     agent_reviewed_at=agent_reviewed_at,
                     has_open_appeal_case=appeal_case is not None and appeal_case_open,
                     risk_signals=risk_signals,
                 )
-                with overview.render(
-                    request, setup_data=setup_data, payment_stats=payment_stats
-                ):
+                with overview.render(request):
                     pass
             elif section == "team":
                 team_section = TeamSection(organization)
@@ -1175,6 +1031,149 @@ async def get_organization_detail(
             else:
                 with tag.div():
                     text(f"Unknown section: {section}")
+
+
+async def _get_overview_card_organization(
+    session: AsyncSession, organization_id: UUID4
+) -> Organization:
+    statement = (
+        select(Organization)
+        .options(joinedload(Organization.payout_account))
+        .where(Organization.id == organization_id)
+    )
+    result = await session.execute(statement)
+    organization = result.scalars().unique().one_or_none()
+    if organization is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return organization
+
+
+async def _build_setup_data(
+    session: AsyncSession, organization: Organization
+) -> dict[str, int | bool]:
+    setup_analytics = OrganizationSetupAnalyticsService(session)
+    return {
+        "checkout_links_count": await setup_analytics.get_checkout_links_count(
+            organization.id
+        ),
+        "webhooks_count": await setup_analytics.get_webhooks_count(organization.id),
+        "api_keys_count": await setup_analytics.get_organization_tokens_count(
+            organization.id
+        ),
+        "products_count": await setup_analytics.get_products_count(organization.id),
+        "benefits_count": await setup_analytics.get_benefits_count(organization.id),
+        "enabled_benefits_count": await setup_analytics.get_enabled_benefits_count(
+            organization.id
+        ),
+        "payment_ready": organization.can_accept_payments,
+    }
+
+
+async def _build_payment_stats(
+    session: AsyncSession, organization: Organization
+) -> dict[str, int | float]:
+    payment_analytics = PaymentAnalyticsService(session)
+
+    total_transfer_sum = await transaction_service.get_transactions_sum(
+        session, organization.account_id, type=TransactionType.balance
+    )
+    (
+        payment_count,
+        total_amount,
+    ) = await payment_analytics.get_succeeded_payments_stats(organization.id)
+    account_balance = await transaction_service.get_transactions_sum(
+        session, organization.account_id
+    )
+    refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
+        organization.id
+    )
+    failed_count = await payment_analytics.get_failed_payments_count(organization.id)
+    risk_scores = await payment_analytics.get_risk_scores(organization.id)
+    (
+        dispute_count,
+        dispute_amount,
+        chargeback_count,
+        chargeback_amount,
+    ) = await payment_analytics.get_dispute_stats(organization.id)
+
+    total_attempts = payment_count + failed_count
+    auth_rate = (payment_count / total_attempts * 100) if total_attempts > 0 else 100.0
+    refund_rate = (refunds_count / payment_count * 100) if payment_count > 0 else 0
+    dispute_rate = (dispute_count / payment_count * 100) if payment_count > 0 else 0
+    chargeback_rate = (
+        (chargeback_count / payment_count * 100) if payment_count > 0 else 0
+    )
+
+    p50_risk, p90_risk = payment_analytics.calculate_risk_percentiles(risk_scores)
+
+    (
+        held_payout_count,
+        held_payout_amount,
+    ) = await PayoutRepository.from_session(session).get_held_stats_by_account(
+        organization.account_id
+    )
+
+    return {
+        "payment_count": payment_count,
+        "total_amount": total_amount,
+        "total_net_amount": total_transfer_sum,
+        "account_balance": account_balance,
+        "refunds_count": refunds_count,
+        "refunds_amount": refunds_amount,
+        "refund_rate": refund_rate,
+        "auth_rate": auth_rate,
+        "failed_count": failed_count,
+        "dispute_count": dispute_count,
+        "dispute_amount": dispute_amount,
+        "dispute_rate": dispute_rate,
+        "chargeback_count": chargeback_count,
+        "chargeback_amount": chargeback_amount,
+        "chargeback_rate": chargeback_rate,
+        "p50_risk": p50_risk,
+        "p90_risk": p90_risk,
+        "risk_scores_count": len(risk_scores),
+        "next_review_threshold": organization.next_review_threshold,
+        "held_payout_count": held_payout_count,
+        "held_payout_amount": held_payout_amount,
+    }
+
+
+@router.get(
+    "/{organization_id}/overview/payment-metrics",
+    name="organizations:overview_payment_metrics",
+)
+async def overview_payment_metrics(
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Lazily loaded payment metrics card of the overview section."""
+    organization = await _get_overview_card_organization(session, organization_id)
+    payment_stats = await _build_payment_stats(session, organization)
+    with OverviewSection(organization).payment_card(payment_stats):
+        pass
+
+
+@router.get(
+    "/{organization_id}/overview/setup-checklist",
+    name="organizations:overview_setup_checklist",
+)
+async def overview_setup_checklist(
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Lazily loaded setup and checklist card of the overview section."""
+    organization = await _get_overview_card_organization(session, organization_id)
+    setup_data = await _build_setup_data(session, organization)
+    orders_count, unrefunded_orders_count = await count_test_sales(
+        session, organization_id
+    )
+    overview = OverviewSection(
+        organization,
+        orders_count=orders_count,
+        unrefunded_orders_count=unrefunded_orders_count,
+    )
+    with overview.setup_checklist_card(setup_data):
+        pass
 
 
 def _get_review_report(

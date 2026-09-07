@@ -140,4 +140,31 @@ def card(
         yield
 
 
-__all__ = ["card", "empty_state", "loading_state"]
+def lazy_card(*, title: str, url: str) -> None:
+    with card(
+        bordered=True,
+        hx_get=url,
+        hx_trigger="load",
+        hx_target="this",
+        hx_swap="outerHTML",
+        _="on htmx:responseError add .hidden to .lazy-card-loading in me "
+        "then remove .hidden from .lazy-card-error in me",
+    ):
+        with tag.h2(classes="text-lg font-bold mb-4"):
+            text(title)
+        with tag.div(
+            classes="lazy-card-loading flex items-center gap-2 text-base-content/60",
+            role="status",
+        ):
+            with tag.span(classes="loading loading-spinner loading-sm"):
+                pass
+            with tag.span(classes="text-sm"):
+                text("Loading…")
+        with tag.div(
+            classes="lazy-card-error alert alert-error alert-soft hidden",
+            role="alert",
+        ):
+            text("Failed to load. Refresh the page to retry.")
+
+
+__all__ = ["card", "empty_state", "lazy_card", "loading_state"]

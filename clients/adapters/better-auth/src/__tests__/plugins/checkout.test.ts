@@ -477,6 +477,34 @@ describe('checkout plugin', () => {
       )
     })
 
+    it('explicit reference_id wins over a colliding metadata.referenceId (regression)', async () => {
+      const mockCheckout = createMockCheckout()
+      vi.mocked(getSessionFromCtx).mockResolvedValue({
+        user: { id: 'user-123' },
+      })
+      vi.mocked(mockClient.checkouts.create).mockResolvedValue(mockCheckout)
+
+      const ctx = {
+        ...mockContext,
+        body: {
+          products: ['prod-123'],
+          reference_id: 'explicit-id',
+          metadata: { referenceId: 'metadata-override', other: 'x' },
+        },
+        json: vi
+          .fn()
+          .mockReturnValue({ url: mockCheckout.url, redirect: true }),
+      }
+
+      await handler(ctx)
+
+      expect(mockClient.checkouts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: { referenceId: 'explicit-id', other: 'x' },
+        }),
+      )
+    })
+
     it('should handle unauthenticated users when not required', async () => {
       const plugin = checkout({ authenticatedUsersOnly: false })
       const endpoints = plugin(mockClient) as any

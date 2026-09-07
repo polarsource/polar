@@ -32,7 +32,11 @@ import {
 const MetadataValueInput = ({
   value,
   onChange,
-}: {
+  ...controlProps
+}: Pick<
+  React.ComponentProps<'input'>,
+  'id' | 'aria-describedby' | 'aria-invalid'
+> & {
   value: MetadataValue
   onChange: (value: MetadataValue) => void
 }) => {
@@ -43,7 +47,10 @@ const MetadataValueInput = ({
           value={String(value)}
           onValueChange={(newValue) => onChange(newValue === 'true')}
         >
-          <SelectTrigger className="w-full min-w-0 flex-1 font-mono">
+          <SelectTrigger
+            {...controlProps}
+            className="w-full min-w-0 flex-1 font-mono"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -59,6 +66,7 @@ const MetadataValueInput = ({
     case 'number':
       return (
         <Input
+          {...controlProps}
           type="number"
           step="any"
           value={Number.isNaN(value) ? '' : value}
@@ -70,6 +78,7 @@ const MetadataValueInput = ({
     default:
       return (
         <Input
+          {...controlProps}
           value={value}
           placeholder="value"
           className="w-full min-w-0 flex-1 font-mono"
@@ -245,10 +254,12 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                             )}
                           </SelectContent>
                         </Select>
-                        <MetadataValueInput
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
+                        <FormControl>
+                          <MetadataValueInput
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
                       </Box>
                       <FormMessage />
                     </FormItem>

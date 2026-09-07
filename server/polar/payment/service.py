@@ -23,16 +23,6 @@ from .sorting import PaymentSortProperty
 class PaymentError(PolarError): ...
 
 
-class UnlinkedPaymentError(PaymentError):
-    def __init__(self, processor_id: str) -> None:
-        self.processor_id = processor_id
-        message = (
-            f"Received a payment with id {processor_id} that is not linked "
-            "to any checkout or order."
-        )
-        super().__init__(message)
-
-
 class UnhandledPaymentIntent(PaymentError):
     def __init__(self, payment_intent_id: str) -> None:
         self.payment_intent_id = payment_intent_id

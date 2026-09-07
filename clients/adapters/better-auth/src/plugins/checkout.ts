@@ -246,8 +246,8 @@ export const checkout =
                 : undefined,
               metadata: ctx.body.reference_id
                 ? {
-                    referenceId: ctx.body.reference_id,
                     ...ctx.body.metadata,
+                    referenceId: ctx.body.reference_id,
                   }
                 : ctx.body.metadata,
               custom_field_data: ctx.body.custom_field_data,

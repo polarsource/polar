@@ -7,6 +7,8 @@ from pathlib import Path
 
 ANALYTICS_URL = "https://polar-dev-analytics.vercel.app/api/track"
 EVENT = "dev_cli_command"
+COMPLETED_EVENT = "dev_cli_command_completed"
+UP_STEP_EVENT = "dev_cli_up_step"
 _GROUP_COMMANDS = {"db", "docker"}
 _FLAG_NAME = re.compile(r"^--?[A-Za-z][A-Za-z0-9-]{0,39}$")
 _REDACTED = "<redacted>"
@@ -70,40 +72,48 @@ def parse_invocation(argv: list[str]) -> tuple[str, list[str], str]:
     return command, flags, invocation
 
 
-def _git_identity() -> tuple[str, str]:
-    def _config(key: str) -> str:
-        try:
-            result = subprocess.run(
-                ["git", "config", "--get", key],
-                capture_output=True,
-                text=True,
-                timeout=2,
-            )
-            return result.stdout.strip() if result.returncode == 0 else ""
-        except Exception:
-            return ""
-
-    return _config("user.name"), _config("user.email")
-
-
 def track(argv: list[str]) -> None:
+    _send(EVENT, argv, {})
+
+
+def track_completed(argv: list[str], duration_ms: int, exit_code: int) -> None:
+    _send(
+        COMPLETED_EVENT,
+        argv,
+        {"duration_ms": duration_ms, "exit_code": exit_code},
+    )
+
+
+def track_up_step(
+    argv: list[str], step: str, duration_ms: int, success: bool, clean: bool
+) -> None:
+    _send(
+        UP_STEP_EVENT,
+        argv,
+        {
+            "step": step,
+            "duration_ms": duration_ms,
+            "success": success,
+            "clean": clean,
+        },
+    )
+
+
+def _send(event: str, argv: list[str], extra: dict[str, int | str | bool]) -> None:
     endpoint = _endpoint()
     if _disabled() or not endpoint:
         return
     command, flags, invocation = parse_invocation(argv)
-    git_name, git_email = _git_identity()
     payload = json.dumps(
         {
             "url": endpoint,
-            "event": EVENT,
-            "distinct_id": git_email or None,
+            "event": event,
             "properties": {
                 "command": command,
                 "invocation": invocation,
                 "flags": flags,
                 "os": sys.platform,
-                "git_name": git_name,
-                "git_email": git_email,
+                **extra,
             },
         }
     )

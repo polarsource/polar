@@ -85,7 +85,7 @@ export const Checkout = <TPath extends string = string>({
       return Response.redirect(redirectUrl.toString())
     } catch (error) {
       console.error(error)
-      return Response.error()
+      return Response.json({ error: 'Internal server error' }, { status: 500 })
     }
   }
 }

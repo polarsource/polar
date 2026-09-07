@@ -107,6 +107,12 @@ export const usage =
             })
           }
 
+          if (ctx.context.session.user['isAnonymous']) {
+            throw new APIError('UNAUTHORIZED', {
+              message: 'Anonymous users cannot ingest usage events',
+            })
+          }
+
           const principal = ctx.body.organizationId
             ? await resolveBillingPrincipal({
                 context: ctx.context,

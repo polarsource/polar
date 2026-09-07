@@ -91,6 +91,8 @@ class BuildRequestMixin:
                 continue
             if isinstance(v, dict):
                 for sub_k, sub_v in v.items():
+                    if sub_v is None:
+                        continue
                     params[f"{k}[{sub_k}]"] = sub_v
             else:
                 params[k] = v

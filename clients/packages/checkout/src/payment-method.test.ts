@@ -160,6 +160,21 @@ describe('PolarEmbedPaymentMethod', () => {
       embed.close()
     })
 
+    it('opts the iframe out of Lenis smooth-scroll on the modal overlay', async () => {
+      const promise = PolarEmbedPaymentMethod.create({
+        sessionToken: CUSTOMER_SESSION_TOKEN,
+      })
+
+      dispatchLoaded()
+      const embed = await promise
+
+      const iframe = document.querySelector('iframe')!
+      expect(iframe.hasAttribute('data-lenis-prevent')).toBe(true)
+      expect(iframe.getAttribute('data-lenis-prevent')).toBe('')
+
+      embed.close()
+    })
+
     it('calls onLoaded callback when the embed loads', async () => {
       const onLoaded = vi.fn()
 
@@ -173,6 +188,26 @@ describe('PolarEmbedPaymentMethod', () => {
 
       expect(onLoaded).toHaveBeenCalledTimes(1)
       embed.close()
+    })
+  })
+
+  describe('createInline', () => {
+    afterEach(cleanupDom)
+
+    it('does not opt the inline iframe out of Lenis (no internal scroll surface)', () => {
+      const element = document.createElement('div')
+      document.body.appendChild(element)
+
+      const embed = PolarEmbedPaymentMethod.createInline({
+        sessionToken: CUSTOMER_SESSION_TOKEN,
+        element,
+      })
+
+      const iframe = document.querySelector('iframe')!
+      expect(iframe.hasAttribute('data-lenis-prevent')).toBe(false)
+
+      embed.close()
+      element.remove()
     })
   })
 

@@ -217,8 +217,9 @@ class TestListIntegrations:
             "T1",
             None,
         }
-        assert all("bot_token" not in integration for integration in integrations)
-        assert all("client_secret" not in integration for integration in integrations)
+        assert all(
+            integration["client_id_last_4"] == ".200" for integration in integrations
+        )
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.organizations_read}),
@@ -702,7 +703,7 @@ class TestEvents:
         repo = SlackAppRepository.from_session(session)
         integration = await repo.get_by_app_id("A0TESTAPPID")
         assert integration is not None
-        assert integration.bot_token is None
+        assert await integration.get_bot_token() is None
         assert integration.revoked_at is not None
 
     async def test_event_callback_verifies_when_plaintext_signing_secret_absent(

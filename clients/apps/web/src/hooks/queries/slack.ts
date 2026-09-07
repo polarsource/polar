@@ -32,7 +32,7 @@ export const useSlackIntegrations = (
 ) =>
   useQuery({
     queryKey: ['slackIntegrations', organizationId],
-    queryFn: async (): Promise<schemas['SlackIntegration'][]> => {
+    queryFn: async (): Promise<schemas['SlackIntegrationListItem'][]> => {
       const response = await api.GET('/v1/integrations/slack', {
         params: { query: { organization_id: organizationId ?? '' } },
       })

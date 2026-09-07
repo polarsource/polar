@@ -125,15 +125,12 @@ class TestPersistence:
     ) -> None:
         integration = _build(organization)
         integration.id = SlackApp.generate_id()
-        integration.client_secret = "cs-test"
         integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
             integration.id, "cs-test"
         )
-        integration.signing_secret = "ss-test"
         integration.signing_secret_encrypted = await SlackApp.encrypt_signing_secret(
             integration.id, "ss-test"
         )
-        integration.bot_token = "xoxb-test"
         integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
             integration.id, "xoxb-test"
         )

@@ -109,7 +109,9 @@ def _signing_keys(secret: str) -> tuple[bytes, ...]:
     keys: list[bytes] = [secret.encode()]
     remainder = secret.removeprefix("whsec_")
     try:
-        decoded = base64.b64decode(remainder + "==")
+        decoded = base64.b64decode(
+            remainder + "=" * (-len(remainder) % 4), validate=True
+        )
     except (binascii.Error, ValueError):
         return (keys[0],)
     if decoded and decoded != keys[0]:

@@ -166,6 +166,12 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         uuid_pending_in_batch: list[UUID] = []
         for event_id, pending_ref in batch_pending_rows.all():
+            # Python's UUID() accepts `urn:uuid:<uuid>` but Postgres's ::uuid
+            # cast below rejects it with a hard error that rolls back the batch.
+            # Skip it so it falls through to string-match (1a/1c). Uppercase,
+            # braces, and no-hyphen forms are accepted by both and stay in 1b.
+            if pending_ref.lower().startswith("urn:uuid:"):
+                continue
             try:
                 UUID(pending_ref)
             except ValueError, TypeError:

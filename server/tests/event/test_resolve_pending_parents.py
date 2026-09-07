@@ -375,6 +375,148 @@ class TestResolvePendingParents:
         assert by_ext["child"].parent_id == parent_id
         assert by_ext["child"].root_id == parent_id
 
+    async def test_urn_uuid_prefix_does_not_crash(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        """
+        A `urn:uuid:<uuid>` pending ref must not crash the worker.
+
+        Python's UUID() accepts the URN form but Postgres's ::uuid cast
+        rejects it with a hard statement error. The ref should fall through
+        to the string-match steps and simply fail to link — the documented
+        behavior for non-linkable refs — rather than rolling back the batch.
+        """
+        organization = await create_organization(save_fixture, account)
+        repository = EventRepository.from_session(session)
+
+        parent_id = uuid.uuid4()
+        events = [
+            _make_event(
+                organization,
+                "child",
+                pending_parent_external_id=f"urn:uuid:{parent_id}",
+            ),
+            {
+                "id": parent_id,
+                "name": "event.parent",
+                "source": EventSource.user,
+                "organization_id": organization.id,
+                "external_id": "parent",
+                "root_id": parent_id,
+            },
+        ]
+        event_ids, _ = await repository.insert_batch(events)
+        resolved = await _resolve(repository, event_ids)
+
+        assert resolved == []
+        by_ext = await _get_events(session, organization)
+        child = by_ext["child"]
+        assert child.parent_id is None
+        assert child.root_id is None
+        assert child.pending_parent_external_id == f"urn:uuid:{parent_id}"
+
+    async def test_urn_uuid_prefix_does_not_crash_other_events_in_batch(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        """
+        A `urn:uuid:` ref in the batch must not prevent other resolvable
+        events in the same batch from linking and getting a root_id.
+        """
+        organization = await create_organization(save_fixture, account)
+        repository = EventRepository.from_session(session)
+
+        parent_id = uuid.uuid4()
+        events = [
+            _make_event(
+                organization,
+                "urn_child",
+                pending_parent_external_id=f"urn:uuid:{parent_id}",
+            ),
+            _make_event(organization, "child", pending_parent_external_id="parent"),
+            {
+                "id": parent_id,
+                "name": "event.parent",
+                "source": EventSource.user,
+                "organization_id": organization.id,
+                "external_id": "parent",
+                "root_id": parent_id,
+            },
+        ]
+        event_ids, _ = await repository.insert_batch(events)
+        resolved = await _resolve(repository, event_ids)
+
+        assert len(resolved) == 1
+        by_ext = await _get_events(session, organization)
+        parent = by_ext["parent"]
+        child = by_ext["child"]
+        urn_child = by_ext["urn_child"]
+
+        assert child.parent_id == parent.id
+        assert child.root_id == parent.id
+        assert child.pending_parent_external_id is None
+
+        assert urn_child.parent_id is None
+        assert urn_child.root_id is None
+        assert urn_child.pending_parent_external_id == f"urn:uuid:{parent_id}"
+
+    @pytest.mark.parametrize(
+        "ref_form",
+        [
+            "canonical",
+            "uppercase",
+            "braced",
+            "no_hyphen",
+        ],
+    )
+    async def test_parent_referenced_by_uuid_noncanonical_forms(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        ref_form: str,
+    ) -> None:
+        """
+        Non-canonical UUID forms that both Python UUID() and Postgres ::uuid
+        accept (uppercase, brace-wrapped, hyphen-stripped) must still link
+        through step 1b. Only the `urn:uuid:` URN form is divergent.
+        """
+        organization = await create_organization(save_fixture, account)
+        repository = EventRepository.from_session(session)
+
+        parent_id = uuid.uuid4()
+        canonical = str(parent_id)
+        if ref_form == "canonical":
+            ref = canonical
+        elif ref_form == "uppercase":
+            ref = canonical.upper()
+        elif ref_form == "braced":
+            ref = "{" + canonical + "}"
+        elif ref_form == "no_hyphen":
+            ref = canonical.replace("-", "")
+        else:
+            pytest.fail(f"unknown ref_form: {ref_form}")
+
+        events = [
+            _make_event(organization, "child", pending_parent_external_id=ref),
+            {
+                "id": parent_id,
+                "name": "event.parent",
+                "source": EventSource.user,
+                "organization_id": organization.id,
+                "external_id": "parent",
+                "root_id": parent_id,
+            },
+        ]
+        event_ids, _ = await repository.insert_batch(events)
+        resolved = await _resolve(repository, event_ids)
+
+        assert len(resolved) == 1
+        by_ext = await _get_events(session, organization)
+        child = by_ext["child"]
+        assert child.parent_id == parent_id
+        assert child.root_id == parent_id
+        assert child.pending_parent_external_id is None
+
     async def test_cross_org_isolation(
         self,
         save_fixture: SaveFixture,

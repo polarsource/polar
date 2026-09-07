@@ -28,7 +28,36 @@ class TestPrivateAccess:
     async def test_requires_login(self, private_client: httpx.AsyncClient) -> None:
         response = await private_client.get("/")
         assert response.status_code == 303
-        assert response.headers["location"] == "/auth/login"
+        assert response.headers["location"] == "/auth/login?return_to=%2F"
+
+    @pytest.mark.parametrize("htmx", [False, True])
+    @pytest.mark.parametrize("method", ["GET", "POST"])
+    async def test_expired_session_recovers_login(
+        self,
+        private_client: httpx.AsyncClient,
+        admin_token: OAuth2Token,
+        save_fixture: SaveFixture,
+        htmx: bool,
+        method: str,
+    ) -> None:
+        admin_token.issued_at = 1
+        await save_fixture(admin_token)
+        private_client.cookies.set(SESSION_COOKIE, "backoffice-token")
+        path = (
+            "/organizations/?query=example"
+            if method == "GET"
+            else "/impersonation/start"
+        )
+        response = await private_client.request(
+            method, path, headers={"HX-Request": str(htmx).lower()}
+        )
+        assert response.status_code == (200 if htmx else 303)
+        location = response.headers["hx-redirect" if htmx else "location"]
+        assert urlsplit(location).path == "/auth/login"
+        assert parse_qs(urlsplit(location).query)["return_to"] == [
+            path if method == "GET" else "/"
+        ]
+        assert "set-cookie" not in response.headers
 
     async def test_admin_and_static(
         self, private_client: httpx.AsyncClient, admin_token: OAuth2Token
@@ -167,7 +196,9 @@ class TestPrivateOAuth:
         respx_mock: MockRouter,
         session: AsyncSession,
     ) -> None:
-        response = await private_client.get("/auth/login")
+        response = await private_client.get(
+            "/auth/login", params={"return_to": "/organizations/?query=example"}
+        )
         assert response.status_code == 303
         authorize = urlsplit(response.headers["location"])
         assert response.headers["location"].startswith(
@@ -209,7 +240,7 @@ class TestPrivateOAuth:
             "/auth/callback", params={"code": "auth-code", "state": params["state"][0]}
         )
         assert response.status_code == 303
-        assert response.headers["location"] == "/"
+        assert response.headers["location"] == "/organizations/?query=example"
         body = parse_qs(token_request.calls.last.request.content.decode())
         assert body["code_verifier"] == [state.code_verifier]
         assert body["redirect_uri"] == [f"{PRIVATE_URL}/auth/callback"]
@@ -270,6 +301,32 @@ class TestPrivateOAuth:
         )
         assert response.status_code == 403
         assert len(respx_mock.calls) == 0
+
+    @pytest.mark.parametrize(
+        "return_to",
+        [
+            "//evil.example",
+            "/\\evil.example",
+            "https://evil.example",
+            "@evil.example",
+            "///evil.example",
+        ],
+    )
+    async def test_rejects_external_return_path(
+        self,
+        private_client: httpx.AsyncClient,
+        session: AsyncSession,
+        return_to: str,
+    ) -> None:
+        response = await private_client.get(
+            "/auth/login", params={"return_to": return_to}
+        )
+        assert response.status_code == 303
+        state = await OAuth2StateService(session).get_by_token(
+            private_client.cookies[settings.OAUTH2_SESSION_STATE_COOKIE_KEY]
+        )
+        assert state is not None
+        assert state.context == {"return_to": "/"}
 
 
 @pytest.mark.asyncio

@@ -38,6 +38,9 @@ The private session follows the normal OAuth token lifetime. Sign out revokes th
 token. Revoking OAuth access or removing admin status also blocks subsequent access.
 Signing out of the dashboard does not revoke the separate OAuth session. If private
 login expires during impersonation, exit impersonation before signing in again.
+Expired private sessions redirect to login, including during HTMX requests. Login
+returns to the requested page and query; interrupted writes return to the backoffice
+root without replaying the action.
 
 Both impersonation entry points use the same session service and cookie helpers.
 Switching targets preserves the original admin cookie and revokes the previous

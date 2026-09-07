@@ -7,6 +7,7 @@ from polar.postgres import AsyncSession, get_db_session
 
 from .access import (
     AdminSession,
+    BackofficeAuthenticationRequired,
     get_private_session,
     is_private_backoffice,
     require_tailscale_user,
@@ -29,8 +30,8 @@ async def get_admin(
         user_session = orig_user_session or user_session
 
     if user_session is None:
-        if is_private_backoffice(request) and request.method in {"GET", "HEAD"}:
-            raise HTTPException(303, headers={"Location": "/auth/login"})
+        if is_private_backoffice(request):
+            raise BackofficeAuthenticationRequired()
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user = user_session.user

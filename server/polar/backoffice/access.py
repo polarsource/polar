@@ -15,6 +15,9 @@ SESSION_COOKIE = "__Host-polar_backoffice_session"
 RETURN_COOKIE = "polar_private_impersonation"
 
 
+class BackofficeAuthenticationRequired(Exception): ...
+
+
 @dataclass(frozen=True)
 class OAuthAdminSession:
     oauth_token: OAuth2Token

@@ -1,12 +1,14 @@
 import secrets
 import time
+from urllib.parse import urlencode
 
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 from authlib.oauth2 import OAuth2Error
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from httpx import HTTPError
 from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateException
+from safe_redirect_url import url_has_allowed_host_and_scheme
 
 from polar.auth.helpers import set_state_cookie
 from polar.auth.oauth2.state import OAuth2StateService, get_oauth2_state_service
@@ -20,10 +22,34 @@ from .access import (
     require_tailscale_user,
     validate_private_token,
 )
+from .responses import HXRedirectResponse
 from .routing import BackofficeRouter
 
 router = BackofficeRouter(prefix="/auth")
 STATE_PROVIDER = "private_backoffice"
+
+
+def validate_return_path(value: str | None) -> str:
+    return (
+        value
+        if value is not None
+        and value.startswith("/")
+        and url_has_allowed_host_and_scheme(value, set(), require_https=True)
+        else "/"
+    )
+
+
+async def authentication_required_handler(
+    request: Request, exc: Exception
+) -> RedirectResponse:
+    return_to = "/"
+    if request.method in {"GET", "HEAD"}:
+        return_to = request.url.path
+        if request.url.query:
+            return_to = f"{return_to}?{request.url.query}"
+    return HXRedirectResponse(
+        request, f"/auth/login?{urlencode({'return_to': return_to})}", 303
+    )
 
 
 def get_oauth_client() -> AsyncOAuth2Client:
@@ -40,6 +66,7 @@ def get_oauth_client() -> AsyncOAuth2Client:
 @router.get("/login")
 async def login(
     request: Request,
+    return_to: str = Query(default="/"),
     state_service: OAuth2StateService = Depends(get_oauth2_state_service),
 ) -> RedirectResponse:
     verifier = secrets.token_urlsafe(32)
@@ -48,6 +75,7 @@ async def login(
         redirect_uri=f"{settings.BACKOFFICE_PRIVATE_URL}/auth/callback",
         code_verifier=verifier,
         scope=["openid", "email"],
+        return_to=validate_return_path(return_to),
     )
     async with get_oauth_client() as client:
         url, _ = client.create_authorization_url(
@@ -108,7 +136,9 @@ async def callback(
         raise HTTPException(403, "Invalid backoffice authorization")
     admin = validate_private_token(token)
     require_tailscale_user(request, admin)
-    response = RedirectResponse("/", 303)
+    response = RedirectResponse(
+        validate_return_path((oauth_state.context or {}).get("return_to")), 303
+    )
     response.set_cookie(
         SESSION_COOKIE,
         access_token,

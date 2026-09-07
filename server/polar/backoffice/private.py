@@ -10,7 +10,9 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from polar.config import settings
 
+from .access import BackofficeAuthenticationRequired
 from .dependencies import get_admin
+from .login import authentication_required_handler
 from .login import router as login_router
 from .versioned_static import VersionedStaticFiles
 
@@ -66,6 +68,10 @@ class TailscaleMiddleware:
 def configure_private_backoffice(app: FastAPI, backoffice_app: FastAPI) -> None:
     assert settings.BACKOFFICE_PRIVATE_URL is not None
     app.add_middleware(TailscaleMiddleware, origin=settings.BACKOFFICE_PRIVATE_URL)
+    for target in (app, backoffice_app):
+        target.add_exception_handler(
+            BackofficeAuthenticationRequired, authentication_required_handler
+        )
     app.include_router(login_router)
     static_files = VersionedStaticFiles(directory=Path(__file__).parent / "static")
 

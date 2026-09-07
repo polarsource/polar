@@ -18,5 +18,5 @@ variable "public_backoffice_enabled" {
 }
 
 output "backoffice_service_id" {
-  value = module.test.backoffice_service_id
+  value = one(module.test[*].backoffice_service_id)
 }

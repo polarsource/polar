@@ -33,10 +33,18 @@ export const convertMetadataValue = (
   }
 }
 
-export const validateMetadataValue = (value: MetadataValue) =>
-  typeof value !== 'number' ||
-  Number.isFinite(value) ||
-  'Must be a valid number'
+export const validateMetadataKey = (key: string) =>
+  key.length > 0 || 'Key is required'
+
+export const validateMetadataValue = (value: MetadataValue) => {
+  if (typeof value === 'string') {
+    return value.length > 0 || 'Value is required'
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) || 'Must be a valid number'
+  }
+  return true
+}
 
 export const metadataToEntries = (
   metadata: Metadata | null | undefined,

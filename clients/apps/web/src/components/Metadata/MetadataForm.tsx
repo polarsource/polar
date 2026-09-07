@@ -13,7 +13,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import {
   FormControl,
   FormField,
-  FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
@@ -25,6 +24,7 @@ import {
   convertMetadataValue,
   getMetadataValueType,
   metadataValueTypeLabels,
+  validateMetadataKey,
   validateMetadataValue,
 } from './utils'
 
@@ -106,7 +106,6 @@ export const MetadataForm = ({ label }: { label?: string }) => {
 
   const validateUniqueKey = useCallback(
     (value: string, index: number) => {
-      if (!value) return true
       const metadata = getValues('metadata')
       const duplicateIndex = metadata?.findIndex(
         (item, i) => i !== index && item.key === value,
@@ -125,7 +124,7 @@ export const MetadataForm = ({ label }: { label?: string }) => {
 
   return (
     <Box flexDirection="column" gap="s">
-      {label ? <FormLabel>{label}</FormLabel> : null}
+      {label ? <Text variant="label">{label}</Text> : null}
       {fields.length > 0 && (
         <Box flexDirection="column" gap="s">
           <Box
@@ -167,7 +166,10 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                 control={control}
                 name={`metadata.${index}.key`}
                 rules={{
-                  validate: (value: string) => validateUniqueKey(value, index),
+                  validate: {
+                    key: validateMetadataKey,
+                    unique: (value: string) => validateUniqueKey(value, index),
+                  },
                 }}
                 render={({ field }) => (
                   <Box

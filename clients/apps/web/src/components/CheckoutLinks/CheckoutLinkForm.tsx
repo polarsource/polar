@@ -10,7 +10,12 @@ import {
   setValidationErrors,
 } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
-import ClearOutlined from '@mui/icons-material/ClearOutlined'
+import { MetadataForm } from '@/components/Metadata/MetadataForm'
+import {
+  MetadataFormValues,
+  entriesToMetadata,
+  metadataToEntries,
+} from '@/components/Metadata/utils'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
@@ -27,7 +32,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { XIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
+import { SubmitHandler, useForm } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
 import { TrialConfigurationForm } from '../TrialConfiguration/TrialConfigurationForm'
@@ -36,9 +41,8 @@ import { CheckoutLinkSeatsField } from './CheckoutLinkSeatsField'
 type CheckoutLinkCreateForm = Omit<
   schemas['CheckoutLinkCreateProducts'],
   'payment_processor' | 'metadata'
-> & {
-  metadata: { key: string; value: string | number | boolean }[]
-}
+> &
+  MetadataFormValues
 
 export interface CheckoutLinkFormProps {
   organization: schemas['Organization']
@@ -76,9 +80,7 @@ export const CheckoutLinkForm = ({
       return {
         ...checkoutLink,
         label: checkoutLink.label ?? null,
-        metadata: Object.entries(checkoutLink.metadata ?? {}).map(
-          ([key, value]) => ({ key, value }),
-        ),
+        metadata: metadataToEntries(checkoutLink.metadata),
         products: checkoutLink.products.map(({ id }) => id),
         allow_discount_codes: checkoutLink.allow_discount_codes ?? true,
         require_billing_address: checkoutLink.require_billing_address ?? false,
@@ -107,14 +109,6 @@ export const CheckoutLinkForm = ({
   })
 
   const { control, handleSubmit, setError, reset, watch } = form
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'metadata',
-    rules: {
-      maxLength: 50,
-    },
-  })
-
   // Watch for selected product IDs to determine if we should show trial configuration
   // oxlint-disable-next-line react-hooks/incompatible-library
   const selectedProductIds = watch('products') || []
@@ -179,10 +173,7 @@ export const CheckoutLinkForm = ({
         discount_id: data.discount_id || null,
         success_url: data.success_url || null,
         return_url: data.return_url || null,
-        metadata: data.metadata.reduce(
-          (acc, { key, value }) => ({ ...acc, [key]: value }),
-          {},
-        ),
+        metadata: entriesToMetadata(data.metadata),
       }
 
       let newCheckoutLink: schemas['CheckoutLink']
@@ -438,71 +429,7 @@ export const CheckoutLinkForm = ({
           <TrialConfigurationForm bottomText="This will override the trial configuration set on products." />
         )}
 
-        <FormItem>
-          <div className="flex flex-row items-center justify-between gap-2 py-2">
-            <FormLabel>Metadata</FormLabel>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="self-start"
-              type="button"
-              onClick={() => {
-                append({ key: '', value: '' })
-              }}
-            >
-              Add Metadata
-            </Button>
-          </div>
-          <div className="flex flex-col gap-2">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex flex-row items-center gap-2">
-                <FormField
-                  control={control}
-                  name={`metadata.${index}.key`}
-                  render={({ field }) => (
-                    <div className="flex flex-1 flex-col gap-y-1">
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value || ''}
-                          placeholder="Key"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  )}
-                />
-                <FormField
-                  control={control}
-                  name={`metadata.${index}.value`}
-                  render={({ field }) => (
-                    <div className="flex flex-1 flex-col gap-y-1">
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value.toString() || ''}
-                          placeholder="Value"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  )}
-                />
-                <Button
-                  className={
-                    'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-                  }
-                  size="icon"
-                  variant="secondary"
-                  type="button"
-                  onClick={() => remove(index)}
-                >
-                  <ClearOutlined fontSize="inherit" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </FormItem>
+        <MetadataForm label="Metadata" />
 
         <div className="flex flex-row gap-x-4">
           <Button

@@ -1,99 +1,88 @@
-import { FormField } from '@polar-sh/ui/components/ui/form'
-
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
-import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
-import { Input } from '@polar-sh/orbit'
 import {
+  Button,
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Text,
 } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   FormControl,
+  FormField,
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
-import { ProductFormType } from './ProductForm/ProductForm'
-
-type MetadataValue = NonNullable<schemas['ProductCreate']['metadata']>[string]
-type MetadataValueType = 'string' | 'number' | 'boolean'
-
-const getValueType = (value: MetadataValue): MetadataValueType => {
-  if (typeof value === 'number') return 'number'
-  if (typeof value === 'boolean') return 'boolean'
-  return 'string'
-}
-
-const defaultValueForType = (type: MetadataValueType): MetadataValue => {
-  switch (type) {
-    case 'number':
-      return 0
-    case 'boolean':
-      return false
-    default:
-      return ''
-  }
-}
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import {
+  MetadataFormValues,
+  MetadataValue,
+  MetadataValueType,
+  convertMetadataValue,
+  getMetadataValueType,
+  metadataValueTypeLabels,
+  validateMetadataKey,
+  validateMetadataValue,
+} from './utils'
 
 const MetadataValueInput = ({
-  type,
   value,
   onChange,
-}: {
-  type: MetadataValueType
+  ...controlProps
+}: Pick<
+  React.ComponentProps<'input'>,
+  'id' | 'aria-describedby' | 'aria-invalid'
+> & {
   value: MetadataValue
   onChange: (value: MetadataValue) => void
 }) => {
-  if (type === 'boolean') {
-    return (
-      <Select
-        value={value === true ? 'true' : 'false'}
-        onValueChange={(v) => onChange(v === 'true')}
-      >
-        <SelectTrigger className="w-full min-w-0 flex-1 font-mono">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem className="font-mono" value="true">
-            true
-          </SelectItem>
-          <SelectItem className="font-mono" value="false">
-            false
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    )
+  switch (typeof value) {
+    case 'boolean':
+      return (
+        <Select
+          value={String(value)}
+          onValueChange={(newValue) => onChange(newValue === 'true')}
+        >
+          <SelectTrigger {...controlProps} className="w-full min-w-0 font-mono">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem className="font-mono" value="true">
+              true
+            </SelectItem>
+            <SelectItem className="font-mono" value="false">
+              false
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      )
+    case 'number':
+      return (
+        <Input
+          {...controlProps}
+          type="number"
+          step="any"
+          value={Number.isNaN(value) ? '' : value}
+          placeholder="value"
+          className="w-full min-w-0 font-mono"
+          onChange={(e) => onChange(e.target.valueAsNumber)}
+        />
+      )
+    default:
+      return (
+        <Input
+          {...controlProps}
+          value={value}
+          placeholder="value"
+          className="w-full min-w-0 font-mono"
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )
   }
-
-  if (type === 'number') {
-    return (
-      <Input
-        type="number"
-        value={value.toString()}
-        placeholder="value"
-        className="w-full min-w-0 flex-1 font-mono"
-        onChange={(e) => {
-          const parsed = e.target.valueAsNumber
-          onChange(Number.isNaN(parsed) ? 0 : parsed)
-        }}
-      />
-    )
-  }
-
-  return (
-    <Input
-      value={value.toString()}
-      placeholder="value"
-      className="w-full min-w-0 flex-1 font-mono"
-      onChange={(e) => onChange(e.target.value)}
-    />
-  )
 }
 
 const RemoveMetadataButton = ({ onClick }: { onClick: () => void }) => (
@@ -111,8 +100,8 @@ const RemoveMetadataButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 )
 
-export const ProductMetadataForm = () => {
-  const { control, trigger, getValues } = useFormContext<ProductFormType>()
+export const MetadataForm = ({ label }: { label?: string }) => {
+  const { control, trigger, getValues } = useFormContext<MetadataFormValues>()
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -124,7 +113,6 @@ export const ProductMetadataForm = () => {
 
   const validateUniqueKey = useCallback(
     (value: string, index: number) => {
-      if (!value) return true
       const metadata = getValues('metadata')
       const duplicateIndex = metadata?.findIndex(
         (item, i) => i !== index && item.key === value,
@@ -137,12 +125,16 @@ export const ProductMetadataForm = () => {
     [getValues],
   )
 
+  const entries = useWatch({ control, name: 'metadata' })
+  const hasEmptyKey = entries?.some((entry) => !entry.key) ?? false
+
   const revalidateAllKeys = useCallback(() => {
     fields.forEach((_, i) => trigger(`metadata.${i}.key`))
   }, [fields, trigger])
 
   return (
-    <FormItem className="flex flex-col gap-2">
+    <Box flexDirection="column" gap="s">
+      {label ? <Text variant="label">{label}</Text> : null}
       {fields.length > 0 && (
         <Box flexDirection="column" gap="s">
           <Box
@@ -184,15 +176,13 @@ export const ProductMetadataForm = () => {
                 control={control}
                 name={`metadata.${index}.key`}
                 rules={{
-                  validate: (value: string) => validateUniqueKey(value, index),
+                  validate: {
+                    key: validateMetadataKey,
+                    unique: (value: string) => validateUniqueKey(value, index),
+                  },
                 }}
                 render={({ field }) => (
-                  <Box
-                    flexDirection="column"
-                    gap="s"
-                    width={{ base: '100%', sm: 192 }}
-                    flexShrink={0}
-                  >
+                  <FormItem className="w-full shrink-0 sm:w-48">
                     <Box display={{ base: 'flex', sm: 'none' }}>
                       <Text variant="caption" color="muted">
                         Key
@@ -219,7 +209,7 @@ export const ProductMetadataForm = () => {
                       </Box>
                     </Box>
                     <FormMessage />
-                  </Box>
+                  </FormItem>
                 )}
               />
               <Box
@@ -231,45 +221,56 @@ export const ProductMetadataForm = () => {
                 <FormField
                   control={control}
                   name={`metadata.${index}.value`}
-                  render={({ field }) => {
-                    const type = getValueType(field.value)
-                    return (
-                      <Box flexDirection="column" gap="s" flex={1} minWidth={0}>
-                        <Box display={{ base: 'flex', sm: 'none' }}>
-                          <Text variant="caption" color="muted">
-                            Value
-                          </Text>
-                        </Box>
-                        <Box alignItems="center" gap="s">
-                          <Select
-                            value={type}
-                            onValueChange={(nextType) =>
-                              field.onChange(
-                                defaultValueForType(
-                                  nextType as MetadataValueType,
-                                ),
-                              )
-                            }
-                          >
-                            <SelectTrigger className="w-32 shrink-0">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="string">String</SelectItem>
-                              <SelectItem value="number">Number</SelectItem>
-                              <SelectItem value="boolean">Boolean</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <MetadataValueInput
-                            type={type}
-                            value={field.value}
-                            onChange={field.onChange}
-                          />
-                        </Box>
-                        <FormMessage />
+                  rules={{ validate: validateMetadataValue }}
+                  render={({ field }) => (
+                    <FormItem className="min-w-0 flex-1">
+                      <Box display={{ base: 'flex', sm: 'none' }}>
+                        <Text variant="caption" color="muted">
+                          Value
+                        </Text>
                       </Box>
-                    )
-                  }}
+                      <Box alignItems="start" gap="s">
+                        <Select
+                          value={getMetadataValueType(field.value)}
+                          onValueChange={(type) =>
+                            field.onChange(
+                              convertMetadataValue(
+                                field.value,
+                                type as MetadataValueType,
+                              ),
+                            )
+                          }
+                        >
+                          <SelectTrigger className="w-32 shrink-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(metadataValueTypeLabels).map(
+                              ([type, typeLabel]) => (
+                                <SelectItem key={type} value={type}>
+                                  {typeLabel}
+                                </SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <Box
+                          flexDirection="column"
+                          gap="s"
+                          flex={1}
+                          minWidth={0}
+                        >
+                          <FormControl>
+                            <MetadataValueInput
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </Box>
+                      </Box>
+                    </FormItem>
+                  )}
                 />
                 <Box
                   display={{ base: 'none', sm: 'flex' }}
@@ -306,6 +307,7 @@ export const ProductMetadataForm = () => {
           size="sm"
           variant="secondary"
           type="button"
+          disabled={hasEmptyKey}
           onClick={() => {
             append({ key: '', value: '' })
           }}
@@ -313,6 +315,6 @@ export const ProductMetadataForm = () => {
           Add Metadata
         </Button>
       </Box>
-    </FormItem>
+    </Box>
   )
 }

@@ -1,3 +1,8 @@
+import {
+  WithMetadataEntries,
+  entriesToMetadata,
+  metadataToEntries,
+} from '@/components/Metadata/utils'
 import { useUpdateBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, operations, schemas } from '@polar-sh/client'
@@ -14,6 +19,7 @@ import { toast } from '../Toast/use-toast'
 
 type BenefitUpdate =
   operations['benefits:update']['requestBody']['content']['application/json']
+type BenefitUpdateForm = WithMetadataEntries<BenefitUpdate>
 
 interface UpdateBenefitModalContentProps {
   organization: schemas['Organization']
@@ -33,21 +39,24 @@ const UpdateBenefitModalContent = ({
   confirmOnUpdate = false,
 }: UpdateBenefitModalContentProps) => {
   const router = useRouter()
-  const defaultValues = useMemo((): BenefitUpdate => {
+  const defaultValues = useMemo((): BenefitUpdateForm => {
+    const values = { ...benefit, metadata: metadataToEntries(benefit.metadata) }
     if (!isBenefitVisibilityConfigurable(benefit.type)) {
       // oxlint-disable-next-line typescript/no-unused-vars
-      const { visibility, ...values } = benefit
-      return values
+      const { visibility, ...valuesWithoutVisibility } = values
+      return valuesWithoutVisibility
     }
-    return benefit
+    return values
   }, [benefit])
-  const form = useForm<BenefitUpdate>({
+  const form = useForm<BenefitUpdateForm>({
     defaultValues,
   })
   const { setError } = form
 
   const [isUploading, setIsUploading] = useState(false)
-  const [pendingUpdate, setPendingUpdate] = useState<BenefitUpdate | null>(null)
+  const [pendingUpdate, setPendingUpdate] = useState<BenefitUpdateForm | null>(
+    null,
+  )
 
   const { isDirty } = form.formState
   useEffect(() => {
@@ -63,10 +72,13 @@ const UpdateBenefitModalContent = ({
   const updateSubscriptionBenefit = useUpdateBenefit(organization.id)
 
   const handleUpdateNewBenefit = useCallback(
-    async (benefitUpdate: BenefitUpdate) => {
+    async (benefitUpdate: BenefitUpdateForm) => {
       const { error } = await updateSubscriptionBenefit.mutateAsync({
         id: benefit.id,
-        body: benefitUpdate,
+        body: {
+          ...benefitUpdate,
+          metadata: entriesToMetadata(benefitUpdate.metadata),
+        },
       })
       if (error) {
         if (isValidationError(error.detail)) {
@@ -92,7 +104,7 @@ const UpdateBenefitModalContent = ({
   )
 
   const onValidSubmit = useCallback(
-    (values: BenefitUpdate) => {
+    (values: BenefitUpdateForm) => {
       if (confirmOnUpdate) {
         setPendingUpdate(values)
         showConfirm()

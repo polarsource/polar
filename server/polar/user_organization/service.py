@@ -312,6 +312,12 @@ class UserOrganizationService:
             )
 
         repository = UserOrganizationRepository.from_session(session)
+        # Acquire row-level locks on all membership rows in user_id order
+        # before any UPDATE. This is the same order used by
+        # `_assert_admin_capability_after_loss` (which also does FOR UPDATE
+        # ordered by user_id), preventing the ABBA deadlock that would
+        # otherwise occur when the two paths interleave.
+        await repository.lock_members_for_update(organization_id)
         previous_owner_user_id = await repository.demote_current_owner(organization_id)
         try:
             await repository.promote_to_owner(organization_id, new_owner_user_id)

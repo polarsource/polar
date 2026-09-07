@@ -57,6 +57,26 @@ class UserOrganizationRepository:
         result = await self.session.execute(statement)
         return [(row[0], row[1]) for row in result.all()]
 
+    async def lock_members_for_update(self, organization_id: UUID) -> None:
+        """Acquire row-level exclusive locks on all non-deleted membership
+        rows for the org, ordered by ``user_id``.
+
+        Calling this before any UPDATE that touches role columns ensures every
+        code path acquires locks in the same order (ascending ``user_id``),
+        which is a necessary condition to prevent deadlocks between concurrent
+        ``transfer_ownership`` and ``set_role`` / ``_assert_admin_capability_after_loss``
+        calls that also lock membership rows with ``FOR UPDATE``.
+        """
+        await self.session.execute(
+            select(UserOrganization.user_id)
+            .where(
+                UserOrganization.organization_id == organization_id,
+                ~UserOrganization.is_deleted,
+            )
+            .order_by(UserOrganization.user_id)
+            .with_for_update()
+        )
+
     async def demote_current_owner(self, organization_id: UUID) -> UUID | None:
         """Demote whoever currently holds `owner` on the org to `admin`.
 

@@ -51,6 +51,7 @@ from .service import (
     AlreadyCanceledSubscription,
     InactiveSubscription,
     SubscriptionLocked,
+    SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
 )
 from .service import subscription as subscription_service
@@ -417,8 +418,11 @@ async def create(
         },
         404: SubscriptionNotFound,
         409: {
-            "description": "Subscription is pending an update.",
-            "model": SubscriptionLocked.schema(),
+            "description": (
+                "Subscription is pending an update, or is not scheduled to be canceled."
+            ),
+            "model": SubscriptionLocked.schema()
+            | SubscriptionNotScheduledToCancel.schema(),
         },
     },
 )

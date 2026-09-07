@@ -35327,6 +35327,17 @@ export interface components {
       /** @description The meter associated with this subscription. */
       meter: components['schemas']['Meter']
     }
+    /** SubscriptionNotScheduledToCancel */
+    SubscriptionNotScheduledToCancel: {
+      /**
+       * Error
+       * @example SubscriptionNotScheduledToCancel
+       * @constant
+       */
+      error: 'SubscriptionNotScheduledToCancel'
+      /** Detail */
+      detail: string
+    }
     /**
      * SubscriptionPastDueEvent
      * @description An event created by Polar when a subscription becomes past due.
@@ -43185,13 +43196,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Subscription is pending an update. */
+      /** @description Subscription is pending an update, or is not scheduled to be canceled. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionLocked']
+          'application/json':
+            | components['schemas']['SubscriptionLocked']
+            | components['schemas']['SubscriptionNotScheduledToCancel']
         }
       }
       /** @description Validation Error */
@@ -54460,13 +54473,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description The subscription has no payment method to charge. */
+      /** @description The subscription has no payment method to charge, or is not scheduled to be canceled. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PaymentMethodRequired']
+          'application/json':
+            | components['schemas']['PaymentMethodRequired']
+            | components['schemas']['SubscriptionNotScheduledToCancel']
         }
       }
       /** @description Validation Error */

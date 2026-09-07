@@ -318,7 +318,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -389,7 +389,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -470,7 +470,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -543,7 +543,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -611,7 +611,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -710,7 +710,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -786,7 +786,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -859,7 +859,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -1450,7 +1450,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -1603,7 +1603,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -1664,7 +1664,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -2331,7 +2331,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -2538,7 +2538,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -2722,7 +2722,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -2767,14 +2767,14 @@ export interface components {
        * Current Period Start
        * Format: date-time
        * @description The start timestamp of the current billing period.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_start: string
       /**
        * Current Period End
        * Format: date-time
        * @description The end timestamp of the current billing period.
-       * @example 2026-01-01T00:00:00.123456Z
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_end: string
       /**

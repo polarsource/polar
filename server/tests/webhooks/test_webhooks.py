@@ -62,7 +62,7 @@ class TestWebhookJsonSchema:
         schema = WebhookCustomerCreatedPayload.model_json_schema(mode=mode)
 
         assert schema["properties"]["timestamp"]["examples"] == [
-            "2026-01-01T00:00:00.123456Z"
+            "2026-01-01T00:00:00.000000Z"
         ]
         assert schema["properties"]["type"]["examples"] == ["customer.created"]
 

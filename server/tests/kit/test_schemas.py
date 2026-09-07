@@ -50,7 +50,7 @@ class TestJsonSchema:
             properties["example"],
             schema["$defs"]["TimestampedSchema"]["properties"]["created_at"],
         ):
-            assert field["examples"] == ["2026-01-01T00:00:00.123456Z"]
+            assert field["examples"] == ["2026-01-01T00:00:00.000000Z"]
         assert properties["custom"]["examples"] == ["2025-01-01T00:00:00Z"]
         assert properties["data"]["examples"] == [{"format": "date-time"}]
 

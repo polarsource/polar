@@ -37,7 +37,7 @@ class Schema(BaseModel):
             node = pending.pop()
             if isinstance(node, dict):
                 if node.get("format") == "date-time":
-                    node.setdefault("examples", ["2026-01-01T00:00:00.123456Z"])
+                    node.setdefault("examples", ["2026-01-01T00:00:00.000000Z"])
                 for key, value in node.items():
                     if key in {"properties", "patternProperties", "$defs"}:
                         pending.extend(value.values())

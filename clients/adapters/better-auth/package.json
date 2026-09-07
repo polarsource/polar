@@ -59,6 +59,7 @@
     "access": "public"
   },
   "devDependencies": {
+    "@better-fetch/fetch": "1.1.21",
     "@polar-sh/adapter-utils": "workspace:*",
     "@polar-sh/sdk": "^0.49.0",
     "@polar-sh/typescript-config": "workspace:*",

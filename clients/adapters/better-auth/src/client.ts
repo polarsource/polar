@@ -28,7 +28,9 @@ export const polarClient = () => {
           })
 
           if (res.error) {
-            throw new Error(res.error.message)
+            const message =
+              res.error.message ?? `${res.error.status} ${res.error.statusText}`
+            throw new Error(message)
           }
 
           const checkout = res.data as { url: string }

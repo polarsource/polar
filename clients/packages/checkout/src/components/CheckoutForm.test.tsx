@@ -4,7 +4,15 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import type { ProductCheckoutPublic } from '../guards'
 import {
   CheckoutFormContext,
@@ -62,6 +70,7 @@ beforeAll(() => {
 afterEach(() => {
   captureOptions.mockClear()
   mockLoadStripe.mockClear()
+  vi.useRealTimers()
 })
 
 function FormWrapper({
@@ -305,6 +314,7 @@ describe('CheckoutForm', () => {
   })
 
   it('resets state field when country changes', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
     const update = vi.fn(async () => createCheckout())
     const checkout = createCheckout({
@@ -353,7 +363,7 @@ describe('CheckoutForm', () => {
     })
 
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 600))
+      await vi.advanceTimersByTimeAsync(600)
     })
 
     // Only state should be reset
@@ -408,6 +418,7 @@ describe('CheckoutForm', () => {
   })
 
   it('clears billing address errors when country changes', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
     const checkout = createCheckout({
       // oxlint-disable-next-line typescript/no-explicit-any
@@ -453,13 +464,17 @@ describe('CheckoutForm', () => {
     })
 
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 600))
+      await vi.advanceTimersByTimeAsync(600)
     })
 
     expect(screen.queryByText('Invalid US state')).not.toBeInTheDocument()
   })
 
   describe('tax ID handling on country change', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+    })
+
     const businessCheckout = (
       overrides: Partial<ProductCheckoutPublic> = {},
     ): ProductCheckoutPublic =>
@@ -504,7 +519,7 @@ describe('CheckoutForm', () => {
 
     const waitForDebounce = () =>
       act(async () => {
-        await new Promise((r) => setTimeout(r, 600))
+        await vi.advanceTimersByTimeAsync(600)
       })
 
     it('clears an applied tax ID on the server and form when the country changes', async () => {

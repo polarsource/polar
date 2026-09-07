@@ -2483,12 +2483,31 @@ class CheckoutService:
                 checkout_max_seats=checkout.max_seats,
             )
             checkout.seats = seats
+        previous_units = checkout.units
         checkout.units = None
         unit_price = price_set.get_unit_price()
         units: int | None = None
         if unit_price is not None:
-            units = checkout_update.units or unit_price.get_minimum_purchasable_units()
-            validate_unit_limits(unit_price, units)
+            is_unit_count_locked = (
+                checkout.min_units is not None or checkout.max_units is not None
+            )
+            if checkout_update.units is not None:
+                units = checkout_update.units
+            elif previous_units is not None and not is_unit_count_locked:
+                # Preserve the existing unit count across a product switch,
+                # clamped to the new product's own bounds.
+                units = max(previous_units, unit_price.get_minimum_purchasable_units())
+                maximum_units = unit_price.get_maximum_units()
+                if maximum_units is not None:
+                    units = min(units, maximum_units)
+            else:
+                units = previous_units or unit_price.get_minimum_purchasable_units()
+            validate_unit_limits(
+                unit_price,
+                units,
+                min_units=checkout.min_units,
+                max_units=checkout.max_units,
+            )
             checkout.units = units
         checkout.amount = calculate_upfront_amount(
             price_set.get_static_prices(), custom_amount=None, seats=seats, units=units

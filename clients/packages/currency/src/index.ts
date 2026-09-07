@@ -252,3 +252,123 @@ export const formatCurrency =
         return formatCurrencySubcent(cents, currency, locales)
     }
   }
+
+/**
+ * Returns the decimal separator (`.` or `,`) used by a given locale to format
+ * fractional numbers.
+ *
+ * Money inputs need this to decide whether a typed/pasted comma is a decimal
+ * separator (e.g. `de` → `12,50`) or a thousands separator (e.g. `en` → `5,000`).
+ * Defaults to `.` when the locale resolves to a period-separated format.
+ *
+ * @param locale - BCP-47 locale tag (e.g. `'en'`, `'de'`, `'fr-FR'`)
+ * @returns `'.'` or `','`
+ * @example
+ * getLocaleDecimalSeparator('en') // '.'
+ * getLocaleDecimalSeparator('de') // ','
+ */
+export const getLocaleDecimalSeparator = (
+  locale: Intl.LocalesArgument,
+): '.' | ',' => {
+  const formatted = new Intl.NumberFormat(locale).format(1.1)
+  return formatted.includes(',') ? ',' : '.'
+}
+
+/**
+ * Normalizes a raw money input string into a display string using `.` as the
+ * decimal separator, interpreting separators according to the locale's decimal
+ * separator.
+ *
+ * Used by `MoneyInput` to convert what a user types or pastes into a stable
+ * display value before it is turned into minor units (cents).
+ *
+ * Rules:
+ * - Strips everything except digits, commas, and periods.
+ * - The locale's decimal separator, when present, is the decimal point; the
+ *   other separator is treated as a thousands separator and stripped.
+ * - For period-decimal locales (`en`, `ja`, …) a comma is always a thousands
+ *   separator, so `5,000` → `5000` (never collapsed to `5.00`).
+ * - For comma-decimal locales (`de`, `fr`, …) the committed value is displayed
+ *   with a period (see `MoneyInput`'s `getInternalValue`, which uses
+ *   `toFixed`), so a period in an input that has no comma is treated as the
+ *   decimal point to keep editing those values correct (e.g. `12.50` → `12.50`).
+ * - At most one decimal separator is honored (the last one); earlier
+ *   occurrences are stripped from the integer part.
+ * - The fractional part is rounded to at most 2 digits.
+ * - A trailing decimal separator with no fractional digits yet (e.g. `5.`) is
+ *   preserved so the user can keep typing decimals; a blur handler is expected
+ *   to strip it.
+ *
+ * @param input - Raw input string (may contain any characters)
+ * @param decimalSeparator - The locale's decimal separator (`.` or `,`)
+ * @returns A normalized display string with `.` as the decimal separator
+ * @example
+ * parseMoneyValue('5,000', '.')   // '5000'
+ * parseMoneyValue('5,000.99', '.')   // '5000.99'
+ * parseMoneyValue('12,50', ',')  // '12.50'
+ * parseMoneyValue('1.234,56', ',')   // '1234.56'
+ * parseMoneyValue('12.50', ',')  // '12.50' (editing a period-displayed value)
+ */
+export const parseMoneyValue = (
+  input: string,
+  decimalSeparator: '.' | ',',
+): string => {
+  const cleaned = input.replace(/[^0-9,.]/g, '')
+  if (cleaned === '') return ''
+
+  // Determine which separator acts as the decimal point in this input.
+  // - The locale's decimal separator is preferred when present.
+  // - For comma-decimal locales the committed value is displayed with a
+  //   period, so a period in an input that has no comma is treated as the
+  //   decimal to keep editing those values correct.
+  // - For period-decimal locales a lone comma is always a thousands separator
+  //   (the reported bug: "5,000" must not collapse to "5.00").
+  let decimalSep: '.' | ',' | null
+  if (cleaned.includes(decimalSeparator)) {
+    decimalSep = decimalSeparator
+  } else if (decimalSeparator === ',' && cleaned.includes('.')) {
+    decimalSep = '.'
+  } else {
+    decimalSep = null
+  }
+
+  if (decimalSep === null) {
+    // No decimal point: strip any thousands separators from the pure integer.
+    const thousandsSeparator = decimalSeparator === '.' ? ',' : '.'
+    return cleaned.split(thousandsSeparator).join('')
+  }
+
+  // Strip the thousands separator (the character that is not the decimal point)
+  const thousandsSeparator = decimalSep === '.' ? ',' : '.'
+  const withoutThousands = cleaned.split(thousandsSeparator).join('')
+  const lastSepIndex = withoutThousands.lastIndexOf(decimalSep)
+
+  // Integer part: everything before the last decimal separator, with any
+  // earlier stray decimal separators stripped
+  const integerPart = withoutThousands
+    .slice(0, lastSepIndex)
+    .split(decimalSep)
+    .join('')
+  const decimalPart = withoutThousands.slice(lastSepIndex + 1)
+
+  // Trailing decimal separator with no decimals yet (e.g. "5." or "12,"):
+  // keep it so the user can continue typing decimals
+  if (decimalPart === '') {
+    return integerPart.length > 0 ? `${integerPart}.` : '.'
+  }
+
+  const maxDecimalPrecision = 2
+  const trimmedDecimalPart = decimalPart.slice(0, maxDecimalPrecision)
+  const parsedValue = Number.parseFloat(`${integerPart}.${trimmedDecimalPart}`)
+
+  if (Number.isNaN(parsedValue)) {
+    return integerPart
+  }
+
+  const decimalPlaces = Math.min(maxDecimalPrecision, decimalPart.length)
+  const formatted = parsedValue.toFixed(decimalPlaces)
+
+  // When the integer part was deleted, avoid reinserting a leading "0" that
+  // would make the caret jump to the end of the input
+  return integerPart.length > 0 ? formatted : formatted.replace(/^0(?=\.)/, '')
+}

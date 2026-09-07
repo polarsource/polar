@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { formatCurrency } from './index'
+import {
+  formatCurrency,
+  getLocaleDecimalSeparator,
+  parseMoneyValue,
+} from './index'
 
 describe('formatCurrency', () => {
   describe('Compact mode', () => {
@@ -194,6 +198,130 @@ describe('formatCurrency', () => {
       expect(formatCurrency('subcent', 'en-US')(0.000001, 'jpy')).toEqual(
         '¥0.000001',
       )
+    })
+  })
+})
+
+describe('getLocaleDecimalSeparator', () => {
+  it.each([
+    ['en', '.'],
+    ['en-US', '.'],
+    ['ja', '.'],
+    ['ko', '.'],
+    ['de', ','],
+    ['de-DE', ','],
+    ['fr', ','],
+    ['fr-FR', ','],
+    ['es', ','],
+    ['it', ','],
+    ['nl', ','],
+    ['pt', ','],
+    ['pt-PT', ','],
+    ['sv', ','],
+    ['tr', ','],
+    ['pl', ','],
+    ['hu', ','],
+  ] as const)('returns the decimal separator for %s', (locale, expected) => {
+    expect(getLocaleDecimalSeparator(locale)).toBe(expected)
+  })
+})
+
+describe('parseMoneyValue', () => {
+  describe('period-decimal locales (en) — comma is a thousands separator', () => {
+    it.each([
+      ['5', '5'],
+      ['5.5', '5.5'],
+      ['5.55', '5.55'],
+      ['5000', '5000'],
+      ['5,000', '5000'],
+      ['1,234', '1234'],
+      ['12,345', '12345'],
+      ['1,000,000', '1000000'],
+      ['1,000,000,000', '1000000000'],
+      ['5,000.99', '5000.99'],
+      ['1,000.50', '1000.50'],
+      ['12,345.67', '12345.67'],
+      ['1,234,567.89', '1234567.89'],
+      ['0.25', '0.25'],
+      ['0.99', '0.99'],
+    ] as const)(
+      'parses %p -> %p (no thousands collapse)',
+      (input, expected) => {
+        expect(parseMoneyValue(input, '.')).toBe(expected)
+      },
+    )
+
+    it('strips a trailing comma as a thousands separator (not a decimal)', () => {
+      expect(parseMoneyValue('5,', '.')).toBe('5')
+    })
+
+    it('treats a mid-string comma as thousands while typing groups', () => {
+      expect(parseMoneyValue('5,0', '.')).toBe('50')
+      expect(parseMoneyValue('5,00', '.')).toBe('500')
+      expect(parseMoneyValue('5,000', '.')).toBe('5000')
+    })
+
+    it('keeps a trailing period so the user can type decimals', () => {
+      expect(parseMoneyValue('5.', '.')).toBe('5.')
+      expect(parseMoneyValue('12.', '.')).toBe('12.')
+    })
+
+    it('rounds the fractional part to 2 digits', () => {
+      expect(parseMoneyValue('5.555', '.')).toBe('5.55')
+      expect(parseMoneyValue('5.999', '.')).toBe('5.99')
+      expect(parseMoneyValue('1,234.567', '.')).toBe('1234.56')
+    })
+
+    it('does not reinsert a leading zero when the integer part is empty', () => {
+      expect(parseMoneyValue('.5', '.')).toBe('.5')
+      expect(parseMoneyValue('.55', '.')).toBe('.55')
+    })
+
+    it('strips everything except digits, commas and periods', () => {
+      expect(parseMoneyValue('$5,000.99', '.')).toBe('5000.99')
+      expect(parseMoneyValue('abc 1,234.56 xyz', '.')).toBe('1234.56')
+      expect(parseMoneyValue('5 000,99', '.')).toBe('500099')
+    })
+
+    it('returns an empty string for empty / non-numeric input', () => {
+      expect(parseMoneyValue('', '.')).toBe('')
+      expect(parseMoneyValue('abc', '.')).toBe('')
+    })
+  })
+
+  describe('comma-decimal locales (de) — comma is the decimal separator', () => {
+    it.each([
+      ['12,5', '12.5'],
+      ['12,50', '12.50'],
+      ['12,500', '12.50'],
+      ['1,99', '1.99'],
+      ['1.234,56', '1234.56'],
+      ['12.345,67', '12345.67'],
+      ['1.234.567,89', '1234567.89'],
+    ] as const)('parses %p -> %p (European convention)', (input, expected) => {
+      expect(parseMoneyValue(input, ',')).toBe(expected)
+    })
+
+    it('keeps a trailing comma so the user can type decimals', () => {
+      expect(parseMoneyValue('12,', ',')).toBe('12.')
+    })
+
+    it('treats a pasted period (no comma) as the decimal of an edited value', () => {
+      // The component displays committed values with a period (toFixed), so
+      // editing "12.50" must round-trip, and a European paste of "1.234"
+      // (thousands-only) is a known pre-existing edge, not a regression.
+      expect(parseMoneyValue('12.50', ',')).toBe('12.50')
+      expect(parseMoneyValue('12.5', ',')).toBe('12.5')
+    })
+
+    it('rounds the fractional part to 2 digits', () => {
+      expect(parseMoneyValue('12,555', ',')).toBe('12.55')
+      expect(parseMoneyValue('1.234,999', ',')).toBe('1234.99')
+    })
+
+    it('returns an empty string for empty / non-numeric input', () => {
+      expect(parseMoneyValue('', ',')).toBe('')
+      expect(parseMoneyValue('abc', ',')).toBe('')
     })
   })
 })

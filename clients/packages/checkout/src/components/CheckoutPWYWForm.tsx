@@ -135,6 +135,7 @@ export const CheckoutPWYWForm = ({
                     onChange={field.onChange}
                     placeholder={0}
                     disabled={field.disabled}
+                    locale={locale}
                   />
                   <FormMessage />
                 </FormItem>

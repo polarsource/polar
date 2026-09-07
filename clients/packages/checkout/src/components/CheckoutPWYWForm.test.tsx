@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { type AcceptedLocale } from '@polar-sh/i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createBaseCheckout,
@@ -11,6 +12,7 @@ function renderPWYW(
     amount?: number
     minimumAmount?: number
     currency?: string
+    locale?: AcceptedLocale
   } = {},
 ) {
   const update = vi.fn()
@@ -27,7 +29,7 @@ function renderPWYW(
       update={update}
       checkout={checkout}
       productPrice={productPrice}
-      locale="en"
+      locale={overrides.locale ?? 'en'}
     />,
   )
 
@@ -132,6 +134,108 @@ describe('CheckoutPWYWForm', () => {
       })
 
       expect(update).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('locale-aware thousands/decimal separator parsing', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it.each([
+      ['5,000', 500000],
+      ['1,234', 123400],
+      ['12,345', 1234500],
+      ['1,000,000', 100000000],
+    ] as const)(
+      'treats a comma as a thousands separator for en: %p -> %i cents',
+      async (value, amount) => {
+        const { update } = renderPWYW({ amount: 1500, minimumAmount: 500 })
+        const input = screen.getByRole('textbox') as HTMLInputElement
+
+        fireEvent.change(input, { target: { value } })
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(600)
+        })
+
+        expect(update).toHaveBeenCalledWith({ amount })
+      },
+    )
+
+    it('preserves a period decimal together with thousands separators for en', async () => {
+      const { update } = renderPWYW({ amount: 1500, minimumAmount: 500 })
+      const input = screen.getByRole('textbox') as HTMLInputElement
+
+      fireEvent.change(input, { target: { value: '5,000.99' } })
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
+
+      expect(update).toHaveBeenCalledWith({ amount: 500099 })
+    })
+
+    it('still rounds a period decimal correctly for en', async () => {
+      const { update } = renderPWYW({ amount: 1500, minimumAmount: 500 })
+      const input = screen.getByRole('textbox') as HTMLInputElement
+
+      fireEvent.change(input, { target: { value: '5.55' } })
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
+
+      expect(update).toHaveBeenCalledWith({ amount: 555 })
+    })
+
+    it.each([
+      ['12,5', 1250],
+      ['12,50', 1250],
+      ['12,500', 1250],
+      ['1.234,56', 123456],
+    ] as const)(
+      'treats a comma as the decimal separator for de: %p -> %i cents',
+      async (value, amount) => {
+        const { update } = renderPWYW({
+          amount: 1500,
+          minimumAmount: 500,
+          currency: 'eur',
+          locale: 'de',
+        })
+        const input = screen.getByRole('textbox') as HTMLInputElement
+
+        fireEvent.change(input, { target: { value } })
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(600)
+        })
+
+        expect(update).toHaveBeenCalledWith({ amount })
+      },
+    )
+
+    it('does not collapse a US thousands-separated amount below the minimum', async () => {
+      // Regression for the reported bug: "1,234" used to be parsed as 123 cents
+      // (123400 intended), which fell below the $5 minimum and surfaced a
+      // misleading "below minimum" error instead of the parser bug.
+      const { update } = renderPWYW({ amount: 1500, minimumAmount: 500 })
+      const input = screen.getByRole('textbox') as HTMLInputElement
+
+      fireEvent.change(input, { target: { value: '1,234' } })
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
+
+      expect(update).toHaveBeenCalledWith({ amount: 123400 })
+      expect(
+        screen.queryByText(/Amount must be at least/i),
+      ).not.toBeInTheDocument()
     })
   })
 })

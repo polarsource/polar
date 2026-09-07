@@ -1,4 +1,9 @@
-import { getCurrencyDecimalFactor, isDecimalCurrency } from '@polar-sh/currency'
+import {
+  getCurrencyDecimalFactor,
+  getLocaleDecimalSeparator,
+  isDecimalCurrency,
+  parseMoneyValue,
+} from '@polar-sh/currency'
 import { ChangeEvent, FocusEvent, useCallback, useMemo, useState } from 'react'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { Input } from './Input'
@@ -17,6 +22,7 @@ interface Props {
   preSlot?: React.ReactNode
   postSlot?: React.ReactNode
   step?: number
+  locale?: string
 }
 
 const MoneyInput = (props: Props) => {
@@ -33,6 +39,7 @@ const MoneyInput = (props: Props) => {
     onFocus,
     disabled,
     step = 0.1,
+    locale = 'en',
   } = props
 
   const decimalFactor = useMemo(
@@ -40,6 +47,10 @@ const MoneyInput = (props: Props) => {
     [currency],
   )
   const isNonDecimalCurrency = !isDecimalCurrency(currency)
+  const decimalSeparator = useMemo(
+    () => getLocaleDecimalSeparator(locale),
+    [locale],
+  )
 
   const getInternalValue = useCallback(
     (value: number | null | undefined): string | undefined => {
@@ -116,54 +127,13 @@ const MoneyInput = (props: Props) => {
         return
       }
 
-      // Strip everything except numbers, commas, and periods
-      // (people can paste in anything, so the keydown handler is not enough)
-      const cleaned = input.replace(/[^0-9,.]/g, '')
-
-      // By default, parse the full value as a whole number, stripping out decimal separators
-      //
-      // Leave a trailing comma, otherwise people can't type in decimals
-      // (the onBlur handler will strip it if it's dangling on blur)
-      let newValue = cleaned.replace(/[,.](?!$)/g, '').replace(/,$/, '.')
-
-      // However, if we detect a decimal separator, round it to 2 decimal places
-      //
-      // We support period decimal separator (enforced when typing)
-      // but also support comma decimal separators (might be pasted in)
-      const decimalMatch = cleaned.match(/([.,])([0-9]+)$/)
-
-      if (decimalMatch) {
-        const maxDecimalPrecision = 2
-        const decimalPart = decimalMatch[2]
-        const integerPart = cleaned
-          .slice(0, -decimalMatch[0].length)
-          .replace(/[,.]/g, '')
-        const trimmedDecimalPart = decimalPart.slice(0, maxDecimalPrecision)
-
-        const parsedValue = Number.parseFloat(
-          `${integerPart}.${trimmedDecimalPart}`,
-        )
-
-        if (!Number.isNaN(parsedValue)) {
-          const decimalPlaces = Math.min(
-            maxDecimalPrecision,
-            decimalPart.length,
-          )
-          const formatted = parsedValue.toFixed(decimalPlaces)
-
-          // This covers when the user deletes the last integer part and prevents inserting a `0`
-          // in place of the last integer part that would make the caret jump to the end of the input
-          // This way the user can continue typing
-          newValue =
-            integerPart.length > 0
-              ? formatted
-              : formatted.replace(/^0(?=\.)/, '')
-        }
-      }
-
-      updateValue(newValue)
+      // Locale-aware parsing of the typed/pasted value. For period-decimal
+      // locales (en, …) a comma is a thousands separator so "5,000" stays 5000;
+      // for comma-decimal locales (de, …) a comma is the decimal separator so
+      // "12,50" becomes 12.50. See @polar-sh/currency `parseMoneyValue`.
+      updateValue(parseMoneyValue(input, decimalSeparator))
     },
-    [updateValue, isNonDecimalCurrency],
+    [updateValue, isNonDecimalCurrency, decimalSeparator],
   )
 
   const onBlur = useCallback(
@@ -246,15 +216,18 @@ const MoneyInput = (props: Props) => {
         updateValue(newValue)
       }
 
-      // Prevent multiple decimal points
+      // Prevent multiple decimal points. The committed value is displayed with
+      // a period (toFixed), and the locale's own decimal separator may be a
+      // comma, so block a second separator once either is already present.
       if (
         (e.key === '.' || e.key === ',') &&
-        e.currentTarget.value.includes('.')
+        (e.currentTarget.value.includes(decimalSeparator) ||
+          e.currentTarget.value.includes('.'))
       ) {
         e.preventDefault()
       }
     },
-    [step, updateValue, isNonDecimalCurrency],
+    [step, updateValue, isNonDecimalCurrency, decimalSeparator],
   )
 
   const currencyLabel = (

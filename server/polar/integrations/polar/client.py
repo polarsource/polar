@@ -15,7 +15,7 @@ from polar.base import (
 from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
 from polar.v2026_04 import PolarAsync as PolarSDK
-from polar.v2026_04.errors import ResourceNotFound
+from polar.v2026_04.errors import OrderNotEligibleForInvoice, ResourceNotFound
 from polar.v2026_04.inputs import (
     CostMetadataInput,
     CustomerBenefitGrantUpdate,
@@ -50,7 +50,7 @@ from polar.v2026_04.outputs import (
 
 from .exceptions import (
     PolarSelfBenefitGrantNotFound,
-    PolarSelfNotPaidOrder,
+    PolarSelfOrderNotEligible,
     PolarSelfPaymentMethodInUse,
     PolarSelfPaymentMethodNotFound,
 )
@@ -241,8 +241,10 @@ class PolarSelfClient:
     async def trigger_order_invoice_generation(self, *, order_id: str) -> None:
         """Trigger PDF generation for an order.
 
-        Raises ``PolarSelfNotPaidOrder`` if the API returns 422 — the order's
-        payment hasn't settled yet, and the caller should retry later.
+        Raises ``PolarSelfOrderNotEligible`` (terminal) if the API returns
+        409 — the order's status (``draft``/``void``) permanently disqualifies
+        it from invoice generation, so the caller should treat it as out of
+        scope rather than retrying.
         """
         with logfire.span(
             "polar.trigger_order_invoice_generation", order_id=order_id
@@ -250,10 +252,10 @@ class PolarSelfClient:
             try:
                 await self._sdk.orders.generate_invoice(order_id)
             except (PolarClientError, PolarServerError) as e:
-                if e.status_code == 422:
-                    span.set_attribute("not_paid", True)
+                if e.status_code == 409 and isinstance(e, OrderNotEligibleForInvoice):
+                    span.set_attribute("order_not_eligible", True)
                     span.set_attribute("error.body", str(getattr(e, "error", e)))
-                    raise PolarSelfNotPaidOrder(order_id) from e
+                    raise PolarSelfOrderNotEligible(order_id) from e
                 _raise_error(span, e, "trigger_order_invoice_generation")
             except PolarNetworkError as e:
                 _raise_network_error(span, e, "trigger_order_invoice_generation")

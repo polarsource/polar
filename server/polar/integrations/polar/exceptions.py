@@ -102,7 +102,15 @@ class PolarSelfInvoiceNotReady(PolarSelfWebhookError):
         self.order_id = order_id
 
 
-class PolarSelfNotPaidOrder(PolarSelfWebhookError):
+class PolarSelfOrderNotEligible(PolarSelfWebhookError):
+    """Order is permanently ineligible for invoice generation (draft/void).
+
+    Unlike ``PolarSelfInvoiceNotReady`` (retry later while the PDF renders),
+    this is a terminal condition: the order's status disqualifies it and
+    retrying will not help. Callers should treat it as out of scope rather
+    than schedule a retry.
+    """
+
     def __init__(self, order_id: str) -> None:
-        super().__init__(f"Order {order_id!r} is not paid yet.")
+        super().__init__(f"Order {order_id!r} is not eligible for invoice generation.")
         self.order_id = order_id

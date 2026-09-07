@@ -57,7 +57,6 @@ from .exceptions import (
     PolarSelfNoActiveSubscription,
     PolarSelfNotApproved,
     PolarSelfNotConfigured,
-    PolarSelfNotPaidOrder,
     PolarSelfOrderNotFound,
     PolarSelfPaidSubscriptionAlreadyExists,
     PolarSelfPlanNotFound,
@@ -771,6 +770,12 @@ class PolarSelfService:
         if order.net_amount == 0:
             return
 
+        # A voided order (e.g. subscription revoked before this deferred
+        # order.created handler ran) is cancelled: nothing to invoice and no
+        # renewal/confirmation email is owed — skip the whole flow.
+        if order.status == "void":
+            return
+
         contacts = await client.list_billing_contacts(customer_id=order.customer.id)
         recipients = sorted({contact.email for contact in contacts if contact.email})
         if not recipients:
@@ -791,10 +796,7 @@ class PolarSelfService:
             if not order.is_invoice_generated:
                 # Kick off PDF generation if the API hasn't done so yet, then
                 # retry — generation runs asynchronously on Polar's side.
-                try:
-                    await client.trigger_order_invoice_generation(order_id=order.id)
-                except PolarSelfNotPaidOrder as e:
-                    raise PolarSelfInvoiceNotReady(order.id) from e
+                await client.trigger_order_invoice_generation(order_id=order.id)
                 raise PolarSelfInvoiceNotReady(order.id)
 
             invoice_url = await client.get_order_invoice(order_id=order.id)

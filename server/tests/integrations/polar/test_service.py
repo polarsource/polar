@@ -30,7 +30,7 @@ from polar.integrations.polar.exceptions import (
     PolarSelfNoActiveSubscription,
     PolarSelfNotApproved,
     PolarSelfNotConfigured,
-    PolarSelfNotPaidOrder,
+    PolarSelfOrderNotEligible,
     PolarSelfOrderNotFound,
     PolarSelfPaidSubscriptionAlreadyExists,
     PolarSelfPlanNotFound,
@@ -2560,24 +2560,71 @@ class TestHandleOrderCreatedEvent:
         )
         enqueue_email_mock.assert_not_called()
 
-    async def test_retries_when_invoice_generation_returns_not_paid(
+    async def test_skips_when_order_status_is_void(
         self,
         order_webhook_client_mock: MagicMock,
         enqueue_email_mock: MagicMock,
     ) -> None:
-        # NotPaidOrder (422) means payment hasn't settled yet — retry rather
-        # than silently sending the email without an invoice attached.
+        # A voided renewal (e.g. subscription revoked before this deferred
+        # handler ran) is cancelled — no invoice to generate and no email owed.
+        order_webhook_client_mock.get_order.return_value = _make_order(
+            status="void",
+            billing_name="Acme Inc",
+            billing_address=_BILLING_ADDRESS,
+            is_invoice_generated=False,
+        )
+        payload = _make_order_created_payload(status="void")
+
+        await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        order_webhook_client_mock.trigger_order_invoice_generation.assert_not_awaited()
+        order_webhook_client_mock.get_order_invoice.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_void_order_even_when_invoice_already_generated(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        # Schedule C: invoice already present on the voided order. Without the
+        # status gate the handler would fetch the invoice and enqueue the
+        # renewal/confirmation email for a cancelled order — the gate suppresses it.
+        order_webhook_client_mock.get_order.return_value = _make_order(
+            status="void",
+            billing_name="Acme Inc",
+            billing_address=_BILLING_ADDRESS,
+            is_invoice_generated=True,
+        )
+        payload = _make_order_created_payload(status="void")
+
+        await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.trigger_order_invoice_generation.assert_not_awaited()
+        order_webhook_client_mock.get_order_invoice.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_propagates_order_not_eligible_from_trigger(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        # Race: the refetched order was non-void, so the trigger ran, but the
+        # order became draft/void between the refetch and the trigger call.
+        # The terminal ineligibility must propagate untouched — converting it
+        # to PolarSelfInvoiceNotReady would burn the retry budget on an order
+        # that will never become eligible.
         order_webhook_client_mock.get_order.return_value = _make_order(
             billing_name="Acme Inc",
             billing_address=_BILLING_ADDRESS,
             is_invoice_generated=False,
         )
         order_webhook_client_mock.trigger_order_invoice_generation.side_effect = (
-            PolarSelfNotPaidOrder("ord_1")
+            PolarSelfOrderNotEligible("ord_1")
         )
         payload = _make_order_created_payload()
 
-        with pytest.raises(PolarSelfInvoiceNotReady):
+        with pytest.raises(PolarSelfOrderNotEligible):
             await polar_self.handle_order_created_event(payload)
 
         enqueue_email_mock.assert_not_called()

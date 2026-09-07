@@ -34302,6 +34302,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**

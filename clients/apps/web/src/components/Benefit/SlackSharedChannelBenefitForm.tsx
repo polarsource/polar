@@ -86,7 +86,8 @@ export const SlackSharedChannelBenefitForm = ({
     selectedIntegrationId === CREATE_NEW_SLACK_APP ||
     (!showIntegrationSelect && !selectedIntegration)
 
-  const connected = !!selectedIntegration?.team_id && !selectedIntegration.revoked_at
+  const connected =
+    !!selectedIntegration?.team_id && !selectedIntegration.revoked_at
   const integrationId = selectedIntegration?.id
 
   useEffect(() => {
@@ -170,10 +171,14 @@ export const SlackSharedChannelBenefitForm = ({
       ) : (
         <>
           <SlackIntegrationSetupPanel
-            key={setupNewIntegration ? 'new' : (resolvedIntegration?.id ?? 'new')}
+            key={
+              setupNewIntegration ? 'new' : (resolvedIntegration?.id ?? 'new')
+            }
             organizationId={organization.id}
             defaultDisplayName={organization.name}
-            integration={setupNewIntegration ? null : (resolvedIntegration ?? null)}
+            integration={
+              setupNewIntegration ? null : (resolvedIntegration ?? null)
+            }
             returnTo={returnTo}
           />
           <FormDescription>

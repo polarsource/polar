@@ -143,7 +143,7 @@ class Invoice(BaseModel):
                 )
             )
 
-        if len(self.tax_breakdown) > 1:
+        if len(items) > 1:
             items.append(
                 InvoiceTotalsItem(
                     label="Total tax",

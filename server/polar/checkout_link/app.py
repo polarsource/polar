@@ -4,6 +4,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from polar.config import settings
 from polar.exceptions import PolarError, ResourceNotFound
+from polar.kit.routing import TransactionalAPIRoute, get_api_router_class
 
 from .endpoints import redirect
 
@@ -20,6 +21,9 @@ async def redirect_to_frontend_not_found(
     return RedirectResponse(settings.generate_frontend_url("/404"), status_code=302)
 
 
+router = get_api_router_class(TransactionalAPIRoute)()
+router.get("/{client_secret}")(redirect)
+
 app = FastAPI(
     docs_url=None,
     redoc_url=None,
@@ -30,5 +34,4 @@ app = FastAPI(
         PolarError: redirect_to_frontend,
     },
 )
-
-app.get("/{client_secret}")(redirect)
+app.include_router(router)

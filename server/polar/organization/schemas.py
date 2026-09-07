@@ -13,7 +13,7 @@ from pydantic import (
     computed_field,
     model_validator,
 )
-from pydantic.json_schema import SkipJsonSchema
+from pydantic.json_schema import SkipJsonSchema, WithJsonSchema
 from pydantic.networks import HttpUrl
 
 from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
@@ -404,6 +404,81 @@ CustomerEmailSettings = Annotated[
 ]
 
 
+class OrganizationCustomerEmailSettingsUpdate(Schema):
+    """Partial update for customer email settings.
+
+    Every field is optional: only the flags provided are changed, the rest keep
+    their current value.
+    """
+
+    order_confirmation: bool | None = None
+    payment_method_expiration_reminder: bool | None = None
+    subscription_cancellation: bool | None = None
+    subscription_confirmation: bool | None = None
+    subscription_cycled: bool | None = None
+    subscription_cycled_after_trial: bool | None = None
+    subscription_past_due: bool | None = None
+    subscription_paused: bool | None = None
+    subscription_resumed: bool | None = None
+    subscription_renewal_reminder: bool | None = None
+    subscription_revoked: bool | None = None
+    subscription_trial_conversion_reminder: bool | None = None
+    subscription_uncanceled: bool | None = None
+    subscription_updated: bool | None = None
+
+
+PublicProrationBehavior = Annotated[
+    SubscriptionProrationBehavior,
+    WithJsonSchema(
+        {
+            "enum": ["invoice", "prorate", "next_period"],
+            "title": "PublicSubscriptionProrationBehavior",
+            "type": "string",
+        }
+    ),
+]
+
+
+class OrganizationSubscriptionSettingsUpdate(Schema):
+    """Partial update for subscription settings.
+
+    Every field is optional: only the fields provided are changed, the rest keep
+    their current value.
+    """
+
+    allow_multiple_subscriptions: bool | None = None
+    proration_behavior: PublicProrationBehavior | None = None
+    benefit_revocation_grace_period: int | None = None
+    prevent_trial_abuse: bool | None = None
+    allow_customer_updates: bool | None = None
+
+
+class CustomerPortalUsageSettingsUpdate(Schema):
+    show: bool | None = None
+
+
+class CustomerPortalSubscriptionSettingsUpdate(Schema):
+    update_seats: bool | None = None
+    update_plan: bool | None = None
+    pause: bool | None = None
+
+
+class CustomerPortalCustomerSettingsUpdate(Schema):
+    allow_email_change: bool | None = None
+
+
+class OrganizationCustomerPortalSettingsUpdate(Schema):
+    """Partial update for customer portal settings.
+
+    Every field is optional and merged into the current settings: only the
+    nested keys provided are changed, the rest keep their current value.
+    """
+
+    usage: CustomerPortalUsageSettingsUpdate | None = None
+    subscription: CustomerPortalSubscriptionSettingsUpdate | None = None
+    customer: CustomerPortalCustomerSettingsUpdate | None = None
+
+
 class OrganizationBase(IDSchema, TimestampedSchema):
     name: str = Field(
         description="Organization name shown in checkout, customer portal, emails etc.",
@@ -704,9 +779,9 @@ class OrganizationUpdate(Schema):
     )
 
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
-    subscription_settings: OrganizationSubscriptionSettings | None = None
-    customer_email_settings: OrganizationCustomerEmailSettings | None = None
-    customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    subscription_settings: OrganizationSubscriptionSettingsUpdate | None = None
+    customer_email_settings: OrganizationCustomerEmailSettingsUpdate | None = None
+    customer_portal_settings: OrganizationCustomerPortalSettingsUpdate | None = None
     dispute_settings: OrganizationDisputeSettingsUpdate | None = None
     embed_hosts: EmbedHostsInput | None = None
     default_presentment_currency: PresentmentCurrency | None = Field(

@@ -196,18 +196,28 @@ class UserService:
         self,
         repository: UserRepository,
         verification_session: stripe_lib.identity.VerificationSession,
-    ) -> User:
+    ) -> User | None:
+        # Resolve including soft-deleted users so a session transition arriving
+        # for a user deleted mid-verification is a no-op instead of raising and
+        # retrying to dead-letter. A genuinely unattributable session still
+        # raises so misrouted webhooks stay visible.
         user = await repository.get_by_identity_verification_id(
-            verification_session.id, for_update=True
+            verification_session.id, for_update=True, include_deleted=True
         )
         if user is not None:
+            if user.deleted_at is not None:
+                return None
             return user
 
         metadata = verification_session.get("metadata") or {}
         user_id = metadata.get("user_id")
         if user_id is not None:
-            user = await repository.get_by_id(UUID(user_id), for_update=True)
+            user = await repository.get_by_id(
+                UUID(user_id), for_update=True, include_deleted=True
+            )
             if user is not None:
+                if user.deleted_at is not None:
+                    return None
                 return user
 
         raise IdentityVerificationForUnknownUser(verification_session.id)
@@ -216,11 +226,13 @@ class UserService:
         self,
         session: AsyncSession,
         verification_session: stripe_lib.identity.VerificationSession,
-    ) -> User:
+    ) -> User | None:
         repository = UserRepository.from_session(session)
         user = await self._get_verification_session_user(
             repository, verification_session
         )
+        if user is None:
+            return None
 
         assert verification_session.status == "verified"
         user = await repository.update(
@@ -242,11 +254,13 @@ class UserService:
         self,
         session: AsyncSession,
         verification_session: stripe_lib.identity.VerificationSession,
-    ) -> User:
+    ) -> User | None:
         repository = UserRepository.from_session(session)
         user = await self._get_verification_session_user(
             repository, verification_session
         )
+        if user is None:
+            return None
 
         if user.identity_verification_id != verification_session.id:
             return user
@@ -268,11 +282,13 @@ class UserService:
         self,
         session: AsyncSession,
         verification_session: stripe_lib.identity.VerificationSession,
-    ) -> User:
+    ) -> User | None:
         repository = UserRepository.from_session(session)
         user = await self._get_verification_session_user(
             repository, verification_session
         )
+        if user is None:
+            return None
 
         if user.identity_verification_id != verification_session.id:
             return user
@@ -416,6 +432,12 @@ class UserService:
     ) -> User:
         """Soft-delete a user, anonymizing PII fields."""
         repository = UserRepository.from_session(session)
+
+        # Without this, post-deletion Stripe transitions land on the soft-deleted
+        # row the webhook lookups filter out (failing the worker to dead-letter),
+        # and the Stripe-side verification PII is left un-redacted.
+        if user.identity_verification_id is not None:
+            user = await self.delete_identity_verification(session, user)
 
         update_dict: dict[str, Any] = {}
 

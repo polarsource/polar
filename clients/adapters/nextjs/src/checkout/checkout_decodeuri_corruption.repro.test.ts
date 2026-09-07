@@ -3,14 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockCheckoutCreate = vi.fn()
 
-vi.mock('@polar-sh/sdk', () => ({
-  Polar: vi.fn(function () {
-    return {
-      checkouts: {
-        create: mockCheckoutCreate,
-      },
-    }
-  }),
+vi.mock('@polar-sh/sdk/2026-04', () => ({
+  createPolarCore: vi.fn(() => ({})),
+}))
+
+vi.mock('@polar-sh/sdk/2026-04/services/checkouts', () => ({
+  createCheckouts: () => mockCheckoutCreate,
 }))
 
 import { Checkout } from './checkout'
@@ -60,7 +58,10 @@ describe('Checkout successUrl/returnUrl percent-escape preservation (decodeURI r
   const buildRequest = () =>
     new NextRequest('https://example.com/checkout?products=prod_123')
 
-  const getCreateCall = () => mockCheckoutCreate.mock.calls[0][0]
+  const getCreateCall = () => {
+    const { success_url, return_url } = mockCheckoutCreate.mock.calls[0][0]
+    return { successUrl: success_url, returnUrl: return_url }
+  }
 
   describe('successUrl', () => {
     it('preserves a %25-prefixed literal so the success page reads %41 (not "A")', async () => {
@@ -75,12 +76,12 @@ describe('Checkout successUrl/returnUrl percent-escape preservation (decodeURI r
       const wire = getCreateCall().successUrl as string
       // The %2541 the merchant configured must survive intact on the wire.
       expect(wire).toBe(
-        'https://example.com/success?data=%2541&checkoutId={CHECKOUT_ID}',
+        'https://example.com/success?data=%2541&checkout_id={CHECKOUT_ID}',
       )
 
       const page = simulateServerThenSuccessPageRead(wire)
       expect(page.searchParams.get('data')).toBe('%41')
-      expect(page.searchParams.get('checkoutId')).toBe(CHECKOUT_ID)
+      expect(page.searchParams.get('checkout_id')).toBe(CHECKOUT_ID)
     })
 
     it('preserves a %25-prefixed NUL literal so the success page reads %00 (not "\\u0000")', async () => {
@@ -94,12 +95,12 @@ describe('Checkout successUrl/returnUrl percent-escape preservation (decodeURI r
 
       const wire = getCreateCall().successUrl as string
       expect(wire).toBe(
-        'https://example.com/success?data=%2500&checkoutId={CHECKOUT_ID}',
+        'https://example.com/success?data=%2500&checkout_id={CHECKOUT_ID}',
       )
 
       const page = simulateServerThenSuccessPageRead(wire)
       expect(page.searchParams.get('data')).toBe('%00')
-      expect(page.searchParams.get('checkoutId')).toBe(CHECKOUT_ID)
+      expect(page.searchParams.get('checkout_id')).toBe(CHECKOUT_ID)
     })
 
     it('preserves a literal percent embedded in a value (50%25off -> 50%off)', async () => {
@@ -113,7 +114,7 @@ describe('Checkout successUrl/returnUrl percent-escape preservation (decodeURI r
 
       const wire = getCreateCall().successUrl as string
       expect(wire).toBe(
-        'https://example.com/success?discount=50%25off&checkoutId={CHECKOUT_ID}',
+        'https://example.com/success?discount=50%25off&checkout_id={CHECKOUT_ID}',
       )
 
       const page = simulateServerThenSuccessPageRead(wire)
@@ -132,7 +133,7 @@ describe('Checkout successUrl/returnUrl percent-escape preservation (decodeURI r
       const wire = getCreateCall().successUrl as string
       // The merchant's %7Bx%7D must be preserved on the wire, not decoded to {x}.
       expect(wire).toBe(
-        'https://example.com/success?data=%7Bx%7D&checkoutId={CHECKOUT_ID}',
+        'https://example.com/success?data=%7Bx%7D&checkout_id={CHECKOUT_ID}',
       )
 
       const page = simulateServerThenSuccessPageRead(wire)
@@ -150,7 +151,7 @@ describe('Checkout successUrl/returnUrl percent-escape preservation (decodeURI r
 
       const wire = getCreateCall().successUrl as string
       expect(wire).toBe(
-        'https://example.com/success?url=https%3A%2F%2Fexample.com&checkoutId={CHECKOUT_ID}',
+        'https://example.com/success?url=https%3A%2F%2Fexample.com&checkout_id={CHECKOUT_ID}',
       )
 
       const page = simulateServerThenSuccessPageRead(wire)
@@ -168,7 +169,7 @@ describe('Checkout successUrl/returnUrl percent-escape preservation (decodeURI r
 
       const wire = getCreateCall().successUrl as string
       expect(wire).toBe(
-        'https://example.com/my%20path/success?checkoutId={CHECKOUT_ID}',
+        'https://example.com/my%20path/success?checkout_id={CHECKOUT_ID}',
       )
       expect(wire).not.toContain('my path')
 
@@ -188,10 +189,10 @@ describe('Checkout successUrl/returnUrl percent-escape preservation (decodeURI r
       const wire = getCreateCall().successUrl as string
       // Backwards-compatible guarantee: the placeholder is the literal token, not
       // %7BCHECKOUT_ID%7D (the server unescapes that too, but we keep the wire form).
-      expect(wire).toBe('https://example.com/success?checkoutId={CHECKOUT_ID}')
+      expect(wire).toBe('https://example.com/success?checkout_id={CHECKOUT_ID}')
 
       const page = simulateServerThenSuccessPageRead(wire)
-      expect(page.searchParams.get('checkoutId')).toBe(CHECKOUT_ID)
+      expect(page.searchParams.get('checkout_id')).toBe(CHECKOUT_ID)
     })
 
     it('does not add checkoutId when includeCheckoutId is false', async () => {
@@ -208,7 +209,7 @@ describe('Checkout successUrl/returnUrl percent-escape preservation (decodeURI r
 
       const page = simulateServerThenSuccessPageRead(wire)
       expect(page.searchParams.get('data')).toBe('%41')
-      expect(page.searchParams.has('checkoutId')).toBe(false)
+      expect(page.searchParams.has('checkout_id')).toBe(false)
     })
   })
 

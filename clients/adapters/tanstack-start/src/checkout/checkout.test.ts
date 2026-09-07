@@ -42,7 +42,9 @@ describe('Checkout', () => {
     ['%2500', '%00'],
     ['%7Bx%7D', '{x}'],
   ])('preserves URL escapes %s', async (encoded, decoded) => {
-    mockCheckoutCreate.mockResolvedValue({ url: 'https://polar.sh/checkout/123' })
+    mockCheckoutCreate.mockResolvedValue({
+      url: 'https://polar.sh/checkout/123',
+    })
     const checkout = Checkout({
       accessToken: 'test-token',
       successUrl: `https://example.com/success?data=${encoded}`,

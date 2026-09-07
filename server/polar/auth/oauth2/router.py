@@ -114,6 +114,8 @@ def get_oauth_login_router(
             )
         except (ExpiredStateException, InvalidStateException) as e:
             raise PolarAuthRedirectionError("OAuth2 session expired") from e
+        except GetEmailError as e:
+            raise PolarAuthRedirectionError(e.message) from e
         except OAuth2CallbackException as e:
             raise PolarAuthRedirectionError(e.message or "OAuth2 callback error") from e
         except OAuth2TokenException as e:
@@ -163,6 +165,8 @@ def get_oauth_login_router(
                 enrollment = await factor.enroll(user.id, oauth_account)
             except OAuth2GetProfileException as e:
                 raise PolarAuthRedirectionError("OAuth2 error") from e
+            except GetEmailError as e:
+                raise PolarAuthRedirectionError(e.message) from e
             identity_id = user.id
 
         authentication_session = await authentication_session_service.advance(
@@ -278,6 +282,10 @@ def get_oauth_link_router(
         except OAuth2GetProfileException as e:
             raise PolarAuthRedirectionError(
                 "OAuth2 error", url=default_return_to, **error_parameters
+            ) from e
+        except GetEmailError as e:
+            raise PolarAuthRedirectionError(
+                e.message, url=default_return_to, **error_parameters
             ) from e
         except OIDCException as e:
             raise PolarAuthRedirectionError(

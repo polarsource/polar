@@ -155,7 +155,9 @@ describe('Checkout', () => {
         makeEvent('/api/checkout?products=prod_123&allow_discount_codes=false'),
       )
 
-      expect(mockCheckoutCreate.mock.calls[0][0].allow_discount_codes).toBe(false)
+      expect(mockCheckoutCreate.mock.calls[0][0].allow_discount_codes).toBe(
+        false,
+      )
     })
   })
 

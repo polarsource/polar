@@ -12,7 +12,6 @@ from polar.oauth2.sub_type import SubType
 from polar.postgres import AsyncSession
 
 SESSION_COOKIE = "__Host-polar_backoffice_session"
-STATE_COOKIE = "__Host-polar_backoffice_state"
 RETURN_COOKIE = "polar_private_impersonation"
 
 

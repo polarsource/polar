@@ -6,15 +6,16 @@ from authlib.oauth2 import OAuth2Error
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from httpx import HTTPError
-from itsdangerous import BadData, URLSafeTimedSerializer
+from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateException
 
+from polar.auth.helpers import set_state_cookie
+from polar.auth.oauth2.state import OAuth2StateService, get_oauth2_state_service
 from polar.config import settings
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.postgres import AsyncSession, get_db_session
 
 from .access import (
     SESSION_COOKIE,
-    STATE_COOKIE,
     get_private_session,
     require_tailscale_user,
     validate_private_token,
@@ -22,9 +23,7 @@ from .access import (
 from .routing import BackofficeRouter
 
 router = BackofficeRouter(prefix="/auth")
-state_serializer = URLSafeTimedSerializer(
-    settings.SECRET, salt="backoffice-oauth-state"
-)
+STATE_PROVIDER = "private_backoffice"
 
 
 def get_oauth_client() -> AsyncOAuth2Client:
@@ -39,23 +38,26 @@ def get_oauth_client() -> AsyncOAuth2Client:
 
 
 @router.get("/login")
-async def login() -> RedirectResponse:
+async def login(
+    request: Request,
+    state_service: OAuth2StateService = Depends(get_oauth2_state_service),
+) -> RedirectResponse:
     verifier = secrets.token_urlsafe(32)
+    state, oauth_state = await state_service.create(
+        provider=STATE_PROVIDER,
+        redirect_uri=f"{settings.BACKOFFICE_PRIVATE_URL}/auth/callback",
+        code_verifier=verifier,
+        scope=["openid", "email"],
+    )
     async with get_oauth_client() as client:
-        url, state = client.create_authorization_url(
+        url, _ = client.create_authorization_url(
             settings.generate_frontend_url("/oauth2/authorize"),
             code_verifier=verifier,
+            state=state,
             sub_type="user",
         )
     response = RedirectResponse(url, 303)
-    response.set_cookie(
-        STATE_COOKIE,
-        state_serializer.dumps({"state": state, "verifier": verifier}),
-        max_age=600,
-        secure=True,
-        httponly=True,
-        samesite="lax",
-    )
+    set_state_cookie(request, response, state, oauth_state.expires_at)
     return response
 
 
@@ -63,15 +65,25 @@ async def login() -> RedirectResponse:
 async def callback(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
+    state_service: OAuth2StateService = Depends(get_oauth2_state_service),
 ) -> RedirectResponse:
+    state = request.query_params.get("state", "")
+    cookie = request.cookies.get(settings.OAUTH2_SESSION_STATE_COOKIE_KEY, "")
+    if (
+        not state
+        or not state.isascii()
+        or not cookie.isascii()
+        or not secrets.compare_digest(state, cookie)
+    ):
+        raise HTTPException(403, "Invalid login state")
     try:
-        state = state_serializer.loads(
-            request.cookies.get(STATE_COOKIE, ""), max_age=600
-        )
-    except BadData as e:
+        oauth_state = await state_service.consume(state)
+    except (ExpiredStateException, InvalidStateException) as e:
         raise HTTPException(403, "Invalid or expired login state") from e
-    if not secrets.compare_digest(
-        state["state"], request.query_params.get("state", "")
+    if (
+        oauth_state.provider != STATE_PROVIDER
+        or oauth_state.redirect_uri
+        != f"{settings.BACKOFFICE_PRIVATE_URL}/auth/callback"
     ):
         raise HTTPException(403, "Invalid login state")
     if request.query_params.get("error"):
@@ -85,7 +97,7 @@ async def callback(
                 settings.generate_external_url("/v1/oauth2/token"),
                 grant_type="authorization_code",
                 code=request.query_params["code"],
-                code_verifier=state["verifier"],
+                code_verifier=oauth_state.code_verifier,
             )
     except (OAuth2Error, HTTPError) as e:
         raise HTTPException(400, "Could not complete backoffice authorization") from e
@@ -105,7 +117,7 @@ async def callback(
         httponly=True,
         samesite="lax",
     )
-    response.delete_cookie(STATE_COOKIE, secure=True, httponly=True, samesite="lax")
+    set_state_cookie(request, response, "", 0)
     return response
 
 

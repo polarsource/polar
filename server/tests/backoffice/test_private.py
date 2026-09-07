@@ -1,4 +1,6 @@
 import time
+from email.utils import parsedate_to_datetime
+from http.cookies import SimpleCookie
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
@@ -9,10 +11,10 @@ from pytest_mock import MockerFixture
 from respx import MockRouter
 
 from polar.app import create_app
-from polar.backoffice.access import SESSION_COOKIE, STATE_COOKIE
-from polar.backoffice.login import state_serializer
+from polar.auth.oauth2.state import OAuth2StateService
+from polar.backoffice.access import SESSION_COOKIE
 from polar.config import settings
-from polar.models import OAuth2Token, User
+from polar.models import OAuth2State, OAuth2Token, User
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
@@ -172,13 +174,30 @@ class TestPrivateOAuth:
             settings.generate_frontend_url("/oauth2/authorize")
         )
         params = parse_qs(authorize.query)
-        state = state_serializer.loads(private_client.cookies[STATE_COOKIE])
+        state_token = private_client.cookies[settings.OAUTH2_SESSION_STATE_COOKIE_KEY]
+        state = await OAuth2StateService(session).get_by_token(state_token)
+        assert state is not None
+        assert state.code_verifier is not None
+        assert params["state"] == [state_token]
+        state_cookie = SimpleCookie(response.headers["set-cookie"])[
+            settings.OAUTH2_SESSION_STATE_COOKIE_KEY
+        ]
+        expires_at = parsedate_to_datetime(state_cookie["expires"]).timestamp()
+        assert (
+            0
+            < expires_at - time.time()
+            <= settings.OAUTH2_SESSION_STATE_TTL.total_seconds()
+        )
+        assert expires_at == state.expires_at
+        assert state_cookie["secure"]
+        assert state_cookie["httponly"]
+        assert not state_cookie["domain"]
         assert params["response_type"] == ["code"]
         assert params["client_id"] == ["backoffice-client"]
         assert params["scope"] == ["openid email"]
         assert params["code_challenge_method"] == ["S256"]
         assert params["code_challenge"] == [
-            create_s256_code_challenge(state["verifier"])
+            create_s256_code_challenge(state.code_verifier)
         ]
         token_request = respx_mock.post(
             settings.generate_external_url("/v1/oauth2/token")
@@ -192,7 +211,7 @@ class TestPrivateOAuth:
         assert response.status_code == 303
         assert response.headers["location"] == "/"
         body = parse_qs(token_request.calls.last.request.content.decode())
-        assert body["code_verifier"] == [state["verifier"]]
+        assert body["code_verifier"] == [state.code_verifier]
         assert body["redirect_uri"] == [f"{PRIVATE_URL}/auth/callback"]
         assert body["client_id"] == ["backoffice-client"]
         cookie = response.headers.get_list("set-cookie")[0]
@@ -200,37 +219,52 @@ class TestPrivateOAuth:
         assert "HttpOnly" in cookie
         assert "Secure" in cookie
         assert "SameSite=lax" in cookie
-        assert STATE_COOKIE not in private_client.cookies
+        assert settings.OAUTH2_SESSION_STATE_COOKIE_KEY not in private_client.cookies
+        assert await OAuth2StateService(session).get_by_token(state_token) is None
+        private_client.cookies.set(
+            settings.OAUTH2_SESSION_STATE_COOKIE_KEY, state_token
+        )
+        replay = await private_client.get(
+            "/auth/callback", params={"code": "auth-code", "state": state_token}
+        )
+        assert replay.status_code == 403
+        assert token_request.call_count == 1
         assert (await private_client.get("/")).status_code == 200
         assert (await private_client.post("/auth/logout")).status_code == 303
         await session.flush()
         assert (await private_client.get("/")).status_code == 303
 
-    @pytest.mark.parametrize("failure", ["wrong", "missing", "expired"])
+    @pytest.mark.parametrize(
+        "failure", ["wrong", "missing", "expired", "provider", "redirect_uri"]
+    )
     async def test_invalid_state(
         self,
         private_client: httpx.AsyncClient,
         respx_mock: MockRouter,
-        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
         failure: str,
     ) -> None:
         await private_client.get("/auth/login")
-        state = state_serializer.loads(private_client.cookies[STATE_COOKIE])
+        state_token = private_client.cookies[settings.OAUTH2_SESSION_STATE_COOKIE_KEY]
+        state = await OAuth2StateService(session).get_by_token(state_token)
+        assert state is not None
         if failure == "missing":
             private_client.cookies.clear()
-        elif failure == "expired":
-            timestamp = mocker.patch(
-                "itsdangerous.timed.TimestampSigner.get_timestamp",
-                return_value=int(time.time()) - 601,
-            )
-            expired_cookie = state_serializer.dumps(state)
-            mocker.stop(timestamp)
-            private_client.cookies.clear()
-            private_client.cookies.set(STATE_COOKIE, expired_cookie)
+        elif failure in {"expired", "provider", "redirect_uri"}:
+            state_orm = await session.get(OAuth2State, state.id)
+            assert state_orm is not None
+            if failure == "expired":
+                state_orm.expires_at = int(time.time()) - 1
+            elif failure == "provider":
+                state_orm.provider = "github"
+            else:
+                state_orm.redirect_uri = "https://other.example/callback"
+            await save_fixture(state_orm)
         response = await private_client.get(
             "/auth/callback",
             params={
-                "state": "wrong" if failure == "wrong" else state["state"],
+                "state": "wrong" if failure == "wrong" else state_token,
                 "code": "auth-code",
             },
         )

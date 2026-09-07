@@ -28,8 +28,9 @@ database, Redis, and signing configuration.
    returns to the private backoffice. The private OAuth session stays independent
    of the impersonated dashboard session.
 
-Only opaque codes appear in redirect URLs. Login state is browser-bound and expires
-after ten minutes; the PKCE verifier and access token stay in HttpOnly cookies.
+Only opaque codes appear in redirect URLs. Login reuses Polar's OAuth state service
+and state-cookie helper. State is browser-bound and expires after ten minutes;
+the PKCE verifier stays in the database and the access token in a HttpOnly cookie.
 Impersonation grants are stored hashed and consumed atomically. Private responses
 and public handoff responses disable caching and referrers.
 

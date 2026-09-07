@@ -191,7 +191,9 @@ Custom plugins passed through `use` also receive a `PolarCore` and call SDK oper
 
 When `createCustomerOnSignUp` is enabled, a new Polar Customer is automatically created when a new User is added in the Better-Auth Database.
 
-All new customers are created with an associated `externalId`, which is the ID of your User in the Database. This allows us to skip any Polar <-> User mapping in your Database.
+Customer creation runs after Better Auth inserts the user, so the initial Polar creation request includes `external_id: user.id`. Applications that reject user creation in a `before` database hook do not create a Polar customer.
+
+`getCustomerCreateParams` runs only when a new customer is needed and receives the persisted user. It can add metadata; the user ID, email, and name remain authoritative. An existing customer with the same email and no external ID is linked once. An existing customer linked to the same user is reused; a different external ID produces a conflict without reassigning the customer.
 
 ### Experimental organization synchronization
 

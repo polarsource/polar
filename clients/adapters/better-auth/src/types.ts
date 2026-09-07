@@ -38,14 +38,12 @@ export interface PolarOptions {
    */
   client: PolarCore
   /**
-   * Enable customer creation when a user signs up
+   * Create a Polar customer after the user is inserted, with external_id set to user.id
    */
   createCustomerOnSignUp?: boolean
   /**
-   * A custom function to get the customer create
-   * params
-   * @param data - data containing user and session
-   * @returns
+   * Additional metadata for new customers, evaluated after user creation.
+   * The user ID, email, and name cannot be overridden.
    */
   getCustomerCreateParams?: (
     data: {

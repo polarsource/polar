@@ -1,7 +1,6 @@
 import type { AuthContext, BetterAuthPlugin } from 'better-auth'
 import {
   onAfterUserCreate,
-  onBeforeUserCreate,
   onBeforeUserDelete,
   onUserDelete,
   onUserUpdate,
@@ -19,7 +18,6 @@ interface PolarBetterAuthPlugin {
       databaseHooks: {
         user: {
           create: {
-            before: ReturnType<typeof onBeforeUserCreate>
             after: ReturnType<typeof onAfterUserCreate>
           }
           update: {
@@ -55,7 +53,6 @@ export const polar = <O extends PolarOptions>(
           databaseHooks: {
             user: {
               create: {
-                before: onBeforeUserCreate(options),
                 after: onAfterUserCreate(options),
               },
               update: {

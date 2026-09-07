@@ -16,87 +16,51 @@ import type { PolarOptions } from '../types'
 const isAnonymousUser = (user: Partial<User>) =>
   'isAnonymous' in user && user.isAnonymous === true
 
-export const onBeforeUserCreate =
-  (options: PolarOptions) =>
-  async (user: Partial<User>, context: GenericEndpointContext | null) => {
-    if (context && options.createCustomerOnSignUp) {
-      try {
-        if (isAnonymousUser(user)) {
-          return
-        }
-
-        const params = options.getCustomerCreateParams
-          ? await options.getCustomerCreateParams({
-              user,
-            })
-          : {}
-
-        if (!user.email) {
-          throw new APIError('BAD_REQUEST', {
-            message: 'An associated email is required',
-          })
-        }
-
-        // Check if customer already exists
-        const existingCustomers = await listCustomers(options.client)({
-          email: user.email,
-        })
-        const existingCustomer = existingCustomers.items[0]
-
-        // Skip creation if customer already exists
-        if (!existingCustomer) {
-          await createCustomers(options.client)({
-            ...params,
-            email: user.email,
-            name: user.name,
-          })
-        }
-      } catch (e: unknown) {
-        if (e instanceof Error) {
-          throw new APIError('INTERNAL_SERVER_ERROR', {
-            message: `Polar customer creation failed. Error: ${e.message}`,
-          })
-        }
-
-        throw new APIError('INTERNAL_SERVER_ERROR', {
-          message: `Polar customer creation failed. Error: ${e}`,
-        })
-      }
-    }
-  }
-
 export const onAfterUserCreate =
   (options: PolarOptions) =>
   async (user: User, context: GenericEndpointContext | null) => {
-    if (context && options.createCustomerOnSignUp) {
-      if (isAnonymousUser(user)) {
+    if (!context || !options.createCustomerOnSignUp || isAnonymousUser(user)) {
+      return
+    }
+
+    try {
+      const existingCustomers = await listCustomers(options.client)({
+        email: user.email,
+      })
+      const existingCustomer = existingCustomers.items[0]
+
+      if (existingCustomer) {
+        if (existingCustomer.external_id === user.id) {
+          return
+        }
+        if (existingCustomer.external_id !== null) {
+          throw new APIError('CONFLICT', {
+            message: 'Polar customer is already linked to a different user',
+          })
+        }
+        await updateCustomers(options.client)(existingCustomer.id, {
+          external_id: user.id,
+        })
         return
       }
 
-      try {
-        const existingCustomers = await listCustomers(options.client)({
-          email: user.email,
-        })
-        const existingCustomer = existingCustomers.items[0]
+      const params = options.getCustomerCreateParams
+        ? await options.getCustomerCreateParams({ user })
+        : {}
 
-        if (existingCustomer) {
-          if (existingCustomer.external_id !== user.id) {
-            await updateCustomers(options.client)(existingCustomer.id, {
-              external_id: user.id,
-            })
-          }
-        }
-      } catch (e: unknown) {
-        if (e instanceof Error) {
-          throw new APIError('INTERNAL_SERVER_ERROR', {
-            message: `Polar customer creation failed. Error: ${e.message}`,
-          })
-        }
-
-        throw new APIError('INTERNAL_SERVER_ERROR', {
-          message: `Polar customer creation failed. Error: ${e}`,
-        })
+      await createCustomers(options.client)({
+        ...params,
+        email: user.email,
+        name: user.name,
+        external_id: user.id,
+      })
+    } catch (e: unknown) {
+      if (e instanceof APIError) {
+        throw e
       }
+      throw new APIError('INTERNAL_SERVER_ERROR', {
+        message: `Polar customer creation failed. Error: ${e instanceof Error ? e.message : e}`,
+      })
     }
   }
 

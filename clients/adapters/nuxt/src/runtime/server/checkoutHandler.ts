@@ -36,7 +36,7 @@ const checkoutQuerySchema = z.object({
     .pipe(z.boolean())
     .optional(),
   discount_id: z.string().nonempty().optional(),
-  discount_code: z.string().optional(),
+  discount_code: z.string().trim().optional(),
   metadata: z.string().nonempty().optional(),
   seats: z
     .string()

@@ -4,11 +4,13 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.models import (
     Benefit,
     Organization,
     Product,
     ProductPriceFixed,
+    ProductPriceSeatUnit,
     UserOrganization,
 )
 from polar.models.custom_field import CustomFieldType
@@ -171,6 +173,43 @@ class TestGetProduct:
         assert price["unit_label"] is None
         assert price["tiers"]["type"] == "volume"
         assert price["tiers"]["tiers"] == [{"bound": None, "unit_amount": "2900"}]
+
+    @pytest.mark.auth
+    async def test_valid_seat_based_null_tiers(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A seat-based product whose `tiers` column is NULL — the state of a
+        # pre-cutover snapshot after `alembic upgrade head` — must still read
+        # instead of raising a ResponseValidationError (HTTP 500) on every
+        # endpoint serializing ProductSchema.
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        seat_price = product.prices[0]
+        assert isinstance(seat_price, ProductPriceSeatUnit)
+        # Simulate the restored-from-pre-cutover-snapshot row: the `tiers`
+        # column (and its bounds) were never backfilled.
+        seat_price.tiers = None  # type: ignore[assignment]
+        seat_price.minimum_units = None
+        seat_price.maximum_units = None
+        await save_fixture(seat_price)
+
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        price = response.json()["prices"][0]
+        assert price["amount_type"] == "seat_based"
+        assert price["seat_tiers"]["tiers"] == []
+        assert price["price_per_seat"] == 0
+        assert price["seat_tiers"]["minimum_seats"] == 1
+        assert price["seat_tiers"]["maximum_seats"] is None
 
 
 @pytest.mark.asyncio

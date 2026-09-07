@@ -410,6 +410,42 @@ class ProductPriceSeatTiers(Schema):
         return self.tiers[-1].max_seats
 
 
+class ProductPriceSeatTiersRead(Schema):
+    """Seat tier payload read from a stored row.
+
+    Kept apart from `ProductPriceSeatTiers` (the input schema) so the
+    input-only `min_length` and contiguity rules never stop a stored row
+    from loading. Notably, a pre-cutover row whose `tiers` column is NULL is
+    rebuilt by the ORM as `{"seat_tier_type": "volume", "tiers": []}`; this
+    schema accepts that empty list and degrades gracefully via the
+    `minimum_seats`, `maximum_seats`, and `price_per_seat` accessors.
+    """
+
+    seat_tier_type: SeatTierType = Field(
+        default=SeatTierType.volume,
+        description="How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.",
+    )
+    tiers: list[ProductPriceSeatTier] = Field(description="List of pricing tiers")
+
+    @computed_field(
+        description="Minimum number of seats required for purchase, derived from first tier."
+    )
+    def minimum_seats(self) -> int:
+        """Get minimum seats from the first tier, defaulting to 1 when empty."""
+        if not self.tiers:
+            return 1
+        return self.tiers[0].min_seats
+
+    @computed_field(
+        description="Maximum number of seats allowed for purchase, derived from last tier. None for unlimited."
+    )
+    def maximum_seats(self) -> int | None:
+        """Get maximum seats from the last tier, defaulting to unlimited when empty."""
+        if not self.tiers:
+            return None
+        return self.tiers[-1].max_seats
+
+
 class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
     """
     Schema to create a seat-based price with volume-based tiers.
@@ -850,7 +886,7 @@ class ProductPriceCustomBase(ProductPriceBase):
 
 class ProductPriceSeatBasedBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.seat_based]
-    seat_tiers: ProductPriceSeatTiers = Field(
+    seat_tiers: ProductPriceSeatTiersRead = Field(
         description="Tiered pricing based on seat quantity"
     )
 
@@ -863,10 +899,13 @@ class ProductPriceSeatBasedBase(ProductPriceBase):
         ),
     )
     def price_per_seat(self) -> SkipJsonSchema[int]:
-        """Return price_per_seat from first tier for backward compatibility."""
+        """Return price_per_seat from first tier for backward compatibility.
+
+        Degrades to 0 when there are no tiers — e.g. a stored row whose
+        `tiers` column is NULL, which reads as free on the ORM side too.
+        """
         if not self.seat_tiers.tiers:
-            # This shouldn't happen due to validation, but protect against it
-            raise ValueError("seat_tiers must contain at least one tier")
+            return 0
         return self.seat_tiers.tiers[0].price_per_seat
 
 

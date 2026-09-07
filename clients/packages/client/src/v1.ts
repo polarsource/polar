@@ -32892,7 +32892,7 @@ export interface components {
        */
       product_id: string
       /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Output']
+      seat_tiers: components['schemas']['ProductPriceSeatTiersRead']
     }
     /**
      * ProductPriceSeatBasedCreate
@@ -32912,7 +32912,7 @@ export interface components {
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
+      seat_tiers: components['schemas']['ProductPriceSeatTiers']
     }
     /**
      * ProductPriceSeatTier
@@ -32943,7 +32943,7 @@ export interface components {
      *     - minimum_seats = first tier's min_seats
      *     - maximum_seats = last tier's max_seats (None for unlimited)
      */
-    'ProductPriceSeatTiers-Input': {
+    ProductPriceSeatTiers: {
       /**
        * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
        * @default volume
@@ -32956,14 +32956,17 @@ export interface components {
       tiers: components['schemas']['ProductPriceSeatTier'][]
     }
     /**
-     * ProductPriceSeatTiers
-     * @description List of pricing tiers for seat-based pricing.
+     * ProductPriceSeatTiersRead
+     * @description Seat tier payload read from a stored row.
      *
-     *     The minimum and maximum seat limits are derived from the tiers:
-     *     - minimum_seats = first tier's min_seats
-     *     - maximum_seats = last tier's max_seats (None for unlimited)
+     *     Kept apart from `ProductPriceSeatTiers` (the input schema) so the
+     *     input-only `min_length` and contiguity rules never stop a stored row
+     *     from loading. Notably, a pre-cutover row whose `tiers` column is NULL is
+     *     rebuilt by the ORM as `{"seat_tier_type": "volume", "tiers": []}`; this
+     *     schema accepts that empty list and degrades gracefully via the
+     *     `minimum_seats`, `maximum_seats`, and `price_per_seat` accessors.
      */
-    'ProductPriceSeatTiers-Output': {
+    ProductPriceSeatTiersRead: {
       /**
        * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
        * @default volume

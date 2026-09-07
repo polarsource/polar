@@ -1,5 +1,7 @@
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from pydantic import TypeAdapter, ValidationError
@@ -16,7 +18,9 @@ from polar.product.schemas import (
     ProductPriceFixedCreate,
     ProductPriceMeteredTiersCreate,
     ProductPriceMeteredUnitCreate,
+    ProductPriceSeatBased,
     ProductPriceSeatTiers,
+    ProductPriceSeatTiersRead,
     ProductPriceUnitBasedCreate,
 )
 from polar.product.tiers import BIGINT_MAX, TiersInput, TierType
@@ -848,3 +852,87 @@ class TestProductPriceSeatTiers:
                     ],
                 }
             )
+
+
+class TestProductPriceSeatTiersRead:
+    """The read schema must accept stored rows the input schema rejects.
+
+    Regression: a ``seat_based`` price whose ``tiers`` column is NULL — e.g.
+    a database restored from a pre-cutover snapshot and migrated with the
+    nullable-column migration — is rebuilt by the ORM as
+    ``{"seat_tier_type": "volume", "tiers": []}``. The input-only
+    ``min_length`` / contiguity rules must not reject that payload during
+    response serialization (previously a ``ResponseValidationError`` → 500).
+    """
+
+    def test_accepts_empty_tiers(self) -> None:
+        seat_tiers = ProductPriceSeatTiersRead.model_validate(
+            {"seat_tier_type": "volume", "tiers": []}
+        )
+        dumped = seat_tiers.model_dump(mode="json")
+        assert dumped["tiers"] == []
+        assert dumped["minimum_seats"] == 1
+        assert dumped["maximum_seats"] is None
+
+    def test_populated_tiers_derive_bounds(self) -> None:
+        seat_tiers = ProductPriceSeatTiersRead.model_validate(
+            {
+                "seat_tier_type": "volume",
+                "tiers": [
+                    {"min_seats": 3, "max_seats": 10, "price_per_seat": 500},
+                    {"min_seats": 11, "max_seats": None, "price_per_seat": 300},
+                ],
+            }
+        )
+        dumped = seat_tiers.model_dump(mode="json")
+        assert len(dumped["tiers"]) == 2
+        assert dumped["minimum_seats"] == 3
+        assert dumped["maximum_seats"] is None
+
+    def test_input_schema_still_rejects_empty_tiers(self) -> None:
+        """The create path keeps enforcing ``min_length=1``."""
+        with pytest.raises(ValidationError, match="at least 1 item"):
+            ProductPriceSeatTiers.model_validate(
+                {"seat_tier_type": "volume", "tiers": []}
+            )
+
+
+def _seat_based_payload(tiers: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "id": str(uuid4()),
+        "source": "catalog",
+        "amount_type": "seat_based",
+        "price_currency": "usd",
+        "tax_behavior": None,
+        "is_archived": False,
+        "product_id": str(uuid4()),
+        "legacy_type": "recurring",
+        "legacy_recurring_interval": None,
+        "created_at": datetime.now(UTC).isoformat(),
+        "modified_at": None,
+        "seat_tiers": {"seat_tier_type": "volume", "tiers": tiers},
+    }
+
+
+class TestProductPriceSeatBasedRead:
+    """Response serialization of a seat-based price must not 500 on NULL tiers."""
+
+    def test_empty_tiers_serialize_without_500(self) -> None:
+        price = ProductPriceSeatBased.model_validate(_seat_based_payload([]))
+        dumped = price.model_dump(mode="json")
+        assert dumped["seat_tiers"]["tiers"] == []
+        assert dumped["price_per_seat"] == 0
+        assert dumped["seat_tiers"]["minimum_seats"] == 1
+        assert dumped["seat_tiers"]["maximum_seats"] is None
+
+    def test_populated_tiers_keep_price_per_seat(self) -> None:
+        price = ProductPriceSeatBased.model_validate(
+            _seat_based_payload(
+                [{"min_seats": 1, "max_seats": None, "price_per_seat": 1500}]
+            )
+        )
+        dumped = price.model_dump(mode="json")
+        assert dumped["price_per_seat"] == 1500
+        assert dumped["seat_tiers"]["tiers"][0]["price_per_seat"] == 1500
+        assert dumped["seat_tiers"]["minimum_seats"] == 1
+        assert dumped["seat_tiers"]["maximum_seats"] is None

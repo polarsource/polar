@@ -268,6 +268,68 @@ class TestUpdate:
         ],
     )
     @pytest.mark.auth
+    async def test_sensitive_update_forbidden_when_aggregating(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        meter_update: MeterUpdate,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # A meter with matching events ingested but `last_billed_event=None`
+        # (the window before the first billing-cron run) is already aggregating:
+        # `MeterEvent` rows exist, so filter/aggregation must be immutable.
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name", operator=FilterOperator.eq, value="matching"
+                    )
+                ],
+            ),
+            last_billed_event=None,
+        )
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                name="matching",
+            )
+        ]
+        await event_service._create_meter_events(session, events)
+
+        assert meter.last_billed_event is None
+
+        with pytest.raises(PolarRequestValidationError):
+            await meter_service.update(session, meter, meter_update, auth_subject)
+
+    @pytest.mark.parametrize(
+        "meter_update",
+        [
+            MeterUpdate(  # pyright: ignore
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="matching",
+                        )
+                    ],
+                )
+            ),
+            MeterUpdate(  # pyright: ignore
+                aggregation=PropertyAggregation(
+                    func=AggregationFunction.sum, property="tokens"
+                )
+            ),
+        ],
+    )
+    @pytest.mark.auth
     async def test_sensitive_update_allowed(
         self,
         auth_subject: AuthSubject[User],

@@ -186,7 +186,14 @@ class MeterService:
         repository = MeterRepository.from_session(session)
 
         errors: list[ValidationError] = []
-        if meter.last_billed_event is not None:
+        event_repository = EventRepository.from_session(session)
+        # Lock once the meter is ongoing: any `MeterEvent` row (inserted
+        # synchronously on ingest, before the billing cron sets the watermark)
+        # or a pre-existing `last_billed_event` watermark (set at creation
+        # against an event backlog, by the backfill->create window, or by a
+        # prior billing run).
+        has_meter_events = await event_repository.has_meter_events(meter.id)
+        if has_meter_events or meter.last_billed_event is not None:
             sensitive_fields = {"filter", "aggregation"}
             for sensitive_field in sensitive_fields:
                 if sensitive_field in meter_update.model_fields_set:

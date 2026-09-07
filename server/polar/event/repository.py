@@ -322,6 +322,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             self.get_meter_clause(meter),
         )
 
+    async def has_meter_events(self, meter_id: UUID) -> bool:
+        statement = (
+            select(MeterEvent.event_id).where(MeterEvent.meter_id == meter_id).limit(1)
+        )
+        result = await self.session.scalar(statement)
+        return result is not None
+
     async def get_meter_billing_page(
         self,
         meter_id: UUID,

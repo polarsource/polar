@@ -38,7 +38,7 @@ export const CustomerPortal = <TPath extends string = string>({
       return Response.redirect(result.customer_portal_url)
     } catch (error) {
       console.error(error)
-      return Response.error()
+      return Response.json({ error: 'Internal server error' }, { status: 500 })
     }
   }
 }

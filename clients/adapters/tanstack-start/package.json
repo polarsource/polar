@@ -28,6 +28,7 @@
     "dev": "tsc --watch",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "files": [

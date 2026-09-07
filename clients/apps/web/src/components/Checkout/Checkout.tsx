@@ -25,8 +25,12 @@ import {
   type ProductCheckoutPublic,
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
-import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
-import { ClientResponseError, type schemas } from '@polar-sh/client'
+import {
+  isExpiredCheckoutError,
+  useCheckout,
+  useCheckoutForm,
+} from '@polar-sh/checkout/providers'
+import type { schemas } from '@polar-sh/client'
 import { AcceptedLocale } from '@polar-sh/i18n'
 import { Alert, Avatar } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -193,11 +197,12 @@ const Checkout = ({
       try {
         return await _update(data)
       } catch (error) {
-        if (
-          error instanceof ClientResponseError &&
-          error.response.status === 410
-        ) {
+        if (isExpiredCheckoutError(error)) {
           window.location.reload()
+          // Never resolve: the page is reloading — keep callers' post-reload
+          // catch blocks (seat/unit "update failed", autosave, ...) from
+          // racing the navigation.
+          return new Promise<schemas['CheckoutPublic']>(() => {})
         }
         throw error
       }
@@ -216,11 +221,11 @@ const Checkout = ({
       try {
         confirmedCheckout = await _confirm(data, stripe, elements)
       } catch (error) {
-        if (
-          error instanceof ClientResponseError &&
-          error.response.status === 410
-        ) {
+        if (isExpiredCheckoutError(error)) {
           window.location.reload()
+          // Never resolve: keep the loading indicator on until the reload
+          // navigates (don't flash the normal button state before the reload).
+          return new Promise<schemas['CheckoutPublicConfirmed']>(() => {})
         }
         setFullLoading(false)
         throw error

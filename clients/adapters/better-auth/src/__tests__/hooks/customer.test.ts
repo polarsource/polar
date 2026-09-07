@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { onUserUpdate } from '../../hooks/customer'
+import { onAfterUserCreate, onUserUpdate } from '../../hooks/customer'
 import { createTestPolarOptions, mockApiError } from '../utils/helpers'
 import {
+  createMockBetterAuthContext,
   createMockCustomer,
   createMockPolarClient,
   createMockUser,
@@ -12,6 +13,44 @@ describe('customer hooks', () => {
 
   beforeEach(() => {
     mockClient = createMockPolarClient()
+  })
+
+  describe('onAfterUserCreate', () => {
+    it('creates a customer with the user ID in the initial request', async () => {
+      const user = createMockUser()
+      vi.mocked(mockClient.customers.list).mockResolvedValue({
+        items: [],
+        pagination: { total_count: 0, max_page: 1 },
+      })
+
+      await onAfterUserCreate(createTestPolarOptions({ client: mockClient }))(
+        user,
+        createMockBetterAuthContext(),
+      )
+
+      expect(mockClient.customers.create).toHaveBeenCalledExactlyOnceWith({
+        email: user.email,
+        name: user.name,
+        external_id: user.id,
+      })
+      expect(mockClient.customers.update).not.toHaveBeenCalled()
+    })
+
+    it('rejects a customer linked to another user without reassigning it', async () => {
+      vi.mocked(mockClient.customers.list).mockResolvedValue({
+        items: [createMockCustomer({ external_id: 'another-user' })],
+        pagination: { total_count: 1, max_page: 1 },
+      })
+
+      await expect(
+        onAfterUserCreate(createTestPolarOptions({ client: mockClient }))(
+          createMockUser(),
+          createMockBetterAuthContext(),
+        ),
+      ).rejects.toMatchObject({ status: 'CONFLICT' })
+      expect(mockClient.customers.create).not.toHaveBeenCalled()
+      expect(mockClient.customers.update).not.toHaveBeenCalled()
+    })
   })
 
   describe('onUserUpdate', () => {

@@ -1,0 +1,56 @@
+---
+title: "ADR-0010: Private backoffice uses Tailscale Serve and Polar OAuth"
+description: "Separate the backoffice network boundary while preserving dashboard sessions."
+---
+
+<Info>
+**Status**: Proposed
+
+**Area**: Cross-cutting
+
+**Date**: 2026-09-07
+</Info>
+
+## Context
+
+Backoffice access must migrate from the public internet to Tailscale without
+breaking impersonation on the regular dashboard domain. Tailscale's automatic
+certificates cover its own DNS names, so the private backoffice cannot share
+dashboard cookies. Polar already provides OAuth authorization-code flow with PKCE.
+
+## Decision
+
+Run the existing backoffice in a separate background service behind Tailscale Serve.
+Use Polar OAuth with a dedicated client and require both current admin privileges
+and a matching Tailscale user identity on every private request.
+
+Keep a single-use impersonation grant redemption endpoint on the public API so
+only that origin writes the dashboard cookies. Disable public backoffice mounts
+after verifying the parallel rollout.
+
+## Consequences
+
+- The private listener binds only to loopback; identity headers are trusted only
+  from the local Tailscale proxy. Non-local callers and missing identities fail closed.
+- Normal login reuses OAuth; the only new grant is for switching impersonation
+  cookies across domains. Public redemption revalidates the original administrator.
+- The existing backoffice `get_admin` dependency remains its authorization boundary;
+  it accepts the dedicated OAuth credential on private requests and the original
+  administrator's web session on public requests, including during impersonation.
+- The OAuth session is independent of the dashboard session. Expiry and revocation
+  apply normally; ending impersonation remains available on the public API.
+- Persistent Tailscale state keeps a stable DNS name. A single instance has a short
+  interruption during deployment.
+
+## Alternatives considered
+
+- **Custom domain and split DNS**: preserves cookies but needs certificate management
+  outside Tailscale's automatic certificates.
+- **Custom login handoff**: duplicates the existing OAuth protocol.
+- **Only gate public application routes**: retains public network ingress to the
+  backoffice process and increases the importance of proxy configuration.
+
+## References
+
+- `server/polar/backoffice/TAILSCALE.md`
+- [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve)

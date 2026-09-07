@@ -415,6 +415,87 @@ class TestGetSubscriptionsNeedingRenewalReminder:
 
 
 @pytest.mark.asyncio
+class TestGetSubscriptionsNeedingRenewalReminderWeeklyThreshold:
+    """Boundary coverage for the week branch of ``long_cycle_condition``.
+
+    The spec is "long billing cycles (> 180 days)". Weeks convert at 7 days each,
+    so the inclusive ``>=`` cutoff used by the other branches must be ``>= 26``
+    (26 * 7 = 182 > 180); ``count == 25`` yields 175 days and must NOT qualify.
+    """
+
+    async def _weekly_subscription(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        current_period_end: datetime,
+        *,
+        count: int,
+    ) -> Subscription:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.week,
+            recurring_interval_count=count,
+        )
+        return await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=current_period_end,
+        )
+
+    async def test_week_count_25_not_returned(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # 25 weeks = 175 days < 180 -> must NOT be treated as a long cycle.
+        now = utc_now()
+        subscription = await self._weekly_subscription(
+            save_fixture,
+            organization,
+            customer,
+            now + timedelta(days=3),
+            count=25,
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        result = await repository.get_subscriptions_needing_renewal_reminder(
+            now, now + timedelta(days=7)
+        )
+
+        assert subscription.id not in [s.id for s in result]
+        assert result == []
+
+    async def test_week_count_26_returned(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # 26 weeks = 182 days > 180 -> qualifies as a long cycle.
+        now = utc_now()
+        subscription = await self._weekly_subscription(
+            save_fixture,
+            organization,
+            customer,
+            now + timedelta(days=3),
+            count=26,
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        result = await repository.get_subscriptions_needing_renewal_reminder(
+            now, now + timedelta(days=7)
+        )
+
+        assert [s.id for s in result] == [subscription.id]
+
+
+@pytest.mark.asyncio
 class TestGetSubscriptionsNeedingTrialConversionReminder:
     async def _trialing_subscription(
         self,

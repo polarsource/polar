@@ -432,7 +432,7 @@ class SubscriptionRepository(
         # Long billing cycle conditions:
         # - year (any count)
         # - month with count >= 6
-        # - week with count >= 25
+        # - week with count >= 26
         # - day with count >= 180
         long_cycle_condition = or_(
             Subscription.recurring_interval == SubscriptionRecurringInterval.year,
@@ -442,7 +442,7 @@ class SubscriptionRepository(
             ),
             and_(
                 Subscription.recurring_interval == SubscriptionRecurringInterval.week,
-                Subscription.recurring_interval_count >= 25,
+                Subscription.recurring_interval_count >= 26,
             ),
             and_(
                 Subscription.recurring_interval == SubscriptionRecurringInterval.day,

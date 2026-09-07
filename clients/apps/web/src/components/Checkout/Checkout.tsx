@@ -101,11 +101,6 @@ const Checkout = ({
   })
   const trialDueTodayExperiment = hasActiveTrial && isTreatment
 
-  const { isTreatment: ctaColorExperiment } = useExperiment(
-    'checkout_cta_primary_color',
-    { trackExposure: !embed },
-  )
-
   const isMobileViewport = useIsMobileViewport()
   const collapsibleOrderSummary =
     hasProductCheckout(checkout) && isOrderSummaryCollapsible(checkout)
@@ -398,7 +393,6 @@ const Checkout = ({
             loadingLabel={label}
             theme={theme}
             themePreset={themePreset}
-            ctaColorExperiment={ctaColorExperiment}
             disabled={disableCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}

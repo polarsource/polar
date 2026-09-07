@@ -245,10 +245,29 @@ class GitHubRepositoryBenefitUserService:
         ) = None
 
         if installation.target_type == "User":
-            user_client = github.get_client(access_token=await oauth.get_access_token())
-            user_response = await user_client.rest.users.async_get_authenticated()
-            if user_response.parsed_data and user_response.parsed_data.plan:
-                plan = user_response.parsed_data.plan
+            try:
+                user_client = github.get_client(
+                    access_token=await oauth.get_access_token()
+                )
+                user_response = await user_client.rest.users.async_get_authenticated()
+                if user_response.parsed_data and user_response.parsed_data.plan:
+                    plan = user_response.parsed_data.plan
+            except GitHubException as e:
+                log.exception(
+                    "failed to get github user plan",
+                    installation_id=installation.id,
+                    user=installation.account.login,
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                )
+            except Exception as e:
+                log.exception(
+                    "unexpected error getting github user plan",
+                    installation_id=installation.id,
+                    user=installation.account.login,
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                )
 
         elif installation.target_type == "Organization":
             try:

@@ -1,15 +1,23 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from githubkit.exception import RequestFailed
+from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject
 from polar.benefit.strategies import BenefitActionRequiredError
+from polar.benefit.strategies.base.service import BenefitPropertiesValidationError
 from polar.benefit.strategies.github_repository.properties import (
     BenefitGrantGitHubRepositoryProperties,
 )
 from polar.benefit.strategies.github_repository.service import (
     BenefitGitHubRepositoryService,
 )
-from polar.models import Benefit, Customer, Member, Organization
+from polar.integrations.github_repository_benefit.service import (
+    github_repository_benefit_user_service,
+)
+from polar.integrations.github_repository_benefit.types import SimpleUser
+from polar.models import Benefit, Customer, Member, Organization, User
 from polar.models.benefit import BenefitType
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.models.member import MemberRole
@@ -111,6 +119,106 @@ def _patch_client(
 ) -> None:
     _DummyCtx._client = mock_client
     service._get_github_app_client = lambda benefit: _DummyCtx()  # type: ignore[assignment,method-assign,return-value]
+
+
+@pytest.mark.asyncio
+class TestGitHubRepositoryValidateProperties:
+    @pytest.mark.auth
+    async def test_personal_repo_transient_user_failure_returns_422_not_500(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        user: User,
+        organization: Organization,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+    ) -> None:
+        """Regression for the secondary-impact path in the bug report.
+
+        Before the fix to ``get_billing_plan``, a transient ``RequestFailed``
+        on ``users.async_get_authenticated()`` for a personal-account
+        installation propagated out of ``validate_properties`` as an opaque
+        500. With the fix, ``get_billing_plan`` degrades to
+        ``is_personal=True, plan_name=""``, so the existing
+        ``if not plan or plan.is_personal:`` guard raises the intended
+        ``BenefitPropertiesValidationError`` with type
+        ``personal_organization_repository`` (422).
+        """
+        from datetime import UTC, datetime, timedelta
+
+        from polar.models import OAuthAccount
+        from polar.models.user import OAuthPlatform
+
+        oauth = OAuthAccount(
+            platform=OAuthPlatform.github_repository_benefit,
+            account_id="12345",
+            account_email="user@example.com",
+            account_username="test-user",
+            user=user,
+            expires_at=int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
+        )
+        await oauth.set_tokens(access_token="test_token", refresh_token=None)
+        await save_fixture(oauth)
+
+        # A "User" (personal-account) installation. ``account`` is spec'd as
+        # ``SimpleUser`` to satisfy the ``isinstance`` guard in
+        # ``get_billing_plan``.
+        installation = MagicMock()
+        installation.id = 60276577
+        installation.target_type = "User"
+        account_spec = MagicMock(spec=SimpleUser)
+        account_spec.login = "test-user"
+        account_spec.id = 123
+        installation.account = account_spec
+
+        # ``get_oauth_account`` succeeds with the saved account.
+        mocker.patch.object(
+            github_repository_benefit_user_service,
+            "get_oauth_account",
+            new=AsyncMock(return_value=oauth),
+        )
+        # ``get_repository_installation`` returns the personal install.
+        mocker.patch.object(
+            github_repository_benefit_user_service,
+            "get_repository_installation",
+            new=AsyncMock(return_value=installation),
+        )
+        # ``list_user_installations`` reports the user has access to it.
+        mocker.patch.object(
+            github_repository_benefit_user_service,
+            "list_user_installations",
+            new=AsyncMock(return_value=[installation]),
+        )
+
+        # The real ``get_billing_plan`` runs; mock the GitHub user client so
+        # ``GET /user`` fails transiently. The fix must catch and degrade.
+        user_client = MagicMock()
+        user_client.rest.users.async_get_authenticated = AsyncMock(
+            side_effect=RequestFailed(
+                MagicMock(status_code=503, json=lambda: {"message": "Unavailable"})
+            )
+        )
+        mocker.patch(
+            "polar.integrations.github.client.get_client",
+            return_value=user_client,
+        )
+
+        service = BenefitGitHubRepositoryService(session, redis)
+
+        with pytest.raises(BenefitPropertiesValidationError) as exc_info:
+            await service.validate_properties(
+                AuthSubject(user, set(), None),
+                organization,
+                {
+                    "repository_owner": "test-user",
+                    "repository_name": "test-repo",
+                    "permission": "pull",
+                },
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "personal_organization_repository"
 
 
 @pytest.mark.asyncio

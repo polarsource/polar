@@ -2,12 +2,15 @@ import socket
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from unittest.mock import AsyncMock, patch
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 import pytest
+from pydantic import TypeAdapter
 
 from polar.kit.http import (
     SSRFBlockedError,
+    SuccessUrl,
     check_url_reachable,
     get_content_disposition,
     get_safe_return_url,
@@ -295,3 +298,62 @@ class TestGetContentDisposition:
         # ASCII DEL (0x7F) must be removed to prevent unsafe header bytes
         result = get_content_disposition("file\x7fdel.txt")
         assert result == 'attachment; filename="filedel.txt"'
+
+
+class TestSuccessUrl:
+    """The checkout adapters (nextjs/tanstack-start/nuxt) forward the merchant's
+    `success_url` with a literal `{CHECKOUT_ID}` placeholder and must not over-decode
+    the merchant's own percent-escapes (see the `decodeURI` regression fix). They rely
+    on `SuccessUrl` storing valid percent-escapes verbatim and unescaping the
+    `%7BCHECKOUT_ID%7D` placeholder back to `{CHECKOUT_ID}`. These tests pin that
+    contract so the merchant's success page reads exactly the value they encoded.
+    """
+
+    @pytest.mark.parametrize(
+        ("input_url", "expected"),
+        [
+            pytest.param(
+                "https://example.com/success?checkoutId={CHECKOUT_ID}",
+                "https://example.com/success?checkoutId={CHECKOUT_ID}",
+                id="literal_placeholder_preserved",
+            ),
+            pytest.param(
+                "https://example.com/success?checkoutId=%7BCHECKOUT_ID%7D",
+                "https://example.com/success?checkoutId={CHECKOUT_ID}",
+                id="encoded_placeholder_unescaped",
+            ),
+            pytest.param(
+                "https://example.com/success?data=%2541&checkoutId={CHECKOUT_ID}",
+                "https://example.com/success?data=%2541&checkoutId={CHECKOUT_ID}",
+                id="percent_prefixed_literal_preserved",
+            ),
+            pytest.param(
+                "https://example.com/success?data=%2500&checkoutId={CHECKOUT_ID}",
+                "https://example.com/success?data=%2500&checkoutId={CHECKOUT_ID}",
+                id="percent_prefixed_nul_literal_preserved",
+            ),
+            pytest.param(
+                "https://example.com/success?discount=50%25off&checkoutId={CHECKOUT_ID}",
+                "https://example.com/success?discount=50%25off&checkoutId={CHECKOUT_ID}",
+                id="embedded_percent_preserved",
+            ),
+        ],
+    )
+    def test_validate_preserves_merchant_escapes(
+        self, input_url: str, expected: str
+    ) -> None:
+        assert TypeAdapter(SuccessUrl).validate_python(input_url) == expected
+
+    def test_success_page_reads_intended_literal_after_substitution(self) -> None:
+        # End-to-end simulation of the server pipeline: validate -> store -> substitute
+        # {CHECKOUT_ID} with the real id -> merchant reads query params.
+        stored = TypeAdapter(SuccessUrl).validate_python(
+            "https://example.com/success?data=%2541&checkoutId={CHECKOUT_ID}"
+        )
+        assert "{CHECKOUT_ID}" in stored
+
+        after_substitution = stored.replace("{CHECKOUT_ID}", "chk_123")
+        query = parse_qs(urlparse(after_substitution).query)
+        # The merchant encoded %2541 so the success page receives the literal %41.
+        assert query["data"] == ["%41"]
+        assert query["checkoutId"] == ["chk_123"]

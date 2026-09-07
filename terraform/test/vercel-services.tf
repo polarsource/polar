@@ -6,6 +6,10 @@ locals {
   # Vercel's Postgres and Redis integrations own POLAR_POSTGRES_URL_NON_POOLING
   # and POLAR_REDIS_URL. They are intentionally not duplicated here.
   vercel_services_environment_variables = {
+    POLAR_BACKOFFICE_MODE = {
+      value     = var.public_backoffice_enabled ? "public" : "disabled"
+      sensitive = false
+    }
     SENTRY_ORG = {
       value     = "polar-sh"
       sensitive = false

@@ -218,12 +218,12 @@ class CustomerMeterService:
         non_rollover_units = non_negative_running_sum(
             event.user_metadata["units"]
             for event in credit_events
-            if not event.user_metadata["rollover"]
+            if not event.user_metadata.get("rollover", False)
         )
         rollover_units = non_negative_running_sum(
             event.user_metadata["units"]
             for event in credit_events
-            if event.user_metadata["rollover"]
+            if event.user_metadata.get("rollover", False)
         )
         balance = non_rollover_units + rollover_units - usage_units
 

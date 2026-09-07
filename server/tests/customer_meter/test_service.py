@@ -1,6 +1,7 @@
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -911,6 +912,18 @@ class TestGetRolloverUnits:
                 0,
                 id="mixed_credits_usage_exceeds_total",
             ),
+            pytest.param(
+                [{"units": 100}],
+                0,
+                0,
+                id="legacy_credit_missing_rollover_key",
+            ),
+            pytest.param(
+                [{"units": 80}, {"units": 60, "rollover": True}],
+                80,
+                60,
+                id="legacy_and_rollover_exact_legacy_consumption",
+            ),
         ],
     )
     async def test_rollover_calculation(
@@ -936,6 +949,12 @@ class TestGetRolloverUnits:
 
         # Create credit events
         for i, credit in enumerate(credits):
+            credit_metadata: dict[str, Any] = {
+                "units": credit["units"],
+                "meter_id": str(meter.id),
+            }
+            if "rollover" in credit:
+                credit_metadata["rollover"] = credit["rollover"]
             await create_event(
                 save_fixture,
                 timestamp=timestamp + timedelta(seconds=i + 2),
@@ -943,11 +962,7 @@ class TestGetRolloverUnits:
                 customer=customer,
                 source=EventSource.system,
                 name=SystemEvent.meter_credited,
-                metadata={
-                    "units": credit["units"],
-                    "meter_id": str(meter.id),
-                    "rollover": credit["rollover"],
-                },
+                metadata=credit_metadata,
             )
 
         rollover_units = await customer_meter_service.get_rollover_units(

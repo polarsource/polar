@@ -1,8 +1,9 @@
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, func
+from sqlalchemy import CursorResult, Select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -85,6 +86,17 @@ class OwnerRoleCannotBeRemoved(UserOrganizationError):
             f"Ownership must be transferred first."
         )
         super().__init__(message, 400)
+
+
+class ConcurrentRoleModification(UserOrganizationError):
+    def __init__(self, user_id: UUID, organization_id: UUID) -> None:
+        self.user_id = user_id
+        self.organization_id = organization_id
+        message = (
+            f"User {user_id}'s role on organization {organization_id} was "
+            f"modified by a concurrent request; retry the role change."
+        )
+        super().__init__(message, 409)
 
 
 class NewOwnerNotVerified(UserOrganizationError):
@@ -214,14 +226,39 @@ class UserOrganizationService:
             )
 
         previous_role = user_org.role
-        await session.execute(
-            sql.update(UserOrganization)
-            .where(
-                UserOrganization.user_id == user_id,
-                UserOrganization.organization_id == organization_id,
-            )
-            .values(role=role)
+        result = cast(
+            CursorResult[UserOrganization],
+            await session.execute(
+                sql.update(UserOrganization)
+                .where(
+                    UserOrganization.user_id == user_id,
+                    UserOrganization.organization_id == organization_id,
+                    UserOrganization.role == previous_role,
+                )
+                .values(role=role)
+            ),
         )
+        if result.rowcount == 0:
+            # The row's role changed between the unlocked read above and
+            # this UPDATE — a concurrent `transfer_ownership` (or another
+            # `set_role`) won the race. Re-read the committed role
+            # directly (a column query, so the result is not served from
+            # this session's identity map with the stale value) and
+            # re-apply the guards, so we never blindly overwrite a row
+            # that may now be the `owner` and leave the organization
+            # ownerless.
+            fresh_role = await session.scalar(
+                sql.select(UserOrganization.role).where(
+                    UserOrganization.user_id == user_id,
+                    UserOrganization.organization_id == organization_id,
+                    ~UserOrganization.is_deleted,
+                )
+            )
+            if fresh_role is None:
+                raise UserNotMemberOfOrganization(user_id, organization_id)
+            if fresh_role == OrganizationRole.owner:
+                raise OwnerRoleCannotBeRemoved(user_id, organization_id)
+            raise ConcurrentRoleModification(user_id, organization_id)
         user_org.role = role
         user = user_org.user
         polar_self_service.enqueue_update_member(

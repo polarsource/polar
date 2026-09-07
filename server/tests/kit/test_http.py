@@ -348,9 +348,12 @@ class TestSuccessUrl:
     def test_success_page_reads_intended_literal_after_substitution(self) -> None:
         # End-to-end simulation of the server pipeline: validate -> store -> substitute
         # {CHECKOUT_ID} with the real id -> merchant reads query params.
-        stored = cast(str, TypeAdapter(SuccessUrl).validate_python(
-            "https://example.com/success?data=%2541&checkoutId={CHECKOUT_ID}"
-        ))
+        stored = cast(
+            str,
+            TypeAdapter(SuccessUrl).validate_python(
+                "https://example.com/success?data=%2541&checkoutId={CHECKOUT_ID}"
+            ),
+        )
         assert "{CHECKOUT_ID}" in stored
 
         after_substitution = stored.replace("{CHECKOUT_ID}", "chk_123")

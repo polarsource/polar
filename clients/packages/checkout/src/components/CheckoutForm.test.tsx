@@ -459,6 +459,186 @@ describe('CheckoutForm', () => {
     expect(screen.queryByText('Invalid US state')).not.toBeInTheDocument()
   })
 
+  describe('tax ID handling on country change', () => {
+    const businessCheckout = (
+      overrides: Partial<ProductCheckoutPublic> = {},
+    ): ProductCheckoutPublic =>
+      createCheckout({
+        is_business_customer: true,
+        customer_billing_address: { country: 'FR' },
+        customer_tax_id: 'FR61954506077',
+        billing_address_fields: {
+          country: 'required',
+          state: 'required',
+          city: 'optional',
+          postal_code: 'optional',
+          line1: 'optional',
+          line2: 'disabled',
+        },
+        ...overrides,
+      })
+
+    const renderForm = (
+      checkout: ProductCheckoutPublic,
+      update: () => Promise<schemas['CheckoutPublic']> = vi.fn(async () =>
+        createCheckout(),
+      ),
+      defaultValues?: Partial<schemas['CheckoutUpdatePublic']>,
+    ) => {
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          update={update}
+          onForm={(f) => {
+            form = f
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          defaultValues={defaultValues}
+          locale="en"
+        />,
+      )
+      return { form, update }
+    }
+
+    const waitForDebounce = () =>
+      act(async () => {
+        await new Promise((r) => setTimeout(r, 600))
+      })
+
+    it('clears an applied tax ID on the server and form when the country changes', async () => {
+      const update = vi.fn(async () => createCheckout())
+      const { form } = renderForm(businessCheckout(), update, {
+        customer_billing_address: {
+          country: 'FR',
+          state: '',
+        },
+        customer_tax_id: 'FR61954506077',
+      })
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'US')
+      })
+      await waitForDebounce()
+
+      expect(update).toHaveBeenLastCalledWith({
+        customer_billing_address: { country: 'US' },
+        customer_tax_id: null,
+      })
+      expect(form.getValues('customer_tax_id')).toBe('')
+    })
+
+    it('clears a typed-but-unapplied tax ID when the country changes', async () => {
+      const update = vi.fn(async () => createCheckout())
+      const { form } = renderForm(
+        businessCheckout({ customer_tax_id: null }),
+        update,
+        {
+          customer_billing_address: {
+            country: 'FR',
+            state: '',
+          },
+          customer_tax_id: 'FR61954506077',
+        },
+      )
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'US')
+      })
+      await waitForDebounce()
+
+      expect(update).toHaveBeenLastCalledWith({
+        customer_billing_address: { country: 'US' },
+        customer_tax_id: null,
+      })
+      expect(form.getValues('customer_tax_id')).toBe('')
+    })
+
+    it('clears a stale customer_tax_id error when the country changes', async () => {
+      const { form } = renderForm(businessCheckout(), undefined, {
+        customer_billing_address: {
+          country: 'FR',
+          state: '',
+        },
+        customer_tax_id: 'FR61954506077',
+      })
+
+      await act(async () => {
+        form.setError('customer_tax_id', {
+          type: 'value_error',
+          message: 'Invalid tax ID.',
+        })
+      })
+      expect(screen.getByText('Invalid tax ID.')).toBeInTheDocument()
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'US')
+      })
+      await waitForDebounce()
+
+      expect(screen.queryByText('Invalid tax ID.')).not.toBeInTheDocument()
+    })
+
+    it('does not send customer_tax_id when the country changes and no tax id is present', async () => {
+      const update = vi.fn(async () => createCheckout())
+      const { form } = renderForm(
+        createCheckout({
+          billing_address_fields: {
+            country: 'required',
+            state: 'required',
+            city: 'optional',
+            postal_code: 'optional',
+            line1: 'optional',
+            line2: 'disabled',
+          },
+        }),
+        update,
+        {
+          customer_billing_address: {
+            country: 'FR',
+            state: '',
+          },
+        },
+      )
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'US')
+      })
+      await waitForDebounce()
+
+      expect(update).toHaveBeenLastCalledWith({
+        customer_billing_address: { country: 'US' },
+      })
+    })
+
+    it('resets both the state field and the tax ID when the country changes', async () => {
+      const update = vi.fn(async () => createCheckout())
+      const { form } = renderForm(businessCheckout(), update, {
+        customer_billing_address: {
+          country: 'SE',
+          state: 'Stockholm',
+          postal_code: '12391',
+          city: 'Stockholm',
+          line1: 'Foo St',
+        },
+        customer_tax_id: 'FR61954506077',
+      })
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'US')
+      })
+      await waitForDebounce()
+
+      expect(form.getValues('customer_billing_address.state')).toBe('')
+      expect(form.getValues('customer_tax_id')).toBe('')
+      expect(update).toHaveBeenLastCalledWith({
+        customer_billing_address: { country: 'US' },
+        customer_tax_id: null,
+      })
+    })
+  })
+
   describe('Stripe checkout form', () => {
     const stripeCheckout = (
       overrides: Partial<ProductCheckoutPublic> = {},

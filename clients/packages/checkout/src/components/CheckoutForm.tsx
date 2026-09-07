@@ -150,6 +150,11 @@ const BaseCheckoutForm = ({
               country: newCountry,
             },
           }
+          if (checkout.customer_tax_id || value.customer_tax_id) {
+            clearErrors('customer_tax_id')
+            payload.customer_tax_id = null
+            resetField('customer_tax_id', { defaultValue: '' })
+          }
         }
         // Update other address fields
       } else if (name.startsWith('customer_billing_address')) {
@@ -176,7 +181,7 @@ const BaseCheckoutForm = ({
         /* API errors handled by provider */
       }
     },
-    [clearErrors, country, resetField, update],
+    [checkout, clearErrors, country, resetField, update],
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 

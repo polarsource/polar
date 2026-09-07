@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Any
+from uuid import UUID
 
 from fastapi import (
     Depends,
@@ -9,7 +10,6 @@ from fastapi import (
     status,
 )
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
 
 from polar.auth.scope import READ_ONLY_SCOPES
 from polar.auth.service import auth as auth_service
@@ -17,14 +17,23 @@ from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.models import (
-    User,
     UserSession,
 )
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
+from polar.redis import Redis, get_redis
+from polar.user.repository import UserRepository
 
+from ..access import (
+    RETURN_COOKIE,
+    AdminSession,
+    OAuthAdminSession,
+    is_private_backoffice,
+)
 from ..dependencies import get_admin
 from ..responses import HXRedirectResponse
+from .handoff import ImpersonationHandoff
+from .handoff import impersonation_handoff as handoff_service
 
 router = BackofficeRouter()
 
@@ -35,19 +44,40 @@ router = BackofficeRouter()
 )
 async def start_impersonation(
     request: Request,
-    admin_session: UserSession = Depends(get_admin),
+    admin_session: AdminSession = Depends(get_admin),
     user_id: str = Form(),
     organization_id: str | None = Form(default=None),
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> Any:  # RedirectResponse | HXRedirectResponse:
     """Start impersonating a user. Only available to admin users."""
 
+    if is_private_backoffice(request):
+        assert isinstance(admin_session, OAuthAdminSession)
+        try:
+            handoff = ImpersonationHandoff(
+                oauth_token_id=admin_session.oauth_token.id,
+                admin_user_id=admin_session.user_id,
+                user_id=UUID(user_id),
+                organization_id=UUID(organization_id) if organization_id else None,
+            )
+        except ValueError as e:
+            raise HTTPException(400, "Invalid impersonation target") from e
+        code = await handoff_service.create(redis, handoff)
+        return HXRedirectResponse(
+            request,
+            settings.generate_external_url(
+                f"/v1/backoffice/impersonation/start?code={code}"
+            ),
+            303,
+        )
+
+    assert isinstance(admin_session, UserSession)
     # Allow non-secure cookies over local http (backoffice dev).
     secure_cookie = request.url.hostname not in ("127.0.0.1", "localhost")
 
     # Get the target user
-    result = await session.execute(select(User).where(User.id == user_id))
-    target_user = result.unique().scalar_one_or_none()
+    target_user = await UserRepository.from_session(session).get_by_id(UUID(user_id))
     if not target_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -87,6 +117,7 @@ async def start_impersonation(
     response = HXRedirectResponse(
         request, f"{settings.FRONTEND_BASE_URL}/dashboard/{target_org.slug}", 307
     )
+    response.delete_cookie(RETURN_COOKIE, domain=settings.USER_SESSION_COOKIE_DOMAIN)
 
     # Set admin session cookie
     if admin_token:
@@ -135,6 +166,10 @@ async def end_impersonation(
 ) -> Any:
     """End impersonation and restore the admin session."""
 
+    if is_private_backoffice(request):
+        return RedirectResponse(
+            settings.generate_external_url("/v1/backoffice/impersonation/end"), 303
+        )
     # Allow non-secure cookies over local http (backoffice dev).
     secure_cookie = request.url.hostname not in ("127.0.0.1", "localhost")
 
@@ -169,12 +204,14 @@ async def end_impersonation(
             detail="Admin session expired or invalid",
         )
 
-    if impersonated_org_id:
-        response = RedirectResponse(
-            settings.generate_backoffice_url(f"/organizations/{impersonated_org_id}")
-        )
+    return_path = (
+        f"/organizations/{impersonated_org_id}" if impersonated_org_id else "/"
+    )
+    if request.cookies.get(RETURN_COOKIE) == "1" and settings.BACKOFFICE_PRIVATE_URL:
+        response = RedirectResponse(f"{settings.BACKOFFICE_PRIVATE_URL}{return_path}")
     else:
-        response = RedirectResponse(settings.generate_backoffice_url("/"))
+        response = RedirectResponse(settings.generate_backoffice_url(return_path))
+    response.delete_cookie(RETURN_COOKIE, domain=settings.USER_SESSION_COOKIE_DOMAIN)
 
     # Restore admin session
     response.set_cookie(

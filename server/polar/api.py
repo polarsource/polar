@@ -2,6 +2,9 @@ from fastapi import APIRouter
 
 from polar.account.endpoints import router as accounts_router
 from polar.auth.endpoints import router as auth_router
+from polar.backoffice.impersonation.bridge import (
+    router as backoffice_impersonation_router,
+)
 from polar.benefit.endpoints import router as benefits_router
 from polar.benefit.grant.endpoints import router as benefit_grants_router
 from polar.benefit.strategies.slack_shared_channel.endpoints import (
@@ -101,6 +104,7 @@ router.include_router(transaction_router)
 router.include_router(tax_router)
 # /auth
 router.include_router(auth_router)
+router.include_router(backoffice_impersonation_router)
 # /oauth2
 router.include_router(oauth2_router)
 # /benefits

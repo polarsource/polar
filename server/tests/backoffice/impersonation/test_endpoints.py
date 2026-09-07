@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -38,7 +36,7 @@ class TestStartImpersonation:
         # if something is missconfigured).
         await start_impersonation(
             request=_request(),
-            admin_session=MagicMock(),
+            admin_session=UserSession(user=user),
             user_id=str(user.id),
             organization_id=str(organization.id),
             session=session,

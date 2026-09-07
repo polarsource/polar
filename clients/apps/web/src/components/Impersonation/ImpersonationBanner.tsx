@@ -1,5 +1,6 @@
 'use client'
 
+import { getPublicServerURL } from '@/utils/api'
 import { useEffect, useState } from 'react'
 
 const ImpersonationBanner = () => {
@@ -32,7 +33,7 @@ const ImpersonationBanner = () => {
       </div>
       <div className="flex-[1_0_0] text-right">
         <a
-          href={`${process.env.NEXT_PUBLIC_BACKOFFICE_URL}/impersonation/end`}
+          href={getPublicServerURL('/v1/backoffice/impersonation/end')}
           className="font-bold hover:opacity-50"
         >
           Exit impersonation

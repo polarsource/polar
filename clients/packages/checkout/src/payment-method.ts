@@ -320,6 +320,10 @@ class EmbedPaymentMethod {
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
     iframe.style.colorScheme = 'normal'
 
+    // Opt the overlay out of smooth-scroll libraries (Lenis) on the embedding
+    // page, which would otherwise swallow the scroll inside the modal.
+    iframe.setAttribute('data-lenis-prevent', '')
+
     iframe.allow = buildIframeAllow()
 
     document.body.appendChild(iframe)

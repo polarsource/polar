@@ -367,6 +367,45 @@ describe('usage plugin', () => {
       await expect(handler(ctx)).rejects.toThrow('User not found')
     })
 
+    it('rejects an anonymous user before calling Polar', async () => {
+      const ctx = {
+        context: {
+          session: { user: { id: 'anon-uuid-123', isAnonymous: true } },
+        },
+        body: {
+          event: 'api_call',
+          metadata: { path: '/api/users' },
+        },
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+        message: 'Anonymous users cannot ingest usage events',
+      })
+      expect(resolveBillingPrincipal).not.toHaveBeenCalled()
+      expect(mockClient.events.ingest).not.toHaveBeenCalled()
+    })
+
+    it('rejects an anonymous organization request before resolving the principal', async () => {
+      const ctx = {
+        context: {
+          session: { user: { id: 'anon-uuid-123', isAnonymous: true } },
+        },
+        body: {
+          organizationId: 'organization-123',
+          event: 'api_call',
+          metadata: {},
+        },
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+        message: 'Anonymous users cannot ingest usage events',
+      })
+      expect(resolveBillingPrincipal).not.toHaveBeenCalled()
+      expect(mockClient.events.ingest).not.toHaveBeenCalled()
+    })
+
     it('should handle ingestion API failure', async () => {
       vi.mocked(mockClient.events.ingest).mockRejectedValue(
         mockApiError(400, 'Invalid event data'),

@@ -13,11 +13,6 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
-  onboarding_flow_v1: {
-    description: 'Test onboarding flow variations',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
   checkout_trial_due_today: {
     description:
       'Show an emphasized "Due today $0" total on trial checkouts, with the recurring price de-emphasized',

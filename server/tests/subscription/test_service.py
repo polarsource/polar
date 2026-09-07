@@ -3939,6 +3939,458 @@ class TestResume:
         assert len(cycle_entries) == 1
         assert cycle_entries[0].discount is None
 
+    async def test_cycle_pause_branch_drops_pending_update_same_interval(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        # A next_period product change snapshots the current (pre-pause) period.
+        # Pausing at period end must drop that snapshot rather than leave it to be
+        # re-applied after resume, which would re-anchor the cycle onto an
+        # already-billed interval and double-charge it.
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=datetime(2026, 9, 1, tzinfo=UTC),
+            current_period_end=datetime(2026, 10, 1, tzinfo=UTC),
+        )
+        assert subscription.anchor_day == 1
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        assert subscription_update.new_cycle_start == datetime(2026, 9, 1, tzinfo=UTC)
+        assert subscription_update.new_cycle_end == datetime(2026, 10, 1, tzinfo=UTC)
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        with freeze_time(datetime(2026, 10, 1, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.cycle(
+                    session, ctx, subscription
+                )
+
+        assert subscription.status == SubscriptionStatus.paused
+        assert subscription.pause_at_period_end is False
+        assert subscription.pending_update is None
+
+        reset_hooks(subscription_hooks)
+
+        with freeze_time(datetime(2026, 10, 1, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.resume(
+                    session, ctx, subscription
+                )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.current_period_start == datetime(2026, 10, 1, tzinfo=UTC)
+        assert subscription.current_period_end == datetime(2026, 11, 1, tzinfo=UTC)
+        assert subscription.anchor_day == 1
+        assert subscription.product == product
+        assert subscription.pending_update is None
+
+        reset_hooks(subscription_hooks)
+
+        with freeze_time(datetime(2026, 11, 1, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.cycle(
+                    session, ctx, subscription
+                )
+
+        # No stale snapshot to re-apply: the product is unchanged and the resume
+        # interval is not billed a second time.
+        assert subscription.product == product
+        assert subscription.current_period_start == datetime(2026, 11, 1, tzinfo=UTC)
+        assert subscription.current_period_end == datetime(2026, 12, 1, tzinfo=UTC)
+        assert subscription.anchor_day == 1
+        assert subscription.pending_update is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        cycle_entries = [
+            entry for entry in billing_entries if entry.type == BillingEntryType.cycle
+        ]
+        assert len(cycle_entries) == 2
+        intervals = {
+            (entry.start_timestamp, entry.end_timestamp) for entry in cycle_entries
+        }
+        assert intervals == {
+            (datetime(2026, 10, 1, tzinfo=UTC), datetime(2026, 11, 1, tzinfo=UTC)),
+            (datetime(2026, 11, 1, tzinfo=UTC), datetime(2026, 12, 1, tzinfo=UTC)),
+        }
+        # No two cycle entries overlap the same interval.
+        assert len(intervals) == len(cycle_entries)
+
+    async def test_cycle_pause_branch_drops_pending_update_interval_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product_yearly = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(20000, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=datetime(2026, 9, 1, tzinfo=UTC),
+            current_period_end=datetime(2026, 10, 1, tzinfo=UTC),
+        )
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_yearly,
+        )
+        # Interval change snapshots applies_at (period end) and computes a full
+        # year from it — a backdated yearly charge if re-applied after resume.
+        assert subscription_update.new_cycle_start == datetime(2026, 10, 1, tzinfo=UTC)
+        assert subscription_update.new_cycle_end == datetime(2027, 10, 1, tzinfo=UTC)
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        with freeze_time(datetime(2026, 10, 1, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.cycle(
+                    session, ctx, subscription
+                )
+
+        assert subscription.status == SubscriptionStatus.paused
+        assert subscription.pending_update is None
+
+        reset_hooks(subscription_hooks)
+
+        # Resume mid-month to a day that differs from the pre-pause anchor: the
+        # bug would clobber anchor_day back to the pre-pause day on the next cycle.
+        with freeze_time(datetime(2026, 10, 15, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.resume(
+                    session, ctx, subscription
+                )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.current_period_start == datetime(2026, 10, 15, tzinfo=UTC)
+        assert subscription.current_period_end == datetime(2026, 11, 15, tzinfo=UTC)
+        assert subscription.anchor_day == 15
+        assert subscription.product == product
+        assert subscription.pending_update is None
+
+        reset_hooks(subscription_hooks)
+
+        with freeze_time(datetime(2026, 11, 15, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.cycle(
+                    session, ctx, subscription
+                )
+
+        # The scheduled yearly change was dropped: the subscription renews on its
+        # original monthly cadence with the resume-day anchor intact — no backdated
+        # yearly charge and no silent re-anchor to the pre-pause day 1.
+        assert subscription.product == product
+        assert subscription.current_period_start == datetime(2026, 11, 15, tzinfo=UTC)
+        assert subscription.current_period_end == datetime(2026, 12, 15, tzinfo=UTC)
+        assert subscription.anchor_day == 15
+        assert subscription.pending_update is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        cycle_entries = [
+            entry for entry in billing_entries if entry.type == BillingEntryType.cycle
+        ]
+        assert len(cycle_entries) == 2
+        intervals = {
+            (entry.start_timestamp, entry.end_timestamp) for entry in cycle_entries
+        }
+        assert intervals == {
+            (datetime(2026, 10, 15, tzinfo=UTC), datetime(2026, 11, 15, tzinfo=UTC)),
+            (datetime(2026, 11, 15, tzinfo=UTC), datetime(2026, 12, 15, tzinfo=UTC)),
+        }
+        assert len(intervals) == len(cycle_entries)
+
+    async def test_resume_drops_pending_update_scheduled_while_paused(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        # A next_period change can be scheduled against a paused subscription's
+        # (now-stale) period. resume() must drop it before billing, or the next
+        # cycle() would re-anchor onto the pre-pause snapshot.
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            current_period_start=datetime(2026, 9, 1, tzinfo=UTC),
+            current_period_end=datetime(2026, 10, 1, tzinfo=UTC),
+        )
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        assert subscription_update.new_cycle_start == datetime(2026, 9, 1, tzinfo=UTC)
+        assert subscription_update.new_cycle_end == datetime(2026, 10, 1, tzinfo=UTC)
+        await save_fixture(subscription_update)
+        subscription.paused_at = datetime(2026, 9, 15, tzinfo=UTC)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+        assert subscription.pending_update is not None
+
+        reset_hooks(subscription_hooks)
+
+        with freeze_time(datetime(2026, 10, 15, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.resume(
+                    session, ctx, subscription
+                )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.current_period_start == datetime(2026, 10, 15, tzinfo=UTC)
+        assert subscription.current_period_end == datetime(2026, 11, 15, tzinfo=UTC)
+        assert subscription.anchor_day == 15
+        assert subscription.product == product
+        assert subscription.pending_update is None
+
+        reset_hooks(subscription_hooks)
+
+        with freeze_time(datetime(2026, 11, 15, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.cycle(
+                    session, ctx, subscription
+                )
+
+        assert subscription.product == product
+        assert subscription.current_period_start == datetime(2026, 11, 15, tzinfo=UTC)
+        assert subscription.current_period_end == datetime(2026, 12, 15, tzinfo=UTC)
+        assert subscription.pending_update is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        cycle_entries = [
+            entry for entry in billing_entries if entry.type == BillingEntryType.cycle
+        ]
+        assert len(cycle_entries) == 2
+        intervals = {
+            (entry.start_timestamp, entry.end_timestamp) for entry in cycle_entries
+        }
+        assert intervals == {
+            (datetime(2026, 10, 15, tzinfo=UTC), datetime(2026, 11, 15, tzinfo=UTC)),
+            (datetime(2026, 11, 15, tzinfo=UTC), datetime(2026, 12, 15, tzinfo=UTC)),
+        }
+
+    async def test_cancel_scheduled_pause_keeps_pending_update_for_next_cycle(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        # The drop is scoped to the actual pause transition in cycle(): merely
+        # scheduling a pause and then cancelling it must not discard a separately
+        # scheduled next_period change, which the normal cycle path still applies.
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=datetime(2026, 9, 1, tzinfo=UTC),
+            current_period_end=datetime(2026, 10, 1, tzinfo=UTC),
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.cancel_scheduled_pause(
+                session, ctx, subscription
+            )
+
+        assert subscription.pause_at_period_end is False
+        assert subscription.pending_update is not None
+
+        reset_hooks(subscription_hooks)
+
+        with freeze_time(datetime(2026, 10, 1, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.cycle(
+                    session, ctx, subscription
+                )
+
+        assert subscription.product == product_second
+        assert subscription.current_period_start == datetime(2026, 10, 1, tzinfo=UTC)
+        assert subscription.current_period_end == datetime(2026, 11, 1, tzinfo=UTC)
+        assert subscription.pending_update is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        cycle_entries = [
+            entry for entry in billing_entries if entry.type == BillingEntryType.cycle
+        ]
+        assert len(cycle_entries) == 1
+        assert cycle_entries[0].start_timestamp == datetime(2026, 10, 1, tzinfo=UTC)
+        assert cycle_entries[0].end_timestamp == datetime(2026, 11, 1, tzinfo=UTC)
+
+    async def test_resume_no_duplicate_charge_after_scheduled_pause_and_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        # End-to-end through the order actor: each cycle billing entry drains to
+        # its own order, never two entries (or two items) over the same interval.
+        mocker.patch("polar.order.service.enqueue_job")
+
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+            current_period_start=datetime(2026, 9, 1, tzinfo=UTC),
+            current_period_end=datetime(2026, 10, 1, tzinfo=UTC),
+        )
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        with freeze_time(datetime(2026, 10, 1, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.cycle(
+                    session, ctx, subscription
+                )
+        assert subscription.pending_update is None
+
+        reset_hooks(subscription_hooks)
+
+        with freeze_time(datetime(2026, 10, 1, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.resume(
+                    session, ctx, subscription
+                )
+
+        reset_hooks(subscription_hooks)
+
+        with freeze_time(datetime(2026, 11, 1, tzinfo=UTC)):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                subscription = await subscription_service.cycle(
+                    session, ctx, subscription
+                )
+
+        order1 = await order_service.create_subscription_order(
+            session,
+            subscription,
+            OrderBillingReasonInternal.subscription_cycle,
+            cutoff=datetime(2026, 10, 1, tzinfo=UTC),
+        )
+        assert len(order1.items) == 1
+
+        order2 = await order_service.create_subscription_order(
+            session,
+            subscription,
+            OrderBillingReasonInternal.subscription_cycle,
+            cutoff=datetime(2026, 11, 1, tzinfo=UTC),
+        )
+        assert len(order2.items) == 1
+        assert order1.id != order2.id
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        pending = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert [
+            entry for entry in pending if entry.type == BillingEntryType.cycle
+        ] == []
+
 
 @pytest.mark.asyncio
 class TestActivateImported:

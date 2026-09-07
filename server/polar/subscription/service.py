@@ -1113,6 +1113,17 @@ class SubscriptionService:
             subscription.status = SubscriptionStatus.paused
             subscription.paused_at = utc_now()
             subscription.pause_at_period_end = False
+            # A scheduled ``next_period`` product change targets "the next billing
+            # cycle"; pausing at period end means that cycle never begins, so the
+            # change has no target cycle. Leave it attached and the snapshot it
+            # captured of this (pre-pause) period would be re-applied by the next
+            # ``cycle()`` against the fresh period ``resume()`` starts, re-anchoring
+            # onto an already-billed interval and double-charging it. Drop it now,
+            # mirroring ``reinstate()``.
+            if subscription.pending_update is not None:
+                subscription = await self.clear_pending_update(
+                    session, ctx, subscription
+                )
             await self.enqueue_benefits_grants(session, subscription)
             repository = SubscriptionRepository.from_session(session)
             return await repository.update(
@@ -2729,6 +2740,14 @@ class SubscriptionService:
         subscription.paused_at = None
         subscription.resumes_at = None
         subscription.scheduler_locked_at = None
+
+        # A pending update left attached from before the pause (or scheduled
+        # while paused) snapshots a billing period that is now stale: ``resume()``
+        # starts a fresh period from now. Applying that snapshot on the next
+        # ``cycle()`` would re-anchor onto the pre-pause period and double-bill the
+        # resume interval, so drop it before billing — mirroring ``reinstate()``.
+        if subscription.pending_update is not None:
+            subscription = await self.clear_pending_update(session, ctx, subscription)
 
         # Start a fresh billing period from now and charge immediately.
         subscription.current_period_start = now

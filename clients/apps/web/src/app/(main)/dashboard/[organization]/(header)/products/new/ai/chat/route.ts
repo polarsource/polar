@@ -20,6 +20,10 @@ import {
 import { cookies } from 'next/headers'
 import { PostHog } from 'posthog-node'
 import { z } from 'zod'
+import {
+  parseMCPSessionCookie,
+  serializeMCPSessionCookie,
+} from './mcpSessionCookie'
 
 const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
   ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
@@ -242,8 +246,15 @@ async function generateOAT(
 ): Promise<string> {
   const requestCookies = await cookies()
 
-  if (requestCookies.has(CONFIG.AUTH_MCP_COOKIE_KEY)) {
-    return requestCookies.get(CONFIG.AUTH_MCP_COOKIE_KEY)!.value
+  const cachedSession = requestCookies.get(CONFIG.AUTH_MCP_COOKIE_KEY)
+  if (cachedSession) {
+    const cachedToken = parseMCPSessionCookie(
+      cachedSession.value,
+      organizationId,
+    )
+    if (cachedToken) {
+      return cachedToken
+    }
   }
 
   const userSessionToken = requestCookies.get(CONFIG.AUTH_COOKIE_KEY)
@@ -283,11 +294,15 @@ async function generateOAT(
     throw new Error('Failed to generate OAT')
   }
 
-  requestCookies.set(CONFIG.AUTH_MCP_COOKIE_KEY, accessToken, {
-    httpOnly: true,
-    secure: true,
-    expires: new Date(Date.now() + data.expires_in * 1000),
-  })
+  requestCookies.set(
+    CONFIG.AUTH_MCP_COOKIE_KEY,
+    serializeMCPSessionCookie(organizationId, accessToken),
+    {
+      httpOnly: true,
+      secure: true,
+      expires: new Date(Date.now() + data.expires_in * 1000),
+    },
+  )
 
   return accessToken
 }
@@ -329,7 +344,10 @@ export async function POST(req: Request) {
   }: { messages: UIMessage[]; organizationId: string; conversationId: string } =
     await req.json()
 
-  const hasToolAccess = (await cookies()).has(CONFIG.AUTH_MCP_COOKIE_KEY)
+  const mcpSessionCookie = (await cookies()).get(CONFIG.AUTH_MCP_COOKIE_KEY)
+  const hasToolAccess =
+    mcpSessionCookie !== undefined &&
+    parseMCPSessionCookie(mcpSessionCookie.value, organizationId) !== null
   let requiresToolAccess = false
   let requiresManualSetup = false
   let isRelevant = true

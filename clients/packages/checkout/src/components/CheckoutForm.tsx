@@ -76,7 +76,6 @@ interface BaseCheckoutFormProps {
   isWalletPayment?: boolean
   beforeSubmit?: React.ReactNode
   embed?: boolean
-  ctaColorExperiment?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -93,7 +92,6 @@ const BaseCheckoutForm = ({
   isWalletPayment,
   beforeSubmit,
   embed,
-  ctaColorExperiment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? isLegacyRecurringProductPrice(checkout.product_price)
@@ -721,7 +719,6 @@ const BaseCheckoutForm = ({
             <div className="flex w-full flex-col items-center justify-center gap-y-2">
               <Button
                 type="submit"
-                variant={ctaColorExperiment ? 'primary' : 'default'}
                 size="lg"
                 wrapperClassNames="text-base"
                 className="w-full"
@@ -792,7 +789,6 @@ interface CheckoutFormProps {
   locale?: AcceptedLocale
   beforeSubmit?: React.ReactNode
   embed?: boolean
-  ctaColorExperiment?: boolean
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {

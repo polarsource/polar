@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import {
   MetadataFormValues,
   MetadataValue,
@@ -47,10 +47,7 @@ const MetadataValueInput = ({
           value={String(value)}
           onValueChange={(newValue) => onChange(newValue === 'true')}
         >
-          <SelectTrigger
-            {...controlProps}
-            className="w-full min-w-0 flex-1 font-mono"
-          >
+          <SelectTrigger {...controlProps} className="w-full min-w-0 font-mono">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -71,7 +68,7 @@ const MetadataValueInput = ({
           step="any"
           value={Number.isNaN(value) ? '' : value}
           placeholder="value"
-          className="w-full min-w-0 flex-1 font-mono"
+          className="w-full min-w-0 font-mono"
           onChange={(e) => onChange(e.target.valueAsNumber)}
         />
       )
@@ -81,7 +78,7 @@ const MetadataValueInput = ({
           {...controlProps}
           value={value}
           placeholder="value"
-          className="w-full min-w-0 flex-1 font-mono"
+          className="w-full min-w-0 font-mono"
           onChange={(e) => onChange(e.target.value)}
         />
       )
@@ -127,6 +124,9 @@ export const MetadataForm = ({ label }: { label?: string }) => {
     },
     [getValues],
   )
+
+  const entries = useWatch({ control, name: 'metadata' })
+  const hasEmptyKey = entries?.some((entry) => !entry.key) ?? false
 
   const revalidateAllKeys = useCallback(() => {
     fields.forEach((_, i) => trigger(`metadata.${i}.key`))
@@ -229,7 +229,7 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                           Value
                         </Text>
                       </Box>
-                      <Box alignItems="center" gap="s">
+                      <Box alignItems="start" gap="s">
                         <Select
                           value={getMetadataValueType(field.value)}
                           onValueChange={(type) =>
@@ -254,14 +254,21 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                             )}
                           </SelectContent>
                         </Select>
-                        <FormControl>
-                          <MetadataValueInput
-                            value={field.value}
-                            onChange={field.onChange}
-                          />
-                        </FormControl>
+                        <Box
+                          flexDirection="column"
+                          gap="s"
+                          flex={1}
+                          minWidth={0}
+                        >
+                          <FormControl>
+                            <MetadataValueInput
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </Box>
                       </Box>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -300,6 +307,7 @@ export const MetadataForm = ({ label }: { label?: string }) => {
           size="sm"
           variant="secondary"
           type="button"
+          disabled={hasEmptyKey}
           onClick={() => {
             append({ key: '', value: '' })
           }}

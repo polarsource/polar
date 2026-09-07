@@ -37,7 +37,6 @@ export interface CheckoutOrderSummaryProps {
   ) => Promise<schemas['CheckoutPublic']>
   themePreset: ThemingPresetProps
   locale: AcceptedLocale
-  trialDueTodayExperiment: boolean
 }
 
 export const CheckoutOrderSummary = ({
@@ -45,7 +44,6 @@ export const CheckoutOrderSummary = ({
   update,
   themePreset,
   locale,
-  trialDueTodayExperiment,
 }: CheckoutOrderSummaryProps) => {
   const hasMedia = checkout.product.medias.length > 0
 
@@ -134,11 +132,7 @@ export const CheckoutOrderSummary = ({
               locale={locale}
             />
           )}
-          <CheckoutPricingBreakdown
-            checkout={checkout}
-            locale={locale}
-            trialDueTodayExperiment={trialDueTodayExperiment}
-          />
+          <CheckoutPricingBreakdown checkout={checkout} locale={locale} />
           <CheckoutDiscountInput
             checkout={checkout}
             update={update}

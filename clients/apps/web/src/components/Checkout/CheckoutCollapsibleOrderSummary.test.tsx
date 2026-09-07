@@ -50,7 +50,6 @@ const renderSummary = (checkout = createCheckout()) =>
       update={vi.fn()}
       themePreset={{} as never}
       locale="en"
-      trialDueTodayExperiment={false}
     />,
   )
 

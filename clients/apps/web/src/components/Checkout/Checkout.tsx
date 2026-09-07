@@ -93,14 +93,6 @@ const Checkout = ({
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
 
-  const hasActiveTrial = Boolean(
-    checkout.active_trial_interval && checkout.active_trial_interval_count,
-  )
-  const { isTreatment } = useExperiment('checkout_trial_due_today', {
-    trackExposure: hasActiveTrial,
-  })
-  const trialDueTodayExperiment = hasActiveTrial && isTreatment
-
   const isMobileViewport = useIsMobileViewport()
   const collapsibleOrderSummary =
     hasProductCheckout(checkout) && isOrderSummaryCollapsible(checkout)
@@ -305,11 +297,7 @@ const Checkout = ({
                       <hr className="dark:border-polar-700 border-gray-200" />
                     </>
                   )}
-                <CheckoutPricingBreakdown
-                  checkout={checkout}
-                  locale={locale}
-                  trialDueTodayExperiment={trialDueTodayExperiment}
-                />
+                <CheckoutPricingBreakdown checkout={checkout} locale={locale} />
                 <CheckoutDiscountInput
                   checkout={checkout}
                   update={update}
@@ -359,7 +347,6 @@ const Checkout = ({
               update={update}
               themePreset={themePreset}
               locale={locale}
-              trialDueTodayExperiment={trialDueTodayExperiment}
             />
           ) : (
             <div className="flex flex-col gap-y-8 md:sticky md:top-8">
@@ -369,7 +356,6 @@ const Checkout = ({
                   update={update}
                   themePreset={themePreset}
                   locale={locale}
-                  trialDueTodayExperiment={trialDueTodayExperiment}
                 />
               )}
             </div>

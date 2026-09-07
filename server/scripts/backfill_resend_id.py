@@ -8,7 +8,7 @@ from uuid import UUID
 
 import typer
 from rich.progress import Progress
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from polar.config import settings
 from polar.integrations.resend.service import resend as resend_service
@@ -45,7 +45,12 @@ async def run_backfill(
 
         async with asyncio.TaskGroup() as group:
             while True:
-                statement = select(User.id).order_by(User.id).limit(1000)
+                statement = (
+                    select(User.id)
+                    .where(or_(User.is_deleted, User.blocked_at.is_(None)))
+                    .order_by(User.id)
+                    .limit(1000)
+                )
                 if last_id is not None:
                     statement = statement.where(User.id > last_id)
                 async with sessionmaker() as session:

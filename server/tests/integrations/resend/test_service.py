@@ -108,8 +108,11 @@ class TestSyncUser:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
         user.resend_id = "contact-id" if linked else None
         user.deleted_at = utc_now()
-        identifier = "contact-id" if linked else user.email
-        respx_mock.get(path=f"/contacts/{identifier}").respond(
+        if linked:
+            respx_mock.get(path="/contacts/contact-id").respond(
+                200, json={"id": "contact-id", "email": user.email}
+            )
+        respx_mock.get(path=f"/contacts/{user.email}").respond(
             200, json={"id": "contact-id", "email": user.email}
         )
         delete = respx_mock.delete(path="/contacts/contact-id").respond(404)
@@ -118,7 +121,42 @@ class TestSyncUser:
 
         assert user.resend_id is None
         assert user.is_deleted
-        assert delete.called
+        assert delete.call_count == 1
+
+    @pytest.mark.parametrize("old_contact_exists", [False, True])
+    async def test_deleted_user_with_unsaved_replacement_contact(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+        old_contact_exists: bool,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        user.resend_id = "old-contact"
+        user.deleted_at = utc_now()
+        user.email = "deleted@example.com"
+        respx_mock.get(path="/contacts/old-contact").respond(
+            200 if old_contact_exists else 404,
+            json={"id": "old-contact", "email": "old@example.com"}
+            if old_contact_exists
+            else None,
+        )
+        respx_mock.get(path="/contacts/new@example.com").respond(
+            200, json={"id": "new-contact", "email": "new@example.com"}
+        )
+        if old_contact_exists:
+            delete_old = respx_mock.delete(path="/contacts/old-contact").respond(200)
+        delete_new = respx_mock.delete(path="/contacts/new-contact").respond(200)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email="new@example.com"
+        )
+
+        assert user.resend_id is None
+        assert delete_new.call_count == 1
+        if old_contact_exists:
+            assert delete_old.call_count == 1
 
     async def test_user_does_not_exist(
         self,

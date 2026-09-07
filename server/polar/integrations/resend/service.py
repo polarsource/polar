@@ -45,17 +45,19 @@ class ResendService:
         if segment_id is None:
             return user
 
-        contact_identifier = (
-            (user.resend_id or previous_email or user.email)
-            if user.is_deleted
-            else (previous_email or user.resend_id or user.email)
-        )
-        contact = await client.get_contact(contact_identifier)
         if user.is_deleted:
-            if contact is not None:
-                await client.delete_contact(contact["id"])
+            contact_ids: set[str] = set()
+            for identifier in (user.resend_id, previous_email or user.email):
+                if identifier is not None:
+                    contact = await client.get_contact(identifier)
+                    if contact is not None:
+                        contact_ids.add(contact["id"])
+            for contact_id in contact_ids:
+                await client.delete_contact(contact_id)
             return await repository.update(user, update_dict={"resend_id": None})
 
+        contact_identifier = previous_email or user.resend_id or user.email
+        contact = await client.get_contact(contact_identifier)
         previous_contact = contact
         if contact is None or contact["email"].lower() != user.email.lower():
             if contact_identifier.lower() != user.email.lower():

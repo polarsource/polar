@@ -818,6 +818,7 @@ class MemberService:
         """
         repository = MemberRepository.from_session(session)
         transferred = False
+        current_owner: Member | None = None
 
         if role is not None and member.role != role:
             members = await repository.list_by_customer(member.customer_id)
@@ -913,6 +914,18 @@ class MemberService:
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(member.organization_id)
         if organization:
+            # Ownership transfer changes two members' roles: the new owner is
+            # promoted and the previous owner is demoted to billing_manager.
+            # Emit the demoted owner's event first, mirroring transfer_ownership's
+            # own demote-then-promote ordering, so subscribers never briefly see
+            # two owners and stay in sync with the DB for the former owner.
+            if transferred and current_owner is not None:
+                await webhook_service.send(
+                    session,
+                    organization,
+                    WebhookEventType.member_updated,
+                    current_owner,
+                )
             await webhook_service.send(
                 session,
                 organization,

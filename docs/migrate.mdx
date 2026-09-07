@@ -1,23 +1,13 @@
 ---
 title: "Migrate to Polar"
 sidebarTitle: "Migrate to Polar"
-description: "Move new sales and existing subscriptions to Polar in controlled phases."
+description: "Move new sales and existing Stripe subscriptions to Polar in controlled phases."
 ---
 
-You do not need to move your entire billing system at once. A migration can run
-in phases: send new business through Polar first, prepare your existing billing
-in the background, and switch subscriptions only when they are ready.
-
-<CardGroup cols={2}>
-  <Card title="Migrating from Stripe" icon="arrow-right-arrow-left" href="#migrate-from-stripe">
-    Move new sales first, then bring eligible recurring subscriptions to Polar.
-  </Card>
-  <Card title="Migrating from Lemon Squeezy" icon="store" href="#lemon-squeezy">
-    Import supported store data with the `polar-migrate` CLI.
-  </Card>
-</CardGroup>
-
-## Migrate from Stripe
+You do not need to move your entire billing system at once. A migration from
+Stripe can run in phases: send new business through Polar first, prepare your
+existing billing in the background, and switch subscriptions only when they are
+ready.
 
 The safest model is a **progressive migration**. Polar and your Stripe
 integration coexist for a while, but each transaction has one system responsible
@@ -38,7 +28,7 @@ Stripe migrations are being rolled out gradually. If **Migrations** is not
 available in your organization settings, [contact Polar support](/support).
 </Info>
 
-### What moves, and what stays where
+## What moves, and what stays where
 
 | Data | During coexistence | After cutover |
 | --- | --- | --- |
@@ -55,7 +45,7 @@ for transactions it processes. Keep Stripe available for the history that Stripe
 processed.
 </Note>
 
-### The migration in five phases
+## The migration in five phases
 
 <Steps>
   <Step title="Route new sales through Polar">
@@ -127,7 +117,7 @@ processed.
   </Step>
 </Steps>
 
-### How coexistence works
+## How coexistence works
 
 The source of truth depends on when the customer entered your billing system:
 
@@ -159,7 +149,7 @@ scheduled to renew. Use the migration switch to coordinate both changes and
 report any subscription that needs attention.
 </Warning>
 
-### Before you start the Stripe cutover
+## Before you start the Stripe cutover
 
 - Confirm your Polar organization can create checkouts and renew subscriptions.
 - Confirm new checkouts already create orders and subscriptions in Polar.
@@ -177,7 +167,7 @@ cannot use the automated card-copy path. [Contact Polar support](/support) to
 discuss your migration.
 </Note>
 
-### What customers experience
+## What customers experience
 
 Most customers do not need to take action. Their current paid period remains
 unchanged, and their next renewal happens in Polar after the switch.
@@ -187,7 +177,7 @@ succeed on its next charge. Polar identifies subscriptions without a copied card
 so you can ask those customers to enter their payment details again before
 switching them.
 
-### Questions to answer for your implementation
+## Questions to answer for your implementation
 
 Every billing integration is different. Before removing your Stripe code, make
 sure you can answer:
@@ -201,27 +191,5 @@ sure you can answer:
 - How will you monitor subscriptions that remain on Stripe after the first
   switch?
 
-## Lemon Squeezy
-
-Use the `polar-migrate` CLI to import supported data from an existing Lemon
-Squeezy store.
-
-### Get started
-
-```bash Terminal
-npx polar-migrate@latest
-```
-
-### Supported data
-
-* Products & Variants
-* License Keys
-* Associated Files
-* Discount Codes
-* Customers
-
-The tool cannot move **active subscriptions** from your Lemon Squeezy store.
-
-### Open source
-
-The CLI is [open source on GitHub](https://github.com/polarsource/polar-migrate).
+Migrating from another billing provider? [Contact Polar support](/support) and
+we will help you plan the move.

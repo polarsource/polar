@@ -55,3 +55,9 @@ export const isOrderSummaryCollapsible = (
   (checkout.prices[checkout.product.id] ?? []).every(
     (price) => price.amount_type === 'fixed' && !('legacy' in price),
   )
+
+export const isExpiredCheckoutError = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  'error' in error &&
+  error.error === 'ExpiredCheckoutError'

@@ -7,7 +7,10 @@ import { usePostHog } from '@/hooks/posthog'
 import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
-import { isOrderSummaryCollapsible } from '@/utils/checkout'
+import {
+  isExpiredCheckoutError,
+  isOrderSummaryCollapsible,
+} from '@/utils/checkout'
 import { getResizedImage } from '@/utils/getResizedImage'
 import { ArrowLeft } from 'lucide-react'
 import {
@@ -27,7 +30,7 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
-import { ClientResponseError, type schemas } from '@polar-sh/client'
+import type { schemas } from '@polar-sh/client'
 import { AcceptedLocale } from '@polar-sh/i18n'
 import { Alert, Avatar } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -192,10 +195,7 @@ const Checkout = ({
       try {
         return await _update(data)
       } catch (error) {
-        if (
-          error instanceof ClientResponseError &&
-          error.response.status === 410
-        ) {
+        if (isExpiredCheckoutError(error)) {
           window.location.reload()
         }
         throw error
@@ -215,10 +215,7 @@ const Checkout = ({
       try {
         confirmedCheckout = await _confirm(data, stripe, elements)
       } catch (error) {
-        if (
-          error instanceof ClientResponseError &&
-          error.response.status === 410
-        ) {
+        if (isExpiredCheckoutError(error)) {
           window.location.reload()
         }
         setFullLoading(false)

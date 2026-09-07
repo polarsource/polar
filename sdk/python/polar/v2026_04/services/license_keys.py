@@ -351,6 +351,7 @@ class LicenseKeysSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            Unauthorized: Not authorized to manage license key.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -368,6 +369,7 @@ class LicenseKeysSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            401: Unauthorized,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -392,6 +394,7 @@ class LicenseKeysSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            Unauthorized: Not authorized to manage license key.
             NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
@@ -410,6 +413,7 @@ class LicenseKeysSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            401: Unauthorized,
             403: NotPermitted,
             404: ResourceNotFound,
             422: HTTPValidationError,
@@ -435,6 +439,7 @@ class LicenseKeysSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            Unauthorized: Not authorized to manage license key.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -452,6 +457,7 @@ class LicenseKeysSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            401: Unauthorized,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -775,6 +781,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            Unauthorized: Not authorized to manage license key.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -792,6 +799,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            401: Unauthorized,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -816,6 +824,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            Unauthorized: Not authorized to manage license key.
             NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
@@ -834,6 +843,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            401: Unauthorized,
             403: NotPermitted,
             404: ResourceNotFound,
             422: HTTPValidationError,
@@ -859,6 +869,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            Unauthorized: Not authorized to manage license key.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -876,6 +887,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            401: Unauthorized,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }

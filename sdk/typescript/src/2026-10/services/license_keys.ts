@@ -288,6 +288,7 @@ export const validateLicenseKeys = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {Unauthorized} Not authorized to manage license key.
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
    */
@@ -306,6 +307,7 @@ export const validateLicenseKeys = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<ValidatedLicenseKey>(response, "json", {
+      401: Unauthorized,
       404: ResourceNotFound,
       422: HTTPValidationError,
     });
@@ -323,6 +325,7 @@ export const activateLicenseKeys = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {Unauthorized} Not authorized to manage license key.
    * @throws {NotPermitted} License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
@@ -342,6 +345,7 @@ export const activateLicenseKeys = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<LicenseKeyActivationRead>(response, "json", {
+      401: Unauthorized,
       403: NotPermitted,
       404: ResourceNotFound,
       422: HTTPValidationError,
@@ -360,6 +364,7 @@ export const deactivateLicenseKeys = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {Unauthorized} Not authorized to manage license key.
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
    */
@@ -375,6 +380,7 @@ export const deactivateLicenseKeys = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<void>(response, "none", {
+      401: Unauthorized,
       404: ResourceNotFound,
       422: HTTPValidationError,
     });

@@ -11569,6 +11569,16 @@
               }
             }
           },
+          "401": {
+            "description": "Not authorized to manage license key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                }
+              }
+            }
+          },
           "404": {
             "description": "License key not found.",
             "content": {
@@ -11651,6 +11661,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LicenseKeyActivationRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authorized to manage license key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
                 }
               }
             }
@@ -11743,6 +11763,16 @@
         "responses": {
           "204": {
             "description": "License key activation deactivated."
+          },
+          "401": {
+            "description": "Not authorized to manage license key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                }
+              }
+            }
           },
           "404": {
             "description": "License key not found.",

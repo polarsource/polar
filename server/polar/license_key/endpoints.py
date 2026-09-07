@@ -202,6 +202,7 @@ async def get_activation(
     summary="Validate License Key",
     response_model=ValidatedLicenseKey,
     responses={
+        401: UnauthorizedResponse,
         404: NotFoundResponse,
     },
 )
@@ -233,6 +234,7 @@ async def validate(
     summary="Activate License Key",
     response_model=LicenseKeyActivationRead,
     responses={
+        401: UnauthorizedResponse,
         403: ActivationNotPermitted,
         404: NotFoundResponse,
     },
@@ -266,6 +268,7 @@ async def activate(
     status_code=204,
     responses={
         204: {"description": "License key activation deactivated."},
+        401: UnauthorizedResponse,
         404: NotFoundResponse,
     },
 )

@@ -81,9 +81,9 @@ middle match the journey under **Settings → Migrations** in Polar.
 
     **What happens:** Polar assesses your recurring products, prices, customers,
     and subscriptions. You review what is ready and what needs attention, then
-    import your selection. Polar creates or reuses the required **products and
-    customers**. It does not create Polar subscriptions or change Stripe billing
-    yet.
+    import your selection. Polar creates the required **products** and creates or
+    reuses the required **customers**. It does not create Polar subscriptions or
+    change Stripe billing yet.
 
     **Continue when:** Every subscription you plan to switch has its product and
     customer prepared in Polar. Leave unsupported subscriptions on Stripe until
@@ -103,7 +103,7 @@ middle match the journey under **Settings → Migrations** in Polar.
     run another copy before switching.
   </Step>
 
-  <Step title="Switch subscriptions">
+  <Step title="Switch billing to Polar">
     **Goal:** Make Polar responsible for future renewals of the subscriptions you
     select.
 
@@ -112,9 +112,9 @@ middle match the journey under **Settings → Migrations** in Polar.
     with the same paid period. The next renewal happens in Polar; the customer is
     not charged again for time they already paid for.
 
-    If a switch would be unsafe—for example, the subscription renews within 24
-    hours or is already scheduled to end—Polar leaves it on Stripe and explains
-    why.
+    If a subscription renews within 24 hours, Polar leaves it on Stripe to avoid
+    a billing conflict. A subscription already scheduled to end also stays there
+    because there is no future renewal to take over.
 
     **Continue when:** Every selected subscription shows as moved, skipped, or
     failed, and every subscription left on Stripe has a clear next action.
@@ -146,6 +146,9 @@ middle match the journey under **Settings → Migrations** in Polar.
 
 Most customers do not need to take action. Their current paid period remains
 unchanged, and their next renewal happens in Polar after the switch.
+
+For a subscription in a trial, Polar keeps the trial end date and takes over
+billing when the trial ends.
 
 Customers whose card cannot be copied need to add payment details again before
 you switch them. A copied card can still fail on a future charge for the same
@@ -181,15 +184,18 @@ for payments it processes.
   <Accordion title="Subscriptions that need attention">
     Polar shows why a record cannot move automatically. Common examples include:
 
-    - Multiple subscription items
+    - Multiple subscription items or a quantity greater than one
     - Discounts
     - Manual invoice collection
     - Unsupported or ambiguous prices
+    - Past-due, unpaid, or paused subscriptions
     - Payment methods that cannot be copied
-    - Subscriptions that are ending or renewing too soon
 
     A subscription that is not ready stays on Stripe. Resolve the issue and retry
     it later, or keep it on Stripe with a clear owner.
+
+    Polar also rechecks subscriptions during the switch. Subscriptions renewing
+    within 24 hours or already scheduled to end remain on Stripe at that point.
   </Accordion>
 
   <Accordion title="Saved card transfer">
@@ -202,9 +208,9 @@ for payments it processes.
     the card data, usually within a few hours and sometimes up to 72 hours. Polar
     verifies the result and identifies subscriptions without a copied card.
 
-    Stripe Connect platform accounts and Stripe accounts in India cannot use the
-    automated card-copy path. [Contact Polar support](/support) to discuss these
-    migrations.
+    Stripe Connect platform accounts and Stripe accounts in India cannot connect
+    to the automated migration flow. [Contact Polar support](/support) to discuss
+    a different migration path.
   </Accordion>
 
   <Accordion title="Checklist for your application">

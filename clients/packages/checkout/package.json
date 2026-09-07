@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && tsup",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "exports": {

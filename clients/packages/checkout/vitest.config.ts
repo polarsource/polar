@@ -9,5 +9,17 @@ export default defineConfig({
     env: {
       TZ: 'UTC',
     },
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test-utils/**'],
+      reporter: ['text-summary'],
+      thresholds: {
+        lines: 80,
+        statements: 80,
+        functions: 80,
+        branches: 70,
+      },
+    },
   },
 })

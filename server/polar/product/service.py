@@ -329,11 +329,20 @@ class ProductService:
 
         # Prevent non-legacy products from changing their recurring interval
         if (
-            update_schema.recurring_interval is not None
+            (
+                update_schema.recurring_interval is not None
+                or update_schema.recurring_interval_count is not None
+            )
             and (
-                update_schema.recurring_interval != product.recurring_interval
-                or update_schema.recurring_interval_count
-                != product.recurring_interval_count
+                (
+                    update_schema.recurring_interval is not None
+                    and update_schema.recurring_interval != product.recurring_interval
+                )
+                or (
+                    update_schema.recurring_interval_count is not None
+                    and update_schema.recurring_interval_count
+                    != product.recurring_interval_count
+                )
             )
             and not all(is_legacy_price(price) for price in product.prices)
         ):

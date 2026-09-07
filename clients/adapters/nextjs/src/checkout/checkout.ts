@@ -53,7 +53,9 @@ export const Checkout = ({
           url.searchParams.get('external_customer_id') ?? undefined,
         customer_email: url.searchParams.get('customer_email') ?? undefined,
         customer_name: url.searchParams.get('customer_name') ?? undefined,
-        customer_billing_address: url.searchParams.has('customer_billing_address')
+        customer_billing_address: url.searchParams.has(
+          'customer_billing_address',
+        )
           ? JSON.parse(url.searchParams.get('customer_billing_address') ?? '{}')
           : undefined,
         customer_tax_id: url.searchParams.get('customer_tax_id') ?? undefined,

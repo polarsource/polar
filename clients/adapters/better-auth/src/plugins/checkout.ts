@@ -164,7 +164,7 @@ export const checkout =
           ) {
             throw new APIError('BAD_REQUEST', {
               message:
-                  'Polar team customer was not found for this Better Auth organization. Use reference_id for an existing unsynchronized organization.',
+                'Polar team customer was not found for this Better Auth organization. Use reference_id for an existing unsynchronized organization.',
             })
           }
 

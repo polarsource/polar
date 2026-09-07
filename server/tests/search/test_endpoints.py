@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehavior
 from polar.models import (
     Organization,
     UserOrganization,
@@ -385,3 +385,65 @@ class TestSearch:
         emails.discard(None)
         assert "user_one@example.com" in emails
         assert "userAone@example.com" not in emails
+
+
+@pytest.mark.asyncio
+class TestSearchOrderAmount:
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    @pytest.mark.parametrize(
+        ("tax_behavior", "subtotal", "discount", "tax"),
+        [
+            # Inclusive: net = subtotal - discount - tax, total = net + tax = subtotal - discount.
+            # The hand-rolled subtotal - discount + tax would overstate by `tax`.
+            (TaxBehavior.inclusive, 10000, 0, 720),
+            (TaxBehavior.inclusive, 5000, 1000, 360),
+            # Exclusive: net = subtotal - discount, total = net + tax = subtotal - discount + tax.
+            (TaxBehavior.exclusive, 10000, 0, 720),
+            (TaxBehavior.exclusive, 5000, 1000, 360),
+            # No tax: both formulas collapse to subtotal - discount.
+            (TaxBehavior.exclusive, 2000, 500, 0),
+        ],
+    )
+    async def test_order_amount_equals_total_amount(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        tax_behavior: TaxBehavior,
+        subtotal: int,
+        discount: int,
+        tax: int,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Tax Plan",
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="taxamount@example.com",
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=subtotal,
+            discount_amount=discount,
+            tax_amount=tax,
+            tax_behavior=tax_behavior,
+        )
+
+        response = await client.get(
+            "/v1/search",
+            params={
+                "organization_id": str(organization.id),
+                "query": "taxamount",
+            },
+        )
+        assert response.status_code == 200
+        order_results = [r for r in response.json()["results"] if r["type"] == "order"]
+        assert len(order_results) == 1
+        assert order_results[0]["amount"] == order.total_amount

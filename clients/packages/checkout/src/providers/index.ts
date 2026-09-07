@@ -11,3 +11,4 @@ export {
   useCheckout,
   type Result,
 } from './CheckoutProvider'
+export { isExpiredCheckoutError } from '../utils/errors'

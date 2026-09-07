@@ -189,6 +189,10 @@ const Checkout = ({
       } catch (error) {
         if (isExpiredCheckoutError(error)) {
           window.location.reload()
+          // Never resolve: the page is reloading — keep callers' post-reload
+          // catch blocks (seat/unit "update failed", autosave, ...) from
+          // racing the navigation.
+          return new Promise<schemas['CheckoutPublic']>(() => {})
         }
         throw error
       }
@@ -209,6 +213,9 @@ const Checkout = ({
       } catch (error) {
         if (isExpiredCheckoutError(error)) {
           window.location.reload()
+          // Never resolve: keep the loading indicator on until the reload
+          // navigates (don't flash the normal button state before the reload).
+          return new Promise<schemas['CheckoutPublicConfirmed']>(() => {})
         }
         setFullLoading(false)
         throw error

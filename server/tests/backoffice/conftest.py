@@ -81,3 +81,26 @@ async def admin_token(user: User, save_fixture: SaveFixture) -> OAuth2Token:
     )
     await save_fixture(token)
     return token
+
+
+@pytest_asyncio.fixture
+async def public_client(
+    private_app: FastAPI,
+    mocker: MockerFixture,
+    session: AsyncSession,
+    redis: Redis,
+    request: pytest.FixtureRequest,
+) -> AsyncIterator[httpx.AsyncClient]:
+    mocker.patch.object(
+        settings, "BACKOFFICE_MODE", getattr(request, "param", "disabled")
+    )
+    mocker.patch.object(settings, "BASE_URL", "https://api.polar.sh")
+    mocker.patch.object(settings, "FRONTEND_BASE_URL", "https://polar.sh")
+    mocker.patch.object(settings, "USER_SESSION_COOKIE_DOMAIN", "polar.sh")
+    app = create_app()
+    app.dependency_overrides[get_db_session] = lambda: session
+    app.dependency_overrides[get_redis] = lambda: redis
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="https://api.polar.sh"
+    ) as client:
+        yield client

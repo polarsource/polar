@@ -1,44 +1,16 @@
-from collections.abc import AsyncIterator
 from urllib.parse import urlsplit
 
 import httpx
 import pytest
-import pytest_asyncio
-from fastapi import FastAPI
-from pytest_mock import MockerFixture
 
-from polar.app import create_app
 from polar.auth.scope import READ_ONLY_SCOPES, Scope
 from polar.auth.service import auth as auth_service
 from polar.backoffice.access import RETURN_COOKIE, SESSION_COOKIE
 from polar.config import settings
 from polar.models import OAuth2Token, Organization, User, UserOrganization
-from polar.postgres import AsyncSession, get_db_session
-from polar.redis import Redis, get_redis
+from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
-
-
-@pytest_asyncio.fixture
-async def public_client(
-    private_app: FastAPI,
-    mocker: MockerFixture,
-    session: AsyncSession,
-    redis: Redis,
-    request: pytest.FixtureRequest,
-) -> AsyncIterator[httpx.AsyncClient]:
-    mocker.patch.object(
-        settings, "BACKOFFICE_MODE", getattr(request, "param", "disabled")
-    )
-    mocker.patch.object(settings, "BASE_URL", "https://api.polar.sh")
-    mocker.patch.object(settings, "FRONTEND_BASE_URL", "https://polar.sh")
-    mocker.patch.object(settings, "USER_SESSION_COOKIE_DOMAIN", "polar.sh")
-    app = create_app()
-    app.dependency_overrides[get_db_session] = lambda: session
-    app.dependency_overrides[get_redis] = lambda: redis
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="https://api.polar.sh"
-    ) as client:
-        yield client
 
 
 @pytest.mark.asyncio
@@ -52,6 +24,7 @@ class TestImpersonationBridge:
         user: User,
         user_second: User,
         organization: Organization,
+        organization_second: Organization,
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
@@ -102,10 +75,43 @@ class TestImpersonationBridge:
         session.expunge_all()
         assert (await private_client.get("/")).status_code == 200
         assert (await public_client.get(bridge_url)).status_code == 400
+        await save_fixture(
+            UserOrganization(user=user_second, organization=organization_second)
+        )
+        response = await private_client.post(
+            "/impersonation/start",
+            data={
+                "user_id": str(user_second.id),
+                "organization_id": str(organization_second.id),
+            },
+        )
+        session.expunge_all()
+        response = await public_client.get(response.headers["location"])
+        assert response.status_code == 307
+        assert (
+            response.headers["location"]
+            == f"https://polar.sh/dashboard/{organization_second.slug}"
+        )
+        assert public_client.cookies[settings.IMPERSONATION_COOKIE_KEY] == admin_cookie
+        assert (
+            await auth_service._get_user_session_by_token(session, impersonated_cookie)
+            is None
+        )
+        impersonated_cookie = public_client.cookies[settings.USER_SESSION_COOKIE_KEY]
+        impersonated = await auth_service._get_user_session_by_token(
+            session, impersonated_cookie
+        )
+        assert impersonated is not None
+        assert impersonated.user_id == user_second.id
+        assert set(impersonated.scopes) == READ_ONLY_SCOPES
+        assert {
+            scope.organization_id for scope in impersonated.organization_scopes
+        } == {organization_second.id}
+        session.expunge_all()
         response = await public_client.get("/v1/backoffice/impersonation/end")
         assert response.status_code == 307
         assert response.headers["location"] == (
-            f"{settings.BACKOFFICE_PRIVATE_URL}/organizations/{organization.id}"
+            f"{settings.BACKOFFICE_PRIVATE_URL}/organizations/{organization_second.id}"
         )
         assert public_client.cookies[settings.USER_SESSION_COOKIE_KEY] == admin_cookie
         assert settings.IMPERSONATION_COOKIE_KEY not in public_client.cookies
@@ -158,3 +164,34 @@ class TestImpersonationBridge:
         assert response.status_code == (400 if failure == "expired_grant" else 403)
         assert "set-cookie" not in response.headers
         assert public_client.cookies[settings.USER_SESSION_COOKIE_KEY] == cookie
+
+    @pytest.mark.parametrize("current_cookie", ["missing", "original"])
+    async def test_restore_preserves_original_session(
+        self,
+        public_client: httpx.AsyncClient,
+        admin_token: OAuth2Token,
+        user: User,
+        session: AsyncSession,
+        current_cookie: str,
+    ) -> None:
+        admin_cookie, _ = await auth_service._create_user_session(
+            session, user, user_agent="test", scopes=list(Scope)
+        )
+        public_client.cookies.set(
+            settings.IMPERSONATION_COOKIE_KEY, admin_cookie, domain=".polar.sh"
+        )
+        public_client.cookies.set(RETURN_COOKIE, "1", domain=".polar.sh")
+        if current_cookie == "original":
+            public_client.cookies.set(
+                settings.USER_SESSION_COOKIE_KEY, admin_cookie, domain=".polar.sh"
+            )
+        session.expunge_all()
+        response = await public_client.get("/v1/backoffice/impersonation/end")
+        assert response.status_code == 307
+        assert response.headers["location"] == f"{settings.BACKOFFICE_PRIVATE_URL}/"
+        assert public_client.cookies[settings.USER_SESSION_COOKIE_KEY] == admin_cookie
+        assert settings.IMPERSONATION_COOKIE_KEY not in public_client.cookies
+        assert (
+            await auth_service._get_user_session_by_token(session, admin_cookie)
+            is not None
+        )

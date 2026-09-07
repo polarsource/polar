@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Protocol
 from uuid import UUID
 
 from fastapi import Request
@@ -7,7 +6,7 @@ from fastapi import Request
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.exceptions import NotPermitted
-from polar.models import OAuth2Token, User
+from polar.models import OAuth2Token, User, UserSession
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.oauth2.sub_type import SubType
 from polar.postgres import AsyncSession
@@ -15,14 +14,6 @@ from polar.postgres import AsyncSession
 SESSION_COOKIE = "__Host-polar_backoffice_session"
 STATE_COOKIE = "__Host-polar_backoffice_state"
 RETURN_COOKIE = "polar_private_impersonation"
-
-
-class AdminSession(Protocol):
-    @property
-    def user(self) -> User: ...
-
-    @property
-    def user_id(self) -> UUID: ...
 
 
 @dataclass(frozen=True)
@@ -33,6 +24,9 @@ class OAuthAdminSession:
     @property
     def user_id(self) -> UUID:
         return self.user.id
+
+
+type AdminSession = UserSession | OAuthAdminSession
 
 
 def is_private_backoffice(request: Request) -> bool:

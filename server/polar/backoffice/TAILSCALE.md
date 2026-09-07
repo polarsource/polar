@@ -38,6 +38,10 @@ token. Revoking OAuth access or removing admin status also blocks subsequent acc
 Signing out of the dashboard does not revoke the separate OAuth session. If private
 login expires during impersonation, exit impersonation before signing in again.
 
+Both impersonation entry points use the same session service and cookie helpers.
+Switching targets preserves the original admin cookie and revokes the previous
+impersonation session.
+
 ## Provisioning
 
 1. Enable MagicDNS and HTTPS certificates in the tailnet. Choose an unused node name,

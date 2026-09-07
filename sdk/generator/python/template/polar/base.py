@@ -281,9 +281,10 @@ def _handle_errors(
     if response.is_client_error:
         if status_code == 429:
             retry_after = response.headers.get("Retry-After")
-            raise PolarRateLimitError(
-                429, int(retry_after) if retry_after is not None else None
-            )
+            if retry_after is not None or (errors or {}).get(429) is None:
+                raise PolarRateLimitError(
+                    429, int(retry_after) if retry_after is not None else None
+                )
         try:
             error_class = (errors or {})[status_code]
             match error_class.error_type:

@@ -214,6 +214,11 @@ export class ClientBase {
     if (statusCode >= 400 && statusCode < 500) {
       if (statusCode === 429) {
         const retryAfter = response.headers.get("Retry-After");
+        if (!retryAfter && errors?.[statusCode]) {
+          const ErrorClass = errors[statusCode];
+          const errorData = await response.json();
+          throw new ErrorClass(statusCode, errorData);
+        }
         throw new PolarRateLimitError(statusCode, retryAfter ? parseInt(retryAfter, 10) : null);
       }
       if (errors?.[statusCode]) {

@@ -114,6 +114,9 @@ module "test" {
   count  = local.test_enabled ? 1 : 0
   source = "../modules/render_service"
 
+  private_backoffice        = var.private_backoffice
+  public_backoffice_enabled = var.public_backoffice_enabled
+
   environment            = "test"
   render_environment_id  = local.environment_id
   registry_credential_id = render_registry_credential.ghcr.id

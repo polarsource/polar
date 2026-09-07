@@ -86,6 +86,8 @@ LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
 LABEL org.opencontainers.image.licenses=Apache-2.0
 COPY --from=ghcr.io/astral-sh/uv:0.11.24 /uv /uvx /bin/
+COPY --from=docker.io/tailscale/tailscale:v1.98.4 /usr/local/bin/tailscaled /usr/local/bin/tailscaled
+COPY --from=docker.io/tailscale/tailscale:v1.98.4 /usr/local/bin/tailscale /usr/local/bin/tailscale
 
 ENV PYTHONUNBUFFERED=1
 ENV UV_COMPILE_BYTECODE=1

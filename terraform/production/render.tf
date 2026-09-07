@@ -147,6 +147,9 @@ import {
 module "production" {
   source = "../modules/render_service"
 
+  private_backoffice        = var.private_backoffice
+  public_backoffice_enabled = var.public_backoffice_enabled
+
   environment            = "production"
   render_environment_id  = render_project.polar.environments["Production"].id
   registry_credential_id = render_registry_credential.ghcr.id

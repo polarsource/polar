@@ -308,7 +308,7 @@ locals {
   env_suffix      = var.environment == "production" ? "" : "-${var.environment}"
   worker_ids      = [for w in render_web_service.worker : w.id]
   cron_job_ids    = [for c in render_cron_job.cron : c.id]
-  all_service_ids = concat([render_web_service.api.id], local.worker_ids, local.cron_job_ids)
+  all_service_ids = concat([render_web_service.api.id], local.worker_ids, local.cron_job_ids, render_background_worker.backoffice[*].id)
 }
 
 # Env group links

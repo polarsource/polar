@@ -100,6 +100,9 @@ import {
 module "sandbox" {
   source = "../modules/render_service"
 
+  private_backoffice        = var.private_backoffice
+  public_backoffice_enabled = var.public_backoffice_enabled
+
   environment            = "sandbox"
   render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
   registry_credential_id = render_registry_credential.ghcr.id

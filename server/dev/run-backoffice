@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${POLAR_BACKOFFICE_PRIVATE_URL:?Set the full HTTPS ts.net origin}"
+: "${POLAR_BACKOFFICE_OAUTH_CLIENT_ID:?Register the backoffice OAuth client first}"
+: "${TAILSCALE_AUTHKEY:?Set a reusable, non-ephemeral backoffice auth key}"
+
+export POLAR_BACKOFFICE_MODE=private
+export WEB_CONCURRENCY=1
+tailscale_hostname="${POLAR_BACKOFFICE_PRIVATE_URL#https://}"
+tailscale_hostname="${tailscale_hostname%%.*}"
+tailscale_state_dir="${TAILSCALE_STATE_DIR:-/var/lib/tailscale}"
+mkdir -p "$tailscale_state_dir" /var/run/tailscale
+chmod 700 "$tailscale_state_dir" /var/run/tailscale
+
+children=()
+# shellcheck disable=SC2329
+cleanup() {
+  if (( ${#children[@]} )); then
+    kill "${children[@]}" 2>/dev/null || true
+    wait "${children[@]}" 2>/dev/null || true
+  fi
+}
+trap 'cleanup' EXIT
+trap 'exit 0' TERM INT
+
+tailscaled --tun=userspace-networking --state="$tailscale_state_dir/tailscaled.state" &
+children+=("$!")
+for _ in {1..100}; do
+  [[ -S /var/run/tailscale/tailscaled.sock ]] && break
+  kill -0 "${children[0]}"
+  sleep 0.1
+done
+[[ -S /var/run/tailscale/tailscaled.sock ]]
+tailscale up --timeout=60s --auth-key="$TAILSCALE_AUTHKEY" \
+  --hostname="$tailscale_hostname" --advertise-tags="${TAILSCALE_TAGS:-tag:backoffice}" \
+  --accept-dns=false --accept-routes=false
+unset TAILSCALE_AUTHKEY
+
+tailscale status --json | uv run python -c '
+import json, os, sys
+from urllib.parse import urlsplit
+actual = json.load(sys.stdin)["Self"]["DNSName"].rstrip(".")
+expected = urlsplit(os.environ["POLAR_BACKOFFICE_PRIVATE_URL"]).hostname
+if actual != expected:
+    sys.exit(f"Tailscale assigned {actual}, but backoffice is configured for {expected}")
+'
+tailscale serve reset
+uv run uvicorn polar.app:app --host 127.0.0.1 --port 10000 \
+  --no-proxy-headers --no-access-log --timeout-graceful-shutdown 30 &
+children+=("$!")
+uv run python -c '
+import socket, time
+deadline = time.monotonic() + 60
+while True:
+    try:
+        with socket.create_connection(("127.0.0.1", 10000), timeout=1):
+            break
+    except OSError:
+        if time.monotonic() >= deadline:
+            raise
+        time.sleep(0.2)
+'
+tailscale serve --bg --yes --https=443 http://127.0.0.1:10000
+
+wait -n "${children[@]}"
+exit 1

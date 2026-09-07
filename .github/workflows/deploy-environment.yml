@@ -94,13 +94,18 @@ jobs:
       - name: Deploy Backend to Render
         run: |
           TAG="sha-${GITHUB_SHA::7}"
+          WORKER_IDS="${{ inputs.render-worker-service-ids }}"
+          if [[ -n "$RENDER_BACKOFFICE_SERVICE_ID" ]]; then
+            WORKER_IDS="${WORKER_IDS:+$WORKER_IDS,}$RENDER_BACKOFFICE_SERVICE_ID"
+          fi
           ./.github/workflows/deploy_server.sh \
             "$TAG" \
             "${{ inputs.has-migrations }}" \
             "${{ inputs.render-api-service-id }}" \
-            "${{ inputs.render-worker-service-ids }}"
+            "$WORKER_IDS"
         env:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
+          RENDER_BACKOFFICE_SERVICE_ID: ${{ vars.RENDER_BACKOFFICE_SERVICE_ID }}
 
   # Sentry release is split into its own job so that a Sentry hiccup (auth
   # expired, rate limit) does not mark deploy-backend as failed. If they

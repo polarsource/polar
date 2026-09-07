@@ -1,7 +1,7 @@
 import {
   updateExternalCustomers,
   createCustomers,
-  deleteCustomers,
+  deleteExternalCustomers,
   updateCustomers,
   listCustomers,
 } from '@polar-sh/sdk/2026-04/services/customers'
@@ -179,15 +179,7 @@ export const onUserDelete =
           return
         }
 
-        if (user.email) {
-          const existingCustomers = await listCustomers(options.client)({
-            email: user.email,
-          })
-          const existingCustomer = existingCustomers.items[0]
-          if (existingCustomer) {
-            await deleteCustomers(options.client)(existingCustomer.id)
-          }
-        }
+        await deleteExternalCustomers(options.client)(user.id)
       } catch (e: unknown) {
         if (e instanceof Error) {
           context?.context.logger.error(

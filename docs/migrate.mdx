@@ -16,6 +16,23 @@ Stripe migrations are rolling out gradually. If **Migrations** is not
 available in your organization settings, [contact Polar support](/support).
 </Info>
 
+## Before you begin
+
+The automated migration is designed for standalone Stripe accounts outside
+India. Your Polar organization must be under review or active, and the mode of
+your Stripe key must match the Polar environment: live for production or test
+for sandbox.
+
+You should also have:
+
+- A complete Polar purchase tested from checkout through access and cancellation
+- Access to the Stripe account that owns the subscriptions
+- The Stripe account owner available to start the saved-card copy
+
+Stripe Connect platform accounts and Stripe accounts in India cannot connect to
+the automated flow. [Contact Polar support](/support) to discuss a different
+migration path.
+
 ## How coexistence works
 
 During the migration, new and existing customers can follow different billing
@@ -187,7 +204,8 @@ for payments it processes.
     - Multiple subscription items or a quantity greater than one
     - Discounts
     - Manual invoice collection
-    - Unsupported or ambiguous prices
+    - Products without a supported recurring price in your organization's
+      default currency, or with ambiguous prices
     - Past-due, unpaid, or paused subscriptions
     - Payment methods that cannot be copied
 
@@ -208,9 +226,6 @@ for payments it processes.
     the card data, usually within a few hours and sometimes up to 72 hours. Polar
     verifies the result and identifies subscriptions without a copied card.
 
-    Stripe Connect platform accounts and Stripe accounts in India cannot connect
-    to the automated migration flow. [Contact Polar support](/support) to discuss
-    a different migration path.
   </Accordion>
 
   <Accordion title="Checklist for your application">
@@ -229,5 +244,4 @@ for payments it processes.
   </Accordion>
 </AccordionGroup>
 
-Migrating from another billing provider? [Contact Polar support](/support) and
-we will help you plan the move.
+Need help planning the migration? [Contact Polar support](/support).

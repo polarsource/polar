@@ -1,4 +1,7 @@
-import { createCheckouts } from '@polar-sh/sdk/2026-04/services/checkouts'
+import {
+  clientUpdateCheckouts,
+  createCheckouts,
+} from '@polar-sh/sdk/2026-04/services/checkouts'
 import type { PolarCore } from '@polar-sh/sdk/2026-04'
 import {
   APIError,
@@ -60,6 +63,7 @@ export const CheckoutParams = z.object({
     .optional(),
   allow_discount_codes: z.coerce.boolean().optional(),
   discount_id: z.string().optional(),
+  discount_code: z.string().optional(),
   seats: z.number().int().min(1).max(10_000).optional(),
   min_seats: z.number().int().min(1).max(10_000).optional(),
   max_seats: z.number().int().min(1).max(10_000).optional(),
@@ -267,6 +271,12 @@ export const checkout =
                   ).toString()
                 : undefined,
             })
+
+            if (ctx.body.discount_code && !ctx.body.discount_id) {
+              await clientUpdateCheckouts(polar)(checkout.client_secret, {
+                discount_code: ctx.body.discount_code,
+              })
+            }
 
             const redirectUrl = new URL(checkout.url)
 

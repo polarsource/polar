@@ -1,4 +1,7 @@
-import { createCheckouts } from '@polar-sh/sdk/2026-04/services/checkouts'
+import {
+  clientUpdateCheckouts,
+  createCheckouts,
+} from '@polar-sh/sdk/2026-04/services/checkouts'
 import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
 import { createError, getValidatedQuery, sendRedirect } from 'h3'
 import type { H3Event } from 'h3'
@@ -33,6 +36,7 @@ const checkoutQuerySchema = z.object({
     .pipe(z.boolean())
     .optional(),
   discount_id: z.string().nonempty().optional(),
+  discount_code: z.string().optional(),
   metadata: z.string().nonempty().optional(),
   seats: z
     .string()
@@ -63,6 +67,7 @@ export const Checkout = ({
       customer_metadata: customerMetadata,
       allow_discount_codes: allowDiscountCodes,
       discount_id: discountId,
+      discount_code: discountCode,
       metadata,
       seats,
     } = await getValidatedQuery(event, checkoutQuerySchema.parse)
@@ -101,6 +106,12 @@ export const Checkout = ({
           ? retUrl.toString().replaceAll('%7BCHECKOUT_ID%7D', '{CHECKOUT_ID}')
           : undefined,
       })
+
+      if (discountCode && !discountId) {
+        await clientUpdateCheckouts(polar)(result.client_secret, {
+          discount_code: discountCode,
+        })
+      }
 
       const redirectUrl = new URL(result.url)
 

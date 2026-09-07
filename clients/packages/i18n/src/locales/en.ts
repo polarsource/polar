@@ -59,6 +59,11 @@ export default {
       },
       fieldRequired: 'This field is required',
     },
+    orderSummary: {
+      value: 'Order summary',
+      _llmContext:
+        'Label of the collapsed order summary bar on mobile checkouts. Tapping it expands the product, price breakdown and discount code field.',
+    },
     pricing: {
       subtotal: 'Subtotal',
       taxableAmount: 'Taxable amount',

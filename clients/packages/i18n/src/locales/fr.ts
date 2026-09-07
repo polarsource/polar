@@ -264,6 +264,7 @@ export default {
       description:
         "Vous avez déjà utilisé un essai gratuit pour ce produit, vous serez donc facturé aujourd'hui. Continuez ci-dessous pour finaliser votre achat.",
     },
+    orderSummary: 'Récapitulatif de commande',
   },
   intervals: {
     short: {

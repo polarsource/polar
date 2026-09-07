@@ -262,6 +262,7 @@ export default {
       description:
         'この商品ではすでに無料トライアルを利用済みのため、本日ご請求されます。以下から続行して購入を完了してください。',
     },
+    orderSummary: '注文概要',
   },
   intervals: {
     short: {

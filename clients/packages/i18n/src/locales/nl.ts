@@ -263,6 +263,7 @@ export default {
       description:
         'Je hebt al een gratis proefperiode voor dit product gebruikt, dus er wordt vandaag kosten in rekening gebracht. Ga hieronder verder om je aankoop af te ronden.',
     },
+    orderSummary: 'Besteloverzicht',
   },
   intervals: {
     short: {

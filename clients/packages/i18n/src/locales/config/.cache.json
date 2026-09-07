@@ -201,7 +201,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -402,7 +403,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -603,7 +605,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -807,7 +810,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1011,7 +1015,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1204,7 +1209,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1400,7 +1406,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1593,7 +1600,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1786,7 +1794,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1979,7 +1988,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2175,7 +2185,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2371,7 +2382,8 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2567,6 +2579,7 @@
     "checkout.pricing.tiers.from": "From",
     "checkout.pricing.tiers.range": "{from}–{to}",
     "checkout.pricing.tiers.andAbove": "{from}+",
-    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in"
+    "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
+    "checkout.orderSummary": "Order summary"
   }
 }

@@ -260,6 +260,7 @@ export default {
       description:
         'Ehhez a termékhez már felhasznált egy ingyenes próbaidőszakot, így ma kiszámlázzuk az összeget. A vásárlás befejezéséhez folytassa lent.',
     },
+    orderSummary: 'Rendelés összegzése',
   },
   intervals: {
     short: {

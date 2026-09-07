@@ -171,4 +171,32 @@ describe('CheckoutHeroPrice', () => {
       expect(screen.getByText('1 month free')).toBeInTheDocument()
     })
   })
+
+  describe('compact', () => {
+    it('forwards compact to the trial hero price', () => {
+      const checkout = createCheckout({
+        amount: 999,
+        net_amount: 999,
+        total_amount: 999,
+        active_trial_interval: 'day',
+        active_trial_interval_count: 7,
+        trial_end: '2026-04-05T00:00:00Z',
+        product: {
+          ...createCheckout().product,
+          recurring_interval: 'month',
+          is_recurring: true,
+          trial_interval: 'day',
+          trial_interval_count: 7,
+        },
+      })
+
+      const { container } = render(
+        <CheckoutHeroPrice checkout={checkout} locale="en" compact />,
+      )
+
+      expect(screen.getByText('7 days free')).toBeInTheDocument()
+      expect(container.textContent).toContain('$9.99 / mo')
+      expect(container.textContent).not.toContain('starting')
+    })
+  })
 })

@@ -326,4 +326,68 @@ describe('CheckoutTrialHeroPrice', () => {
       expect(container.textContent).toContain('$199.99 / 2 yr')
     })
   })
+
+  describe('compact', () => {
+    it('drops the starting date and uses the short interval', () => {
+      const checkout = createTrialCheckout({
+        amount: 999,
+        net_amount: 999,
+        total_amount: 999,
+        product: { ...trialProduct, recurring_interval: 'month' },
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" compact />,
+      )
+
+      expect(screen.getByText('1 month free')).toBeInTheDocument()
+      expect(container.textContent).toContain('Then')
+      expect(container.textContent).toContain('$9.99 / mo')
+      expect(container.textContent).not.toContain('starting')
+    })
+
+    it('keeps the interval count in the short interval', () => {
+      const checkout = createTrialCheckout({
+        amount: 4106,
+        net_amount: 4106,
+        total_amount: 4106,
+        product: {
+          ...trialProduct,
+          recurring_interval: 'month',
+          recurring_interval_count: 3,
+        },
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" compact />,
+      )
+
+      expect(container.textContent).toContain('$41.06 / 3 mo')
+    })
+
+    it('shows only the trial label with a limited-time discount', () => {
+      const checkout = createTrialCheckout({
+        amount: 9999,
+        discount_amount: 5000,
+        net_amount: 4999,
+        total_amount: 4999,
+        discount: {
+          id: 'disc_1',
+          name: '50% off',
+          type: 'percentage',
+          duration: 'once',
+          code: null,
+          basis_points: 5000,
+        } as ProductCheckoutPublic['discount'],
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" compact />,
+      )
+
+      expect(screen.getByText('1 month free')).toBeInTheDocument()
+      expect(container.textContent).not.toContain('Free until')
+      expect(container.textContent).not.toContain('$')
+    })
+  })
 })

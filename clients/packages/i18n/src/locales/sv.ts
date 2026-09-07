@@ -259,6 +259,7 @@ export default {
       description:
         'Du har redan använt en gratis provperiod för den här produkten, så du debiteras idag. Fortsätt nedan för att slutföra köpet.',
     },
+    orderSummary: 'Ordersammanfattning',
   },
   intervals: {
     short: {

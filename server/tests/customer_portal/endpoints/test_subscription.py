@@ -4,10 +4,12 @@ import pytest
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import Customer, Member, Organization, Product, Subscription
 from polar.models.order import OrderStatus
+from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import (
@@ -24,6 +26,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_payment_method,
     create_product,
+    create_subscription_with_seats,
     set_product_benefits,
 )
 
@@ -240,6 +243,53 @@ class TestCustomerSubscriptionProductUpdate:
         error = response.json()
         assert error["error"] == "UpdateSubscriptionPlanNotAllowed"
         assert "not allowed" in error["detail"].lower()
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_seat_to_seat_below_target_minimum_returns_422_on_product_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        old_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        new_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        new_seat_price = ProductPriceSeatUnit(
+            price_currency=PresentmentCurrency.usd,
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 5, "max_seats": None, "price_per_seat": 2000},
+                ],
+            },
+            product=new_seat_product,
+        )
+        await save_fixture(new_seat_price)
+        new_seat_product.prices.append(new_seat_price)
+        await save_fixture(new_seat_product)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=old_seat_product, customer=customer, seats=3
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={"product_id": str(new_seat_product.id)},
+        )
+
+        assert response.status_code == 422
+        error = response.json()
+        assert error["detail"][0]["loc"] == ["body", "product_id"]
+        assert "below the minimum of 5 seats" in error["detail"][0]["msg"]
 
 
 @pytest.mark.asyncio

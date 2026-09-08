@@ -3,14 +3,13 @@
 import { schemas } from '@polar-sh/client'
 import {
   Avatar,
-  Button,
   Checkbox,
   SegmentedControl,
+  Switch,
   Text,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useEffect, useState } from 'react'
-import CreateOrganizationForm from './components/CreateOrganizationForm'
 
 type AccessMode = 'all' | 'specific'
 
@@ -34,24 +33,6 @@ const OrganizationSelector = ({
       ? new Set([organizations[0].id])
       : new Set(),
   )
-  const [createdOrganizations, setCreatedOrganizations] = useState<
-    schemas['AuthorizeOrganization'][]
-  >([])
-  const [creating, setCreating] = useState(
-    singleSelect && organizations.length === 0,
-  )
-
-  // A just-created org can also reappear in `organizations` once the page
-  // refreshes after creation, so dedupe by id to avoid showing it twice.
-  const allOrganizations = [...organizations, ...createdOrganizations].filter(
-    (organization, index, list) =>
-      list.findIndex((other) => other.id === organization.id) === index,
-  )
-
-  // Offer creation only when the user has no organization yet — in either flow
-  // (e.g. a first-time user discovering Polar through a third-party app).
-  const showCreate = allOrganizations.length === 0
-
   // "All" is always valid; "specific" (and single-select) requires a selection.
   useEffect(() => {
     onValidityChange?.(mode === 'all' || selected.size > 0)
@@ -73,38 +54,13 @@ const OrganizationSelector = ({
     })
   }
 
-  const onCreated = (organization: schemas['Organization']) => {
-    setCreatedOrganizations((previous) => [
-      ...previous,
-      {
-        id: organization.id,
-        slug: organization.slug,
-        avatar_url: organization.avatar_url,
-      },
-    ])
-    setSelected(new Set([organization.id]))
-    setCreating(false)
-  }
-
   return (
     <Box as="section" flexDirection="column" rowGap="m" marginBottom="l">
-      <Box flexDirection="column" rowGap="xs">
-        <Text variant="label">Organization access</Text>
-        <Text variant="caption" color="muted">
-          {singleSelect
-            ? creating
-              ? 'This token will be limited to the organization you create below.'
-              : 'This token is limited to the organization you select below.'
-            : mode === 'all'
-              ? 'This token can access every organization you belong to, including ones you join later.'
-              : 'This token can access only the organizations you select below.'}
-        </Text>
-      </Box>
-
-      {!singleSelect && allOrganizations.length > 0 && (
+      {!singleSelect && organizations.length > 0 && (
         <SegmentedControl
           value={mode}
           onChange={setMode}
+          size="lg"
           options={[
             { value: 'all', label: 'All organizations' },
             { value: 'specific', label: 'Specific organizations' },
@@ -112,7 +68,7 @@ const OrganizationSelector = ({
         />
       )}
 
-      {mode === 'specific' && allOrganizations.length > 0 && (
+      {mode === 'specific' && organizations.length > 0 && (
         <Box
           flexDirection="column"
           borderRadius="m"
@@ -121,7 +77,7 @@ const OrganizationSelector = ({
           borderColor="border-primary"
           overflow="hidden"
         >
-          {allOrganizations.map((organization, index) => (
+          {organizations.map((organization, index) => (
             <Box
               as="label"
               key={organization.id}
@@ -138,46 +94,35 @@ const OrganizationSelector = ({
               transitionDuration="fast"
               cursor={{ hover: 'pointer' }}
             >
-              {singleSelect ? (
-                <input
-                  type="radio"
-                  name="organizations"
-                  value={organization.id}
-                  checked={selected.has(organization.id)}
-                  onChange={() => select(organization.id)}
-                  className="h-4 w-4 accent-black dark:accent-white"
-                />
-              ) : (
-                <Checkbox
-                  name="organizations"
-                  value={organization.id}
-                  checked={selected.has(organization.id)}
-                  onCheckedChange={() => select(organization.id)}
-                />
-              )}
               <Avatar
-                className="h-6 w-6"
+                className="h-8 w-8"
                 avatar_url={organization.avatar_url}
-                name={organization.slug}
+                name={organization.name || organization.slug}
               />
-              <Text variant="label">{organization.slug}</Text>
+              <Text>{organization.name || organization.slug}</Text>
+              <div className="ml-auto">
+                {singleSelect ? (
+                  <input
+                    type="radio"
+                    name="organizations"
+                    value={organization.id}
+                    checked={selected.has(organization.id)}
+                    onChange={() => select(organization.id)}
+                    className="h-4 w-4 accent-black dark:accent-white"
+                  />
+                ) : (
+                  <Switch
+                    name="organizations"
+                    value={organization.id}
+                    checked={selected.has(organization.id)}
+                    onCheckedChange={() => select(organization.id)}
+                  />
+                )}
+              </div>
             </Box>
           ))}
         </Box>
       )}
-
-      {showCreate &&
-        (creating ? (
-          <CreateOrganizationForm onCreated={onCreated} />
-        ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setCreating(true)}
-          >
-            Create a new organization
-          </Button>
-        ))}
     </Box>
   )
 }

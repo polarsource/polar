@@ -179,9 +179,6 @@ const CreateOrganizationForm = ({
                   />
                 </FormControl>
                 <FormMessage />
-                <FormDescription>
-                  The default currency for your products
-                </FormDescription>
               </FormItem>
             )}
           />

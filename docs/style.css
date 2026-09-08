@@ -7,12 +7,20 @@
   max-width: 48rem;
 }
 
-/* The migration assistant prompt is long by design. Cap the code area and
-   scroll inside it so the header, and its copy button, stay in place. */
-.migration-prompt [data-component-part='code-block-root'] {
+/* The migration assistant prompt is long by design. Cap the block and scroll it
+   natively, keeping the header and its copy button pinned to the top. */
+.migration-prompt .code-block {
   max-height: 26rem;
+  overflow-y: auto;
 }
 
-.migration-prompt [data-component-part='scroll-area-viewport'] {
-  overflow-y: auto !important;
+.migration-prompt [data-component-part='code-block-header'] {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #f9fafb;
+}
+
+.dark .migration-prompt [data-component-part='code-block-header'] {
+  background-color: #1c1c20;
 }

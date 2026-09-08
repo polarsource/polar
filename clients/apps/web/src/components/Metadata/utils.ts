@@ -17,19 +17,14 @@ export const metadataValueTypeLabels: Record<MetadataValueType, string> = {
 export const getMetadataValueType = (value: MetadataValue): MetadataValueType =>
   typeof value as MetadataValueType
 
-export const convertMetadataValue = (
-  value: MetadataValue,
-  type: MetadataValueType,
-): MetadataValue => {
+export const defaultValueForType = (type: MetadataValueType): MetadataValue => {
   switch (type) {
-    case 'string':
-      return String(value)
     case 'number':
-      return typeof value === 'boolean'
-        ? Number(value)
-        : Number.parseFloat(String(value))
+      return Number.NaN
     case 'boolean':
-      return typeof value === 'string' ? value === 'true' : Boolean(value)
+      return false
+    default:
+      return ''
   }
 }
 

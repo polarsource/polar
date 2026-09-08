@@ -22,7 +22,7 @@ import {
   MetadataFormValues,
   MetadataValue,
   MetadataValueType,
-  convertMetadataValue,
+  defaultValueForType,
   getMetadataValueType,
   metadataValueTypeLabels,
   validateMetadataKey,
@@ -234,10 +234,7 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                           value={getMetadataValueType(field.value)}
                           onValueChange={(type) =>
                             field.onChange(
-                              convertMetadataValue(
-                                field.value,
-                                type as MetadataValueType,
-                              ),
+                              defaultValueForType(type as MetadataValueType),
                             )
                           }
                         >

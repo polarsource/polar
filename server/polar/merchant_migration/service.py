@@ -762,17 +762,14 @@ class MerchantMigrationService:
             payment_method = (
                 payment_methods[record_mapping.source_payment_method_id]
                 if record_mapping is not None
-                and staged is not None
                 and staged.customer_source_id == record_mapping.source_customer_id
                 else None
             )
-            if payment_method is None or staged.payment_method is None:
-                staged.payment_method = None
-            else:
+            if payment_method is not None and staged.payment_method is not None:
                 staged.payment_method.source_id = payment_method.processor_id
-            await record_repository.update(
-                record, update_dict={"canonical": serialize(staged)}
-            )
+                await record_repository.update(
+                    record, update_dict={"canonical": serialize(staged)}
+                )
             if record.target_id is not None:
                 subscription = await subscription_repository.get_by_id(record.target_id)
                 if subscription is not None:

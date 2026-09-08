@@ -347,6 +347,29 @@ class TestRun:
         assert outcome.status == MerchantMigrationCutoverStatus.skipped
         _assert_left_alone(adapter, pending_record)
 
+    async def test_uses_customer_default_for_an_uncovered_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        imported_customer: Customer,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        payment_method = await create_payment_method(save_fixture, imported_customer)
+        imported_customer.default_payment_method_id = payment_method.id
+        await save_fixture(imported_customer)
+        await save_fixture(migration)
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id == payment_method.id
+
     async def test_uses_the_exact_mapped_method_already_in_polar(
         self,
         mocker: MockerFixture,

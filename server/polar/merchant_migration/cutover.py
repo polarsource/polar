@@ -508,15 +508,21 @@ class SubscriptionCutover:
             except KeyError, TypeError, ValueError:
                 return None
             if (
-                not isinstance(staged, CanonicalSubscription)
-                or staged.payment_method is None
+                isinstance(staged, CanonicalSubscription)
+                and staged.payment_method is not None
             ):
-                return None
-            return await repository.get_by_customer_and_processor_id(
-                customer.id,
-                PaymentProcessor.stripe,
-                staged.payment_method.source_id,
-            )
+                payment_method = await repository.get_by_customer_and_processor_id(
+                    customer.id,
+                    PaymentProcessor.stripe,
+                    staged.payment_method.source_id,
+                )
+                if payment_method is not None:
+                    return payment_method
+            if customer.default_payment_method_id is not None:
+                return await repository.get_by_id_and_customer(
+                    customer.default_payment_method_id, customer.id
+                )
+            return None
         return await link_payment_method(
             self.session, customer, source_method=source.payment_method
         )

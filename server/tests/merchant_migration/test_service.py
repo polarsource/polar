@@ -1853,11 +1853,18 @@ class TestImportPaymentMethodMappings:
         assert mapped_subscription.payment_method.source_id == "pm_new"
         uncovered_subscription = deserialize(uncovered.type, uncovered.canonical)
         assert isinstance(uncovered_subscription, CanonicalSubscription)
-        assert uncovered_subscription.payment_method is None
+        assert uncovered_subscription.payment_method is not None
+        assert uncovered_subscription.payment_method.source_id == "pm_uncovered"
         coverage = await MerchantMigrationRecordRepository.from_session(
             session
         ).payment_method_coverage(migration.id, exact=True)
         assert coverage == {mapped.id}
+        customer.default_payment_method_id = payment_method.id
+        await session.flush()
+        coverage = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).payment_method_coverage(migration.id, exact=True)
+        assert coverage == {mapped.id, uncovered.id}
 
     async def test_rejects_a_mapping_for_another_migration(
         self,

@@ -508,9 +508,12 @@ class MerchantMigrationRecordRepository(
         ]
         if exact:
             payment_method_filters.append(
-                PaymentMethod.processor_id
-                == MerchantMigrationRecord.canonical["payment_method"].op("->>")(
-                    "source_id"
+                or_(
+                    PaymentMethod.processor_id
+                    == MerchantMigrationRecord.canonical["payment_method"].op("->>")(
+                        "source_id"
+                    ),
+                    PaymentMethod.id == Customer.default_payment_method_id,
                 )
             )
         statement = (

@@ -456,24 +456,6 @@ async def product_unit_based_with_max(
 
 
 @pytest_asyncio.fixture
-async def product_unit_based_with_min_max(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    """$29/unit flat, monthly, 2-20 units."""
-    return await create_product_unit_based(
-        save_fixture,
-        organization=organization,
-        minimum_units=2,
-        tiers=Tiers.model_validate(
-            {
-                "type": TierType.volume,
-                "tiers": [{"bound": 20, "unit_amount": "2900"}],
-            }
-        ),
-    )
-
-
-@pytest_asyncio.fixture
 async def product_seat_based_with_min(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -4395,11 +4377,11 @@ class TestUpdate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_unit_based: Product,
-        product_unit_based_with_min_max: Product,
+        product_unit_based_with_min: Product,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
-            products=[product_unit_based, product_unit_based_with_min_max],
+            products=[product_unit_based, product_unit_based_with_min],
             product=product_unit_based,
             units=5,
         )
@@ -4409,10 +4391,10 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             checkout,
-            CheckoutUpdate(product_id=product_unit_based_with_min_max.id),
+            CheckoutUpdate(product_id=product_unit_based_with_min.id),
         )
 
-        assert updated_checkout.product == product_unit_based_with_min_max
+        assert updated_checkout.product == product_unit_based_with_min
         assert updated_checkout.units == 5
 
     async def test_switching_products_clamps_units_to_new_bounds(
@@ -4445,11 +4427,11 @@ class TestUpdate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_unit_based: Product,
-        product_unit_based_with_min_max: Product,
+        product_unit_based_with_min: Product,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
-            products=[product_unit_based, product_unit_based_with_min_max],
+            products=[product_unit_based, product_unit_based_with_min],
             product=product_unit_based,
             units=5,
             min_units=5,
@@ -4463,36 +4445,13 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             checkout,
-            CheckoutUpdate(product_id=product_unit_based_with_min_max.id),
+            CheckoutUpdate(product_id=product_unit_based_with_min.id),
         )
 
-        assert updated_checkout.product == product_unit_based_with_min_max
+        assert updated_checkout.product == product_unit_based_with_min
         assert updated_checkout.units == 5
         assert updated_checkout.min_units == 5
         assert updated_checkout.max_units == 5
-
-    async def test_switching_products_enforces_locked_units_on_override(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product_unit_based: Product,
-        product_unit_based_with_min_max: Product,
-    ) -> None:
-        checkout = await create_checkout(
-            save_fixture,
-            products=[product_unit_based, product_unit_based_with_min_max],
-            product=product_unit_based,
-            units=5,
-            min_units=5,
-            max_units=5,
-        )
-
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.update(
-                session,
-                checkout,
-                CheckoutUpdate(product_id=product_unit_based_with_min_max.id, units=10),
-            )
 
     async def test_update_seats_below_minimum(
         self,

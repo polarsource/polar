@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  defaultValueForType,
+  convertMetadataValue,
   validateMetadataKey,
   validateMetadataValue,
 } from './utils'
@@ -31,26 +31,32 @@ describe('validateMetadataValue', () => {
   })
 })
 
-describe('defaultValueForType', () => {
-  it('resets to an empty string for the string type', () => {
-    expect(defaultValueForType('string')).toBe('')
+describe('convertMetadataValue', () => {
+  it('coerces a number to a string', () => {
+    expect(convertMetadataValue(5, 'string')).toBe('5')
   })
 
-  it('resets to NaN for the number type so the row stays invalid until typed', () => {
-    expect(Number.isNaN(defaultValueForType('number'))).toBe(true)
+  it('coerces a boolean true to a string', () => {
+    expect(convertMetadataValue(true, 'string')).toBe('true')
   })
 
-  it('resets to false for the boolean type', () => {
-    expect(defaultValueForType('boolean')).toBe(false)
+  it('does not launder NaN into the literal string "NaN"', () => {
+    expect(convertMetadataValue(Number.NaN, 'string')).toBe('')
   })
 
-  it('never produces a value that launders a rejected number into an accepted string', () => {
-    for (const type of ['string', 'number', 'boolean'] as const) {
-      const reset = defaultValueForType(type)
-      if (type === 'number') {
-        expect(validateMetadataValue(reset)).not.toBe(true)
-      }
-    }
-    expect(validateMetadataValue(defaultValueForType('string'))).not.toBe(true)
+  it('coerces a string to a number', () => {
+    expect(convertMetadataValue('3.14', 'number')).toBe(3.14)
+  })
+
+  it('coerces a boolean to a number', () => {
+    expect(convertMetadataValue(true, 'number')).toBe(1)
+  })
+
+  it('coerces the string "true" to boolean true', () => {
+    expect(convertMetadataValue('true', 'boolean')).toBe(true)
+  })
+
+  it('coerces any other string to boolean false', () => {
+    expect(convertMetadataValue('5', 'boolean')).toBe(false)
   })
 })

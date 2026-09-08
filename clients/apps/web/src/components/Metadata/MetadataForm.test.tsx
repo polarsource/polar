@@ -111,12 +111,12 @@ describe('MetadataForm type-change reset', () => {
     expect(captured).toEqual([])
   })
 
-  it('resets the field to a fresh default for the new type instead of coercing', async () => {
+  it('coerces the existing value to the new type on type change', async () => {
     render(<Harness values={{ metadata: [{ key: 'plan', value: 5 }] }} />)
     await waitFor(() => expect(typeSelectValue()).toBe('number'))
     typeSelectOnValueChange!('string')
     await waitFor(() => expect(typeSelectValue()).toBe('string'))
-    expect(valueInput().value).toBe('')
+    expect(valueInput().value).toBe('5')
     typeSelectOnValueChange!('boolean')
     await waitFor(() => expect(typeSelectValue()).toBe('boolean'))
     expect(

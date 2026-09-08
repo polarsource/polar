@@ -16,7 +16,7 @@ const AuthorizeErrorPage = ({
   const router = useRouter()
 
   return (
-    <SharedLayout>
+    <SharedLayout title="Authorization failed">
       <Alert
         variant="danger"
         title="An error occurred"

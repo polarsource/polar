@@ -1,41 +1,285 @@
-import LogoType from '@/components/Brand/logos/LogoType'
 import { UploadImage } from '@/components/Image/Image'
-import AddOutlined from '@mui/icons-material/AddOutlined'
+import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { schemas } from '@polar-sh/client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { Check, Plus } from 'lucide-react'
+import type { ReactNode, Ref } from 'react'
+
+type AuthorizationStep = 'organizations' | 'scopes'
+
+const AUTHORIZATION_STEPS = [
+  {
+    id: 'organizations',
+    title: 'Organizations',
+    description: 'Select organizations to share',
+    contentTitle: 'Select organizations',
+    contentDescription:
+      'Choose which organizations you want to grant access to.',
+  },
+  {
+    id: 'scopes',
+    title: 'Permissions',
+    description: 'Review scopes to grant',
+    contentTitle: 'Review requested scopes',
+    contentDescription:
+      'Review the permissions this application is requesting before granting access.',
+  },
+] as const
+
+interface SharedLayoutProps {
+  client?: schemas['AuthorizeResponseOrganization']['client']
+  introduction?: ReactNode
+  footer?: ReactNode
+  step?: AuthorizationStep
+  onStepSelect?: (step: AuthorizationStep) => void
+  stepDescriptions?: Partial<Record<AuthorizationStep, ReactNode>>
+  title?: string
+  subtitle?: string
+  actions?: ReactNode
+  actionsContainerRef?: Ref<HTMLElement>
+  children?: ReactNode
+}
 
 export default function SharedLayout({
   client,
   introduction,
+  footer,
+  step,
+  onStepSelect,
+  stepDescriptions,
+  title,
+  subtitle,
+  actions,
+  actionsContainerRef,
   children,
-}: {
-  client?: schemas['AuthorizeResponseOrganization']['client']
-  introduction?: string | React.ReactNode
-  children?: React.ReactNode
-}) {
+}: SharedLayoutProps) {
+  const currentStepIndex = step
+    ? AUTHORIZATION_STEPS.findIndex(({ id }) => id === step)
+    : -1
+  const activeStep = AUTHORIZATION_STEPS[currentStepIndex]
+  const contentTitle = title ?? activeStep?.contentTitle
+  const contentSubtitle = subtitle ?? activeStep?.contentDescription
+  const branding = (
+    <Box alignItems="center" gap="m">
+      <Box color="text-primary">
+        <PolarLogotype logoVariant="logotype" />
+      </Box>
+      {client?.logo_uri && (
+        <>
+          <Plus size={18} />
+          <UploadImage
+            src={client.logo_uri}
+            approximateWidth={40}
+            className="h-10"
+            alt={client.client_name ?? client.client_id}
+          />
+        </>
+      )}
+    </Box>
+  )
+
   return (
-    <div className="dark:bg-polar-950 flex flex-col items-center gap-12 bg-white pt-16 md:p-16">
-      <div className="flex w-96 flex-col items-center gap-6">
-        <div className="flex flex-row items-center gap-2">
-          <LogoType className="h-10" />
-          {client?.logo_uri && (
-            <>
-              <AddOutlined className="h-5" />
-              <UploadImage
-                src={client.logo_uri}
-                approximateWidth={40}
-                className="h-10"
-                alt={client.client_name ?? client.client_id}
-              />
-            </>
-          )}
-        </div>
-        {introduction && (
-          <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
+    <Box
+      minHeight="100dvh"
+      alignItems={{ base: undefined, lg: 'center' }}
+      justifyContent="center"
+      backgroundColor={{ base: undefined, lg: 'background-primary' }}
+      overflowX="hidden"
+      padding={{ base: 'none', lg: '2xl' }}
+    >
+      <Box
+        width="100%"
+        maxWidth={{ base: undefined, lg: '80rem' }}
+        alignItems="stretch"
+        columnGap="2xl"
+        backgroundColor={{ base: undefined, lg: 'background-secondary' }}
+        borderRadius="l"
+        padding="s"
+        borderWidth={{ base: 0, lg: 1 }}
+        borderStyle="solid"
+        borderColor="border-secondary"
+      >
+        <Box
+          as="aside"
+          display={{ base: 'none', lg: 'flex' }}
+          width={320}
+          flexShrink={0}
+          flexDirection="column"
+          justifyContent="between"
+          rowGap="2xl"
+          padding="2xl"
+          paddingBottom="l"
+        >
+          <Box flexDirection="column" rowGap="3xl">
+            {branding}
             {introduction}
-          </div>
-        )}
-      </div>
-      {children && <div className="flex w-lg flex-col gap-6">{children}</div>}
-    </div>
+            {step && (
+              <Box as="ol" flexDirection="column" rowGap="xl">
+                {AUTHORIZATION_STEPS.map((authorizationStep, index) => {
+                  const isCompleted = index < currentStepIndex
+                  const isCurrent = index === currentStepIndex
+                  const isClickable = isCompleted && Boolean(onStepSelect)
+
+                  return (
+                    <Box
+                      as="li"
+                      key={authorizationStep.id}
+                      display="flex"
+                      alignItems="center"
+                      columnGap="l"
+                      cursor={isClickable ? { base: 'pointer' } : undefined}
+                      opacity={isClickable ? { base: 1, hover: 0.7 } : undefined}
+                      transitionProperty={isClickable ? 'opacity' : undefined}
+                      transitionDuration={isClickable ? 'fast' : undefined}
+                      onClick={
+                        isClickable
+                          ? () => onStepSelect?.(authorizationStep.id)
+                          : undefined
+                      }
+                    >
+                      <Box
+                        width={32}
+                        height={32}
+                        flexShrink={0}
+                        alignItems="center"
+                        justifyContent="center"
+                        borderRadius="full"
+                        backgroundColor={
+                          isCompleted || isCurrent
+                            ? 'background-inverse'
+                            : undefined
+                        }
+                        borderWidth={isCompleted ? 0 : 1}
+                        borderStyle="solid"
+                        borderColor="border-primary"
+                      >
+                        <Text
+                          as="span"
+                          variant="caption"
+                          color={isCompleted || isCurrent ? 'inverse' : 'muted'}
+                        >
+                          {isCompleted ? <Check size={14} /> : index + 1}
+                        </Text>
+                      </Box>
+                      <Box flexDirection="column">
+                        <Text variant="title">{authorizationStep.title}</Text>
+                        <Text color="muted">
+                          {isCompleted
+                            ? (stepDescriptions?.[authorizationStep.id] ??
+                              authorizationStep.description)
+                            : authorizationStep.description}
+                        </Text>
+                      </Box>
+                    </Box>
+                  )
+                })}
+              </Box>
+            )}
+          </Box>
+          {footer && (
+            <Box minHeight={40} alignItems="center">
+              {footer}
+            </Box>
+          )}
+        </Box>
+
+        <Box
+          as="main"
+          flex={1}
+          alignSelf={{ base: 'stretch', lg: 'center' }}
+          flexDirection="column"
+          alignItems="center"
+          backgroundColor={{ base: undefined, lg: 'background-primary' }}
+          borderRadius={{ base: 'none', lg: 'm' }}
+          borderWidth={{ base: 0, lg: 1 }}
+          borderStyle="solid"
+          borderColor="border-secondary"
+          height={{ base: '100dvh', lg: '48rem' }}
+          overflow="hidden"
+        >
+          <Box
+            width="100%"
+            flex={1}
+            justifyContent="center"
+            overflowY="auto"
+            paddingTop="3xl"
+            paddingBottom="3xl"
+            paddingHorizontal="l"
+          >
+            <Box
+              width="100%"
+              maxWidth="28rem"
+              flexDirection="column"
+              rowGap="2xl"
+            >
+              <Box
+                display={{ base: 'flex', lg: 'none' }}
+                flexDirection="column"
+                rowGap="xl"
+              >
+                {branding}
+                {introduction}
+                {step && (
+                  <Box width="100%" alignItems="center" gap="s">
+                    {AUTHORIZATION_STEPS.map((authorizationStep, index) => (
+                      <Box key={authorizationStep.id} flex={1}>
+                        <Box
+                          display="block"
+                          height={2}
+                          width="100%"
+                          borderRadius="full"
+                          backgroundColor={
+                            index <= currentStepIndex
+                              ? 'background-inverse'
+                              : 'background-card'
+                          }
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+
+              {(contentTitle || contentSubtitle) && (
+                <Box flexDirection="column" rowGap="m">
+                  {contentTitle && (
+                    <Text variant="heading-xs">{contentTitle}</Text>
+                  )}
+                  {contentSubtitle && (
+                    <Text variant="body" color="muted">
+                      {contentSubtitle}
+                    </Text>
+                  )}
+                </Box>
+              )}
+
+              {children}
+
+              {footer && (
+                <Box display={{ base: 'flex', lg: 'none' }}>{footer}</Box>
+              )}
+            </Box>
+          </Box>
+
+          {(actions || actionsContainerRef) && (
+            <Box
+              width="100%"
+              flexShrink={0}
+              justifyContent="center"
+              borderTopWidth={1}
+              borderStyle="solid"
+              borderColor="border-secondary"
+              backgroundColor="background-primary"
+              padding="l"
+            >
+              <Box ref={actionsContainerRef} width="100%" justifyContent="end">
+                {actions}
+              </Box>
+            </Box>
+          )}
+        </Box>
+      </Box>
+    </Box>
   )
 }

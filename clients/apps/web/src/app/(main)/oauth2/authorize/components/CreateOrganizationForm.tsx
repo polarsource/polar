@@ -11,7 +11,6 @@ import { Button, Checkbox, Input } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormMessage,
@@ -22,6 +21,7 @@ import {
   useEffect,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import SupportedUseCases from './SupportedUseCases'
@@ -37,8 +37,10 @@ type FormSchema = Pick<
 // from the OAuth flow. Lives inside the consent <form>, so it never renders a
 // nested form — the submit button drives the mutation directly.
 const CreateOrganizationForm = ({
+  actionsContainer,
   onCreated,
 }: {
+  actionsContainer: HTMLElement | null
   onCreated: (organization: schemas['Organization']) => void
 }) => {
   const { currentUser, reloadUser } = useAuth()
@@ -259,18 +261,21 @@ const CreateOrganizationForm = ({
             {errors.root.message}
           </p>
         )}
-
-        <Button
-          type="button"
-          loading={createOrganization.isPending}
-          disabled={
-            !name || !slug || name.length < 3 || slug.length < 3 || !terms
-          }
-          onClick={handleSubmit(onSubmit)}
-        >
-          Create Organization
-        </Button>
       </div>
+      {actionsContainer &&
+        createPortal(
+          <Button
+            type="button"
+            loading={createOrganization.isPending}
+            disabled={
+              !name || !slug || name.length < 3 || slug.length < 3 || !terms
+            }
+            onClick={handleSubmit(onSubmit)}
+          >
+            Create Organization
+          </Button>,
+          actionsContainer,
+        )}
     </Form>
   )
 }

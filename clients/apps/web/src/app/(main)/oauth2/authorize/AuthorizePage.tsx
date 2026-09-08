@@ -6,8 +6,10 @@ import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
-import OrganizationSelector from './OrganizationSelector'
+import { useCallback, useState } from 'react'
+import OrganizationSelector, {
+  type OrganizationSelection,
+} from './OrganizationSelector'
 import CreateOrganizationForm from './components/CreateOrganizationForm'
 import SharedLayout from './components/SharedLayout'
 
@@ -21,6 +23,8 @@ const groupScopes = (scopes: schemas['Scope'][]) => {
     return acc
   }, {})
 }
+
+const CONSENT_FORM_ID = 'oauth-consent'
 
 const AuthorizePage = ({
   authorizeResponse: {
@@ -61,32 +65,98 @@ const AuthorizePage = ({
   const [canSubmit, setCanSubmit] = useState(
     !singleOrganization || availableOrganizations.length === 1,
   )
+  const [organizationSelection, setOrganizationSelection] =
+    useState<OrganizationSelection>(() =>
+      singleOrganization
+        ? { mode: 'specific', count: availableOrganizations.length === 1 ? 1 : 0 }
+        : { mode: 'all', count: 0 },
+    )
+  const organizationsDescription =
+    organizationSelection.mode === 'all'
+      ? 'All organizations selected'
+      : organizationSelection.count === 1
+        ? 'One organization selected'
+        : organizationSelection.count > 1
+          ? `${organizationSelection.count} organizations selected`
+          : undefined
+  const [
+    createOrganizationActionsContainer,
+    setCreateOrganizationActionsContainer,
+  ] = useState<HTMLElement | null>(null)
+  const createOrganizationActionsRef = useCallback(
+    (element: HTMLElement | null) => {
+      setCreateOrganizationActionsContainer(element)
+    },
+    [],
+  )
+  const actions =
+    step === 'organizations' ? (
+      <Button
+        type="button"
+        disabled={!canSubmit}
+        onClick={() => setStep('scopes')}
+      >
+        Review scopes
+      </Button>
+    ) : step === 'scopes' ? (
+      <Box width="100%" justifyContent="end" gap="m">
+        <Button
+          variant="ghost"
+          type="button"
+          onClick={() => setStep('organizations')}
+        >
+          Back
+        </Button>
+        <Button
+          form={CONSENT_FORM_ID}
+          type="submit"
+          name="action"
+          value="allow"
+          disabled={!canSubmit}
+        >
+          Authorize
+        </Button>
+      </Box>
+    ) : undefined
 
   return (
     <SharedLayout
       client={client}
+      step={step === 'scopes' ? 'scopes' : 'organizations'}
+      onStepSelect={(selectedStep) => setStep(selectedStep)}
+      stepDescriptions={{ organizations: organizationsDescription }}
+      actions={actions}
+      actionsContainerRef={
+        step === 'create' ? createOrganizationActionsRef : undefined
+      }
       introduction={
+        <Text variant="body">
+          <Text as="span" variant="title">
+            {clientName}
+          </Text>{' '}
+          would like to access your Polar account.
+        </Text>
+      }
+      footer={
         sub && (
-          <>
-            <div className="dark:text-polar-400 w-full text-center text-lg text-balance text-gray-600">
-              <span className="dark:text-polar-300 font-semibold text-gray-700">
-                {clientName}
-              </span>{' '}
-              would like to access your Polar account.
-            </div>
-            <div className="dark:border-polar-700 dark:bg-polar-800 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-2 pr-4 text-sm">
-              <Avatar
-                className="h-8 w-8"
-                avatar_url={sub.avatar_url}
-                name={sub.email}
-              />
-              {sub.email}
-            </div>
-          </>
+          <Box alignItems="center" gap="s">
+            <Avatar
+              className="h-8 w-8"
+              avatar_url={sub.avatar_url}
+              name={sub.email}
+            />
+            <Box flexDirection="column">
+              <Text variant="caption" color="muted">
+                Signed in as
+              </Text>
+              <Text variant="label">{sub.email}</Text>
+            </Box>
+          </Box>
         )
       }
     >
       <form
+        id={CONSENT_FORM_ID}
         method="post"
         action={actionURL}
         onSubmit={(event) => {
@@ -95,6 +165,7 @@ const AuthorizePage = ({
       >
         {step === 'create' ? (
           <CreateOrganizationForm
+            actionsContainer={createOrganizationActionsContainer}
             onCreated={(organization) => {
               setCreatedOrganization(organization)
               setStep('organizations')
@@ -106,15 +177,8 @@ const AuthorizePage = ({
               organizations={availableOrganizations}
               singleSelect={singleOrganization}
               onValidityChange={setCanSubmit}
+              onSelectionChange={setOrganizationSelection}
             />
-            <Button
-              type="button"
-              fullWidth
-              disabled={!canSubmit}
-              onClick={() => setStep('scopes')}
-            >
-              Review scopes
-            </Button>
           </Box>
         )}
 
@@ -164,25 +228,6 @@ const AuthorizePage = ({
                     </Text>
                   </Box>
                 ))}
-            </Box>
-
-            <Box gap="m">
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => setStep('organizations')}
-              >
-                Back
-              </Button>
-              <Button
-                fullWidth
-                type="submit"
-                name="action"
-                value="allow"
-                disabled={!canSubmit}
-              >
-                Authorize
-              </Button>
             </Box>
             {hasTerms && (
               <div className="mt-8 text-center text-sm text-gray-500">

@@ -2,6 +2,7 @@ export type {
   BillingOwner,
   IssueCode,
   MockSubscriptionRecord,
+  PaymentReadiness,
   SubscriptionCategory,
   SubscriptionStatus,
 } from './mockTypes'
@@ -19,30 +20,12 @@ const CLEAN_COUNT = cleanSubscriptions.length
 const PROBLEM_COUNT = problemSubscriptions.length
 
 export const mockMigration = {
-  sourceAccount: 'acct_pepy_2026',
-  subscriptions: {
-    total: mockSubscriptions.length,
-    eligible: CLEAN_COUNT,
-    decisions: problemSubscriptions.filter(
-      (record) => record.status === 'action_required',
-    ).length,
-    stripe: mockSubscriptions.length,
-    polar: 0,
-    unknown: 0,
-  },
   cards: {
-    matching:
-      CLEAN_COUNT +
-      problemSubscriptions.filter(
-        (record) =>
-          record.issueCode === 'expired_card' ||
-          record.issueCode === 'renewal_inside_safety_window',
-      ).length,
-    customerAction: problemSubscriptions.filter(
-      (record) =>
-        record.issueCode === 'missing_payment_method' ||
-        record.issueCode === 'expired_card' ||
-        record.issueCode === 'payment_method_requires_reentry',
+    matching: mockSubscriptions.filter(
+      (record) => record.paymentReadiness === 'matching',
+    ).length,
+    customerAction: mockSubscriptions.filter(
+      (record) => record.paymentReadiness !== 'matching',
     ).length,
   },
   transfer: {

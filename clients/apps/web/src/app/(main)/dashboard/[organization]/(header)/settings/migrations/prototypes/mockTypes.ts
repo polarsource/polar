@@ -16,6 +16,8 @@ export type SubscriptionStatus =
   | 'blocked'
   | 'cutover_hold'
 
+export type PaymentReadiness = 'matching' | 'missing' | 'expired' | 'reentry'
+
 export type IssueCode =
   | 'none'
   | 'customer_missing_country'
@@ -51,5 +53,6 @@ export interface MockSubscriptionRecord {
   detail: string
   recommendedAction: string
   billingOwner: BillingOwner
+  paymentReadiness: PaymentReadiness
   canarySelectable: boolean
 }

@@ -62,6 +62,14 @@ describe('migration prototype mock catalog', () => {
     expect(clean.every((record) => record.issueCode === 'none')).toBe(true)
   })
 
+  it('separates matching payment methods from customer actions', () => {
+    expect(mockMigration.cards.matching).toBe(33)
+    expect(mockMigration.cards.customerAction).toBe(3)
+    expect(
+      mockMigration.cards.matching + mockMigration.cards.customerAction,
+    ).toBe(mockSubscriptions.length)
+  })
+
   it('covers all 16 unique issue codes including key edge cases', () => {
     const problems = getProblemSubscriptions()
     const codes = getIssueCodes()

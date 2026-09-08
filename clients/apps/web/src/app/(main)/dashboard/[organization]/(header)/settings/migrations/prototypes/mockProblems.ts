@@ -58,6 +58,7 @@ export const problemSubscriptions: MockSubscriptionRecord[] = [
     detail:
       'No copied card has landed on Polar for this customer yet. They need to enter billing details again, or the copy has to pick them up.',
     recommendedAction: 'Ask the customer to add a card, or retry card copy.',
+    paymentReadiness: 'missing',
   }),
   problem({
     id: 'sub_problem_expired_card',
@@ -72,6 +73,7 @@ export const problemSubscriptions: MockSubscriptionRecord[] = [
     detail:
       'The copied card has expired, so the first Polar renewal will fail and go to dunning.',
     recommendedAction: 'Ask the customer to enter a new payment method.',
+    paymentReadiness: 'expired',
   }),
   problem({
     id: 'sub_problem_cancel_at_period_end',
@@ -238,5 +240,6 @@ export const problemSubscriptions: MockSubscriptionRecord[] = [
       'Payment method (link) cannot be copied. Ask the customer to re-enter their billing details.',
     recommendedAction:
       'Send a Polar update-payment link before including them in a transfer.',
+    paymentReadiness: 'reentry',
   }),
 ]

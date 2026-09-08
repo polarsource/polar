@@ -31,7 +31,12 @@ export function Surface({
 export function FlowRail({ stage }: { stage: PrototypeStage }) {
   const activeIndex = stageIndex(stage)
   return (
-    <Box as="ol" columnGap="s" alignItems="stretch">
+    <Box
+      as="ol"
+      aria-label="Migration prototype steps"
+      columnGap="s"
+      alignItems="stretch"
+    >
       {flowSteps.map((label, index) => {
         const reached = index <= activeIndex
         const current = index === activeIndex

@@ -1,11 +1,12 @@
 'use client'
 
-import { Button, SegmentedControl, Text } from '@polar-sh/orbit'
+import { Button, Input, SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useMemo, useState } from 'react'
+import { HeaderCheckState, buildCurrentColumns } from './CurrentRecordColumns'
+import { CurrentDataTable, useCurrentPagination } from './CurrentDataTable'
 import { MockSubscriptionRecord, mockSubscriptions } from './mockData'
 import { PrototypeAction } from './model'
-import { CurrentRecordRow } from './CurrentRecordList'
 import { TOP_ISSUE_CODES } from './recordLabels'
 import {
   getCleanSubscriptions,
@@ -15,7 +16,6 @@ import {
 
 type AssessmentFilter = 'all' | 'to_prepare' | 'ready' | 'attention' | 'skipped'
 
-const PAGE_SIZE = 10
 const numberFormat = new Intl.NumberFormat('en-US')
 
 function prioritizeTopProblems(
@@ -29,21 +29,20 @@ function prioritizeTopProblems(
   })
 }
 
-function filterRows(filter: AssessmentFilter): MockSubscriptionRecord[] {
-  const clean = getCleanSubscriptions()
-  const problems = prioritizeTopProblems(getProblemSubscriptions())
-  switch (filter) {
-    case 'to_prepare':
-      return clean
-    case 'ready':
-      return []
-    case 'attention':
-      return problems
-    case 'skipped':
-      return []
-    default:
-      return mockSubscriptions
+function matchesQuery(record: MockSubscriptionRecord, query: string): boolean {
+  if (!query) {
+    return true
   }
+  const haystack = [
+    record.customerLabel,
+    record.customerEmail ?? '',
+    record.productName,
+    record.title,
+    record.issueCode,
+  ]
+    .join(' ')
+    .toLowerCase()
+  return haystack.includes(query)
 }
 
 export function CurrentAssessment({
@@ -55,28 +54,50 @@ export function CurrentAssessment({
   const clean = getCleanSubscriptions()
   const cleanIds = useMemo(() => new Set(clean.map((row) => row.id)), [clean])
   const [filter, setFilter] = useState<AssessmentFilter>('all')
-  const [page, setPage] = useState(1)
+  const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const { page, pageSize, pagination, onPaginationChange, resetPage } =
+    useCurrentPagination()
 
-  const rows = filterRows(filter)
-  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const rows = useMemo(() => {
+    const problems = prioritizeTopProblems(getProblemSubscriptions())
+    const base =
+      filter === 'to_prepare'
+        ? clean
+        : filter === 'ready' || filter === 'skipped'
+          ? []
+          : filter === 'attention'
+            ? problems
+            : mockSubscriptions
+    const normalized = query.trim().toLowerCase()
+    return normalized
+      ? base.filter((record) => matchesQuery(record, normalized))
+      : base
+  }, [clean, filter, query])
+
   const selectedReady = [...selected].filter((id) => cleanIds.has(id)).length
   const canPrepare =
     selectedReady === totals.clean && selected.size === totals.clean
-
-  const counts: Record<AssessmentFilter, number> = {
-    all: totals.total,
-    to_prepare: totals.clean,
-    ready: 0,
-    attention: totals.problems,
-    skipped: 0,
-  }
+  const headerState: HeaderCheckState =
+    selectedReady === 0
+      ? 'unchecked'
+      : selectedReady === totals.clean
+        ? 'checked'
+        : 'indeterminate'
 
   const selectReady = () => {
     setSelected(new Set(clean.map((row) => row.id)))
     setFilter('to_prepare')
-    setPage(1)
+    setQuery('')
+    resetPage()
+  }
+
+  const toggleAllReady = () => {
+    if (selectedReady === totals.clean) {
+      setSelected(new Set())
+      return
+    }
+    selectReady()
   }
 
   const toggle = (id: string) => {
@@ -93,6 +114,36 @@ export function CurrentAssessment({
       return next
     })
   }
+
+  const columns = useMemo(
+    () =>
+      buildCurrentColumns({
+        isSelectable: (id) => cleanIds.has(id),
+        isSelected: (id) => selected.has(id),
+        headerState,
+        canSelectAll: totals.clean > 0,
+        onToggle: toggle,
+        onToggleAll: toggleAllReady,
+      }),
+    [cleanIds, headerState, selected, selectedReady, totals.clean],
+  )
+
+  const counts: Record<AssessmentFilter, number> = {
+    all: totals.total,
+    to_prepare: totals.clean,
+    ready: 0,
+    attention: totals.problems,
+    skipped: 0,
+  }
+
+  const emptyMessage =
+    filter === 'ready'
+      ? 'No subscriptions are ready to switch yet.'
+      : filter === 'skipped'
+        ? 'Nothing is staying on Stripe permanently yet.'
+        : query
+          ? 'No subscriptions match this search.'
+          : 'No subscriptions to show.'
 
   return (
     <Box as="section" flexDirection="column" rowGap="l">
@@ -118,7 +169,7 @@ export function CurrentAssessment({
             value={filter}
             onChange={(next) => {
               setFilter(next as AssessmentFilter)
-              setPage(1)
+              resetPage()
             }}
             options={[
               { value: 'all', label: `All rows ${counts.all}` },
@@ -149,79 +200,44 @@ export function CurrentAssessment({
       </Box>
 
       {filter === 'attention' ? (
-        <Text variant="caption" color="muted">
-          Top requested problems first: missing country, existing Polar product,
-          email identity conflict. All {totals.problems} problem rows are
-          reachable across pages.
-        </Text>
-      ) : null}
-
-      {pageRows.length === 0 ? (
         <Box
-          borderWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-          borderRadius="l"
-          paddingVertical="2xl"
-          justifyContent="center"
+          alignItems={{ base: 'start', md: 'center' }}
+          justifyContent="between"
+          gap="m"
+          flexWrap="wrap"
         >
           <Text variant="caption" color="muted">
-            {filter === 'ready'
-              ? 'No subscriptions are ready to switch yet.'
-              : filter === 'skipped'
-                ? 'Nothing is staying on Stripe permanently yet.'
-                : 'No subscriptions to show.'}
+            Top requested problems first: missing country, existing Polar
+            product, email identity conflict. All {totals.problems} problem rows
+            are reachable across pages or search.
           </Text>
-        </Box>
-      ) : (
-        <Box
-          as="ul"
-          flexDirection="column"
-          rowGap="s"
-          aria-label="Assessment rows"
-        >
-          {pageRows.map((record) => (
-            <CurrentRecordRow
-              key={record.id}
-              record={record}
-              selectable={cleanIds.has(record.id)}
-              selected={selected.has(record.id)}
-              onToggle={() => toggle(record.id)}
-              emphasize={
-                filter === 'attention' &&
-                TOP_ISSUE_CODES.includes(record.issueCode)
-              }
+          <Box width={{ base: '100%', md: 280 }}>
+            <Input
+              aria-label="Search problem records"
+              placeholder="Search problems"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                resetPage()
+              }}
             />
-          ))}
-        </Box>
-      )}
-
-      {rows.length > PAGE_SIZE ? (
-        <Box alignItems="center" justifyContent="between" gap="m">
-          <Text variant="caption" color="muted">
-            Page {page} of {pageCount} · {selectedReady} of {totals.clean} ready
-            selected across pages
-          </Text>
-          <Box gap="s">
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={page <= 1}
-              onClick={() => setPage((value) => value - 1)}
-            >
-              Previous
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={page >= pageCount}
-              onClick={() => setPage((value) => value + 1)}
-            >
-              Next
-            </Button>
           </Box>
         </Box>
       ) : null}
+
+      <CurrentDataTable
+        columns={columns}
+        rows={rows}
+        page={page}
+        pageSize={pageSize}
+        pagination={pagination}
+        onPaginationChange={onPaginationChange}
+        emptyMessage={emptyMessage}
+      />
+
+      <Text variant="caption" color="muted">
+        {selectedReady} of {totals.clean} ready selected across pages
+      </Text>
     </Box>
   )
 }

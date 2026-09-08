@@ -2,9 +2,10 @@
 
 import { Button, SegmentedControl, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { buildCurrentColumns } from './CurrentRecordColumns'
+import { CurrentDataTable, useCurrentPagination } from './CurrentDataTable'
 import { PrototypeAction, PrototypeState } from './model'
-import { CurrentRecordRow } from './CurrentRecordList'
 import { Metric, Surface } from './PrototypePrimitives'
 import { TOP_ISSUE_CODES } from './recordLabels'
 import { getCleanSubscriptions, getProblemSubscriptions } from './selectors'
@@ -19,20 +20,39 @@ export function CurrentReceipt({
   act: (action: PrototypeAction) => void
 }) {
   const clean = getCleanSubscriptions()
-  const problems = [...getProblemSubscriptions()].sort((left, right) => {
+  const problems = useMemo(() => {
     const rank = new Map(TOP_ISSUE_CODES.map((code, index) => [code, index]))
-    return (
-      (rank.get(left.issueCode) ?? TOP_ISSUE_CODES.length) -
-      (rank.get(right.issueCode) ?? TOP_ISSUE_CODES.length)
-    )
-  })
+    return [...getProblemSubscriptions()].sort((left, right) => {
+      return (
+        (rank.get(left.issueCode) ?? TOP_ISSUE_CODES.length) -
+        (rank.get(right.issueCode) ?? TOP_ISSUE_CODES.length)
+      )
+    })
+  }, [])
   const receipt = state.receipt
   const polar = receipt?.polarOwned ?? clean.length
   const stripe = receipt?.stripeOwned ?? problems.length
   const unknown = receipt?.unknownOwned ?? 0
   const [filter, setFilter] = useState<ReceiptFilter>('stripe')
+  const { page, pageSize, pagination, onPaginationChange, resetPage } =
+    useCurrentPagination()
 
   const rows = filter === 'polar' ? clean : filter === 'stripe' ? problems : []
+
+  const columns = useMemo(
+    () =>
+      buildCurrentColumns({
+        isSelectable: () => false,
+        isSelected: () => false,
+        headerState: 'unchecked',
+        canSelectAll: false,
+        onToggle: () => undefined,
+        onToggleAll: () => undefined,
+        showSelect: false,
+        transferred: true,
+      }),
+    [],
+  )
 
   return (
     <Box flexDirection="column" rowGap="l">
@@ -82,7 +102,10 @@ export function CurrentReceipt({
           <SegmentedControl
             size="sm"
             value={filter}
-            onChange={(next) => setFilter(next as ReceiptFilter)}
+            onChange={(next) => {
+              setFilter(next as ReceiptFilter)
+              resetPage()
+            }}
             options={[
               { value: 'polar', label: `On Polar ${polar}` },
               { value: 'stripe', label: `On Stripe ${stripe}` },
@@ -94,37 +117,25 @@ export function CurrentReceipt({
         {filter === 'stripe' ? (
           <Text variant="caption" color="muted">
             Top requested problems first: missing country, existing Polar
-            product, email identity conflict. Outcomes and reasons stay
-            reachable for every residual Stripe record.
+            product, email identity conflict. Open a row for the issue detail
+            and recommended action.
           </Text>
         ) : null}
 
-        {rows.length === 0 ? (
-          <Text variant="caption" color="muted">
-            {filter === 'unknown'
+        <CurrentDataTable
+          columns={columns}
+          rows={rows}
+          page={page}
+          pageSize={pageSize}
+          pagination={pagination}
+          onPaginationChange={onPaginationChange}
+          transferred
+          emptyMessage={
+            filter === 'unknown'
               ? 'No unknown owners in this mock receipt.'
-              : 'No records in this outcome.'}
-          </Text>
-        ) : (
-          <Box
-            as="ul"
-            flexDirection="column"
-            rowGap="s"
-            aria-label="Receipt outcomes"
-          >
-            {rows.map((record) => (
-              <CurrentRecordRow
-                key={record.id}
-                record={record}
-                transferred
-                emphasize={
-                  filter === 'stripe' &&
-                  TOP_ISSUE_CODES.includes(record.issueCode)
-                }
-              />
-            ))}
-          </Box>
-        )}
+              : 'No records in this outcome.'
+          }
+        />
       </Box>
     </Box>
   )

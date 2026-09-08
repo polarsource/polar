@@ -1,6 +1,7 @@
 import type {
   IssueCode,
   MockSubscriptionRecord,
+  PaymentReadiness,
   SubscriptionCategory,
   SubscriptionStatus,
 } from './mockTypes'
@@ -37,6 +38,7 @@ export const clean = (
     'Mapped product, matching card, billing country present, and renewal outside 24 hours.',
   recommendedAction: 'Include in the clean canary cohort.',
   billingOwner: 'stripe',
+  paymentReadiness: 'matching',
   canarySelectable: true,
 })
 
@@ -53,6 +55,7 @@ type ProblemSpec = {
   title: string
   detail: string
   recommendedAction: string
+  paymentReadiness?: PaymentReadiness
 }
 
 export const problem = (spec: ProblemSpec): MockSubscriptionRecord => ({
@@ -70,5 +73,6 @@ export const problem = (spec: ProblemSpec): MockSubscriptionRecord => ({
   detail: spec.detail,
   recommendedAction: spec.recommendedAction,
   billingOwner: 'stripe',
+  paymentReadiness: spec.paymentReadiness ?? 'matching',
   canarySelectable: false,
 })

@@ -65,7 +65,7 @@ export function applyPrototypeAction(
   action: PrototypeAction,
 ): PrototypeState {
   if (action === 'reset') {
-    return initialPrototypeState
+    return createPrototypeState()
   }
   if (action === 'review_receipt' && state.stage === 'receipt') {
     return { ...state, receiptViewed: true }

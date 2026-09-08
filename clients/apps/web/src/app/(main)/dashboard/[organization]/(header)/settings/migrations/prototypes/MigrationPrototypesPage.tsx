@@ -85,7 +85,7 @@ export default function MigrationPrototypesPage({
         <Alert
           variant="info"
           title="Interactive product prototype"
-          description="Complete each flow from source connection through final billing ownership. Switching variants preserves each variant's progress."
+          description="Complete each flow from source connection through final billing ownership. Switching variants preserves completed stages; local filters and selections reset."
         />
 
         <Box as="nav" aria-label="Prototype variants" gap="s" flexWrap="wrap">

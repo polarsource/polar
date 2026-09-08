@@ -2561,7 +2561,6 @@ class SubscriptionService:
         subscription.current_period_end = new_period_end
         subscription.anchor_day = new_period_end.day
 
-        # A cancellation scheduled at the period end moves with the period.
         if subscription.cancel_at_period_end:
             subscription.ends_at = new_period_end
 

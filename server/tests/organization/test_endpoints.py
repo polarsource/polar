@@ -559,6 +559,38 @@ class TestUpdateOrganization:
         assert settings["customer"]["allow_email_change"] is True
 
     @pytest.mark.auth
+    async def test_update_customer_portal_settings_empty_customer_preserves_stored_value(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # `customer: {}` is a valid payload — `allow_email_change` is
+        # NotRequired — and is what react-hook-form serializes for an org that
+        # never set the field. It must not clear a stored value.
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "customer": {"allow_email_change": True},
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    "usage": {"show": True},
+                    "subscription": {"update_seats": True, "update_plan": True},
+                    "customer": {},
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["customer"]["allow_email_change"] is True
+
+    @pytest.mark.auth
     async def test_update_customer_portal_settings_merge_persists(
         self,
         client: AsyncClient,

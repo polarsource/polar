@@ -201,6 +201,21 @@ def _append_internal_note(
         organization.internal_notes = note
 
 
+def _merge_customer_portal_settings(
+    stored: OrganizationCustomerPortalSettings,
+    update: OrganizationCustomerPortalSettings,
+) -> OrganizationCustomerPortalSettings:
+    merged: dict[str, Any] = {**stored}
+    for key, value in update.items():
+        current = merged.get(key)
+        merged[key] = (
+            {**current, **value}
+            if isinstance(current, dict) and isinstance(value, dict)
+            else value
+        )
+    return cast(OrganizationCustomerPortalSettings, merged)
+
+
 class PaymentStatusResponse(BaseModel):
     """Service-level response for payment status."""
 
@@ -591,20 +606,9 @@ class OrganizationService:
             )
 
         if update_schema.customer_portal_settings is not None:
-            new_portal = update_schema.customer_portal_settings
-            merged: dict[str, Any] = {
-                **organization.customer_portal_settings,
-                **new_portal,
-            }
-            if "subscription" in new_portal and isinstance(
-                merged.get("subscription"), dict
-            ):
-                merged["subscription"] = {
-                    **organization.customer_portal_settings.get("subscription", {}),
-                    **new_portal["subscription"],
-                }
-            organization.customer_portal_settings = cast(
-                OrganizationCustomerPortalSettings, merged
+            organization.customer_portal_settings = _merge_customer_portal_settings(
+                organization.customer_portal_settings,
+                update_schema.customer_portal_settings,
             )
 
         if update_schema.default_presentment_currency is not None:

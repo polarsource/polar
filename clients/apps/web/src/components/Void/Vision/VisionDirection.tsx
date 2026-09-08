@@ -50,7 +50,12 @@ const CapabilityList = () => (
         columnGap="xl"
         paddingVertical="2xl"
       >
-        <Box flex={1} alignItems="baseline" columnGap="l">
+        <Box
+          flex={1}
+          alignItems="baseline"
+          flexDirection="column"
+          columnGap="l"
+        >
           <Text as="span" variant="heading-s" color="muted">
             {String(index + 1).padStart(2, '0')}
           </Text>

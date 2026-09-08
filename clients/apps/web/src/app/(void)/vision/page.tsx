@@ -46,26 +46,21 @@ export default function Page() {
                   alignSelf="start"
                 >
                   <Box flexDirection="column">
-                    <Text variant="heading-l" as="p">
+                    <Text variant="heading-m" as="p">
                       Vision
                     </Text>
-                    <Text variant="heading-l" as="p" color="muted">
+                    <Text variant="heading-m" as="p" color="muted">
                       Polar 2026
                     </Text>
                   </Box>
                 </Box>
               </Box>
               <Box flexDirection="column" rowGap={{ base: '4xl', md: '5xl' }}>
-                <Box flexDirection="column" rowGap="m">
-                  <Text variant="heading-xl" as="h1" wrap="balance">
+                <Box flexDirection="column">
+                  <Text variant="heading-l" as="h1" wrap="balance">
                     Customer state as a function
                   </Text>
-                  <Text
-                    variant="heading-xl"
-                    as="p"
-                    color="muted"
-                    wrap="balance"
-                  >
+                  <Text variant="heading-l" as="p" color="muted" wrap="balance">
                     Billing as a side effect
                   </Text>
                 </Box>

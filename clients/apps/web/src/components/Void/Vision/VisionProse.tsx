@@ -30,7 +30,7 @@ export const VisionChapter = ({
           top="2rem"
           alignSelf="start"
         >
-          <Text variant="heading-l" as="h2">
+          <Text variant="heading-m" as="h2">
             {name}
           </Text>
         </Box>
@@ -56,7 +56,7 @@ export const ChapterBody = ({ children }: PropsWithChildren) => (
 )
 
 export const Paragraph = ({ children }: PropsWithChildren) => (
-  <Text variant="heading-s" as="p" wrap="pretty" lineHeight="relaxed">
+  <Text variant="heading-xs" as="p" wrap="pretty" lineHeight="relaxed">
     {children}
   </Text>
 )

@@ -76,14 +76,14 @@ class TestBackfillOAuth2ClientEncryptedSecrets:
             == "crt-legacy"
         )
 
-    async def test_fills_missing_encrypted_when_hash_present(
+    async def test_fills_registration_token_when_client_secret_already_derived(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         user: User,
     ) -> None:
-        """Registration dual-writes the hash synchronously but not the
-        ciphertext; the backfill fills only the missing ciphertext."""
+        """One prod row has client_secret hash+ciphertext but no registration
+        token derived columns."""
         client = await _create_legacy_client(
             save_fixture,
             user,
@@ -92,18 +92,20 @@ class TestBackfillOAuth2ClientEncryptedSecrets:
             registration_access_token="crt-hashed",
         )
         client.client_secret_hash = OAuth2Client.hash_secret("cs-hashed")
-        client.registration_access_token_hash = OAuth2Client.hash_secret("crt-hashed")
+        client.client_secret_encrypted = await OAuth2Client.encrypt_client_secret(
+            client.id, "cs-hashed"
+        )
         await save_fixture(client)
 
         await run_backfill(batch_size=10, sleep_seconds=0, session=session)
 
         loaded = await _reload(session, client)
+        assert loaded.client_secret_hash == OAuth2Client.hash_secret("cs-hashed")
         assert isinstance(loaded.client_secret_encrypted, EncryptedString)
-        assert isinstance(loaded.registration_access_token_encrypted, EncryptedString)
-        assert (
-            await loaded.client_secret_encrypted.decrypt(id=str(loaded.id))
-            == "cs-hashed"
+        assert loaded.registration_access_token_hash == OAuth2Client.hash_secret(
+            "crt-hashed"
         )
+        assert isinstance(loaded.registration_access_token_encrypted, EncryptedString)
         assert (
             await loaded.registration_access_token_encrypted.decrypt(id=str(loaded.id))
             == "crt-hashed"
@@ -154,6 +156,43 @@ class TestBackfillOAuth2ClientEncryptedSecrets:
                     OAuth2Client.registration_access_token_encrypted.is_(None),
                 )
             )
+        )
+        assert remaining.scalars().first() is None
+
+    async def test_mixed_filled_and_legacy_rows(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        for i in range(8):
+            client = await _create_legacy_client(
+                save_fixture, user, client_id=f"polar_ci_mixed_{i}"
+            )
+            if i % 2 == 0:
+                client.client_secret_hash = OAuth2Client.hash_secret(
+                    client.client_secret
+                )
+                client.client_secret_encrypted = (
+                    await OAuth2Client.encrypt_client_secret(
+                        client.id, client.client_secret
+                    )
+                )
+                client.registration_access_token_hash = OAuth2Client.hash_secret(
+                    client.registration_access_token
+                )
+                client.registration_access_token_encrypted = (
+                    await OAuth2Client.encrypt_registration_access_token(
+                        client.id, client.registration_access_token
+                    )
+                )
+                await save_fixture(client)
+
+        encrypted = await run_backfill(batch_size=2, sleep_seconds=0, session=session)
+
+        assert encrypted == 4
+        remaining = await session.execute(
+            select(OAuth2Client).where(OAuth2Client.client_secret_hash.is_(None))
         )
         assert remaining.scalars().first() is None
 

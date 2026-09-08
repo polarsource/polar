@@ -7,10 +7,11 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { AssistedVariant } from './AssistedVariant'
 import { ControlTowerVariant } from './ControlTowerVariant'
+import { CurrentEvolutionVariant } from './CurrentEvolutionVariant'
 import { GuidedVariant } from './GuidedVariant'
 import {
   applyPrototypeAction,
-  initialPrototypeState,
+  createInitialVariantStates,
   PrototypeAction,
   PrototypeState,
   PrototypeVariant,
@@ -24,13 +25,20 @@ const variants: {
   { value: 'guided', label: 'A · Guided', short: 'Best for small merchants' },
   { value: 'tower', label: 'B · Control tower', short: 'Best for operators' },
   { value: 'assisted', label: 'C · Assisted', short: 'Best for early access' },
+  {
+    value: 'current',
+    label: 'D · Current evolution',
+    short: "Closest to today's UI",
+  },
 ]
 
-const initialStates: Record<PrototypeVariant, PrototypeState> = {
-  guided: initialPrototypeState,
-  tower: initialPrototypeState,
-  assisted: initialPrototypeState,
-}
+const initialStates: Record<PrototypeVariant, PrototypeState> =
+  createInitialVariantStates([
+    'guided',
+    'tower',
+    'assisted',
+    'current',
+  ] as const)
 
 export default function MigrationPrototypesPage({
   organizationSlug,
@@ -59,8 +67,8 @@ export default function MigrationPrototypesPage({
         >
           <Box flexDirection="column" rowGap="xs">
             <Text color="muted" wrap="pretty">
-              Three complete mocked flows using the same Pepy-sized migration.
-              No API calls or billing changes are made.
+              Four complete mocked flows using the same Pepy-sized migration. No
+              API calls or billing changes are made.
             </Text>
             <Link
               href={`/dashboard/${organizationSlug}/settings/migrations`}
@@ -108,6 +116,9 @@ export default function MigrationPrototypesPage({
         ) : null}
         {variant === 'assisted' ? (
           <AssistedVariant state={state} act={act} />
+        ) : null}
+        {variant === 'current' ? (
+          <CurrentEvolutionVariant state={state} act={act} />
         ) : null}
       </Box>
     </DashboardBody>

@@ -3,6 +3,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 import { flowSteps, mockMigration } from './mockData'
 import { PrototypeStage, stageIndex } from './model'
+import { getOwnershipForTransfer } from './selectors'
 
 export function Surface({
   children,
@@ -63,12 +64,17 @@ export function FlowRail({ stage }: { stage: PrototypeStage }) {
 }
 
 export function OwnershipSummary({
-  polar = mockMigration.subscriptions.polar,
-  stripe = mockMigration.subscriptions.total,
+  transferred = false,
+  polar,
+  stripe,
+  unknown,
 }: {
+  transferred?: boolean
   polar?: number
   stripe?: number
+  unknown?: number
 }) {
+  const ownership = getOwnershipForTransfer(transferred)
   return (
     <Box
       gap="l"
@@ -77,9 +83,12 @@ export function OwnershipSummary({
       borderRadius="m"
       backgroundColor="background-secondary"
     >
-      <Metric label="Billing on Polar" value={polar} />
-      <Metric label="Billing on Stripe" value={stripe} />
-      <Metric label="Unknown owner" value={0} />
+      <Metric label="Billing on Polar" value={polar ?? ownership.polarOwned} />
+      <Metric
+        label="Billing on Stripe"
+        value={stripe ?? ownership.stripeOwned}
+      />
+      <Metric label="Unknown owner" value={unknown ?? ownership.unknownOwned} />
     </Box>
   )
 }
@@ -137,6 +146,7 @@ export function DecisionList() {
 }
 
 export function ClosedState({ onReset }: { onReset: () => void }) {
+  const ownership = getOwnershipForTransfer(true)
   return (
     <Surface>
       <Status status="Migration closed" color="green" />
@@ -144,10 +154,11 @@ export function ClosedState({ onReset }: { onReset: () => void }) {
         Billing ownership is known
       </Text>
       <Text color="muted">
-        9 canary subscriptions bill on Polar. One remains on Stripe with a
-        documented renewal-window reason.
+        {ownership.polarOwned} subscriptions bill on Polar.{' '}
+        {ownership.stripeOwned} remain on Stripe with documented problem
+        reasons. Unknown owners: {ownership.unknownOwned}.
       </Text>
-      <OwnershipSummary polar={9} stripe={832} />
+      <OwnershipSummary transferred />
       <Box>
         <Button variant="secondary" onClick={onReset}>
           Run this variant again

@@ -5,15 +5,18 @@ import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { mockMigration } from './mockData'
 import { PrototypeAction, PrototypeState } from './model'
+import { CustomerActionList, ProblemPackages } from './ProblemPackages'
 import {
   ClosedState,
   DecisionList,
   FlowRail,
   Metric,
-  OwnershipSummary,
   PrototypeLabel,
   Surface,
 } from './PrototypePrimitives'
+import { RecordExplorer } from './RecordExplorer'
+import { GuidedReceiptStage, GuidedTransferStage } from './GuidedLaterStages'
+import { getInitialTotals, getProblemSubscriptions } from './selectors'
 
 interface Props {
   state: PrototypeState
@@ -22,6 +25,8 @@ interface Props {
 
 export function GuidedVariant({ state, act }: Props) {
   const [reviewing, setReviewing] = useState(false)
+  const totals = getInitialTotals()
+  const problems = getProblemSubscriptions()
 
   if (state.stage === 'closed') {
     return <ClosedState onReset={() => act('reset')} />
@@ -68,12 +73,12 @@ export function GuidedVariant({ state, act }: Props) {
           </Text>
           <Text color="muted">
             Polar checks products, customers, subscriptions, tax information,
-            and payment methods.
+            and payment methods against the shared catalog.
           </Text>
           <Box gap="xl" flexWrap="wrap">
-            <Metric label="Subscriptions found" value={841} />
-            <Metric label="Potentially eligible" value={812} />
-            <Metric label="Stay on Stripe" value={22} />
+            <Metric label="Subscriptions found" value={totals.total} />
+            <Metric label="Ready to transfer" value={totals.clean} />
+            <Metric label="With problems" value={totals.problems} />
           </Box>
           <Box>
             <Button onClick={() => act('assess')}>Run assessment</Button>
@@ -81,26 +86,30 @@ export function GuidedVariant({ state, act }: Props) {
         </Surface>
       ) : null}
       {state.stage === 'decisions' ? (
-        <Surface>
-          <Text variant="heading-xs" as="h3">
-            Resolve 7 decisions
-          </Text>
-          <Text color="muted">
-            These choices prevent duplicate products, incorrect customer
-            matches, and unexpected tax treatment.
-          </Text>
-          <DecisionList />
-          <Alert
-            variant="info"
-            title="22 subscriptions will stay on Stripe"
-            description="They remain billed there with a documented reason."
-          />
-          <Box>
-            <Button onClick={() => act('resolve')}>
-              Confirm decisions and prepare
-            </Button>
-          </Box>
-        </Surface>
+        <Box flexDirection="column" rowGap="l">
+          <Surface>
+            <Text variant="heading-xs" as="h3">
+              Package problem review
+            </Text>
+            <Text color="muted">
+              Confirm merchant mappings, then keep the {problems.length} problem
+              records on Stripe until each package is cleared.
+            </Text>
+            <DecisionList />
+            <ProblemPackages />
+            <Alert
+              variant="info"
+              title={`${problems.length} subscriptions stay on Stripe`}
+              description="Missing country, existing Polar product, and identity conflict lead the review. Open the catalog for every package."
+            />
+            <Box>
+              <Button onClick={() => act('resolve')}>
+                Confirm decisions and prepare
+              </Button>
+            </Box>
+          </Surface>
+          <RecordExplorer title="Problem packages" />
+        </Box>
       ) : null}
       {state.stage === 'cards' ? (
         <Surface>
@@ -109,13 +118,15 @@ export function GuidedVariant({ state, act }: Props) {
             Move saved payment methods
           </Text>
           <Text color="muted">
-            Stripe copied 806 matching cards. Six customers need to add a card
-            again.
+            Stripe can copy {mockMigration.cards.matching} matching cards.{' '}
+            {mockMigration.cards.customerAction} customers need a card action
+            before they leave Stripe.
           </Text>
+          <CustomerActionList />
           <Alert
             variant="warning"
             title="A copied card is not a successful payment"
-            description="Its chargeability is confirmed at the first real renewal."
+            description="Chargeability is confirmed at the first real renewal."
           />
           <Box>
             <Button onClick={() => act('copy_cards')}>
@@ -125,84 +136,21 @@ export function GuidedVariant({ state, act }: Props) {
         </Surface>
       ) : null}
       {state.stage === 'transfer' ? (
-        <Surface emphasis={reviewing}>
-          <Text variant="heading-xs" as="h3">
-            {reviewing ? 'Review irreversible transfer' : 'Choose a canary'}
-          </Text>
-          {reviewing ? (
-            <>
-              <OwnershipSummary />
-              <Alert
-                variant="warning"
-                title="Stripe is stopped first"
-                description="Polar then activates each subscription without charging today. This cannot be automatically undone."
-              />
-              <Text>
-                10 subscriptions · {mockMigration.transfer.monthlyValue} monthly
-                value · renewals {mockMigration.transfer.renewalWindow}
-              </Text>
-              <Box gap="s">
-                <Button variant="secondary" onClick={() => setReviewing(false)}>
-                  Back
-                </Button>
-                <Button
-                  onClick={() => {
-                    setReviewing(false)
-                    act('transfer')
-                  }}
-                >
-                  Transfer 10 subscriptions
-                </Button>
-              </Box>
-            </>
-          ) : (
-            <>
-              <Text color="muted">
-                Start with ten known customers. All have explicit mappings,
-                matching cards, and renew outside 24 hours.
-              </Text>
-              <Alert
-                variant="info"
-                title="Test webhook acknowledged"
-                description="Polar cannot verify how your application interprets out-of-order events."
-              />
-              <Box>
-                <Button onClick={() => setReviewing(true)}>
-                  Review transfer
-                </Button>
-              </Box>
-            </>
-          )}
-        </Surface>
+        <GuidedTransferStage
+          reviewing={reviewing}
+          setReviewing={setReviewing}
+          totals={totals}
+          problemCount={problems.length}
+          act={act}
+        />
       ) : null}
       {state.stage === 'receipt' ? (
-        <Surface>
-          <Status status="Completed with 1 exception" color="yellow" />
-          <Text variant="heading-xs" as="h3">
-            Review the transfer receipt
-          </Text>
-          <Box gap="xl" flexWrap="wrap">
-            <Metric label="Billing on Polar" value={9} />
-            <Metric label="Billing on Stripe" value={1} />
-            <Metric label="Needs recovery" value={0} />
-          </Box>
-          <Text color="muted">
-            One subscription renewed too recently and remains on Stripe.
-          </Text>
-          <Box gap="s">
-            <Button variant="secondary" onClick={() => act('review_receipt')}>
-              Export receipt
-            </Button>
-            <Button onClick={() => act('close')}>
-              Close with billing on Stripe
-            </Button>
-          </Box>
-          {state.receiptViewed ? (
-            <Text variant="caption" color="success" role="status">
-              Mock receipt exported.
-            </Text>
-          ) : null}
-        </Surface>
+        <GuidedReceiptStage
+          state={state}
+          totals={totals}
+          problemCount={problems.length}
+          act={act}
+        />
       ) : null}
     </Box>
   )

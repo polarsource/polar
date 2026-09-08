@@ -1,24 +1,40 @@
 'use client'
 
-import { Alert, Button, Grid, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { mockMigration } from './mockData'
-import { PrototypeAction, PrototypeStage, PrototypeState } from './model'
+import { Text } from '@polar-sh/orbit'
+import { PrototypeAction, PrototypeState } from './model'
 import {
   ClosedState,
-  DecisionList,
-  Metric,
   OwnershipSummary,
   PrototypeLabel,
-  Surface,
 } from './PrototypePrimitives'
+import { getCleanSubscriptions, getProblemSubscriptions } from './selectors'
+import { TowerWorkspace } from './TowerWorkspace'
 
 interface Props {
   state: PrototypeState
   act: (action: PrototypeAction) => void
 }
 
+function cohortCounts(stage: PrototypeState['stage']) {
+  if (stage === 'create') {
+    return { ready: 0, decisions: 0, blocked: 0, holds: 0, moved: 0 }
+  }
+  const problems = getProblemSubscriptions()
+  const ready = getCleanSubscriptions().length
+  return {
+    ready: stage === 'receipt' ? 0 : ready,
+    decisions: problems.filter((r) => r.status === 'action_required').length,
+    blocked: problems.filter((r) => r.status === 'blocked').length,
+    holds: problems.filter((r) => r.status === 'cutover_hold').length,
+    moved: stage === 'receipt' ? ready : 0,
+  }
+}
+
 export function ControlTowerVariant({ state, act }: Props) {
+  const transferred = state.stage === 'receipt'
+  const cohorts = cohortCounts(state.stage)
+
   if (state.stage === 'closed') {
     return <ClosedState onReset={() => act('reset')} />
   }
@@ -30,35 +46,48 @@ export function ControlTowerVariant({ state, act }: Props) {
         title="Migration control tower"
         description="A persistent operations view. Cohorts, exceptions, and billing ownership stay visible throughout."
       />
-      <OwnershipSummary
-        polar={state.stage === 'receipt' ? 9 : 0}
-        stripe={state.stage === 'receipt' ? 832 : 841}
-      />
-      <Grid templateColumns={{ base: '1fr', lg: '280px 1fr' }} gap="l">
-        <Box flexDirection="column" rowGap="s">
+      <OwnershipSummary transferred={transferred} />
+      <Box
+        flexDirection={{ base: 'column', lg: 'row' }}
+        gap="l"
+        alignItems="stretch"
+      >
+        <Box
+          flexDirection="column"
+          rowGap="s"
+          flex={{ base: '1 1 auto', lg: '0 0 280px' }}
+          aria-label="Cohort counts"
+        >
           <TowerQueue
-            label="Needs decision"
-            value={state.stage === 'decisions' ? 7 : 0}
-            active={state.stage === 'decisions'}
-          />
-          <TowerQueue
-            label="Payment methods"
-            value={state.stage === 'cards' ? 806 : 0}
-            active={state.stage === 'cards'}
-          />
-          <TowerQueue
-            label="Ready to transfer"
-            value={state.stage === 'transfer' ? 10 : 0}
+            label="Ready"
+            value={cohorts.ready}
             active={state.stage === 'transfer'}
           />
           <TowerQueue
+            label="Decisions"
+            value={cohorts.decisions}
+            active={state.stage === 'decisions'}
+          />
+          <TowerQueue
+            label="Blocked"
+            value={cohorts.blocked}
+            active={state.stage === 'decisions'}
+          />
+          <TowerQueue
+            label="Holds"
+            value={cohorts.holds}
+            active={state.stage === 'cards' || state.stage === 'receipt'}
+          />
+          <TowerQueue
             label="Moved to Polar"
-            value={state.stage === 'receipt' ? 9 : 0}
+            value={cohorts.moved}
             active={state.stage === 'receipt'}
           />
         </Box>
-        <TowerWorkspace state={state} act={act} />
-      </Grid>
+        <Box flex={1} minWidth={0}>
+          <TowerWorkspace state={state} act={act} />
+        </Box>
+      </Box>
     </Box>
   )
 }
@@ -88,142 +117,5 @@ function TowerQueue({
         {value}
       </Text>
     </Box>
-  )
-}
-
-function TowerWorkspace({
-  state,
-  act,
-}: {
-  state: PrototypeState
-  act: (action: PrototypeAction) => void
-}) {
-  const stage: PrototypeStage = state.stage
-  if (stage === 'create') {
-    return (
-      <Surface>
-        <Status status="No source connected" color="gray" />
-        <Text variant="heading-xs" as="h3">
-          Connect a billing source
-        </Text>
-        <Text color="muted">
-          Add Stripe to populate the tower with readiness cohorts and
-          exceptions.
-        </Text>
-        <Box>
-          <Button onClick={() => act('create')}>Connect mock Stripe</Button>
-        </Box>
-      </Surface>
-    )
-  }
-
-  if (stage === 'assessment') {
-    return (
-      <Surface>
-        <Status status="Source connected" color="green" />
-        <Text variant="heading-xs" as="h3">
-          Populate the control tower
-        </Text>
-        <Box gap="xl" flexWrap="wrap">
-          <Metric label="Subscriptions" value={841} />
-          <Metric label="Products" value={4} />
-          <Metric label="Customers" value={829} />
-        </Box>
-        <Box>
-          <Button onClick={() => act('assess')}>Run assessment</Button>
-        </Box>
-      </Surface>
-    )
-  }
-
-  if (stage === 'decisions') {
-    return (
-      <Surface emphasis>
-        <Text variant="heading-xs" as="h3">
-          Decision inbox
-        </Text>
-        <DecisionList />
-        <Box>
-          <Button onClick={() => act('resolve')}>
-            Resolve all demonstrated decisions
-          </Button>
-        </Box>
-      </Surface>
-    )
-  }
-
-  if (stage === 'cards') {
-    return (
-      <Surface>
-        <Status status="Waiting on Stripe" color="yellow" />
-        <Text variant="heading-xs" as="h3">
-          Payment-method cohort
-        </Text>
-        <Box gap="xl" flexWrap="wrap">
-          <Metric label="Matching cards" value={806} />
-          <Metric label="Customer action" value={6} />
-          <Metric label="Unsupported" value={12} />
-        </Box>
-        <Alert
-          variant="warning"
-          title="Matching does not prove chargeability"
-        />
-        <Box>
-          <Button onClick={() => act('copy_cards')}>
-            Complete mocked card transfer
-          </Button>
-        </Box>
-      </Surface>
-    )
-  }
-
-  if (stage === 'transfer') {
-    return (
-      <Surface emphasis>
-        <Text variant="heading-xs" as="h3">
-          Ready cohort
-        </Text>
-        <Text color="muted">
-          10 selected · {mockMigration.transfer.monthlyValue} monthly value · no
-          renewal inside 24 hours
-        </Text>
-        <Alert
-          variant="warning"
-          title="Stripe is stopped before Polar activates"
-          description="Transfer is per subscription and cannot be automatically undone."
-        />
-        <Box>
-          <Button onClick={() => act('transfer')}>Transfer ready cohort</Button>
-        </Box>
-      </Surface>
-    )
-  }
-
-  return (
-    <Surface>
-      <Status status="Known ownership" color="green" />
-      <Text variant="heading-xs" as="h3">
-        Reconciliation
-      </Text>
-      <Box gap="xl" flexWrap="wrap">
-        <Metric label="Moved" value={9} />
-        <Metric label="Left on Stripe" value={1} />
-        <Metric label="Unknown" value={0} />
-      </Box>
-      <Text color="muted">
-        The exception renewed too recently. Stripe continues billing it.
-      </Text>
-      <Box gap="s">
-        <Button variant="secondary" onClick={() => act('review_receipt')}>
-          Export ledger
-        </Button>
-        <Button onClick={() => act('close')}>Close program</Button>
-      </Box>
-      {state.receiptViewed ? (
-        <Text variant="caption" color="success" role="status">
-          Mock ledger exported.
-        </Text>
-      ) : null}
-    </Surface>
   )
 }

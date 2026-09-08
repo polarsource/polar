@@ -1,44 +1,45 @@
 {
-	"name": "polar-cli",
-	"version": "1.3.9",
-	"description": "",
-	"bin": "bin/cli.js",
-	"type": "module",
-	"scripts": {
-		"prepare": "effect-language-service patch",
-		"build": "tsup ./src/cli.ts --format esm --outDir bin",
-		"dev": "tsc --watch",
-		"typecheck": "tsc --noEmit",
-		"test": "bun test",
-		"check": "biome check --write ./src",
-		"build:binary": "bun build ./src/cli.ts --compile --outfile polar",
-		"build:binary:darwin-arm64": "bun build ./src/cli.ts --compile --target=bun-darwin-arm64 --outfile polar",
-		"build:binary:darwin-x64": "bun build ./src/cli.ts --compile --target=bun-darwin-x64 --outfile polar",
-		"build:binary:linux-x64": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile polar"
-	},
-	"files": [
-		"bin",
-		"dist"
-	],
-	"keywords": [],
-	"author": "",
-	"license": "Apache-2.0",
-	"packageManager": "pnpm@10.5.2",
-	"dependencies": {
-		"@effect/platform-bun": "4.0.0-rc.112",
-		"@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
-		"@polar-sh/sdk": "^0.47.0",
-		"effect": "4.0.0-rc.112",
-		"eventsource": "^4.1.0",
-		"open": "^10.2.0"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.1.4",
-		"@effect/language-service": "^0.87.2",
-		"@sindresorhus/tsconfig": "^8.0.1",
-		"@types/bun": "^1.4.1",
-		"@types/node": "^24.2.1",
-		"tsup": "^8.5.0",
-		"typescript": "^5.9.2"
-	}
+  "name": "polar-cli",
+  "version": "1.3.9",
+  "description": "",
+  "bin": "bin/cli.js",
+  "type": "module",
+  "scripts": {
+    "prepare": "effect-language-service patch",
+    "build": "tsup ./src/cli.ts --format esm --outDir bin",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "check": "pnpm format:check && pnpm lint",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint --type-aware --deny-warnings .",
+    "build:binary": "bun build ./src/cli.ts --compile --outfile polar",
+    "build:binary:darwin-arm64": "bun build ./src/cli.ts --compile --target=bun-darwin-arm64 --outfile polar",
+    "build:binary:darwin-x64": "bun build ./src/cli.ts --compile --target=bun-darwin-x64 --outfile polar",
+    "build:binary:linux-x64": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile polar"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@effect/platform-bun": "4.0.0-rc.112",
+    "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
+    "@polar-sh/sdk": "^0.47.0",
+    "effect": "4.0.0-rc.112",
+    "eventsource": "^4.1.0",
+    "open": "^10.2.0"
+  },
+  "devDependencies": {
+    "@effect/language-service": "^0.87.2",
+    "@sindresorhus/tsconfig": "^8.0.1",
+    "@types/bun": "^1.4.1",
+    "@types/node": "^24.2.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  }
 }

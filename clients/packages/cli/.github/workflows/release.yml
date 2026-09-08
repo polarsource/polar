@@ -3,11 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "Draft verification tag to create, e.g. verify-signing-2026-04-16"
+        description: 'Draft verification tag to create, e.g. verify-signing-2026-04-16'
         required: true
         type: string
 
@@ -23,15 +23,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: clients/package.json
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: pnpm
+          cache-dependency-path: clients/pnpm-lock.yaml
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - run: bun install --frozen-lockfile
+      - run: pnpm --dir clients install --filter polar-cli --frozen-lockfile --ignore-scripts
 
-      - run: bun run typecheck
+      - run: pnpm --dir clients --filter polar-cli run prepare
 
-      - run: bun test
+      - run: pnpm --dir clients --filter polar-cli typecheck
+
+      - run: pnpm --dir clients --filter polar-cli test
 
   build:
     needs: test
@@ -57,9 +69,22 @@ jobs:
             notarize: false
 
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: clients/packages/cli
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: clients/package.json
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: pnpm
+          cache-dependency-path: clients/pnpm-lock.yaml
 
       # Currently 1.3.12 is the latest, and is broken when it comes
       # to building MacOS binaries that are possible to sign.
@@ -69,7 +94,7 @@ jobs:
         with:
           bun-version: 1.3.11
 
-      - run: bun install --frozen-lockfile
+      - run: pnpm --dir ../.. install --filter polar-cli --frozen-lockfile --ignore-scripts
 
       - name: Validate macOS signing configuration
         if: ${{ matrix.sign }}
@@ -147,7 +172,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.archive }}
-          path: ${{ matrix.archive }}
+          path: clients/packages/cli/${{ matrix.archive }}
 
   release:
     needs: build

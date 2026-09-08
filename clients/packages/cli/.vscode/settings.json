@@ -1,9 +1,8 @@
 {
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.organizeImports.biome": "explicit",
     "source.removeUnusedImports": "explicit",
-    "source.fixAll.biome": "explicit"
-  },
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true
+    "source.fixAll.oxc": "explicit"
+  }
 }

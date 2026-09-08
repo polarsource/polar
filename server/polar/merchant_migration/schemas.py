@@ -10,6 +10,7 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_operation import MerchantMigrationOperationStatus
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
@@ -341,6 +342,20 @@ class PanTransferChecklist(Schema):
     )
 
 
+class MerchantMigrationOperation(Schema):
+    """Background work for the current migration step."""
+
+    status: MerchantMigrationOperationStatus = Field(
+        description="pending or running while Polar works; done or failed when it finishes."
+    )
+    stalled: bool = Field(
+        description="Whether an active operation has stopped making progress."
+    )
+    error: str | None = Field(
+        description="Why the run failed. None while it is pending, running, or done."
+    )
+
+
 class MerchantMigration(IDSchema, TimestampedSchema):
     organization_id: UUID4
     source_platform: MerchantMigrationSourcePlatform = Field(
@@ -356,5 +371,10 @@ class MerchantMigration(IDSchema, TimestampedSchema):
         description=(
             "Non-secret metadata about the connected source. The shape varies by "
             "provider (e.g. Stripe exposes `stripe_user_id`, `livemode`)."
+        ),
+    )
+    operation: MerchantMigrationOperation | None = Field(
+        description=(
+            "Background work for the current step, if any. None until a run starts."
         ),
     )

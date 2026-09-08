@@ -1,4 +1,3 @@
-from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import Any
 
@@ -208,6 +207,7 @@ class TestGetSourceAccount:
 
 def _stripe_subscription(
     *,
+    id: str = "sub_1",
     status: str = "active",
     cancel_at_period_end: bool = False,
     trial_end: int | None = None,
@@ -220,7 +220,7 @@ def _stripe_subscription(
 ) -> stripe_lib.Subscription:
     return stripe_lib.Subscription.construct_from(
         {
-            "id": "sub_1",
+            "id": id,
             "customer": "cus_1",
             "currency": currency,
             "automatic_tax": automatic_tax,
@@ -254,12 +254,13 @@ def _stripe_subscription(
 
 def _stripe_price(
     *,
+    id: str = "price_1",
     currency: str = "usd",
     unit_amount: int | None = 1000,
     currency_options: dict[str, Any] | None = None,
 ) -> stripe_lib.Price:
     price: dict[str, Any] = {
-        "id": "price_1",
+        "id": id,
         "object": "price",
         "currency": currency,
         "unit_amount": unit_amount,
@@ -282,19 +283,18 @@ def _stripe_price(
 
 
 def _listed_prices(
-    mocker: MockerFixture, client: Any, *prices: stripe_lib.Price
+    mocker: MockerFixture,
+    client: Any,
+    *prices: stripe_lib.Price,
+    has_more: bool = False,
 ) -> None:
-    async def paging() -> AsyncIterator[stripe_lib.Price]:
-        for price in prices:
-            yield price
-
-    listing = mocker.MagicMock()
-    listing.auto_paging_iter = paging
+    listing = mocker.MagicMock(data=list(prices), has_more=has_more)
     client.v1.prices.list_async = mocker.AsyncMock(return_value=listing)
 
 
 async def _extracted_products(adapter: StripeAdapter) -> list[CanonicalProduct]:
-    return [product async for product in adapter._extract_products()]
+    page = await adapter.extract_page()
+    return [record for record in page.records if isinstance(record, CanonicalProduct)]
 
 
 @pytest.mark.asyncio
@@ -370,6 +370,120 @@ class TestExtractProducts:
 
         _, kwargs = client.v1.prices.list_async.call_args
         assert "data.currency_options" in kwargs["params"]["expand"]
+
+    async def test_page_cursor_resumes_after_last_price(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(
+            mocker,
+            client,
+            _stripe_price(id="price_2"),
+            has_more=True,
+        )
+
+        page = await adapter.extract_page(
+            {"phase": "prices", "starting_after": "price_1"}
+        )
+
+        assert page.next_cursor == {
+            "phase": "prices",
+            "starting_after": "price_2",
+        }
+        client.v1.prices.list_async.assert_awaited_once_with(
+            params={
+                "active": True,
+                "limit": 100,
+                "expand": ["data.product", "data.currency_options"],
+                "starting_after": "price_1",
+            }
+        )
+
+    async def test_last_price_page_advances_to_customers(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(mocker, client, _stripe_price())
+
+        page = await adapter.extract_page()
+
+        assert page.next_cursor == {
+            "phase": "customers",
+            "starting_after": None,
+        }
+
+
+@pytest.mark.asyncio
+class TestExtractPages:
+    async def test_customer_page_resumes_and_advances_to_subscriptions(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        customer = stripe_lib.Customer.construct_from(
+            {
+                "id": "cus_2",
+                "email": "customer@example.com",
+                "name": "Customer",
+                "address": {"country": "US"},
+            },
+            None,
+        )
+        client.v1.customers.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[customer], has_more=False)
+        )
+
+        page = await adapter.extract_page(
+            {"phase": "customers", "starting_after": "cus_1"}
+        )
+
+        assert [record.source_id for record in page.records] == ["cus_2"]
+        assert page.next_cursor == {
+            "phase": "subscriptions",
+            "starting_after": None,
+        }
+        client.v1.customers.list_async.assert_awaited_once_with(
+            params={"limit": 100, "starting_after": "cus_1"}
+        )
+
+    async def test_skipped_subscription_still_advances_the_page_cursor(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        subscription = _stripe_subscription(id="sub_2", status="incomplete")
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[subscription],
+                has_more=True,
+            )
+        )
+
+        page = await adapter.extract_page(
+            {"phase": "subscriptions", "starting_after": "sub_1"}
+        )
+
+        assert page.records == []
+        assert page.next_cursor == {
+            "phase": "subscriptions",
+            "starting_after": "sub_2",
+        }
+
+    async def test_last_subscription_page_finishes_extraction(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[_stripe_subscription()],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page(
+            {"phase": "subscriptions", "starting_after": None}
+        )
+
+        assert len(page.records) == 1
+        assert page.next_cursor is None
 
 
 @pytest.mark.asyncio

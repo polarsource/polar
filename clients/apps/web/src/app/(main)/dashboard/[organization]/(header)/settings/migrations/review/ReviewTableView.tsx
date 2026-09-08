@@ -1,6 +1,5 @@
 'use client'
 
-import { schemas } from '@polar-sh/client'
 import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
@@ -47,7 +46,7 @@ interface Props {
   importError?: string
   onRerunPrecheck?: () => void
   rerunning?: boolean
-  blockers?: schemas['PrecheckIssue'][]
+  refreshError?: string
   attentionCount: number
 }
 
@@ -70,7 +69,7 @@ export function ReviewTableView({
   importError,
   onRerunPrecheck,
   rerunning = false,
-  blockers = [],
+  refreshError,
   attentionCount,
 }: Props) {
   const rowTotal = remainingSubscriptionCount(
@@ -120,21 +119,6 @@ export function ReviewTableView({
     onPageChange(next.pageIndex + 1)
   }
 
-  if (blockers.length > 0) {
-    return (
-      <Box flexDirection="column" rowGap="l">
-        {blockers.map((blocker) => (
-          <Alert
-            key={blocker.code}
-            variant="danger"
-            title="This migration can't run"
-            description={blocker.message}
-          />
-        ))}
-      </Box>
-    )
-  }
-
   if (catalogEmpty) {
     return (
       <CatalogEmptyPanel
@@ -147,6 +131,13 @@ export function ReviewTableView({
 
   return (
     <Box as="section" flexDirection="column" rowGap="xl">
+      {refreshError && (
+        <Alert
+          variant="danger"
+          title="We couldn't refresh from Stripe"
+          description={refreshError}
+        />
+      )}
       {importError && (
         <Alert
           variant="danger"

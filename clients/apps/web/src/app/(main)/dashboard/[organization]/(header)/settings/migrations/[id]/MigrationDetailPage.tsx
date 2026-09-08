@@ -123,7 +123,7 @@ function StepContent({
       return (
         <Box flexDirection="column" rowGap="l">
           <StepHeading def={def} />
-          <PrecheckPanel migrationId={migration.id} />
+          <PrecheckPanel migration={migration} />
         </Box>
       )
     case 'pre_check':

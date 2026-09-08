@@ -200,6 +200,64 @@ class TestUpsert:
         all_records = await repository.get_all(repository.get_base_statement())
         assert len(all_records) == 1
 
+    async def test_replaces_prices_when_repointing_a_pending_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        first_migration = await _create_migration(save_fixture, organization)
+        second_migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        old_product = CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_old",
+                    currency="eur",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        )
+        current_product = CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_current",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        )
+        await repository.upsert(
+            first_migration,
+            organization,
+            old_product,
+            merge_product_prices=True,
+        )
+
+        reused = await repository.upsert(
+            second_migration,
+            organization,
+            current_product,
+            merge_product_prices=True,
+        )
+
+        assert reused.merchant_migration_id == second_migration.id
+        assert [price["source_id"] for price in reused.canonical["prices"]] == [
+            "price_current"
+        ]
+
 
 @pytest.mark.asyncio
 class TestGetOpsStatement:

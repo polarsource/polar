@@ -24853,6 +24853,8 @@ export interface components {
       source: {
         [key: string]: unknown
       } | null
+      /** @description Background work for the current step, if any. None until a run starts. */
+      operation: components['schemas']['MerchantMigrationOperation'] | null
     }
     /** MerchantMigrationCreate */
     MerchantMigrationCreate: {
@@ -24999,6 +25001,29 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * MerchantMigrationOperation
+     * @description Background work for the current migration step.
+     */
+    MerchantMigrationOperation: {
+      /** @description pending or running while Polar works; done or failed when it finishes. */
+      status: components['schemas']['MerchantMigrationOperationStatus']
+      /**
+       * Stalled
+       * @description Whether an active operation has stopped making progress.
+       */
+      stalled: boolean
+      /**
+       * Error
+       * @description Why the run failed. None while it is pending, running, or done.
+       */
+      error: string | null
+    }
+    /**
+     * MerchantMigrationOperationStatus
+     * @enum {string}
+     */
+    MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
       /**
@@ -26086,6 +26111,17 @@ export interface components {
       average_seats_per_customer?: number | null
       /** Seat Utilization Rate */
       seat_utilization_rate?: number | null
+    }
+    /** MigrationOperationInProgress */
+    MigrationOperationInProgress: {
+      /**
+       * Error
+       * @example MigrationOperationInProgress
+       * @constant
+       */
+      error: 'MigrationOperationInProgress'
+      /** Detail */
+      detail: string
     }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {
@@ -31727,41 +31763,6 @@ export interface components {
      * @enum {string}
      */
     PrecheckEntity: 'products' | 'prices' | 'customers' | 'subscriptions'
-    /** PrecheckEntitySummary */
-    PrecheckEntitySummary: {
-      /** @description The source entity type. */
-      entity: components['schemas']['PrecheckEntity']
-      /**
-       * Total
-       * @description How many were read from the source.
-       */
-      total: number
-      /**
-       * Importable
-       * @description How many will be imported into Polar.
-       */
-      importable: number
-      /**
-       * Skipped
-       * @description How many won't be imported and stay on the source.
-       */
-      skipped: number
-    }
-    /** PrecheckIssue */
-    PrecheckIssue: {
-      level: components['schemas']['PrecheckIssueLevel']
-      /** Code */
-      code: string
-      /** Message */
-      message: string
-      /** Source Id */
-      source_id: string | null
-    }
-    /**
-     * PrecheckIssueLevel
-     * @enum {string}
-     */
-    PrecheckIssueLevel: 'blocker' | 'warning'
     /**
      * PrecheckReasonLevel
      * @enum {string}
@@ -31772,18 +31773,6 @@ export interface components {
      * @enum {string}
      */
     PrecheckRecordStatus: 'importable' | 'skipped'
-    /** PrecheckReport */
-    PrecheckReport: {
-      /** Can Start */
-      can_start: boolean
-      /** Issues */
-      issues: components['schemas']['PrecheckIssue'][]
-      /**
-       * Entities
-       * @description Per-entity counts of what will be imported vs stay on the source.
-       */
-      entities: components['schemas']['PrecheckEntitySummary'][]
-    }
     /**
      * PresentmentCurrency
      * @enum {string}
@@ -55696,7 +55685,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PrecheckReport']
+          'application/json': components['schemas']['MerchantMigration']
         }
       }
       /** @description The source is not connected or isn't supported. */
@@ -55726,6 +55715,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description A pre-check is already running. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MigrationOperationInProgress']
         }
       }
       /** @description Validation Error */
@@ -55794,7 +55792,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description The pre-check hasn't run yet, or it reports a blocker. */
+      /** @description The pre-check hasn't run yet, it reports a blocker, or another job is still running. */
       409: {
         headers: {
           [name: string]: unknown
@@ -55803,6 +55801,7 @@ export interface operations {
           'application/json':
             | components['schemas']['CatalogImportNotReady']
             | components['schemas']['CatalogImportBlocked']
+            | components['schemas']['MigrationOperationInProgress']
         }
       }
       /** @description Validation Error */
@@ -69635,6 +69634,9 @@ export const memberSortPropertyValues: ReadonlyArray<
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']
+export const merchantMigrationOperationStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationStatus']
+> = ['pending', 'running', 'done', 'failed']
 export const merchantMigrationRecordStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationRecordStatus']
 > = ['pending', 'imported', 'skipped', 'failed']
@@ -71278,9 +71280,6 @@ export const pledgeStateValues: ReadonlyArray<
 export const precheckEntityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckEntity']
 > = ['products', 'prices', 'customers', 'subscriptions']
-export const precheckIssueLevelValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['PrecheckIssueLevel']
-> = ['blocker', 'warning']
 export const precheckReasonLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckReasonLevel']
 > = ['action_required', 'info']

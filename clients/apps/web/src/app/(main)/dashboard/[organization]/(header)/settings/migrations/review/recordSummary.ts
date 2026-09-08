@@ -19,8 +19,11 @@ const empty = (entity: CountEntity): EntityCount => ({
   selectable: 0,
 })
 
-export const useRecordSummary = (id: string) => {
-  const query = useMerchantMigrationRecordSummary(id)
+export const useRecordSummary = (
+  id: string,
+  refetchInterval?: number | false,
+) => {
+  const query = useMerchantMigrationRecordSummary(id, refetchInterval)
 
   const derived = useMemo(() => {
     const counts = Object.fromEntries(

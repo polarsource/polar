@@ -46,11 +46,11 @@ export function GuidedVariant({ state, act }: Props) {
             Stripe during assessment.
           </Text>
           <Box flexDirection="column" rowGap="s">
-            <Text variant="label" as="label">
+            <Text variant="label" as="label" htmlFor="prototype-stripe-key">
               Restricted Stripe key
             </Text>
             <Input
-              aria-label="Restricted Stripe key"
+              id="prototype-stripe-key"
               type="password"
               defaultValue="rk_live_mock_pepy"
             />
@@ -197,6 +197,11 @@ export function GuidedVariant({ state, act }: Props) {
               Close with billing on Stripe
             </Button>
           </Box>
+          {state.receiptViewed ? (
+            <Text variant="caption" color="success" role="status">
+              Mock receipt exported.
+            </Text>
+          ) : null}
         </Surface>
       ) : null}
     </Box>

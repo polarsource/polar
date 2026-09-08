@@ -21,12 +21,12 @@ export type PrototypeAction =
 
 export interface PrototypeState {
   stage: PrototypeStage
-  migrationName: string
+  receiptViewed: boolean
 }
 
 export const initialPrototypeState: PrototypeState = {
   stage: 'create',
-  migrationName: 'Stripe production',
+  receiptViewed: false,
 }
 
 const transitions: Record<
@@ -48,6 +48,9 @@ export function applyPrototypeAction(
 ): PrototypeState {
   if (action === 'reset') {
     return initialPrototypeState
+  }
+  if (action === 'review_receipt' && state.stage === 'receipt') {
+    return { ...state, receiptViewed: true }
   }
   const transition = transitions[action]
   if (state.stage !== transition.from) {

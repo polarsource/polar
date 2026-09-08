@@ -179,6 +179,11 @@ function AssistedTask({ state, act }: Props) {
         </Button>
         <Button onClick={() => act('close')}>Accept and close plan</Button>
       </Box>
+      {state.receiptViewed ? (
+        <Text variant="caption" color="success" role="status">
+          Mock receipt downloaded.
+        </Text>
+      ) : null}
     </Surface>
   )
 }

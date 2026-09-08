@@ -54,9 +54,9 @@ export default function MigrationsPage({ organization }: Props) {
             one Stripe account and runs in guided steps.
           </Text>
           <Box alignItems="center" gap="s">
-            <Link href={`${basePath}/prototypes`}>
-              <Button variant="secondary">Compare concepts</Button>
-            </Link>
+            <Button asChild variant="secondary">
+              <Link href={`${basePath}/prototypes`}>Compare concepts</Link>
+            </Button>
             <Button onClick={show}>
               <Box alignItems="center" columnGap="s">
                 <AddOutlined fontSize="inherit" />

@@ -57,7 +57,7 @@ export function ControlTowerVariant({ state, act }: Props) {
             active={state.stage === 'receipt'}
           />
         </Box>
-        <TowerWorkspace stage={state.stage} act={act} />
+        <TowerWorkspace state={state} act={act} />
       </Grid>
     </Box>
   )
@@ -92,12 +92,13 @@ function TowerQueue({
 }
 
 function TowerWorkspace({
-  stage,
+  state,
   act,
 }: {
-  stage: PrototypeStage
+  state: PrototypeState
   act: (action: PrototypeAction) => void
 }) {
+  const stage: PrototypeStage = state.stage
   if (stage === 'create') {
     return (
       <Surface>
@@ -218,6 +219,11 @@ function TowerWorkspace({
         </Button>
         <Button onClick={() => act('close')}>Close program</Button>
       </Box>
+      {state.receiptViewed ? (
+        <Text variant="caption" color="success" role="status">
+          Mock ledger exported.
+        </Text>
+      ) : null}
     </Surface>
   )
 }

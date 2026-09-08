@@ -29,13 +29,16 @@ describe('migration prototype model', () => {
     expect(result).toBe(initialPrototypeState)
   })
 
-  it('keeps receipt downloads side-effect free', () => {
+  it('records mocked receipt feedback without advancing the flow', () => {
     const receipt = {
       ...initialPrototypeState,
       stage: 'receipt' as const,
     }
 
-    expect(applyPrototypeAction(receipt, 'review_receipt')).toEqual(receipt)
+    expect(applyPrototypeAction(receipt, 'review_receipt')).toEqual({
+      ...receipt,
+      receiptViewed: true,
+    })
   })
 
   it('resets a completed prototype', () => {

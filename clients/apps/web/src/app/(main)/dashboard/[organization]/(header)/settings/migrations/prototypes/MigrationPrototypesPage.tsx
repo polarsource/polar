@@ -101,7 +101,7 @@ export default function MigrationPrototypesPage({
         </Box>
 
         {variant === 'guided' ? (
-          <GuidedVariant state={state} act={act} />
+          <GuidedVariant key={state.stage} state={state} act={act} />
         ) : null}
         {variant === 'tower' ? (
           <ControlTowerVariant state={state} act={act} />

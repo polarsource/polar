@@ -652,6 +652,61 @@ describe('CheckoutForm', () => {
         customer_tax_id: null,
       })
     })
+
+    it('clears the tax ID when a country change is coalesced with a line1 edit within the debounce window', async () => {
+      const update = vi.fn(async () => createCheckout())
+      const { form } = renderForm(businessCheckout(), update, {
+        customer_billing_address: { country: 'FR', state: '', line1: '' },
+        customer_tax_id: 'FR61954506077',
+      })
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'US')
+      })
+      await act(async () => {
+        form.setValue('customer_billing_address.line1', '1 Market St')
+      })
+      await waitForDebounce()
+
+      expect(update).toHaveBeenCalledTimes(1)
+      expect(update).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          customer_billing_address: expect.objectContaining({
+            country: 'US',
+            line1: '1 Market St',
+          }),
+          customer_tax_id: null,
+        }),
+      )
+      expect(form.getValues('customer_tax_id')).toBe('')
+    })
+
+    it('does not clear the tax ID when only a non-country address field is edited (no country change)', async () => {
+      const update = vi.fn(async () => createCheckout())
+      const { form } = renderForm(businessCheckout(), update, {
+        customer_billing_address: { country: 'FR', state: '', line1: '' },
+        customer_tax_id: 'FR61954506077',
+      })
+
+      await act(async () => {
+        form.setValue('customer_billing_address.line1', '1 Market St')
+      })
+      await waitForDebounce()
+
+      expect(update).toHaveBeenCalledTimes(1)
+      expect(update).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          customer_billing_address: expect.objectContaining({
+            country: 'FR',
+            line1: '1 Market St',
+          }),
+        }),
+      )
+      expect(update).toHaveBeenLastCalledWith(
+        expect.not.objectContaining({ customer_tax_id: expect.anything() }),
+      )
+      expect(form.getValues('customer_tax_id')).toBe('FR61954506077')
+    })
   })
 
   describe('Stripe checkout form', () => {

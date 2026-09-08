@@ -158,12 +158,25 @@ const BaseCheckoutForm = ({
       } else if (name.startsWith('customer_billing_address')) {
         const { customer_billing_address: customerBillingAddress } = value
         if (customerBillingAddress && customerBillingAddress.country) {
+          const newCountry = customerBillingAddress.country
           payload = {
             ...payload,
             customer_billing_address: {
               ...customerBillingAddress,
-              country: customerBillingAddress.country,
+              country: newCountry,
             },
+          }
+          // Coalesced edit: a country change followed by another address
+          // edit within the debounce window lands here with a non-country
+          // name. Compare against the persisted checkout country (the live
+          // watched `country` has already advanced to `newCountry`).
+          if (
+            newCountry !== checkout.customer_billing_address?.country &&
+            (checkout.customer_tax_id || value.customer_tax_id)
+          ) {
+            clearErrors('customer_tax_id')
+            payload.customer_tax_id = null
+            resetField('customer_tax_id', { defaultValue: '' })
           }
           clearErrors('customer_billing_address')
         }

@@ -17,6 +17,7 @@ class Tab:
     badge_variant: str | None = None
     # A small status dot (e.g. "needs attention"). Takes precedence over count.
     dot: bool = False
+    loading: bool = False
     # Extra classes on the tab element, e.g. "ml-auto" to push it to the right.
     extra_classes: str = ""
 
@@ -31,6 +32,10 @@ def _render_tab_indicator(tab: Tab) -> None:
     elif tab.count is not None:
         with tag.span(classes=f"badge badge-{variant} ml-2"):
             text(str(tab.count))
+    elif tab.loading:
+        with tag.span(classes=f"badge badge-{variant} ml-2", role="status"):
+            with tag.span(classes="loading loading-spinner loading-xs"):
+                pass
 
 
 @contextlib.contextmanager

@@ -390,7 +390,7 @@ class MemberService:
         send_webhook: bool = True,
     ) -> Member | None:
         """
-        Create an owner member for a customer if feature flag is enabled.
+        Create an owner member for a customer.
 
         Args:
             session: Database session
@@ -401,21 +401,8 @@ class MemberService:
             owner_external_id: Optional override for member external_id (defaults to customer.external_id)
 
         Returns:
-            Created/existing Member if feature flag enabled, None if flag disabled
+            The created or existing owner Member.
         """
-        member_model = organization.feature_settings.get("member_model_enabled", False)
-        seat_based = organization.feature_settings.get(
-            "seat_based_pricing_enabled", False
-        )
-        if not member_model and not seat_based:
-            log.debug(
-                "member.create_owner_member.skipped",
-                reason="feature_flag_disabled",
-                customer_id=customer.id,
-                organization_id=organization.id,
-            )
-            return None
-
         repository = MemberRepository.from_session(session)
 
         raw_email = owner_email or customer.email
@@ -648,7 +635,7 @@ class MemberService:
 
         Raises:
             ResourceNotFound: If customer not found or not accessible
-            NotPermitted: If feature flag disabled or no permission to add members
+            NotPermitted: If no permission to add members
         """
         org_ids = await get_accessible_org_ids(session, auth_subject)
         customer = await self._get_readable_customer(
@@ -659,15 +646,6 @@ class MemberService:
             options=(joinedload(Customer.organization),),
         )
         customer_id = customer.id
-
-        member_model = customer.organization.feature_settings.get(
-            "member_model_enabled", False
-        )
-        seat_based = customer.organization.feature_settings.get(
-            "seat_based_pricing_enabled", False
-        )
-        if not member_model and not seat_based:
-            raise NotPermitted("Member management is not enabled for this organization")
 
         email = email.strip()
 

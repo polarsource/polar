@@ -340,35 +340,6 @@ class TestCreate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
-    async def test_no_member_when_flag_disabled(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {"member_model_enabled": False}
-
-        payload: dict[str, Any] = {
-            "email": "customer.without.member@example.com",
-        }
-        if is_user(auth_subject):
-            payload["organization_id"] = str(organization.id)
-
-        customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
-        )
-        await session.flush()
-
-        assert customer.email == "customer.without.member@example.com"
-
-        member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_customer_and_email(customer)
-        assert member is None
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
-    )
     async def test_owner_override_all_fields(
         self,
         session: AsyncSession,

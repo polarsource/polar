@@ -339,9 +339,7 @@ def _create_seed_customer(
         customer.created_at = created_at
     session.add(customer)
 
-    if organization.feature_settings.get(
-        "member_model_enabled", False
-    ) or organization.feature_settings.get("seat_based_pricing_enabled", False):
+    if organization.feature_settings.get("member_model_enabled", False):
         member_email = owner_email or email
         if member_email is None:
             raise ValueError("Seed customers with members require an owner email")
@@ -1713,7 +1711,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                 "previous_annual_revenue": 0,
             },
             "feature_settings": {
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
             "customer_email_settings": {
@@ -1749,7 +1746,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                 "previous_annual_revenue": 0,
             },
             "feature_settings": {
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
             "products": [
@@ -1785,7 +1781,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                 "previous_annual_revenue": 0,
             },
             "feature_settings": {
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": False,
             },
             "products": [

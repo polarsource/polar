@@ -1128,49 +1128,13 @@ class TestCreate:
             assert len(metered_prices) == 1
 
     @pytest.mark.auth
-    async def test_seat_based_price_feature_disabled(
+    async def test_seat_based_price(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        create_schema = ProductCreateRecurring(
-            name="Product",
-            organization_id=organization.id,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[
-                ProductPriceSeatBasedCreate(
-                    amount_type=ProductPriceAmountType.seat_based,
-                    price_currency=PresentmentCurrency.usd,
-                    seat_tiers=ProductPriceSeatTiers(
-                        tiers=[
-                            ProductPriceSeatTier(
-                                min_seats=1,
-                                max_seats=None,
-                                price_per_seat=1000,
-                            )
-                        ]
-                    ),
-                )
-            ],
-        )
-
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(session, create_schema, auth_subject)
-
-    @pytest.mark.auth
-    async def test_seat_based_price_feature_enabled(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {"seat_based_pricing_enabled": True}
-        session.add(organization)
-        await session.flush()
-
         create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=organization.id,
@@ -1440,10 +1404,6 @@ class TestCreateUnitBasedPrice:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.feature_settings = {"seat_based_pricing_enabled": True}
-        session.add(organization)
-        await session.flush()
-
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
                 session,
@@ -1598,14 +1558,6 @@ class TestCreateMeterCycling:
 class TestCreateFixedSeatComposition:
     """Validation for composing a fixed price with a seat-based price."""
 
-    @pytest_asyncio.fixture
-    async def seat_based_pricing_enabled(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        organization.feature_settings = {"seat_based_pricing_enabled": True}
-        session.add(organization)
-        await session.flush()
-
     @pytest.mark.auth
     async def test_fixed_and_seat_allowed(
         self,
@@ -1613,7 +1565,6 @@ class TestCreateFixedSeatComposition:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        seat_based_pricing_enabled: None,
     ) -> None:
         product = await product_service.create(
             session,
@@ -1638,7 +1589,6 @@ class TestCreateFixedSeatComposition:
         organization: Organization,
         user_organization: UserOrganization,
         meter: Meter,
-        seat_based_pricing_enabled: None,
     ) -> None:
         product = await product_service.create(
             session,
@@ -1672,7 +1622,6 @@ class TestCreateFixedSeatComposition:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        seat_based_pricing_enabled: None,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
@@ -1696,7 +1645,6 @@ class TestCreateFixedSeatComposition:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        seat_based_pricing_enabled: None,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
@@ -1720,7 +1668,6 @@ class TestCreateFixedSeatComposition:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        seat_based_pricing_enabled: None,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
@@ -1773,7 +1720,6 @@ class TestCreateFixedSeatComposition:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        seat_based_pricing_enabled: None,
     ) -> None:
         """USD = fixed + seat, EUR = fixed only must be rejected."""
         with pytest.raises(PolarRequestValidationError):
@@ -1801,7 +1747,6 @@ class TestCreateFixedSeatComposition:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        seat_based_pricing_enabled: None,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
@@ -1813,28 +1758,6 @@ class TestCreateFixedSeatComposition:
                         _fixed_price_create(tax_behavior=TaxBehaviorOption.inclusive),
                         _seat_price_create(tax_behavior=TaxBehaviorOption.exclusive),
                     ],
-                    organization_id=organization.id,
-                ),
-                auth_subject,
-            )
-
-    @pytest.mark.auth
-    async def test_fixed_and_seat_feature_disabled_rejected(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        """Without ``seat_based_pricing_enabled`` the seat gate alone rejects the
-        composition — no separate fixed+seat gate is needed."""
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(
-                session,
-                ProductCreateRecurring(
-                    name="Product",
-                    recurring_interval=SubscriptionRecurringInterval.month,
-                    prices=[_fixed_price_create(), _seat_price_create()],
                     organization_id=organization.id,
                 ),
                 auth_subject,

@@ -141,19 +141,15 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_allows_when_seat_based_pricing_enabled_but_not_migrated(
+    async def test_allows_when_member_model_not_enabled(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
         organization: Organization,
     ) -> None:
-        # Enable seat-based pricing but NOT member_model_enabled (not fully migrated)
-        # Should still allow customer-sessions for backward compatibility
-        organization.feature_settings = {
-            "seat_based_pricing_enabled": True,
-            "member_model_enabled": False,
-        }
+        # An org that isn't migrated to the member model still gets a customer session
+        organization.feature_settings = {"member_model_enabled": False}
         await save_fixture(organization)
 
         customer = await create_customer(
@@ -182,10 +178,7 @@ class TestCreate:
         organization: Organization,
     ) -> None:
         # When member_model_enabled is true, should create MemberSession for owner
-        organization.feature_settings = {
-            "seat_based_pricing_enabled": True,
-            "member_model_enabled": True,
-        }
+        organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
         customer = await create_customer(
@@ -228,10 +221,7 @@ class TestCreate:
     ) -> None:
         # When member_model_enabled but no owner member exists,
         # the graceful fallback auto-creates one and returns a MemberSession.
-        organization.feature_settings = {
-            "seat_based_pricing_enabled": True,
-            "member_model_enabled": True,
-        }
+        organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
         customer = await create_customer(

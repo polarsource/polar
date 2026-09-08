@@ -6,7 +6,7 @@ from pathlib import Path
 
 from rich import print
 
-from polar.auth.scope import SCOPES_SUPPORTED
+from polar.auth.scope import SCOPES_SUPPORTED, Scope
 from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import OAuth2Client
@@ -17,6 +17,25 @@ from .constants import (
     CLIENT_REGISTRATION_TOKEN_PREFIX,
     CLIENT_SECRET_PREFIX,
 )
+
+# Customer-facing surfaces and session issuance: the MCP server exposes no tools
+# for them, so it never asks for these scopes.
+MCP_EXCLUDED_SCOPES = {
+    Scope.customer_portal_read,
+    Scope.customer_portal_write,
+    Scope.customer_sessions_write,
+    Scope.member_sessions_write,
+    Scope.wallets_read,
+    Scope.wallets_write,
+    Scope.notifications_read,
+    Scope.notifications_write,
+    Scope.notification_recipients_read,
+    Scope.notification_recipients_write,
+}
+
+MCP_SCOPES = [
+    scope for scope in SCOPES_SUPPORTED if Scope(scope) not in MCP_EXCLUDED_SCOPES
+]
 
 
 def append_credentials_to_env_file(
@@ -48,7 +67,7 @@ async def create_client(add_to_env_file: bool) -> None:
                 "token_endpoint_auth_method": "client_secret_post",
                 "grant_types": ["web"],
                 "response_types": [],
-                "scope": " ".join(SCOPES_SUPPORTED),
+                "scope": " ".join(MCP_SCOPES),
             }
         )
         session.add(oauth2_client)

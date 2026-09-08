@@ -163,20 +163,54 @@ class PayoutAccountService:
         self,
         session: AsyncSession,
         payout_account: PayoutAccount,
-        *,
-        unlink: bool = False,
     ) -> None:
-        # Verify the account is not linked to any organization
-        if not unlink:
-            organization_repository = OrganizationRepository.from_session(session)
-            linked_organizations = (
-                await organization_repository.get_all_by_payout_account(
-                    payout_account.id
-                )
-            )
-            if linked_organizations:
-                raise PayoutAccountLinkedToOrganization(payout_account.id)
+        organization_repository = OrganizationRepository.from_session(session)
+        linked_organizations = await organization_repository.get_all_by_payout_account(
+            payout_account.id
+        )
+        if linked_organizations:
+            raise PayoutAccountLinkedToOrganization(payout_account.id)
 
+        await self._delete(session, payout_account)
+
+    async def unlink_and_maybe_delete(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        payout_account_id = organization.payout_account_id
+        if payout_account_id is None:
+            return
+
+        organization_repository = OrganizationRepository.from_session(session)
+        linked_organizations = await organization_repository.get_all_by_payout_account(
+            payout_account_id
+        )
+        other_organizations = [
+            linked for linked in linked_organizations if linked.id != organization.id
+        ]
+
+        # Still shared: just drop this organization's link, keep the account.
+        if other_organizations:
+            await organization_repository.remove_payout_account(
+                organization.id, payout_account_id
+            )
+            return
+
+        # Would be orphaned: run the deletion guards before unlinking so a failed
+        # deletion (e.g. pending payouts) leaves the organization untouched.
+        repository = PayoutAccountRepository.from_session(session)
+        payout_account = await repository.get_by_id(payout_account_id)
+        if payout_account is not None:
+            await self._delete(session, payout_account)
+
+        await organization_repository.remove_payout_account(
+            organization.id, payout_account_id
+        )
+
+    async def _delete(
+        self, session: AsyncSession, payout_account: PayoutAccount
+    ) -> None:
         # Verify there are no pending payouts for this account
         payout_repository = PayoutRepository.from_session(session)
         pending_payouts_count = await payout_repository.count_pending_by_payout_account(
@@ -196,11 +230,6 @@ class PayoutAccountService:
             if balance != 0:
                 raise PayoutAccountNonZeroBalance(payout_account.stripe_id)
             await stripe.delete_account(payout_account.stripe_id)
-
-        # Unlink the payout account from the organization before deleting
-        if unlink:
-            organization_repository = OrganizationRepository.from_session(session)
-            await organization_repository.delete_payout_account(payout_account.id)
 
         repository = PayoutAccountRepository.from_session(session)
         await repository.soft_delete(payout_account)

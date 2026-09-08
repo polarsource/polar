@@ -152,7 +152,7 @@ class TestDelete:
         assert response.status_code == 200
         assert "Delete Payout Account" in response.text
 
-    async def test_post_deletes_payout_account(
+    async def test_post_deletes_orphaned_payout_account(
         self,
         backoffice_client: httpx.AsyncClient,
         mocker: MockerFixture,
@@ -163,6 +163,9 @@ class TestDelete:
         payout_account = await create_payout_account(
             save_fixture, organization, user, stripe_id="acct_todelete"
         )
+        # Only an orphaned (unlinked) account may be deleted from this page.
+        organization.payout_account = None
+        await save_fixture(organization)
 
         stripe_mock = mocker.patch("polar.payout_account.service.stripe")
         stripe_mock.account_exists = mocker.AsyncMock(return_value=True)
@@ -176,3 +179,29 @@ class TestDelete:
 
         assert response.status_code in (200, 303)
         stripe_mock.delete_account.assert_awaited_once_with(payout_account.stripe_id)
+
+    async def test_post_refuses_when_still_linked_to_organization(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """A payout account still referenced by an organization is not deleted:
+        it could be shared by several organizations, so the account-centric page
+        must not orphan any of them."""
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_todelete"
+        )
+
+        stripe_mock = mocker.patch("polar.payout_account.service.stripe")
+        stripe_mock.delete_account = mocker.AsyncMock(return_value=None)
+
+        response = await backoffice_client.post(
+            f"/payout-accounts/{payout_account.id}/delete",
+            data={"reason": "Merchant closed account"},
+        )
+
+        assert response.status_code == 422
+        stripe_mock.delete_account.assert_not_awaited()

@@ -16,8 +16,10 @@ from polar.models.user import User
 from polar.models.user_session import UserSession
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import AUPSection
+from polar.payout_account.repository import PayoutAccountRepository
 from polar.postgres import AsyncSession, get_db_session
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_payout_account
 
 
 @pytest_asyncio.fixture
@@ -347,6 +349,45 @@ class TestDeletePayoutAccount:
 
         assert response.status_code == 200
         assert "Delete Payout Account" in response.text
+
+    async def test_shared_account_only_unlinks_this_organization(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        organization_second: Organization,
+        user: User,
+    ) -> None:
+        """Deleting the payout account from one organization's page must not
+        destroy an account another organization still shares."""
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_shared"
+        )
+        organization_second.payout_account = payout_account
+        await save_fixture(organization_second)
+
+        stripe_mock = mocker.patch("polar.payout_account.service.stripe")
+        stripe_mock.delete_account = mocker.AsyncMock(return_value=None)
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/delete-payout-account",
+            data={"reason": "Merchant request"},
+        )
+
+        assert response.status_code in (200, 303)
+        stripe_mock.delete_account.assert_not_awaited()
+
+        await session.refresh(organization)
+        await session.refresh(organization_second)
+        assert organization.payout_account_id is None
+        assert organization_second.payout_account_id == payout_account.id
+
+        repository = PayoutAccountRepository.from_session(session)
+        persisted = await repository.get_by_id(payout_account.id, include_deleted=True)
+        assert persisted is not None
+        assert persisted.deleted_at is None
 
 
 @pytest.mark.asyncio

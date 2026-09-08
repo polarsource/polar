@@ -7,6 +7,7 @@ from polar.enums import PayoutAccountStatus, PayoutAccountType
 from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, User
 from polar.models.payout_attempt import PayoutAttemptStatus
+from polar.payout_account.repository import PayoutAccountRepository
 from polar.payout_account.service import (
     PayoutAccountHasPendingPayouts,
     PayoutAccountLinkedToOrganization,
@@ -171,8 +172,53 @@ class TestDelete:
             payout_account.stripe_id
         )
 
+
+@pytest.mark.asyncio
+class TestUnlinkAndMaybeDelete:
     @pytest.mark.auth
-    async def test_successful_deletion_unlinked(
+    async def test_shared_account_only_unlinks_requesting_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        """A payout account shared by two organizations is kept intact when one
+        organization is unlinked, even if the account has pending payouts."""
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        organization_second.payout_account = payout_account
+        await save_fixture(organization_second)
+
+        # Pending payout on the shared account: it must NOT block the unlink.
+        account = await create_account(save_fixture, user)
+        await create_payout(
+            save_fixture,
+            payout_account=payout_account,
+            account=account,
+            attempts=[PayoutAttemptStatus.pending],
+        )
+
+        await payout_account_service.unlink_and_maybe_delete(session, organization)
+
+        await session.refresh(organization)
+        await session.refresh(organization_second)
+        assert organization.payout_account_id is None
+        assert organization_second.payout_account_id == payout_account.id
+
+        stripe_service_mock.delete_account.assert_not_called()  # type: ignore[attr-defined]
+
+        repository = PayoutAccountRepository.from_session(session)
+        persisted = await repository.get_by_id(payout_account.id, include_deleted=True)
+        assert persisted is not None
+        assert persisted.deleted_at is None
+
+    @pytest.mark.auth
+    async def test_last_organization_deletes_orphaned_account(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -181,7 +227,7 @@ class TestDelete:
         user: User,
         stripe_service_mock: StripeService,
     ) -> None:
-        """Successfully deletes a payout account if forcing organization unlinking."""
+        """Unlinking the last organization deletes the now-orphaned account."""
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
@@ -190,11 +236,56 @@ class TestDelete:
         stripe_service_mock.retrieve_balance.return_value = ("usd", 0)  # type: ignore[attr-defined]
         stripe_service_mock.delete_account.return_value = None  # type: ignore[attr-defined]
 
-        await payout_account_service.delete(session, payout_account, unlink=True)
+        await payout_account_service.unlink_and_maybe_delete(session, organization)
+
+        await session.refresh(organization)
+        assert organization.payout_account_id is None
 
         stripe_service_mock.delete_account.assert_called_once_with(  # type: ignore[attr-defined]
             payout_account.stripe_id
         )
+
+        repository = PayoutAccountRepository.from_session(session)
+        persisted = await repository.get_by_id(payout_account.id, include_deleted=True)
+        assert persisted is not None
+        assert persisted.deleted_at is not None
+
+    @pytest.mark.auth
+    async def test_last_organization_with_pending_payout_raises(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        """Unlinking the last organization of an account with pending payouts
+        raises and leaves the organization linked."""
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+
+        account = await create_account(save_fixture, user)
+        await create_payout(
+            save_fixture,
+            payout_account=payout_account,
+            account=account,
+            attempts=[PayoutAttemptStatus.pending],
+        )
+
+        with pytest.raises(PayoutAccountHasPendingPayouts):
+            await payout_account_service.unlink_and_maybe_delete(session, organization)
+
+        await session.refresh(organization)
+        assert organization.payout_account_id == payout_account.id
+
+        stripe_service_mock.delete_account.assert_not_called()  # type: ignore[attr-defined]
+
+        repository = PayoutAccountRepository.from_session(session)
+        persisted = await repository.get_by_id(payout_account.id, include_deleted=True)
+        assert persisted is not None
+        assert persisted.deleted_at is None
 
 
 @pytest.mark.asyncio

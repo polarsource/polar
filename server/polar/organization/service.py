@@ -785,7 +785,7 @@ class OrganizationService:
             return check_result
 
         try:
-            await self._delete_payout_account(session, organization)
+            await payout_account_service.unlink_and_maybe_delete(session, organization)
         except Exception as e:
             log.error(
                 "organization.deletion.stripe_account_deletion_failed",
@@ -890,22 +890,6 @@ class OrganizationService:
         )
 
         return organization
-
-    async def _delete_payout_account(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        if organization.payout_account_id is None:
-            return
-
-        payout_account_repository = PayoutAccountRepository.from_session(session)
-        payout_account = await payout_account_repository.get_by_id(
-            organization.payout_account_id
-        )
-
-        if payout_account is None:
-            return
-
-        await payout_account_service.delete(session, payout_account, unlink=True)
 
     async def set_payout_account(
         self,

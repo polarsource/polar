@@ -24,6 +24,9 @@ const SelectTrigger = ({
       'border-input bg-background ring-offset-background data-placeholder:text-muted-foreground focus:ring-ring flex h-10 w-full items-center justify-between rounded-md border px-3 py-2 md:text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
       className,
     )}
+    // Safari only tabs to form controls with an explicit tabindex, so without
+    // this the trigger is skipped in the tab order (unlike a native <select>).
+    tabIndex={0}
     {...props}
   >
     {children}

@@ -968,6 +968,8 @@ class TestCreateFromCheckoutSubscription:
         assert order.customer == checkout.customer
         assert order.product == product
         assert len(order.items) == len(product.prices)
+        assert order.items[0].start_timestamp == subscription.current_period_start
+        assert order.items[0].end_timestamp == subscription.current_period_end
 
     async def test_metered(
         self,
@@ -2859,6 +2861,8 @@ class TestCreateTrialOrder:
         assert order.product == product
         assert order.subscription == subscription
         assert len(order.items) == 1
+        assert order.items[0].start_timestamp == subscription.trial_start
+        assert order.items[0].end_timestamp == subscription.trial_end
 
 
 @pytest.mark.asyncio

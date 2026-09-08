@@ -122,7 +122,15 @@ class OrderItem(RecordModel):
         formatted_start = format_date(start.date(), locale="en_US")
         formatted_end = format_date(end.date(), locale="en_US")
         label = f"Trial period for {product.name} ({formatted_start} - {formatted_end})"
-        return cls(label=label, amount=0, tax_amount=0, net_amount=0, proration=False)
+        return cls(
+            label=label,
+            amount=0,
+            tax_amount=0,
+            net_amount=0,
+            proration=False,
+            start_timestamp=start,
+            end_timestamp=end,
+        )
 
     @classmethod
     def from_wallet(cls, wallet: "Wallet", amount: int) -> Self:

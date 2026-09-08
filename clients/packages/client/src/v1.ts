@@ -26976,6 +26976,16 @@ export interface components {
        * @description Associated price ID, if any.
        */
       product_price_id: string | null
+      /**
+       * Start Timestamp
+       * @description Start of the period covered by this line item, if any.
+       */
+      start_timestamp: string | null
+      /**
+       * End Timestamp
+       * @description End of the period covered by this line item, if any.
+       */
+      end_timestamp: string | null
     }
     /** OrderNotDraft */
     OrderNotDraft: {

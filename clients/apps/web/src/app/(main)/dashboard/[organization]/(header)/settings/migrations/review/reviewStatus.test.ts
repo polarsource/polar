@@ -22,21 +22,21 @@ function row(overrides: Partial<ReviewRow>): ReviewRow {
 }
 
 describe('reviewStatus', () => {
-  describe('imported', () => {
-    it('shows "Imported" (gray) when import_status is imported', () => {
+  describe('switched', () => {
+    it('shows "Switched" (gray) when import_status is imported', () => {
       expect(reviewStatus(row({ import_status: 'imported' }))).toEqual({
-        label: 'Imported',
+        label: 'Switched',
         color: 'gray',
       })
     })
 
     // `isImported` checks `import_status === 'imported'`, so a precheck-skipped
-    // row that somehow ended up imported should still surface as Imported — the
+    // row that somehow ended up imported should still surface as Switched — the
     // runtime outcome wins over the precheck prediction.
-    it('prefers "Imported" over a precheck-skipped status', () => {
+    it('prefers "Switched" over a precheck-skipped status', () => {
       expect(
         reviewStatus(row({ status: 'skipped', import_status: 'imported' })),
-      ).toEqual({ label: 'Imported', color: 'gray' })
+      ).toEqual({ label: 'Switched', color: 'gray' })
     })
   })
 
@@ -94,11 +94,11 @@ describe('reviewStatus', () => {
             reason_level: 'action_required',
           }),
         ),
-      ).toEqual({ label: 'Imported', color: 'gray' })
+      ).toEqual({ label: 'Switched', color: 'gray' })
     })
   })
 
-  describe('ready', () => {
+  describe('preparation', () => {
     it('shows "Ready to switch" when a pending subscription has imported dependencies', () => {
       expect(
         reviewStatus(
@@ -111,19 +111,19 @@ describe('reviewStatus', () => {
       ).toEqual({ label: 'Ready to switch' })
     })
 
-    it('shows "Ready" when importable and pending with no reason', () => {
+    it('shows "To prepare" when importable and pending with no reason', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: 'pending' })),
-      ).toEqual({ label: 'Ready' })
+      ).toEqual({ label: 'To prepare' })
     })
 
-    it('shows "Ready" when import_status is null (price rows)', () => {
+    it('shows "To prepare" when import_status is null', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: null })),
-      ).toEqual({ label: 'Ready' })
+      ).toEqual({ label: 'To prepare' })
     })
 
-    it('shows "Ready" for an info-level reason that does not need attention', () => {
+    it('shows "To prepare" for an info-level reason that does not need attention', () => {
       expect(
         reviewStatus(
           row({
@@ -132,7 +132,7 @@ describe('reviewStatus', () => {
             reason_level: 'info',
           }),
         ),
-      ).toEqual({ label: 'Ready' })
+      ).toEqual({ label: 'To prepare' })
     })
   })
 })

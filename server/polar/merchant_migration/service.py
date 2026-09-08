@@ -273,7 +273,14 @@ def _summarize_entities(
 ) -> list[MerchantMigrationRecordSummaryEntity]:
     """Tally every entity in one pass over the classified rows."""
     tallies = {
-        entity: {"total": 0, "importable": 0, "imported": 0, "selectable": 0}
+        entity: {
+            "total": 0,
+            "importable": 0,
+            "imported": 0,
+            "ready": 0,
+            "action_required": 0,
+            "selectable": 0,
+        }
         for entity in entities
     }
     for item in items:
@@ -283,9 +290,20 @@ def _summarize_entities(
         tally["total"] += 1
         if item.import_status == MerchantMigrationRecordStatus.imported:
             tally["imported"] += 1
+        if (
+            item.reason_level == PrecheckReasonLevel.action_required
+            and item.import_status != MerchantMigrationRecordStatus.imported
+        ):
+            tally["action_required"] += 1
         if item.status != PrecheckRecordStatus.importable:
             continue
         tally["importable"] += 1
+        if (
+            item.entity == PrecheckEntity.subscriptions
+            and item.import_status == MerchantMigrationRecordStatus.pending
+            and item.dependencies_imported
+        ):
+            tally["ready"] += 1
         if (
             item.entity == PrecheckEntity.subscriptions
             and item.import_status == MerchantMigrationRecordStatus.pending
@@ -300,6 +318,8 @@ def _summarize_entities(
             importable=tally["importable"],
             skipped=tally["total"] - tally["importable"],
             imported=tally["imported"],
+            ready=tally["ready"],
+            action_required=tally["action_required"],
             selectable=tally["selectable"],
         )
         for entity, tally in tallies.items()
@@ -1126,18 +1146,20 @@ class MerchantMigrationService:
         status: PrecheckRecordStatus | None,
         reason_level: PrecheckReasonLevel | None = None,
         import_status: MerchantMigrationRecordStatus | None = None,
+        exclude_import_status: MerchantMigrationRecordStatus | None = None,
         cutover_status: MerchantMigrationCutoverStatus | None = None,
+        dependencies_imported: bool | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
         """Return staged records classified importable/skipped and paginated in
         memory. ``entity`` scopes to one type; ``None`` returns products, customers
         and subscriptions together. ``status`` filters to importable or skipped;
         ``reason_level`` filters to rows the merchant has to act on
-        (`action_required`) or only needs to know about (`info`);
-        ``import_status`` filters on the ledger outcome, which excludes price rows
-        since they have none; ``cutover_status`` narrows to what the switch did
-        with a subscription, which is how the merchant finds the ones it left on
-        the source. Reads what ``run_precheck`` persisted."""
+        (`action_required`) or only needs to know about (`info`); the import status
+        filters include or exclude a ledger outcome; ``cutover_status`` narrows to
+        what the switch did with a subscription; ``dependencies_imported``
+        separates subscriptions ready to switch from those still needing
+        preparation. Reads what ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
         entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
         items = await self._classify_staged(session, migration, entities)
@@ -1149,8 +1171,18 @@ class MerchantMigrationService:
             items = [item for item in items if item.reason_level == reason_level]
         if import_status is not None:
             items = [item for item in items if item.import_status == import_status]
+        if exclude_import_status is not None:
+            items = [
+                item for item in items if item.import_status != exclude_import_status
+            ]
         if cutover_status is not None:
             items = [item for item in items if item.cutover_status == cutover_status]
+        if dependencies_imported is not None:
+            items = [
+                item
+                for item in items
+                if item.dependencies_imported is dependencies_imported
+            ]
 
         start = (pagination.page - 1) * pagination.limit
         return items[start : start + pagination.limit], len(items)

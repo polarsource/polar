@@ -5,6 +5,7 @@ import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
+import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import {
   EMPTY_MESSAGES,
@@ -19,6 +20,10 @@ import {
   selectedCount,
   SelectionState,
 } from '../selection'
+import {
+  remainingSubscriptionCount,
+  reviewCatalogEmptyKind,
+} from './reviewCatalog'
 import { ReviewRow } from './reviewRows'
 
 const numberFormat = new Intl.NumberFormat('en-US')
@@ -68,19 +73,24 @@ export function ReviewTableView({
   blockers = [],
   attentionCount,
 }: Props) {
-  const rowTotal = counts.subscriptions.total
-  const skippedTotal = counts.subscriptions.skipped
+  const rowTotal = remainingSubscriptionCount(
+    counts.subscriptions.total,
+    counts.subscriptions.imported,
+  )
+  const catalogEmpty = reviewCatalogEmptyKind(
+    counts.subscriptions.total,
+    counts.subscriptions.imported,
+  )
   const selectableTotal = counts.subscriptions.selectable
-
   const importCount = selectedCount(selection, selectableTotal)
-  const importLabel = importing
-    ? 'Importing…'
+  const prepareLabel = importing
+    ? 'Preparing…'
     : importCount > 0
-      ? `Import ${numberFormat.format(importCount)} ${
+      ? `Prepare ${numberFormat.format(importCount)} ${
           importCount === 1 ? 'subscription' : 'subscriptions'
         }`
-      : 'Import subscriptions'
-  const hasCatalog = rowTotal > 0
+      : 'Prepare subscriptions'
+  const canPrepare = filter === 'all' || filter === 'to_prepare'
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
   const columns = useMemo(
@@ -125,42 +135,13 @@ export function ReviewTableView({
     )
   }
 
-  // Reaching this step means a scan already ran, so no subscription rows means
-  // Stripe had no subscriptions we can migrate.
-  if (!hasCatalog) {
+  if (catalogEmpty) {
     return (
-      <Box
-        borderWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        borderRadius="l"
-        paddingVertical="3xl"
-        paddingHorizontal="xl"
-        flexDirection="column"
-        alignItems="center"
-        rowGap="l"
-        textAlign="center"
-      >
-        <Box flexDirection="column" rowGap="xs" alignItems="center">
-          <Text variant="heading-xs" as="h3">
-            Nothing to import
-          </Text>
-          <Text variant="caption" color="muted">
-            We found no subscriptions in Stripe that can move to Polar. If you
-            have added some since, scan again.
-          </Text>
-        </Box>
-        {onRerunPrecheck && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={onRerunPrecheck}
-            disabled={rerunning}
-          >
-            {rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
-          </Button>
-        )}
-      </Box>
+      <CatalogEmptyPanel
+        kind={catalogEmpty}
+        onRerunPrecheck={onRerunPrecheck}
+        rerunning={rerunning}
+      />
     )
   }
 
@@ -169,7 +150,7 @@ export function ReviewTableView({
       {importError && (
         <Alert
           variant="danger"
-          title="We couldn't import the catalog"
+          title="We couldn't prepare these subscriptions"
           description={importError}
         />
       )}
@@ -186,9 +167,11 @@ export function ReviewTableView({
             <ReviewStatusTabs
               value={filter}
               counts={{
-                attention: attentionCount,
-                skipped: skippedTotal,
                 all: rowTotal,
+                to_prepare: selectableTotal,
+                ready: counts.subscriptions.ready,
+                attention: attentionCount,
+                skipped: counts.subscriptions.skipped,
               }}
               onChange={onFilterChange}
             />
@@ -204,18 +187,20 @@ export function ReviewTableView({
                 {rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
               </Button>
             )}
-            <Button
-              size="sm"
-              onClick={onImport}
-              disabled={importing || importCount <= 0}
-            >
-              {importLabel}
-            </Button>
+            {canPrepare ? (
+              <Button
+                size="sm"
+                onClick={onImport}
+                disabled={importing || importCount <= 0}
+              >
+                {prepareLabel}
+              </Button>
+            ) : null}
           </Box>
         </Box>
 
         <Text variant="caption" color="muted">
-          Importing a subscription brings its customer and product to Polar.
+          Preparing a subscription brings its customer and product to Polar.
           Polar starts billing only when you switch.
         </Text>
 

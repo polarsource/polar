@@ -25168,6 +25168,16 @@ export interface components {
        */
       imported: number
       /**
+       * Ready
+       * @description How many subscriptions are prepared and ready to switch.
+       */
+      ready: number
+      /**
+       * Action Required
+       * @description How many require merchant action before they can be prepared.
+       */
+      action_required: number
+      /**
        * Selectable
        * @description How many subscriptions an import would still prepare: importable by the pre-check, pending in the ledger, and not already backed by an imported customer and product. Zero for other entities.
        */
@@ -56205,9 +56215,13 @@ export interface operations {
         import_status?:
           | components['schemas']['MerchantMigrationRecordStatus']
           | null
+        exclude_import_status?:
+          | components['schemas']['MerchantMigrationRecordStatus']
+          | null
         cutover_status?:
           | components['schemas']['MerchantMigrationCutoverStatus']
           | null
+        dependencies_imported?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

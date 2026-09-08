@@ -457,7 +457,11 @@ async def records(
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
     reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
     import_status: Annotated[MerchantMigrationRecordStatus | None, Query()] = None,
+    exclude_import_status: Annotated[
+        MerchantMigrationRecordStatus | None, Query()
+    ] = None,
     cutover_status: Annotated[MerchantMigrationCutoverStatus | None, Query()] = None,
+    dependencies_imported: Annotated[bool | None, Query()] = None,
     # The primary, like the summary above: it supplies the selection ceiling
     # and these rows supply the checkboxes, so a split would let replica lag
     # show a tickable row the count doesn't include.
@@ -471,7 +475,9 @@ async def records(
         status=status,
         reason_level=reason_level,
         import_status=import_status,
+        exclude_import_status=exclude_import_status,
         cutover_status=cutover_status,
+        dependencies_imported=dependencies_imported,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)

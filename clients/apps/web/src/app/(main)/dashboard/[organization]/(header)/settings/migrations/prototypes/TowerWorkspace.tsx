@@ -75,7 +75,7 @@ export function TowerWorkspace({ state, act }: Props) {
             </Button>
           </Box>
         </Surface>
-        <RecordExplorer title="Exception inbox" />
+        <RecordExplorer title="Records requiring attention" />
       </Box>
     )
   }
@@ -160,7 +160,7 @@ export function TowerWorkspace({ state, act }: Props) {
       <RecordExplorer
         transferred
         defaultMode="all"
-        title="Exception reconciliation"
+        title="Records remaining on Stripe"
       />
     </Box>
   )

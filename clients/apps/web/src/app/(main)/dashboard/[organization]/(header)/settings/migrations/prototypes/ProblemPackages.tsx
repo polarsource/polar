@@ -24,6 +24,9 @@ export function ProblemPackages({
         <Metric label="Problem records" value={problems.length} />
         <Metric label="Issue packages" value={packages.length} />
       </Box>
+      <Text variant="caption" color="muted">
+        All problem records remain on Stripe until their category is resolved.
+      </Text>
       {packages.map(([category, count]) => {
         const sample = problems.find((record) => record.category === category)
         return (
@@ -48,7 +51,6 @@ export function ProblemPackages({
                 {sample?.title ?? 'Review before transfer'}
               </Text>
             </Box>
-            <Text variant="caption">Stay on Stripe until resolved</Text>
           </Box>
         )
       })}

@@ -8,9 +8,104 @@ from polar.auth.scope import Scope
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
-from polar.models import Organization, OrganizationAccessToken, User, UserOrganization
+from polar.models import (
+    OAuth2Client,
+    OAuth2Token,
+    Organization,
+    OrganizationAccessToken,
+    User,
+    UserOrganization,
+)
 from tests.fixtures.auth import AuthSubjectFixture, make_session_stale
 from tests.fixtures.database import SaveFixture
+
+
+@pytest.mark.asyncio
+class TestOAuthAuthentication:
+    @pytest.fixture(autouse=True)
+    def oauth_session(self, auth_subject: AuthSubject[User]) -> None:
+        auth_subject.session = OAuth2Token(client=OAuth2Client())
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            scopes={Scope.organization_access_tokens_write, Scope.metrics_read}
+        )
+    )
+    async def test_token_lifecycle(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/organization-access-tokens/",
+            json={
+                "organization_id": str(organization.id),
+                "comment": "OAuth token",
+                "scopes": ["metrics:read"],
+            },
+        )
+        assert response.status_code == 201
+        token_id = response.json()["organization_access_token"]["id"]
+
+        response = await client.get("/v1/organization-access-tokens/")
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["items"]] == [token_id]
+
+        response = await client.patch(
+            f"/v1/organization-access-tokens/{token_id}",
+            json={"comment": "updated"},
+        )
+        assert response.status_code == 200
+        assert response.json()["comment"] == "updated"
+
+        response = await client.delete(f"/v1/organization-access-tokens/{token_id}")
+        assert response.status_code == 204
+        response = await client.get("/v1/organization-access-tokens/")
+        assert response.status_code == 200
+        assert response.json()["items"] == []
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.organization_access_tokens_read})
+    )
+    async def test_read_only(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get("/v1/organization-access-tokens/")
+        assert response.status_code == 200
+
+        response = await client.post(
+            "/v1/organization-access-tokens/",
+            json={
+                "organization_id": str(organization.id),
+                "comment": "forbidden",
+                "scopes": ["metrics:read"],
+            },
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.organization_access_tokens_write})
+    )
+    async def test_cannot_escalate_scopes(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/organization-access-tokens/",
+            json={
+                "organization_id": str(organization.id),
+                "comment": "forbidden",
+                "scopes": ["orders:write"],
+            },
+        )
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "scopes"]
 
 
 async def _build_oat(

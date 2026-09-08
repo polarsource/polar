@@ -5890,10 +5890,15 @@ export interface paths {
     /**
      * List
      * @description List organization access tokens.
+     *
+     *     **Scopes**: `organization_access_tokens:read` `organization_access_tokens:write`
      */
     get: operations['organization_access_tokens:list']
     put?: never
-    /** Create */
+    /**
+     * Create
+     * @description **Scopes**: `organization_access_tokens:write`
+     */
     post: operations['organization_access_tokens:create']
     delete?: never
     options?: never
@@ -5911,11 +5916,17 @@ export interface paths {
     get?: never
     put?: never
     post?: never
-    /** Delete */
+    /**
+     * Delete
+     * @description **Scopes**: `organization_access_tokens:write`
+     */
     delete: operations['organization_access_tokens:delete']
     options?: never
     head?: never
-    /** Update */
+    /**
+     * Update
+     * @description **Scopes**: `organization_access_tokens:write`
+     */
     patch: operations['organization_access_tokens:update']
     trace?: never
   }

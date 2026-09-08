@@ -60,7 +60,7 @@ export function CurrentSwitch({
     setSelected(new Set(clean.map((row) => row.id)))
     setFilter('ready')
     resetPage()
-  }, [clean, resetPage])
+  }, [clean, resetPage, setFilter, setSelected])
 
   const toggleAllReady = useCallback(() => {
     if (switchCount === clean.length) {
@@ -68,7 +68,7 @@ export function CurrentSwitch({
       return
     }
     selectReady()
-  }, [clean.length, selectReady, switchCount])
+  }, [clean.length, selectReady, setSelected, switchCount])
 
   const toggle = useCallback(
     (id: string) => {
@@ -85,7 +85,7 @@ export function CurrentSwitch({
         return next
       })
     },
-    [cleanIds],
+    [cleanIds, setSelected],
   )
 
   const columns = useMemo(

@@ -90,7 +90,7 @@ export function CurrentAssessment({
     setFilter('to_prepare')
     setQuery('')
     resetPage()
-  }, [clean, resetPage])
+  }, [clean, resetPage, setFilter, setQuery, setSelected])
 
   const toggleAllReady = useCallback(() => {
     if (selectedReady === totals.clean) {
@@ -98,7 +98,7 @@ export function CurrentAssessment({
       return
     }
     selectReady()
-  }, [selectReady, selectedReady, totals.clean])
+  }, [selectReady, selectedReady, setSelected, totals.clean])
 
   const toggle = useCallback(
     (id: string) => {
@@ -115,7 +115,7 @@ export function CurrentAssessment({
         return next
       })
     },
-    [cleanIds],
+    [cleanIds, setSelected],
   )
 
   const columns = useMemo(

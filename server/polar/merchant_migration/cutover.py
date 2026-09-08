@@ -284,10 +284,10 @@ class SubscriptionCutover:
             return _skip(_NOT_IMPORTED)
 
         customer_record = await self.record_repository.get_imported_customer_dependency(
-            self.migration.id, staged.customer_source_id
+            self.migration.organization_id, staged.customer_source_id
         )
         product_record = await self.record_repository.get_imported_product_dependency(
-            self.migration.id, staged.price_source_id
+            self.migration.organization_id, staged.price_source_id
         )
         if (
             customer_record is None
@@ -358,6 +358,18 @@ class SubscriptionCutover:
 
         if already_stopped and self._period_is_lapsed(source, product):
             return _fail(_LAPSED)
+
+        customer = await self.customer_repository.get_by_id(
+            customer.id, include_deleted=True, for_update=True
+        )
+        if customer is None or customer.is_deleted:
+            return _skip(_CUSTOMER_DELETED)
+        # Re-check under the lock: another cutover may have created one while
+        # this worker resolved the payment method.
+        if await self.subscription_repository.exists_live_by_customer_and_product(
+            customer.id, product.id
+        ):
+            return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
 
         subscription = await create_imported_subscription(
             self.session, staged, product, price, customer

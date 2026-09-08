@@ -306,10 +306,10 @@ class MerchantMigrationRecordRepository(
         return await self.get_all(statement)
 
     async def get_imported_customer_dependency(
-        self, migration_id: UUID, customer_source_id: str
+        self, organization_id: UUID, customer_source_id: str
     ) -> MerchantMigrationRecord | None:
         statement = self.get_base_statement().where(
-            MerchantMigrationRecord.merchant_migration_id == migration_id,
+            MerchantMigrationRecord.organization_id == organization_id,
             MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
             MerchantMigrationRecord.target_id.is_not(None),
@@ -318,10 +318,10 @@ class MerchantMigrationRecordRepository(
         return await self.get_one_or_none(statement)
 
     async def get_imported_product_dependency(
-        self, migration_id: UUID, price_source_id: str
+        self, organization_id: UUID, price_source_id: str
     ) -> MerchantMigrationRecord | None:
         statement = self.get_base_statement().where(
-            MerchantMigrationRecord.merchant_migration_id == migration_id,
+            MerchantMigrationRecord.organization_id == organization_id,
             MerchantMigrationRecord.type == MerchantMigrationRecordType.product,
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
             MerchantMigrationRecord.target_id.is_not(None),
@@ -332,6 +332,22 @@ class MerchantMigrationRecordRepository(
             ),
         )
         return await self.get_one_or_none(statement)
+
+    async def list_imported_catalog_dependencies(
+        self, organization_id: UUID
+    ) -> Sequence[MerchantMigrationRecord]:
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.type.in_(
+                (
+                    MerchantMigrationRecordType.customer,
+                    MerchantMigrationRecordType.product,
+                )
+            ),
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.target_id.is_not(None),
+        )
+        return await self.get_all(statement)
 
     def _switchable_subscriptions_statement(
         self, migration_id: UUID
@@ -345,8 +361,8 @@ class MerchantMigrationRecordRepository(
         pending_ready = and_(
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
             exists().where(
-                CustomerRecord.merchant_migration_id
-                == MerchantMigrationRecord.merchant_migration_id,
+                CustomerRecord.organization_id
+                == MerchantMigrationRecord.organization_id,
                 CustomerRecord.type == MerchantMigrationRecordType.customer,
                 CustomerRecord.status == MerchantMigrationRecordStatus.imported,
                 CustomerRecord.target_id.is_not(None),
@@ -355,8 +371,8 @@ class MerchantMigrationRecordRepository(
                 CustomerRecord.deleted_at.is_(None),
             ),
             exists().where(
-                ProductRecord.merchant_migration_id
-                == MerchantMigrationRecord.merchant_migration_id,
+                ProductRecord.organization_id
+                == MerchantMigrationRecord.organization_id,
                 ProductRecord.type == MerchantMigrationRecordType.product,
                 ProductRecord.status == MerchantMigrationRecordStatus.imported,
                 ProductRecord.target_id.is_not(None),
@@ -486,8 +502,8 @@ class MerchantMigrationRecordRepository(
             .join(
                 CustomerRecord,
                 and_(
-                    CustomerRecord.merchant_migration_id
-                    == MerchantMigrationRecord.merchant_migration_id,
+                    CustomerRecord.organization_id
+                    == MerchantMigrationRecord.organization_id,
                     CustomerRecord.type == MerchantMigrationRecordType.customer,
                     CustomerRecord.status == MerchantMigrationRecordStatus.imported,
                     CustomerRecord.target_id.is_not(None),

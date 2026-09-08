@@ -336,13 +336,131 @@ class OrganizationListView:
 
         yield
 
+    def render_status_tabs(
+        self,
+        request: Request,
+        status_filter: OrganizationStatus | None,
+        status_counts: dict[OrganizationStatus, int] | None,
+        selected_open_cases: bool,
+        open_cases_count: int,
+        lazy_counts_url: str | None = None,
+    ) -> None:
+        def count_of(status: OrganizationStatus) -> int | None:
+            if status_counts is None:
+                return None
+            return status_counts.get(status, 0)
+
+        tabs = [
+            Tab(
+                label="All",
+                url=str(request.url_for("organizations:list")),
+                active=status_filter is None and not selected_open_cases,
+                # Mirror the default list, which hides denied/blocked/offboarded
+                # orgs (they have their own tabs) — otherwise the count overstates
+                # the rows.
+                count=(
+                    sum(
+                        count
+                        for status, count in status_counts.items()
+                        if status
+                        not in (
+                            OrganizationStatus.DENIED,
+                            OrganizationStatus.BLOCKED,
+                            OrganizationStatus.OFFBOARDED,
+                        )
+                    )
+                    if status_counts is not None
+                    else None
+                ),
+                loading=status_counts is None,
+            ),
+            Tab(
+                label="Active",
+                url=str(request.url_for("organizations:list")) + "?status=active",
+                active=status_filter == OrganizationStatus.ACTIVE,
+                count=count_of(OrganizationStatus.ACTIVE),
+                loading=status_counts is None,
+                badge_variant="success",
+            ),
+            Tab(
+                label="Review",
+                url=str(request.url_for("organizations:list")) + "?status=review",
+                active=status_filter == OrganizationStatus.REVIEW,
+                count=count_of(OrganizationStatus.REVIEW),
+                loading=status_counts is None,
+                badge_variant="warning",
+            ),
+            Tab(
+                label="Snoozed",
+                url=str(request.url_for("organizations:list")) + "?status=snoozed",
+                active=status_filter == OrganizationStatus.SNOOZED,
+                count=count_of(OrganizationStatus.SNOOZED),
+                loading=status_counts is None,
+                badge_variant="warning",
+            ),
+            Tab(
+                label="Offboarding",
+                url=str(request.url_for("organizations:list")) + "?status=offboarding",
+                active=status_filter == OrganizationStatus.OFFBOARDING,
+                count=count_of(OrganizationStatus.OFFBOARDING),
+                loading=status_counts is None,
+                badge_variant="warning",
+            ),
+            Tab(
+                label="Offboarded",
+                url=str(request.url_for("organizations:list")) + "?status=offboarded",
+                active=status_filter == OrganizationStatus.OFFBOARDED,
+                count=count_of(OrganizationStatus.OFFBOARDED),
+                loading=status_counts is None,
+                badge_variant="error",
+            ),
+            Tab(
+                label="Denied",
+                url=str(request.url_for("organizations:list")) + "?status=denied",
+                active=status_filter == OrganizationStatus.DENIED,
+                count=count_of(OrganizationStatus.DENIED),
+                loading=status_counts is None,
+                badge_variant="error",
+            ),
+            Tab(
+                label="Blocked",
+                url=str(request.url_for("organizations:list")) + "?status=blocked",
+                active=status_filter == OrganizationStatus.BLOCKED,
+                count=count_of(OrganizationStatus.BLOCKED),
+                loading=status_counts is None,
+                badge_variant="error",
+            ),
+            # Pushed to the right — a separate dimension from the status tabs.
+            Tab(
+                label="Open cases",
+                url=str(request.url_for("organizations:list")) + "?status=open_cases",
+                active=selected_open_cases,
+                count=open_cases_count,
+                badge_variant="warning",
+                extra_classes="ml-auto",
+            ),
+        ]
+
+        if status_counts is None:
+            with tab_nav(
+                tabs,
+                hx_get=lazy_counts_url,
+                hx_trigger="load",
+                hx_target="this",
+                hx_swap="outerHTML",
+            ):
+                pass
+        else:
+            with tab_nav(tabs):
+                pass
+
     @contextlib.contextmanager
     def render(
         self,
         request: Request,
         organizations: list[Organization],
         status_filter: OrganizationStatus | None,
-        status_counts: dict[OrganizationStatus, int],
+        status_counts: dict[OrganizationStatus, int] | None,
         page: int,
         has_more: bool,
         current_sort: str = "priority",
@@ -360,96 +478,22 @@ class OrganizationListView:
         awaiting_reply_org_ids: set[uuid.UUID] | None = None,
         selected_open_cases: bool = False,
         open_cases_count: int = 0,
+        lazy_counts_url: str | None = None,
     ) -> Generator[None]:
         """Render the complete list view."""
 
-        # Page header
         with tag.div(classes="flex items-center justify-between mb-8"):
             with tag.h1(classes="text-3xl font-bold"):
                 text("Organizations")
 
-        # Status tabs
-        tabs = [
-            Tab(
-                label="All",
-                url=str(request.url_for("organizations:list")),
-                active=status_filter is None and not selected_open_cases,
-                # Mirror the default list, which hides denied/blocked/offboarded
-                # orgs (they have their own tabs) — otherwise the count overstates
-                # the rows.
-                count=sum(
-                    count
-                    for status, count in status_counts.items()
-                    if status
-                    not in (
-                        OrganizationStatus.DENIED,
-                        OrganizationStatus.BLOCKED,
-                        OrganizationStatus.OFFBOARDED,
-                    )
-                ),
-            ),
-            Tab(
-                label="Active",
-                url=str(request.url_for("organizations:list")) + "?status=active",
-                active=status_filter == OrganizationStatus.ACTIVE,
-                count=status_counts.get(OrganizationStatus.ACTIVE, 0),
-                badge_variant="success",
-            ),
-            Tab(
-                label="Review",
-                url=str(request.url_for("organizations:list")) + "?status=review",
-                active=status_filter == OrganizationStatus.REVIEW,
-                count=status_counts.get(OrganizationStatus.REVIEW, 0),
-                badge_variant="warning",
-            ),
-            Tab(
-                label="Snoozed",
-                url=str(request.url_for("organizations:list")) + "?status=snoozed",
-                active=status_filter == OrganizationStatus.SNOOZED,
-                count=status_counts.get(OrganizationStatus.SNOOZED, 0),
-                badge_variant="warning",
-            ),
-            Tab(
-                label="Offboarding",
-                url=str(request.url_for("organizations:list")) + "?status=offboarding",
-                active=status_filter == OrganizationStatus.OFFBOARDING,
-                count=status_counts.get(OrganizationStatus.OFFBOARDING, 0),
-                badge_variant="warning",
-            ),
-            Tab(
-                label="Offboarded",
-                url=str(request.url_for("organizations:list")) + "?status=offboarded",
-                active=status_filter == OrganizationStatus.OFFBOARDED,
-                count=status_counts.get(OrganizationStatus.OFFBOARDED, 0),
-                badge_variant="error",
-            ),
-            Tab(
-                label="Denied",
-                url=str(request.url_for("organizations:list")) + "?status=denied",
-                active=status_filter == OrganizationStatus.DENIED,
-                count=status_counts.get(OrganizationStatus.DENIED, 0),
-                badge_variant="error",
-            ),
-            Tab(
-                label="Blocked",
-                url=str(request.url_for("organizations:list")) + "?status=blocked",
-                active=status_filter == OrganizationStatus.BLOCKED,
-                count=status_counts.get(OrganizationStatus.BLOCKED, 0),
-                badge_variant="error",
-            ),
-            # Pushed to the right — a separate dimension from the status tabs.
-            Tab(
-                label="Open cases",
-                url=str(request.url_for("organizations:list")) + "?status=open_cases",
-                active=selected_open_cases,
-                count=open_cases_count,
-                badge_variant="warning",
-                extra_classes="ml-auto",
-            ),
-        ]
-
-        with tab_nav(tabs):
-            pass
+        self.render_status_tabs(
+            request,
+            status_filter,
+            status_counts,
+            selected_open_cases,
+            open_cases_count,
+            lazy_counts_url=lazy_counts_url,
+        )
 
         # Search and filters section
         with tag.div(classes="my-6"):

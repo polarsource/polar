@@ -494,6 +494,22 @@ async def _build_review_signals(
     return signals
 
 
+_STATUS_FILTERS: dict[str, OrganizationStatus] = {
+    "active": OrganizationStatus.ACTIVE,
+    "denied": OrganizationStatus.DENIED,
+    "created": OrganizationStatus.CREATED,
+    "offboarding": OrganizationStatus.OFFBOARDING,
+    "offboarded": OrganizationStatus.OFFBOARDED,
+    "review": OrganizationStatus.REVIEW,
+    "snoozed": OrganizationStatus.SNOOZED,
+    "blocked": OrganizationStatus.BLOCKED,
+}
+
+
+def _parse_status_filter(status: str | None) -> OrganizationStatus | None:
+    return _STATUS_FILTERS.get(status) if status else None
+
+
 def _apply_sql_sort(stmt: Select[Any], sort: str, direction: str) -> Select[Any]:
     is_desc = direction == "desc"
     if sort == "name":
@@ -580,24 +596,7 @@ async def list_organizations(
     # When searching, include deleted so matches surface.
     deleted_filter: DeletedFilter = deleted or ("include" if q else "exclude")
 
-    # Parse status filter
-    status_filter: OrganizationStatus | None = None
-    if status == "active":
-        status_filter = OrganizationStatus.ACTIVE
-    elif status == "denied":
-        status_filter = OrganizationStatus.DENIED
-    elif status == "created":
-        status_filter = OrganizationStatus.CREATED
-    elif status == "offboarding":
-        status_filter = OrganizationStatus.OFFBOARDING
-    elif status == "offboarded":
-        status_filter = OrganizationStatus.OFFBOARDED
-    elif status == "review":
-        status_filter = OrganizationStatus.REVIEW
-    elif status == "snoozed":
-        status_filter = OrganizationStatus.SNOOZED
-    elif status == "blocked":
-        status_filter = OrganizationStatus.BLOCKED
+    status_filter = _parse_status_filter(status)
 
     # "Open cases" is a separate dimension (not an org status).
     selected_open_cases = status == "open_cases"
@@ -773,7 +772,6 @@ async def list_organizations(
         ):
             pass
     else:
-        status_counts = await list_view.get_status_counts(deleted_filter)
         countries = await list_view.get_distinct_countries()
         open_cases_count = (
             await session.scalar(
@@ -792,7 +790,7 @@ async def list_organizations(
                 request,
                 organizations,
                 status_filter,
-                status_counts,
+                None,
                 page,
                 has_more,
                 sort,
@@ -810,8 +808,38 @@ async def list_organizations(
                 awaiting_reply_org_ids=awaiting_reply_org_ids,
                 selected_open_cases=selected_open_cases,
                 open_cases_count=open_cases_count,
+                lazy_counts_url=str(
+                    request.url_for("organizations:status_counts").include_query_params(
+                        **{k: v for k, v in request.query_params.items() if v}
+                    )
+                ),
             ):
                 pass
+
+
+@router.get("/status-counts", name="organizations:status_counts")
+async def status_counts(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+    status: str | None = Query(None),
+    q: str | None = Query(None),
+    deleted: DeletedFilter | None = Query(None),
+) -> None:
+    list_view = OrganizationListView(session)
+    deleted_filter: DeletedFilter = deleted or ("include" if q else "exclude")
+    open_cases_count = (
+        await session.scalar(
+            select(func.count()).select_from(open_case_organization_ids().subquery())
+        )
+        or 0
+    )
+    list_view.render_status_tabs(
+        request,
+        _parse_status_filter(status),
+        await list_view.get_status_counts(deleted_filter),
+        status == "open_cases",
+        open_cases_count,
+    )
 
 
 @router.get("/{organization_id}", name="organizations:detail")

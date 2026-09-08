@@ -493,7 +493,6 @@ describe('checkout frame ancestors', () => {
       'frame-ancestors https://example.com https://*.shop.example.com;',
     )
     expect(policy).toContain("script-src 'self'")
-    expect(response.headers.get('X-Frame-Options')).toBeNull()
   })
 
   it('asks nothing on a top-level navigation, and refuses framing', async () => {
@@ -507,7 +506,6 @@ describe('checkout frame ancestors', () => {
     expect(response.headers.get('Content-Security-Policy')).toContain(
       "frame-ancestors 'none';",
     )
-    expect(response.headers.get('X-Frame-Options')).toBe('DENY')
   })
 
   it('leaves other pages to the static policy', async () => {

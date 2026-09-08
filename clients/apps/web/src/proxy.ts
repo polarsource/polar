@@ -96,8 +96,7 @@ const requiresAuthentication = (request: NextRequest): boolean => {
 }
 
 const CHECKOUT_CLIENT_SECRET = /^\/checkout\/([^/]+)/
-const NONE = "'none'"
-const NO_FRAME_ANCESTORS = [NONE]
+const NO_FRAME_ANCESTORS = ["'none'"]
 
 const isFramed = (request: NextRequest): boolean => {
   const destination = request.headers.get('Sec-Fetch-Dest')
@@ -345,9 +344,6 @@ export async function proxy(request: NextRequest) {
       'Content-Security-Policy',
       checkoutCSP(frameAncestors.join(' ')),
     )
-    if (frameAncestors.length === 1 && frameAncestors[0] === NONE) {
-      response.headers.set('X-Frame-Options', 'DENY')
-    }
   }
 
   if (isNewDistinctId) {

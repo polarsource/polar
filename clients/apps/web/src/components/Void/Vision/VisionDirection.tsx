@@ -20,7 +20,7 @@ const CAPABILITIES = [
   {
     title: 'Margins, as they happen',
     description: [
-      'In Void, costs are events too. Revenue in, cost in, margin out, per customer, in real time. Polar is the first billing platform in the world that knows your margins.',
+      'In Polar, costs are events too. Revenue in, cost in, margin out, per customer, in real time. Polar is the first billing platform in the world that knows your margins.',
     ],
   },
   {
@@ -68,25 +68,26 @@ const CapabilityList = () => (
   </Box>
 )
 
-export const VisionVoid = () => (
+export const VisionDirection = () => (
   <VisionChapter
-    name="Void"
+    name="Direction"
     after={
       <Box flexDirection="column" rowGap={{ base: '3xl', md: '5xl' }}>
         <CapabilityList />
         <ChapterBody>
           <Paragraph>
-            We had to start over to build this. We are calling it Void, for now.
-            A fold has to begin somewhere, and it begins with nothing.
+            This is where we are taking Polar. A fold has to begin somewhere,
+            and it begins with the first event.
           </Paragraph>
         </ChapterBody>
       </Box>
     }
   >
     <Paragraph>
-      Void is a system of record for the customer, built entirely on reducers.
-      Everything that happens is an event: a token consumed, a seat added, a
-      price changed, a refund. Events are never edited.
+      We are evolving Polar into a system of record for the customer, built
+      entirely on reducers. Everything that happens is an event: a token
+      consumed, a seat added, a price changed, a refund. Events are never
+      edited.
     </Paragraph>
     <Paragraph>
       Fold them and you get the customer&apos;s state: what they have used, what

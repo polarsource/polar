@@ -4,7 +4,7 @@ import {
   VisionBeliefs,
   VisionProblem,
 } from '@/components/Void/Vision/VisionBeliefs'
-import { VisionVoid } from '@/components/Void/Vision/VisionVoid'
+import { VisionDirection } from '@/components/Void/Vision/VisionDirection'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Metadata } from 'next/types'
@@ -12,7 +12,7 @@ import { Metadata } from 'next/types'
 export const metadata: Metadata = {
   title: 'Customer state as a function, billing as a side effect',
   description:
-    'Void is a system of record for the customer, built entirely on reducers. Customer state is a function of everything that happened, and billing is a side effect of that state.',
+    'Polar is evolving into a system of record for the customer, built entirely on reducers. Customer state is a function of everything that happened, and billing is a side effect of that state.',
   robots: { index: false, follow: false },
 }
 
@@ -72,7 +72,7 @@ export default function Page() {
           </Box>
           <VisionProblem />
           <VisionBeliefs />
-          <VisionVoid />
+          <VisionDirection />
         </Box>
       </Box>
     </PolarThemeProvider>

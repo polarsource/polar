@@ -106,6 +106,7 @@ describe('EmailOTPForm', () => {
     expect(turnstile.render).toHaveBeenCalledTimes(1)
     expect(turnstile.render.mock.calls[0]?.[1]).toMatchObject({
       action: 'turnstile-spin-v2',
+      appearance: 'interaction-only',
       sitekey: '0x4AAAAAAD7cBrbpX3kX8K9g',
     })
 

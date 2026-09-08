@@ -284,10 +284,10 @@ class SubscriptionCutover:
             return _skip(_NOT_IMPORTED)
 
         customer_record = await self.record_repository.get_imported_customer_dependency(
-            self.migration.id, staged.customer_source_id
+            self.migration.organization_id, staged.customer_source_id
         )
         product_record = await self.record_repository.get_imported_product_dependency(
-            self.migration.id, staged.price_source_id
+            self.migration.organization_id, staged.price_source_id
         )
         if (
             customer_record is None

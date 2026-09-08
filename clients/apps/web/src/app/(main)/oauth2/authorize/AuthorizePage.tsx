@@ -4,7 +4,8 @@ import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
-import { List, ListItem } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import OrganizationSelector from './OrganizationSelector'
 import SharedLayout from './components/SharedLayout'
@@ -25,7 +26,6 @@ const AuthorizePage = ({
     client,
     scopes,
     sub,
-    scope_display_names,
     organizations,
     requires_single_organization,
   },
@@ -55,7 +55,7 @@ const AuthorizePage = ({
           <>
             <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
               <span className="font-medium">{clientName}</span> requests the
-              following permissions to your personal Polar account.
+              following permissions to your Polar account.
             </div>
             <div className="dark:border-polar-700 dark:bg-polar-800 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-2 pr-4 text-sm">
               <Avatar
@@ -70,31 +70,51 @@ const AuthorizePage = ({
       }
     >
       <form method="post" action={actionURL}>
-        <div className="mb-6 w-full">
-          <List size="small">
-            {Object.entries(groupScopes(scopes)).map(([key, scopes]) => (
-              <ListItem
+        <Box
+          as="ul"
+          flexDirection="column"
+          marginBottom="xl"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+          borderRadius="l"
+          overflow="hidden"
+        >
+          {Object.entries(groupScopes(scopes))
+            .sort(([a], [b]) => a.localeCompare(b, 'en'))
+            .map(([key, scopes], index) => (
+              <Box
+                as="li"
                 key={key}
-                className="dark:bg-polar-800 dark:hover:bg-polar-800 flex flex-col items-start gap-y-1 bg-white py-3 text-sm hover:bg-white"
-                size="small"
+                display="flex"
+                alignItems="center"
+                justifyContent="between"
+                gap="l"
+                paddingHorizontal="l"
+                paddingVertical="s"
+                borderTopWidth={index === 0 ? 0 : 1}
+                borderStyle="solid"
+                borderColor="border-primary"
               >
-                <h3 className="font-medium capitalize">
-                  {key === 'openid' ? 'OpenID' : key.replaceAll('_', ' ')}
-                </h3>
-                <ul>
-                  {scopes.map((scope) => (
-                    <li
-                      key={scope}
-                      className="dark:text-polar-500 text-sm text-gray-500"
-                    >
-                      {scope_display_names[scope]}
-                    </li>
-                  ))}
-                </ul>
-              </ListItem>
+                <Text as="span" variant="title">
+                  {key === 'openid'
+                    ? 'OpenID'
+                    : key
+                        .split('_')
+                        .map(
+                          (word) =>
+                            word.charAt(0).toUpperCase() + word.slice(1),
+                        )
+                        .join(' ')}
+                </Text>
+                <Text as="span" variant="default" color="muted">
+                  {scopes.some((scope) => scope.endsWith(':write'))
+                    ? 'Write'
+                    : 'Read'}
+                </Text>
+              </Box>
             ))}
-          </List>
-        </div>
+        </Box>
 
         <OrganizationSelector
           organizations={organizations}

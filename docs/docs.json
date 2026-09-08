@@ -42,7 +42,7 @@
         "groups": [
           {
             "group": "Bootup",
-            "pages": ["introduction", "migrate"]
+            "pages": ["introduction", "migrate", "migrate/ai-assistant"]
           },
           {
             "group": "Features",

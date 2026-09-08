@@ -2691,6 +2691,8 @@ class SubscriptionService:
         if subscription.cancel_at_period_end:
             subscription.ends_at = new_period_end
 
+        await self._realign_pending_update_cycle(session, subscription)
+
         await event_service.create_event(
             session,
             build_system_event(

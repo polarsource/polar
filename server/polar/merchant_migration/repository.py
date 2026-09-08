@@ -55,10 +55,8 @@ class MerchantMigrationRepository(
         )
 
     async def stripe_account_id_exists(self, stripe_account_id: str) -> bool:
-        # Deleting our record cannot undo a Stripe PAN copy, so the source
-        # account remains reserved after soft deletion.
         statement = select(
-            self.get_base_statement(include_deleted=True)
+            self.get_base_statement()
             .where(
                 MerchantMigration.source_platform
                 == MerchantMigrationSourcePlatform.stripe,

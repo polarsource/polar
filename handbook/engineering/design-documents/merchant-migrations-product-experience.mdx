@@ -4,6 +4,7 @@
 **Created**: 2026-09-08
 
 **Last Updated**: 2026-09-08
+
 </Info>
 
 # Merchant migrations product experience
@@ -28,7 +29,8 @@ The core change is conceptual. A migration is not a wizard that eventually turns
 It is a controlled transfer of billing ownership, with a permanent receipt for what moved, what
 stayed, and what needs attention.
 
-This document complements [Merchant Migrations to Polar](merchant-migrations.mdx). That document
+This document complements
+[Merchant Migrations to Polar](/engineering/design-documents/merchant-migrations). That document
 defines the migration engine and PAN transfer. This one defines the merchant experience,
 information architecture, API/UI/Ops boundaries, and rollout.
 
@@ -801,35 +803,35 @@ Cleanup guidance is conditional:
 
 ## Three alternatives for each key decision
 
-| Decision | Alternative 1 | Alternative 2 | Alternative 3 | Recommendation |
-|---|---|---|---|---|
-| Product mapping | Create a new Polar product | Choose an existing Polar product | Leave dependent subscriptions on Stripe | Explicit choice; possible matches are unselected |
-| Customer identity | Apply a merchant-supplied stable-ID map | Choose an existing Polar customer | Leave dependent subscriptions on Stripe | Stable map first; review exceptions |
-| Tax policy | Preserve source treatment when fully determinable | Confirm a group with exact impact preview | Leave uncertain records on Stripe | Preserve evidence-backed cases; block uncertainty |
-| Payment handling | Use a matching copied card | Ask the customer to add a payment method | Leave the subscription on Stripe | Describe evidence honestly; merchant chooses uncovered cases |
-| Integration support | Read the event contract | Send a test webhook | Use an SDK/provider adapter that handles customer state | Contract + optional test; never claim code correctness |
-| Transfer selection | Select exact rows in UI | Upload/query exact IDs | Save a named transfer selection | Exact UI now; API and durable selection at scale |
-| Progress | Aggregate current operation | Aggregate plus exception drill-down | Durable named transfer page | Aggregate + exceptions now; durable page later |
-| Reconciliation | Dashboard receipt | CSV export | JSON API | Same receipt model on all three surfaces |
-| Unsupported records | Leave on Stripe | Fix source data and reassess | Ops-assisted special handling | Persistent Stripe-owned queue with explicit path |
-| Recovery | Retry while Stripe still owns billing | Resume automatically from migration marker | Pause expansion and escalate to Ops | Classify by owner; no generic rollback |
-| Large catalogs | UI for policy and exceptions | CSV round trip for bulk mappings | API for deterministic automation | One data model, surface chosen by volume |
+| Decision            | Alternative 1                                     | Alternative 2                              | Alternative 3                                           | Recommendation                                               |
+| ------------------- | ------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------ |
+| Product mapping     | Create a new Polar product                        | Choose an existing Polar product           | Leave dependent subscriptions on Stripe                 | Explicit choice; possible matches are unselected             |
+| Customer identity   | Apply a merchant-supplied stable-ID map           | Choose an existing Polar customer          | Leave dependent subscriptions on Stripe                 | Stable map first; review exceptions                          |
+| Tax policy          | Preserve source treatment when fully determinable | Confirm a group with exact impact preview  | Leave uncertain records on Stripe                       | Preserve evidence-backed cases; block uncertainty            |
+| Payment handling    | Use a matching copied card                        | Ask the customer to add a payment method   | Leave the subscription on Stripe                        | Describe evidence honestly; merchant chooses uncovered cases |
+| Integration support | Read the event contract                           | Send a test webhook                        | Use an SDK/provider adapter that handles customer state | Contract + optional test; never claim code correctness       |
+| Transfer selection  | Select exact rows in UI                           | Upload/query exact IDs                     | Save a named transfer selection                         | Exact UI now; API and durable selection at scale             |
+| Progress            | Aggregate current operation                       | Aggregate plus exception drill-down        | Durable named transfer page                             | Aggregate + exceptions now; durable page later               |
+| Reconciliation      | Dashboard receipt                                 | CSV export                                 | JSON API                                                | Same receipt model on all three surfaces                     |
+| Unsupported records | Leave on Stripe                                   | Fix source data and reassess               | Ops-assisted special handling                           | Persistent Stripe-owned queue with explicit path             |
+| Recovery            | Retry while Stripe still owns billing             | Resume automatically from migration marker | Pause expansion and escalate to Ops                     | Classify by owner; no generic rollback                       |
+| Large catalogs      | UI for policy and exceptions                      | CSV round trip for bulk mappings           | API for deterministic automation                        | One data model, surface chosen by volume                     |
 
 ## UI, API, automation, and Ops boundary
 
-| Capability | Dashboard | Public API / CSV | Automatic | Polar Ops |
-|---|---|---|---|---|
-| Connect source | Primary | API for approved programs | Validate scopes and mode | Diagnose provider access |
-| Assess support | Summary + exceptions | Full records and reason codes | Classify and refresh | Improve adapter/support rules |
-| Map products | Suggest, compare, confirm | Bulk upsert and export | Suggest compatible targets | Resolve unsupported edge cases |
-| Map customers | Review ambiguous matches | Bulk stable-ID mapping | Exact stable-ID matches | Investigate conflicts |
-| Set tax policy | Policy, preview, exceptions | Bulk overrides | Infer when evidence is sufficient | Advise on migration mechanics, not tax law |
-| Transfer cards | Checklist and coverage | Read status | Link copied cards | Coordinate with Stripe/provider |
-| Check integration | Contract and delivery evidence | Test endpoints/status | Send and observe test events | Help interpret failures |
-| Build transfer selection | Recommended and manual | Query/upload exact IDs | Filter eligible records | No normal involvement |
-| Start/stop transfer | Primary | Idempotent command | Recheck each record | Emergency stop/repair |
-| Reconcile | Summary and exceptions | Complete receipt/export | Compare invariants | Repair stranded/ambiguous states |
-| Finish | Guided acknowledgment | Readiness status | Block on unknown ownership | Approve exceptional closeout |
+| Capability               | Dashboard                      | Public API / CSV              | Automatic                         | Polar Ops                                  |
+| ------------------------ | ------------------------------ | ----------------------------- | --------------------------------- | ------------------------------------------ |
+| Connect source           | Primary                        | API for approved programs     | Validate scopes and mode          | Diagnose provider access                   |
+| Assess support           | Summary + exceptions           | Full records and reason codes | Classify and refresh              | Improve adapter/support rules              |
+| Map products             | Suggest, compare, confirm      | Bulk upsert and export        | Suggest compatible targets        | Resolve unsupported edge cases             |
+| Map customers            | Review ambiguous matches       | Bulk stable-ID mapping        | Exact stable-ID matches           | Investigate conflicts                      |
+| Set tax policy           | Policy, preview, exceptions    | Bulk overrides                | Infer when evidence is sufficient | Advise on migration mechanics, not tax law |
+| Transfer cards           | Checklist and coverage         | Read status                   | Link copied cards                 | Coordinate with Stripe/provider            |
+| Check integration        | Contract and delivery evidence | Test endpoints/status         | Send and observe test events      | Help interpret failures                    |
+| Build transfer selection | Recommended and manual         | Query/upload exact IDs        | Filter eligible records           | No normal involvement                      |
+| Start/stop transfer      | Primary                        | Idempotent command            | Recheck each record               | Emergency stop/repair                      |
+| Reconcile                | Summary and exceptions         | Complete receipt/export       | Compare invariants                | Repair stranded/ambiguous states           |
+| Finish                   | Guided acknowledgment          | Readiness status              | Block on unknown ownership        | Approve exceptional closeout               |
 
 The dashboard owns decisions a person can understand and compare. API/CSV owns large mappings and
 exact record manipulation. Automation owns deterministic classification and evidence gathering.
@@ -919,17 +921,17 @@ not presented like a source-canceled, target-inactive record that needs immediat
 
 Use consistent verbs:
 
-| Internal concept | Merchant language |
-|---|---|
-| Precheck | Assess |
-| Import dependencies | Prepare |
-| PAN copy/import | Move payment methods |
-| Cutover | Transfer billing |
-| Moved | Billing on Polar |
-| Skipped | Left on Stripe |
+| Internal concept          | Merchant language             |
+| ------------------------- | ----------------------------- |
+| Precheck                  | Assess                        |
+| Import dependencies       | Prepare                       |
+| PAN copy/import           | Move payment methods          |
+| Cutover                   | Transfer billing              |
+| Moved                     | Billing on Polar              |
+| Skipped                   | Left on Stripe                |
 | Failed before source stop | Left on Stripe; action needed |
-| Failed after source stop | Needs recovery |
-| Has payment method | Matching payment method found |
+| Failed after source stop  | Needs recovery                |
+| Has payment method        | Matching payment method found |
 
 Avoid:
 

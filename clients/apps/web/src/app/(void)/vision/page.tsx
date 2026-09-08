@@ -45,9 +45,14 @@ export default function Page() {
                   top="2rem"
                   alignSelf="start"
                 >
-                  <Text variant="heading-l" as="p">
-                    Vision
-                  </Text>
+                  <Box flexDirection="column">
+                    <Text variant="heading-l" as="p">
+                      Vision
+                    </Text>
+                    <Text variant="heading-l" as="p" color="muted">
+                      Polar 2026
+                    </Text>
+                  </Box>
                 </Box>
               </Box>
               <Box flexDirection="column" rowGap={{ base: '4xl', md: '5xl' }}>

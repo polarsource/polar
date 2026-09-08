@@ -139,9 +139,9 @@ const OrganizationSelector = ({
               <Avatar
                 className="h-8 w-8"
                 avatar_url={organization.avatar_url}
-                name={organization.slug}
+                name={organization.name || organization.slug}
               />
-              <Text>{organization.slug}</Text>
+              <Text>{organization.name || organization.slug}</Text>
               <Box marginLeft="auto">
                 {singleSelect ? (
                   <input

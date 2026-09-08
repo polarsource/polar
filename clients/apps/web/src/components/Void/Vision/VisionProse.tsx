@@ -25,9 +25,15 @@ export const VisionChapter = ({
       gap={{ base: '2xl', lg: 'l' }}
     >
       <Box alignItems="start">
-        <Text variant="heading-l" as="h2">
-          {name}
-        </Text>
+        <Box
+          position={{ base: 'static', lg: 'sticky' }}
+          top="2rem"
+          alignSelf="start"
+        >
+          <Text variant="heading-l" as="h2">
+            {name}
+          </Text>
+        </Box>
       </Box>
       <Box flexDirection="column" rowGap="xl">
         {children}

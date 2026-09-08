@@ -40,9 +40,15 @@ export default function Page() {
               gap={{ base: '2xl', lg: 'l' }}
             >
               <Box alignItems="start">
-                <Text variant="heading-l" as="p">
-                  Vision
-                </Text>
+                <Box
+                  position={{ base: 'static', lg: 'sticky' }}
+                  top="2rem"
+                  alignSelf="start"
+                >
+                  <Text variant="heading-l" as="p">
+                    Vision
+                  </Text>
+                </Box>
               </Box>
               <Box flexDirection="column" rowGap={{ base: '4xl', md: '5xl' }}>
                 <Box flexDirection="column" rowGap="m">

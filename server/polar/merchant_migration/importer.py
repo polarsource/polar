@@ -172,13 +172,9 @@ class CatalogImporter:
                 self.organization.id
             )
         )
-        by_identity = {
-            (record.type, record.source_id): record for record in imported_dependencies
-        }
-        by_identity.update(
-            {(record.type, record.source_id): record for record in records}
+        catalog = self._catalog_with_imported_dependencies(
+            records, imported_dependencies
         )
-        catalog = list(by_identity.values())
         product_records = self._records_of(records, MerchantMigrationRecordType.product)
         customer_records = self._records_of(
             records, MerchantMigrationRecordType.customer
@@ -211,6 +207,19 @@ class CatalogImporter:
             step=self.migration.step,
             results=[product_result, customer_result, subscription_result],
         )
+
+    @staticmethod
+    def _catalog_with_imported_dependencies(
+        records: Sequence[MerchantMigrationRecord],
+        imported_dependencies: Sequence[MerchantMigrationRecord],
+    ) -> list[MerchantMigrationRecord]:
+        catalog = {
+            (record.type, record.source_id): record
+            for record in imported_dependencies
+        }
+        for record in records:
+            catalog[(record.type, record.source_id)] = record
+        return list(catalog.values())
 
     def _records_of(
         self,

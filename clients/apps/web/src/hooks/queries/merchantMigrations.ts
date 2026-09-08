@@ -192,6 +192,7 @@ export const useMigrationRecords = (
     status?: schemas['PrecheckRecordStatus']
     reasonLevel?: schemas['PrecheckReasonLevel']
     importStatus?: schemas['MerchantMigrationRecordStatus']
+    excludeImportStatus?: schemas['MerchantMigrationRecordStatus']
     cutoverStatus?: schemas['MerchantMigrationCutoverStatus']
     dependenciesImported?: boolean
     page: number
@@ -214,6 +215,9 @@ export const useMigrationRecords = (
                 : {}),
               ...(params.importStatus
                 ? { import_status: params.importStatus }
+                : {}),
+              ...(params.excludeImportStatus
+                ? { exclude_import_status: params.excludeImportStatus }
                 : {}),
               ...(params.cutoverStatus
                 ? { cutover_status: params.cutoverStatus }

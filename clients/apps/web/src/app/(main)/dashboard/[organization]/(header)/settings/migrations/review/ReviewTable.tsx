@@ -30,6 +30,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     entity: 'subscriptions',
     page,
     limit: pageSize,
+    excludeImportStatus: 'imported',
     ...(filter === 'to_prepare'
       ? {
           status: 'importable' as const,
@@ -44,7 +45,6 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
           dependenciesImported: true,
         }
       : {}),
-    ...(filter === 'switched' ? { importStatus: 'imported' as const } : {}),
     ...(filter === 'attention' ? { reasonLevel: 'action_required' } : {}),
     ...(filter === 'skipped' ? { status: 'skipped' as const } : {}),
   })

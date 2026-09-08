@@ -28,8 +28,7 @@ describe('ReviewStatusTabs', () => {
         counts={{
           all: 58,
           to_prepare: 20,
-          ready: 11,
-          switched: 27,
+          ready: 38,
           attention: 0,
           skipped: 0,
         }}
@@ -38,8 +37,7 @@ describe('ReviewStatusTabs', () => {
     )
 
     expect(screen.getByRole('button', { name: 'All rows 58' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Switched 27' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Ready to switch 11' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ready to switch 38' }))
     expect(onChange).toHaveBeenCalledWith('ready')
   })
 })

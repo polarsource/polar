@@ -4,7 +4,6 @@ export type ReviewFilter =
   | 'all'
   | 'to_prepare'
   | 'ready'
-  | 'switched'
   | 'attention'
   | 'skipped'
 
@@ -16,7 +15,6 @@ const OPTIONS: { value: ReviewFilter; label: string }[] = [
   { value: 'all', label: 'All rows' },
   { value: 'to_prepare', label: 'To prepare' },
   { value: 'ready', label: 'Ready to switch' },
-  { value: 'switched', label: 'Switched' },
   { value: 'attention', label: 'Needs attention' },
   { value: 'skipped', label: "Won't import" },
 ]
@@ -25,7 +23,6 @@ export const EMPTY_MESSAGES: Record<ReviewFilter, string> = {
   all: 'No subscriptions to show.',
   to_prepare: 'No subscriptions need preparation.',
   ready: 'No subscriptions are ready to switch.',
-  switched: 'No subscriptions have been switched.',
   attention: 'Nothing needs attention.',
   skipped: 'Nothing is staying on Stripe.',
 }

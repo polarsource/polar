@@ -290,7 +290,10 @@ def _summarize_entities(
         tally["total"] += 1
         if item.import_status == MerchantMigrationRecordStatus.imported:
             tally["imported"] += 1
-        if item.reason_level == PrecheckReasonLevel.action_required:
+        if (
+            item.reason_level == PrecheckReasonLevel.action_required
+            and item.import_status != MerchantMigrationRecordStatus.imported
+        ):
             tally["action_required"] += 1
         if item.status != PrecheckRecordStatus.importable:
             continue
@@ -1143,6 +1146,7 @@ class MerchantMigrationService:
         status: PrecheckRecordStatus | None,
         reason_level: PrecheckReasonLevel | None = None,
         import_status: MerchantMigrationRecordStatus | None = None,
+        exclude_import_status: MerchantMigrationRecordStatus | None = None,
         cutover_status: MerchantMigrationCutoverStatus | None = None,
         dependencies_imported: bool | None = None,
         pagination: PaginationParams,
@@ -1151,13 +1155,11 @@ class MerchantMigrationService:
         memory. ``entity`` scopes to one type; ``None`` returns products, customers
         and subscriptions together. ``status`` filters to importable or skipped;
         ``reason_level`` filters to rows the merchant has to act on
-        (`action_required`) or only needs to know about (`info`);
-        ``import_status`` filters on the ledger outcome, which excludes price rows
-        since they have none; ``cutover_status`` narrows to what the switch did
-        with a subscription, which is how the merchant finds the ones it left on
-        the source; ``dependencies_imported`` separates subscriptions ready to
-        switch from those still needing preparation. Reads what ``run_precheck``
-        persisted."""
+        (`action_required`) or only needs to know about (`info`); the import status
+        filters include or exclude a ledger outcome; ``cutover_status`` narrows to
+        what the switch did with a subscription; ``dependencies_imported``
+        separates subscriptions ready to switch from those still needing
+        preparation. Reads what ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
         entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
         items = await self._classify_staged(session, migration, entities)
@@ -1169,6 +1171,10 @@ class MerchantMigrationService:
             items = [item for item in items if item.reason_level == reason_level]
         if import_status is not None:
             items = [item for item in items if item.import_status == import_status]
+        if exclude_import_status is not None:
+            items = [
+                item for item in items if item.import_status != exclude_import_status
+            ]
         if cutover_status is not None:
             items = [item for item in items if item.cutover_status == cutover_status]
         if dependencies_imported is not None:

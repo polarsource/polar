@@ -949,6 +949,19 @@ class TestImportCatalog:
         assert count == 1
         assert [item.source_id for item in items] == ["prod_1"]
 
+        items, count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.products,
+            status=None,
+            exclude_import_status=MerchantMigrationRecordStatus.imported,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+
+        assert count == 1
+        assert [item.source_id for item in items] == ["prod_2"]
+
     @pytest.mark.auth
     async def test_imports_subscription_dependencies_without_creating_subscription(
         self,

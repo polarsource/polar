@@ -68,7 +68,7 @@ export function ReviewTableView({
   blockers = [],
   attentionCount,
 }: Props) {
-  const rowTotal = counts.subscriptions.total
+  const rowTotal = counts.subscriptions.total - counts.subscriptions.imported
   const skippedTotal = counts.subscriptions.skipped
   const selectableTotal = counts.subscriptions.selectable
 
@@ -190,7 +190,6 @@ export function ReviewTableView({
                 all: rowTotal,
                 to_prepare: selectableTotal,
                 ready: counts.subscriptions.ready,
-                switched: counts.subscriptions.imported,
                 attention: attentionCount,
                 skipped: skippedTotal,
               }}

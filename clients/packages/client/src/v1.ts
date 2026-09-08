@@ -56205,6 +56205,9 @@ export interface operations {
         import_status?:
           | components['schemas']['MerchantMigrationRecordStatus']
           | null
+        exclude_import_status?:
+          | components['schemas']['MerchantMigrationRecordStatus']
+          | null
         cutover_status?:
           | components['schemas']['MerchantMigrationCutoverStatus']
           | null

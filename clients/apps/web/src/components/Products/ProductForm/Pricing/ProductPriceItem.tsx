@@ -123,12 +123,9 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                         <SelectItem value="free">
                           {AMOUNT_TYPE_LABELS.free}
                         </SelectItem>
-                        {organization.feature_settings
-                          ?.seat_based_pricing_enabled && (
-                          <SelectItem value="seat_based">
-                            {AMOUNT_TYPE_LABELS.seat_based}
-                          </SelectItem>
-                        )}
+                        <SelectItem value="seat_based">
+                          {AMOUNT_TYPE_LABELS.seat_based}
+                        </SelectItem>
                         <SelectItem value="unit_based">
                           {AMOUNT_TYPE_LABELS.unit_based}
                         </SelectItem>

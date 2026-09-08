@@ -1,9 +1,6 @@
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  CATALOG_EMPTY_COPY,
-  ReviewCatalogEmptyKind,
-} from './reviewCatalog'
+import { CATALOG_EMPTY_COPY, ReviewCatalogEmptyKind } from './reviewCatalog'
 
 interface Props {
   kind: ReviewCatalogEmptyKind

@@ -1,6 +1,4 @@
-export type ReviewCatalogEmptyKind =
-  | 'no_stripe_subscriptions'
-  | 'all_switched'
+export type ReviewCatalogEmptyKind = 'no_stripe_subscriptions' | 'all_switched'
 
 export function remainingSubscriptionCount(
   total: number,

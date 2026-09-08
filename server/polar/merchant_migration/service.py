@@ -488,6 +488,20 @@ class MerchantMigrationService:
             organization = await self._get_organization(session, migration)
             adapter = await self._build_adapter(migration)
             page = await adapter.extract_page(cursor)
+        except stripe_lib.StripeError:
+            repository = MerchantMigrationRepository.from_session(session)
+            await repository.refresh_for_update(migration)
+            current_operation = migration.operation
+            if (
+                current_operation is None
+                or not current_operation.is_active
+                or current_operation.cursor != cursor
+            ):
+                return
+            await self._fail_operation(
+                session, migration, SourceVerificationUnavailable().message
+            )
+            return
         except MerchantMigrationError as e:
             repository = MerchantMigrationRepository.from_session(session)
             await repository.refresh_for_update(migration)

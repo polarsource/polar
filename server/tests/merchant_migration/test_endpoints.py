@@ -1,4 +1,5 @@
 from collections.abc import Awaitable, Callable
+from datetime import timedelta
 
 import pytest
 import stripe as stripe_lib
@@ -7,6 +8,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.config import settings
+from polar.kit.utils import utc_now
 from polar.merchant_migration.adapters.base import ExtractionPage
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -32,6 +34,11 @@ from polar.models import (
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
+)
+from polar.models.merchant_migration_operation import (
+    STALL_THRESHOLD,
+    MerchantMigrationOperation,
+    MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
@@ -280,6 +287,26 @@ class TestGet:
         assert json_body["source_platform"] == "stripe"
         assert json_body["operation"] is None
         assert "source_credentials" not in json_body
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_read}))
+    async def test_returns_stalled_operation(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now() - STALL_THRESHOLD - timedelta(minutes=1),
+        )
+        await save_fixture(migration)
+
+        response = await client.get(f"/v1/merchant-migrations/{migration.id}")
+
+        assert response.status_code == 200
+        assert response.json()["operation"]["stalled"] is True
 
 
 @pytest.mark.asyncio

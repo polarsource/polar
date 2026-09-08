@@ -578,7 +578,11 @@ class MerchantMigrationRecordRepository(
         canonical = serialize(record)
         if existing is not None:
             if existing.status == MerchantMigrationRecordStatus.pending:
-                if merge_product_prices and isinstance(record, CanonicalProduct):
+                if (
+                    merge_product_prices
+                    and existing.merchant_migration_id == merchant_migration.id
+                    and isinstance(record, CanonicalProduct)
+                ):
                     current = deserialize(existing.type, existing.canonical)
                     if isinstance(current, CanonicalProduct):
                         prices = {

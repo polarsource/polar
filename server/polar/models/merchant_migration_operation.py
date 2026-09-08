@@ -109,6 +109,10 @@ class MerchantMigrationOperation(Schema):
             return False
         return (now or utc_now()) - self.last_progress_at >= STALL_THRESHOLD
 
+    @property
+    def stalled(self) -> bool:
+        return self.is_stalled()
+
 
 class MerchantMigrationOperationType(TypeDecorator[Any]):
     # none_as_null: Python None → SQL NULL (not JSON 'null'), so IS NULL matches

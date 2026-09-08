@@ -878,6 +878,39 @@ class TestExecutePrecheck:
         assert updated.operation.status == MerchantMigrationOperationStatus.failed
         assert updated.operation.error == "The migration source is not connected yet."
 
+    @pytest.mark.auth
+    async def test_marks_failed_on_stripe_error(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = _FakeAdapter()
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=adapter,
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+        mocker.patch.object(
+            adapter,
+            "extract_page",
+            side_effect=stripe_lib.APIConnectionError("Stripe unavailable"),
+        )
+
+        await service.execute_precheck(session, migration.id)
+
+        repository = MerchantMigrationRepository.from_session(session)
+        updated = await repository.get_by_id(migration.id)
+        assert updated is not None
+        assert updated.operation is not None
+        assert updated.operation.status == MerchantMigrationOperationStatus.failed
+        assert updated.operation.error == SourceVerificationUnavailable().message
+
 
 def _catalog() -> list[CanonicalRecord]:
     return [

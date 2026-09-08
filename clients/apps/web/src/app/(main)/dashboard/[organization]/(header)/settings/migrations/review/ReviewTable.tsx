@@ -98,6 +98,13 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     () => setSelection((prev) => toggleAll(prev)),
     [],
   )
+  const refreshError = rerunPrecheck.isError
+    ? rerunPrecheck.error?.message ||
+      "We couldn't start the refresh from Stripe. Please try again."
+    : migration?.operation?.status === 'failed'
+      ? migration.operation.error ||
+        "We couldn't refresh from Stripe. Please try again."
+      : undefined
 
   if (records.isLoading || countsLoading) {
     return (
@@ -149,12 +156,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       }
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={refreshing || rerunPrecheck.isPending}
-      refreshError={
-        migration?.operation?.status === 'failed'
-          ? migration.operation.error ||
-            "We couldn't refresh from Stripe. Please try again."
-          : undefined
-      }
+      refreshError={refreshError}
     />
   )
 }

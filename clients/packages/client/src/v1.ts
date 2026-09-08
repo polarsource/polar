@@ -25007,6 +25007,11 @@ export interface components {
       /** @description pending or running while Polar works; done or failed when it finishes. */
       status: components['schemas']['MerchantMigrationOperationStatus']
       /**
+       * Stalled
+       * @description Whether an active operation has stopped making progress.
+       */
+      stalled: boolean
+      /**
        * Error
        * @description Why the run failed. None while it is pending, running, or done.
        */

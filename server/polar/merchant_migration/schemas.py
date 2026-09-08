@@ -348,6 +348,9 @@ class MerchantMigrationOperation(Schema):
     status: MerchantMigrationOperationStatus = Field(
         description="pending or running while Polar works; done or failed when it finishes."
     )
+    stalled: bool = Field(
+        description="Whether an active operation has stopped making progress."
+    )
     error: str | None = Field(
         description="Why the run failed. None while it is pending, running, or done."
     )

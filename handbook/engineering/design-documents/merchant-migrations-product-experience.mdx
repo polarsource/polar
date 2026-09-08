@@ -429,6 +429,25 @@ Keep the four current labels:
 
 The status summary is informational. The step body owns the action.
 
+### Connect and source recovery
+
+**New.** A disconnected or expired source must not leave the detail page at a dead end. Keep the
+migration and let an authorized merchant replace its restricted key in place:
+
+```text
+Stripe connection needs attention
+
+Polar can no longer read this account. Add a new restricted key to continue.
+No subscription has been changed.
+
+[Replace Stripe key] [View required permissions]
+```
+
+The replacement endpoint validates account identity, live/test mode, and scopes before storing
+the new encrypted credential. It refuses a key for a different Stripe account. If no irreversible
+action has occurred, the merchant may also abandon and archive the migration without deleting its
+audit history.
+
 ### Assessment: summary before records
 
 **Change.** After assessment, lead with outcomes before the table:
@@ -446,6 +465,19 @@ Target after Slice 2
 
 Simple merchants can accept all unambiguous records. The table remains available for exact
 selection and audit.
+
+The default prepare action selects all eligible records with no unresolved decision, never
+attention or unsupported records. Its banner states that selection crosses pagination:
+
+```text
+All 812 eligible subscriptions across 41 pages are selected.
+7 needing a decision and 22 staying on Stripe are excluded.
+
+[Review selection] [Prepare 812 subscriptions]
+```
+
+Changing tabs does not silently change the selection. Screen readers receive the same count and
+scope through a live region.
 
 ### Assessment: account-level blockers
 
@@ -886,6 +918,16 @@ Merchant migration endpoints are currently private dashboard APIs protected by
 `organizations_read` and `organizations_write`. Keep new writes private during the assisted
 pilot. Stabilize them for public SDKs only after the resource semantics are proven.
 
+### Required source recovery
+
+```text
+PATCH /v1/merchant-migrations/{id}/source
+POST  /v1/merchant-migrations/{id}/archive
+```
+
+Source replacement accepts a new credential but not a new account identity. Archive is allowed
+only before source cancellation and retains the ledger for audit.
+
 ### Required mapping contracts
 
 ```text
@@ -1087,9 +1129,12 @@ safety measures.
 
 ### Slice 1: Make the current flow truthful
 
+- Add source-key replacement on the existing migration detail page.
 - Replace "Ready to charge" with "Matching payment method found".
 - Separate card movement completion from subscription cutover.
 - Fix copy that implies an immediate Polar charge; the first charge is at renewal.
+- State the exact cross-page scope of prepare selection and exclude unresolved records by
+  default.
 - Add counts for billing on Polar, billing on Stripe, and unknown owner using the current ledger
   and a source recheck where needed.
 - Replace the compact destructive modal with a full transfer review of the exact selection.

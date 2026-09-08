@@ -17,8 +17,12 @@
 .migration-prompt [data-component-part='code-block-header'] {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 20;
   background-color: #f9fafb;
+}
+
+.migration-prompt [data-component-part='code-block-root'] {
+  z-index: 0;
 }
 
 .dark .migration-prompt [data-component-part='code-block-header'] {

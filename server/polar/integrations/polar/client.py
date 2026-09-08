@@ -417,6 +417,11 @@ class PolarSelfClient:
                         limit=100,
                     ):
                         contacts.append(contact)
+                except ResourceNotFound:
+                    # No members for this role (or the customer is gone) — treat
+                    # it as an empty result and move on, rather than failing the
+                    # whole lookup.
+                    continue
                 except (PolarClientError, PolarServerError) as e:
                     _raise_error(span, e, "list_billing_contacts")
                 except PolarNetworkError as e:

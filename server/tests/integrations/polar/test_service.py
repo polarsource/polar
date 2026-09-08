@@ -2662,6 +2662,26 @@ class TestHandleOrderCreatedEvent:
         order_webhook_client_mock.get_order.assert_awaited_once_with(order_id="ord_1")
         enqueue_email_mock.assert_not_called()
 
+    async def test_skips_in_sandbox(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        # polar-self emails must never be sent from the sandbox environment.
+        mocker.patch(
+            "polar.integrations.polar.service.settings.is_sandbox",
+            return_value=True,
+        )
+        order_webhook_client_mock.get_order.return_value = _make_order()
+        payload = _make_order_created_payload()
+
+        await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.get_order.assert_not_awaited()
+        order_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
 
 def _make_subscription_canceled_payload(
     *, ends_at: str | None = "2026-02-01T00:00:00Z", **kwargs: Any
@@ -2777,6 +2797,23 @@ class TestHandleSubscriptionCanceledEvent:
         email = enqueue_email_mock.call_args.args[0]
         assert email.props.ends_at is None
 
+    async def test_skips_in_sandbox(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.integrations.polar.service.settings.is_sandbox",
+            return_value=True,
+        )
+        payload = _make_subscription_canceled_payload(amount=2000)
+
+        await polar_self.handle_subscription_canceled_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
 
 @pytest.mark.asyncio
 class TestHandleSubscriptionPastDueEvent:
@@ -2825,6 +2862,23 @@ class TestHandleSubscriptionPastDueEvent:
         assert kwargs["to_email_addr"] == "billing@example.com"
         assert kwargs["subject"] == "Your Pro subscription payment failed"
 
+    async def test_skips_in_sandbox(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.integrations.polar.service.settings.is_sandbox",
+            return_value=True,
+        )
+        payload = _make_subscription_past_due_payload(amount=2000)
+
+        await polar_self.handle_subscription_past_due_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
 
 @pytest.mark.asyncio
 class TestHandleSubscriptionRevokedEvent:
@@ -2871,3 +2925,20 @@ class TestHandleSubscriptionRevokedEvent:
         kwargs = enqueue_email_mock.call_args.kwargs
         assert kwargs["to_email_addr"] == "billing@example.com"
         assert kwargs["subject"] == "Your Pro subscription has ended"
+
+    async def test_skips_in_sandbox(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.integrations.polar.service.settings.is_sandbox",
+            return_value=True,
+        )
+        payload = _make_subscription_revoked_payload(amount=2000)
+
+        await polar_self.handle_subscription_revoked_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()

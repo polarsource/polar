@@ -1,4 +1,6 @@
-from unittest.mock import AsyncMock
+from collections.abc import AsyncIterator
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from polar.base import PolarServerError
@@ -142,3 +144,73 @@ class TestTriggerOrderInvoiceGeneration:
         await client.trigger_order_invoice_generation(order_id="ord_1")
 
         generate_invoice.assert_awaited_once_with("ord_1")
+
+
+def _members(*emails: str) -> list[MagicMock]:
+    members = []
+    for email in emails:
+        member = MagicMock()
+        member.email = email
+        members.append(member)
+    return members
+
+
+def _async_iter(items: list[Any]) -> AsyncIterator[Any]:
+    async def _gen() -> AsyncIterator[Any]:
+        for item in items:
+            yield item
+
+    return _gen()
+
+
+@pytest.mark.asyncio
+class TestListBillingContacts:
+    async def test_resource_not_found_for_role_is_skipped(
+        self, mocker: MockerFixture
+    ) -> None:
+        # A 404 for one role means "no members with that role" — not a failure.
+        # The wrapper must skip it and still return the other role's contacts.
+        client = _client()
+        owner, *_ = _members("owner@example.com")
+
+        def iter_list(customer_id: str, *, role: str, limit: int) -> Any:
+            if role == "owner":
+                return _async_iter([owner])
+            raise _not_found()
+
+        mocker.patch.object(
+            client._sdk.customers.members,
+            "iter_list",
+            side_effect=iter_list,
+        )
+
+        contacts = await client.list_billing_contacts(customer_id="cus_1")
+
+        assert contacts == [owner]
+
+    async def test_resource_not_found_for_all_roles_returns_empty(
+        self, mocker: MockerFixture
+    ) -> None:
+        client = _client()
+        mocker.patch.object(
+            client._sdk.customers.members,
+            "iter_list",
+            side_effect=_not_found(),
+        )
+
+        contacts = await client.list_billing_contacts(customer_id="cus_1")
+
+        assert contacts == []
+
+    async def test_other_error_still_raises(self, mocker: MockerFixture) -> None:
+        # A non-"not found" error (here a 5xx) must not be swallowed — it should
+        # surface so the task retries.
+        client = _client()
+        mocker.patch.object(
+            client._sdk.customers.members,
+            "iter_list",
+            side_effect=PolarServerError(500, "boom"),
+        )
+
+        with pytest.raises(PolarSelfClientOperationalError):
+            await client.list_billing_contacts(customer_id="cus_1")

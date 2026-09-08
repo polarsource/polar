@@ -8,6 +8,7 @@ from sqlalchemy.orm import aliased, joinedload
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -17,6 +18,7 @@ from polar.models import (
     Customer,
     MerchantMigration,
     MerchantMigrationRecord,
+    MerchantMigrationSourcePlatform,
     PaymentMethod,
 )
 from polar.models.merchant_migration_operation import (
@@ -46,6 +48,24 @@ class MerchantMigrationRepository(
     RepositoryBase[MerchantMigration],
 ):
     model = MerchantMigration
+
+    async def lock_stripe_account(self, stripe_account_id: str) -> None:
+        await pg_advisory_xact_lock(
+            self.session, "merchant_migration.stripe_account", stripe_account_id
+        )
+
+    async def stripe_account_id_exists(self, stripe_account_id: str) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                MerchantMigration.source_platform
+                == MerchantMigrationSourcePlatform.stripe,
+                MerchantMigration.source_credentials["stripe_user_id"].astext
+                == stripe_account_id,
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

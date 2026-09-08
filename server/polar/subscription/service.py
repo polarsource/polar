@@ -1119,6 +1119,11 @@ class SubscriptionService:
             subscription.status = SubscriptionStatus.paused
             subscription.paused_at = utc_now()
             subscription.pause_at_period_end = False
+            # A scheduled change targets the next cycle, which never begins.
+            if subscription.pending_update is not None:
+                subscription = await self.clear_pending_update(
+                    session, ctx, subscription
+                )
             await self.enqueue_benefits_grants(session, subscription)
             repository = SubscriptionRepository.from_session(session)
             return await repository.update(
@@ -2745,6 +2750,11 @@ class SubscriptionService:
             )
         )
         subscription.initialize_meter_period(now)
+
+        # Scheduling a change on a paused subscription is still allowed; it
+        # snapshots the pre-pause period, which this fresh one supersedes.
+        if subscription.pending_update is not None:
+            subscription = await self.clear_pending_update(session, ctx, subscription)
 
         self._clear_expired_discount(subscription)
 

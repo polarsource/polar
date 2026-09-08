@@ -3739,6 +3739,41 @@ class TestPause:
         assert order_calls == []
         assert_hooks_called_once(subscription_hooks, {"updated", "paused"})
 
+    async def test_cycle_drops_pending_update_when_pausing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cycle(session, ctx, subscription)
+
+        assert updated.status == SubscriptionStatus.paused
+        assert updated.pending_update is None
+        assert updated.product == product
+
 
 @pytest.mark.asyncio
 class TestCancelScheduledPause:
@@ -3938,6 +3973,53 @@ class TestResume:
         ]
         assert len(cycle_entries) == 1
         assert cycle_entries[0].discount is None
+
+    async def test_drops_pending_update_scheduled_while_paused(
+        self,
+        frozen_time: datetime,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        subscription.paused_at = frozen_time - timedelta(days=10)
+        await save_fixture(subscription)
+        mocker.patch.object(subscription_service, "reset_meters")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.resume(session, ctx, subscription)
+
+        assert updated.pending_update is None
+        assert updated.product == product
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        cycle_entries = [
+            entry for entry in billing_entries if entry.type == BillingEntryType.cycle
+        ]
+        assert len(cycle_entries) == 1
+        assert cycle_entries[0].start_timestamp == frozen_time
 
 
 @pytest.mark.asyncio

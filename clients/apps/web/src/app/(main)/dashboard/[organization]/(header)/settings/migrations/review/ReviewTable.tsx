@@ -1,13 +1,13 @@
 'use client'
 
 import {
+  invalidateMigrationRecords,
   isActiveMigrationOperation,
   useImportMerchantMigrationCatalog,
   useMerchantMigration,
   useMigrationRecords,
   useRunMerchantMigrationPrecheck,
 } from '@/hooks/queries/merchantMigrations'
-import { getQueryClient } from '@/utils/api/query'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -76,13 +76,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     }
     if (wasRefreshing.current) {
       wasRefreshing.current = false
-      const client = getQueryClient()
-      client.invalidateQueries({
-        queryKey: ['merchantMigrationRecords', { id: migrationId }],
-      })
-      client.invalidateQueries({
-        queryKey: ['merchantMigrationRecordSummary', { id: migrationId }],
-      })
+      invalidateMigrationRecords(migrationId)
     }
   }, [refreshing, migrationId])
 

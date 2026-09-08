@@ -474,7 +474,6 @@ class MerchantMigrationService:
         return migration
 
     async def execute_precheck(self, session: AsyncSession, migration_id: UUID) -> None:
-        """Read Stripe and stage the catalog. One job for now; paging can split later."""
         migration = await self._load(session, migration_id)
         if migration is None:
             return
@@ -931,7 +930,7 @@ class MerchantMigrationService:
                 merchant_migration_id=migration.id,
                 organization_id=organization.id,
             )
-            await self._fail_cutover(
+            await self._fail_operation(
                 session,
                 migration,
                 "Organization renewals are disabled; subscriptions stay on the source.",
@@ -994,14 +993,6 @@ class MerchantMigrationService:
             migration, update_dict=update_dict
         )
 
-    async def _fail_cutover(
-        self,
-        session: AsyncSession,
-        migration: MerchantMigration,
-        error: str,
-    ) -> None:
-        await self._fail_operation(session, migration, error)
-
     async def _fail_operation(
         self,
         session: AsyncSession,
@@ -1025,7 +1016,7 @@ class MerchantMigrationService:
         operation = migration.operation
         if operation is None or not operation.is_stalled():
             return
-        await self._fail_cutover(
+        await self._fail_operation(
             session,
             migration,
             "Switch stalled with no progress; start it again to resume.",

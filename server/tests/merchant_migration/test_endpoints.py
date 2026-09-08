@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 import pytest
 import stripe as stripe_lib
@@ -354,19 +354,21 @@ class TestPrecheck:
         )
 
 
-async def _start_and_execute_precheck(
-    client: AsyncClient,
-    session: AsyncSession,
-    migration: MerchantMigration,
-    mocker: MockerFixture,
-) -> None:
-    mocker.patch("polar.merchant_migration.service.enqueue_job")
-    response = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
-    assert response.status_code == 200
-    await merchant_migration_service.execute_precheck(session, migration.id)
-    # The worker session commits; the test session does not. Staging flushes
-    # per record, but step/operation stay unflushed until this.
-    await session.flush()
+StartAndExecutePrecheck = Callable[[MerchantMigration], Awaitable[None]]
+
+
+@pytest.fixture
+def start_and_execute_precheck(
+    client: AsyncClient, session: AsyncSession, mocker: MockerFixture
+) -> StartAndExecutePrecheck:
+    async def run(migration: MerchantMigration) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
+        assert response.status_code == 200
+        await merchant_migration_service.execute_precheck(session, migration.id)
+        await session.flush()
+
+    return run
 
 
 async def _catalog_extract() -> AsyncIterator[CanonicalRecord]:
@@ -403,11 +405,11 @@ class TestRecords:
     async def test_lists_classified_records(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
+        start_and_execute_precheck: StartAndExecutePrecheck,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
@@ -419,7 +421,7 @@ class TestRecords:
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter
         )
 
-        await _start_and_execute_precheck(client, session, migration, mocker)
+        await start_and_execute_precheck(migration)
 
         response = await client.get(
             f"/v1/merchant-migrations/{migration.id}/records",
@@ -483,11 +485,11 @@ class TestImport:
     async def test_imports_catalog(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
+        start_and_execute_precheck: StartAndExecutePrecheck,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
@@ -499,7 +501,7 @@ class TestImport:
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter
         )
 
-        await _start_and_execute_precheck(client, session, migration, mocker)
+        await start_and_execute_precheck(migration)
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/import")
         assert response.status_code == 200
@@ -513,11 +515,11 @@ class TestImport:
     async def test_imports_selected_subscription_dependencies(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
+        start_and_execute_precheck: StartAndExecutePrecheck,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
@@ -529,7 +531,7 @@ class TestImport:
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter
         )
 
-        await _start_and_execute_precheck(client, session, migration, mocker)
+        await start_and_execute_precheck(migration)
 
         records = await client.get(
             f"/v1/merchant-migrations/{migration.id}/records",

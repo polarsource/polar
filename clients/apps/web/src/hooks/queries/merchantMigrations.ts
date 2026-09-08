@@ -54,7 +54,7 @@ export const useCreateMerchantMigration = (organizationId: string) =>
   })
 
 // The listing and its counts live behind separate keys but are one unit.
-const invalidateMigrationRecords = (id: string) => {
+export const invalidateMigrationRecords = (id: string) => {
   const client = getQueryClient()
   client.invalidateQueries({ queryKey: ['merchantMigration', { id }] })
   client.invalidateQueries({ queryKey: ['merchantMigrationRecords', { id }] })

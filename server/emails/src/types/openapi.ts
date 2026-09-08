@@ -2134,13 +2134,6 @@ export interface components {
        */
       issue_funding_enabled: boolean
       /**
-       * Seat Based Pricing Enabled
-       * @deprecated
-       * @description Always `true`: seat-based pricing is enabled for every organization.
-       * @default true
-       */
-      seat_based_pricing_enabled: boolean
-      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false

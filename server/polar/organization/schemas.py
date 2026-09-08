@@ -31,7 +31,6 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
@@ -47,7 +46,6 @@ from polar.models.user_organization import (
     OrganizationRole,
 )
 from polar.organization.embed_hosts import InvalidEmbedHost, validate_host_pattern
-from polar.version import V2026_04
 
 OrganizationID = Annotated[
     UUID4,
@@ -173,13 +171,6 @@ OverviewMetrics = Annotated[list[str] | None, BeforeValidator(_coerce_overview_m
 class OrganizationFeatureSettings(Schema):
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
-    )
-    seat_based_pricing_enabled: Annotated[bool, Version(up_to=V2026_04)] = Field(
-        True,
-        deprecated=True,
-        description=(
-            "Always `true`: seat-based pricing is enabled for every organization."
-        ),
     )
     wallets_enabled: bool = Field(
         False, description="If this organization has Wallets enabled"

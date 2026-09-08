@@ -636,7 +636,7 @@ class TestRestoreOneoffGrantBatch:
         account: Account,
     ) -> None:
         """If the surviving sibling also has no member_id, the restored grant
-        stays unlinked (repair command can link it later)."""
+        stays unlinked."""
         (
             organization,
             customer,

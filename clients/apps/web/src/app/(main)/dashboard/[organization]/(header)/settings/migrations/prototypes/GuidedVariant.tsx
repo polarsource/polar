@@ -37,7 +37,7 @@ export function GuidedVariant({ state, act }: Props) {
       <PrototypeLabel
         number="A"
         title="Guided runbook"
-        description="One calm next action at a time. Decisions appear only when they block the current step."
+        description="One action at a time. Decisions appear only when they block the current step."
       />
       <FlowRail stage={state.stage} />
       {state.stage === 'create' ? (
@@ -89,7 +89,7 @@ export function GuidedVariant({ state, act }: Props) {
         <Box flexDirection="column" rowGap="l">
           <Surface>
             <Text variant="heading-xs" as="h3">
-              Package problem review
+              Review problem categories
             </Text>
             <Text color="muted">
               Confirm merchant mappings, then keep the {problems.length} problem
@@ -108,7 +108,7 @@ export function GuidedVariant({ state, act }: Props) {
               </Button>
             </Box>
           </Surface>
-          <RecordExplorer title="Problem packages" />
+          <RecordExplorer title="Problem records" />
         </Box>
       ) : null}
       {state.stage === 'cards' ? (

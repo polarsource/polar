@@ -1,6 +1,6 @@
 'use client'
 
-import { Input, SegmentedControl, Text } from '@polar-sh/orbit'
+import { Button, Input, SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import {
@@ -111,6 +111,10 @@ export function RecordExplorer({
         <Metric label="With problems" value={totals.problems} />
         <Metric label="Total catalog" value={totals.total} />
       </Box>
+      <Text variant="caption" color="muted">
+        Needs decision = merchant input · Blocked = unsupported as-is · Hold =
+        retry later or after customer action
+      </Text>
       {mode === 'all' ? (
         <Box flexDirection="column" rowGap="s">
           <Text variant="label" as="label" htmlFor="prototype-record-filter">
@@ -131,6 +135,25 @@ export function RecordExplorer({
               options={CATEGORY_FILTERS}
             />
           </Box>
+          {category !== 'all' || query ? (
+            <Box alignItems="center" justifyContent="between" gap="m">
+              <Text variant="caption" color="muted">
+                Showing {visible.length} of {totals.problems} problems ·
+                Category: {category === 'all' ? 'All' : category} · Search:{' '}
+                {query || 'None'}
+              </Text>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setCategory('all')
+                  setQuery('')
+                }}
+              >
+                Clear filters
+              </Button>
+            </Box>
+          ) : null}
         </Box>
       ) : (
         <Text color="muted">

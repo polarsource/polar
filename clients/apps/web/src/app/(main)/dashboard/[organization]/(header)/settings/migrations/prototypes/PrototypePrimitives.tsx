@@ -59,7 +59,7 @@ export function FlowRail({ stage }: { stage: PrototypeStage }) {
               color={current ? 'default' : 'muted'}
               truncate
             >
-              {label}
+              {index + 1}. {label}
             </Text>
           </Box>
         )
@@ -151,7 +151,6 @@ export function DecisionList() {
 }
 
 export function ClosedState({ onReset }: { onReset: () => void }) {
-  const ownership = getOwnershipForTransfer(true)
   return (
     <Surface>
       <Status status="Migration closed" color="green" />
@@ -159,9 +158,7 @@ export function ClosedState({ onReset }: { onReset: () => void }) {
         Billing ownership is known
       </Text>
       <Text color="muted">
-        {ownership.polarOwned} subscriptions bill on Polar.{' '}
-        {ownership.stripeOwned} remain on Stripe with documented problem
-        reasons. Unknown owners: {ownership.unknownOwned}.
+        Every subscription has a documented billing owner and next action.
       </Text>
       <OwnershipSummary transferred />
       <Box>

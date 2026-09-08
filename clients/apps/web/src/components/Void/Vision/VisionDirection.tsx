@@ -13,7 +13,7 @@ const CAPABILITIES = [
   {
     title: 'Instant meter checks',
     description: [
-      'Every other platform answers a meter check with a round trip: query, sum, hope the cache is warm. The best of them land around 50ms, which is a long time to hold a request open before letting an agent run.',
+      'Every other platform answers a meter check with a round trip: query, sum, hope the cache is warm. The best of them land around 50ms. That is fast, until an agent needs the answer before every single call it makes. We are building the fastest meter check in the world.',
       'Because the customer is a pure function of events, the SDK runs the same reducers locally, in your process, and reconciles the delta with the server behind the scenes. A meter check never leaves your machine. Check before every call. Nobody will notice.',
     ],
   },

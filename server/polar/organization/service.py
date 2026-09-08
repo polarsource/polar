@@ -56,6 +56,7 @@ from polar.models.organization import (
     STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
+    OrganizationCustomerPortalSettings,
     OrganizationDetails,
     OrganizationDisputeSettings,
     OrganizationStatus,
@@ -198,6 +199,21 @@ def _append_internal_note(
         organization.internal_notes = f"{organization.internal_notes}\n\n{note}"
     else:
         organization.internal_notes = note
+
+
+def _merge_customer_portal_settings(
+    stored: OrganizationCustomerPortalSettings,
+    update: OrganizationCustomerPortalSettings,
+) -> OrganizationCustomerPortalSettings:
+    merged: dict[str, Any] = {**stored}
+    for key, value in update.items():
+        current = merged.get(key)
+        merged[key] = (
+            {**current, **value}
+            if isinstance(current, dict) and isinstance(value, dict)
+            else value
+        )
+    return cast(OrganizationCustomerPortalSettings, merged)
 
 
 class PaymentStatusResponse(BaseModel):
@@ -573,6 +589,12 @@ class OrganizationService:
                 },
             )
 
+        if update_schema.customer_portal_settings is not None:
+            organization.customer_portal_settings = _merge_customer_portal_settings(
+                organization.customer_portal_settings,
+                update_schema.customer_portal_settings,
+            )
+
         if update_schema.default_presentment_currency is not None:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
@@ -590,6 +612,7 @@ class OrganizationService:
                 "feature_settings",
                 "subscription_settings",
                 "dispute_settings",
+                "customer_portal_settings",
                 "details",
             },
         )

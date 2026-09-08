@@ -511,6 +511,84 @@ class TestUpdateOrganization:
         assert settings["customer"]["allow_email_change"] is True
 
     @pytest.mark.auth
+    async def test_update_customer_portal_settings_merge_preserves_omitted_keys(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A PATCH omitting the NotRequired `update_units`, `pause` and
+        # `customer` keys must preserve them, while the keys it does send
+        # override. The follow-up GET reads from the database, so it covers
+        # persistence too.
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings.get("subscription", {}),
+                "update_units": True,
+                "pause": True,
+            },
+            "customer": {"allow_email_change": True},
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    "usage": {"show": False},
+                    "subscription": {
+                        "update_seats": False,
+                        "update_plan": True,
+                    },
+                },
+            },
+        )
+        assert response.status_code == 200
+
+        response = await client.get(f"/v1/organizations/{organization.id}")
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["usage"]["show"] is False
+        sub = settings["subscription"]
+        assert sub["update_seats"] is False
+        assert sub["update_plan"] is True
+        assert sub["update_units"] is True
+        assert sub["pause"] is True
+        assert settings["customer"]["allow_email_change"] is True
+
+    @pytest.mark.auth
+    async def test_update_customer_portal_settings_empty_customer_preserves_stored_value(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Every nested group is merged, not just `subscription`.
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "customer": {"allow_email_change": True},
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    "usage": {"show": True},
+                    "subscription": {"update_seats": True, "update_plan": True},
+                    "customer": {},
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["customer"]["allow_email_change"] is True
+
+    @pytest.mark.auth
     async def test_submit_for_review_requires_relevant_fields(
         self,
         client: AsyncClient,

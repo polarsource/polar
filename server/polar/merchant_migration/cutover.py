@@ -13,6 +13,7 @@ import structlog
 from sqlalchemy.orm import joinedload, noload, selectinload
 
 from polar.customer.repository import CustomerRepository
+from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
@@ -28,11 +29,13 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
 )
 from polar.models.subscription import SubscriptionStatus
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 
+from . import pan_transfer
 from .adapters import SourceAdapter
 from .canonical import (
     CanonicalProduct,
@@ -158,10 +161,11 @@ class SubscriptionCutover:
         except AmbiguousCopiedCard as e:
             # Recorded rather than raised: one customer must not stop the run.
             log.warning(
-                "merchant_migration.cutover.ambiguous_card",
+                "merchant_migration.cutover.card_resolution_error",
                 migration_id=self.migration.id,
                 record_id=record.id,
-                customer_id=e.customer_id,
+                subscription_id=record.target_id,
+                error=str(e),
             )
             return _fail(str(e))
         except stripe_lib.StripeError as e:
@@ -214,8 +218,8 @@ class SubscriptionCutover:
 
         # Behind the gate above because resolving writes: it upserts the copied
         # methods and may set the customer's default.
-        payment_method = await link_payment_method(
-            self.session, customer, source_method=source.payment_method
+        payment_method = await self._resolve_payment_method(
+            record, customer, source, subscription
         )
         if already_stopped:
             # An unproven card beats no biller at all: a failed first renewal
@@ -329,9 +333,7 @@ class SubscriptionCutover:
         ):
             return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
 
-        payment_method = await link_payment_method(
-            self.session, customer, source_method=source.payment_method
-        )
+        payment_method = await self._resolve_payment_method(record, customer, source)
         if already_stopped:
             if payment_method is None or payment_method.type != "card":
                 log.error(
@@ -484,6 +486,39 @@ class SubscriptionCutover:
             f"It renews on the source at {renewal.isoformat()}, too soon to hand "
             "over without risking a double charge. Retry once that renewal has "
             "gone through."
+        )
+
+    async def _resolve_payment_method(
+        self,
+        record: MerchantMigrationRecord,
+        customer: Customer,
+        source: CanonicalSubscription,
+        subscription: Subscription | None = None,
+    ) -> PaymentMethod | None:
+        repository = PaymentMethodRepository.from_session(self.session)
+        if subscription is not None and subscription.payment_method_id is not None:
+            payment_method = await repository.get_by_id(subscription.payment_method_id)
+            if payment_method is not None:
+                return payment_method
+        if pan_transfer.stripe_mapping_applied(
+            self.migration.pan_transfer_method, self.migration.pan_transfer_steps
+        ):
+            try:
+                staged = deserialize(record.type, record.canonical)
+            except KeyError, TypeError, ValueError:
+                return None
+            if (
+                not isinstance(staged, CanonicalSubscription)
+                or staged.payment_method is None
+            ):
+                return None
+            return await repository.get_by_customer_and_processor_id(
+                customer.id,
+                PaymentProcessor.stripe,
+                staged.payment_method.source_id,
+            )
+        return await link_payment_method(
+            self.session, customer, source_method=source.payment_method
         )
 
     def _card_note(self, payment_method: PaymentMethod) -> str | None:

@@ -39,6 +39,7 @@ from polar.models.merchant_migration_record import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
 from polar.worker import enqueue_job
 
 from . import pan_transfer
@@ -49,8 +50,15 @@ from .canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     deserialize,
+    serialize,
 )
-from .cards import AmbiguousCopiedCard, link_payment_method
+from .cards import (
+    AmbiguousCopiedCard,
+    PaymentMethodMappingCSVError,
+    link_mapped_payment_method,
+    link_payment_method,
+    parse_payment_method_mapping_csv,
+)
 from .cutover import SubscriptionCutover
 from .errors import MerchantMigrationError
 from .importer import CatalogImporter
@@ -680,6 +688,105 @@ class MerchantMigrationService:
         await repository.update(migration, update_dict={"pan_transfer_steps": steps})
         return self._checklist(migration, steps)
 
+    async def import_payment_method_mappings(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        contents: bytes,
+    ) -> None:
+        mappings = parse_payment_method_mapping_csv(contents)
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        customer_repository = CustomerRepository.from_session(session)
+        customers: dict[str, Customer] = {}
+        for mapping in mappings:
+            customer_record = await record_repository.get_imported_customer_dependency(
+                migration.id, mapping.source_customer_id
+            )
+            if customer_record is None or customer_record.target_id is None:
+                raise PaymentMethodMappingCSVError(
+                    f"Source customer {mapping.source_customer_id} was not imported "
+                    "by this migration."
+                )
+            customer = await customer_repository.get_by_id(customer_record.target_id)
+            if customer is None:
+                raise PaymentMethodMappingCSVError(
+                    f"Imported customer {mapping.source_customer_id} no longer exists."
+                )
+            if customer.stripe_customer_id not in (
+                None,
+                mapping.source_customer_id,
+                mapping.destination_customer_id,
+            ):
+                raise PaymentMethodMappingCSVError(
+                    f"Imported customer {mapping.source_customer_id} is linked to a "
+                    "different Stripe customer."
+                )
+            customers[mapping.source_customer_id] = customer
+
+        payment_methods: dict[str, PaymentMethod] = {}
+        for mapping in mappings:
+            customer = customers[mapping.source_customer_id]
+            if customer.stripe_customer_id != mapping.destination_customer_id:
+                await customer_repository.update(
+                    customer,
+                    update_dict={"stripe_customer_id": mapping.destination_customer_id},
+                )
+            payment_method = await link_mapped_payment_method(
+                session,
+                customer,
+                mapping,
+            )
+            if payment_method is None:
+                raise PaymentMethodMappingCSVError(
+                    f"Copied payment method {mapping.destination_payment_method_id} "
+                    "does not exist on Polar's Stripe account."
+                )
+            payment_methods[mapping.source_payment_method_id] = payment_method
+
+        mappings_by_source = {
+            mapping.source_payment_method_id: mapping for mapping in mappings
+        }
+        subscription_repository = SubscriptionRepository.from_session(session)
+        async for record in record_repository.stream_imported_subscriptions(
+            migration.id
+        ):
+            staged = _staged_subscription(record)
+            if staged is None:
+                continue
+            source_method = staged.payment_method
+            record_mapping = (
+                mappings_by_source.get(source_method.source_id)
+                if source_method is not None
+                else None
+            )
+            payment_method = (
+                payment_methods[record_mapping.source_payment_method_id]
+                if record_mapping is not None
+                and staged is not None
+                and staged.customer_source_id == record_mapping.source_customer_id
+                else None
+            )
+            if payment_method is None or staged.payment_method is None:
+                staged.payment_method = None
+            else:
+                staged.payment_method.source_id = payment_method.processor_id
+            await record_repository.update(
+                record, update_dict={"canonical": serialize(staged)}
+            )
+            if record.target_id is not None:
+                subscription = await subscription_repository.get_by_id(record.target_id)
+                if subscription is not None:
+                    await subscription_repository.update(
+                        subscription,
+                        update_dict={
+                            "payment_method_id": (
+                                payment_method.id
+                                if payment_method is not None
+                                else None
+                            )
+                        },
+                    )
+
     async def run_card_verification(
         self, session: AsyncSession, migration_id: UUID, *, offset: int = 0
     ) -> None:
@@ -689,6 +796,12 @@ class MerchantMigrationService:
             log.warning(
                 "merchant_migration.missing", merchant_migration_id=migration_id
             )
+            return
+        if pan_transfer.stripe_mapping_applied(
+            migration.pan_transfer_method, migration.pan_transfer_steps
+        ):
+            await repository.refresh_for_update(migration)
+            await self._complete_step(session, migration, STEP_VERIFY_CARDS)
             return
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
@@ -743,10 +856,11 @@ class MerchantMigrationService:
                 )
             except AmbiguousCopiedCard as e:
                 log.error(
-                    "merchant_migration.verify_cards.ambiguous_card",
+                    "merchant_migration.verify_cards.card_resolution_error",
                     merchant_migration_id=record.merchant_migration_id,
                     record_id=record.id,
-                    customer_id=e.customer_id,
+                    customer_id=customer.id,
+                    error=str(e),
                 )
                 resolved[key] = None
         return resolved[key]
@@ -1213,7 +1327,12 @@ class MerchantMigrationService:
         if not any(item.entity == PrecheckEntity.subscriptions for item in items):
             return
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        covered = await record_repository.payment_method_coverage(migration.id)
+        covered = await record_repository.payment_method_coverage(
+            migration.id,
+            exact=pan_transfer.stripe_mapping_applied(
+                migration.pan_transfer_method, migration.pan_transfer_steps
+            ),
+        )
         for item in items:
             if item.entity != PrecheckEntity.subscriptions or item.record_id is None:
                 continue

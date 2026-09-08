@@ -566,9 +566,7 @@ class TestUpdateOrganization:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # `customer: {}` is a valid payload — `allow_email_change` is
-        # NotRequired — and is what react-hook-form serializes for an org that
-        # never set the field. It must not clear a stored value.
+        # Every nested group is merged, not just `subscription`.
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
             "customer": {"allow_email_change": True},

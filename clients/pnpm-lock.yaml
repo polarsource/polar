@@ -1011,9 +1011,6 @@ importers:
       '@effect/platform-bun':
         specifier: 4.0.0-rc.112
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)
-      '@lemonsqueezy/lemonsqueezy.js':
-        specifier: ^4.0.0
-        version: 4.0.0
       '@polar-sh/sdk':
         specifier: ^0.47.0
         version: 0.47.1
@@ -3649,10 +3646,6 @@ packages:
     peerDependenciesMeta:
       zod-to-json-schema:
         optional: true
-
-  '@lemonsqueezy/lemonsqueezy.js@4.0.0':
-    resolution: {integrity: sha512-xcY1/lDrY7CpIF98WKiL1ElsfoVhddP7FT0fw7ssOzrFqQsr44HgolKrQZxd9SywsCPn12OTOUieqDIokI3mFg==}
-    engines: {node: '>=20'}
 
   '@manypkg/cli@0.25.1':
     resolution: {integrity: sha512-lag906FyiNxzZjsRErkUD5/to174I2JzPk5bZubuJp6loMKKJn73zrtqeU7nHlVkHBg3tgXDTJj22HxUDxLRXw==}
@@ -18726,8 +18719,6 @@ snapshots:
     transitivePeerDependencies:
       - react
       - react-dom
-
-  '@lemonsqueezy/lemonsqueezy.js@4.0.0': {}
 
   '@manypkg/cli@0.25.1':
     dependencies:

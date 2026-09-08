@@ -5,9 +5,7 @@ import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from './commands/listen'
 import { login } from './commands/login'
 import { logout } from './commands/logout'
-import { migrate } from './commands/migrate'
 import { update } from './commands/update'
-import * as Migration from './services/migration/migrate'
 import * as OAuth from './services/oauth'
 import * as Polar from './services/polar'
 import {
@@ -17,7 +15,7 @@ import {
 import { VERSION } from './version'
 
 const mainCommand = Command.make('polar').pipe(
-  Command.withSubcommands([login, logout, migrate, listen, update]),
+  Command.withSubcommands([login, logout, listen, update]),
 )
 
 const cli = Command.run(mainCommand, {
@@ -27,7 +25,6 @@ const cli = Command.run(mainCommand, {
 const services = Layer.mergeAll(
   OAuth.layer,
   Polar.layer,
-  Migration.layer,
   BunServices.layer,
   FetchHttpClient.layer,
 )

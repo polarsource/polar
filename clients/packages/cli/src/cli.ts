@@ -1,6 +1,7 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
 import { Effect, Layer } from 'effect'
 import { Command } from 'effect/unstable/cli'
+import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from './commands/listen'
 import { login } from './commands/login'
 import { logout } from './commands/logout'
@@ -28,6 +29,7 @@ const services = Layer.mergeAll(
   Polar.layer,
   Migration.layer,
   BunServices.layer,
+  FetchHttpClient.layer,
 )
 
 showUpdateNotice()

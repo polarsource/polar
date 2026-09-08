@@ -2,9 +2,11 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { Effect } from 'effect'
+import { FetchHttpClient } from 'effect/unstable/http'
 import { VERSION } from '../version'
+import { getLatestRelease, isNewerVersion } from './github-releases'
 
-const REPO = 'polarsource/cli'
 const STATE_DIR = join(homedir(), '.polar')
 const STATE_FILE = join(STATE_DIR, 'update-check.json')
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000 // 24 hours
@@ -21,7 +23,8 @@ export function showUpdateNotice(): void {
     const raw = readFileSync(STATE_FILE, 'utf-8')
     const state: UpdateCheckState = JSON.parse(raw)
 
-    if (!state.latestVersion || state.latestVersion === VERSION) return
+    if (!state.latestVersion || !isNewerVersion(state.latestVersion, VERSION))
+      return
 
     const dim = '\x1b[2m'
     const cyan = '\x1b[36m'
@@ -56,21 +59,17 @@ export function checkForUpdateInBackground(): void {
 
     if (!shouldCheck) return
 
-    fetch(`https://api.github.com/repos/${REPO}/releases/latest`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then((data: { tag_name?: string }) => {
-        if (!data.tag_name) return
-
+    Effect.runPromise(
+      getLatestRelease.pipe(Effect.provide(FetchHttpClient.layer)),
+    )
+      .then((release) => {
         if (!existsSync(STATE_DIR)) {
           mkdirSync(STATE_DIR, { recursive: true })
         }
 
         const state: UpdateCheckState = {
           lastChecked: new Date().toISOString(),
-          latestVersion: data.tag_name,
+          latestVersion: release.version,
         }
 
         return writeFile(STATE_FILE, JSON.stringify(state, null, 2))

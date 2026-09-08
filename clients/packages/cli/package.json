@@ -1,9 +1,13 @@
 {
   "name": "polar-cli",
+  "private": true,
   "version": "1.3.9",
   "description": "",
   "bin": "bin/cli.js",
   "type": "module",
+  "engines": {
+    "bun": "1.4.2"
+  },
   "scripts": {
     "prepare": "effect-language-service patch",
     "build": "tsup ./src/cli.ts --format esm --outDir bin",

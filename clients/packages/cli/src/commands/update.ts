@@ -3,8 +3,13 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { BunFileSystem } from '@effect/platform-bun'
-import { Console, Data, Effect, FileSystem, Schema } from 'effect'
+import { Console, Data, Effect, FileSystem } from 'effect'
 import { Command } from 'effect/unstable/cli'
+import {
+  type CLIRelease,
+  getLatestRelease,
+  isNewerVersion,
+} from '../services/github-releases'
 import * as OAuth from '../services/oauth'
 import { VERSION } from '../version'
 
@@ -68,18 +73,6 @@ export const replaceBinary = (
       )
   })
 
-const REPO = 'polarsource/cli'
-
-const GitHubRelease = Schema.Struct({
-  tag_name: Schema.String,
-  assets: Schema.Array(
-    Schema.Struct({
-      name: Schema.String,
-      browser_download_url: Schema.String,
-    }),
-  ),
-})
-
 function detectPlatform(): { os: string; arch: string } {
   const platform = process.platform
   const arch = process.arch
@@ -138,10 +131,7 @@ export function getArchiveExtractionCommand(
   throw new Error(`Unsupported archive format: ${archivePath}`)
 }
 
-const downloadAndUpdate = (
-  release: typeof GitHubRelease.Type,
-  latestVersion: string,
-) =>
+const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
   Effect.gen(function* () {
     const bold = '\x1b[1m'
     const cyan = '\x1b[36m'
@@ -313,22 +303,11 @@ export const update = Command.make('update', {}, () =>
 
     yield* Console.log(`${dim}Checking for updates...${reset}`)
 
-    const response = yield* Effect.tryPromise({
-      try: () =>
-        fetch(`https://api.github.com/repos/${REPO}/releases/latest`).then(
-          (res) => res.json(),
-        ),
-      catch: (cause) =>
-        new UpdateError({
-          message: 'Failed to fetch latest release from GitHub',
-          cause,
-        }),
-    })
+    const release = yield* getLatestRelease
 
-    const release = yield* Schema.decodeUnknownEffect(GitHubRelease)(response)
-    const latestVersion = release.tag_name
+    const latestVersion = release.version
 
-    if (latestVersion === VERSION) {
+    if (!isNewerVersion(latestVersion, VERSION)) {
       yield* Console.log(
         `${green}Already up to date${reset} ${dim}(${VERSION})${reset}`,
       )

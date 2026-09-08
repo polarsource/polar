@@ -1,0 +1,304 @@
+name: Release CLI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - clients/packages/cli/package.json
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the current main version (otherwise create a verification draft)
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-cli
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.release.outputs.enabled }}
+      tag: ${{ steps.release.outputs.tag }}
+      publish: ${{ steps.release.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/github-script@v9
+        id: release
+        with:
+          script: |
+            const { version } = require('./clients/packages/cli/package.json')
+            const publish = context.eventName === 'push' || context.payload.inputs?.publish === 'true'
+            core.setOutput('enabled', false)
+            if (!/^\d+\.\d+\.\d+$/.test(version)) {
+              throw new Error('CLI releases require a stable semantic version')
+            }
+            if (publish && context.ref !== 'refs/heads/main') {
+              throw new Error('CLI releases can only be published from main')
+            }
+            if (context.eventName === 'push') {
+              let previousVersion
+              try {
+                const { data } = await github.rest.repos.getContent({
+                  ...context.repo,
+                  path: 'clients/packages/cli/package.json',
+                  ref: context.payload.before,
+                })
+                previousVersion = JSON.parse(Buffer.from(data.content, 'base64').toString()).version
+              } catch (error) {
+                if (error.status !== 404) throw error
+              }
+              if (!previousVersion || previousVersion === version) return
+            }
+            const tag = publish
+              ? `polar-cli@${version}`
+              : `polar-cli-verify-${context.runId}-${process.env.GITHUB_RUN_ATTEMPT}`
+            try {
+              const { data } = await github.rest.repos.getReleaseByTag({ ...context.repo, tag })
+              if (!data.draft) {
+                core.info(`${tag} is already published`)
+                return
+              }
+              if (data.target_commitish !== context.sha) {
+                throw new Error('Retry the original workflow run to finish this draft release')
+              }
+            } catch (error) {
+              if (error.status !== 404) throw error
+            }
+            core.setOutput('enabled', true)
+            core.setOutput('tag', tag)
+            core.setOutput('publish', publish)
+
+  test:
+    needs: prepare
+    if: needs.prepare.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: clients/package.json
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: pnpm
+          cache-dependency-path: clients/pnpm-lock.yaml
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: clients/packages/cli/package.json
+
+      - run: pnpm --dir clients install --filter polar-cli --frozen-lockfile --ignore-scripts
+      - run: pnpm --dir clients --filter polar-cli run prepare
+      - run: pnpm --dir clients --filter polar-cli format:check
+      - run: pnpm --dir clients --filter polar-cli lint
+      - run: pnpm --dir clients --filter polar-cli typecheck
+      - run: pnpm --dir clients --filter polar-cli test
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - target: bun-darwin-arm64
+            archive: polar-darwin-arm64.zip
+            os: macos-15
+            sign: true
+          - target: bun-darwin-x64
+            archive: polar-darwin-x64.zip
+            os: macos-15
+            sign: true
+          - target: bun-linux-x64
+            archive: polar-linux-x64.tar.gz
+            os: ubuntu-latest
+            sign: false
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: clients/packages/cli
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: clients/package.json
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: pnpm
+          cache-dependency-path: clients/pnpm-lock.yaml
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: clients/packages/cli/package.json
+
+      - run: pnpm --dir ../.. install --filter polar-cli --frozen-lockfile --ignore-scripts
+
+      - name: Validate macOS signing configuration
+        if: matrix.sign
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          test -n "$MACOS_CERTIFICATE_P12_BASE64" || { echo "Missing MACOS_CERTIFICATE_P12_BASE64 secret"; exit 1; }
+          test -n "$MACOS_CERTIFICATE_PASSWORD" || { echo "Missing MACOS_CERTIFICATE_PASSWORD secret"; exit 1; }
+          test -n "$MACOS_SIGNING_IDENTITY" || { echo "Missing MACOS_SIGNING_IDENTITY secret"; exit 1; }
+          test -n "$APP_STORE_CONNECT_API_KEY_P8" || { echo "Missing APP_STORE_CONNECT_API_KEY_P8 secret"; exit 1; }
+          test -n "$APP_STORE_CONNECT_API_KEY_ID" || { echo "Missing APP_STORE_CONNECT_API_KEY_ID secret"; exit 1; }
+          test -n "$APP_STORE_CONNECT_ISSUER_ID" || { echo "Missing APP_STORE_CONNECT_ISSUER_ID secret"; exit 1; }
+
+      - name: Import macOS signing certificate
+        if: matrix.sign
+        uses: apple-actions/import-codesign-certs@v6
+        with:
+          p12-file-base64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+
+      - name: Build binary
+        run: bun build ./src/cli.ts --compile --target=${{ matrix.target }} --outfile polar
+
+      - name: Sign macOS binary
+        if: matrix.sign
+        env:
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        run: |
+          codesign --force --options runtime \
+            --entitlements ./.github/macos-entitlements.plist \
+            --sign "$MACOS_SIGNING_IDENTITY" \
+            --timestamp \
+            ./polar
+          codesign --verify --strict --verbose=2 ./polar
+
+      - name: Write App Store Connect API key
+        if: matrix.sign
+        env:
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        run: |
+          key_path="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
+          printf '%s' "$APP_STORE_CONNECT_API_KEY_P8" > "$key_path"
+          chmod 600 "$key_path"
+          echo "APP_STORE_CONNECT_API_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+
+      - name: Package binary
+        run: |
+          if [[ "${{ matrix.archive }}" == *.zip ]]; then
+            ditto -c -k polar "${{ matrix.archive }}"
+          else
+            tar -czf "${{ matrix.archive }}" polar
+          fi
+
+      - name: Notarize macOS archive
+        if: matrix.sign
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          xcrun notarytool submit "${{ matrix.archive }}" \
+            --key "$APP_STORE_CONNECT_API_KEY_PATH" \
+            --key-id "$APP_STORE_CONNECT_API_KEY_ID" \
+            --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --wait
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: clients/packages/cli/${{ matrix.archive }}
+          if-no-files-found: error
+
+  release:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: polar-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate checksums
+        working-directory: release-assets
+        run: sha256sum polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-x64.tar.gz > checksums.txt
+
+      - name: Create draft release
+        id: draft
+        uses: actions/github-script@v9
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          PUBLISH: ${{ needs.prepare.outputs.publish }}
+        with:
+          script: |
+            const fs = require('node:fs')
+            const { version } = require('./clients/packages/cli/package.json')
+            const tag = process.env.RELEASE_TAG
+            const publish = process.env.PUBLISH === 'true'
+            let body = `Verification build of CLI ${version}.`
+            if (publish) {
+              const lines = fs.readFileSync('clients/packages/cli/CHANGELOG.md', 'utf8').split(/\r?\n/)
+              const start = lines.indexOf(`## ${version}`)
+              if (start === -1) throw new Error(`Missing changelog entry for ${version}`)
+              const next = lines.findIndex((line, index) => index > start && line.startsWith('## '))
+              body = lines.slice(start + 1, next === -1 ? undefined : next).join('\n').trim()
+            }
+            body += `\n\nSource: https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}`
+            let release
+            try {
+              release = (await github.rest.repos.getReleaseByTag({ ...context.repo, tag })).data
+            } catch (error) {
+              if (error.status !== 404) throw error
+              release = (await github.rest.repos.createRelease({
+                ...context.repo,
+                tag_name: tag,
+                target_commitish: context.sha,
+                name: publish ? `Polar CLI v${version}` : tag,
+                body,
+                draft: true,
+                prerelease: !publish,
+                make_latest: 'false',
+              })).data
+            }
+            if (!release.draft || release.target_commitish !== context.sha) {
+              throw new Error('Refusing to overwrite a published release or a draft from another commit')
+            }
+            core.setOutput('id', release.id)
+
+      - name: Upload binaries and checksums
+        working-directory: release-assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release upload "$RELEASE_TAG" polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-x64.tar.gz checksums.txt --clobber
+
+      - name: Publish complete release
+        if: needs.prepare.outputs.publish == 'true'
+        uses: actions/github-script@v9
+        env:
+          RELEASE_ID: ${{ steps.draft.outputs.id }}
+        with:
+          script: |
+            await github.rest.repos.updateRelease({
+              ...context.repo,
+              release_id: Number(process.env.RELEASE_ID),
+              draft: false,
+              prerelease: false,
+              make_latest: 'false',
+            })

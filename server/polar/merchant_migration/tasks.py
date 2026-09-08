@@ -11,7 +11,6 @@ from .service import merchant_migration as merchant_migration_service
     time_limit=600_000,
 )
 async def merchant_migration_precheck(merchant_migration_id: UUID) -> None:
-    """Read the source catalog and stage it. One run for the whole extract."""
     async with AsyncSessionMaker() as session:
         await merchant_migration_service.execute_precheck(
             session, merchant_migration_id

@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from datetime import timedelta
+from typing import Any
 from unittest.mock import Mock
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
+from polar.merchant_migration.adapters.base import ExtractionPage
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -29,6 +31,7 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    deserialize,
     serialize,
 )
 from polar.merchant_migration.cards import AmbiguousCopiedCard
@@ -120,6 +123,7 @@ class _FakeAdapter:
         verify_error: Exception | None = None,
         account_id: str | None = "acct_test",
         source_account: CanonicalAccount | None = None,
+        page_size: int | None = None,
     ) -> None:
         self._records = records or []
         self._missing_scopes = missing_scopes or []
@@ -128,6 +132,7 @@ class _FakeAdapter:
         self._source_account = source_account or CanonicalAccount(
             country="US", has_connected_accounts=False
         )
+        self._page_size = page_size
         self.stopped: list[str] = []
 
     async def verify_scopes(self) -> list[str]:
@@ -141,6 +146,17 @@ class _FakeAdapter:
     async def extract(self) -> AsyncIterator[CanonicalRecord]:
         for record in self._records:
             yield record
+
+    async def extract_page(
+        self, cursor: dict[str, Any] | None = None
+    ) -> ExtractionPage:
+        offset = int((cursor or {}).get("offset", 0))
+        page_size = self._page_size or len(self._records) or 1
+        next_offset = offset + page_size
+        return ExtractionPage(
+            self._records[offset:next_offset],
+            {"offset": next_offset} if next_offset < len(self._records) else None,
+        )
 
     async def get_source_account(self) -> CanonicalAccount:
         return self._source_account
@@ -678,6 +694,101 @@ class TestExecutePrecheck:
         )
         assert len(records) == 2
 
+    @pytest.mark.auth
+    async def test_stages_one_page_and_enqueues_the_next(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog(), page_size=1),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+        enqueue.reset_mock()
+
+        await service.execute_precheck(session, migration.id)
+
+        assert migration.step == MerchantMigrationStep.source_setup
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
+        assert migration.operation.cursor == {"offset": 1}
+        enqueue.assert_called_once_with(
+            "merchant_migration.precheck", merchant_migration_id=migration.id
+        )
+
+        enqueue.reset_mock()
+        await service.execute_precheck(session, migration.id)
+
+        assert migration.step.value == MerchantMigrationStep.pre_check.value
+        assert migration.operation is not None
+        assert (
+            migration.operation.status.value
+            == MerchantMigrationOperationStatus.done.value
+        )
+        assert migration.operation.cursor is None
+        enqueue.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_merges_prices_for_a_product_split_across_pages(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        products: list[CanonicalRecord] = [
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id=price_id,
+                        currency=currency,
+                        amount=amount,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    )
+                ],
+            )
+            for price_id, currency, amount in (
+                ("price_usd", "usd", 1000),
+                ("price_eur", "eur", 900),
+            )
+        ]
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(products, page_size=1),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+
+        await service.execute_precheck(session, migration.id)
+        await service.execute_precheck(session, migration.id)
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.get_all(
+            record_repository.get_base_statement()
+        )
+        assert len(records) == 1
+        product = deserialize(records[0].type, records[0].canonical)
+        assert isinstance(product, CanonicalProduct)
+        assert {(price.source_id, price.currency) for price in product.prices} == {
+            ("price_usd", "usd"),
+            ("price_eur", "eur"),
+        }
+
     async def test_skips_when_no_active_operation(
         self,
         session: AsyncSession,
@@ -704,15 +815,14 @@ class TestExecutePrecheck:
         user_organization: UserOrganization,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
+        adapter = _FakeAdapter()
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
-            return_value=_FakeAdapter(),
+            return_value=adapter,
         )
         mocker.patch("polar.merchant_migration.service.enqueue_job")
         await service.start_precheck(session, auth_subject, migration.id)
-        mocker.patch.object(
-            service, "_complete_precheck", side_effect=SourceNotConnected()
-        )
+        mocker.patch.object(adapter, "extract_page", side_effect=SourceNotConnected())
 
         await service.execute_precheck(session, migration.id)
 

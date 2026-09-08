@@ -1,8 +1,9 @@
 from collections.abc import AsyncGenerator, Sequence
+from dataclasses import replace
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, and_, exists, func, or_, select
+from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, or_, select
 from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -30,7 +31,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 
-from .canonical import CanonicalRecord, serialize
+from .canonical import CanonicalProduct, CanonicalRecord, deserialize, serialize
 
 type RecordCounts = dict[
     tuple[UUID, MerchantMigrationRecordType, MerchantMigrationRecordStatus], int
@@ -544,11 +545,21 @@ class MerchantMigrationRecordRepository(
                 record, update_dict={"cutover_status": None, "cutover_error": None}
             )
 
+    async def delete_pending(self, migration_id: UUID) -> None:
+        await self.session.execute(
+            delete(MerchantMigrationRecord).where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+            )
+        )
+
     async def upsert(
         self,
         merchant_migration: MerchantMigration,
         organization: Organization,
         record: CanonicalRecord,
+        *,
+        merge_product_prices: bool = False,
     ) -> MerchantMigrationRecord:
         """Idempotently stage a record, keyed per org by (type, source_id). A
         re-run refreshes a still-pending row; imported/skipped/failed rows are
@@ -561,6 +572,21 @@ class MerchantMigrationRecordRepository(
         canonical = serialize(record)
         if existing is not None:
             if existing.status == MerchantMigrationRecordStatus.pending:
+                if merge_product_prices and isinstance(record, CanonicalProduct):
+                    current = deserialize(existing.type, existing.canonical)
+                    if isinstance(current, CanonicalProduct):
+                        prices = {
+                            (price.source_id, price.currency): price
+                            for price in current.prices
+                        }
+                        prices.update(
+                            {
+                                (price.source_id, price.currency): price
+                                for price in record.prices
+                            }
+                        )
+                        record = replace(record, prices=list(prices.values()))
+                        canonical = serialize(record)
                 return await self.update(
                     existing,
                     update_dict={

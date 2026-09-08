@@ -42,7 +42,7 @@ from polar.product.repository import ProductRepository
 from polar.worker import enqueue_job
 
 from . import pan_transfer
-from .adapters import SourceAdapter, StripeAdapter
+from .adapters import PaginatedSourceAdapter, StripeAdapter
 from .canonical import (
     CanonicalPaymentMethod,
     CanonicalProduct,
@@ -461,6 +461,9 @@ class MerchantMigrationService:
         await self._build_adapter(migration)
 
         repository = MerchantMigrationRepository.from_session(session)
+        await MerchantMigrationRecordRepository.from_session(session).delete_pending(
+            migration.id
+        )
         await repository.update(
             migration,
             update_dict={
@@ -482,25 +485,59 @@ class MerchantMigrationService:
         operation = migration.operation
         if operation is None or not operation.is_active:
             return
+        running_operation = operation.model_copy(
+            update={
+                "status": MerchantMigrationOperationStatus.running,
+                "error": None,
+                "last_progress_at": utc_now(),
+            }
+        )
         await repository.update(
             migration,
-            update_dict={
-                "operation": operation.model_copy(
-                    update={
-                        "status": MerchantMigrationOperationStatus.running,
-                        "error": None,
-                        "last_progress_at": utc_now(),
-                    }
-                )
-            },
+            update_dict={"operation": running_operation},
         )
         try:
-            await self._complete_precheck(session, migration)
+            organization = await self._get_organization(session, migration)
+            adapter = await self._build_adapter(migration)
+            page = await adapter.extract_page(operation.cursor)
+            record_repository = MerchantMigrationRecordRepository.from_session(session)
+            for record in page.records:
+                await record_repository.upsert(
+                    migration,
+                    organization,
+                    record,
+                    merge_product_prices=True,
+                )
         except MerchantMigrationError as e:
             await self._fail_operation(session, migration, e.message)
             return
+        if page.next_cursor is not None:
+            await repository.update(
+                migration,
+                update_dict={
+                    "operation": running_operation.model_copy(
+                        update={
+                            "cursor": page.next_cursor,
+                            "last_progress_at": utc_now(),
+                        }
+                    )
+                },
+            )
+            enqueue_job(
+                "merchant_migration.precheck", merchant_migration_id=migration.id
+            )
+            return
+
+        update_dict: dict[str, object] = {
+            "operation": self._done_operation(migration).model_copy(
+                update={"cursor": None}
+            )
+        }
+        if migration.step == MerchantMigrationStep.source_setup:
+            update_dict["step"] = MerchantMigrationStep.pre_check
         await repository.update(
-            migration, update_dict={"operation": self._done_operation(migration)}
+            migration,
+            update_dict=update_dict,
         )
 
     async def run_precheck(
@@ -1432,7 +1469,9 @@ class MerchantMigrationService:
             await record_repository.upsert(migration, organization, record)
             yield record
 
-    async def _build_adapter(self, migration: MerchantMigration) -> SourceAdapter:
+    async def _build_adapter(
+        self, migration: MerchantMigration
+    ) -> PaginatedSourceAdapter:
         if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
             raise UnsupportedMigrationSource(migration.source_platform)
         return StripeAdapter(await self._decrypt_stripe_api_key(migration))

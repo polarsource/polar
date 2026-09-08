@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 import pytest
 import stripe as stripe_lib
@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.config import settings
+from polar.merchant_migration.adapters.base import ExtractionPage
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -371,22 +372,24 @@ def start_and_execute_precheck(
     return run
 
 
-async def _catalog_extract() -> AsyncIterator[CanonicalRecord]:
-    yield CanonicalProduct(
-        source_id="prod_1:month:1",
-        product_source_id="prod_1",
-        name="Pro",
-        recurring_interval="month",
-        recurring_interval_count=1,
-        prices=[
-            CanonicalPrice(
-                source_id="price_1",
-                currency="usd",
-                amount=1000,
-                pricing_scheme=CanonicalPricingScheme.fixed,
-            )
-        ],
-    )
+def _catalog() -> list[CanonicalRecord]:
+    return [
+        CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_1",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        )
+    ]
 
 
 @pytest.mark.asyncio
@@ -413,7 +416,9 @@ class TestRecords:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
-        adapter.extract.return_value = _catalog_extract()
+        adapter.extract_page = mocker.AsyncMock(
+            return_value=ExtractionPage(_catalog(), None)
+        )
         adapter.get_source_account = mocker.AsyncMock(
             return_value=CanonicalAccount(country="US", has_connected_accounts=False)
         )
@@ -434,30 +439,31 @@ class TestRecords:
         assert json_body["items"][0]["status"] == "importable"
 
 
-async def _catalog_with_customer_extract() -> AsyncIterator[CanonicalRecord]:
-    async for record in _catalog_extract():
-        yield record
-    yield CanonicalCustomer(
-        source_id="cus_1",
-        email="alice@example.com",
-        name="Alice",
-        country="US",
-    )
-    yield CanonicalSubscription(
-        source_id="sub_1",
-        customer_source_id="cus_1",
-        price_source_id="price_1",
-        status=CanonicalSubscriptionStatus.active,
-        collection_method=CanonicalCollectionMethod.charge_automatically,
-        current_period_start=None,
-        current_period_end=None,
-        trialing=False,
-        paused_collection=False,
-        line_item_count=1,
-        quantity=1,
-        payment_method=None,
-        currency="usd",
-    )
+def _catalog_with_customer() -> list[CanonicalRecord]:
+    return [
+        *_catalog(),
+        CanonicalCustomer(
+            source_id="cus_1",
+            email="alice@example.com",
+            name="Alice",
+            country="US",
+        ),
+        CanonicalSubscription(
+            source_id="sub_1",
+            customer_source_id="cus_1",
+            price_source_id="price_1",
+            status=CanonicalSubscriptionStatus.active,
+            collection_method=CanonicalCollectionMethod.charge_automatically,
+            current_period_start=None,
+            current_period_end=None,
+            trialing=False,
+            paused_collection=False,
+            line_item_count=1,
+            quantity=1,
+            payment_method=None,
+            currency="usd",
+        ),
+    ]
 
 
 @pytest.mark.asyncio
@@ -493,7 +499,9 @@ class TestImport:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
-        adapter.extract.return_value = _catalog_with_customer_extract()
+        adapter.extract_page = mocker.AsyncMock(
+            return_value=ExtractionPage(_catalog_with_customer(), None)
+        )
         adapter.get_source_account = mocker.AsyncMock(
             return_value=CanonicalAccount(country="US", has_connected_accounts=False)
         )
@@ -523,7 +531,9 @@ class TestImport:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
-        adapter.extract.return_value = _catalog_with_customer_extract()
+        adapter.extract_page = mocker.AsyncMock(
+            return_value=ExtractionPage(_catalog_with_customer(), None)
+        )
         adapter.get_source_account = mocker.AsyncMock(
             return_value=CanonicalAccount(country="US", has_connected_accounts=False)
         )

@@ -101,6 +101,12 @@ const textProps: PropRow[] = [
     description: 'Wrapping behavior.',
   },
   {
+    name: 'lineHeight',
+    type: "'none' | 'tight' | 'snug' | 'normal' | 'relaxed'",
+    description:
+      'Override the leading baked into the variant, e.g. to relax long-form copy set in a heading role.',
+  },
+  {
     name: 'loading',
     type: 'boolean',
     default: 'false',

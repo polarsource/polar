@@ -9,6 +9,7 @@ import * as stylex from '@stylexjs/stylex'
 import { textColorStyles, textRoleStyles } from '../tokens/semantics.stylex'
 import {
   textAlignStyles,
+  textLineHeightStyles,
   textUtilityStyles,
   textWrapStyles,
 } from '../utils/text-styles'
@@ -59,12 +60,14 @@ export type TextColor =
 
 export type TextAlign = 'left' | 'center' | 'right' | 'justify'
 export type TextWrap = 'wrap' | 'nowrap' | 'balance' | 'pretty'
+export type TextLineHeight = 'none' | 'tight' | 'snug' | 'normal' | 'relaxed'
 
 export type TextStyleProps = {
   variant?: TextVariant
   color?: TextColor
   align?: TextAlign
   wrap?: TextWrap
+  lineHeight?: TextLineHeight
 }
 
 // The role each variant plays decides which element it should render as, so the
@@ -156,6 +159,12 @@ type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
    * body `pretty`); set this to override. Ignored while truncating.
    */
   wrap?: TextStyleProps['wrap']
+  /**
+   * Line height, on the shared leading scale. Each role bakes in its own
+   * leading (headings tighter, body looser); set this to override, e.g. to
+   * relax long-form copy set in a heading role.
+   */
+  lineHeight?: TextStyleProps['lineHeight']
   /**
    * The text to render. Prefer plain strings and numbers; inline elements are
    * allowed where you genuinely need them (a `<br>`, an inline link), but reach
@@ -252,6 +261,7 @@ function Text<E extends TextTag = 'p'>({
   color,
   align,
   wrap,
+  lineHeight,
   children,
   style,
   loading,
@@ -295,6 +305,7 @@ function Text<E extends TextTag = 'p'>({
     textColorStyles[color ?? 'default'],
     align && textAlignStyles[align],
     resolvedWrap && textWrapStyles[resolvedWrap],
+    lineHeight && textLineHeightStyles[lineHeight],
     monospace && textUtilityStyles.monospace,
     tabularNums && textUtilityStyles.tabularNums,
     lineThrough && textUtilityStyles.lineThrough,

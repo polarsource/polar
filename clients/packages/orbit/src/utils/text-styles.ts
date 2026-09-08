@@ -5,7 +5,7 @@
 
 import * as stylex from '@stylexjs/stylex'
 
-import { fontFamilies } from '../tokens/value.stylex'
+import { fontFamilies, lineHeights } from '../tokens/value.stylex'
 
 export const textAlignStyles = stylex.create({
   left: { textAlign: 'left' },
@@ -19,6 +19,14 @@ export const textWrapStyles = stylex.create({
   nowrap: { textWrap: 'nowrap' },
   balance: { textWrap: 'balance' },
   pretty: { textWrap: 'pretty' },
+})
+
+export const textLineHeightStyles = stylex.create({
+  none: { lineHeight: lineHeights.none },
+  tight: { lineHeight: lineHeights.tight },
+  snug: { lineHeight: lineHeights.snug },
+  normal: { lineHeight: lineHeights.normal },
+  relaxed: { lineHeight: lineHeights.relaxed },
 })
 
 export const textUtilityStyles = stylex.create({

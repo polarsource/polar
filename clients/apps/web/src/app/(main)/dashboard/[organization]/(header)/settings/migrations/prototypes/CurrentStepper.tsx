@@ -33,6 +33,8 @@ export function CurrentStepper({ stage }: { stage: PrototypeStage }) {
       alignItems="stretch"
       columnGap="s"
       aria-label="Migration steps"
+      maxWidth="100%"
+      overflowX="auto"
     >
       {VISIBLE_STEPS.map((label, index) => {
         const reached = index <= current
@@ -42,7 +44,7 @@ export function CurrentStepper({ stage }: { stage: PrototypeStage }) {
             as="li"
             key={label}
             flex={1}
-            minWidth={0}
+            minWidth={{ base: 112, md: 0 }}
             flexDirection="column"
             rowGap="s"
             paddingTop="s"
@@ -54,7 +56,6 @@ export function CurrentStepper({ stage }: { stage: PrototypeStage }) {
             <Text
               variant="caption"
               color={isCurrent ? 'accent' : reached ? 'default' : 'muted'}
-              truncate
             >
               {label}
             </Text>

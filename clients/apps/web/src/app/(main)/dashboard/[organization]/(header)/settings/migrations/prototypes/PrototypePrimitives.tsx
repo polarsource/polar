@@ -36,6 +36,8 @@ export function FlowRail({ stage }: { stage: PrototypeStage }) {
       aria-label="Migration prototype steps"
       columnGap="s"
       alignItems="stretch"
+      maxWidth="100%"
+      overflowX="auto"
     >
       {flowSteps.map((label, index) => {
         const reached = index <= activeIndex
@@ -45,7 +47,7 @@ export function FlowRail({ stage }: { stage: PrototypeStage }) {
             as="li"
             key={label}
             flex={1}
-            minWidth={0}
+            minWidth={{ base: 88, md: 0 }}
             flexDirection="column"
             rowGap="s"
             paddingTop="s"
@@ -54,11 +56,7 @@ export function FlowRail({ stage }: { stage: PrototypeStage }) {
             borderColor={reached ? 'border-primary' : 'border-secondary'}
             aria-current={current ? 'step' : undefined}
           >
-            <Text
-              variant="caption"
-              color={current ? 'default' : 'muted'}
-              truncate
-            >
+            <Text variant="caption" color={current ? 'default' : 'muted'}>
               {index + 1}. {label}
             </Text>
           </Box>

@@ -1,13 +1,16 @@
 'use client'
 
 import {
+  isActiveMigrationOperation,
   useImportMerchantMigrationCatalog,
+  useMerchantMigration,
   useMigrationRecords,
   useRunMerchantMigrationPrecheck,
 } from '@/hooks/queries/merchantMigrations'
+import { getQueryClient } from '@/utils/api/query'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRecordSummary } from './recordSummary'
 import {
   selectionPayload,
@@ -26,36 +29,62 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   const [pageSize, setPageSize] = useState(20)
   const [selection, setSelection] = useState<SelectionState>(initialSelection)
 
-  const records = useMigrationRecords(migrationId, {
-    entity: 'subscriptions',
-    page,
-    limit: pageSize,
-    excludeImportStatus: 'imported',
-    ...(filter === 'to_prepare'
-      ? {
-          status: 'importable' as const,
-          importStatus: 'pending' as const,
-          dependenciesImported: false,
-        }
-      : {}),
-    ...(filter === 'ready'
-      ? {
-          status: 'importable' as const,
-          importStatus: 'pending' as const,
-          dependenciesImported: true,
-        }
-      : {}),
-    ...(filter === 'attention' ? { reasonLevel: 'action_required' } : {}),
-    ...(filter === 'skipped' ? { status: 'skipped' as const } : {}),
-  })
+  const { data: migration } = useMerchantMigration(migrationId)
+  const refreshing = isActiveMigrationOperation(migration?.operation)
+  const pollMs = refreshing ? 2000 : false
+
+  const records = useMigrationRecords(
+    migrationId,
+    {
+      entity: 'subscriptions',
+      page,
+      limit: pageSize,
+      excludeImportStatus: 'imported',
+      ...(filter === 'to_prepare'
+        ? {
+            status: 'importable' as const,
+            importStatus: 'pending' as const,
+            dependenciesImported: false,
+          }
+        : {}),
+      ...(filter === 'ready'
+        ? {
+            status: 'importable' as const,
+            importStatus: 'pending' as const,
+            dependenciesImported: true,
+          }
+        : {}),
+      ...(filter === 'attention' ? { reasonLevel: 'action_required' } : {}),
+      ...(filter === 'skipped' ? { status: 'skipped' as const } : {}),
+    },
+    pollMs,
+  )
   const {
     counts,
     attentionCount,
     isLoading: countsLoading,
     isError: countsError,
-  } = useRecordSummary(migrationId)
+  } = useRecordSummary(migrationId, pollMs)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
+  const wasRefreshing = useRef(false)
+
+  useEffect(() => {
+    if (refreshing) {
+      wasRefreshing.current = true
+      return
+    }
+    if (wasRefreshing.current) {
+      wasRefreshing.current = false
+      const client = getQueryClient()
+      client.invalidateQueries({
+        queryKey: ['merchantMigrationRecords', { id: migrationId }],
+      })
+      client.invalidateQueries({
+        queryKey: ['merchantMigrationRecordSummary', { id: migrationId }],
+      })
+    }
+  }, [refreshing, migrationId])
 
   const onFilterChange = (next: ReviewFilter) => {
     setFilter(next)
@@ -67,7 +96,6 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     setPage(1)
   }
 
-  // Stable so `buildReviewColumns` can actually be memoised.
   const toggle = useCallback(
     (id: string) => setSelection((prev) => toggleRow(prev, id)),
     [],
@@ -126,10 +154,13 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
           : undefined
       }
       onRerunPrecheck={() => rerunPrecheck.mutate()}
-      rerunning={rerunPrecheck.isPending}
-      blockers={rerunPrecheck.data?.issues.filter(
-        (issue) => issue.level === 'blocker',
-      )}
+      rerunning={refreshing || rerunPrecheck.isPending}
+      refreshError={
+        migration?.operation?.status === 'failed'
+          ? migration.operation.error ||
+            "We couldn't refresh from Stripe. Please try again."
+          : undefined
+      }
     />
   )
 }

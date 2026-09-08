@@ -1,90 +1,56 @@
 'use client'
 
-import { useRunMerchantMigrationPrecheck } from '@/hooks/queries/merchantMigrations'
+import {
+  isActiveMigrationOperation,
+  useRunMerchantMigrationPrecheck,
+} from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
-import { Button, Status, Text } from '@polar-sh/orbit'
+import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { PrecheckSummary } from './PrecheckSummary'
 
-export function PrecheckPanel({ migrationId }: { migrationId: string }) {
-  const precheck = useRunMerchantMigrationPrecheck(migrationId)
-  const report = precheck.data
+export function PrecheckPanel({
+  migration,
+}: {
+  migration: schemas['MerchantMigration']
+}) {
+  const precheck = useRunMerchantMigrationPrecheck(migration.id)
+  const running =
+    precheck.isPending || isActiveMigrationOperation(migration.operation)
+  const failed = migration.operation?.status === 'failed'
+  const error =
+    (failed ? migration.operation?.error : null) ||
+    (precheck.isError
+      ? "We couldn't start the pre-check. Please try again."
+      : null)
 
   return (
     <Box flexDirection="column" rowGap="l" marginTop="m">
-      {report ? (
-        <PrecheckResult report={report} migrationId={migrationId} />
-      ) : (
-        <Text variant="caption" color="muted">
-          We&apos;ll read your Stripe products, prices, customers and
-          subscriptions and check they can be imported. Nothing is changed in
-          Stripe.
-        </Text>
+      <Text variant="caption" color="muted">
+        We&apos;ll read your Stripe products, prices, customers and
+        subscriptions and check they can be imported. Nothing is changed in
+        Stripe.
+      </Text>
+
+      {running && (
+        <Box alignItems="center" columnGap="s">
+          <Spinner />
+          <Text variant="caption" color="muted">
+            Reading your Stripe catalog…
+          </Text>
+        </Box>
       )}
 
-      {precheck.isError && (
+      {error && !running && (
         <Text variant="caption" color="danger">
-          We couldn&apos;t complete the pre-check. Please try again.
+          {error}
         </Text>
       )}
 
       <Box>
-        <Button
-          size="sm"
-          variant={report ? 'ghost' : 'default'}
-          onClick={() => precheck.mutate()}
-          disabled={precheck.isPending}
-        >
-          {precheck.isPending
-            ? 'Checking…'
-            : report
-              ? 'Run again'
-              : 'Run pre-check'}
+        <Button size="sm" onClick={() => precheck.mutate()} disabled={running}>
+          {running ? 'Checking…' : failed ? 'Try again' : 'Run pre-check'}
         </Button>
       </Box>
-    </Box>
-  )
-}
-
-function PrecheckResult({
-  report,
-  migrationId,
-}: {
-  report: schemas['PrecheckReport']
-  migrationId: string
-}) {
-  const blockers = report.issues.filter((issue) => issue.level === 'blocker')
-
-  return (
-    <Box flexDirection="column" rowGap="l">
-      <Box alignItems="center" columnGap="s">
-        <Status
-          status={
-            report.can_start
-              ? 'Ready to import'
-              : `${blockers.length} blocker${blockers.length === 1 ? '' : 's'} to resolve`
-          }
-          color={report.can_start ? 'green' : 'red'}
-          size="small"
-        />
-        <Text variant="caption" color="muted">
-          Read from Stripe · nothing changed
-        </Text>
-      </Box>
-
-      {blockers.length > 0 && (
-        <Box as="ul" flexDirection="column" rowGap="xs">
-          {blockers.map((issue, index) => (
-            <Box as="li" key={`${issue.code}-${index}`}>
-              <Text variant="caption" color="danger">
-                {issue.message}
-              </Text>
-            </Box>
-          ))}
-        </Box>
-      )}
-
-      <PrecheckSummary migrationId={migrationId} report={report} />
     </Box>
   )
 }

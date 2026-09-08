@@ -5,6 +5,19 @@ from polar.worker import AsyncSessionMaker, TaskPriority, actor
 from .service import merchant_migration as merchant_migration_service
 
 
+@actor(
+    actor_name="merchant_migration.precheck",
+    priority=TaskPriority.LOW,
+    time_limit=600_000,
+)
+async def merchant_migration_precheck(merchant_migration_id: UUID) -> None:
+    """Read the source catalog and stage it. One run for the whole extract."""
+    async with AsyncSessionMaker() as session:
+        await merchant_migration_service.execute_precheck(
+            session, merchant_migration_id
+        )
+
+
 @actor(actor_name="merchant_migration.verify_cards", priority=TaskPriority.LOW)
 async def merchant_migration_verify_cards(
     merchant_migration_id: UUID, offset: int = 0

@@ -42,7 +42,6 @@ from .schemas import (
     PrecheckEntity,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
-    PrecheckReport,
 )
 from .service import (
     CatalogImportBlocked,
@@ -51,6 +50,7 @@ from .service import (
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
+    MigrationOperationInProgress,
     MissingStripeScopes,
     SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
@@ -150,7 +150,7 @@ async def get(
 
 @router.post(
     "/{id}/precheck",
-    response_model=PrecheckReport,
+    response_model=MerchantMigrationSchema,
     summary="Run Merchant Migration Pre-check",
     responses={
         400: {
@@ -165,14 +165,18 @@ async def get(
             "description": "Merchant migration not found.",
             "model": MerchantMigrationNotFound.schema(),
         },
+        409: {
+            "description": "A pre-check is already running.",
+            "model": MigrationOperationInProgress.schema(),
+        },
     },
 )
 async def precheck(
     id: UUID4,
     auth_subject: MerchantMigrationWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> PrecheckReport:
-    return await merchant_migration_service.run_precheck(session, auth_subject, id)
+) -> MerchantMigration:
+    return await merchant_migration_service.start_precheck(session, auth_subject, id)
 
 
 @router.post(
@@ -193,8 +197,11 @@ async def precheck(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "The pre-check hasn't run yet, or it reports a blocker.",
-            "model": CatalogImportNotReady.schema() | CatalogImportBlocked.schema(),
+            "description": "The pre-check hasn't run yet, it reports a blocker, "
+            "or another job is still running.",
+            "model": CatalogImportNotReady.schema()
+            | CatalogImportBlocked.schema()
+            | MigrationOperationInProgress.schema(),
         },
     },
 )

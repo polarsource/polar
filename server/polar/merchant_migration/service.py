@@ -202,6 +202,14 @@ class CatalogImportNotReady(MerchantMigrationError):
         )
 
 
+class MigrationOperationInProgress(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This migration already has a job running. Wait for it to finish.",
+            409,
+        )
+
+
 class CutoverNotStarted(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
@@ -435,6 +443,67 @@ class MerchantMigrationService:
             raise SourceAccountAlreadyMigrated()
         return await repository.create(migration, flush=True)
 
+    async def start_precheck(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigration:
+        """Queue a Stripe read. Returns immediately; poll ``operation`` until it
+        finishes. A stalled run is replaced so the merchant can retry with one click.
+        """
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if self._operation_blocks_new_work(migration):
+            raise MigrationOperationInProgress()
+        # Fail before enqueueing if the key is gone or the source isn't Stripe.
+        await self._build_adapter(migration)
+
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration,
+            update_dict={
+                "operation": MerchantMigrationOperation(
+                    status=MerchantMigrationOperationStatus.pending,
+                    last_progress_at=utc_now(),
+                )
+            },
+        )
+        enqueue_job("merchant_migration.precheck", merchant_migration_id=migration.id)
+        return migration
+
+    async def execute_precheck(self, session: AsyncSession, migration_id: UUID) -> None:
+        """Read Stripe and stage the catalog. One job for now; paging can split later."""
+        migration = await self._load(session, migration_id)
+        if migration is None:
+            return
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.refresh_for_update(migration)
+        operation = migration.operation
+        if operation is None or not operation.is_active:
+            return
+        await repository.update(
+            migration,
+            update_dict={
+                "operation": operation.model_copy(
+                    update={
+                        "status": MerchantMigrationOperationStatus.running,
+                        "error": None,
+                        "last_progress_at": utc_now(),
+                    }
+                )
+            },
+        )
+        try:
+            await self._complete_precheck(session, migration)
+        except MerchantMigrationError as e:
+            await self._fail_operation(session, migration, e.message)
+            return
+        await repository.update(
+            migration, update_dict={"operation": self._done_operation(migration)}
+        )
+
     async def run_precheck(
         self,
         session: AsyncSession,
@@ -447,7 +516,11 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        return await self._complete_precheck(session, migration)
 
+    async def _complete_precheck(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> PrecheckReport:
         organization = await self._get_organization(session, migration)
 
         adapter = await self._build_adapter(migration)
@@ -489,6 +562,8 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        if self._operation_blocks_new_work(migration):
+            raise MigrationOperationInProgress()
         if migration.step not in IMPORTABLE_STEPS:
             raise CatalogImportNotReady()
 
@@ -925,9 +1000,23 @@ class MerchantMigrationService:
         migration: MerchantMigration,
         error: str,
     ) -> None:
+        await self._fail_operation(session, migration, error)
+
+    async def _fail_operation(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        error: str,
+    ) -> None:
         await MerchantMigrationRepository.from_session(session).update(
             migration,
             update_dict={"operation": self._failed_operation(migration, error)},
+        )
+
+    def _operation_blocks_new_work(self, migration: MerchantMigration) -> bool:
+        operation = migration.operation
+        return (
+            operation is not None and operation.is_active and not operation.is_stalled()
         )
 
     async def _fail_stalled_cutover(

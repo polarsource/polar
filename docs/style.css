@@ -6,25 +6,3 @@
 #content-area {
   max-width: 48rem;
 }
-
-/* The migration assistant prompt is long by design. Cap the block and scroll it
-   natively, keeping the header and its copy button pinned to the top. */
-.migration-prompt .code-block {
-  max-height: 26rem;
-  overflow-y: auto;
-}
-
-.migration-prompt [data-component-part='code-block-header'] {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background-color: #f9fafb;
-}
-
-.migration-prompt [data-component-part='code-block-root'] {
-  z-index: 0;
-}
-
-.dark .migration-prompt [data-component-part='code-block-header'] {
-  background-color: #1c1c20;
-}

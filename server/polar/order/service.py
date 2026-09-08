@@ -864,6 +864,10 @@ class OrderService:
                     units=checkout.units,
                 )
             )
+            if subscription is not None:
+                for item in items:
+                    item.start_timestamp = subscription.current_period_start
+                    item.end_timestamp = subscription.current_period_end
 
         discount_amount = checkout.discount_amount
 

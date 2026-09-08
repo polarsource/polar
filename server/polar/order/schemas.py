@@ -248,6 +248,12 @@ class OrderItemSchema(IDSchema, TimestampedSchema):
         description="Whether this charge is due to a proration.", examples=[False]
     )
     product_price_id: UUID4 | None = Field(description="Associated price ID, if any.")
+    start_timestamp: datetime | None = Field(
+        description="Start of the period covered by this line item, if any."
+    )
+    end_timestamp: datetime | None = Field(
+        description="End of the period covered by this line item, if any."
+    )
 
 
 class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):

@@ -35,6 +35,8 @@ log = structlog.get_logger(__name__)
 @dataclasses.dataclass
 class StaticLineItem:
     price: StaticPrice
+    start_timestamp: datetime
+    end_timestamp: datetime
     amount: int
     currency: str
     label: str
@@ -91,6 +93,8 @@ class BillingEntryService:
                 net_amount=line_item.amount,
                 tax_amount=0,
                 proration=line_item.proration,
+                start_timestamp=line_item.start_timestamp,
+                end_timestamp=line_item.end_timestamp,
                 product_price=line_item.price,
             )
             item_entries_map[order_item] = selector
@@ -363,6 +367,8 @@ class BillingEntryService:
 
         return StaticLineItem(
             price=price,
+            start_timestamp=entry.start_timestamp,
+            end_timestamp=entry.end_timestamp,
             amount=amount,
             currency=entry.currency,
             label=label,

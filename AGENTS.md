@@ -137,7 +137,11 @@ Treat **Accepted** ADRs as binding:
 
 ## Custom Commands
 
-- `/polar-code-review` — checks the diff against Polar-specific rules with 2 parallel agents (conventions, ADR compliance). Bugs, security, and simplification are covered by the built-in `/code-review`, `/security-review`, and `/simplify`.
+- `/polar-code-review` — checks the diff against Polar-specific rules with parallel
+  lenses (`conventions-check`, `adr-check`, `reuse-check`, `slop-check`, plus
+  `api-surface-review` / `ship-safety` / `billing-review` when the paths match). Bugs,
+  security, and simplification are covered by the built-in `/code-review`,
+  `/security-review`, and `/simplify`.
 
 ## Documentation
 

@@ -8,6 +8,10 @@ better, and they verify findings and can apply fixes. This adds what they cannot
 
 This is only a router. Every lens is a skill you can also run on its own.
 
+When a Polar-specific comment recurs in human review, encode it in the **owning
+skill** with a PR citation — do not grow this file. The lenses below are the
+place those comments become detectable.
+
 ## 1. Diff
 
 ```bash
@@ -28,8 +32,8 @@ Run the first four always. Add the rest only when the trigger matches.
 | `adr-check` | always |
 | `reuse-check` | always |
 | `slop-check` | always |
-| `api-surface-review` | `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`, `sdk/`, `clients/packages/client/` |
-| `ship-safety` | `migrations/versions/`, `**/tasks.py`, `polar/models/`, `server/scripts/`; an endpoint is removed; or the diff spans `server/` and `clients/` with a dependency between them |
+| `api-surface-review` | `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`, `sdk/`, `clients/packages/client/`, `clients/packages/checkout/`, `clients/adapters/` |
+| `ship-safety` | `migrations/versions/`, `**/tasks.py`, `polar/models/`, `server/scripts/`; an endpoint is removed; a dual-write/encryption cutover; or the diff spans `server/` and `clients/` with a dependency between them |
 | `billing-review` | the billing paths listed in that skill's Scope section |
 
 ## 3. Launch

@@ -65,6 +65,16 @@ arbitrary values for things the design system already defines.
   only API, one-off animations not yet expressible via Orbit, or temporary glue while
   migrating a legacy file.
 
+**Exception: `clients/packages/checkout`.** Checkout is a standalone embeddable widget with
+its own conversion-tuned styling. It must **not** import `@polar-sh/orbit`, `@polar-sh/orbit/*`,
+or `@polar-sh/ui` components that wrap Orbit. Use the local components in
+`packages/checkout/src/components/ui`. Oxlint enforces this. This is the inverse of the Box
+rule above.
+
+**Published packages are public API.** `clients/packages/checkout` and `clients/adapters/*`
+are consumed outside this repo. Treat export, type, error-shape, and runtime changes there
+the same way as OpenAPI changes — monorepo usage is not evidence that a change is safe.
+
 ## The `<Box />` Component
 
 Box is the canonical layout/style primitive. It compiles your typed props into StyleX

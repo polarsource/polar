@@ -135,9 +135,13 @@ resource = ResourceService()
 ```
 
 **CRITICAL: Never call `session.commit()`**
-- API: Session commits at end of request automatically
+- API: `TransactionalMiddleware` commits on `http.response.start`, before the body or a
+  redirect is sent. An extra `session.commit()` in an endpoint is a no-op on the write path.
 - Workers: Session commits at end of task automatically
 - Use `session.flush()` if you need data visible before request ends
+- A GET that immediately follows a write and uses a **read** session can still see a stale
+  replica. That is read-your-writes lag, not a missing commit. Do not "fix" it by adding
+  another commit.
 
 ## Endpoint Pattern
 

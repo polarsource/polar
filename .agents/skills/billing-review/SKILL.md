@@ -145,7 +145,27 @@ These keep breaking because new code assumes a payment exists.
   (#12089)
 - Renewal emails, invoices and receipts all have free-subscription branches. (#9291)
 
-### 10. Billing-specific additions to rules owned elsewhere
+### 10. Seats and units stay in parity
+
+Seat-based and unit-based quantity flows share the same bugs. A fix that preserves
+locked quantity, validates min/max, or handles product switching on one path must
+inspect the other. Flag a one-sided fix or a copied implementation that will drift.
+(#13749, #13890, #14196)
+
+### 11. Subscription update and trial edges
+
+- **Pause clears `pending_update`.** Re-anchoring a scheduled update on resume double-bills.
+  Reset the pending update when entering pause unless a human has signed off otherwise.
+  (#14220, #14165)
+- Adding a trial onto an already-paying subscription is surprising. Question it rather
+  than silently setting `trial_start`. (#13917)
+- Meter ownership belongs in `get_readable_by_id(..., organization_id=...)`, so a
+  cross-org meter falls into the existing "does not exist" path. Do not add a parallel
+  ownership check. (#14057)
+- Do not overload `ProductPriceMeteredUnit` for tiered/volume pricing. Dedicated model,
+  enum value, schemas, and `is_metered` guard. (#13793, #14072)
+
+### 12. Billing-specific additions to rules owned elsewhere
 
 Short pointers only — the owning lens reports the general rule.
 

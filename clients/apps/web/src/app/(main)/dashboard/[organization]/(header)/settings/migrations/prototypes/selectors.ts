@@ -156,7 +156,9 @@ export function getProblemCategoryTotals(
   ) as ProblemCategoryTotals
 
   for (const record of getProblemSubscriptions(records)) {
-    totals[record.category] += 1
+    if (record.category !== 'clean') {
+      totals[record.category] += 1
+    }
   }
 
   return totals

@@ -68,7 +68,10 @@ const AuthorizePage = ({
   const [organizationSelection, setOrganizationSelection] =
     useState<OrganizationSelection>(() =>
       singleOrganization
-        ? { mode: 'specific', count: availableOrganizations.length === 1 ? 1 : 0 }
+        ? {
+            mode: 'specific',
+            count: availableOrganizations.length === 1 ? 1 : 0,
+          }
         : { mode: 'all', count: 0 },
     )
   const organizationsDescription =
@@ -131,9 +134,9 @@ const AuthorizePage = ({
       }
       introduction={
         <Text variant="body">
-          <Text as="span" variant="title">
+          <span className="font-semibold text-gray-900 dark:text-white">
             {clientName}
-          </Text>{' '}
+          </span>{' '}
           would like to access your Polar account.
         </Text>
       }
@@ -187,7 +190,7 @@ const AuthorizePage = ({
             <Box
               as="ul"
               flexDirection="column"
-              marginBottom="xl"
+              marginBottom={{ base: 'none', lg: 'xl' }}
               borderWidth={1}
               borderStyle="solid"
               borderColor="border-primary"

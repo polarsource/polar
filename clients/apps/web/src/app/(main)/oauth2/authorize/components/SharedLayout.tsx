@@ -63,7 +63,7 @@ export default function SharedLayout({
   const branding = (
     <Box alignItems="center" gap="m">
       <Box color="text-primary">
-        <PolarLogotype logoVariant="logotype" />
+        <PolarLogotype logoVariant="logotype" logoClassName="ml-0" />
       </Box>
       {client?.logo_uri && (
         <>
@@ -95,7 +95,7 @@ export default function SharedLayout({
         columnGap="2xl"
         backgroundColor={{ base: undefined, lg: 'background-secondary' }}
         borderRadius="l"
-        padding="s"
+        padding={{ base: 'none', lg: 's' }}
         borderWidth={{ base: 0, lg: 1 }}
         borderStyle="solid"
         borderColor="border-secondary"
@@ -195,16 +195,16 @@ export default function SharedLayout({
           borderWidth={{ base: 0, lg: 1 }}
           borderStyle="solid"
           borderColor="border-secondary"
-          height={{ base: '100dvh', lg: '48rem' }}
-          overflow="hidden"
+          height={{ base: undefined, lg: '48rem' }}
+          overflow={{ base: 'visible', lg: 'hidden' }}
         >
           <Box
             width="100%"
-            flex={1}
+            flex={{ base: undefined, lg: 1 }}
             justifyContent="center"
-            overflowY="auto"
-            paddingTop="3xl"
-            paddingBottom="3xl"
+            overflowY={{ base: 'visible', lg: 'auto' }}
+            paddingTop={{ base: 'xl', lg: '3xl' }}
+            paddingBottom={{ base: '5xl', lg: '3xl' }}
             paddingHorizontal="l"
           >
             <Box
@@ -255,10 +255,6 @@ export default function SharedLayout({
               )}
 
               {children}
-
-              {footer && (
-                <Box display={{ base: 'flex', lg: 'none' }}>{footer}</Box>
-              )}
             </Box>
           </Box>
 
@@ -267,6 +263,11 @@ export default function SharedLayout({
               width="100%"
               flexShrink={0}
               justifyContent="center"
+              position={{ base: 'fixed', lg: 'static' }}
+              bottom={0}
+              left={0}
+              right={0}
+              zIndex={10}
               borderTopWidth={1}
               borderStyle="solid"
               borderColor="border-secondary"

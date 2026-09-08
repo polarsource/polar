@@ -15,7 +15,7 @@ from pydantic import (
 )
 
 from polar.auth.scope import (
-    SCOPES_SUPPORTED,
+    SCOPES_DEFAULT,
     SCOPES_SUPPORTED_DISPLAY_NAMES,
     Scope,
     scope_to_list,
@@ -52,7 +52,7 @@ class OAuth2ClientConfiguration(Schema):
         "refresh_token",
     ]
     response_types: list[Literal["code"]] = ["code"]
-    scope: str = " ".join(SCOPES_SUPPORTED)
+    scope: str = " ".join(SCOPES_DEFAULT)
     client_name: str
     client_uri: str | None = None
     logo_uri: HttpUrl | None = None

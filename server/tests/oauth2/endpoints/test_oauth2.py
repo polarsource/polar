@@ -6,7 +6,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from polar.auth.scope import Scope
+from polar.auth.scope import SCOPES_EXCLUDED_BY_DEFAULT, Scope
 from polar.auth.service import USER_SESSION_TOKEN_PREFIX
 from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
@@ -202,6 +202,24 @@ class TestOAuth2Register:
         assert json["scope"] == "openid email"
         for value in json.values():
             assert value is not None
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="anonymous"))
+    async def test_omitted_scope_excludes_first_party_scopes(
+        self, client: AsyncClient
+    ) -> None:
+        response = await client.post(
+            "/v1/oauth2/register",
+            json={
+                "client_name": "Test Client",
+                "redirect_uris": ["https://example.com/callback"],
+            },
+        )
+
+        assert response.status_code == 201
+        scopes = set(response.json()["scope"].split())
+
+        assert scopes.isdisjoint(scope.value for scope in SCOPES_EXCLUDED_BY_DEFAULT)
+        assert Scope.products_read in scopes
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_valid_public_client(self, client: AsyncClient) -> None:

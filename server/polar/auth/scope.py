@@ -154,6 +154,26 @@ SCOPES_SUPPORTED = [
         Scope.organization_access_tokens_write,
     }
 ]
+
+# Scopes serving Polar's own surfaces: the customer portal, the sessions that
+# open it, and the notification centre. They remain supported, but a client
+# registering without an explicit scope has to ask for them.
+SCOPES_EXCLUDED_BY_DEFAULT: set[Scope] = {
+    Scope.customer_portal_read,
+    Scope.customer_portal_write,
+    Scope.customer_sessions_write,
+    Scope.member_sessions_write,
+    Scope.wallets_read,
+    Scope.wallets_write,
+    Scope.notifications_read,
+    Scope.notifications_write,
+    Scope.notification_recipients_read,
+    Scope.notification_recipients_write,
+}
+
+SCOPES_DEFAULT = [
+    s for s in SCOPES_SUPPORTED if Scope(s) not in SCOPES_EXCLUDED_BY_DEFAULT
+]
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
     Scope.profile: "Read your profile",

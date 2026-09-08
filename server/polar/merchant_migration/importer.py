@@ -214,8 +214,7 @@ class CatalogImporter:
         imported_dependencies: Sequence[MerchantMigrationRecord],
     ) -> list[MerchantMigrationRecord]:
         catalog = {
-            (record.type, record.source_id): record
-            for record in imported_dependencies
+            (record.type, record.source_id): record for record in imported_dependencies
         }
         for record in records:
             catalog[(record.type, record.source_id)] = record

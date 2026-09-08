@@ -439,6 +439,23 @@ async def product_unit_based_with_min(
 
 
 @pytest_asyncio.fixture
+async def product_unit_based_with_max(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """$29/unit flat, monthly, maximum 10 units."""
+    return await create_product_unit_based(
+        save_fixture,
+        organization=organization,
+        tiers=Tiers.model_validate(
+            {
+                "type": TierType.volume,
+                "tiers": [{"bound": 10, "unit_amount": "2900"}],
+            }
+        ),
+    )
+
+
+@pytest_asyncio.fixture
 async def product_seat_based_with_min(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -4354,6 +4371,87 @@ class TestUpdate:
                 checkout,
                 CheckoutUpdate(product_id=product_seat_based_with_min_max.id, seats=10),
             )
+
+    async def test_switching_products_preserves_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_unit_based: Product,
+        product_unit_based_with_min: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_unit_based, product_unit_based_with_min],
+            product=product_unit_based,
+            units=5,
+        )
+
+        assert checkout.units == 5
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_unit_based_with_min.id),
+        )
+
+        assert updated_checkout.product == product_unit_based_with_min
+        assert updated_checkout.units == 5
+
+    async def test_switching_products_clamps_units_to_new_bounds(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_unit_based: Product,
+        product_unit_based_with_max: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_unit_based, product_unit_based_with_max],
+            product=product_unit_based,
+            units=15,
+        )
+
+        assert checkout.units == 15
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_unit_based_with_max.id),
+        )
+
+        assert updated_checkout.product == product_unit_based_with_max
+        assert updated_checkout.units == 10
+
+    async def test_switching_products_preserves_locked_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_unit_based: Product,
+        product_unit_based_with_min: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_unit_based, product_unit_based_with_min],
+            product=product_unit_based,
+            units=5,
+            min_units=5,
+            max_units=5,
+        )
+
+        assert checkout.units == 5
+        assert checkout.min_units == 5
+        assert checkout.max_units == 5
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_unit_based_with_min.id),
+        )
+
+        assert updated_checkout.product == product_unit_based_with_min
+        assert updated_checkout.units == 5
+        assert updated_checkout.min_units == 5
+        assert updated_checkout.max_units == 5
 
     async def test_update_seats_below_minimum(
         self,

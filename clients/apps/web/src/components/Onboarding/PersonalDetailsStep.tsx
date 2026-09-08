@@ -101,7 +101,12 @@ function SubmitButton({ loading }: { loading: boolean }) {
 
   return (
     <Box alignSelf="start">
-      <Button type="submit" loading={loading} disabled={disabled}>
+      <Button
+        type="submit"
+        form="personal-details"
+        loading={loading}
+        disabled={disabled}
+      >
         Continue
       </Button>
     </Box>
@@ -220,14 +225,16 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
   }
 
   return (
-    <OnboardingShell
-      title="Let's get to know you"
-      subtitle={`Signed in as ${currentUser?.email ?? ''}. Tell us a bit about yourself to get started.`}
-      step="personal"
-    >
-      <Form {...form}>
+    <Form {...form}>
+      <OnboardingShell
+        title="Let's get to know you"
+        subtitle={`Signed in as ${currentUser?.email ?? ''}. Tell us a bit about yourself to get started.`}
+        step="personal"
+        actions={<SubmitButton loading={submitting} />}
+      >
         <Box
           as="form"
+          id="personal-details"
           onSubmit={handleSubmit(onSubmit)}
           flexDirection="column"
           rowGap="xl"
@@ -396,7 +403,6 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
           )}
 
           <Box flexDirection="column" rowGap="s">
-            <SubmitButton loading={submitting} />
             {submitError && (
               <Alert
                 variant="danger"
@@ -405,7 +411,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
             )}
           </Box>
         </Box>
-      </Form>
-    </OnboardingShell>
+      </OnboardingShell>
+    </Form>
   )
 }

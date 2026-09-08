@@ -8162,6 +8162,8 @@ export interface components {
       id: string
       /** Slug */
       slug: string
+      /** Name */
+      name: string
       /** Avatar Url */
       avatar_url: string | null
     }

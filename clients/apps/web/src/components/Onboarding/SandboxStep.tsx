@@ -20,30 +20,22 @@ interface FormSchema {
   terms: boolean
 }
 
-function SubmitButton({
-  loading,
-  error,
-}: {
-  loading: boolean
-  error: string | null
-}) {
+function SubmitButton({ loading }: { loading: boolean }) {
   const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
   const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
   const terms = useWatch<FormSchema, 'terms'>({ name: 'terms' })
 
   return (
-    <>
-      {error && <Alert variant="danger" title={error} />}
-      <Box alignSelf="start">
-        <Button
-          type="submit"
-          loading={loading}
-          disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
-        >
-          Create Sandbox Organization
-        </Button>
-      </Box>
-    </>
+    <Box alignSelf="start">
+      <Button
+        type="submit"
+        form="sandbox-organization"
+        loading={loading}
+        disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
+      >
+        Create Sandbox Organization
+      </Button>
+    </Box>
   )
 }
 
@@ -103,13 +95,15 @@ export function SandboxStep() {
   }
 
   return (
-    <OnboardingShell
-      title="Create a sandbox organization"
-      subtitle="Set up a test organization to explore Polar with mock payments."
-    >
-      <Form {...form}>
+    <Form {...form}>
+      <OnboardingShell
+        title="Create a sandbox organization"
+        subtitle="Set up a test organization to explore Polar with mock payments."
+        actions={<SubmitButton loading={submitting} />}
+      >
         <Box
           as="form"
+          id="sandbox-organization"
           onSubmit={form.handleSubmit(onSubmit)}
           flexDirection="column"
           rowGap="xl"
@@ -121,9 +115,9 @@ export function SandboxStep() {
             onEditSlug={() => setEditedSlug(true)}
             form={form}
           />
-          <SubmitButton loading={submitting} error={error} />
+          {error && <Alert variant="danger" title={error} />}
         </Box>
-      </Form>
-    </OnboardingShell>
+      </OnboardingShell>
+    </Form>
   )
 }

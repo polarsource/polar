@@ -31,7 +31,13 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 
-from .canonical import CanonicalProduct, CanonicalRecord, deserialize, serialize
+from .canonical import (
+    CanonicalProduct,
+    CanonicalRecord,
+    canonical_price_key,
+    deserialize,
+    serialize,
+)
 
 type RecordCounts = dict[
     tuple[UUID, MerchantMigrationRecordType, MerchantMigrationRecordStatus], int
@@ -576,12 +582,12 @@ class MerchantMigrationRecordRepository(
                     current = deserialize(existing.type, existing.canonical)
                     if isinstance(current, CanonicalProduct):
                         prices = {
-                            (price.source_id, price.currency): price
+                            canonical_price_key(price): price
                             for price in current.prices
                         }
                         prices.update(
                             {
-                                (price.source_id, price.currency): price
+                                canonical_price_key(price): price
                                 for price in record.prices
                             }
                         )

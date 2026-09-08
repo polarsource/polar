@@ -273,10 +273,6 @@ class StripeAdapter:
         has_more: bool,
     ) -> dict[str, Any] | None:
         if has_more:
-            if not data:
-                raise RuntimeError(
-                    f"Stripe returned an empty {phase} page with has_more"
-                )
             return StripeExtractionCursor(
                 phase=phase, starting_after=data[-1].id
             ).model_dump(mode="json")

@@ -480,12 +480,37 @@ class MerchantMigrationService:
         migration = await self._load(session, migration_id)
         if migration is None:
             return
-        repository = MerchantMigrationRepository.from_session(session)
-        await repository.refresh_for_update(migration)
         operation = migration.operation
         if operation is None or not operation.is_active:
             return
-        running_operation = operation.model_copy(
+        cursor = operation.cursor
+        try:
+            organization = await self._get_organization(session, migration)
+            adapter = await self._build_adapter(migration)
+            page = await adapter.extract_page(cursor)
+        except MerchantMigrationError as e:
+            repository = MerchantMigrationRepository.from_session(session)
+            await repository.refresh_for_update(migration)
+            current_operation = migration.operation
+            if (
+                current_operation is None
+                or not current_operation.is_active
+                or current_operation.cursor != cursor
+            ):
+                return
+            await self._fail_operation(session, migration, e.message)
+            return
+
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.refresh_for_update(migration)
+        current_operation = migration.operation
+        if (
+            current_operation is None
+            or not current_operation.is_active
+            or current_operation.cursor != cursor
+        ):
+            return
+        running_operation = current_operation.model_copy(
             update={
                 "status": MerchantMigrationOperationStatus.running,
                 "error": None,
@@ -496,21 +521,14 @@ class MerchantMigrationService:
             migration,
             update_dict={"operation": running_operation},
         )
-        try:
-            organization = await self._get_organization(session, migration)
-            adapter = await self._build_adapter(migration)
-            page = await adapter.extract_page(operation.cursor)
-            record_repository = MerchantMigrationRecordRepository.from_session(session)
-            for record in page.records:
-                await record_repository.upsert(
-                    migration,
-                    organization,
-                    record,
-                    merge_product_prices=True,
-                )
-        except MerchantMigrationError as e:
-            await self._fail_operation(session, migration, e.message)
-            return
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        for record in page.records:
+            await record_repository.upsert(
+                migration,
+                organization,
+                record,
+                merge_product_prices=True,
+            )
         if page.next_cursor is not None:
             await repository.update(
                 migration,
@@ -552,13 +570,7 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
-        return await self._complete_precheck(session, migration)
-
-    async def _complete_precheck(
-        self, session: AsyncSession, migration: MerchantMigration
-    ) -> PrecheckReport:
         organization = await self._get_organization(session, migration)
-
         adapter = await self._build_adapter(migration)
         source_account = await adapter.get_source_account()
         existing_product_names = await ProductRepository.from_session(

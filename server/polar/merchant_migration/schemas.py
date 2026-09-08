@@ -343,8 +343,7 @@ class PanTransferChecklist(Schema):
 
 
 class MerchantMigrationOperation(Schema):
-    """Background work for a migration step. The dashboard polls this instead of
-    waiting on the start request."""
+    """Background work for the current migration step."""
 
     status: MerchantMigrationOperationStatus = Field(
         description="pending or running while Polar works; done or failed when it finishes."

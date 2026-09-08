@@ -663,6 +663,50 @@ class TestStartPrecheck:
 @pytest.mark.asyncio
 class TestExecutePrecheck:
     @pytest.mark.auth
+    async def test_fetches_page_before_locking_the_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = _FakeAdapter(_catalog())
+        events: list[str] = []
+        extract_page = adapter.extract_page
+        refresh_for_update = MerchantMigrationRepository.refresh_for_update
+
+        async def fetch_page(cursor: dict[str, Any] | None = None) -> ExtractionPage:
+            events.append("fetch")
+            return await extract_page(cursor)
+
+        async def lock_migration(
+            repository: MerchantMigrationRepository,
+            migration: MerchantMigration,
+        ) -> None:
+            events.append("lock")
+            await refresh_for_update(repository, migration)
+
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=adapter,
+        )
+        mocker.patch.object(adapter, "extract_page", side_effect=fetch_page)
+        mocker.patch.object(
+            MerchantMigrationRepository,
+            "refresh_for_update",
+            lock_migration,
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+
+        await service.execute_precheck(session, migration.id)
+
+        assert events == ["fetch", "lock"]
+
+    @pytest.mark.auth
     async def test_stages_and_marks_done(
         self,
         mocker: MockerFixture,

@@ -6,24 +6,35 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Check, Plus } from 'lucide-react'
 import type { ReactNode, Ref } from 'react'
 
-type AuthorizationStep = 'organizations' | 'scopes'
+type AuthorizationStep = 'create' | 'organizations' | 'scopes'
+type SelectableAuthorizationStep = Exclude<AuthorizationStep, 'create'>
+
+const AUTHORIZATION_STEP_CONTENT = {
+  create: {
+    title: 'Create an organization',
+    description: 'Set up your organization to continue.',
+  },
+  organizations: {
+    title: 'Select organizations',
+    description: 'Choose which organizations you want to grant access to.',
+  },
+  scopes: {
+    title: 'Review requested scopes',
+    description:
+      'Review the permissions this application is requesting before granting access.',
+  },
+} as const
 
 const AUTHORIZATION_STEPS = [
   {
     id: 'organizations',
     title: 'Organizations',
     description: 'Select organizations to share',
-    contentTitle: 'Select organizations',
-    contentDescription:
-      'Choose which organizations you want to grant access to.',
   },
   {
     id: 'scopes',
     title: 'Permissions',
     description: 'Review scopes to grant',
-    contentTitle: 'Review requested scopes',
-    contentDescription:
-      'Review the permissions this application is requesting before granting access.',
   },
 ] as const
 
@@ -32,8 +43,8 @@ interface SharedLayoutProps {
   introduction?: ReactNode
   footer?: ReactNode
   step?: AuthorizationStep
-  onStepSelect?: (step: AuthorizationStep) => void
-  stepDescriptions?: Partial<Record<AuthorizationStep, ReactNode>>
+  onStepSelect?: (step: SelectableAuthorizationStep) => void
+  stepDescriptions?: Partial<Record<SelectableAuthorizationStep, ReactNode>>
   title?: string
   subtitle?: string
   actions?: ReactNode
@@ -54,12 +65,13 @@ export default function SharedLayout({
   actionsContainerRef,
   children,
 }: SharedLayoutProps) {
-  const currentStepIndex = step
-    ? AUTHORIZATION_STEPS.findIndex(({ id }) => id === step)
+  const selectableStep = step === 'create' ? 'organizations' : step
+  const currentStepIndex = selectableStep
+    ? AUTHORIZATION_STEPS.findIndex(({ id }) => id === selectableStep)
     : -1
-  const activeStep = AUTHORIZATION_STEPS[currentStepIndex]
-  const contentTitle = title ?? activeStep?.contentTitle
-  const contentSubtitle = subtitle ?? activeStep?.contentDescription
+  const stepContent = step ? AUTHORIZATION_STEP_CONTENT[step] : undefined
+  const contentTitle = title ?? stepContent?.title
+  const contentSubtitle = subtitle ?? stepContent?.description
   const branding = (
     <Box alignItems="center" gap="m">
       <Box color="text-primary">
@@ -129,7 +141,9 @@ export default function SharedLayout({
                       alignItems="center"
                       columnGap="l"
                       cursor={isClickable ? { base: 'pointer' } : undefined}
-                      opacity={isClickable ? { base: 1, hover: 0.7 } : undefined}
+                      opacity={
+                        isClickable ? { base: 1, hover: 0.7 } : undefined
+                      }
                       transitionProperty={isClickable ? 'opacity' : undefined}
                       transitionDuration={isClickable ? 'fast' : undefined}
                       onClick={

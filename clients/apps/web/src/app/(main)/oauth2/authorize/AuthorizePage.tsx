@@ -102,7 +102,7 @@ const AuthorizePage = ({
         Review scopes
       </Button>
     ) : step === 'scopes' ? (
-      <Box width="100%" justifyContent="end" gap="m">
+      <Box width="100%" justifyContent="between" gap="m">
         <Button
           variant="ghost"
           type="button"
@@ -110,22 +110,33 @@ const AuthorizePage = ({
         >
           Back
         </Button>
-        <Button
-          form={CONSENT_FORM_ID}
-          type="submit"
-          name="action"
-          value="allow"
-          disabled={!canSubmit}
-        >
-          Authorize
-        </Button>
+        <Box gap="m">
+          <Button
+            variant="ghost"
+            form={CONSENT_FORM_ID}
+            type="submit"
+            name="action"
+            value="deny"
+          >
+            Deny
+          </Button>
+          <Button
+            form={CONSENT_FORM_ID}
+            type="submit"
+            name="action"
+            value="allow"
+            disabled={!canSubmit}
+          >
+            Authorize
+          </Button>
+        </Box>
       </Box>
     ) : undefined
 
   return (
     <SharedLayout
       client={client}
-      step={step === 'scopes' ? 'scopes' : 'organizations'}
+      step={step}
       onStepSelect={(selectedStep) => setStep(selectedStep)}
       stepDescriptions={{ organizations: organizationsDescription }}
       actions={actions}

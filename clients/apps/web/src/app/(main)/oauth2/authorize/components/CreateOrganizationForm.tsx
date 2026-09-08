@@ -8,6 +8,7 @@ import { useCreateOrganization } from '@/hooks/queries'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, Checkbox, Input } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Form,
   FormControl,
@@ -111,7 +112,11 @@ const CreateOrganizationForm = ({
 
   return (
     <Form {...form}>
-      <div className="flex flex-col gap-y-4">
+      <Box
+        flexDirection="column"
+        gap="l"
+        marginBottom={{ base: 'none', lg: 'xl' }}
+      >
         <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 bg-white p-6">
           <FormField
             control={control}
@@ -261,7 +266,7 @@ const CreateOrganizationForm = ({
             {errors.root.message}
           </p>
         )}
-      </div>
+      </Box>
       {actionsContainer &&
         createPortal(
           <Button

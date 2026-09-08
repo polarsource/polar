@@ -32,11 +32,13 @@ const organizations = [
   {
     id: '4e94e15f-0c4a-4667-bd14-12680a0ac366',
     slug: 'acme',
+    name: 'acme',
     avatar_url: null,
   },
   {
     id: '83b81a4e-6e50-4af1-9b6b-5b70f38b3f70',
     slug: 'polar',
+    name: 'polar',
     avatar_url: null,
   },
 ]

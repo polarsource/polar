@@ -85,18 +85,14 @@ export function CurrentSwitch({
     })
   }
 
-  const columns = useMemo(
-    () =>
-      buildCurrentColumns({
-        isSelectable: (id) => cleanIds.has(id),
-        isSelected: (id) => selected.has(id),
-        headerState,
-        canSelectAll: clean.length > 0,
-        onToggle: toggle,
-        onToggleAll: toggleAllReady,
-      }),
-    [clean.length, cleanIds, headerState, selected, switchCount],
-  )
+  const columns = buildCurrentColumns({
+    isSelectable: (id) => cleanIds.has(id),
+    isSelected: (id) => selected.has(id),
+    headerState,
+    canSelectAll: clean.length > 0,
+    onToggle: toggle,
+    onToggleAll: toggleAllReady,
+  })
 
   return (
     <Box as="section" flexDirection="column" rowGap="l">

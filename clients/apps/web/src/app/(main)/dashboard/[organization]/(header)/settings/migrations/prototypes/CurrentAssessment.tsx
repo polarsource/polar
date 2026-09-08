@@ -115,18 +115,14 @@ export function CurrentAssessment({
     })
   }
 
-  const columns = useMemo(
-    () =>
-      buildCurrentColumns({
-        isSelectable: (id) => cleanIds.has(id),
-        isSelected: (id) => selected.has(id),
-        headerState,
-        canSelectAll: totals.clean > 0,
-        onToggle: toggle,
-        onToggleAll: toggleAllReady,
-      }),
-    [cleanIds, headerState, selected, selectedReady, totals.clean],
-  )
+  const columns = buildCurrentColumns({
+    isSelectable: (id) => cleanIds.has(id),
+    isSelected: (id) => selected.has(id),
+    headerState,
+    canSelectAll: totals.clean > 0,
+    onToggle: toggle,
+    onToggleAll: toggleAllReady,
+  })
 
   const counts: Record<AssessmentFilter, number> = {
     all: totals.total,

@@ -25001,8 +25001,7 @@ export interface components {
     }
     /**
      * MerchantMigrationOperation
-     * @description Background work for a migration step. The dashboard polls this instead of
-     *     waiting on the start request.
+     * @description Background work for the current migration step.
      */
     MerchantMigrationOperation: {
       /** @description pending or running while Polar works; done or failed when it finishes. */

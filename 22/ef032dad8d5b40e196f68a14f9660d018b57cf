@@ -1,0 +1,27 @@
+server/scripts/backfill_oauth2_client_encrypted_secrets.py
+  s_eb87cbcf635926::t_941a1605d5af09 44-45,50-51,98,204
+  s_eb87cbcf635926::t_790bad144e15fc 22,43,48,52,70-89,92-94,133,149-150,155
+  s_eb87cbcf635926::t_598ca1524de6da 34-39,46-47,49,55-69,90-91,95-96,146,152,174
+  s_eb87cbcf635926::t_af38900ad19470 53-54
+  s_eb87cbcf635926::t_ea3aefcbeccc94 153-154
+server/tests/scripts/test_backfill_oauth2_client_encrypted_secrets.py
+  s_eb87cbcf635926::t_925b4aa62d0b39 79,85-86,95-97,103,105-106,108
+  s_eb87cbcf635926::t_35b6ce14bbd50b 162
+  s_eb87cbcf635926::t_8c28e751f19a46 163-198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "22ef032dad8d5b40e196f68a14f9660d018b57cf",
+  "prompts": {},
+  "sessions": {
+    "s_eb87cbcf635926": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "065c9e8d-64ad-4cdc-8713-9276a0ac8b9a",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

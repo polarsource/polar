@@ -140,7 +140,7 @@ export function ClosedState({ onReset }: { onReset: () => void }) {
   return (
     <Surface>
       <Status status="Migration closed" color="green" />
-      <Text variant="heading-lg" as="h2">
+      <Text variant="heading-l" as="h2">
         Billing ownership is known
       </Text>
       <Text color="muted">
@@ -171,7 +171,7 @@ export function PrototypeLabel({
       <Text variant="caption" color="muted">
         Variant {number}
       </Text>
-      <Text variant="heading-lg" as="h2">
+      <Text variant="heading-l" as="h2">
         {title}
       </Text>
       <Text color="muted" wrap="pretty">

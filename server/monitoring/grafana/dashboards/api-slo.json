@@ -533,7 +533,8 @@
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green"
+                        "color": "green",
+                        "value": 0
                       },
                       {
                         "color": "red",
@@ -1288,7 +1289,8 @@
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green"
+                        "color": "green",
+                        "value": 0
                       },
                       {
                         "color": "yellow",
@@ -1730,7 +1732,8 @@
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green"
+                        "color": "green",
+                        "value": 0
                       }
                     ]
                   }
@@ -2491,7 +2494,7 @@
         "1d"
       ],
       "fiscalYearStartMonth": 0,
-      "from": "now-2d",
+      "from": "now-6h",
       "hideTimepicker": false,
       "timezone": "browser",
       "to": "now"

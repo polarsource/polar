@@ -2,7 +2,7 @@
 
 import { Button, Input, SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { HeaderCheckState, buildCurrentColumns } from './CurrentRecordColumns'
 import { CurrentDataTable, useCurrentPagination } from './CurrentDataTable'
 import { MockSubscriptionRecord, mockSubscriptions } from './mockData'
@@ -85,44 +85,51 @@ export function CurrentAssessment({
         ? 'checked'
         : 'indeterminate'
 
-  const selectReady = () => {
+  const selectReady = useCallback(() => {
     setSelected(new Set(clean.map((row) => row.id)))
     setFilter('to_prepare')
     setQuery('')
     resetPage()
-  }
+  }, [clean, resetPage])
 
-  const toggleAllReady = () => {
+  const toggleAllReady = useCallback(() => {
     if (selectedReady === totals.clean) {
       setSelected(new Set())
       return
     }
     selectReady()
-  }
+  }, [selectReady, selectedReady, totals.clean])
 
-  const toggle = (id: string) => {
-    if (!cleanIds.has(id)) {
-      return
-    }
-    setSelected((current) => {
-      const next = new Set(current)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
+  const toggle = useCallback(
+    (id: string) => {
+      if (!cleanIds.has(id)) {
+        return
       }
-      return next
-    })
-  }
+      setSelected((current) => {
+        const next = new Set(current)
+        if (next.has(id)) {
+          next.delete(id)
+        } else {
+          next.add(id)
+        }
+        return next
+      })
+    },
+    [cleanIds],
+  )
 
-  const columns = buildCurrentColumns({
-    isSelectable: (id) => cleanIds.has(id),
-    isSelected: (id) => selected.has(id),
-    headerState,
-    canSelectAll: totals.clean > 0,
-    onToggle: toggle,
-    onToggleAll: toggleAllReady,
-  })
+  const columns = useMemo(
+    () =>
+      buildCurrentColumns({
+        isSelectable: (id) => cleanIds.has(id),
+        isSelected: (id) => selected.has(id),
+        headerState,
+        canSelectAll: totals.clean > 0,
+        onToggle: toggle,
+        onToggleAll: toggleAllReady,
+      }),
+    [cleanIds, headerState, selected, toggle, toggleAllReady, totals.clean],
+  )
 
   const counts: Record<AssessmentFilter, number> = {
     all: totals.total,

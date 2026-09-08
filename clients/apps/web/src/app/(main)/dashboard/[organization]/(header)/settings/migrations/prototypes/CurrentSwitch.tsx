@@ -3,7 +3,7 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { Alert, Button, SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { HeaderCheckState, buildCurrentColumns } from './CurrentRecordColumns'
 import { CurrentDataTable, useCurrentPagination } from './CurrentDataTable'
 import { MockSubscriptionRecord } from './mockData'
@@ -56,43 +56,50 @@ export function CurrentSwitch({
         ? 'checked'
         : 'indeterminate'
 
-  const selectReady = () => {
+  const selectReady = useCallback(() => {
     setSelected(new Set(clean.map((row) => row.id)))
     setFilter('ready')
     resetPage()
-  }
+  }, [clean, resetPage])
 
-  const toggleAllReady = () => {
+  const toggleAllReady = useCallback(() => {
     if (switchCount === clean.length) {
       setSelected(new Set())
       return
     }
     selectReady()
-  }
+  }, [clean.length, selectReady, switchCount])
 
-  const toggle = (id: string) => {
-    if (!cleanIds.has(id)) {
-      return
-    }
-    setSelected((current) => {
-      const next = new Set(current)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
+  const toggle = useCallback(
+    (id: string) => {
+      if (!cleanIds.has(id)) {
+        return
       }
-      return next
-    })
-  }
+      setSelected((current) => {
+        const next = new Set(current)
+        if (next.has(id)) {
+          next.delete(id)
+        } else {
+          next.add(id)
+        }
+        return next
+      })
+    },
+    [cleanIds],
+  )
 
-  const columns = buildCurrentColumns({
-    isSelectable: (id) => cleanIds.has(id),
-    isSelected: (id) => selected.has(id),
-    headerState,
-    canSelectAll: clean.length > 0,
-    onToggle: toggle,
-    onToggleAll: toggleAllReady,
-  })
+  const columns = useMemo(
+    () =>
+      buildCurrentColumns({
+        isSelectable: (id) => cleanIds.has(id),
+        isSelected: (id) => selected.has(id),
+        headerState,
+        canSelectAll: clean.length > 0,
+        onToggle: toggle,
+        onToggleAll: toggleAllReady,
+      }),
+    [clean.length, cleanIds, headerState, selected, toggle, toggleAllReady],
+  )
 
   return (
     <Box as="section" flexDirection="column" rowGap="l">
@@ -173,7 +180,6 @@ export function CurrentSwitch({
         }
         destructive
         destructiveText={switchLabel}
-        confirmPrompt={switchLabel}
         onConfirm={() => act('transfer')}
       />
     </Box>

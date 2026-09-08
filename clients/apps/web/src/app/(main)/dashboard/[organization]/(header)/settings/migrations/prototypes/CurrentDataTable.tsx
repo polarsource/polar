@@ -8,7 +8,7 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { CurrentRecordModal } from './CurrentRecordModal'
 import { MockSubscriptionRecord } from './mockData'
 
@@ -17,6 +17,7 @@ export const CURRENT_PAGE_SIZE = 10
 export function useCurrentPagination(pageSize = CURRENT_PAGE_SIZE) {
   const [page, setPage] = useState(1)
   const [size, setSize] = useState(pageSize)
+  const resetPage = useCallback(() => setPage(1), [])
   const pagination: PaginationState = { pageIndex: page - 1, pageSize: size }
 
   const onPaginationChange: OnChangeFn<PaginationState> = (updater) => {
@@ -34,7 +35,7 @@ export function useCurrentPagination(pageSize = CURRENT_PAGE_SIZE) {
     pageSize: size,
     pagination,
     onPaginationChange,
-    resetPage: () => setPage(1),
+    resetPage,
   }
 }
 

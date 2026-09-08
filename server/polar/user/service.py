@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from polar.exceptions import PolarError
 from polar.integrations.polar.service import polar_self as polar_self_service
+from polar.integrations.resend.service import resend as resend_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.anonymization import anonymize_email_for_deletion
 from polar.models import NotificationRecipient, User
@@ -416,6 +417,7 @@ class UserService:
     ) -> User:
         """Soft-delete a user, anonymizing PII fields."""
         repository = UserRepository.from_session(session)
+        previous_email = user.email
 
         update_dict: dict[str, Any] = {}
 
@@ -434,6 +436,7 @@ class UserService:
         await self._delete_notification_recipients(session, user)
 
         log.info("user.deleted", user_id=user.id)
+        resend_service.enqueue_sync_user(user.id, previous_email=previous_email)
 
         return user
 

@@ -74,6 +74,7 @@ locals {
     discord_webhook_url            = var.backend_discord_webhook_url_production
     posthog_project_api_key        = var.backend_posthog_project_api_key_production
     resend_api_key                 = var.backend_resend_api_key_production
+    resend_active_users_segment_id = var.resend_active_users_segment_id
     resend_webhook_secret          = var.backend_resend_webhook_secret
     firecrawl_api_key              = var.firecrawl_api_key
     logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_production

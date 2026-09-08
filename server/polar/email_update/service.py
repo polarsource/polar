@@ -9,6 +9,7 @@ from polar.config import settings
 from polar.email.schemas import EmailUpdateEmail, EmailUpdateProps
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.integrations.resend.service import resend as resend_service
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.services import ResourceServiceReader
@@ -103,10 +104,13 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
             raise InvalidEmailUpdate()
 
         user = email_update_record.user
+        previous_email = user.email
         user.email = email_update_record.email
         session.add(user)
 
         await session.delete(email_update_record)
+
+        resend_service.enqueue_sync_user(user.id, previous_email=previous_email)
 
         return user
 

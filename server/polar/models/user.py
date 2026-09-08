@@ -222,6 +222,10 @@ class User(RecordModel):
         String, nullable=True, default=None, unique=True
     )
 
+    resend_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None, unique=True
+    )
+
     identity_verification_status: Mapped[IdentityVerificationStatus] = mapped_column(
         StringEnum(IdentityVerificationStatus),
         nullable=False,

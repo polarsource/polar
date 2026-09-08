@@ -209,6 +209,10 @@ locals {
     POLAR_RESEND_API_KEY = {
       value = var.backend_resend_api_key
     }
+    POLAR_RESEND_ACTIVE_USERS_SEGMENT_ID = var.resend_active_users_segment_id != "" ? {
+      value     = var.resend_active_users_segment_id
+      sensitive = false
+    } : null
     POLAR_RESEND_WEBHOOK_SECRET = {
       value = var.backend_resend_webhook_secret
     }
@@ -420,5 +424,5 @@ module "vercel_services" {
     function_default_regions = ["cle1"]
   }
 
-  environment_variables = local.vercel_services_environment_variables
+  environment_variables = { for name, config in local.vercel_services_environment_variables : name => config if config != null }
 }

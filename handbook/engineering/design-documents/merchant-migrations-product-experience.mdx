@@ -434,6 +434,8 @@ The status summary is informational. The step body owns the action.
 **Change.** After assessment, lead with outcomes before the table:
 
 ```text
+Target after Slice 2
+
 841 subscriptions found
 812 can be prepared
   7 need a decision
@@ -560,9 +562,31 @@ before deciding which one should remain.
 [Compare subscriptions]
 ```
 
+The comparison is an explicit resolution screen:
+
+```text
+Compare subscriptions
+
+Stripe                                  Polar
+Pro · $19/month                         Pro · $19/month
+Renews Sep 18                           Renews Sep 22
+Active                                  Active
+
+Both subscriptions are currently active and may bill this customer.
+
+( ) Keep billing on Stripe; leave this record out of migration
+( ) Keep billing on Polar; cancel Stripe outside this migration
+( ) I need help resolving this customer
+
+[Save decision]
+```
+
+Polar does not automatically cancel either subscription from this screen. The cutover engine's
+duplicate-subscription guard remains in place.
+
 The same check runs again at cutover because a customer can buy on Polar after assessment.
 
-### Work queue: billing policy
+### Assessment: billing policy
 
 **New.** This queue appears only when Polar cannot preserve tax behavior automatically or lacks a
 reliable billing country. It cannot ship as UI over the current migration engine: extraction,
@@ -630,7 +654,8 @@ Never use "valid card" or "ready to charge" based only on copied-card matching.
 
 ### Integration compatibility
 
-**Change.** Before the first transfer, show the webhook contract and offer a test delivery.
+**Change.** Place this information at the start of the Switch step, before transfer selection.
+Show the webhook contract and offer a test delivery.
 Polar can verify endpoint configuration and delivery, but it cannot verify the merchant's
 entitlement implementation. Do not turn merchant attestation into a green readiness check.
 
@@ -654,26 +679,27 @@ test-event endpoint is available without a UI-specific integration.
 ### Transfer selection
 
 **Current + Change.** Keep the current cross-page subscription selection. Rename the action from
-"Switch subscriptions" to "Review transfer". The first release adds a recommended canary filter
-without requiring a new batch resource.
+"Switch subscriptions" to "Review transfer".
 
 For the first transfer, offer:
 
-- Recommended canary
 - Choose subscriptions
 
 Upload IDs and API selection arrive with the bulk surface in Slice 4.
 
-The recommended canary is deterministic and explainable. It includes only explicitly designated
-merchant-owned/internal customers, matching cards, resolved identity and product mappings, no tax
-uncertainty, and renewals outside the safety window. Polar must not infer that a customer is
-internal or silently pick random customers.
+The UI encourages a canary but does not invent one:
+
+- If the merchant supplied test-customer IDs through the stable customer mapping, Polar can offer
+  that exact set as a canary.
+- Otherwise the merchant selects known internal customers from the table.
+- Polar then filters out records with missing cards, unresolved mappings or tax, and renewals
+  inside the safety window.
 
 ```text
 Review first transfer
 
-Recommended canary                                      10 subscriptions
-Eligible for transfer. Review the exact selection before continuing.
+Your selected canary                                    10 subscriptions
+2 selected records were excluded because they renew within 24 hours.
 
 Next renewal: Sep 11–18
 Monthly recurring value: $190
@@ -795,6 +821,23 @@ The merchant can close the migration only after:
 - the merchant acknowledges Stripe must remain operational for those subscriptions, or confirms
   a separate remediation plan;
 - if first-renewal monitoring is enabled, it has no unresolved critical issue.
+
+```text
+Close migration
+
+738 subscriptions bill on Polar
+ 82 subscriptions still bill on Stripe
+  0 have unknown billing ownership
+
+Stripe must remain connected for the 82 subscriptions listed in the receipt.
+Their webhooks and customer portal routes must keep working.
+
+[ ] I understand that some billing remains on Stripe.
+
+[Export final receipt] [Close with billing on Stripe]
+```
+
+When no source-owned subscription remains, the acknowledgment and residual warning are omitted.
 
 Cleanup guidance is conditional:
 
@@ -1069,7 +1112,7 @@ This slice is required before migrating Pepy-like organizations with an existing
 - Keep records on Stripe when Polar cannot calculate or preserve the selected policy.
 - Add optional webhook test-delivery evidence without presenting it as proof of correct
   entitlement logic.
-- Add deterministic recommended canary.
+- Add canary eligibility filtering and reuse merchant-supplied test-customer IDs when available.
 
 This slice is required before transferring any selection affected by tax or country uncertainty.
 

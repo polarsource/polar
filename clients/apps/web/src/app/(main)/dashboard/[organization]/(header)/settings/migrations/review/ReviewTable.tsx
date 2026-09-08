@@ -20,14 +20,8 @@ import {
 import { ReviewFilter } from './ReviewStatusTabs'
 import { ReviewTableView } from './ReviewTableView'
 
-export function ReviewTable({
-  migrationId,
-  defaultFilter = 'all',
-}: {
-  migrationId: string
-  defaultFilter?: ReviewFilter
-}) {
-  const [filter, setFilter] = useState<ReviewFilter>(defaultFilter)
+export function ReviewTable({ migrationId }: { migrationId: string }) {
+  const [filter, setFilter] = useState<ReviewFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [selection, setSelection] = useState<SelectionState>(initialSelection)
@@ -36,8 +30,21 @@ export function ReviewTable({
     entity: 'subscriptions',
     page,
     limit: pageSize,
-    ...(filter === 'imported' ? { importStatus: 'imported' as const } : {}),
-    ...(filter === 'pending' ? { importStatus: 'pending' as const } : {}),
+    ...(filter === 'to_prepare'
+      ? {
+          status: 'importable' as const,
+          importStatus: 'pending' as const,
+          dependenciesImported: false,
+        }
+      : {}),
+    ...(filter === 'ready'
+      ? {
+          status: 'importable' as const,
+          importStatus: 'pending' as const,
+          dependenciesImported: true,
+        }
+      : {}),
+    ...(filter === 'switched' ? { importStatus: 'imported' as const } : {}),
     ...(filter === 'attention' ? { reasonLevel: 'action_required' } : {}),
     ...(filter === 'skipped' ? { status: 'skipped' as const } : {}),
   })

@@ -19,7 +19,7 @@ vi.mock('@polar-sh/orbit', () => ({
 }))
 
 describe('ReviewStatusTabs', () => {
-  it('shows imported and pending subscriptions as separate filters', () => {
+  it('separates subscriptions by migration stage', () => {
     const onChange = vi.fn()
 
     render(
@@ -27,8 +27,9 @@ describe('ReviewStatusTabs', () => {
         value="all"
         counts={{
           all: 58,
-          imported: 27,
-          pending: 31,
+          to_prepare: 20,
+          ready: 11,
+          switched: 27,
           attention: 0,
           skipped: 0,
         }}
@@ -37,8 +38,8 @@ describe('ReviewStatusTabs', () => {
     )
 
     expect(screen.getByRole('button', { name: 'All rows 58' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Imported 27' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Pending 31' }))
-    expect(onChange).toHaveBeenCalledWith('pending')
+    expect(screen.getByRole('button', { name: 'Switched 27' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Ready to switch 11' }))
+    expect(onChange).toHaveBeenCalledWith('ready')
   })
 })

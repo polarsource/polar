@@ -14,7 +14,7 @@ const empty = (entity: CountEntity): EntityCount => ({
   importable: 0,
   skipped: 0,
   imported: 0,
-  pending: 0,
+  ready: 0,
   action_required: 0,
   selectable: 0,
 })

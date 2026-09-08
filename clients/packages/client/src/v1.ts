@@ -25168,13 +25168,13 @@ export interface components {
        */
       imported: number
       /**
-       * Pending
-       * @description How many are waiting to be imported into Polar.
+       * Ready
+       * @description How many subscriptions are prepared and ready to switch.
        */
-      pending: number
+      ready: number
       /**
        * Action Required
-       * @description How many require merchant action before they can be imported.
+       * @description How many require merchant action before they can be prepared.
        */
       action_required: number
       /**
@@ -56208,6 +56208,7 @@ export interface operations {
         cutover_status?:
           | components['schemas']['MerchantMigrationCutoverStatus']
           | null
+        dependencies_imported?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

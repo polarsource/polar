@@ -193,6 +193,7 @@ export const useMigrationRecords = (
     reasonLevel?: schemas['PrecheckReasonLevel']
     importStatus?: schemas['MerchantMigrationRecordStatus']
     cutoverStatus?: schemas['MerchantMigrationCutoverStatus']
+    dependenciesImported?: boolean
     page: number
     limit: number
   },
@@ -216,6 +217,9 @@ export const useMigrationRecords = (
                 : {}),
               ...(params.cutoverStatus
                 ? { cutover_status: params.cutoverStatus }
+                : {}),
+              ...(params.dependenciesImported !== undefined
+                ? { dependencies_imported: params.dependenciesImported }
                 : {}),
               page: params.page,
               limit: params.limit,

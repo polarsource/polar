@@ -1000,6 +1000,18 @@ class TestImportCatalog:
         )
         assert len(items) == 1
         assert items[0].dependencies_imported is True
+        ready_items, ready_count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=PrecheckRecordStatus.importable,
+            import_status=MerchantMigrationRecordStatus.pending,
+            dependencies_imported=True,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert ready_count == 1
+        assert ready_items[0].source_id == "sub_1"
         summary = await service.summarize_records(session, auth_subject, migration.id)
         subscriptions = next(
             entry
@@ -1007,6 +1019,7 @@ class TestImportCatalog:
             if entry.entity == PrecheckEntity.subscriptions
         )
         assert subscriptions.selectable == 0
+        assert subscriptions.ready == 1
 
     @pytest.mark.auth
     async def test_excluded_subscription_leaves_its_dependencies_pending(
@@ -1519,15 +1532,18 @@ class TestSummarizeRecords:
         assert products.importable == 1
         assert products.skipped == 1
         assert products.imported == 1
-        assert products.pending == 1
+        assert products.ready == 0
         assert products.action_required == 0
         assert products.selectable == 0
 
         customers = by_entity[PrecheckEntity.customers]
         assert customers.total == 1
         assert customers.imported == 1
-        assert customers.pending == 0
+        assert customers.ready == 0
         assert customers.selectable == 0
+
+        subscriptions = by_entity[PrecheckEntity.subscriptions]
+        assert subscriptions.ready == 1
 
         items, count = await service.list_records(
             session,
@@ -1560,10 +1576,10 @@ class TestSummarizeRecords:
         by_entity = {entry.entity: entry for entry in summary.entities}
         products = by_entity[PrecheckEntity.products]
         assert products.imported == 0
-        assert products.pending == 2
+        assert products.ready == 0
         assert products.selectable == 0
         subscriptions = by_entity[PrecheckEntity.subscriptions]
-        assert subscriptions.pending == 1
+        assert subscriptions.ready == 0
         assert subscriptions.selectable == 1
 
 

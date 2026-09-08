@@ -277,7 +277,7 @@ def _summarize_entities(
             "total": 0,
             "importable": 0,
             "imported": 0,
-            "pending": 0,
+            "ready": 0,
             "action_required": 0,
             "selectable": 0,
         }
@@ -290,13 +290,17 @@ def _summarize_entities(
         tally["total"] += 1
         if item.import_status == MerchantMigrationRecordStatus.imported:
             tally["imported"] += 1
-        if item.import_status == MerchantMigrationRecordStatus.pending:
-            tally["pending"] += 1
         if item.reason_level == PrecheckReasonLevel.action_required:
             tally["action_required"] += 1
         if item.status != PrecheckRecordStatus.importable:
             continue
         tally["importable"] += 1
+        if (
+            item.entity == PrecheckEntity.subscriptions
+            and item.import_status == MerchantMigrationRecordStatus.pending
+            and item.dependencies_imported
+        ):
+            tally["ready"] += 1
         if (
             item.entity == PrecheckEntity.subscriptions
             and item.import_status == MerchantMigrationRecordStatus.pending
@@ -311,7 +315,7 @@ def _summarize_entities(
             importable=tally["importable"],
             skipped=tally["total"] - tally["importable"],
             imported=tally["imported"],
-            pending=tally["pending"],
+            ready=tally["ready"],
             action_required=tally["action_required"],
             selectable=tally["selectable"],
         )
@@ -1140,6 +1144,7 @@ class MerchantMigrationService:
         reason_level: PrecheckReasonLevel | None = None,
         import_status: MerchantMigrationRecordStatus | None = None,
         cutover_status: MerchantMigrationCutoverStatus | None = None,
+        dependencies_imported: bool | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
         """Return staged records classified importable/skipped and paginated in
@@ -1150,7 +1155,9 @@ class MerchantMigrationService:
         ``import_status`` filters on the ledger outcome, which excludes price rows
         since they have none; ``cutover_status`` narrows to what the switch did
         with a subscription, which is how the merchant finds the ones it left on
-        the source. Reads what ``run_precheck`` persisted."""
+        the source; ``dependencies_imported`` separates subscriptions ready to
+        switch from those still needing preparation. Reads what ``run_precheck``
+        persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
         entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
         items = await self._classify_staged(session, migration, entities)
@@ -1164,6 +1171,12 @@ class MerchantMigrationService:
             items = [item for item in items if item.import_status == import_status]
         if cutover_status is not None:
             items = [item for item in items if item.cutover_status == cutover_status]
+        if dependencies_imported is not None:
+            items = [
+                item
+                for item in items
+                if item.dependencies_imported is dependencies_imported
+            ]
 
         start = (pagination.page - 1) * pagination.limit
         return items[start : start + pagination.limit], len(items)

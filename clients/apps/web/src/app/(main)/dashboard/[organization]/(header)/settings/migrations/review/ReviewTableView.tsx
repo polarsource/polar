@@ -80,7 +80,7 @@ export function ReviewTableView({
           importCount === 1 ? 'subscription' : 'subscriptions'
         }`
       : 'Prepare subscriptions'
-  const canPrepare = filter === 'all' || filter === 'pending'
+  const canPrepare = filter === 'all' || filter === 'to_prepare'
   const hasCatalog = rowTotal > 0
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
@@ -188,8 +188,9 @@ export function ReviewTableView({
               value={filter}
               counts={{
                 all: rowTotal,
-                imported: counts.subscriptions.imported,
-                pending: counts.subscriptions.pending,
+                to_prepare: selectableTotal,
+                ready: counts.subscriptions.ready,
+                switched: counts.subscriptions.imported,
                 attention: attentionCount,
                 skipped: skippedTotal,
               }}

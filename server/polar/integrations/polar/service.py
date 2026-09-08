@@ -752,6 +752,11 @@ class PolarSelfService:
     async def handle_order_created_event(
         self, payload: WebhookOrderCreatedPayload
     ) -> None:
+        # polar-self emails are only meant for production customers; never send
+        # them from the sandbox environment.
+        if settings.is_sandbox():
+            return
+
         # The webhook payload reflects the order at creation time; fields like
         # ``is_invoice_generated`` flip to True later, so refetch over the API.
         client = get_client()
@@ -940,6 +945,11 @@ class PolarSelfService:
         never have a payment to fail, and a subscription with no billing
         contacts has nobody to notify.
         """
+        # polar-self emails are only meant for production customers; never send
+        # them from the sandbox environment.
+        if settings.is_sandbox():
+            return None
+
         if subscription.amount == 0:
             return None
 

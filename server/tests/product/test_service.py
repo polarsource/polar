@@ -2172,6 +2172,73 @@ class TestUpdate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_invalid_change_recurring_interval_count_on_non_legacy_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        assert product.recurring_interval_count == 1
+        update_schema = ProductUpdate(recurring_interval_count=3)
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.update(
+                session,
+                product,
+                update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_unchanged_recurring_interval_count_on_non_legacy_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        assert product.recurring_interval_count == 1
+        update_schema = ProductUpdate(recurring_interval_count=1)
+
+        updated_product = await product_service.update(
+            session,
+            product,
+            update_schema,
+            auth_subject,
+        )
+
+        assert updated_product.recurring_interval_count == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_change_recurring_interval_count_on_legacy_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_recurring_monthly_and_yearly: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_schema = ProductUpdate(recurring_interval_count=3)
+
+        updated_product = await product_service.update(
+            session,
+            product_recurring_monthly_and_yearly,
+            update_schema,
+            auth_subject,
+        )
+
+        assert updated_product.recurring_interval_count == 3
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_invalid_legacy_product_price_with_new_price(
         self,
         session: AsyncSession,

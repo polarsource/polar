@@ -150,9 +150,7 @@ class TestDeserialize:
             product_source_ids=["prod_1"],
         )
 
-        result = deserialize(
-            MerchantMigrationRecordType.discount, serialize(discount)
-        )
+        result = deserialize(MerchantMigrationRecordType.discount, serialize(discount))
 
         assert isinstance(result, CanonicalDiscount)
         assert result.code == "LAUNCH"

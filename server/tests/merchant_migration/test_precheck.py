@@ -171,9 +171,7 @@ def build_discount(
         duration=duration,
         duration_in_months=duration_in_months,
         basis_points=(
-            basis_points
-            if discount_type == CanonicalDiscountType.percentage
-            else None
+            basis_points if discount_type == CanonicalDiscountType.percentage else None
         ),
         amounts=amounts or {},
         code=code,

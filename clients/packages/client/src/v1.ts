@@ -71274,7 +71274,7 @@ export const pledgeStateValues: ReadonlyArray<
 ]
 export const precheckEntityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckEntity']
-> = ['products', 'prices', 'customers', 'subscriptions']
+> = ['products', 'prices', 'customers', 'discounts', 'subscriptions']
 export const precheckReasonLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckReasonLevel']
 > = ['action_required', 'info']

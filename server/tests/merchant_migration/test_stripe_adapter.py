@@ -590,7 +590,9 @@ class TestExtractCoupons:
         kwargs = client.v1.subscriptions.list_async.await_args.kwargs
         assert "data.discounts" in kwargs["params"]["expand"]
 
-    async def test_maps_expanded_subscription_coupon(self, mocker: MockerFixture) -> None:
+    async def test_maps_expanded_subscription_coupon(
+        self, mocker: MockerFixture
+    ) -> None:
         adapter, client = _adapter(mocker)
         subscription = _stripe_subscription()
         subscription["discounts"] = [

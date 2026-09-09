@@ -35,12 +35,12 @@ from polar.models import (
     Product,
     Subscription,
 )
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
-from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.organization import OrganizationStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession

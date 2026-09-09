@@ -1482,10 +1482,14 @@ class TestImportCatalog:
         send_webhook.assert_not_called()
 
         discounts = (
-            await session.execute(
-                select(Discount).where(Discount.organization_id == organization.id)
+            (
+                await session.execute(
+                    select(Discount).where(Discount.organization_id == organization.id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert len(discounts) == 1
         assert discounts[0].name == "Launch"
         assert discounts[0].code == "LAUNCH"

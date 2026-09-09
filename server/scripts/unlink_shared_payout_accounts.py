@@ -28,7 +28,23 @@ KEEPER_STATUSES = (
 
 Candidate = aliased(Organization, name="candidate")
 Keeper = aliased(Organization, name="keeper")
-Sibling = aliased(Organization, name="sibling")
+
+
+def _shared_payout_account_ids() -> Select[tuple[UUID | None]]:
+    """Payout accounts held by more than one live organization.
+
+    Narrowing to these first keeps the per-organization checks below off the
+    whole table.
+    """
+    return (
+        select(Organization.payout_account_id)
+        .where(
+            Organization.payout_account_id.is_not(None),
+            Organization.deleted_at.is_(None),
+        )
+        .group_by(Organization.payout_account_id)
+        .having(func.count() > 1)
+    )
 
 
 def _sells(organization: type[Organization]) -> ColumnElement[bool]:
@@ -46,21 +62,9 @@ def _sells(organization: type[Organization]) -> ColumnElement[bool]:
 def _unlinkable() -> tuple[ColumnElement[bool], ...]:
     return (
         Candidate.deleted_at.is_(None),
-        Candidate.payout_account_id.is_not(None),
+        Candidate.payout_account_id.in_(_shared_payout_account_ids()),
         Candidate.status.not_in(KEEPER_STATUSES),
         ~_sells(Candidate),
-    )
-
-
-def _is_shared() -> ColumnElement[bool]:
-    return (
-        select(Sibling.id)
-        .where(
-            Sibling.payout_account_id == Candidate.payout_account_id,
-            Sibling.id != Candidate.id,
-            Sibling.deleted_at.is_(None),
-        )
-        .exists()
     )
 
 
@@ -113,7 +117,7 @@ async def unlink_shared_payout_accounts(
             )
             without_keeper = await session.scalar(
                 select(func.count(distinct(Candidate.payout_account_id))).where(
-                    *_unlinkable(), _is_shared(), ~_has_keeper()
+                    *_unlinkable(), ~_has_keeper()
                 )
             )
 

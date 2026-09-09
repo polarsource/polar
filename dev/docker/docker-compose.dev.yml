@@ -62,6 +62,9 @@ x-common-backend-env: &common-backend-env
   POLAR_TINYBIRD_CLICKHOUSE_URL: http://tinybird:7182
   # OAuth insecure transport for development
   AUTHLIB_INSECURE_TRANSPORT: "true"
+  # Cloudflare Turnstile dummy always-pass secret. Public test credential, not a
+  # real secret — set here so stale server/.env files still allow email login.
+  POLAR_TURNSTILE_SECRET: "1x0000000000000000000000000000000AA"
   # Note: Secrets like POLAR_GITHUB_CLIENT_ID, POLAR_STRIPE_* are loaded from
   # env_file (server/.env) and NOT set here. Setting them here with ${VAR:-default}
   # would read from the HOST shell, not from env_file.
@@ -141,6 +144,8 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
       NEXT_PUBLIC_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
       NEXT_PUBLIC_BACKOFFICE_URL: http://localhost:${API_PORT:-8000}/backoffice
+      # Dummy always-pass Turnstile sitekey (pairs with POLAR_TURNSTILE_SECRET).
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
       # Note: NEXT_PUBLIC_STRIPE_KEY and NEXT_PUBLIC_GITHUB_APP_NAMESPACE
       # must be set in server/.env (they're loaded via env_file)
       # POLAR_API_URL is for server-side requests (container-to-container)

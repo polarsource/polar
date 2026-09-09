@@ -492,7 +492,9 @@ class CatalogImporter:
             if duration == DiscountDuration.repeating
             else None
         )
-        metadata = {"stripe_coupon_id": discount.source_id}
+        metadata: dict[str, str | int | float | bool] = {
+            "stripe_coupon_id": discount.source_id
+        }
         products = product_ids or None
         if discount.discount_type == CanonicalDiscountType.percentage:
             assert discount.basis_points is not None

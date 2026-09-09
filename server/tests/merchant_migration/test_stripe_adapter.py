@@ -10,12 +10,14 @@ from polar.merchant_migration.adapters.stripe import (
     StripeAdapter,
 )
 from polar.merchant_migration.canonical import (
+    CanonicalDiscount,
     CanonicalDiscountDuration,
     CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPricingScheme,
     CanonicalProduct,
+    CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
 
@@ -537,6 +539,7 @@ class TestExtractCoupons:
 
         assert len(page.records) == 1
         discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
         assert discount.source_id == "coupon_1"
         assert discount.discount_type == CanonicalDiscountType.percentage
         assert discount.basis_points == 1000
@@ -567,6 +570,7 @@ class TestExtractCoupons:
 
         assert len(page.records) == 1
         discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
         assert discount.source_id == "coupon_1"
         assert discount.code == "LAUNCH10"
         assert page.next_cursor == {
@@ -609,6 +613,7 @@ class TestExtractCoupons:
         page = await adapter.extract_page({"phase": "subscriptions"})
 
         record = page.records[0]
+        assert isinstance(record, CanonicalSubscription)
         assert record.has_discount is True
         assert record.discount_source_ids == ["coupon_1"]
         assert record.discount_started_at == datetime(

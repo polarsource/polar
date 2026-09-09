@@ -15,6 +15,7 @@ from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
 from authlib.oidc.core.errors import ConsentRequiredError, LoginRequiredError
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
 from authlib.oidc.core.grants import OpenIDToken as _OpenIDToken
+from authlib.oidc.core.grants.util import validate_request_prompt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -280,6 +281,7 @@ class ValidateSubAndPrompt:
         redirect_uri: str,
         redirect_fragment: bool = False,
     ) -> None:
+        validate_request_prompt(grant, redirect_uri, redirect_fragment)
         self._validate_sub(grant, redirect_uri, redirect_fragment)
         self._validate_scope_consent(grant, redirect_uri, redirect_fragment)
 
@@ -315,11 +317,19 @@ class ValidateSubAndPrompt:
         redirect_uri: str,
         redirect_fragment: bool = False,
     ) -> None:
-        # First party clients always skip consent
+        payload = grant.request.payload
+        assert payload is not None
+        prompt = payload.data.get("prompt")
+
         client = grant.client
         assert client is not None
         first_party: bool = client.first_party
-        if first_party and grant.sub_type is not None and grant.sub is not None:
+        if (
+            first_party
+            and prompt in (None, "none")
+            and grant.sub_type is not None
+            and grant.sub is not None
+        ):
             grant.prompt = "none"
             # Implicitly save the grant to all the scopes
             oauth2_grant_service.create_or_update_grant(
@@ -330,11 +340,6 @@ class ValidateSubAndPrompt:
                 scope=client.scope,
             )
             return
-
-        payload = grant.request.payload
-        assert payload is not None
-
-        prompt = payload.data.get("prompt")
 
         # Check if the sub has granted the requested scope or a subset of it
         has_granted_scope = False

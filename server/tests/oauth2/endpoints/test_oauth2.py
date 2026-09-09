@@ -576,10 +576,22 @@ class TestOAuth2Authorize:
         assert set(json["scopes"]) == set(oauth2_client.scope.split(" "))
 
     @pytest.mark.auth
-    @pytest.mark.parametrize("prompt", [None, "none", "consent"])
-    async def test_no_scope_first_party_client(
+    @pytest.mark.parametrize(
+        ("prompt", "expected_status"),
+        [
+            (None, 302),
+            ("none", 302),
+            ("consent", 200),
+            ("login", 401),
+            ("login consent", 401),
+        ],
+    )
+    @pytest.mark.parametrize("scope", [None, "openid profile email"])
+    async def test_prompt_first_party_client(
         self,
         prompt: str | None,
+        expected_status: int,
+        scope: str | None,
         client: AsyncClient,
         first_party_oauth2_client: OAuth2Client,
     ) -> None:
@@ -588,15 +600,26 @@ class TestOAuth2Authorize:
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
         }
+        if scope is not None:
+            params["scope"] = scope
         if prompt is not None:
             params["prompt"] = prompt
         response = await client.get("/v1/oauth2/authorize", params=params)
 
-        assert response.status_code == 302
-        location = response.headers["location"]
-        assert location.startswith(params["redirect_uri"])
-        assert "code=" in location
-        assert parse_qs(urlparse(location).query)["iss"] == [settings.BASE_URL]
+        assert response.status_code == expected_status
+        if expected_status == 200:
+            assert (
+                response.json()["client"]["client_id"]
+                == first_party_oauth2_client.client_id
+            )
+            assert set(response.json()["scopes"]) == set(
+                (scope or first_party_oauth2_client.scope).split(" ")
+            )
+        elif expected_status == 302:
+            location = response.headers["location"]
+            assert location.startswith(params["redirect_uri"])
+            assert "code=" in location
+            assert parse_qs(urlparse(location).query)["iss"] == [settings.BASE_URL]
 
     @pytest.mark.auth
     async def test_new_scope(
@@ -627,10 +650,20 @@ class TestOAuth2Authorize:
         assert set(json["scopes"]) == {"openid", "profile", "email"}
 
     @pytest.mark.auth
-    @pytest.mark.parametrize("prompt", [None, "none", "consent"])
+    @pytest.mark.parametrize(
+        ("prompt", "expected_status"),
+        [
+            (None, 302),
+            ("none", 302),
+            ("consent", 200),
+            ("login", 401),
+            ("login consent", 401),
+        ],
+    )
     async def test_new_scope_first_party_client(
         self,
         prompt: str | None,
+        expected_status: int,
         sync_session: Session,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -652,16 +685,29 @@ class TestOAuth2Authorize:
             params["prompt"] = prompt
         response = await client.get("/v1/oauth2/authorize", params=params)
 
-        assert response.status_code == 302
-        location = response.headers["location"]
-        assert location.startswith(params["redirect_uri"])
-        assert "code=" in location
+        assert response.status_code == expected_status
+        if expected_status == 200:
+            assert (
+                response.json()["client"]["client_id"]
+                == first_party_oauth2_client.client_id
+            )
+            assert set(response.json()["scopes"]) == set(
+                first_party_oauth2_client.scope.split(" ")
+            )
+        elif expected_status == 302:
+            location = response.headers["location"]
+            assert location.startswith(params["redirect_uri"])
+            assert "code=" in location
 
+        sync_session.expire_all()
         updated_grant = sync_session.get(OAuth2Grant, grant.id)
         assert updated_grant is not None
-        assert set(updated_grant.scopes) == set(
+        expected_scopes = (
             first_party_oauth2_client.scope.split(" ")
+            if expected_status == 302
+            else ["openid", "profile"]
         )
+        assert set(updated_grant.scopes) == set(expected_scopes)
 
     @pytest.mark.auth
     @pytest.mark.parametrize("scope", ["openid", "openid profile email"])

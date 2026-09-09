@@ -38,8 +38,8 @@ export function ProductMappingRow({
         onValueChange={onChange}
         disabled={locked || saving}
       >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Choose a Polar product" />
+        <SelectTrigger className="h-8 min-h-8 w-full min-w-0 py-0">
+          <SelectValue placeholder="Polar product" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={CREATE_NEW_VALUE}>

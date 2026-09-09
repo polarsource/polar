@@ -51,6 +51,28 @@ export function shouldShowProductMappingPanel(
   return visibleMappingItems(items).length > 0
 }
 
+export const PRODUCT_MAPPING_PAGE_SIZE = 5
+
+export function paginateMappingItems(
+  items: ProductMappingItem[],
+  page: number,
+) {
+  const total = items.length
+  const pageCount = Math.max(1, Math.ceil(total / PRODUCT_MAPPING_PAGE_SIZE))
+  const currentPage = Math.min(Math.max(page, 1), pageCount)
+  const start = (currentPage - 1) * PRODUCT_MAPPING_PAGE_SIZE
+  const pageItems = items.slice(start, start + PRODUCT_MAPPING_PAGE_SIZE)
+  return {
+    page: currentPage,
+    pageCount,
+    items: pageItems,
+    showPagination: total > PRODUCT_MAPPING_PAGE_SIZE,
+    rangeStart: total === 0 ? 0 : start + 1,
+    rangeEnd: start + pageItems.length,
+    total,
+  }
+}
+
 export function mappingChoice(
   sourceId: string,
   value: string,

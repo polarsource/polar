@@ -7,6 +7,7 @@ import {
   mappingChoice,
   mappingRequiresChoice,
   mappingSelectValue,
+  paginateMappingItems,
   shouldShowProductMappingPanel,
   type ProductMappingItem,
 } from './productMapping'
@@ -167,5 +168,31 @@ describe('formatMappingInterval', () => {
     expect(formatMappingInterval('month', 1)).toBe('Monthly')
     expect(formatMappingInterval('month', 3)).toBe('Every 3 months')
     expect(formatMappingInterval(null, 1)).toBe('—')
+  })
+})
+
+describe('paginateMappingItems', () => {
+  const items = Array.from({ length: 6 }, (_, index) =>
+    item({ source_id: `prod_${index}:month:1` }),
+  )
+
+  it('hides pagination when every product fits on one page', () => {
+    const paged = paginateMappingItems(items.slice(0, 5), 1)
+    expect(paged.showPagination).toBe(false)
+    expect(paged.items).toHaveLength(5)
+  })
+
+  it('pages five at a time and clamps out-of-range pages', () => {
+    const first = paginateMappingItems(items, 1)
+    expect(first.showPagination).toBe(true)
+    expect(first.items).toHaveLength(5)
+    expect(first.rangeEnd).toBe(5)
+
+    const second = paginateMappingItems(items, 2)
+    expect(second.items).toHaveLength(1)
+    expect(second.rangeStart).toBe(6)
+    expect(second.rangeEnd).toBe(6)
+
+    expect(paginateMappingItems(items, 99).page).toBe(2)
   })
 })

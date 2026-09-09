@@ -31762,6 +31762,17 @@ export interface components {
      * @enum {string}
      */
     PrecheckEntity: 'products' | 'prices' | 'customers' | 'subscriptions'
+    /** PrecheckNotAvailable */
+    PrecheckNotAvailable: {
+      /**
+       * Error
+       * @example PrecheckNotAvailable
+       * @constant
+       */
+      error: 'PrecheckNotAvailable'
+      /** Detail */
+      detail: string
+    }
     /**
      * PrecheckReasonLevel
      * @enum {string}
@@ -55727,13 +55738,15 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description A pre-check is already running. */
+      /** @description A pre-check is already running, or the migration has already moved past the pre-check step. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MigrationOperationInProgress']
+          'application/json':
+            | components['schemas']['MigrationOperationInProgress']
+            | components['schemas']['PrecheckNotAvailable']
         }
       }
       /** @description Validation Error */

@@ -3,7 +3,7 @@
 
 import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, TypeVar
@@ -75,6 +75,13 @@ class StripeExtractionPhase(StrEnum):
 class StripeExtractionCursor(Schema):
     phase: StripeExtractionPhase = StripeExtractionPhase.prices
     starting_after: str | None = None
+
+
+@dataclass(frozen=True)
+class MappedSubscriptionDiscounts:
+    source_ids: list[str]
+    started_at: datetime | None
+    has_discount: bool
 
 
 class StripeAdapter:
@@ -448,9 +455,7 @@ class StripeAdapter:
     ) -> CanonicalSubscription:
         items = subscription["items"]["data"]
         first_item = items[0]
-        discount_source_ids, discount_started_at, has_discount = (
-            self._map_subscription_discounts(subscription)
-        )
+        discounts = self._map_subscription_discounts(subscription)
         return CanonicalSubscription(
             source_id=subscription.id,
             customer_source_id=self._id_of(subscription.customer),
@@ -468,9 +473,9 @@ class StripeAdapter:
             line_item_count=len(items),
             quantity=first_item.get("quantity") or 1,
             payment_method=self._resolve_payment_method(subscription),
-            has_discount=has_discount,
-            discount_source_ids=discount_source_ids,
-            discount_started_at=discount_started_at,
+            has_discount=discounts.has_discount,
+            discount_source_ids=discounts.source_ids,
+            discount_started_at=discounts.started_at,
             cancel_at_period_end=bool(subscription.cancel_at_period_end),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
@@ -481,7 +486,7 @@ class StripeAdapter:
 
     def _map_subscription_discounts(
         self, subscription: stripe_lib.Subscription
-    ) -> tuple[list[str], datetime | None, bool]:
+    ) -> MappedSubscriptionDiscounts:
         """Coupon ids Polar can look up, when the first one started, and whether
         any discount was present.
 
@@ -501,7 +506,11 @@ class StripeAdapter:
                 started_at = self._to_datetime(
                     discount.get("start") if not isinstance(discount, str) else None
                 )
-        return source_ids, started_at, bool(discounts) or bool(source_ids)
+        return MappedSubscriptionDiscounts(
+            source_ids=source_ids,
+            started_at=started_at,
+            has_discount=bool(discounts) or bool(source_ids),
+        )
 
     def _coupon_id_of_discount(self, discount: Any) -> str | None:
         if isinstance(discount, str):

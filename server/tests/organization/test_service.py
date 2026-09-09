@@ -1734,25 +1734,7 @@ class TestGetActivationReadiness:
 
 
 @pytest.mark.asyncio
-class TestBackofficeActivate:
-    async def test_activates_created_organization(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        organization.status = OrganizationStatus.CREATED
-        organization.capabilities = {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]}
-        await save_fixture(organization)
-
-        result = await organization_service.backoffice_activate(session, organization)
-
-        assert result.status == OrganizationStatus.ACTIVE
-        assert result.capabilities == STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]
-        assert result.initially_reviewed_at is not None
-        assert result.internal_notes is not None
-        assert "activated from created via backoffice" in result.internal_notes
-
+class TestBackofficeSubmitAndMaybeActivate:
     async def test_rejects_non_created(
         self,
         session: AsyncSession,
@@ -1761,9 +1743,11 @@ class TestBackofficeActivate:
         organization.status = OrganizationStatus.REVIEW
 
         with pytest.raises(OrganizationError, match="CREATED"):
-            await organization_service.backoffice_activate(session, organization)
+            await organization_service.backoffice_submit_and_maybe_activate(
+                session, organization
+            )
 
-    async def test_activates_even_when_gates_are_missing(
+    async def test_rejects_incomplete_details(
         self,
         session: AsyncSession,
         organization: Organization,
@@ -1771,11 +1755,78 @@ class TestBackofficeActivate:
         organization.status = OrganizationStatus.CREATED
         organization.details = {}
         organization.details_submitted_at = None
+
+        with pytest.raises(PolarRequestValidationError):
+            await organization_service.backoffice_submit_and_maybe_activate(
+                session, organization
+            )
+
+        assert organization.status == OrganizationStatus.CREATED
+
+    async def test_submits_for_review_without_forcing_active(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.CREATED
+        organization.website = "https://example.com"
+        organization.email = "support@example.com"
+        organization.details = {
+            "product_description": "Subscription SaaS for software teams and agencies.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": False,
+        }
+        organization.details_submitted_at = None
         organization.payout_account_id = None
 
-        result = await organization_service.backoffice_activate(session, organization)
+        outcome = await organization_service.backoffice_submit_and_maybe_activate(
+            session, organization
+        )
 
-        assert result.status == OrganizationStatus.ACTIVE
+        assert outcome.submitted_for_review is True
+        assert outcome.activated is False
+        assert organization.status == OrganizationStatus.CREATED
+        assert organization.details_submitted_at is not None
+        assert organization.internal_notes is not None
+        assert "Submitted for review via backoffice" in organization.internal_notes
+
+    async def test_activates_when_all_gates_pass(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime.now(UTC)
+        organization.capabilities = {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]}
+        await save_fixture(organization)
+        session.add(
+            OrganizationReview(
+                organization_id=organization.id,
+                verdict=OrganizationReview.Verdict.PASS,
+                risk_score=10.0,
+                violated_sections=[],
+                reason="Clean",
+                model_used="test",
+            )
+        )
+        await session.flush()
+
+        outcome = await organization_service.backoffice_submit_and_maybe_activate(
+            session, organization
+        )
+
+        assert outcome.submitted_for_review is False
+        assert outcome.activated is True
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert (
+            organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]
+        )
 
 
 @pytest.mark.asyncio

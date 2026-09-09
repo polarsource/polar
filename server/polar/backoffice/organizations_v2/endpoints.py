@@ -31,6 +31,7 @@ from polar.account_credit.service import account_credit_service
 from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
 from polar.enums import PayoutAccountType
+from polar.exceptions import PolarRequestValidationError
 from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
 from polar.integrations.plain.service import (
@@ -2529,7 +2530,7 @@ async def activate_dialog(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Activate a CREATED organization, showing onboarding readiness first."""
+    """Submit a CREATED org for review and/or run maybe_activate."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id, include_blocked=True)
@@ -2540,18 +2541,40 @@ async def activate_dialog(
         session, organization
     )
     error_message: str | None = None
+    can_submit_review = organization.status == OrganizationStatus.CREATED and (
+        organization.details_submitted_at is None or not readiness.review_exists
+    )
+    can_activate = (
+        organization.status == OrganizationStatus.CREATED and readiness.is_ready
+    )
 
     if request.method == "POST":
         try:
-            await organization_service.backoffice_activate(session, organization)
+            outcome = await organization_service.backoffice_submit_and_maybe_activate(
+                session, organization
+            )
         except OrganizationError as e:
             error_message = e.message
+        except PolarRequestValidationError as e:
+            error_message = "; ".join(error["msg"] for error in e.errors())
         else:
-            await add_toast(
-                request,
-                "Organization activated.",
-                "success",
-            )
+            if outcome.activated:
+                await add_toast(request, "Organization activated.", "success")
+            elif outcome.submitted_for_review:
+                await add_toast(
+                    request,
+                    "Submitted for review. The organization will activate "
+                    "automatically if the review passes and onboarding is complete.",
+                    "success",
+                )
+            else:
+                missing = ", ".join(item.label.lower() for item in readiness.missing)
+                await add_toast(
+                    request,
+                    "Could not activate yet. Still missing: "
+                    f"{missing or 'review or onboarding'}.",
+                    "warning",
+                )
             return HXRedirectResponse(
                 request,
                 str(
@@ -2562,7 +2585,9 @@ async def activate_dialog(
                 303,
             )
 
-    can_activate = organization.status == OrganizationStatus.CREATED
+        readiness = await organization_service.get_activation_readiness(
+            session, organization
+        )
 
     with modal("Activate Organization", open=True):
         with tag.div(classes="flex flex-col gap-4"):
@@ -2579,8 +2604,7 @@ async def activate_dialog(
                     with tag.p(classes="text-sm"):
                         text(
                             "All onboarding and review gates have passed. "
-                            "Activating will set status to Active and enable "
-                            "the default Active capabilities."
+                            "Activate uses the same path as automatic activation."
                         )
             else:
                 with tag.div(
@@ -2590,9 +2614,10 @@ async def activate_dialog(
                         text("Not fully ready to activate")
                     with tag.p(classes="text-sm"):
                         text(
-                            "Some gates have not passed. You can still activate "
-                            "from Created — capabilities will follow Active "
-                            "defaults. Review the missing items below."
+                            "Complete the missing steps below. Submitting for "
+                            "review queues the review agent; the organization "
+                            "activates automatically if the review passes and "
+                            "payout and identity checks are ready."
                         )
 
             with tag.ul(classes="space-y-2"):
@@ -2617,7 +2642,7 @@ async def activate_dialog(
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                if can_activate:
+                if can_activate or can_submit_review:
                     with tag.form(
                         hx_post=str(
                             request.url_for(
@@ -2627,10 +2652,10 @@ async def activate_dialog(
                         ),
                     ):
                         with button(
-                            variant="success" if readiness.is_ready else "warning",
+                            variant="success" if can_activate else "warning",
                             type="submit",
                         ):
-                            text("Activate")
+                            text("Activate" if can_activate else "Submit for review")
 
     return None
 

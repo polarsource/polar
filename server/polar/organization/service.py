@@ -262,6 +262,7 @@ class ActivationReadiness:
     payout_account_ready: ActivationRequirement
     owner_identity_verified: ActivationRequirement
     review_approved: ActivationRequirement
+    review_exists: bool
 
     @property
     def requirements(self) -> tuple[ActivationRequirement, ...]:
@@ -289,6 +290,12 @@ class ActivationReadiness:
         return [
             requirement for requirement in self.requirements if not requirement.ready
         ]
+
+
+@dataclass(frozen=True)
+class BackofficeActivationOutcome:
+    submitted_for_review: bool
+    activated: bool
 
 
 class CannotChangeOwnerError(OrganizationError):
@@ -1353,6 +1360,7 @@ class OrganizationService:
             payout_account_ready=payout_account_ready,
             owner_identity_verified=owner_identity_verified,
             review_approved=review_requirement,
+            review_exists=review is not None,
         )
 
     async def _is_activation_ready(
@@ -1416,17 +1424,16 @@ class OrganizationService:
         )
         return True
 
-    async def backoffice_activate(
+    async def backoffice_submit_and_maybe_activate(
         self,
         session: AsyncSession,
         organization: Organization,
-    ) -> Organization:
-        """Admin override: CREATED → ACTIVE, syncing ACTIVE capabilities.
+    ) -> BackofficeActivationOutcome:
+        """Complete review submission from backoffice, then try `maybe_activate`.
 
-        Bypasses the review-approval gate that `maybe_activate` requires so
-        that backoffice can activate orgs that never submitted for review
-        (e.g. manual payout accounts). Onboarding gaps are surfaced in the
-        dialog; this method still performs the transition.
+        Does not force ``CREATED → ACTIVE``. If onboarding or review is still
+        incomplete after submission, the org stays ``CREATED`` until a later
+        `maybe_activate` (review agent, payout account, identity webhook).
         """
         if organization.status != OrganizationStatus.CREATED:
             raise OrganizationError(
@@ -1435,19 +1442,37 @@ class OrganizationService:
                 409,
             )
 
-        organization.set_status(OrganizationStatus.ACTIVE)
-        if organization.initially_reviewed_at is None:
-            organization.initially_reviewed_at = datetime.now(UTC)
-        _append_internal_note(
-            organization, "Organization activated from created via backoffice."
-        )
-        session.add(organization)
+        submitted_for_review = False
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+
+        if organization.details_submitted_at is None:
+            await self.submit_for_review(session, organization)
+            submitted_for_review = True
+            _append_internal_note(organization, "Submitted for review via backoffice.")
+        elif review is None:
+            enqueue_job(
+                "organization_review.run_agent",
+                organization_id=organization.id,
+                context=ReviewContext.SUBMISSION,
+            )
+            submitted_for_review = True
+            _append_internal_note(
+                organization, "Queued organization review via backoffice."
+            )
+
+        activated = await self.maybe_activate(session, organization)
         log.info(
-            "organization.backoffice_activate.activated",
+            "organization.backoffice_submit_and_maybe_activate",
             organization_id=str(organization.id),
             slug=organization.slug,
+            submitted_for_review=submitted_for_review,
+            activated=activated,
         )
-        return organization
+        return BackofficeActivationOutcome(
+            submitted_for_review=submitted_for_review,
+            activated=activated,
+        )
 
     async def _reactivate_organization(
         self,

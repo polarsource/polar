@@ -595,6 +595,7 @@ class TestActivateDialog:
         assert response.status_code == 200
         assert "Activate" in response.text
         assert f"/organizations/{organization.id}/activate-dialog" in response.text
+
     async def test_get_shows_missing_requirements(
         self,
         backoffice_client: httpx.AsyncClient,
@@ -615,7 +616,7 @@ class TestActivateDialog:
         assert "Organization details have not been submitted" in response.text
         assert "No payout account is connected" in response.text
         assert "No organization review has been submitted" in response.text
-        assert "Activate" in response.text
+        assert "Submit for review" in response.text
 
     async def test_get_shows_ready_when_gates_pass(
         self,
@@ -659,15 +660,90 @@ class TestActivateDialog:
         assert "Ready to activate" in response.text
         assert "Not fully ready to activate" not in response.text
 
-    async def test_post_activates_created_organization(
+    async def test_post_submits_valid_details_without_forcing_active(
+        self,
+        mocker: MockerFixture,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.CREATED
+        organization.website = "https://example.com"
+        organization.email = "support@example.com"
+        organization.details = {
+            "product_description": "Subscription SaaS for software teams and agencies.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": False,
+        }
+        organization.details_submitted_at = None
+        session.add(organization)
+        await session.flush()
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/activate-dialog"
+        )
+
+        assert response.status_code == 303
+        await session.refresh(organization)
+        assert organization.status == OrganizationStatus.CREATED
+        assert organization.details_submitted_at is not None
+
+    async def test_post_rejects_incomplete_details(
         self,
         backoffice_client: httpx.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
         organization.status = OrganizationStatus.CREATED
+        organization.details = {}
+        organization.details_submitted_at = None
         session.add(organization)
         await session.flush()
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/activate-dialog"
+        )
+
+        assert response.status_code == 200
+        assert organization.status == OrganizationStatus.CREATED
+        await session.refresh(organization)
+        assert organization.status == OrganizationStatus.CREATED
+
+    async def test_post_activates_when_ready(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        organization.details = {"about": "A merchant"}
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
+        await create_payout_account(save_fixture, organization, user)
+        await save_fixture(
+            OrganizationReview(
+                organization_id=organization.id,
+                verdict=OrganizationReview.Verdict.PASS,
+                risk_score=10.0,
+                violated_sections=[],
+                reason="Clean",
+                model_used="test",
+            )
+        )
 
         response = await backoffice_client.post(
             f"/organizations/{organization.id}/activate-dialog"

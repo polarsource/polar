@@ -7,7 +7,6 @@ import { environmentOf, production } from './flags'
 
 const selectOrganization = (environment: PolarEnvironment) =>
   Effect.gen(function* () {
-    const auth = yield* Auth
     const organizations = yield* Organizations
     const items = yield* organizations.list(environment)
     if (items.length === 0) {
@@ -22,8 +21,7 @@ const selectOrganization = (environment: PolarEnvironment) =>
       )
       return
     }
-    const credential = yield* auth.resolve(environment)
-    const activeOrganizationId = credential.session?.organization?.id
+    const activeOrganizationId = yield* organizations.selected(environment)
     const organization = yield* Prompt.select({
       message: `Select ${environment} organization`,
       choices: items.map((organization) => ({
@@ -34,7 +32,7 @@ const selectOrganization = (environment: PolarEnvironment) =>
             : organization.name,
       })),
     })
-    yield* auth.select(environment, organization)
+    yield* organizations.select(environment, organization.id)
     yield* Console.log(
       `Active organization: ${organization.name} (${organization.slug}) — ${organization.id}`,
     )
@@ -79,7 +77,7 @@ const whoami = Command.make('whoami', { production }, ({ production }) =>
       }
       const org = items[0]!
       yield* Console.log(`Organization: ${org.name} (${org.slug}) — ${org.id}`)
-    } else if (credential.session?.organization) {
+    } else if (yield* organizations.selected(environment)) {
       const org = yield* organizations.resolve(environment)
       yield* Console.log(`Organization: ${org.name} (${org.slug}) — ${org.id}`)
     } else {
@@ -97,13 +95,14 @@ const list = Command.make('list', { production }, ({ production }) =>
     const organizations = yield* Organizations
     const credential = yield* auth.resolve(environment)
     const items = yield* organizations.list(environment)
+    const activeOrganizationId = yield* organizations.selected(environment)
     yield* Console.log(
       `Organizations in ${environment}${credential.source === 'override' ? ' (POLAR_ACCESS_TOKEN override)' : ''}:`,
     )
     if (!items.length) yield* Console.log('No accessible organizations.')
     for (const org of items) {
       yield* Console.log(
-        `${org.id === credential.session?.organization?.id ? '*' : ' '} ${org.name} (${org.slug}) — ${org.id}`,
+        `${org.id === activeOrganizationId ? '*' : ' '} ${org.name} (${org.slug}) — ${org.id}`,
       )
     }
   }),

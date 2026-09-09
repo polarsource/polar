@@ -159,7 +159,6 @@ export const exchange = (
         data.scope === undefined
           ? (previous?.scopes ?? [])
           : data.scope.split(' ').filter(Boolean),
-      organization: previous?.organization,
     }
   }).pipe(Effect.scoped, Effect.provide(FetchHttpClient.layer))
 

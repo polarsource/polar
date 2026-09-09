@@ -9,6 +9,7 @@ import {
 import { Auth, type Credential } from './auth'
 import { Organizations, layer } from './organizations'
 import { Polar } from './polar'
+import { CLIConfig } from './config'
 
 const first = { id: 'org-1', name: 'First', slug: 'first' }
 const second = { id: 'org-2', name: 'Second', slug: 'second' }
@@ -21,16 +22,13 @@ let requests: Array<{
 }>
 let denied: boolean
 let selected: boolean
+let activeOrganizations: Partial<Record<PolarEnvironment, string>>
 
 const auth = Auth.of({
   resolve: () => Effect.sync(() => credential),
   override: Effect.sync(() => credential.source === 'override'),
   login: () => Effect.succeed(false),
   logout: () => Effect.succeed(false),
-  select: () =>
-    Effect.sync(() => {
-      selected = true
-    }),
 })
 const polar = Polar.of({
   getClient: () => Effect.die('unused'),
@@ -65,7 +63,23 @@ const service = Effect.service(Organizations).pipe(
   Effect.provide(
     layer.pipe(
       Layer.provide(
-        Layer.mergeAll(Layer.succeed(Auth, auth), Layer.succeed(Polar, polar)),
+        Layer.mergeAll(
+          Layer.succeed(Auth, auth),
+          Layer.succeed(Polar, polar),
+          Layer.succeed(
+            CLIConfig,
+            CLIConfig.of({
+              getActiveOrganization: (env) =>
+                Effect.sync(() => activeOrganizations[env]),
+              setActiveOrganization: (env, id) =>
+                Effect.sync(() => {
+                  selected = true
+                  if (id === undefined) delete activeOrganizations[env]
+                  else activeOrganizations[env] = id
+                }),
+            }),
+          ),
+        ),
       ),
     ),
   ),
@@ -80,12 +94,38 @@ beforeEach(() => {
       accessToken: Redacted.make('access'),
       expiresAt: Date.now() + 3600_000,
       scopes: [],
-      organization: first,
     },
   }
+  activeOrganizations = { sandbox: first.id, production: first.id }
   pages = [[first], [second]]
   requests = []
   denied = selected = false
+})
+
+test('selection is stored in config separately for each environment', async () => {
+  const organizations = await Effect.runPromise(service)
+  await Effect.runPromise(organizations.select('sandbox', second.id))
+  expect(await Effect.runPromise(organizations.selected('sandbox'))).toBe(
+    second.id,
+  )
+  expect(await Effect.runPromise(organizations.resolve('sandbox'))).toEqual(
+    second,
+  )
+  expect(activeOrganizations.production).toBe(first.id)
+  expect(credential.session).not.toHaveProperty('organization')
+})
+
+test('token overrides ignore saved selection and cannot change it', async () => {
+  credential = { source: 'override', accessToken: Redacted.make('ci') }
+  const organizations = await Effect.runPromise(service)
+  expect(
+    await Effect.runPromise(organizations.selected('sandbox')),
+  ).toBeUndefined()
+  await expect(
+    Effect.runPromise(organizations.select('sandbox', second.id)),
+  ).rejects.toThrow('Unset POLAR_ACCESS_TOKEN')
+  expect(activeOrganizations.sandbox).toBe(first.id)
+  expect(selected).toBe(false)
 })
 
 test('enumerates every page on the explicitly selected environment', async () => {
@@ -105,13 +145,13 @@ test('explicit organization overrides selection without persisting it', async ()
   expect(
     await Effect.runPromise(organizations.resolve('sandbox', second.id)),
   ).toEqual(second)
-  expect(credential.session?.organization).toEqual(first)
+  expect(activeOrganizations.sandbox).toBe(first.id)
   expect(selected).toBe(false)
   expect(requests).toEqual([{ id: second.id, environment: 'sandbox' }])
 })
 
 test('explicit IDs work with no saved selection and without enumeration', async () => {
-  credential.session = { ...credential.session!, organization: undefined }
+  delete activeOrganizations.sandbox
   denied = true
   const organizations = await Effect.runPromise(service)
   expect(

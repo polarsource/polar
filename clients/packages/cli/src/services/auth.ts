@@ -6,6 +6,7 @@ import {
   type Session,
 } from '../schemas/Auth'
 import { Credentials } from './credentials'
+import { CLIConfig } from './config'
 import { OAuth } from './oauth'
 
 export interface Credential {
@@ -26,10 +27,6 @@ export class Auth extends Context.Service<
       newSession: boolean,
     ) => Effect.Effect<boolean, AuthError>
     logout: (environment: PolarEnvironment) => Effect.Effect<boolean, AuthError>
-    select: (
-      environment: PolarEnvironment,
-      organization: NonNullable<Session['organization']>,
-    ) => Effect.Effect<void, AuthError>
     override: Effect.Effect<boolean>
   }
 >()('Auth') {}
@@ -41,6 +38,7 @@ export const make = (
 ) =>
   Effect.gen(function* () {
     const store = yield* Credentials
+    const config = yield* CLIConfig
     const oauth = yield* OAuth
     const locks = {
       sandbox: yield* Semaphore.make(1),
@@ -119,22 +117,21 @@ export const make = (
           }
           const session = yield* oauth.login(environment)
           yield* locks[environment].withPermit(
-            store.write(environment, { ...session, organization: undefined }),
+            Effect.gen(function* () {
+              yield* store.write(environment, session)
+              yield* config.setActiveOrganization(environment, undefined)
+            }),
           )
           return true
         }),
       logout: (environment) =>
-        locks[environment].withPermit(store.delete(environment)),
-      select: (environment, organization) =>
-        Effect.gen(function* () {
-          yield* requireSavedMode
-          yield* locks[environment].withPermit(
-            Effect.gen(function* () {
-              const session = yield* saved(environment)
-              yield* store.write(environment, { ...session, organization })
-            }),
-          )
-        }),
+        locks[environment].withPermit(
+          Effect.gen(function* () {
+            const deleted = yield* store.delete(environment)
+            yield* config.setActiveOrganization(environment, undefined)
+            return deleted
+          }),
+        ),
     })
   })
 

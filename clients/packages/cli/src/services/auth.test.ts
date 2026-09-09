@@ -3,6 +3,7 @@ import { Effect, Redacted } from 'effect'
 import { AuthError, type PolarEnvironment, type Session } from '../schemas/Auth'
 import { make } from './auth'
 import { Credentials } from './credentials'
+import { CLIConfig } from './config'
 import { OAuth } from './oauth'
 
 const organization = { id: 'org-1', name: 'First', slug: 'first' }
@@ -12,9 +13,9 @@ const session: Session = {
   refreshToken: Redacted.make('refresh'),
   expiresAt: Date.now() + 3600_000,
   scopes: ['organizations:read'],
-  organization,
 }
 let sessions: Partial<Record<PolarEnvironment, Session>>
+let activeOrganizations: Partial<Record<PolarEnvironment, string>>
 let override: string | undefined
 let reads: number
 let writes: number
@@ -70,12 +71,28 @@ const oauth = OAuth.of({
 const authEffect = make(Effect.sync(() => override)).pipe(
   Effect.provideService(Credentials, store),
   Effect.provideService(OAuth, oauth),
+  Effect.provideService(
+    CLIConfig,
+    CLIConfig.of({
+      getActiveOrganization: (env) =>
+        Effect.sync(() => activeOrganizations[env]),
+      setActiveOrganization: (env, id) =>
+        Effect.sync(() => {
+          if (id === undefined) delete activeOrganizations[env]
+          else activeOrganizations[env] = id
+        }),
+    }),
+  ),
 )
 
 beforeEach(() => {
   sessions = {
     sandbox: session,
     production: { ...session, accessToken: Redacted.make('production') },
+  }
+  activeOrganizations = {
+    sandbox: organization.id,
+    production: organization.id,
   }
   override = undefined
   reads = writes = refreshes = logins = 0
@@ -89,18 +106,17 @@ describe('saved sessions', () => {
     expect(logins).toBe(0)
     expect(writes).toBe(0)
     expect(await Effect.runPromise(auth.login('sandbox', true))).toBe(true)
-    expect(sessions.sandbox?.organization).toBeUndefined()
+    expect(activeOrganizations.sandbox).toBeUndefined()
     expect(Redacted.value(sessions.sandbox!.accessToken)).toBe('new-account')
-    expect(sessions.production?.organization).toEqual(organization)
+    expect(activeOrganizations.production).toBe(organization.id)
   })
 
   test('initial login persists credentials without requiring organizations', async () => {
     delete sessions.sandbox
     const auth = await Effect.runPromise(authEffect)
     expect(await Effect.runPromise(auth.login('sandbox', false))).toBe(true)
-    expect(
-      (await Effect.runPromise(auth.resolve('sandbox'))).session?.organization,
-    ).toBeUndefined()
+    expect(activeOrganizations.sandbox).toBeUndefined()
+    expect(sessions.sandbox).toBeDefined()
     expect(logins).toBe(1)
   })
 
@@ -111,18 +127,16 @@ describe('saved sessions', () => {
       Effect.runPromise(auth.login('sandbox', true)),
     ).rejects.toThrow('denied')
     expect(sessions.sandbox).toBe(session)
+    expect(activeOrganizations.sandbox).toBe(organization.id)
     expect(writes).toBe(0)
   })
 
-  test('selection and idempotent logout are environment isolated', async () => {
+  test('idempotent logout clears selection only in its environment', async () => {
     const auth = await Effect.runPromise(authEffect)
-    await Effect.runPromise(
-      auth.select('sandbox', { id: 'org-2', name: 'Second', slug: 'second' }),
-    )
-    expect(sessions.sandbox?.organization?.id).toBe('org-2')
-    expect(sessions.production?.organization).toEqual(organization)
     expect(await Effect.runPromise(auth.logout('sandbox'))).toBe(true)
     expect(await Effect.runPromise(auth.logout('sandbox'))).toBe(false)
+    expect(activeOrganizations.sandbox).toBeUndefined()
+    expect(activeOrganizations.production).toBe(organization.id)
     expect(sessions.production).toBeDefined()
   })
 
@@ -207,14 +221,11 @@ describe('token override', () => {
     expect(reads + writes + refreshes + logins).toBe(0)
   })
 
-  test('blocks login and selection but permits saved logout without unsetting the override', async () => {
+  test('blocks login but permits saved logout without unsetting the override', async () => {
     override = 'ci-secret'
     const auth = await Effect.runPromise(authEffect)
     await expect(
       Effect.runPromise(auth.login('sandbox', true)),
-    ).rejects.toThrow('Unset POLAR_ACCESS_TOKEN')
-    await expect(
-      Effect.runPromise(auth.select('sandbox', organization)),
     ).rejects.toThrow('Unset POLAR_ACCESS_TOKEN')
     await Effect.runPromise(auth.logout('sandbox'))
     expect(sessions.sandbox).toBeUndefined()

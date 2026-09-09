@@ -7,6 +7,7 @@ import { auth } from './commands/auth'
 import { update } from './commands/update'
 import * as Auth from './services/auth'
 import * as Credentials from './services/credentials'
+import * as Config from './services/config'
 import * as Organizations from './services/organizations'
 import * as OAuth from './services/oauth'
 import * as Polar from './services/polar'
@@ -24,12 +25,13 @@ const cli = Command.run(mainCommand, {
   version: VERSION.replace(/^v/, ''),
 })
 
+const configLayer = Config.layer.pipe(Layer.provide(BunServices.layer))
 const authLayer = Auth.layer.pipe(
-  Layer.provide(Layer.mergeAll(Credentials.layer, OAuth.layer)),
+  Layer.provide(Layer.mergeAll(Credentials.layer, OAuth.layer, configLayer)),
 )
 const polarLayer = Polar.layer.pipe(Layer.provide(authLayer))
 const organizationsLayer = Organizations.layer.pipe(
-  Layer.provide(Layer.mergeAll(authLayer, polarLayer)),
+  Layer.provide(Layer.mergeAll(authLayer, polarLayer, configLayer)),
 )
 const services = Layer.mergeAll(
   authLayer,

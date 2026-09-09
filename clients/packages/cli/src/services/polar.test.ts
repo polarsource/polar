@@ -26,7 +26,6 @@ test('retries a rejected saved token with refreshed credentials in the same envi
     override: Effect.succeed(false),
     login: () => Effect.die('unused'),
     logout: () => Effect.die('unused'),
-    select: () => Effect.die('unused'),
   })
   const polar = await Effect.runPromise(
     make.pipe(Effect.provideService(Auth, auth)),
@@ -84,7 +83,6 @@ test.each([
       override: Effect.succeed(source === 'override'),
       login: () => Effect.die('unused'),
       logout: () => Effect.die('unused'),
-      select: () => Effect.die('unused'),
     })
     const polar = await Effect.runPromise(
       make.pipe(Effect.provideService(Auth, auth)),
@@ -118,7 +116,6 @@ test('preserves refresh failures without retrying the API request', async () => 
     override: Effect.succeed(false),
     login: () => Effect.die('unused'),
     logout: () => Effect.die('unused'),
-    select: () => Effect.die('unused'),
   })
   const polar = await Effect.runPromise(
     make.pipe(Effect.provideService(Auth, auth)),

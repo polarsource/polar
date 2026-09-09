@@ -15,7 +15,6 @@ describe('startListening', () => {
       }),
     login: () => Effect.die('unused'),
     logout: () => Effect.die('unused'),
-    select: () => Effect.die('unused'),
   })
   const fibers: Fiber.Fiber<never, unknown>[] = []
   const connections: {
@@ -221,7 +220,6 @@ describe('authenticatedStreamClient', () => {
       }),
     login: () => Effect.die('listen must not open the browser'),
     logout: () => Effect.die('unused'),
-    select: () => Effect.die('unused'),
   })
   const forward: (
     input: Parameters<typeof fetch>[0],

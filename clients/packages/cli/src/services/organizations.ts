@@ -6,11 +6,19 @@ import {
   type PolarEnvironment,
 } from '../schemas/Auth'
 import { Auth } from './auth'
+import { CLIConfig } from './config'
 import { Polar } from './polar'
 
 export class Organizations extends Context.Service<
   Organizations,
   {
+    selected: (
+      environment: PolarEnvironment,
+    ) => Effect.Effect<string | undefined, AuthError>
+    select: (
+      environment: PolarEnvironment,
+      id: string,
+    ) => Effect.Effect<void, AuthError>
     list: (
       environment: PolarEnvironment,
     ) => Effect.Effect<ActiveOrganization[], AuthError>
@@ -26,6 +34,7 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const polar = yield* Polar
     const auth = yield* Auth
+    const config = yield* CLIConfig
     const list = (environment: PolarEnvironment) =>
       Effect.gen(function* () {
         const organizations: ActiveOrganization[] = []
@@ -49,10 +58,28 @@ export const layer = Layer.effect(
       })
     return Organizations.of({
       list,
+      selected: (environment) =>
+        Effect.gen(function* () {
+          if (yield* auth.override) return undefined
+          return yield* config.getActiveOrganization(environment)
+        }),
+      select: (environment, id) =>
+        Effect.gen(function* () {
+          if (yield* auth.override)
+            return yield* new AuthError({
+              message: 'Unset POLAR_ACCESS_TOKEN to manage saved sessions.',
+            })
+          yield* auth.resolve(environment)
+          yield* config.setActiveOrganization(environment, id)
+        }),
       resolve: (environment, id) =>
         Effect.gen(function* () {
           const credential = yield* auth.resolve(environment)
-          const selected = id ?? credential.session?.organization?.id
+          const selected =
+            id ??
+            (credential.source === 'keyring'
+              ? yield* config.getActiveOrganization(environment)
+              : undefined)
           if (selected) {
             const organization = yield* polar.use(
               (client) => client.organizations.get({ id: selected }),

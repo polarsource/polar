@@ -17,7 +17,6 @@ export const Session = Schema.Struct({
   ),
   expiresAt: Schema.Number,
   scopes: Schema.Array(Schema.String),
-  organization: Schema.optional(ActiveOrganization),
 })
 export type Session = typeof Session.Type
 

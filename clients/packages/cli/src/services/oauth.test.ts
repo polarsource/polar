@@ -81,7 +81,6 @@ const session: Session = {
   refreshToken: Redacted.make('refresh'),
   expiresAt: 0,
   scopes: ['organizations:read'],
-  organization: { id: 'id', name: 'Name', slug: 'name' },
 }
 
 test('exchange converts seconds to milliseconds and preserves omitted refresh token/scopes', async () => {
@@ -100,7 +99,6 @@ test('exchange converts seconds to milliseconds and preserves omitted refresh to
   expect(updated.expiresAt).toBeLessThanOrEqual(Date.now() + 3600_000)
   expect(Redacted.value(updated.refreshToken!)).toBe('refresh')
   expect(updated.scopes).toEqual(session.scopes)
-  expect(updated.organization).toEqual(session.organization)
   expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
     'https://sandbox-api.polar.sh/v1/oauth2/token',
   )

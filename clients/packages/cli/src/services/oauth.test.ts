@@ -33,6 +33,10 @@ beforeEach(() => {
 test.each([true, false])(
   'closes the callback server after OAuth completion (authorized: %s)',
   async (authorized) => {
+    let callbackResponse:
+      | { status: number | undefined; type: string | undefined; body: string }
+      | undefined
+    let browserDone: Promise<void> | undefined
     const server = http.createServer()
     const nativeListen = server.listen.bind(server)
     const listen = vi
@@ -56,15 +60,23 @@ test.each([true, false])(
           authorized ? 'code' : 'error',
           authorized ? 'test-code' : 'access_denied',
         )
-        await new Promise<void>((resolve, reject) => {
+        browserDone = new Promise<void>((resolve, reject) => {
           http
             .get(callback, (response) => {
-              response.resume()
+              callbackResponse = {
+                status: response.statusCode,
+                type: response.headers['content-type'],
+                body: '',
+              }
+              response.on('data', (chunk) => {
+                callbackResponse!.body += chunk
+              })
               response.on('end', resolve)
               response.on('error', reject)
             })
             .on('error', reject)
         })
+        await browserDone
         return new ChildProcess()
       })
     respond(() => Response.json({ access_token: 'test-token', expires_in: 60 }))
@@ -81,6 +93,14 @@ test.each([true, false])(
       )
       expect(result._tag).toBe(authorized ? 'Success' : 'Failure')
       expect(server.listening).toBe(false)
+      await browserDone
+      expect(callbackResponse).toMatchObject({
+        status: 200,
+        type: 'text/html; charset=utf-8',
+      })
+      expect(callbackResponse!.body).toContain(
+        authorized ? 'You are signed in' : 'Sign-in canceled',
+      )
     } finally {
       server.closeAllConnections()
       server.close()

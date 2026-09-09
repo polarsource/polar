@@ -21,6 +21,7 @@ import {
   type PolarEnvironment,
   type Session,
 } from '@/schemas/Auth'
+import { callbackPage, type CallbackOutcome } from '@/utils/callback-page'
 import * as ui from '@/utils/ui'
 
 const SANDBOX_CLIENT_ID = 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9'
@@ -171,25 +172,37 @@ export const exchange = (
     }
   }).pipe(Effect.scoped)
 
-export const validateCallback = (url: URL, expectedState: string) => {
+export type CallbackResult =
+  | { outcome: 'success'; code: string }
+  | { outcome: Exclude<CallbackOutcome, 'success'>; message: string }
+
+export const parseCallback = (
+  url: URL,
+  expectedState: string,
+): CallbackResult => {
   if (url.searchParams.get('state') !== expectedState) {
-    return Effect.fail(
-      new AuthError({ message: 'Invalid OAuth callback state.' }),
-    )
+    return { outcome: 'invalid', message: 'Invalid OAuth callback state.' }
   }
   if (url.searchParams.has('error')) {
-    return Effect.fail(
-      new AuthError({ message: 'OAuth authorization was denied or canceled.' }),
-    )
+    return {
+      outcome: 'denied',
+      message: 'OAuth authorization was denied or canceled.',
+    }
   }
   const code = url.searchParams.get('code')
   return code
-    ? Effect.succeed(code)
-    : Effect.fail(
-        new AuthError({
-          message: 'OAuth callback is missing its authorization code.',
-        }),
-      )
+    ? { outcome: 'success', code }
+    : {
+        outcome: 'invalid',
+        message: 'OAuth callback is missing its authorization code.',
+      }
+}
+
+export const validateCallback = (url: URL, expectedState: string) => {
+  const result = parseCallback(url, expectedState)
+  return result.outcome === 'success'
+    ? Effect.succeed(result.code)
+    : Effect.fail(new AuthError({ message: result.message }))
 }
 
 const login = (environment: PolarEnvironment) =>
@@ -236,9 +249,12 @@ const login = (environment: PolarEnvironment) =>
           response.writeHead(404).end()
           return
         }
+        const result = parseCallback(url, state)
         response
-          .writeHead(200, { 'Content-Type': 'text/plain' })
-          .end('Return to the Polar CLI to complete login.')
+          .writeHead(result.outcome === 'invalid' ? 400 : 200, {
+            'Content-Type': 'text/html; charset=utf-8',
+          })
+          .end(callbackPage(result.outcome))
         finish(validateCallback(url, state))
       })
       server.on('error', () =>

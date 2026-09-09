@@ -1,3 +1,4 @@
+import typing
 from uuid import UUID
 
 from polar.config import settings
@@ -7,7 +8,7 @@ from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 from polar.worker import enqueue_job
 
-from .client import client
+from .client import ContactDoesNotExist, InvalidIdentifier, client
 
 
 class ResendServiceError(PolarError): ...
@@ -48,37 +49,49 @@ class ResendService:
         if user.is_deleted:
             contact_ids: set[str] = set()
             for identifier in (user.resend_id, previous_email or user.email):
-                if identifier is not None:
+                if identifier is None:
+                    continue
+                try:
                     contact = await client.get_contact(identifier)
-                    if contact is not None:
-                        contact_ids.add(contact["id"])
+                except ContactDoesNotExist, InvalidIdentifier:
+                    continue
+                contact_ids.add(contact["id"])
             for contact_id in contact_ids:
                 await client.delete_contact(contact_id)
             return await repository.update(user, update_dict={"resend_id": None})
 
-        contact_identifier = previous_email or user.resend_id or user.email
-        contact = await client.get_contact(contact_identifier)
-        previous_contact = contact
-        if contact is None or contact["email"].lower() != user.email.lower():
-            if contact_identifier.lower() != user.email.lower():
-                contact = await client.get_contact(user.email)
-            if contact is None:
-                contact = await client.create_contact(
-                    user.email,
-                    unsubscribed=bool(
-                        previous_contact and previous_contact["unsubscribed"]
-                    ),
-                )
+        previous_contact: dict[str, typing.Any] | None = None
+        previous_identifier = previous_email or user.resend_id
+        if previous_identifier is not None:
+            try:
+                previous_contact = await client.get_contact(previous_identifier)
+            except ContactDoesNotExist, InvalidIdentifier:
+                pass
 
         if (
             previous_contact is not None
-            and previous_contact.get("unsubscribed")
-            and contact.get("unsubscribed") is False
+            and previous_contact["email"].lower() == user.email.lower()
         ):
-            await client.update_contact(contact["id"], unsubscribed=True)
+            contact = previous_contact
+        else:
+            unsubscribed = (
+                previous_contact["unsubscribed"] if previous_contact else False
+            )
+            try:
+                contact = await client.get_contact(user.email)
+            except ContactDoesNotExist:
+                contact = await client.create_contact(
+                    user.email, unsubscribed=unsubscribed
+                )
+            except InvalidIdentifier:
+                return user
+            else:
+                if unsubscribed != contact["unsubscribed"]:
+                    await client.update_contact(
+                        contact["id"], unsubscribed=unsubscribed
+                    )
 
         await client.add_contact_to_segment(contact["id"], segment_id)
-        # Resend contact emails are immutable; replace the contact on email changes.
         if previous_contact is not None and previous_contact["id"] != contact["id"]:
             await client.delete_contact(previous_contact["id"])
         return await repository.update(user, update_dict={"resend_id": contact["id"]})

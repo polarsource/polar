@@ -1,6 +1,7 @@
 import json
 from uuid import uuid4
 
+import httpx
 import pytest
 import respx
 from pytest_mock import MockerFixture
@@ -38,7 +39,7 @@ class TestSyncUser:
         existing: bool,
     ) -> None:
         mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
-        contact = {"id": "contact-id", "email": user.email, "unsubscribed": True}
+        contact = {"id": "contact-id", "email": user.email, "unsubscribed": False}
         lookup = respx_mock.get(path=f"/contacts/{user.email}").respond(
             200 if existing else 404, json=contact if existing else None
         )
@@ -60,6 +61,31 @@ class TestSyncUser:
                 "email": user.email,
                 "unsubscribed": False,
             }
+
+    @pytest.mark.parametrize("email", ["user@example.com", "USER@example.com"])
+    async def test_reuses_linked_contact(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+        email: str,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        user.email = "user@example.com"
+        user.resend_id = "contact-id"
+        respx_mock.get(path="/contacts/contact-id").respond(
+            200, json={"id": "contact-id", "email": email, "unsubscribed": True}
+        )
+        segment = respx_mock.post(
+            path="/contacts/contact-id/segments/active-users"
+        ).respond(200)
+
+        user = await resend_service.sync_user(session, user.id)
+
+        assert user.resend_id == "contact-id"
+        assert segment.called
+        assert len(respx_mock.calls) == 2
 
     @pytest.mark.parametrize("linked", [False, True])
     async def test_email_change(
@@ -95,6 +121,41 @@ class TestSyncUser:
             "unsubscribed": True,
         }
         assert delete.called
+
+    @pytest.mark.parametrize("failure_stage", ["create", "segment"])
+    async def test_email_change_preserves_old_contact_on_failure(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+        failure_stage: str,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        delete = mocker.patch("polar.integrations.resend.service.client.delete_contact")
+        previous_email = user.email
+        user.email = "new@example.com"
+        user.resend_id = "old-contact"
+        respx_mock.get(path=f"/contacts/{previous_email}").respond(
+            200,
+            json={"id": "old-contact", "email": previous_email, "unsubscribed": True},
+        )
+        respx_mock.get(path="/contacts/new@example.com").respond(404)
+        respx_mock.post(path="/contacts").respond(
+            500 if failure_stage == "create" else 200, json={"id": "new-contact"}
+        )
+        if failure_stage == "segment":
+            respx_mock.post(path="/contacts/new-contact/segments/active-users").respond(
+                500
+            )
+
+        with pytest.raises(httpx.HTTPStatusError):
+            await resend_service.sync_user(
+                session, user.id, previous_email=previous_email
+            )
+
+        delete.assert_not_awaited()
+        assert user.resend_id == "old-contact"
 
     @pytest.mark.parametrize("linked", [False, True])
     async def test_deleted_user(

@@ -1834,7 +1834,7 @@ class TestImportPaymentMethodMappings:
 
         customer_record = await MerchantMigrationRecordRepository.from_session(
             session
-        ).get_imported_customer_dependency(migration.id, "cus_sub_1")
+        ).get_imported_customer_dependency(migration.organization_id, "cus_sub_1")
         assert customer_record is not None
         assert customer_record.target_id is not None
         customer = await session.get(Customer, customer_record.target_id)

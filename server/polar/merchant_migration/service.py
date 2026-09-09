@@ -714,7 +714,7 @@ class MerchantMigrationService:
         payment_methods: MappedPaymentMethods = {}
         for mapping in mappings:
             customer_record = await record_repository.get_imported_customer_dependency(
-                migration.id, mapping.customer_id
+                migration.organization_id, mapping.customer_id
             )
             if customer_record is None or customer_record.target_id is None:
                 continue
@@ -787,7 +787,7 @@ class MerchantMigrationService:
             if staged is None:
                 continue
             customer_record = await record_repository.get_imported_customer_dependency(
-                migration.id, staged.customer_source_id
+                migration.organization_id, staged.customer_source_id
             )
             if customer_record is None or customer_record.target_id is None:
                 continue

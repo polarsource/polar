@@ -306,10 +306,10 @@ class MerchantMigrationRecordRepository(
         return await self.get_all(statement)
 
     async def get_imported_customer_dependency(
-        self, migration_id: UUID, customer_source_id: str
+        self, organization_id: UUID, customer_source_id: str
     ) -> MerchantMigrationRecord | None:
         statement = self.get_base_statement().where(
-            MerchantMigrationRecord.merchant_migration_id == migration_id,
+            MerchantMigrationRecord.organization_id == organization_id,
             MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
             MerchantMigrationRecord.target_id.is_not(None),
@@ -318,10 +318,10 @@ class MerchantMigrationRecordRepository(
         return await self.get_one_or_none(statement)
 
     async def get_imported_product_dependency(
-        self, migration_id: UUID, price_source_id: str
+        self, organization_id: UUID, price_source_id: str
     ) -> MerchantMigrationRecord | None:
         statement = self.get_base_statement().where(
-            MerchantMigrationRecord.merchant_migration_id == migration_id,
+            MerchantMigrationRecord.organization_id == organization_id,
             MerchantMigrationRecord.type == MerchantMigrationRecordType.product,
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
             MerchantMigrationRecord.target_id.is_not(None),

@@ -104,6 +104,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
     create_payment_method,
+    create_subscription,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
@@ -1799,6 +1800,21 @@ class TestImportPaymentMethodMappings:
                 type=CanonicalPaymentMethodType.card,
             ),
         )
+        mapped_customer_record = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_imported_customer_dependency(migration.id, "cus_sub_1")
+        assert mapped_customer_record is not None
+        assert mapped_customer_record.target_id is not None
+        mapped_customer = await session.get(Customer, mapped_customer_record.target_id)
+        assert mapped_customer is not None
+        mapped_target = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=mapped_customer,
+            status=SubscriptionStatus.paused,
+        )
+        mapped.target_id = mapped_target.id
+        await session.flush()
         uncovered = await _imported_subscription(
             save_fixture,
             migration,
@@ -1878,6 +1894,7 @@ class TestImportPaymentMethodMappings:
         assert isinstance(mapped_subscription, CanonicalSubscription)
         assert mapped_subscription.payment_method is not None
         assert mapped_subscription.payment_method.source_id == "pm_new"
+        assert mapped_target.payment_method_id == payment_method.id
         uncovered_subscription = deserialize(uncovered.type, uncovered.canonical)
         assert isinstance(uncovered_subscription, CanonicalSubscription)
         assert uncovered_subscription.payment_method is not None

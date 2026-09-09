@@ -9,3 +9,4 @@ bin
 
 polar
 *.bun-build
+coverage

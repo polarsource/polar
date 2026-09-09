@@ -5,7 +5,7 @@ import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from '@/commands/listen'
 import { auth } from '@/commands/auth'
 import { update } from '@/commands/update'
-import { describeError } from '@/errors'
+import { describeError } from '@/utils/errors'
 import * as Auth from '@/services/auth'
 import * as Credentials from '@/services/credentials'
 import * as Config from '@/services/config'
@@ -16,7 +16,7 @@ import {
   checkForUpdateInBackground,
   showUpdateNotice,
 } from '@/services/update-check'
-import * as ui from '@/ui'
+import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
 const mainCommand = Command.make('polar').pipe(
@@ -28,8 +28,9 @@ const cli = Command.run(mainCommand, {
 })
 
 const configLayer = Config.layer.pipe(Layer.provide(BunServices.layer))
+const oauthLayer = OAuth.layer.pipe(Layer.provide(FetchHttpClient.layer))
 const authLayer = Auth.layer.pipe(
-  Layer.provide(Layer.mergeAll(Credentials.layer, OAuth.layer, configLayer)),
+  Layer.provide(Layer.mergeAll(Credentials.layer, oauthLayer, configLayer)),
 )
 const polarLayer = Polar.layer.pipe(Layer.provide(authLayer))
 const organizationsLayer = Organizations.layer.pipe(

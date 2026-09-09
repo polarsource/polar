@@ -1,10 +1,12 @@
-import { afterAll, afterEach, expect, vi, test } from 'vitest'
+import { beforeEach, expect, vi, test } from 'vitest'
 import { ChildProcess } from 'node:child_process'
 import * as http from 'node:http'
-import { Effect, Redacted } from 'effect'
+import { Console, Effect, Layer, Redacted } from 'effect'
 import * as browser from 'open'
-import type { Session } from '@/schemas/Auth'
 import { exchange, layer, OAuth, validateCallback } from '@/services/oauth'
+import { captureConsole } from '@/utils/test-utils/cli'
+import { fakeHttp } from '@/utils/test-utils/http'
+import { session } from '@/utils/test-utils/services'
 
 vi.mock('node:http', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:http')>()
@@ -12,9 +14,21 @@ vi.mock('node:http', async (importOriginal) => {
 })
 vi.mock('open', () => ({ default: vi.fn() }))
 
-const fetchMock = vi.spyOn(globalThis, 'fetch')
-afterEach(() => fetchMock.mockReset())
-afterAll(() => fetchMock.mockRestore())
+const tokenUrls = {
+  sandbox: 'https://sandbox-api.polar.sh/v1/oauth2/token',
+  production: 'https://api.polar.sh/v1/oauth2/token',
+}
+
+let api: ReturnType<typeof fakeHttp>
+
+const respond = (handler: () => Response) => {
+  api.routes[`POST ${tokenUrls.sandbox}`] = handler
+  api.routes[`POST ${tokenUrls.production}`] = handler
+}
+
+beforeEach(() => {
+  api = fakeHttp()
+})
 
 test.each([true, false])(
   'closes the callback server after OAuth completion (authorized: %s)',
@@ -53,15 +67,17 @@ test.each([true, false])(
         })
         return new ChildProcess()
       })
-    fetchMock.mockResolvedValue(
-      Response.json({ access_token: 'test-token', expires_in: 60 }),
-    )
+    respond(() => Response.json({ access_token: 'test-token', expires_in: 60 }))
     try {
       const result = await Effect.runPromise(
         Effect.gen(function* () {
           const oauth = yield* OAuth
           return yield* oauth.login('sandbox')
-        }).pipe(Effect.provide(layer), Effect.result),
+        }).pipe(
+          Effect.provide(layer.pipe(Layer.provide(api.layer))),
+          Effect.provideService(Console.Console, captureConsole().console),
+          Effect.result,
+        ),
       )
       expect(result._tag).toBe(authorized ? 'Success' : 'Failure')
       expect(server.listening).toBe(false)
@@ -75,37 +91,30 @@ test.each([true, false])(
   },
 )
 
-const session: Session = {
-  version: 1,
-  accessToken: Redacted.make('old'),
-  refreshToken: Redacted.make('refresh'),
-  expiresAt: 0,
-  scopes: ['organizations:read'],
-}
+const previous = session('old', { expiresAt: 0 })
+
+const run = <A, E>(effect: Effect.Effect<A, E, never>) =>
+  Effect.runPromise(effect)
 
 test('exchange converts seconds to milliseconds and preserves omitted refresh token/scopes', async () => {
-  fetchMock.mockResolvedValue(
-    Response.json({ access_token: 'new', expires_in: 3600 }),
-  )
+  respond(() => Response.json({ access_token: 'new', expires_in: 3600 }))
   const before = Date.now()
-  const updated = await Effect.runPromise(
+  const updated = await run(
     exchange(
       'sandbox',
       new URLSearchParams({ grant_type: 'refresh_token' }),
-      session,
-    ),
+      previous,
+    ).pipe(Effect.provide(api.layer)),
   )
   expect(updated.expiresAt).toBeGreaterThanOrEqual(before + 3600_000)
   expect(updated.expiresAt).toBeLessThanOrEqual(Date.now() + 3600_000)
   expect(Redacted.value(updated.refreshToken!)).toBe('refresh')
-  expect(updated.scopes).toEqual(session.scopes)
-  expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
-    'https://sandbox-api.polar.sh/v1/oauth2/token',
-  )
+  expect(updated.scopes).toEqual(previous.scopes)
+  expect(api.urls()).toEqual([tokenUrls.sandbox])
 })
 
 test('exchange retains rotated credentials and selects production explicitly', async () => {
-  fetchMock.mockResolvedValue(
+  respond(() =>
     Response.json({
       access_token: 'new',
       refresh_token: 'rotated',
@@ -113,22 +122,25 @@ test('exchange retains rotated credentials and selects production explicitly', a
       scope: 'organizations:read webhooks:read',
     }),
   )
-  const updated = await Effect.runPromise(
-    exchange('production', new URLSearchParams(), session),
+  const updated = await run(
+    exchange('production', new URLSearchParams(), previous).pipe(
+      Effect.provide(api.layer),
+    ),
   )
   expect(Redacted.value(updated.refreshToken!)).toBe('rotated')
   expect(updated.scopes).toEqual(['organizations:read', 'webhooks:read'])
-  expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
-    'https://api.polar.sh/v1/oauth2/token',
-  )
+  expect(api.urls()).toEqual([tokenUrls.production])
 })
 
 test.each([400, 401, 500])(
   'OAuth HTTP %s errors never include response secrets',
   async (status) => {
-    fetchMock.mockResolvedValue(new Response('secret-token', { status }))
-    const result = await Effect.runPromise(
-      exchange('sandbox', new URLSearchParams()).pipe(Effect.result),
+    respond(() => new Response('secret-token', { status }))
+    const result = await run(
+      exchange('sandbox', new URLSearchParams()).pipe(
+        Effect.provide(api.layer),
+        Effect.result,
+      ),
     )
     expect(result._tag).toBe('Failure')
     if (result._tag === 'Failure') {
@@ -141,15 +153,22 @@ test.each([400, 401, 500])(
 )
 
 test('network errors and malformed token responses are sanitized', async () => {
-  fetchMock.mockRejectedValue(new Error('secret-in-network-error'))
+  respond(() => {
+    throw new Error('secret-in-network-error')
+  })
   await expect(
-    Effect.runPromise(exchange('sandbox', new URLSearchParams())),
+    run(
+      exchange('sandbox', new URLSearchParams()).pipe(
+        Effect.provide(api.layer),
+      ),
+    ),
   ).rejects.toThrow('network request failed')
-  fetchMock.mockResolvedValue(
-    Response.json({ access_token: 'secret-token', expires_in: -1 }),
-  )
-  const result = await Effect.runPromise(
-    exchange('sandbox', new URLSearchParams()).pipe(Effect.result),
+  respond(() => Response.json({ access_token: 'secret-token', expires_in: -1 }))
+  const result = await run(
+    exchange('sandbox', new URLSearchParams()).pipe(
+      Effect.provide(api.layer),
+      Effect.result,
+    ),
   )
   expect(JSON.stringify(result)).not.toContain('secret-token')
   expect(result._tag).toBe('Failure')
@@ -158,17 +177,15 @@ test('network errors and malformed token responses are sanitized', async () => {
 test('callback verifies state before accepting codes or OAuth denial', async () => {
   const base = 'http://127.0.0.1:3333/oauth/callback'
   expect(
-    await Effect.runPromise(
+    await run(
       validateCallback(new URL(`${base}?state=expected&code=code`), 'expected'),
     ),
   ).toBe('code')
   await expect(
-    Effect.runPromise(
-      validateCallback(new URL(`${base}?state=wrong&code=code`), 'expected'),
-    ),
+    run(validateCallback(new URL(`${base}?state=wrong&code=code`), 'expected')),
   ).rejects.toThrow('state')
   await expect(
-    Effect.runPromise(
+    run(
       validateCallback(
         new URL(`${base}?state=expected&error=access_denied`),
         'expected',
@@ -176,8 +193,6 @@ test('callback verifies state before accepting codes or OAuth denial', async () 
     ),
   ).rejects.toThrow('denied')
   await expect(
-    Effect.runPromise(
-      validateCallback(new URL(`${base}?state=expected`), 'expected'),
-    ),
+    run(validateCallback(new URL(`${base}?state=expected`), 'expected')),
   ).rejects.toThrow('missing')
 })

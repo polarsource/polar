@@ -1,4 +1,4 @@
-import { Console, Effect } from 'effect'
+import { Console, Effect, Stdio } from 'effect'
 import { Command, Flag, Prompt } from 'effect/unstable/cli'
 import {
   AuthError,
@@ -8,7 +8,7 @@ import {
 } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
-import * as ui from '@/ui'
+import * as ui from '@/utils/ui'
 import { environmentOf, production } from '@/commands/flags'
 
 const dashboardUrl = (environment: PolarEnvironment) =>
@@ -28,7 +28,8 @@ const selectOrganization = (environment: PolarEnvironment) =>
       yield* Console.log(ui.blank)
       return
     }
-    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    const stdio = yield* Stdio.Stdio
+    if (!(yield* stdio.stdinIsTerminal) || !(yield* stdio.stdoutIsTerminal)) {
       yield* Console.log(
         ui.warning('Organization selection requires an interactive terminal'),
       )

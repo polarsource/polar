@@ -3,7 +3,7 @@
 
 **Created**: 2026-06-15
 
-**Last Updated**: 2026-08-12
+**Last Updated**: 2026-09-09
 </Info>
 
 # Merchant Migrations to Polar
@@ -175,6 +175,23 @@ Precheck and catalog import run as **Dramatiq background jobs** (batched self-re
 
 The UI should treat this as leave-and-return background work (poll while `pending`/`running`; retry on `failed`). Details are out of scope here.
 
+## Product mapping
+
+Merchants who already sell on Polar (new checkouts) while still billing a legacy cohort on Stripe must map Stripe products onto the **existing** Polar products. Creating a duplicate Polar product would split benefits and plan resolution: subscribers would land on a new product ID that the merchant's app does not recognize.
+
+Grain is one Polar product = one source product + interval (`CanonicalProduct.source_id`, e.g. `prod_…:month:1`). A mapping is valid only when amount, currency, and cadence match; otherwise the first Polar renewal would charge a different price. Quantity, tax, and trial stay on the subscription / pre-check: Polar products don't carry per-subscription quantity, and cutover already preserves period and trial dates.
+
+UI options considered:
+
+1. **Dedicated wizard step** — rejected. Empty for greenfield merchants, and an extra click for everyone else.
+2. **Assessment panel on catalog review** — chosen. Mapping sits above the subscription table, hidden when Polar has no catalog.
+3. **Auto-suggest** — also chosen, as the default. A unique amount+currency+interval match is reused at import without a click; a case-insensitive name match wins when several are compatible. Name collision without a unique compatible match blocks Prepare until the merchant maps or explicitly creates a new product.
+
+- Missing mapping + unique compatible Polar product (amount, currency, interval) → reuse it at import.
+- Missing mapping + name collision without a unique compatible match → the merchant must choose map-or-create before import.
+- Explicit `null` → create a new Polar product even when a match exists.
+- Mappings persist on `MerchantMigration.source_credentials.product_mappings` (no new column: precheck deletes pending records, and a dedicated column would fail isolation CI if shipped with app code).
+
 ## Testing and rollout
 
 We can't test this on sandbox: PAN Copy and PAN Import only run on Stripe live, so we validate against live production. (love the YOLO mode with money)
@@ -202,7 +219,7 @@ Before importing, we should run the following checks.
 - **Pricing**
 	- Blocker: only fixed prices are supported for now (tiered/dynamic pricing isn't - we can still import the rest).
 - **Catalog**
-	- Blocker: duplicate product names (in case of manual creation).
+	- Warning: a Polar product already uses this name. Map the Stripe product onto it, or Polar creates a duplicate. Amount/currency/interval must match to reuse.
 - **Customers**
 	- Warning: duplicate emails (in case of manual creation), we will reuse the existing ones.
 	- Warning: if we reuse a Polar customer by email but PAN copy preserves the source `cus_…`, the copied card lands under a different customer. We should reconcile `stripe_customer_id` on reuse.

@@ -5381,6 +5381,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/product-mappings': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Merchant Migration Product Mappings
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['merchant-migrations:list_product_mappings']
+    /**
+     * Update Merchant Migration Product Mappings
+     * @description **Scopes**: `organizations:write`
+     */
+    put: operations['merchant-migrations:update_product_mappings']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/customer-ids.csv': {
     parameters: {
       query?: never
@@ -24963,6 +24987,13 @@ export interface components {
        * @description Prepare every importable subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
+      /**
+       * Product Mappings
+       * @description Stripe product → existing Polar product mappings to apply before import. Omitted mappings keep whatever was saved earlier; a null `polar_product_id` creates a new Polar product.
+       */
+      product_mappings?:
+        | components['schemas']['MerchantMigrationProductMappingChoice'][]
+        | null
     }
     /** MerchantMigrationImportResult */
     MerchantMigrationImportResult: {
@@ -24978,6 +25009,19 @@ export interface components {
        * @description How many were left on the source (not importable).
        */
       skipped: number
+    }
+    /** MerchantMigrationMappedPrice */
+    MerchantMigrationMappedPrice: {
+      /**
+       * Amount
+       * @description Price in the currency's smallest unit (cents for USD).
+       */
+      amount: number
+      /**
+       * Currency
+       * @description ISO currency code.
+       */
+      currency: string
     }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
@@ -25024,6 +25068,144 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
+    /** MerchantMigrationPolarProductOption */
+    MerchantMigrationPolarProductOption: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The Polar product id.
+       */
+      id: string
+      /**
+       * Name
+       * @description The Polar product name.
+       */
+      name: string
+      /**
+       * Recurring Interval
+       * @description Billing interval (`month`, `year`). None for one-time products.
+       */
+      recurring_interval: string | null
+      /**
+       * Recurring Interval Count
+       * @description How many `recurring_interval` units each period spans.
+       */
+      recurring_interval_count: number | null
+      /**
+       * Prices
+       * @description Active fixed catalog prices.
+       */
+      prices: components['schemas']['MerchantMigrationMappedPrice'][]
+      /**
+       * Compatible
+       * @description Whether amount, currency, and billing interval match the Stripe product.
+       */
+      compatible: boolean
+      /**
+       * Incompatibilities
+       * @description Why this Polar product can't be mapped, when `compatible` is false.
+       */
+      incompatibilities: components['schemas']['ProductMappingIncompatibility'][]
+    }
+    /** MerchantMigrationProductMappingChoice */
+    MerchantMigrationProductMappingChoice: {
+      /**
+       * Source Id
+       * @description The staged catalog product id (`prod_…:month:1`). One Polar product per source interval.
+       */
+      source_id: string
+      /**
+       * Polar Product Id
+       * @description The Polar product to reuse. None creates a new Polar product for this source product.
+       */
+      polar_product_id: string | null
+    }
+    /** MerchantMigrationProductMappingItem */
+    MerchantMigrationProductMappingItem: {
+      /**
+       * Source Id
+       * @description The staged catalog product id (`prod_…:month:1`).
+       */
+      source_id: string
+      /**
+       * Product Source Id
+       * @description The Stripe product id (`prod_…`).
+       */
+      product_source_id: string
+      /**
+       * Name
+       * @description The Stripe product name.
+       */
+      name: string
+      /**
+       * Recurring Interval
+       * @description Billing interval on the source.
+       */
+      recurring_interval: string | null
+      /**
+       * Recurring Interval Count
+       * @description How many `recurring_interval` units each period spans.
+       */
+      recurring_interval_count: number
+      /**
+       * Prices
+       * @description Importable fixed prices on this source product.
+       */
+      prices: components['schemas']['MerchantMigrationMappedPrice'][]
+      /**
+       * Subscriber Count
+       * @description How many staged subscriptions bill this product.
+       */
+      subscriber_count: number
+      /** @description Whether this product has already been imported or skipped. */
+      import_status: components['schemas']['MerchantMigrationRecordStatus']
+      /**
+       * Mapped Product Id
+       * @description The Polar product chosen for this source product. None when creating a new Polar product or when no choice has been saved yet.
+       */
+      mapped_product_id: string | null
+      /**
+       * Create New
+       * @description The merchant chose to create a new Polar product instead of mapping.
+       */
+      create_new: boolean
+      /**
+       * Suggested Product Id
+       * @description The unique Polar product that matches amount, currency, and interval. None when there is no unique match.
+       */
+      suggested_product_id: string | null
+      /**
+       * Name Collision
+       * @description A Polar product already uses this name.
+       */
+      name_collision: boolean
+      /**
+       * Requires Choice
+       * @description The merchant must map or explicitly create a new product before import. True when a Polar product shares the name but isn't a unique compatible match, and no mapping has been saved.
+       */
+      requires_choice: boolean
+      /**
+       * Candidates
+       * @description Active Polar products the merchant can map onto.
+       */
+      candidates: components['schemas']['MerchantMigrationPolarProductOption'][]
+    }
+    /** MerchantMigrationProductMappingList */
+    MerchantMigrationProductMappingList: {
+      /**
+       * Items
+       * @description Importable source products and how they map onto Polar.
+       */
+      items: components['schemas']['MerchantMigrationProductMappingItem'][]
+    }
+    /** MerchantMigrationProductMappingUpdate */
+    MerchantMigrationProductMappingUpdate: {
+      /**
+       * Mappings
+       * @description Replaces the saved mappings for the listed source products. A null `polar_product_id` creates a new Polar product.
+       */
+      mappings: components['schemas']['MerchantMigrationProductMappingChoice'][]
+    }
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
       /**
@@ -32169,6 +32351,38 @@ export interface components {
        * @description Number of meter interval units. Defaults to 1 when `meter_interval` is set. Ignored when `meter_interval` is `None`.
        */
       meter_interval_count?: number | null
+    }
+    /**
+     * ProductMappingIncompatibility
+     * @enum {string}
+     */
+    ProductMappingIncompatibility:
+      | 'not_recurring'
+      | 'interval_mismatch'
+      | 'currency_mismatch'
+      | 'amount_mismatch'
+      | 'missing_fixed_price'
+    /** ProductMappingInvalid */
+    ProductMappingInvalid: {
+      /**
+       * Error
+       * @example ProductMappingInvalid
+       * @constant
+       */
+      error: 'ProductMappingInvalid'
+      /** Detail */
+      detail: string
+    }
+    /** ProductMappingLocked */
+    ProductMappingLocked: {
+      /**
+       * Error
+       * @example ProductMappingLocked
+       * @constant
+       */
+      error: 'ProductMappingLocked'
+      /** Detail */
+      detail: string
     }
     /**
      * ProductMediaFileCreate
@@ -55753,7 +55967,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationImportReport']
         }
       }
-      /** @description The source is not connected or isn't supported. */
+      /** @description The source is not connected, isn't supported, or a product mapping is invalid. */
       400: {
         headers: {
           [name: string]: unknown
@@ -55762,6 +55976,7 @@ export interface operations {
           'application/json':
             | components['schemas']['SourceNotConnected']
             | components['schemas']['UnsupportedMigrationSource']
+            | components['schemas']['ProductMappingInvalid']
         }
       }
       /** @description Not allowed to manage this organization. */
@@ -55782,7 +55997,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description The pre-check hasn't run yet, it reports a blocker, or another job is still running. */
+      /** @description The pre-check hasn't run yet, it reports a blocker, another job is still running, or an imported product mapping can't change. */
       409: {
         headers: {
           [name: string]: unknown
@@ -55792,6 +56007,127 @@ export interface operations {
             | components['schemas']['CatalogImportNotReady']
             | components['schemas']['CatalogImportBlocked']
             | components['schemas']['MigrationOperationInProgress']
+            | components['schemas']['ProductMappingLocked']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:list_product_mappings': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationProductMappingList']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:update_product_mappings': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MerchantMigrationProductMappingUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationProductMappingList']
+        }
+      }
+      /** @description A mapping is invalid. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductMappingInvalid']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description An already-imported product can't be remapped. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductMappingLocked']
         }
       }
       /** @description Validation Error */
@@ -71412,6 +71748,15 @@ export const processorValues: ReadonlyArray<
 export const productBillingTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductBillingType']
 > = ['one_time', 'recurring']
+export const productMappingIncompatibilityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductMappingIncompatibility']
+> = [
+  'not_recurring',
+  'interval_mismatch',
+  'currency_mismatch',
+  'amount_mismatch',
+  'missing_fixed_price',
+]
 export const productMediaFileCreateServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductMediaFileCreate']['service']
 > = ['product_media']

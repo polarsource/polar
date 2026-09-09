@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.config import settings
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.merchant_migration.adapters.base import ExtractionPage
 from polar.merchant_migration.canonical import (
@@ -47,6 +48,7 @@ from polar.models.merchant_migration_record import (
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_product
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
@@ -585,6 +587,110 @@ class TestImport:
         results = {r["entity"]: r for r in response.json()["results"]}
         assert results["customers"]["imported"] == 1
         assert results["products"]["imported"] == 1
+
+
+@pytest.mark.asyncio
+class TestProductMappings:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/product-mappings"
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_lists_and_saves_create_new(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+        start_and_execute_precheck: StartAndExecutePrecheck,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = mocker.MagicMock()
+        adapter.extract_page = mocker.AsyncMock(
+            return_value=ExtractionPage(_catalog(), None)
+        )
+        adapter.get_source_account = mocker.AsyncMock(
+            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+        await start_and_execute_precheck(migration)
+
+        listed = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/product-mappings"
+        )
+        assert listed.status_code == 200
+        item = listed.json()["items"][0]
+        assert item["source_id"] == "prod_1:month:1"
+        assert item["requires_choice"] is True
+
+        updated = await client.put(
+            f"/v1/merchant-migrations/{migration.id}/product-mappings",
+            json={
+                "mappings": [{"source_id": "prod_1:month:1", "polar_product_id": None}]
+            },
+        )
+        assert updated.status_code == 200
+        saved = updated.json()["items"][0]
+        assert saved["create_new"] is True
+        assert saved["requires_choice"] is False
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_rejects_amount_mismatch(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+        start_and_execute_precheck: StartAndExecutePrecheck,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = mocker.MagicMock()
+        adapter.extract_page = mocker.AsyncMock(
+            return_value=ExtractionPage(_catalog(), None)
+        )
+        adapter.get_source_account = mocker.AsyncMock(
+            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+        await start_and_execute_precheck(migration)
+
+        response = await client.put(
+            f"/v1/merchant-migrations/{migration.id}/product-mappings",
+            json={
+                "mappings": [
+                    {
+                        "source_id": "prod_1:month:1",
+                        "polar_product_id": str(existing.id),
+                    }
+                ]
+            },
+        )
+        assert response.status_code == 400
 
 
 def _configure_destination(mocker: MockerFixture) -> None:

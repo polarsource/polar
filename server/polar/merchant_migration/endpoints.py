@@ -19,6 +19,10 @@ from polar.postgres import AsyncReadSession, get_db_read_session, get_db_session
 from polar.routing import APIRouter
 
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
+from .errors import (
+    ProductMappingInvalid,
+    ProductMappingLocked,
+)
 from .pan_transfer import (
     PanStepNotActionable,
     PanStepNotFound,
@@ -35,6 +39,8 @@ from .schemas import (
     MerchantMigrationCutoverRequest,
     MerchantMigrationImportReport,
     MerchantMigrationImportRequest,
+    MerchantMigrationProductMappingList,
+    MerchantMigrationProductMappingUpdate,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     PanTransferChecklist,
@@ -185,8 +191,11 @@ async def precheck(
     summary="Import Merchant Migration Catalog",
     responses={
         400: {
-            "description": "The source is not connected or isn't supported.",
-            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
+            "description": "The source is not connected, isn't supported, or a "
+            "product mapping is invalid.",
+            "model": SourceNotConnected.schema()
+            | UnsupportedMigrationSource.schema()
+            | ProductMappingInvalid.schema(),
         },
         403: {
             "description": "Not allowed to manage this organization.",
@@ -198,10 +207,12 @@ async def precheck(
         },
         409: {
             "description": "The pre-check hasn't run yet, it reports a blocker, "
-            "or another job is still running.",
+            "another job is still running, or an imported product mapping "
+            "can't change.",
             "model": CatalogImportNotReady.schema()
             | CatalogImportBlocked.schema()
-            | MigrationOperationInProgress.schema(),
+            | MigrationOperationInProgress.schema()
+            | ProductMappingLocked.schema(),
         },
     },
 )
@@ -217,6 +228,66 @@ async def import_catalog(
         id,
         record_ids=body.record_ids if body is not None else None,
         exclude_record_ids=body.exclude_record_ids if body is not None else None,
+        product_mappings=body.product_mappings if body is not None else None,
+    )
+
+
+@router.get(
+    "/{id}/product-mappings",
+    response_model=MerchantMigrationProductMappingList,
+    summary="List Merchant Migration Product Mappings",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def list_product_mappings(
+    id: UUID4,
+    auth_subject: MerchantMigrationRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> MerchantMigrationProductMappingList:
+    return await merchant_migration_service.list_product_mappings(
+        session, auth_subject, id
+    )
+
+
+@router.put(
+    "/{id}/product-mappings",
+    response_model=MerchantMigrationProductMappingList,
+    summary="Update Merchant Migration Product Mappings",
+    responses={
+        400: {
+            "description": "A mapping is invalid.",
+            "model": ProductMappingInvalid.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "An already-imported product can't be remapped.",
+            "model": ProductMappingLocked.schema(),
+        },
+    },
+)
+async def update_product_mappings(
+    id: UUID4,
+    body: MerchantMigrationProductMappingUpdate,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationProductMappingList:
+    return await merchant_migration_service.update_product_mappings(
+        session, auth_subject, id, body.mappings
     )
 
 

@@ -97,7 +97,8 @@ _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
 )
 _EXISTING_PRODUCT_NAME_REASON = (
-    "A Polar product already uses this name. Importing adds a second one."
+    "A Polar product already uses this name. Map this Stripe product onto it "
+    "so subscribers keep the same Polar product and benefits."
 )
 _DUPLICATE_CUSTOMER_EMAIL_REASON = (
     "Another source customer uses this email, and a Polar customer can only carry "
@@ -437,16 +438,17 @@ class PrecheckEngine:
         products_by_name: dict[str, set[str]],
         existing_product_names: set[str],
     ) -> Iterable[PrecheckIssue]:
-        # Warn, don't block: the product still imports, as a new Polar product next
-        # to the existing one. Mapping onto it is a later, merchant-driven step.
+        # Warn, don't block: without an explicit mapping Polar still imports a
+        # new product. Compatible name+price matches are reused at import.
         for name in products_by_name:
             if name.lower() in existing_product_names:
                 yield PrecheckIssue(
                     level=PrecheckIssueLevel.warning,
                     code="product_exists_in_polar",
                     message=(
-                        f"A Polar product named '{name}' already exists; importing "
-                        "will create a duplicate."
+                        f"A Polar product named '{name}' already exists; map "
+                        "this Stripe product onto it, or Polar will create a "
+                        "duplicate."
                     ),
                     source_id=None,
                 )

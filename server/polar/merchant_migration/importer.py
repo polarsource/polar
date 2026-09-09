@@ -29,6 +29,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 from polar.models.product_price import ProductPriceAmountType, ProductPriceFixed
+from polar.product.repository import ProductRepository
 from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCreate,
@@ -45,6 +46,7 @@ from .canonical import (
     deserialize,
     subscription_price_key,
 )
+from .errors import ProductMappingInvalid
 from .precheck import (
     ProductImportPlan,
     Reason,
@@ -52,6 +54,7 @@ from .precheck import (
     plan_product_imports,
     plan_subscription_imports,
 )
+from .product_mapping import UNSET, decide_mapping, read_product_mappings
 from .repository import MerchantMigrationRecordRepository
 from .schemas import (
     MerchantMigrationImportReport,
@@ -97,7 +100,9 @@ def find_imported_price(
         (
             price
             for price in product.prices
-            if isinstance(price, ProductPriceFixed) and price.price_currency == currency
+            if isinstance(price, ProductPriceFixed)
+            and price.price_currency.lower() == currency
+            and price.price_amount == canonical_price.amount
         ),
         None,
     )
@@ -164,6 +169,7 @@ class CatalogImporter:
         self.exclude_record_ids = exclude_record_ids
         self.record_repository = MerchantMigrationRecordRepository.from_session(session)
         self.customer_repository = CustomerRepository.from_session(session)
+        self.product_mappings = read_product_mappings(migration)
 
     async def run(self) -> MerchantMigrationImportReport:
         records = await self.record_repository.list_by_migration(self.migration.id)
@@ -295,6 +301,9 @@ class CatalogImporter:
         plans = plan_product_imports(
             products, self.organization.default_presentment_currency
         )
+        polar_products = await ProductRepository.from_session(
+            self.session
+        ).get_all_by_organization(self.organization.id)
 
         counts = ImportCounts()
         for record, product in zip(records, products, strict=True):
@@ -307,6 +316,18 @@ class CatalogImporter:
             if plan.skip is not None:
                 await self._mark_skipped(record, plan.skip)
                 counts.skipped += 1
+                continue
+            decision = decide_mapping(
+                product,
+                polar_products,
+                self.product_mappings.get(product.source_id, UNSET),
+            )
+            if decision.skip is not None:
+                # Leave the ledger pending so a corrected mapping can retry.
+                raise ProductMappingInvalid(decision.skip.message)
+            if decision.product is not None:
+                await self._mark_imported(record, decision.product.id)
+                counts.imported += 1
                 continue
             polar_product = await self._create_product(product, plan)
             await self._mark_imported(record, polar_product.id)

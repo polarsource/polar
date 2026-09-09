@@ -66,6 +66,14 @@ class PrecheckReasonLevel(StrEnum):
     info = "info"
 
 
+class ProductMappingIncompatibility(StrEnum):
+    not_recurring = "not_recurring"
+    interval_mismatch = "interval_mismatch"
+    currency_mismatch = "currency_mismatch"
+    amount_mismatch = "amount_mismatch"
+    missing_fixed_price = "missing_fixed_price"
+
+
 class PrecheckEntitySummary(Schema):
     entity: PrecheckEntity = Field(description="The source entity type.")
     total: int = Field(description="How many were read from the source.")
@@ -238,6 +246,21 @@ class MerchantMigrationRecordSummary(Schema):
     )
 
 
+class MerchantMigrationProductMappingChoice(Schema):
+    source_id: str = Field(
+        description=(
+            "The staged catalog product id (`prod_…:month:1`). One Polar product "
+            "per source interval."
+        ),
+    )
+    polar_product_id: UUID4 | None = Field(
+        description=(
+            "The Polar product to reuse. None creates a new Polar product for "
+            "this source product."
+        ),
+    )
+
+
 class MerchantMigrationImportRequest(Schema):
     record_ids: list[UUID4] | None = Field(
         default=None,
@@ -253,6 +276,14 @@ class MerchantMigrationImportRequest(Schema):
         description=(
             "Prepare every importable subscription except these — the opt-out "
             "selection for large catalogs. Ignored when `record_ids` is set."
+        ),
+    )
+    product_mappings: list[MerchantMigrationProductMappingChoice] | None = Field(
+        default=None,
+        description=(
+            "Stripe product → existing Polar product mappings to apply before "
+            "import. Omitted mappings keep whatever was saved earlier; a null "
+            "`polar_product_id` creates a new Polar product."
         ),
     )
 
@@ -376,5 +407,100 @@ class MerchantMigration(IDSchema, TimestampedSchema):
     operation: MerchantMigrationOperation | None = Field(
         description=(
             "Background work for the current step, if any. None until a run starts."
+        ),
+    )
+
+
+class MerchantMigrationMappedPrice(Schema):
+    amount: int = Field(
+        description="Price in the currency's smallest unit (cents for USD)."
+    )
+    currency: str = Field(description="ISO currency code.")
+
+
+class MerchantMigrationPolarProductOption(Schema):
+    id: UUID4 = Field(description="The Polar product id.")
+    name: str = Field(description="The Polar product name.")
+    recurring_interval: str | None = Field(
+        description="Billing interval (`month`, `year`). None for one-time products."
+    )
+    recurring_interval_count: int | None = Field(
+        description="How many `recurring_interval` units each period spans."
+    )
+    prices: list[MerchantMigrationMappedPrice] = Field(
+        description="Active fixed catalog prices."
+    )
+    compatible: bool = Field(
+        description=(
+            "Whether amount, currency, and billing interval match the Stripe product."
+        )
+    )
+    incompatibilities: list[ProductMappingIncompatibility] = Field(
+        description="Why this Polar product can't be mapped, when `compatible` is false."
+    )
+
+
+class MerchantMigrationProductMappingItem(Schema):
+    source_id: str = Field(
+        description="The staged catalog product id (`prod_…:month:1`)."
+    )
+    product_source_id: str = Field(description="The Stripe product id (`prod_…`).")
+    name: str = Field(description="The Stripe product name.")
+    recurring_interval: str | None = Field(
+        description="Billing interval on the source."
+    )
+    recurring_interval_count: int = Field(
+        description="How many `recurring_interval` units each period spans."
+    )
+    prices: list[MerchantMigrationMappedPrice] = Field(
+        description="Importable fixed prices on this source product."
+    )
+    subscriber_count: int = Field(
+        description="How many staged subscriptions bill this product."
+    )
+    import_status: MerchantMigrationRecordStatus = Field(
+        description="Whether this product has already been imported or skipped."
+    )
+    mapped_product_id: UUID4 | None = Field(
+        description=(
+            "The Polar product chosen for this source product. None when creating "
+            "a new Polar product or when no choice has been saved yet."
+        )
+    )
+    create_new: bool = Field(
+        description=(
+            "The merchant chose to create a new Polar product instead of mapping."
+        )
+    )
+    suggested_product_id: UUID4 | None = Field(
+        description=(
+            "The unique Polar product that matches amount, currency, and interval. "
+            "None when there is no unique match."
+        )
+    )
+    name_collision: bool = Field(description="A Polar product already uses this name.")
+    requires_choice: bool = Field(
+        description=(
+            "The merchant must map or explicitly create a new product before "
+            "import. True when a Polar product shares the name but isn't a unique "
+            "compatible match, and no mapping has been saved."
+        )
+    )
+    candidates: list[MerchantMigrationPolarProductOption] = Field(
+        description="Active Polar products the merchant can map onto."
+    )
+
+
+class MerchantMigrationProductMappingList(Schema):
+    items: list[MerchantMigrationProductMappingItem] = Field(
+        description="Importable source products and how they map onto Polar."
+    )
+
+
+class MerchantMigrationProductMappingUpdate(Schema):
+    mappings: list[MerchantMigrationProductMappingChoice] = Field(
+        description=(
+            "Replaces the saved mappings for the listed source products. A null "
+            "`polar_product_id` creates a new Polar product."
         ),
     )

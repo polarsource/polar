@@ -10,7 +10,6 @@ import {
   Schema,
 } from 'effect'
 import {
-  FetchHttpClient,
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
@@ -22,7 +21,7 @@ import {
   type PolarEnvironment,
   type Session,
 } from '@/schemas/Auth'
-import * as ui from '@/ui'
+import * as ui from '@/utils/ui'
 
 const SANDBOX_CLIENT_ID = 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9'
 const PRODUCTION_CLIENT_ID = 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA'
@@ -170,7 +169,7 @@ export const exchange = (
           ? (previous?.scopes ?? [])
           : data.scope.split(' ').filter(Boolean),
     }
-  }).pipe(Effect.scoped, Effect.provide(FetchHttpClient.layer))
+  }).pipe(Effect.scoped)
 
 export const validateCallback = (url: URL, expectedState: string) => {
   if (url.searchParams.get('state') !== expectedState) {
@@ -310,24 +309,30 @@ const login = (environment: PolarEnvironment) =>
     )
   })
 
-export const layer = Layer.succeed(
+export const layer = Layer.effect(
   OAuth,
-  OAuth.of({
-    login,
-    refresh: (environment, session) =>
-      session.refreshToken
-        ? exchange(
-            environment,
-            new URLSearchParams({
-              grant_type: 'refresh_token',
-              refresh_token: Redacted.value(session.refreshToken),
-            }),
-            session,
-          )
-        : Effect.fail(
-            new AuthError({
-              message: `Session cannot be refreshed. Run ${loginCommand(environment)} --new-session.`,
-            }),
-          ),
+  Effect.gen(function* () {
+    const client = yield* HttpClient.HttpClient
+    return OAuth.of({
+      login: (environment) =>
+        login(environment).pipe(
+          Effect.provideService(HttpClient.HttpClient, client),
+        ),
+      refresh: (environment, session) =>
+        session.refreshToken
+          ? exchange(
+              environment,
+              new URLSearchParams({
+                grant_type: 'refresh_token',
+                refresh_token: Redacted.value(session.refreshToken),
+              }),
+              session,
+            ).pipe(Effect.provideService(HttpClient.HttpClient, client))
+          : Effect.fail(
+              new AuthError({
+                message: `Session cannot be refreshed. Run ${loginCommand(environment)} --new-session.`,
+              }),
+            ),
+    })
   }),
 )

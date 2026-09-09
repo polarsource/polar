@@ -26,7 +26,7 @@ import {
   ListenReconnect,
   ListenWebhookEvent,
 } from '@/schemas/Events'
-import * as ui from '@/ui'
+import * as ui from '@/utils/ui'
 
 export const LISTEN_BASE_URLS = {
   production: 'https://api.polar.sh/v1/cli/listen',

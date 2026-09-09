@@ -1,21 +1,14 @@
 import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
-import { Effect, Fiber, Redacted } from 'effect'
+import { Console, Effect, Fiber, Redacted } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { authenticatedStreamClient, startListening } from '@/commands/listen'
+import { captureConsole } from '@/utils/test-utils/cli'
+import { fakeAuth, overrideCredential } from '@/utils/test-utils/services'
 
 describe('startListening', () => {
-  const auth = Auth.of({
-    override: Effect.succeed(false),
-    resolve: () =>
-      Effect.succeed({
-        accessToken: Redacted.make('test-token'),
-        source: 'override' as const,
-      }),
-    login: () => Effect.die('unused'),
-    logout: () => Effect.die('unused'),
-  })
+  const { auth } = fakeAuth({ credential: overrideCredential('test-token') })
   const fibers: Fiber.Fiber<never, unknown>[] = []
   const connections: {
     controller: ReadableStreamDefaultController<Uint8Array>
@@ -38,7 +31,10 @@ describe('startListening', () => {
     )
   }
   const forward = vi.fn<Fetch>(async () => new Response(null, { status: 200 }))
+  let output: string[]
   const run = (fetch: Fetch = streamFetch, credentials = auth) => {
+    const captured = captureConsole()
+    output = captured.lines
     const fiber = Effect.runFork(
       startListening({
         listenUrl: 'https://example.test/listen',
@@ -53,6 +49,7 @@ describe('startListening', () => {
           fetch as typeof globalThis.fetch,
         ),
         Effect.provideService(Auth, credentials),
+        Effect.provideService(Console.Console, captured.console),
       ),
     )
     fibers.push(fiber)
@@ -83,11 +80,13 @@ describe('startListening', () => {
   })
 
   test('terminates on credential resolution failures without issuing a request', async () => {
-    const fiber = run(streamFetch, {
-      ...auth,
-      resolve: () =>
-        Effect.fail(new AuthError({ message: 'Keyring unavailable' })),
-    })
+    const fiber = run(
+      streamFetch,
+      fakeAuth({
+        credential: overrideCredential('test-token'),
+        failure: new AuthError({ message: 'Keyring unavailable' }),
+      }).auth,
+    )
     expect(
       await Effect.runPromise(Fiber.join(fiber).pipe(Effect.flip)),
     ).toMatchObject({ _tag: 'ListenError', code: 0 })
@@ -128,7 +127,6 @@ describe('startListening', () => {
   })
 
   test('reconnects immediately, resumes event IDs and prints the banner once', async () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
     run()
     await tick()
     const ack = {
@@ -144,9 +142,7 @@ describe('startListening', () => {
     expect(requests[1]!.get('Last-Event-ID')).toBe('evt_1')
     emit(ack, 1)
     await tick()
-    expect(
-      log.mock.calls.filter(([line]) => String(line).includes('Connected')),
-    ).toHaveLength(1)
+    expect(output.filter((line) => line.includes('Connected'))).toHaveLength(1)
   })
 
   test('logs malformed JSON without terminating the stream', async () => {
@@ -209,7 +205,7 @@ describe('authenticatedStreamClient', () => {
   let failure: boolean
   let status: number
   const auth = Auth.of({
-    override: Effect.succeed(false),
+    ...fakeAuth().auth,
     resolve: (environment, rejected) =>
       Effect.gen(function* () {
         resolutions.push(environment)
@@ -220,8 +216,6 @@ describe('authenticatedStreamClient', () => {
         }
         return { accessToken: Redacted.make(token), source }
       }),
-    login: () => Effect.die('listen must not open the browser'),
-    logout: () => Effect.die('unused'),
   })
   const forward: (
     input: Parameters<typeof fetch>[0],

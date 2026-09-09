@@ -12,7 +12,7 @@
     "build": "tsup ./src/cli.ts --format esm --outDir bin",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "test": "bun --bun vitest run",
+    "test": "bun --bun vitest run --coverage",
     "check": "pnpm format:check && pnpm lint",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
@@ -42,6 +42,7 @@
     "@sindresorhus/tsconfig": "^8.0.1",
     "@types/bun": "^1.4.1",
     "@types/node": "^24.2.1",
+    "@vitest/coverage-istanbul": "^5.0.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "vitest": "catalog:"

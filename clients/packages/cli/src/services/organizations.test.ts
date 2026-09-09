@@ -1,19 +1,21 @@
 import { beforeEach, expect, test } from 'vitest'
-import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
-import { Effect, Layer, Redacted } from 'effect'
-import {
-  AuthError,
-  type ActiveOrganization,
-  type PolarEnvironment,
-} from '@/schemas/Auth'
-import { Auth, type Credential } from '@/services/auth'
+import { Effect, Layer } from 'effect'
+import type { ActiveOrganization, PolarEnvironment } from '@/schemas/Auth'
+import { Auth } from '@/services/auth'
 import { Organizations, layer } from '@/services/organizations'
 import { Polar } from '@/services/polar'
 import { CLIConfig } from '@/services/config'
+import {
+  fakeAuth,
+  fakeConfig,
+  fakePolar,
+  overrideCredential,
+} from '@/utils/test-utils/services'
 
 const first = { id: 'org-1', name: 'First', slug: 'first' }
 const second = { id: 'org-2', name: 'Second', slug: 'second' }
-let credential: Credential
+let auth: ReturnType<typeof fakeAuth>
+let config: ReturnType<typeof fakeConfig>
 let pages: ActiveOrganization[][]
 let requests: Array<{
   page?: number
@@ -21,87 +23,53 @@ let requests: Array<{
   environment: PolarEnvironment
 }>
 let denied: boolean
-let selected: boolean
-let activeOrganizations: Partial<Record<PolarEnvironment, string>>
 
-const auth = Auth.of({
-  resolve: () => Effect.sync(() => credential),
-  override: Effect.sync(() => credential.source === 'override'),
-  login: () => Effect.succeed(false),
-  logout: () => Effect.succeed(false),
+const polar = fakePolar({
+  organizations: {
+    list: ({ page }: { page: number }) => {
+      requests.push({ page, environment: polar.state.requests.at(-1)! })
+      if (denied) throw new Error('forbidden')
+      return Promise.resolve({
+        items: pages[page - 1] ?? [],
+        pagination: { max_page: pages.length },
+      })
+    },
+    get: (id: string) => {
+      requests.push({ id, environment: polar.state.requests.at(-1)! })
+      const org = pages.flat().find((org) => org.id === id)
+      if (!org) throw new Error('missing')
+      return Promise.resolve(org)
+    },
+  },
 })
-const polar = Polar.of({
-  getClient: () => Effect.die('unused'),
-  use: (fn, environment = 'sandbox') =>
-    Effect.tryPromise({
-      try: () =>
-        fn({
-          organizations: {
-            list: ({ page }: { page: number }) => {
-              requests.push({ page, environment })
-              if (denied) throw new Error('forbidden')
-              return Promise.resolve({
-                items: pages[page - 1] ?? [],
-                pagination: { max_page: pages.length },
-              })
-            },
-            get: (id: string) => {
-              requests.push({ id, environment })
-              const org = pages.flat().find((org) => org.id === id)
-              if (!org) throw new Error('missing')
-              return Promise.resolve(org)
-            },
-          },
-        } as unknown as PolarSDK),
-      catch: () =>
-        new AuthError({ message: 'Organization missing or access denied.' }),
-    }),
-})
-const service = Effect.service(Organizations).pipe(
-  Effect.provide(
-    layer.pipe(
-      Layer.provide(
-        Layer.mergeAll(
-          Layer.succeed(Auth, auth),
-          Layer.succeed(Polar, polar),
-          Layer.succeed(
-            CLIConfig,
-            CLIConfig.of({
-              getActiveOrganization: (env) =>
-                Effect.sync(() => activeOrganizations[env]),
-              setActiveOrganization: (env, id) =>
-                Effect.sync(() => {
-                  selected = true
-                  if (id === undefined) delete activeOrganizations[env]
-                  else activeOrganizations[env] = id
-                }),
-            }),
+
+const service = () =>
+  Effect.runPromise(
+    Effect.service(Organizations).pipe(
+      Effect.provide(
+        layer.pipe(
+          Layer.provide(
+            Layer.mergeAll(
+              Layer.succeed(Auth, auth.auth),
+              Layer.succeed(Polar, polar.polar),
+              Layer.succeed(CLIConfig, config.config),
+            ),
           ),
         ),
       ),
     ),
-  ),
-)
+  )
 
 beforeEach(() => {
-  credential = {
-    source: 'keyring',
-    accessToken: Redacted.make('access'),
-    session: {
-      version: 1,
-      accessToken: Redacted.make('access'),
-      expiresAt: Date.now() + 3600_000,
-      scopes: [],
-    },
-  }
-  activeOrganizations = { sandbox: first.id, production: first.id }
+  auth = fakeAuth()
+  config = fakeConfig({ sandbox: first.id, production: first.id })
   pages = [[first], [second]]
   requests = []
-  denied = selected = false
+  denied = false
 })
 
 test('selection is stored in config separately for each environment', async () => {
-  const organizations = await Effect.runPromise(service)
+  const organizations = await service()
   await Effect.runPromise(organizations.select('sandbox', second.id))
   expect(await Effect.runPromise(organizations.selected('sandbox'))).toBe(
     second.id,
@@ -109,25 +77,24 @@ test('selection is stored in config separately for each environment', async () =
   expect(await Effect.runPromise(organizations.resolve('sandbox'))).toEqual(
     second,
   )
-  expect(activeOrganizations.production).toBe(first.id)
-  expect(credential.session).not.toHaveProperty('organization')
+  expect(config.state.activeOrganizations.production).toBe(first.id)
 })
 
 test('token overrides ignore saved selection and cannot change it', async () => {
-  credential = { source: 'override', accessToken: Redacted.make('ci') }
-  const organizations = await Effect.runPromise(service)
+  auth.state.credential = overrideCredential()
+  const organizations = await service()
   expect(
     await Effect.runPromise(organizations.selected('sandbox')),
   ).toBeUndefined()
   await expect(
     Effect.runPromise(organizations.select('sandbox', second.id)),
   ).rejects.toThrow('Unset POLAR_ACCESS_TOKEN')
-  expect(activeOrganizations.sandbox).toBe(first.id)
-  expect(selected).toBe(false)
+  expect(config.state.activeOrganizations.sandbox).toBe(first.id)
+  expect(config.state.writes).toBe(0)
 })
 
 test('enumerates every page on the explicitly selected environment', async () => {
-  const organizations = await Effect.runPromise(service)
+  const organizations = await service()
   expect(await Effect.runPromise(organizations.list('production'))).toEqual([
     first,
     second,
@@ -139,19 +106,19 @@ test('enumerates every page on the explicitly selected environment', async () =>
 })
 
 test('explicit organization overrides selection without persisting it', async () => {
-  const organizations = await Effect.runPromise(service)
+  const organizations = await service()
   expect(
     await Effect.runPromise(organizations.resolve('sandbox', second.id)),
   ).toEqual(second)
-  expect(activeOrganizations.sandbox).toBe(first.id)
-  expect(selected).toBe(false)
+  expect(config.state.activeOrganizations.sandbox).toBe(first.id)
+  expect(config.state.writes).toBe(0)
   expect(requests).toEqual([{ id: second.id, environment: 'sandbox' }])
 })
 
 test('explicit IDs work with no saved selection and without enumeration', async () => {
-  delete activeOrganizations.sandbox
+  delete config.state.activeOrganizations.sandbox
   denied = true
-  const organizations = await Effect.runPromise(service)
+  const organizations = await service()
   expect(
     await Effect.runPromise(organizations.resolve('sandbox', first.id)),
   ).toEqual(first)
@@ -162,19 +129,19 @@ test('explicit IDs work with no saved selection and without enumeration', async 
 
 test('stale or unauthorized organization IDs fail rather than choosing another', async () => {
   pages = [[second]]
-  const organizations = await Effect.runPromise(service)
+  const organizations = await service()
   await expect(
     Effect.runPromise(organizations.resolve('production')),
-  ).rejects.toThrow('missing or access denied')
+  ).rejects.toThrow('missing')
   await expect(
     Effect.runPromise(organizations.resolve('production', 'missing')),
-  ).rejects.toThrow('missing or access denied')
-  expect(selected).toBe(false)
+  ).rejects.toThrow('missing')
+  expect(config.state.writes).toBe(0)
 })
 
 test('override uses its own permissions and only selects a sole accessible organization', async () => {
-  credential = { source: 'override', accessToken: Redacted.make('ci') }
-  const organizations = await Effect.runPromise(service)
+  auth.state.credential = overrideCredential()
+  const organizations = await service()
   await expect(
     Effect.runPromise(organizations.resolve('sandbox')),
   ).rejects.toThrow('--org <id>')
@@ -186,16 +153,16 @@ test('override uses its own permissions and only selects a sole accessible organ
   await expect(
     Effect.runPromise(organizations.resolve('sandbox')),
   ).rejects.toThrow('--org <id>')
-  expect(selected).toBe(false)
+  expect(config.state.writes).toBe(0)
 })
 
 test('override enumeration reports permission errors but explicit accessible IDs still work', async () => {
-  credential = { source: 'override', accessToken: Redacted.make('ci') }
+  auth.state.credential = overrideCredential()
   denied = true
-  const organizations = await Effect.runPromise(service)
+  const organizations = await service()
   await expect(
     Effect.runPromise(organizations.list('sandbox')),
-  ).rejects.toThrow('access denied')
+  ).rejects.toThrow('forbidden')
   expect(
     await Effect.runPromise(organizations.resolve('sandbox', second.id)),
   ).toEqual(second)

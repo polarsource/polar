@@ -4,34 +4,33 @@ import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { Auth, type Credential } from '@/services/auth'
 import { make } from '@/services/polar'
+import {
+  fakeAuth,
+  keyringCredential,
+  overrideCredential,
+} from '@/utils/test-utils/services'
+
+type Resolve = (
+  environment: PolarEnvironment,
+  rejected?: Redacted.Redacted<string>,
+) => Effect.Effect<Credential, AuthError>
+
+const polarWith = (resolve: Resolve) =>
+  Effect.runPromise(
+    make.pipe(
+      Effect.provideService(Auth, Auth.of({ ...fakeAuth().auth, resolve })),
+    ),
+  )
 
 afterEach(() => vi.unstubAllGlobals())
 
 test('retries a rejected saved token with refreshed credentials in the same environment', async () => {
-  const accessToken = Redacted.make('saved-token')
+  const saved = keyringCredential('saved-token')
   const resolve = vi
-    .fn<
-      (
-        environment: PolarEnvironment,
-        rejected?: Redacted.Redacted<string>,
-      ) => Effect.Effect<Credential, AuthError>
-    >()
-    .mockReturnValueOnce(Effect.succeed({ source: 'keyring', accessToken }))
-    .mockReturnValueOnce(
-      Effect.succeed({
-        source: 'keyring',
-        accessToken: Redacted.make('refreshed-token'),
-      }),
-    )
-  const auth = Auth.of({
-    resolve,
-    override: Effect.succeed(false),
-    login: () => Effect.die('unused'),
-    logout: () => Effect.die('unused'),
-  })
-  const polar = await Effect.runPromise(
-    make.pipe(Effect.provideService(Auth, auth)),
-  )
+    .fn<Resolve>()
+    .mockReturnValueOnce(Effect.succeed(saved))
+    .mockReturnValueOnce(Effect.succeed(keyringCredential('refreshed-token')))
+  const polar = await polarWith(resolve)
   const organization = { id: 'org-1', name: 'First', slug: 'first' }
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -48,7 +47,7 @@ test('retries a rejected saved token with refreshed credentials in the same envi
   ).toEqual(organization)
   expect(resolve.mock.calls).toEqual([
     ['production'],
-    ['production', accessToken],
+    ['production', saved.accessToken],
   ])
   expect(
     fetch.mock.calls.map(([, init]) =>
@@ -63,39 +62,28 @@ test('retries a rejected saved token with refreshed credentials in the same envi
 
 test.each([
   {
-    source: 'override' as const,
+    credential: overrideCredential(),
     status: 401,
     attempts: 1,
     message: 'Authentication rejected',
   },
   {
-    source: 'keyring' as const,
+    credential: keyringCredential(),
     status: 403,
     attempts: 1,
     message: 'Access denied',
   },
   {
-    source: 'keyring' as const,
+    credential: keyringCredential(),
     status: 401,
     attempts: 2,
     message: 'Authentication rejected',
   },
 ])(
-  'bounds retries for $source credentials on HTTP $status',
-  async ({ source, status, attempts, message }) => {
-    const resolve = vi.fn(
-      (_environment: PolarEnvironment, _rejected?: Redacted.Redacted<string>) =>
-        Effect.succeed({ source, accessToken: Redacted.make('token') }),
-    )
-    const auth = Auth.of({
-      resolve,
-      override: Effect.succeed(source === 'override'),
-      login: () => Effect.die('unused'),
-      logout: () => Effect.die('unused'),
-    })
-    const polar = await Effect.runPromise(
-      make.pipe(Effect.provideService(Auth, auth)),
-    )
+  'bounds retries for $credential.source credentials on HTTP $status',
+  async ({ credential, status, attempts, message }) => {
+    const resolve = vi.fn<Resolve>(() => Effect.succeed(credential))
+    const polar = await polarWith(resolve)
     const request = vi
       .fn<(client: PolarSDK) => Promise<string>>()
       .mockRejectedValue({ statusCode: status })
@@ -108,26 +96,8 @@ test.each([
 
 test('preserves refresh failures without retrying the API request', async () => {
   const error = new AuthError({ message: 'Unable to refresh saved session.' })
-  const resolve = vi.fn(
-    (
-      _environment: PolarEnvironment,
-      rejected?: Redacted.Redacted<string>,
-    ): Effect.Effect<Credential, AuthError> =>
-      rejected
-        ? Effect.fail(error)
-        : Effect.succeed({
-            source: 'keyring',
-            accessToken: Redacted.make('token'),
-          }),
-  )
-  const auth = Auth.of({
-    resolve,
-    override: Effect.succeed(false),
-    login: () => Effect.die('unused'),
-    logout: () => Effect.die('unused'),
-  })
-  const polar = await Effect.runPromise(
-    make.pipe(Effect.provideService(Auth, auth)),
+  const polar = await polarWith((_environment, rejected) =>
+    rejected ? Effect.fail(error) : Effect.succeed(keyringCredential()),
   )
   const request = vi
     .fn<(client: PolarSDK) => Promise<string>>()

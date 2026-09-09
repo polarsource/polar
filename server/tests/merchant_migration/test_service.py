@@ -1828,11 +1828,9 @@ class TestImportPaymentMethodMappings:
                 type=CanonicalPaymentMethodType.card,
             ),
         )
-        conflict_record = (
-            await MerchantMigrationRecordRepository.from_session(
-                session
-            ).get_imported_customer_dependency(migration.id, "cus_sub_conflict")
-        )
+        conflict_record = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_imported_customer_dependency(migration.id, "cus_sub_conflict")
         assert conflict_record is not None
         assert conflict_record.target_id is not None
         conflict_customer = await session.get(Customer, conflict_record.target_id)
@@ -1857,8 +1855,7 @@ class TestImportPaymentMethodMappings:
         )
 
         assert errors == [
-            "Imported customer cus_sub_conflict is linked to a different Stripe "
-            "customer."
+            "Imported customer cus_sub_conflict is linked to a different Stripe customer."
         ]
         customer_record = await MerchantMigrationRecordRepository.from_session(
             session

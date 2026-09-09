@@ -7,6 +7,7 @@ import { schemas } from '@polar-sh/client'
 import { Alert, Button, Grid, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import AddOutlined from '@mui/icons-material/AddOutlined'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { CreateMigrationModal } from './CreateMigrationModal'
@@ -52,12 +53,17 @@ export default function MigrationsPage({ organization }: Props) {
             Migrate your billing from Stripe to Polar. Each migration connects
             one Stripe account and runs in guided steps.
           </Text>
-          <Button onClick={show}>
-            <Box alignItems="center" columnGap="s">
-              <AddOutlined fontSize="inherit" />
-              New migration
-            </Box>
-          </Button>
+          <Box alignItems="center" gap="s">
+            <Button asChild variant="secondary">
+              <Link href={`${basePath}/prototypes`}>Compare concepts</Link>
+            </Button>
+            <Button onClick={show}>
+              <Box alignItems="center" columnGap="s">
+                <AddOutlined fontSize="inherit" />
+                New migration
+              </Box>
+            </Button>
+          </Box>
         </Box>
 
         {isLoading ? (

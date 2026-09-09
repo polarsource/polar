@@ -1,4 +1,4 @@
-import { Polar as PolarSDK } from '@polar-sh/sdk'
+import { createPolar, type Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
 import { Context, Effect, Layer, Redacted } from 'effect'
 import { AuthError, loginCommand, type PolarEnvironment } from '../schemas/Auth'
 import { Auth } from './auth'
@@ -21,8 +21,8 @@ export const make = Effect.gen(function* () {
   const getClient = (environment: PolarEnvironment = 'sandbox') =>
     Effect.gen(function* () {
       const { accessToken } = yield* auth.resolve(environment)
-      return new PolarSDK({
-        server: environment,
+      return createPolar({
+        environment,
         accessToken: Redacted.value(accessToken),
       })
     })
@@ -37,8 +37,8 @@ export const make = Effect.gen(function* () {
         Effect.tryPromise({
           try: () =>
             fn(
-              new PolarSDK({
-                server: environment,
+              createPolar({
+                environment,
                 accessToken: Redacted.value(accessToken),
               }),
             ),

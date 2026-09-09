@@ -1015,8 +1015,8 @@ importers:
         specifier: 2.0.0
         version: 2.0.0
       '@polar-sh/sdk':
-        specifier: ^0.47.0
-        version: 0.47.1
+        specifier: 1.0.0-alpha.20
+        version: 1.0.0-alpha.20
       effect:
         specifier: 4.0.0-rc.112
         version: 4.0.0-rc.112
@@ -5272,9 +5272,6 @@ packages:
 
   '@polar-sh/sdk@0.46.1':
     resolution: {integrity: sha512-bFoEX2wxa5rWe2jTrJrf2Knelf/3zW1O2wGoqYoJfuRVvUgGSml1TB1v6NO+tDkT5d1bMfUFXBKxFYnuegG1iw==}
-
-  '@polar-sh/sdk@0.47.1':
-    resolution: {integrity: sha512-fkz7wPLbqfuDmY9LxuXpE2uP2TAV6J0q/YN5hJ4UBxpjbkB0hKM6c4R35N89t83dfzMlG6EOlqOn+Rd1T6XrJQ==}
 
   '@polar-sh/sdk@1.0.0-alpha.20':
     resolution: {integrity: sha512-/IX6YFtxDArPdKtF6AgiV4J+p3jb5+8/nyuw1Z+ZH07ykMqjCVox/tw9va208e6KMGlLk4BPHuFl+GE1YWlm5Q==}
@@ -20522,11 +20519,6 @@ snapshots:
     dependencies:
       standardwebhooks: 1.0.0
       zod: 4.3.6
-
-  '@polar-sh/sdk@0.47.1':
-    dependencies:
-      standardwebhooks: 1.0.0
-      zod: 4.4.3
 
   '@polar-sh/sdk@1.0.0-alpha.20': {}
 

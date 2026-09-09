@@ -39,6 +39,8 @@ resource "aws_elasticache_replication_group" "this" {
   multi_az_enabled           = var.node_count > 1
   automatic_failover_enabled = var.node_count > 1
   port                       = var.port
+  transit_encryption_enabled = true
+  transit_encryption_mode    = "preferred"
   snapshot_retention_limit   = var.snapshot_retention_days
   subnet_group_name          = aws_elasticache_subnet_group.this.name
   security_group_ids         = [aws_security_group.this.id]

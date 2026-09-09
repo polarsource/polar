@@ -112,9 +112,8 @@ uv run alembic revision --autogenerate -m "description"   # generate a migration
 uv run alembic upgrade head                               # apply migrations
 ```
 
-`uv run task test` adds coverage and runs serially — that is roughly **50 minutes** for the
-~7700 tests. Use `task test_fast` (`-n auto`, no coverage) interactively, or scope to a path:
-`POLAR_ENV=testing uv run python -m pytest tests/<module>`.
+`uv run task test` adds coverage and runs serially. Use `task test_fast` (`-n auto`, no coverage)
+interactively, or scope to a path: `POLAR_ENV=testing uv run python -m pytest tests/<module>`.
 
 Set `POLAR_TEST_DATABASE_TEMPLATE=polar_test` (with `polar_test` created and migrated) and each
 xdist worker clones that database instead of replaying the whole migration history into its own

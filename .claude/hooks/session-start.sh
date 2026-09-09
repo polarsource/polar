@@ -172,7 +172,7 @@ for note in ${NOTES+"${NOTES[@]}"}; do echo "Note: $note"; done
 cat <<'USAGE'
 Commands that work now (from server/): 'uv run task lint', 'uv run task lint_types',
 'POLAR_ENV=testing uv run python -m pytest <path>'. Prefer 'uv run task test_fast'
-over 'uv run task test' -- the latter adds coverage and takes ~50 minutes.
+over 'uv run task test' -- the latter adds coverage and runs serially.
 From clients/: 'pnpm lint', 'pnpm typecheck', and scope tests with
 'pnpm test --filter web'; an unscoped 'pnpm test' oversubscribes 4 CPUs and
 produces spurious 5s timeouts.

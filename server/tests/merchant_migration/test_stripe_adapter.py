@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 from polar.merchant_migration.adapters.stripe import (
     CANCELLATION_COMMENT_PREFIX,
     StripeAdapter,
+    StripeMissingScope,
 )
 from polar.merchant_migration.canonical import (
     CanonicalDiscount,
@@ -619,6 +620,60 @@ class TestExtractCoupons:
         assert record.discount_started_at == datetime(
             2023, 11, 14, 22, 13, 20, tzinfo=UTC
         )
+
+    async def test_exhausted_coupon_keeps_zero_remaining(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.coupons.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[_stripe_coupon(max_redemptions=10, times_redeemed=10)],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "coupons"})
+
+        discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
+        assert discount.max_redemptions == 0
+
+    async def test_promotion_code_caps_remaining_to_the_promo(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        coupon = _stripe_coupon(max_redemptions=100, times_redeemed=0)
+        promotion_code = stripe_lib.PromotionCode.construct_from(
+            {
+                "id": "promo_1",
+                "code": "LAUNCH-10",
+                "max_redemptions": 10,
+                "times_redeemed": 7,
+                "promotion": {"coupon": coupon},
+            },
+            None,
+        )
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[promotion_code], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
+        assert discount.code == "LAUNCH10"
+        assert discount.max_redemptions == 3
+
+    async def test_missing_coupon_scope_is_named(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.coupons.list_async = mocker.AsyncMock(
+            side_effect=stripe_lib.PermissionError("missing coupon scope")
+        )
+
+        with pytest.raises(StripeMissingScope) as exc:
+            await adapter.extract_page({"phase": "coupons"})
+
+        assert exc.value.label == "Coupons"
 
 
 @pytest.mark.asyncio

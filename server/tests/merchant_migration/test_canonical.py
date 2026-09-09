@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from polar.kit.currency import PresentmentCurrency
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalCustomer,
@@ -14,6 +15,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
+    polar_discount_amounts,
     polar_discount_code,
     serialize,
 )
@@ -183,7 +185,6 @@ class TestDeserialize:
 
         assert isinstance(result, CanonicalSubscription)
         assert result.discount_source_ids == ["coupon_1"]
-        assert result.discount_source_id == "coupon_1"
 
     def test_legacy_subscription_blob_without_discount_ids_still_skips(self) -> None:
         data = serialize(
@@ -219,3 +220,13 @@ class TestPolarDiscountCode:
 
     def test_rejects_too_short(self) -> None:
         assert polar_discount_code("AB") is None
+
+
+class TestPolarDiscountAmounts:
+    def test_keeps_supported_amounts(self) -> None:
+        assert polar_discount_amounts({"USD": 100, "xyz": 50}) == {
+            PresentmentCurrency.usd: 100
+        }
+
+    def test_drops_amounts_above_polar_max(self) -> None:
+        assert polar_discount_amounts({"usd": 1_000_000_000_000}) == {}

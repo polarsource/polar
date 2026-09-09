@@ -14,6 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.discount.service import discount as discount_service
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
@@ -1185,7 +1186,9 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
     ]
 
 
-def _percentage_discount(source_id: str = "coupon_1") -> CanonicalDiscount:
+def _percentage_discount(
+    source_id: str = "coupon_1", *, max_redemptions: int | None = None
+) -> CanonicalDiscount:
     return CanonicalDiscount(
         source_id=source_id,
         name="Launch",
@@ -1197,16 +1200,18 @@ def _percentage_discount(source_id: str = "coupon_1") -> CanonicalDiscount:
         code="LAUNCH",
         extra_codes=0,
         ends_at=None,
-        max_redemptions=None,
+        max_redemptions=max_redemptions,
         product_source_ids=[],
     )
 
 
-def _catalog_with_discounted_subscription() -> list[CanonicalRecord]:
+def _catalog_with_discounted_subscription(
+    *, max_redemptions: int | None = None
+) -> list[CanonicalRecord]:
     """Same catalog as `_catalog_with_subscription`, with a coupon on the sub."""
     return [
         *_importable_catalog(),
-        _percentage_discount(),
+        _percentage_discount(max_redemptions=max_redemptions),
         CanonicalSubscription(
             source_id="sub_1",
             customer_source_id="cus_1",
@@ -1471,8 +1476,6 @@ class TestImportCatalog:
             organization,
             records=_catalog_with_discounted_subscription(),
         )
-        from polar.discount.service import discount as discount_service
-
         send_webhook = mocker.spy(discount_service, "_send_webhook")
 
         report = await service.import_catalog(session, auth_subject, migration.id)
@@ -1505,6 +1508,41 @@ class TestImportCatalog:
         )
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].dependencies_imported is True
+
+    @pytest.mark.auth
+    async def test_exhausted_discount_imports_without_checkout_code(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_discounted_subscription(max_redemptions=0),
+        )
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        discounts = (
+            (
+                await session.execute(
+                    select(Discount).where(Discount.organization_id == organization.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert len(discounts) == 1
+        assert discounts[0].code is None
+        assert discounts[0].max_redemptions == 0
+        assert discounts[0].ends_at is not None
 
     @pytest.mark.auth
     async def test_listing_reflects_import_status_after_import(

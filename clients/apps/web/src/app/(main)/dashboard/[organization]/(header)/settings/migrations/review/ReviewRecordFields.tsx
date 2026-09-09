@@ -28,6 +28,16 @@ export function SubscriptionFields({ row }: { row: ReviewRow }) {
     <Section title="Subscription">
       <DetailCell label="Import" value={<ReviewStatusIndicator row={row} />} />
       {row.subtitle ? <DetailCell label="Status" value={row.subtitle} /> : null}
+      {row.discount_name ? (
+        <DetailCell
+          label="Discount"
+          value={
+            row.discount_code
+              ? `${row.discount_name} (${row.discount_code})`
+              : row.discount_name
+          }
+        />
+      ) : null}
       <DetailCell label="Renewal" value={renewalDate(row)} />
       {tax ? <DetailCell label="Automatic tax" value={tax} /> : null}
       {row.import_status === 'failed' ? (

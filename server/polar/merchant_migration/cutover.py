@@ -25,6 +25,7 @@ from polar.models import (
     Product,
     Subscription,
 )
+from polar.models.discount import DiscountDuration
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
@@ -89,6 +90,10 @@ _DISCOUNT_CHANGED = (
 _DISCOUNT_NOT_IMPORTED = (
     "This subscription's coupon was never imported into Polar, so taking it "
     "over would renew at full price. Re-run the import for this customer."
+)
+_DISCOUNT_MISSING_START = (
+    "The source doesn't say when this coupon was applied, so Polar can't "
+    "continue its remaining duration. It stays on the source."
 )
 _NO_CARD = (
     "No copied card has landed on Polar for this customer yet. They need to "
@@ -509,20 +514,25 @@ class SubscriptionCutover:
                 return discount_reason
         return self._renewal_reason(source)
 
+    def _kept_discount_source_id(
+        self, source: CanonicalSubscription, staged: CanonicalSubscription
+    ) -> str | None:
+        source_ids = set(source.discount_source_ids)
+        for source_id in staged.discount_source_ids:
+            if source_id in source_ids:
+                return source_id
+        return None
+
     def _discount_mismatch(
         self, source: CanonicalSubscription, staged: CanonicalSubscription
     ) -> str | None:
-        staged_ids = set(staged.discount_source_ids)
-        source_ids = set(source.discount_source_ids)
-        if not staged_ids and not staged.has_discount:
-            if source.has_discount or source_ids:
-                return _DISCOUNT_CHANGED
-            return None
-        if not staged_ids:
+        staged_has = bool(staged.discount_source_ids) or staged.has_discount
+        source_has = bool(source.discount_source_ids) or source.has_discount
+        if not staged_has:
+            return _DISCOUNT_CHANGED if source_has else None
+        if not staged.discount_source_ids:
             return _DISCOUNT_CHANGED
-        if not source_ids:
-            return _DISCOUNT_CHANGED
-        if source_ids.isdisjoint(staged_ids):
+        if self._kept_discount_source_id(source, staged) is None:
             return _DISCOUNT_CHANGED
         return None
 
@@ -532,23 +542,21 @@ class SubscriptionCutover:
         mismatch = self._discount_mismatch(source, staged)
         if mismatch is not None:
             return None, mismatch
-        kept_ids = [
-            source_id
-            for source_id in source.discount_source_ids
-            if source_id in staged.discount_source_ids
-        ]
-        if not kept_ids:
+        kept = self._kept_discount_source_id(source, staged)
+        if kept is None:
             return None, None
-        for source_id in kept_ids:
-            record = await self.record_repository.get_imported_discount_dependency(
-                self.migration.organization_id, source_id
-            )
-            if record is None or record.target_id is None:
-                continue
-            discount = await self.discount_repository.get_by_id(record.target_id)
-            if discount is not None:
-                return discount, None
-        return None, _DISCOUNT_NOT_IMPORTED
+        record = await self.record_repository.get_imported_discount_dependency(
+            self.migration.organization_id, kept
+        )
+        if record is None or record.target_id is None:
+            return None, _DISCOUNT_NOT_IMPORTED
+        discount = await self.discount_repository.get_by_id(record.target_id)
+        if discount is None:
+            return None, _DISCOUNT_NOT_IMPORTED
+        started_at = source.discount_started_at or staged.discount_started_at
+        if discount.duration != DiscountDuration.forever and started_at is None:
+            return None, _DISCOUNT_MISSING_START
+        return discount, None
 
     def _renewal_reason(self, source: CanonicalSubscription) -> str | None:
         renewal = source.current_period_end

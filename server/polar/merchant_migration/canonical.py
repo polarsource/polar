@@ -7,7 +7,10 @@ from enum import StrEnum
 from typing import Any
 
 from fastapi.encoders import jsonable_encoder
+from pydantic import TypeAdapter, ValidationError
 
+from polar.discount.schemas import Amount, _code_validator
+from polar.kit.currency import PresentmentCurrency
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
 
 
@@ -143,10 +146,6 @@ class CanonicalSubscription:
 
     type = MerchantMigrationRecordType.subscription
 
-    @property
-    def discount_source_id(self) -> str | None:
-        return self.discount_source_ids[0] if self.discount_source_ids else None
-
 
 class CanonicalDiscountType(StrEnum):
     fixed = "fixed"
@@ -176,8 +175,8 @@ class CanonicalDiscount:
     code: str | None
     extra_codes: int
     ends_at: datetime | None
-    # Remaining redemptions (source max minus already redeemed), or None
-    # when the source has no cap.
+    # Remaining redemptions (source max minus already redeemed). None when the
+    # source has no cap; 0 when the cap is already spent.
     max_redemptions: int | None
     # Empty means the coupon applies to every product.
     product_source_ids: list[str]
@@ -224,14 +223,32 @@ def subscription_price_key_values(
     return price_key(source_id, currency)
 
 
+_AMOUNT = TypeAdapter(Amount)
+
+
 def polar_discount_code(raw: str | None) -> str | None:
     """Stripe promotion codes may include dashes; Polar codes are alphanumeric."""
     if raw is None:
         return None
     cleaned = "".join(character for character in raw if character.isalnum())
-    if 3 <= len(cleaned) <= 256:
-        return cleaned
-    return None
+    try:
+        return _code_validator(cleaned)
+    except ValueError:
+        return None
+
+
+def polar_discount_amounts(amounts: dict[str, int]) -> dict[PresentmentCurrency, int]:
+    polar_amounts: dict[PresentmentCurrency, int] = {}
+    for currency, amount in amounts.items():
+        try:
+            key = PresentmentCurrency(currency.lower())
+        except ValueError:
+            continue
+        try:
+            polar_amounts[key] = _AMOUNT.validate_python(amount)
+        except ValidationError:
+            continue
+    return polar_amounts
 
 
 def serialize(record: CanonicalRecord) -> dict[str, Any]:

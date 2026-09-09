@@ -17,6 +17,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
     Discount,
@@ -50,6 +51,7 @@ from .canonical import (
     CanonicalSubscription,
     canonical_price_key,
     deserialize,
+    polar_discount_amounts,
     subscription_price_key,
 )
 from .precheck import (
@@ -120,7 +122,7 @@ async def create_imported_subscription(
     *,
     discount: Discount | None = None,
 ) -> Subscription:
-    applied_at = subscription.discount_started_at or subscription.current_period_start
+    applied_at = subscription.discount_started_at
     return await subscription_service.create_imported(
         session,
         product=product,
@@ -486,6 +488,9 @@ class CatalogImporter:
         self, discount: CanonicalDiscount, product_ids: list[UUID]
     ) -> Discount:
         code = await self._available_discount_code(discount.code)
+        exhausted = discount.max_redemptions == 0
+        if exhausted:
+            code = None
         duration = DiscountDuration(discount.duration.value)
         duration_in_months = (
             discount.duration_in_months
@@ -496,6 +501,11 @@ class CatalogImporter:
             "stripe_coupon_id": discount.source_id
         }
         products = product_ids or None
+        ends_at = discount.ends_at
+        if exhausted:
+            now = utc_now()
+            ends_at = now if ends_at is None or ends_at > now else ends_at
+        max_redemptions = None if exhausted else discount.max_redemptions
         if discount.discount_type == CanonicalDiscountType.percentage:
             assert discount.basis_points is not None
             create: DiscountFixedCreate | DiscountPercentageCreate = (
@@ -505,8 +515,8 @@ class CatalogImporter:
                     duration=duration,
                     duration_in_months=duration_in_months,
                     basis_points=discount.basis_points,
-                    ends_at=discount.ends_at,
-                    max_redemptions=discount.max_redemptions,
+                    ends_at=ends_at,
+                    max_redemptions=max_redemptions,
                     products=products,
                     organization_id=self.organization.id,
                     metadata=metadata,
@@ -518,39 +528,28 @@ class CatalogImporter:
                 code=code,
                 duration=duration,
                 duration_in_months=duration_in_months,
-                amounts=self._polar_discount_amounts(discount.amounts),
-                ends_at=discount.ends_at,
-                max_redemptions=discount.max_redemptions,
+                amounts=polar_discount_amounts(discount.amounts),
+                ends_at=ends_at,
+                max_redemptions=max_redemptions,
                 products=products,
                 organization_id=self.organization.id,
                 metadata=metadata,
             )
-        return await discount_service.create(
+        created = await discount_service.create(
             self.session, create, self.auth_subject, notify=False
         )
+        if exhausted:
+            created.max_redemptions = 0
+        return created
 
     async def _available_discount_code(self, code: str | None) -> str | None:
         if code is None:
             return None
         repository = DiscountRepository.from_session(self.session)
-        existing = await repository.get_by_code_and_organization_for_update(
+        existing = await repository.get_by_code_and_organization(
             code, self.organization.id
         )
         return None if existing is not None else code
-
-    @staticmethod
-    def _polar_discount_amounts(
-        amounts: dict[str, int],
-    ) -> dict[PresentmentCurrency, int]:
-        polar_amounts: dict[PresentmentCurrency, int] = {}
-        for currency, amount in amounts.items():
-            try:
-                key = PresentmentCurrency(currency.lower())
-            except ValueError:
-                continue
-            if amount >= 0:
-                polar_amounts[key] = amount
-        return polar_amounts
 
     async def _create_or_reuse_customer(
         self, customer: CanonicalCustomer

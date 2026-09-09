@@ -691,7 +691,9 @@ class MerchantMigrationRecordRepository(
         if incoming.code is None:
             return current
         if current.code is None:
-            return replace(current, code=incoming.code)
+            return replace(
+                current, code=incoming.code, max_redemptions=incoming.max_redemptions
+            )
         if current.code != incoming.code:
             return replace(current, extra_codes=current.extra_codes + 1)
         return current

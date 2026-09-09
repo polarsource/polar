@@ -175,13 +175,22 @@ class MergeJSONSchema:
         return hash(type(self.mode))
 
 
-_ISO8601_DURATION_JSON_SCHEMA_PATTERN = (
-    r"^P(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+S)?)?$"
+# Each branch starts with the highest designator it carries, so that at least one
+# component is required: `P`, `PT` and `P1MT` are not durations.
+_ISO8601_DURATION_DATE = (
+    r"\d+Y(?:\d+M)?(?:\d+W)?(?:\d+D)?|\d+M(?:\d+W)?(?:\d+D)?|\d+W(?:\d+D)?|\d+D"
 )
-_ISO8601_DURATION_PATTERN = re.compile(
-    r"^P(?!$)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?"
-    r"(?:T(?!$)(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$"
+_ISO8601_DURATION_TIME = r"\d+H(?:\d+M)?(?:\d+S)?|\d+M(?:\d+S)?|\d+S"
+# Published in the OpenAPI schema, so it must stay the single source of truth for
+# what the parser below accepts.
+ISO8601_DURATION_PATTERN = (
+    rf"^P(?:(?:{_ISO8601_DURATION_DATE})(?:T(?:{_ISO8601_DURATION_TIME}))?"
+    rf"|T(?:{_ISO8601_DURATION_TIME}))$"
 )
+_ISO8601_DURATION_RE = re.compile(ISO8601_DURATION_PATTERN)
+_ISO8601_DURATION_COMPONENT_RE = re.compile(r"(\d+)([A-Z])")
+_ISO8601_DURATION_DATE_UNITS = {"Y": "years", "M": "months", "W": "weeks", "D": "days"}
+_ISO8601_DURATION_TIME_UNITS = {"H": "hours", "M": "minutes", "S": "seconds"}
 
 
 def parse_iso8601_duration(value: str) -> relativedelta:
@@ -191,24 +200,20 @@ def parse_iso8601_duration(value: str) -> relativedelta:
     Unlike a `timedelta`, it keeps months and years as such: adding `P1M` to a date
     lands on the same day of the next month, matching how billing periods are computed.
     """
-    match = _ISO8601_DURATION_PATTERN.match(value)
-    if match is None:
+    if _ISO8601_DURATION_RE.fullmatch(value) is None:
         raise ValueError(
             "Input should be a valid ISO 8601 duration, like `P1M` or `P14D`"
         )
 
-    years, months, weeks, days, hours, minutes, seconds = (
-        int(group) if group else 0 for group in match.groups()
-    )
-    duration = relativedelta(
-        years=years,
-        months=months,
-        weeks=weeks,
-        days=days,
-        hours=hours,
-        minutes=minutes,
-        seconds=seconds,
-    )
+    date_part, _, time_part = value.partition("T")
+    components = {
+        _ISO8601_DURATION_DATE_UNITS[designator]: int(amount)
+        for amount, designator in _ISO8601_DURATION_COMPONENT_RE.findall(date_part)
+    } | {
+        _ISO8601_DURATION_TIME_UNITS[designator]: int(amount)
+        for amount, designator in _ISO8601_DURATION_COMPONENT_RE.findall(time_part)
+    }
+    duration = relativedelta(**components)
 
     if not duration:
         raise ValueError("Input should be a duration greater than zero")
@@ -244,12 +249,7 @@ ISO8601Duration = Annotated[
         )
     ),
     PlainSerializer(format_iso8601_duration, return_type=str),
-    MergeJSONSchema(
-        {
-            "pattern": _ISO8601_DURATION_JSON_SCHEMA_PATTERN,
-            "examples": ["P1M", "P14D"],
-        }
-    ),
+    MergeJSONSchema({"pattern": ISO8601_DURATION_PATTERN, "examples": ["P1M", "P14D"]}),
 ]
 
 

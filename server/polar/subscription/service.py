@@ -65,6 +65,7 @@ from polar.invoice.generator import format_date
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
+from polar.kit.schemas import format_iso8601_duration
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
@@ -2561,7 +2562,20 @@ class SubscriptionService:
 
         # A duration extends the current period, so it's relative to its end
         if isinstance(new_period_end, relativedelta):
-            new_period_end = old_period_end + new_period_end
+            duration = format_iso8601_duration(new_period_end)
+            try:
+                new_period_end = old_period_end + new_period_end
+            except (OverflowError, ValueError) as e:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "current_billing_period_end"),
+                            "msg": "The resulting billing period end is out of range.",
+                            "input": duration,
+                        }
+                    ]
+                ) from e
             if new_period_end <= utc_now():
                 raise PolarRequestValidationError(
                     [
@@ -2569,7 +2583,7 @@ class SubscriptionService:
                             "type": "value_error",
                             "loc": ("body", "current_billing_period_end"),
                             "msg": "The resulting billing period end must be in the future.",
-                            "input": new_period_end,
+                            "input": duration,
                         }
                     ]
                 )

@@ -132,7 +132,9 @@ def test_parse_iso8601_duration(value: str, expected: relativedelta) -> None:
     assert parse_iso8601_duration(format_iso8601_duration(duration)) == expected
 
 
-@pytest.mark.parametrize("value", ["", "P", "PT", "1 month", "-P1M", "p1m", "P0D"])
+@pytest.mark.parametrize(
+    "value", ["", "P", "PT", "P1MT", "P1D1Y", "1 month", "-P1M", "p1m", "P0D"]
+)
 def test_parse_iso8601_duration_invalid(value: str) -> None:
     with pytest.raises(ValueError, match="Input should be"):
         parse_iso8601_duration(value)

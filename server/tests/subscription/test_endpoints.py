@@ -1608,6 +1608,26 @@ class TestSubscriptionUpdateBillingPeriod:
 
         assert response.status_code == 422
 
+    @pytest.mark.auth
+    async def test_out_of_range_iso8601_duration(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"current_billing_period_end": "P10000Y"},
+        )
+
+        assert response.status_code == 422
+
 
 EXPORT_DEFAULT_HEADER = (
     "Email,Started At,Product,Amount,Currency,Status,Billing Interval"

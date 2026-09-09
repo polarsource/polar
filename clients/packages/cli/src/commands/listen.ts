@@ -17,6 +17,7 @@ import {
   HttpClientRequest,
   HttpClientResponse,
 } from 'effect/unstable/http'
+import { apiUrl } from '@/services/api'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
 import { org } from '@/commands/flags'
@@ -28,11 +29,6 @@ import {
 } from '@/schemas/Events'
 import * as ui from '@/utils/ui'
 
-export const LISTEN_BASE_URLS = {
-  production: 'https://api.polar.sh/v1/cli/listen',
-  sandbox: 'https://sandbox-api.polar.sh/v1/cli/listen',
-} as const
-
 export class ListenError extends Data.TaggedError('ListenError')<{
   message: string
   code: number
@@ -40,6 +36,15 @@ export class ListenError extends Data.TaggedError('ListenError')<{
 }> {}
 
 const EVENT_TYPE_WIDTH = 28
+
+const forwardedHeaders = (
+  headers: Record<string, string | undefined>,
+): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(headers).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined,
+    ),
+  )
 
 const printError = (line: string) =>
   Effect.sync(() => {
@@ -218,7 +223,7 @@ export const startListening = ({
               yield* Effect.tryPromise((signal) =>
                 forward(forwardUrl, {
                   method: 'POST',
-                  headers: webhook.value.headers,
+                  headers: forwardedHeaders(webhook.value.headers),
                   body: rawPayload,
                   signal,
                 }),
@@ -311,7 +316,7 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
     )
     const { environment } = organization
     return yield* startListening({
-      listenUrl: `${LISTEN_BASE_URLS[environment]}/${organization.id}`,
+      listenUrl: apiUrl(environment, `/cli/listen/${organization.id}`),
       forwardUrl: url,
       organizationName: organization.name,
       environment,

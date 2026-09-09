@@ -23,6 +23,7 @@ export const ListenWebhookEvent = Schema.Struct({
     'webhook-id': Schema.String,
     'webhook-timestamp': Schema.String,
     'webhook-signature': Schema.String,
+    'x-polar-triggered': Schema.optional(Schema.String),
   }),
 })
 

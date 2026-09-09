@@ -874,7 +874,7 @@ def _subscription_items(
         subscriptions, products, customers, default_currency
     )
     customer_by_source = {c.source_id: c for c in customers}
-    product_by_price = _product_by_price_key(products)
+    product_by_price = product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
     price_by_key = _price_display_by_key(products)
     items: list[MerchantMigrationRecordItem] = []
@@ -922,7 +922,7 @@ def _subscription_items(
     return items
 
 
-def _product_by_price_key(
+def product_by_price_key(
     products: Sequence[CanonicalProduct],
 ) -> dict[PriceKey, CanonicalProduct]:
     return {
@@ -1141,7 +1141,7 @@ def plan_subscription_imports(
     importable_prices = {
         price for plan in product_plans.values() for price in plan.importable_prices
     }
-    product_by_price = _product_by_price_key(products)
+    product_by_price = product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
     customer_plans = plan_customer_imports(customers)
     plans: dict[str, Reason | None] = {}

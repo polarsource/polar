@@ -86,8 +86,6 @@ from .product_mapping import (
     has_name_collision,
     incompatibilities,
     is_compatible,
-    polar_interval,
-    polar_interval_count,
     read_product_mappings,
     serialize_product_mappings,
     subscriber_counts,
@@ -282,9 +280,11 @@ def _polar_option(
     return MerchantMigrationPolarProductOption(
         id=product.id,
         name=product.name,
-        recurring_interval=polar_interval(product),
+        recurring_interval=(
+            product.recurring_interval.value if product.recurring_interval else None
+        ),
         recurring_interval_count=(
-            polar_interval_count(product) if product.recurring_interval else None
+            product.recurring_interval_count if product.recurring_interval else None
         ),
         prices=[
             MerchantMigrationMappedPrice(

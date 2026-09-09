@@ -1,9 +1,8 @@
 """Match a staged Stripe product onto an existing Polar product.
 
-Polar recurrence lives on the product, so the grain is one CanonicalProduct
-(source product + interval). Interval and currency must match to map; amount
-need not. Imported subscribers keep the Stripe amount (an archived catalog
-price) when Polar's active catalog has moved on.
+Grain is one CanonicalProduct (source product + interval). Interval and currency
+must match; amount need not. Imported subscribers keep the Stripe amount when
+Polar's catalog has moved on.
 """
 
 from collections import Counter
@@ -13,14 +12,10 @@ from uuid import UUID
 
 from polar.models import MerchantMigration, Product
 from polar.models.product_price import ProductPriceFixed
+from polar.product.guard import is_recurring_product
 
-from .canonical import (
-    CanonicalProduct,
-    CanonicalSubscription,
-    price_key,
-    subscription_price_key,
-)
-from .precheck import Reason
+from .canonical import CanonicalProduct, CanonicalSubscription, subscription_price_key
+from .precheck import Reason, product_by_price_key
 from .schemas import ProductMappingIncompatibility
 
 UNSET = object()
@@ -55,48 +50,33 @@ _BLOCKING = frozenset(
 
 @dataclass(frozen=True)
 class MappingDecision:
-    """What import should do with one staged product."""
-
     product: Product | None = None
     skip: Reason | None = None
     create_new: bool = False
 
 
-def polar_interval(product: Product) -> str | None:
-    if product.recurring_interval is None:
-        return None
-    return product.recurring_interval.value
-
-
-def polar_interval_count(product: Product) -> int:
-    return product.recurring_interval_count or 1
-
-
-def fixed_prices(product: Product) -> dict[str, ProductPriceFixed]:
-    return {
+def incompatibilities(
+    canonical: CanonicalProduct, product: Product
+) -> list[ProductMappingIncompatibility]:
+    if product.is_archived:
+        return [ProductMappingIncompatibility.not_recurring]
+    if not is_recurring_product(product):
+        return [ProductMappingIncompatibility.not_recurring]
+    found: list[ProductMappingIncompatibility] = []
+    if (
+        product.recurring_interval.value != canonical.recurring_interval
+        or (product.recurring_interval_count or 1) != canonical.recurring_interval_count
+    ):
+        found.append(ProductMappingIncompatibility.interval_mismatch)
+    polar_by_currency = {
         price.price_currency.lower(): price
         for price in product.prices
         if isinstance(price, ProductPriceFixed)
     }
-
-
-def incompatibilities(
-    canonical: CanonicalProduct, product: Product
-) -> list[ProductMappingIncompatibility]:
-    if product.is_archived or polar_interval(product) is None:
-        return [ProductMappingIncompatibility.not_recurring]
-    found: list[ProductMappingIncompatibility] = []
-    if (
-        polar_interval(product) != canonical.recurring_interval
-        or polar_interval_count(product) != canonical.recurring_interval_count
-    ):
-        found.append(ProductMappingIncompatibility.interval_mismatch)
-    polar_by_currency = fixed_prices(product)
     for price in canonical.prices:
         if price.amount is None:
             continue
-        currency = price.currency.lower()
-        polar_price = polar_by_currency.get(currency)
+        polar_price = polar_by_currency.get(price.currency.lower())
         if polar_price is None:
             found.append(
                 ProductMappingIncompatibility.currency_mismatch
@@ -113,7 +93,7 @@ def is_compatible(canonical: CanonicalProduct, product: Product) -> bool:
     return not _BLOCKING.intersection(incompatibilities(canonical, product))
 
 
-def catalog_amounts_match(canonical: CanonicalProduct, product: Product) -> bool:
+def _catalog_amounts_match(canonical: CanonicalProduct, product: Product) -> bool:
     codes = incompatibilities(canonical, product)
     return (
         ProductMappingIncompatibility.amount_mismatch not in codes
@@ -121,28 +101,21 @@ def catalog_amounts_match(canonical: CanonicalProduct, product: Product) -> bool
     )
 
 
-def name_collision(canonical: CanonicalProduct, product: Product) -> bool:
-    return product.name.lower() == canonical.name.lower()
-
-
 def suggest_product(
     canonical: CanonicalProduct, products: Sequence[Product]
 ) -> Product | None:
-    """The unique Polar product this Stripe product should map onto.
-
-    Prefer a unique case-insensitive name among interval-compatible products,
-    even when Polar's catalog amount has moved on. Otherwise a unique
-    amount+currency+interval match. Do not auto-map a unique compatible product
-    that differs in both name and amount.
-    """
     compatible = [product for product in products if is_compatible(canonical, product)]
-    named = [product for product in compatible if name_collision(canonical, product)]
+    named = [
+        product
+        for product in compatible
+        if product.name.lower() == canonical.name.lower()
+    ]
     if len(named) == 1:
         return named[0]
     if len(named) > 1:
         return None
     amount_matches = [
-        product for product in compatible if catalog_amounts_match(canonical, product)
+        product for product in compatible if _catalog_amounts_match(canonical, product)
     ]
     if len(amount_matches) == 1:
         return amount_matches[0]
@@ -152,24 +125,22 @@ def suggest_product(
 def has_name_collision(
     canonical: CanonicalProduct, products: Sequence[Product]
 ) -> bool:
-    return any(name_collision(canonical, product) for product in products)
+    return any(
+        product.name.lower() == canonical.name.lower() for product in products
+    )
 
 
 def subscriber_counts(
     products: Sequence[CanonicalProduct],
     subscriptions: Sequence[CanonicalSubscription],
 ) -> dict[str, int]:
-    product_by_price = {
-        price_key(price.source_id, price.currency): product.source_id
-        for product in products
-        for price in product.prices
-    }
+    product_by_price = product_by_price_key(products)
     counts: Counter[str] = Counter()
     for subscription in subscriptions:
         key = subscription_price_key(subscription)
-        source_id = product_by_price.get(key) if key is not None else None
-        if source_id is not None:
-            counts[source_id] += 1
+        product = product_by_price.get(key) if key is not None else None
+        if product is not None:
+            counts[product.source_id] += 1
     return dict(counts)
 
 
@@ -205,7 +176,6 @@ def decide_mapping(
     products: Sequence[Product],
     chosen: UUID | None | object = UNSET,
 ) -> MappingDecision:
-    """Resolve one staged product against stored choice, suggestion, and collisions."""
     if chosen is not UNSET:
         if chosen is None:
             return MappingDecision(create_new=True)

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   CREATE_NEW_VALUE,
-  catalogPriceNote,
   compatibleCandidates,
   formatMappingInterval,
   mappingChoice,
@@ -137,29 +136,6 @@ describe('compatibleCandidates', () => {
         }),
       ),
     ).toEqual([mismatched])
-  })
-})
-
-describe('catalogPriceNote', () => {
-  it('notes the Polar catalog price when it differs from Stripe', () => {
-    expect(
-      catalogPriceNote(
-        item({
-          prices: [{ amount: 500, currency: 'usd' }],
-          suggested_product_id: 'prod_polar',
-          candidates: [
-            candidate({
-              prices: [{ amount: 1000, currency: 'usd' }],
-              incompatibilities: ['amount_mismatch'],
-            }),
-          ],
-        }),
-      ),
-    ).toBe('catalog $10.00/mo')
-  })
-
-  it('is silent when creating a new Polar product', () => {
-    expect(catalogPriceNote(item({ create_new: true }))).toBeNull()
   })
 })
 

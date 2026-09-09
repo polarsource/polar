@@ -154,7 +154,16 @@ export function ReviewTableView({
       )}
       {header}
 
-      <Box flexDirection="column" rowGap="m">
+      <Box flexDirection="column" rowGap="s">
+        <Box flexDirection="column" rowGap="xs">
+          <Text variant="heading-xs" as="h3">
+            Subscriptions
+          </Text>
+          <Text variant="caption" color="muted">
+            Preparing a subscription brings its customer and product to Polar.
+            Polar starts billing only when you switch.
+          </Text>
+        </Box>
         <Box
           alignItems="center"
           justifyContent="between"
@@ -197,11 +206,6 @@ export function ReviewTableView({
             ) : null}
           </Box>
         </Box>
-
-        <Text variant="caption" color="muted">
-          Preparing a subscription brings its customer and product to Polar.
-          Polar starts billing only when you switch.
-        </Text>
 
         {rows.length === 0 ? (
           <Box

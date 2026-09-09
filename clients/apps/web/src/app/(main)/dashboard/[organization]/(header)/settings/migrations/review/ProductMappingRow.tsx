@@ -11,7 +11,6 @@ import {
 import { Box } from '@polar-sh/orbit/Box'
 import {
   CREATE_NEW_VALUE,
-  catalogPriceNote,
   compatibleCandidates,
   mappingSelectValue,
   type ProductMappingItem,
@@ -29,7 +28,6 @@ export function ProductMappingRow({
   const locked = item.import_status !== 'pending'
   const value = mappingSelectValue(item)
   const candidates = compatibleCandidates(item)
-  const catalogNote = catalogPriceNote(item)
 
   return (
     <Box flexDirection="column" rowGap="xs" minWidth={0}>
@@ -52,11 +50,6 @@ export function ProductMappingRow({
           ))}
         </SelectContent>
       </Select>
-      {catalogNote ? (
-        <Text variant="caption" color="muted">
-          {catalogNote}
-        </Text>
-      ) : null}
       {item.requires_choice ? (
         <Text variant="caption" color="warning">
           A Polar product already uses this name, but the billing interval

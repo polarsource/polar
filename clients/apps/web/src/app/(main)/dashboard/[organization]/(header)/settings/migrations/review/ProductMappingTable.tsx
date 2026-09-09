@@ -12,7 +12,7 @@ import {
 } from './productMapping'
 
 const COLUMNS =
-  'minmax(0, 1.4fr) max-content max-content max-content minmax(140px, 1.2fr)'
+  'minmax(0, 7.5rem) max-content max-content max-content minmax(0, 1fr)'
 
 export function ProductMappingTable({
   items,

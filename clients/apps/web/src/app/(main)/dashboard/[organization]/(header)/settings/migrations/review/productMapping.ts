@@ -9,13 +9,6 @@ export const CREATE_NEW_VALUE = 'create_new'
 
 const formatAmount = formatCurrency('accounting', 'en-US')
 
-const INTERVAL_ABBREVIATION: Record<string, string> = {
-  day: '/day',
-  week: '/wk',
-  month: '/mo',
-  year: '/yr',
-}
-
 const INTERVAL_LABEL: Record<string, [string, string]> = {
   day: ['Daily', 'days'],
   week: ['Weekly', 'weeks'],
@@ -92,23 +85,6 @@ export function mappingRequiresChoice(items: ProductMappingItem[]): boolean {
   )
 }
 
-export function selectedMappingCandidate(item: ProductMappingItem) {
-  const value = mappingSelectValue(item)
-  if (!value || value === CREATE_NEW_VALUE) return undefined
-  return item.candidates.find((candidate) => candidate.id === value)
-}
-
-export function catalogPriceNote(item: ProductMappingItem): string | null {
-  const candidate = selectedMappingCandidate(item)
-  if (!candidate?.incompatibilities.includes('amount_mismatch')) {
-    return null
-  }
-  return `catalog ${formatMappingPrices(
-    candidate.prices,
-    candidate.recurring_interval,
-  )}`
-}
-
 export function formatMappingAmount(
   prices: ProductMappingItem['prices'],
 ): string {
@@ -133,16 +109,4 @@ export function formatMappingInterval(
   }
   const [once, plural] = labels
   return count <= 1 ? once : `Every ${count} ${plural}`
-}
-
-export function formatMappingPrices(
-  prices: ProductMappingItem['prices'],
-  interval: string | null,
-): string {
-  const money = formatMappingAmount(prices)
-  if (money === '—') {
-    return money
-  }
-  const suffix = interval ? (INTERVAL_ABBREVIATION[interval] ?? '') : ''
-  return `${money}${suffix}`
 }

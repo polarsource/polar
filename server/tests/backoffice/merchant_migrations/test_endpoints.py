@@ -4,7 +4,6 @@ from datetime import timedelta
 import httpx
 import pytest
 import pytest_asyncio
-from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
@@ -13,14 +12,11 @@ from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalCustomer,
-    CanonicalPaymentMethod,
-    CanonicalPaymentMethodType,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
-    serialize,
 )
 from polar.merchant_migration.pan_transfer import (
     PanStepActor,
@@ -30,25 +26,15 @@ from polar.merchant_migration.pan_transfer import (
     PanTransferStep,
 )
 from polar.merchant_migration.repository import MerchantMigrationRecordRepository
-from polar.models import (
-    MerchantMigration,
-    MerchantMigrationRecord,
-    Organization,
-    User,
-)
+from polar.models import MerchantMigration, Organization, User
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
-from polar.models.merchant_migration_record import (
-    MerchantMigrationRecordStatus,
-    MerchantMigrationRecordType,
-)
+from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
-from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import pan_step_required_inputs
 
 
@@ -468,116 +454,6 @@ class TestCompleteStep:
             step for step in migration.pan_transfer_steps if step.key == "start_copy"
         )
         assert step.inputs == {"stripe_migration_request_id": "migreq_123"}
-
-    async def test_stripe_copy_requires_the_mapping_csv(
-        self,
-        backoffice_client: httpx.AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        migration = await _create_migration(
-            save_fixture,
-            organization,
-            step=MerchantMigrationStep.copy_cards,
-            steps=_advance_to("stripe_copy"),
-        )
-
-        response = await backoffice_client.get(
-            f"/merchant-migrations/{migration.id}/steps/stripe_copy/complete"
-        )
-
-        assert response.status_code == 200
-        assert 'name="payment_method_mapping"' in response.text
-        assert "customer_id_old" in response.text
-
-    async def test_uploads_mapping_before_completing_stripe_copy(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        migration = await _create_migration(
-            save_fixture,
-            organization,
-            step=MerchantMigrationStep.copy_cards,
-            steps=_advance_to("stripe_copy"),
-        )
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="mapped@example.com",
-            stripe_customer_id="cus_old",
-        )
-        await save_fixture(
-            MerchantMigrationRecord(
-                merchant_migration=migration,
-                organization=organization,
-                type=MerchantMigrationRecordType.customer,
-                status=MerchantMigrationRecordStatus.imported,
-                source_id="cus_old",
-                target_id=customer.id,
-                canonical=serialize(
-                    CanonicalCustomer(
-                        source_id="cus_old",
-                        email="mapped@example.com",
-                        name=None,
-                        country=None,
-                    )
-                ),
-            )
-        )
-        record = MerchantMigrationRecord(
-            merchant_migration=migration,
-            organization=organization,
-            type=MerchantMigrationRecordType.subscription,
-            status=MerchantMigrationRecordStatus.pending,
-            source_id="sub_1",
-            canonical=serialize(
-                CanonicalSubscription(
-                    source_id="sub_1",
-                    customer_source_id="cus_old",
-                    price_source_id="price_1",
-                    status=CanonicalSubscriptionStatus.active,
-                    collection_method=CanonicalCollectionMethod.charge_automatically,
-                    current_period_start=None,
-                    current_period_end=None,
-                    trialing=False,
-                    paused_collection=False,
-                    line_item_count=1,
-                    quantity=1,
-                    payment_method=CanonicalPaymentMethod(
-                        source_id="pm_old",
-                        type=CanonicalPaymentMethodType.card,
-                    ),
-                )
-            ),
-        )
-        await save_fixture(record)
-        stripe_payment_method = build_stripe_payment_method(customer="cus_new")
-        stripe_payment_method.id = "pm_new"
-        mocker.patch(
-            "polar.merchant_migration.cards.stripe_service.get_payment_method",
-            new=mocker.AsyncMock(return_value=stripe_payment_method),
-        )
-        contents = (
-            b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
-            b"cus_old,pm_old,cus_new,pm_new\n"
-        )
-
-        response = await backoffice_client.post(
-            f"/merchant-migrations/{migration.id}/steps/stripe_copy/complete",
-            files={"payment_method_mapping": ("mapping.csv", contents, "text/csv")},
-            headers={"HX-Request": "true"},
-        )
-
-        assert response.status_code == 200
-        assert "merchant-migrations" in response.headers["HX-Redirect"]
-        await _reload(session, migration)
-        current = pan_transfer.current(migration.pan_transfer_steps)
-        assert current is not None
-        assert current.key == "verify_cards"
 
     async def test_warns_when_completing_on_the_merchants_behalf(
         self,

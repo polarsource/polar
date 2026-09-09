@@ -693,39 +693,38 @@ class MerchantMigrationService:
         session: AsyncSession,
         migration: MerchantMigration,
         contents: bytes,
-    ) -> None:
+    ) -> list[str]:
         mappings = parse_payment_method_mapping_csv(contents)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         customer_repository = CustomerRepository.from_session(session)
         customers: dict[str, Customer] = {}
+        errors: list[str] = []
         for mapping in mappings:
             customer_record = await record_repository.get_imported_customer_dependency(
                 migration.id, mapping.source_customer_id
             )
             if customer_record is None or customer_record.target_id is None:
-                raise PaymentMethodMappingCSVError(
-                    f"Source customer {mapping.source_customer_id} was not imported "
-                    "by this migration."
-                )
+                continue
             customer = await customer_repository.get_by_id(customer_record.target_id)
             if customer is None:
-                raise PaymentMethodMappingCSVError(
-                    f"Imported customer {mapping.source_customer_id} no longer exists."
-                )
+                continue
             if customer.stripe_customer_id not in (
                 None,
                 mapping.source_customer_id,
                 mapping.destination_customer_id,
             ):
-                raise PaymentMethodMappingCSVError(
+                errors.append(
                     f"Imported customer {mapping.source_customer_id} is linked to a "
                     "different Stripe customer."
                 )
+                continue
             customers[mapping.source_customer_id] = customer
 
         payment_methods: dict[str, PaymentMethod] = {}
         for mapping in mappings:
-            customer = customers[mapping.source_customer_id]
+            customer = customers.get(mapping.source_customer_id)
+            if customer is None:
+                continue
             if customer.stripe_customer_id != mapping.destination_customer_id:
                 await customer_repository.update(
                     customer,
@@ -760,7 +759,7 @@ class MerchantMigrationService:
                 else None
             )
             payment_method = (
-                payment_methods[record_mapping.source_payment_method_id]
+                payment_methods.get(record_mapping.source_payment_method_id)
                 if record_mapping is not None
                 and staged.customer_source_id == record_mapping.source_customer_id
                 else None
@@ -783,6 +782,7 @@ class MerchantMigrationService:
                             )
                         },
                     )
+        return errors
 
     async def run_card_verification(
         self, session: AsyncSession, migration_id: UUID, *, offset: int = 0

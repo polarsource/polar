@@ -461,7 +461,7 @@ async def complete_step(
     step = _get_step(migration, key)
     current = current_pan_step(migration)
     inputs = step_inputs(migration, key)
-    mapping_error: str | None = None
+    mapping_errors: list[str] = []
 
     if request.method == "POST":
         form_data = await request.form()
@@ -478,18 +478,21 @@ async def complete_step(
                         "The payment method mapping CSV is larger than 20 MB."
                     )
                 async with session.begin_nested():
-                    await merchant_migration_service.import_payment_method_mappings(
-                        session, migration, contents
+                    mapping_errors = (
+                        await merchant_migration_service.import_payment_method_mappings(
+                            session, migration, contents
+                        )
                     )
-            await merchant_migration_service.complete_pan_step_as_ops(
-                session,
-                migration,
-                key,
-                inputs={name: str(form_data.get(name, "")) for name, _ in inputs},
-            )
+            if not mapping_errors:
+                await merchant_migration_service.complete_pan_step_as_ops(
+                    session,
+                    migration,
+                    key,
+                    inputs={name: str(form_data.get(name, "")) for name, _ in inputs},
+                )
         except PaymentMethodMappingCSVError as e:
-            mapping_error = str(e)
-        else:
+            mapping_errors = [str(e)]
+        if not mapping_errors:
             await add_toast(
                 request,
                 f"Completed “{PAN_STEP_LABELS.get(key, key)}”",
@@ -534,9 +537,12 @@ async def complete_step(
                     ):
                         pass
             if key == STEP_STRIPE_COPY:
-                if mapping_error is not None:
+                if mapping_errors:
                     with alert("error", soft=True):
-                        text(mapping_error)
+                        with tag.ul(classes="list-disc pl-4"):
+                            for error in mapping_errors:
+                                with tag.li():
+                                    text(error)
                 with tag.fieldset(classes="fieldset"):
                     with tag.label(
                         classes="label", **{"for": "payment_method_mapping"}

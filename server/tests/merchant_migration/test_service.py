@@ -35,7 +35,6 @@ from polar.merchant_migration.canonical import (
 )
 from polar.merchant_migration.cards import (
     AmbiguousCopiedCard,
-    PaymentMethodMappingCSVError,
 )
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.merchant_migration.pan_transfer import (
@@ -1817,6 +1816,29 @@ class TestImportPaymentMethodMappings:
         uncovered_subscription.customer_source_id = "cus_sub_1"
         uncovered.canonical = serialize(uncovered_subscription)
         await save_fixture(uncovered)
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_conflict",
+            email="conflict@example.com",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_conflict",
+                type=CanonicalPaymentMethodType.card,
+            ),
+        )
+        conflict_record = (
+            await MerchantMigrationRecordRepository.from_session(
+                session
+            ).get_imported_customer_dependency(migration.id, "cus_sub_conflict")
+        )
+        assert conflict_record is not None
+        assert conflict_record.target_id is not None
+        conflict_customer = await session.get(Customer, conflict_record.target_id)
+        assert conflict_customer is not None
+        conflict_customer.stripe_customer_id = "cus_different"
+        await session.flush()
         stripe_payment_method = build_stripe_payment_method(customer="cus_new")
         stripe_payment_method.id = "pm_new"
         mocker.patch(
@@ -1824,15 +1846,20 @@ class TestImportPaymentMethodMappings:
             new=mocker.AsyncMock(return_value=stripe_payment_method),
         )
 
-        await service.import_payment_method_mappings(
+        errors = await service.import_payment_method_mappings(
             session,
             migration,
             (
                 b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
                 b"cus_sub_1,pm_old,cus_new,pm_new\n"
+                b"cus_sub_conflict,pm_conflict,cus_new_conflict,pm_new_conflict\n"
             ),
         )
 
+        assert errors == [
+            "Imported customer cus_sub_conflict is linked to a different Stripe "
+            "customer."
+        ]
         customer_record = await MerchantMigrationRecordRepository.from_session(
             session
         ).get_imported_customer_dependency(migration.id, "cus_sub_1")
@@ -1866,7 +1893,7 @@ class TestImportPaymentMethodMappings:
         ).payment_method_coverage(migration.id, exact=True)
         assert coverage == {mapped.id, uncovered.id}
 
-    async def test_rejects_a_mapping_for_another_migration(
+    async def test_skips_a_mapping_for_another_migration(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1874,15 +1901,16 @@ class TestImportPaymentMethodMappings:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
 
-        with pytest.raises(PaymentMethodMappingCSVError):
-            await service.import_payment_method_mappings(
-                session,
-                migration,
-                (
-                    b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
-                    b"cus_unknown,pm_old,cus_new,pm_new\n"
-                ),
-            )
+        errors = await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_unknown,pm_old,cus_new,pm_new\n"
+            ),
+        )
+
+        assert errors == []
 
 
 @pytest.mark.asyncio

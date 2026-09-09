@@ -112,7 +112,7 @@ const EmailOTPForm = ({
       />
       <Form {...form}>
         <form
-          className="flex w-full flex-col"
+          className="flex w-full flex-col gap-2"
           onSubmit={handleSubmit(onSubmit)}
         >
           <FormField
@@ -121,33 +121,30 @@ const EmailOTPForm = ({
             render={({ field }) => {
               return (
                 <FormItem>
-                  <FormControl className="w-full">
-                    <div className="flex w-full flex-col gap-2">
-                      <Input
-                        type="email"
-                        required
-                        placeholder="Email"
-                        autoComplete="off"
-                        data-1p-ignore
-                        {...field}
-                      />
-                      <Button
-                        type="submit"
-                        variant="secondary"
-                        fullWidth
-                        loading={loading}
-                        disabled={loading}
-                      >
-                        {signup ? 'Sign up with email' : 'Sign in with email'}
-                      </Button>
-                    </div>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      required
+                      placeholder="Email"
+                      autoComplete="off"
+                      data-1p-ignore
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )
             }}
           />
-          {/* Stays out of the field stack so the hidden widget adds no gap. */}
+          <Button
+            type="submit"
+            variant="secondary"
+            fullWidth
+            loading={loading}
+            disabled={loading}
+          >
+            {signup ? 'Sign up with email' : 'Sign in with email'}
+          </Button>
           <div ref={turnstileContainerRef} />
         </form>
       </Form>

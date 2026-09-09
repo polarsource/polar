@@ -135,6 +135,7 @@ from .schemas import (
 from .service import (
     CannotCreateOrganizationError,
     DisputeAutoAcceptNotEnabled,
+    PayoutAccountAlreadyLinked,
     SSOEnforcementRequiresConnection,
 )
 from .service import organization as organization_service
@@ -225,6 +226,10 @@ async def get_account(
     response_model=OrganizationSchema,
     responses={
         404: OrganizationNotFound,
+        409: {
+            "description": "Payout account already linked to another organization.",
+            "model": PayoutAccountAlreadyLinked.schema(),
+        },
     },
     tags=[APITag.private],
 )

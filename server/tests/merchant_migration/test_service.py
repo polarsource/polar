@@ -23,6 +23,9 @@ from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
+    CanonicalDiscount,
+    CanonicalDiscountDuration,
+    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -69,6 +72,7 @@ from polar.merchant_migration.service import (
 from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
     Customer,
+    Discount,
     MerchantMigration,
     MerchantMigrationRecord,
     Organization,
@@ -1181,6 +1185,48 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
     ]
 
 
+def _percentage_discount(source_id: str = "coupon_1") -> CanonicalDiscount:
+    return CanonicalDiscount(
+        source_id=source_id,
+        name="Launch",
+        discount_type=CanonicalDiscountType.percentage,
+        duration=CanonicalDiscountDuration.forever,
+        duration_in_months=None,
+        basis_points=2000,
+        amounts={},
+        code="LAUNCH",
+        extra_codes=0,
+        ends_at=None,
+        max_redemptions=None,
+        product_source_ids=[],
+    )
+
+
+def _catalog_with_discounted_subscription() -> list[CanonicalRecord]:
+    """Same catalog as `_catalog_with_subscription`, with a coupon on the sub."""
+    return [
+        *_importable_catalog(),
+        _percentage_discount(),
+        CanonicalSubscription(
+            source_id="sub_1",
+            customer_source_id="cus_1",
+            price_source_id="price_1",
+            status=CanonicalSubscriptionStatus.active,
+            collection_method=CanonicalCollectionMethod.charge_automatically,
+            current_period_start=None,
+            current_period_end=None,
+            trialing=False,
+            paused_collection=False,
+            line_item_count=1,
+            quantity=1,
+            payment_method=None,
+            has_discount=True,
+            discount_source_ids=["coupon_1"],
+            currency="usd",
+        ),
+    ]
+
+
 def _multi_currency_catalog() -> list[CanonicalRecord]:
     return [
         CanonicalProduct(
@@ -1406,6 +1452,55 @@ class TestImportCatalog:
         await service.import_catalog(session, auth_subject, migration.id)
 
         after_created.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_imports_discounts_without_notify(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_discounted_subscription(),
+        )
+        from polar.discount.service import discount as discount_service
+
+        send_webhook = mocker.spy(discount_service, "_send_webhook")
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.discounts].imported == 1
+        send_webhook.assert_not_called()
+
+        discounts = (
+            await session.execute(
+                select(Discount).where(Discount.organization_id == organization.id)
+            )
+        ).scalars().all()
+        assert len(discounts) == 1
+        assert discounts[0].name == "Launch"
+        assert discounts[0].code == "LAUNCH"
+        assert discounts[0].user_metadata["stripe_coupon_id"] == "coupon_1"
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].dependencies_imported is True
 
     @pytest.mark.auth
     async def test_listing_reflects_import_status_after_import(
@@ -2054,6 +2149,7 @@ class TestSummarizeRecords:
         assert set(by_entity) == {
             PrecheckEntity.products,
             PrecheckEntity.customers,
+            PrecheckEntity.discounts,
             PrecheckEntity.subscriptions,
         }
 

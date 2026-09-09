@@ -99,12 +99,19 @@ IMPORTABLE_STEPS = {
 }
 
 # Entities whose records map 1:1 to a ledger row. Prices live inside a product
-# record and are excluded.
+# record and are excluded. Discounts import with the catalog but are not listed
+# in the subscription review table unless asked for by entity.
 _ENTITY_RECORD_TYPE = {
     PrecheckEntity.products: MerchantMigrationRecordType.product,
     PrecheckEntity.customers: MerchantMigrationRecordType.customer,
+    PrecheckEntity.discounts: MerchantMigrationRecordType.discount,
     PrecheckEntity.subscriptions: MerchantMigrationRecordType.subscription,
 }
+_REVIEW_ENTITIES = (
+    PrecheckEntity.products,
+    PrecheckEntity.customers,
+    PrecheckEntity.subscriptions,
+)
 
 SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "table": "merchant_migrations",
@@ -273,6 +280,18 @@ def _staged_subscription(
     except KeyError, TypeError, ValueError:
         return None
     return staged if isinstance(staged, CanonicalSubscription) else None
+
+
+def _subscription_discount_imported(
+    subscription: CanonicalSubscription, imported_discount_source_ids: set[str]
+) -> bool:
+    """Whether the coupon this subscription needs is already a Polar discount."""
+    if not subscription.has_discount and not subscription.discount_source_ids:
+        return True
+    return any(
+        source_id in imported_discount_source_ids
+        for source_id in subscription.discount_source_ids
+    )
 
 
 def _staged_payment_method(
@@ -542,6 +561,7 @@ class MerchantMigrationService:
                 organization,
                 record,
                 merge_product_prices=True,
+                merge_discount_codes=True,
             )
         if page.next_cursor is not None:
             await repository.update(
@@ -1318,7 +1338,7 @@ class MerchantMigrationService:
         separates subscriptions ready to switch from those still needing
         preparation. Reads what ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
-        entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
+        entities = [entity] if entity is not None else list(_REVIEW_ENTITIES)
         items = await self._classify_staged(session, migration, entities)
         await self._attach_cutover_coverage(session, migration, items)
 
@@ -1382,6 +1402,7 @@ class MerchantMigrationService:
         if (
             PrecheckEntity.subscriptions in entities
             or PrecheckEntity.customers in entities
+            or PrecheckEntity.discounts in entities
         ):
             extra_dependencies = (
                 await record_repository.list_imported_catalog_dependencies(
@@ -1410,6 +1431,7 @@ class MerchantMigrationService:
             if entity_type in {
                 PrecheckEntity.customers,
                 PrecheckEntity.subscriptions,
+                PrecheckEntity.discounts,
             }:
                 classified_from = [*extra_canonicals, *records]
             entity_items = classify_records(
@@ -1428,6 +1450,17 @@ class MerchantMigrationService:
                     item
                     for item in entity_items
                     if item.source_id in staged_customer_source_ids
+                ]
+            elif entity_type == PrecheckEntity.discounts:
+                staged_discount_source_ids = {
+                    record.source_id
+                    for record in staged
+                    if record.type == MerchantMigrationRecordType.discount
+                }
+                entity_items = [
+                    item
+                    for item in entity_items
+                    if item.source_id in staged_discount_source_ids
                 ]
             self._attach_record_ids(
                 entity_items, staged, entity_type, extra_dependencies
@@ -1475,12 +1508,20 @@ class MerchantMigrationService:
             return
         imported_customer_source_ids: set[str] = set()
         imported_product_price_source_ids: set[str] = set()
+        imported_discount_source_ids: set[str] = set()
         if entity == PrecheckEntity.subscriptions:
             imported_rows = [*staged, *extra_dependencies]
             imported_customer_source_ids = {
                 record.source_id
                 for record in imported_rows
                 if record.type == MerchantMigrationRecordType.customer
+                and record.status == MerchantMigrationRecordStatus.imported
+                and record.target_id is not None
+            }
+            imported_discount_source_ids = {
+                record.source_id
+                for record in imported_rows
+                if record.type == MerchantMigrationRecordType.discount
                 and record.status == MerchantMigrationRecordStatus.imported
                 and record.target_id is not None
             }
@@ -1513,6 +1554,9 @@ class MerchantMigrationService:
                     and subscription.customer_source_id in imported_customer_source_ids
                     and subscription.price_source_id
                     in imported_product_price_source_ids
+                    and _subscription_discount_imported(
+                        subscription, imported_discount_source_ids
+                    )
                 )
 
     def _staged_renews_at(self, record: MerchantMigrationRecord) -> datetime | None:
@@ -1531,7 +1575,13 @@ class MerchantMigrationService:
         """Stage each record as it streams past, so we persist the catalog in
         the same single pass the precheck reads (extraction stays incremental)."""
         async for record in records:
-            await record_repository.upsert(migration, organization, record)
+            await record_repository.upsert(
+                migration,
+                organization,
+                record,
+                merge_product_prices=True,
+                merge_discount_codes=True,
+            )
             yield record
 
     async def _build_adapter(

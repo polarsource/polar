@@ -31750,7 +31750,12 @@ export interface components {
      * PrecheckEntity
      * @enum {string}
      */
-    PrecheckEntity: 'products' | 'prices' | 'customers' | 'subscriptions'
+    PrecheckEntity:
+      | 'products'
+      | 'prices'
+      | 'customers'
+      | 'discounts'
+      | 'subscriptions'
     /**
      * PrecheckReasonLevel
      * @enum {string}

@@ -32,6 +32,7 @@ from polar.models.merchant_migration_record import (
 )
 
 from .canonical import (
+    CanonicalDiscount,
     CanonicalProduct,
     CanonicalRecord,
     canonical_price_key,
@@ -340,6 +341,18 @@ class MerchantMigrationRecordRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_imported_discount_dependency(
+        self, organization_id: UUID, discount_source_id: str
+    ) -> MerchantMigrationRecord | None:
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.type == MerchantMigrationRecordType.discount,
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.target_id.is_not(None),
+            MerchantMigrationRecord.source_id == discount_source_id,
+        )
+        return await self.get_one_or_none(statement)
+
     async def list_imported_catalog_dependencies(
         self, organization_id: UUID
     ) -> Sequence[MerchantMigrationRecord]:
@@ -349,6 +362,7 @@ class MerchantMigrationRecordRepository(
                 (
                     MerchantMigrationRecordType.customer,
                     MerchantMigrationRecordType.product,
+                    MerchantMigrationRecordType.discount,
                 )
             ),
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
@@ -365,6 +379,31 @@ class MerchantMigrationRecordRepository(
         """
         CustomerRecord = aliased(MerchantMigrationRecord)
         ProductRecord = aliased(MerchantMigrationRecord)
+        DiscountRecord = aliased(MerchantMigrationRecord)
+        no_discount = and_(
+            or_(
+                MerchantMigrationRecord.canonical["discount_source_ids"].is_(None),
+                func.jsonb_array_length(
+                    MerchantMigrationRecord.canonical["discount_source_ids"]
+                )
+                == 0,
+            ),
+            func.coalesce(
+                MerchantMigrationRecord.canonical["has_discount"].astext, "false"
+            )
+            != "true",
+        )
+        discount_imported = exists().where(
+            DiscountRecord.organization_id
+            == MerchantMigrationRecord.organization_id,
+            DiscountRecord.type == MerchantMigrationRecordType.discount,
+            DiscountRecord.status == MerchantMigrationRecordStatus.imported,
+            DiscountRecord.target_id.is_not(None),
+            MerchantMigrationRecord.canonical["discount_source_ids"].op("@>")(
+                func.jsonb_build_array(DiscountRecord.source_id)
+            ),
+            DiscountRecord.deleted_at.is_(None),
+        )
         pending_ready = and_(
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
             exists().where(
@@ -395,6 +434,7 @@ class MerchantMigrationRecordRepository(
                 ),
                 ProductRecord.deleted_at.is_(None),
             ),
+            or_(no_discount, discount_imported),
         )
         return (
             self.get_base_statement()
@@ -582,6 +622,7 @@ class MerchantMigrationRecordRepository(
         record: CanonicalRecord,
         *,
         merge_product_prices: bool = False,
+        merge_discount_codes: bool = False,
     ) -> MerchantMigrationRecord:
         """Idempotently stage a record, keyed per org by (type, source_id). A
         re-run refreshes a still-pending row; imported/skipped/failed rows are
@@ -613,6 +654,15 @@ class MerchantMigrationRecordRepository(
                         )
                         record = replace(record, prices=list(prices.values()))
                         canonical = serialize(record)
+                if (
+                    merge_discount_codes
+                    and existing.merchant_migration_id == merchant_migration.id
+                    and isinstance(record, CanonicalDiscount)
+                ):
+                    current = deserialize(existing.type, existing.canonical)
+                    if isinstance(current, CanonicalDiscount):
+                        record = self._merge_discount_code(current, record)
+                        canonical = serialize(record)
                 return await self.update(
                     existing,
                     update_dict={
@@ -632,3 +682,17 @@ class MerchantMigrationRecordRepository(
             ),
             flush=True,
         )
+
+    @staticmethod
+    def _merge_discount_code(
+        current: CanonicalDiscount, incoming: CanonicalDiscount
+    ) -> CanonicalDiscount:
+        """Keep the coupon terms already staged and attach the first Polar-valid
+        promotion code. Extra codes are counted so the precheck can warn."""
+        if incoming.code is None:
+            return current
+        if current.code is None:
+            return replace(current, code=incoming.code)
+        if current.code != incoming.code:
+            return replace(current, extra_codes=current.extra_codes + 1)
+        return current

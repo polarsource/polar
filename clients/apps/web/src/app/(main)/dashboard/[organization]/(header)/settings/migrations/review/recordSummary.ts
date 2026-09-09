@@ -2,11 +2,16 @@ import { useMerchantMigrationRecordSummary } from '@/hooks/queries/merchantMigra
 import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
 
-export type CountEntity = 'subscriptions' | 'products' | 'customers'
+export type CountEntity = 'subscriptions' | 'products' | 'customers' | 'discounts'
 
 export type EntityCount = schemas['MerchantMigrationRecordSummaryEntity']
 
-const COUNT_ENTITIES: CountEntity[] = ['subscriptions', 'products', 'customers']
+const COUNT_ENTITIES: CountEntity[] = [
+  'subscriptions',
+  'products',
+  'customers',
+  'discounts',
+]
 
 const empty = (entity: CountEntity): EntityCount => ({
   entity,
@@ -40,6 +45,7 @@ export const useRecordSummary = (
         subscriptions: counts.subscriptions.imported,
         products: counts.products.imported,
         customers: counts.customers.imported,
+        discounts: counts.discounts.imported,
       },
       selectableTotal: counts.subscriptions.selectable,
       attentionCount: counts.subscriptions.action_required,

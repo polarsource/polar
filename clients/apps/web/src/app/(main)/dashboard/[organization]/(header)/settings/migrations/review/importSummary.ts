@@ -3,7 +3,12 @@ import { CountEntity } from './recordSummary'
 export type ImportedCounts = Record<CountEntity, number>
 
 export function importedTotal(counts: ImportedCounts): number {
-  return counts.subscriptions + counts.products + counts.customers
+  return (
+    counts.subscriptions +
+    counts.products +
+    counts.customers +
+    counts.discounts
+  )
 }
 
 // True only on a settled read. `isFetching` matters as much as `isLoading`:
@@ -23,11 +28,13 @@ export function nothingImported(outcome: {
   )
 }
 
-// "1 subscription, 3 products and 13 customers", dropping what landed nothing.
+// "1 subscription, 3 products, 2 discounts and 13 customers", dropping what
+// landed nothing.
 export function importedCountsText(counts: ImportedCounts): string {
   const parts = [
     plural(counts.subscriptions, 'subscription'),
     plural(counts.products, 'product'),
+    plural(counts.discounts, 'discount'),
     plural(counts.customers, 'customer'),
   ].filter((part) => part !== null)
   if (parts.length === 0) return ''

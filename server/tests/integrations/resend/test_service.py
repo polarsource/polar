@@ -157,6 +157,77 @@ class TestSyncUser:
         delete.assert_not_awaited()
         assert user.resend_id == "old-contact"
 
+    @pytest.mark.parametrize("prior_unsubscribed", [True, False])
+    async def test_chained_email_change_inherits_prior_unsubscribe_state(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+        prior_unsubscribed: bool,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        user.email = "c@example.com"
+        user.resend_id = "contact-A"
+        respx_mock.get(path="/contacts/b@example.com").respond(404)
+        prior_contact = respx_mock.get(path="/contacts/contact-A").respond(
+            200,
+            json={
+                "id": "contact-A",
+                "email": "a@example.com",
+                "unsubscribed": prior_unsubscribed,
+            },
+        )
+        respx_mock.get(path="/contacts/c@example.com").respond(404)
+        create = respx_mock.post(path="/contacts").respond(
+            200, json={"id": "new-contact"}
+        )
+        respx_mock.post(path="/contacts/new-contact/segments/active-users").respond(200)
+        delete = respx_mock.delete(path="/contacts/contact-A").respond(200)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email="b@example.com"
+        )
+
+        assert prior_contact.called
+        assert json.loads(create.calls.last.request.content) == {
+            "email": "c@example.com",
+            "unsubscribed": prior_unsubscribed,
+        }
+        assert delete.called
+        assert user.resend_id == "new-contact"
+
+    async def test_previous_email_unresolved_but_resend_id_is_current_contact(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        user.email = "c@example.com"
+        user.resend_id = "new-contact"
+        respx_mock.get(path="/contacts/b@example.com").respond(404)
+        respx_mock.get(path="/contacts/new-contact").respond(
+            200,
+            json={
+                "id": "new-contact",
+                "email": "c@example.com",
+                "unsubscribed": True,
+            },
+        )
+        segment = respx_mock.post(
+            path="/contacts/new-contact/segments/active-users"
+        ).respond(200)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email="b@example.com"
+        )
+
+        assert user.resend_id == "new-contact"
+        assert segment.called
+        assert len(respx_mock.calls) == 3
+
     @pytest.mark.parametrize("linked", [False, True])
     async def test_deleted_user(
         self,

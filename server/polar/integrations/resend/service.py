@@ -61,10 +61,15 @@ class ResendService:
             return await repository.update(user, update_dict={"resend_id": None})
 
         previous_contact: dict[str, typing.Any] | None = None
-        previous_identifier = previous_email or user.resend_id
-        if previous_identifier is not None:
+        previous_identifiers: list[str] = []
+        if previous_email is not None:
+            previous_identifiers.append(previous_email)
+        if user.resend_id is not None and user.resend_id != previous_email:
+            previous_identifiers.append(user.resend_id)
+        for identifier in previous_identifiers:
             try:
-                previous_contact = await client.get_contact(previous_identifier)
+                previous_contact = await client.get_contact(identifier)
+                break
             except ContactDoesNotExist, InvalidIdentifier:
                 pass
 

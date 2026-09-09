@@ -28,10 +28,29 @@ export function mappingSelectValue(item: ProductMappingItem): string {
   return ''
 }
 
+export function isSilentAutoMap(item: ProductMappingItem): boolean {
+  if (item.requires_choice || item.create_new) {
+    return false
+  }
+  const candidate = selectedMappingCandidate(item)
+  if (!candidate) {
+    return false
+  }
+  return !candidate.incompatibilities.includes('amount_mismatch')
+}
+
+export function visibleMappingItems(
+  items: ProductMappingItem[],
+): ProductMappingItem[] {
+  return items.filter(
+    (item) => item.candidates.length > 0 && !isSilentAutoMap(item),
+  )
+}
+
 export function shouldShowProductMappingPanel(
   items: ProductMappingItem[],
 ): boolean {
-  return items.some((item) => item.candidates.length > 0)
+  return visibleMappingItems(items).length > 0
 }
 
 export function mappingChoice(
@@ -56,19 +75,15 @@ export function selectedMappingCandidate(item: ProductMappingItem) {
   return item.candidates.find((candidate) => candidate.id === value)
 }
 
-export function grandfatheredPriceWarning(
-  item: ProductMappingItem,
-): string | null {
+export function catalogPriceNote(item: ProductMappingItem): string | null {
   const candidate = selectedMappingCandidate(item)
   if (!candidate?.incompatibilities.includes('amount_mismatch')) {
     return null
   }
-  const stripe = formatMappingPrices(item.prices, item.recurring_interval)
-  const polar = formatMappingPrices(
+  return `catalog ${formatMappingPrices(
     candidate.prices,
     candidate.recurring_interval,
-  )
-  return `Imported subscribers keep ${stripe}. Polar currently sells this product at ${polar}.`
+  )}`
 }
 
 export function formatMappingPrices(

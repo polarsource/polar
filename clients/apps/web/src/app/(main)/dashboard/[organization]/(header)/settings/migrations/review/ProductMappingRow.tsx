@@ -11,9 +11,9 @@ import {
 import { Box } from '@polar-sh/orbit/Box'
 import {
   CREATE_NEW_VALUE,
+  catalogPriceNote,
   compatibleCandidates,
   formatMappingPrices,
-  grandfatheredPriceWarning,
   mappingSelectValue,
   type ProductMappingItem,
 } from './productMapping'
@@ -30,44 +30,32 @@ export function ProductMappingRow({
   const locked = item.import_status !== 'pending'
   const value = mappingSelectValue(item)
   const candidates = compatibleCandidates(item)
-  const grandfatherWarning = grandfatheredPriceWarning(item)
+  const catalogNote = catalogPriceNote(item)
   const subscriberLabel =
-    item.subscriber_count === 1
-      ? '1 subscription'
-      : `${item.subscriber_count} subscriptions`
+    item.subscriber_count === 1 ? '1 sub' : `${item.subscriber_count} subs`
 
   return (
-    <Box
-      flexDirection="column"
-      rowGap="s"
-      padding="l"
-      borderWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-      borderRadius="l"
-    >
+    <Box flexDirection="column" rowGap="xs">
       <Box
         alignItems="center"
         justifyContent="between"
         columnGap="m"
-        rowGap="s"
+        rowGap="xs"
         flexWrap="wrap"
       >
-        <Box flexDirection="column" rowGap="xs" minWidth={0} flex={1}>
-          <Text variant="body">{item.name}</Text>
-          <Text variant="caption" color="muted">
-            {formatMappingPrices(item.prices, item.recurring_interval)} ·{' '}
-            {subscriberLabel}
-          </Text>
-        </Box>
-        <Box minWidth={220} flex={1}>
+        <Text variant="body">
+          {item.name} ·{' '}
+          {formatMappingPrices(item.prices, item.recurring_interval)} ·{' '}
+          {subscriberLabel}
+        </Text>
+        <Box alignItems="center" columnGap="s" minWidth={0}>
           <Select
             value={value || undefined}
             onValueChange={onChange}
             disabled={locked || saving}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose a Polar product" />
+            <SelectTrigger className="w-auto min-w-40">
+              <SelectValue placeholder="Polar product" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={CREATE_NEW_VALUE}>
@@ -76,20 +64,17 @@ export function ProductMappingRow({
               {candidates.map((candidate) => (
                 <SelectItem key={candidate.id} value={candidate.id}>
                   {candidate.name}
-                  {candidate.id === item.suggested_product_id
-                    ? ' (suggested)'
-                    : ''}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {catalogNote ? (
+            <Text variant="caption" color="muted">
+              {catalogNote}
+            </Text>
+          ) : null}
         </Box>
       </Box>
-      {grandfatherWarning ? (
-        <Text variant="caption" color="warning">
-          {grandfatherWarning}
-        </Text>
-      ) : null}
       {item.requires_choice ? (
         <Text variant="caption" color="warning">
           A Polar product already uses this name, but the billing interval

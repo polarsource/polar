@@ -4,15 +4,20 @@ import {
   useProductMappings,
   useUpdateProductMappings,
 } from '@/hooks/queries/merchantMigrations'
-import { Alert, Spinner, Text } from '@polar-sh/orbit'
+import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ProductMappingRow } from './ProductMappingRow'
-import { mappingChoice, shouldShowProductMappingPanel } from './productMapping'
+import {
+  mappingChoice,
+  shouldShowProductMappingPanel,
+  visibleMappingItems,
+} from './productMapping'
 
 export function ProductMappingPanel({ migrationId }: { migrationId: string }) {
   const mappings = useProductMappings(migrationId)
   const updateMappings = useUpdateProductMappings(migrationId)
   const items = mappings.data?.items ?? []
+  const visible = visibleMappingItems(items)
 
   if (mappings.isLoading) {
     return (
@@ -37,17 +42,7 @@ export function ProductMappingPanel({ migrationId }: { migrationId: string }) {
   }
 
   return (
-    <Box flexDirection="column" rowGap="m">
-      <Box flexDirection="column" rowGap="xs">
-        <Text variant="heading-xs">Map existing Polar products</Text>
-        <Text variant="caption" color="muted">
-          If you already sell these plans on Polar, map each Stripe product onto
-          the matching Polar product so subscribers keep the same benefits.
-          Polar suggests a match when the name is unique, or when amount,
-          currency, and billing interval uniquely match. Imported subscribers
-          keep their Stripe price if Polar&apos;s catalog has moved on.
-        </Text>
-      </Box>
+    <Box flexDirection="column" rowGap="s">
       {updateMappings.isError ? (
         <Alert
           variant="danger"
@@ -58,7 +53,7 @@ export function ProductMappingPanel({ migrationId }: { migrationId: string }) {
           }
         />
       ) : null}
-      {items.map((item) => (
+      {visible.map((item) => (
         <ProductMappingRow
           key={item.source_id}
           item={item}

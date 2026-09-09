@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   CREATE_NEW_VALUE,
+  catalogPriceNote,
   compatibleCandidates,
-  grandfatheredPriceWarning,
   mappingChoice,
   mappingRequiresChoice,
   mappingSelectValue,
@@ -97,8 +97,30 @@ describe('shouldShowProductMappingPanel', () => {
     )
   })
 
-  it('shows when Polar already has a catalog', () => {
-    expect(shouldShowProductMappingPanel([item()])).toBe(true)
+  it('hides a unique same-price match', () => {
+    expect(
+      shouldShowProductMappingPanel([
+        item({ suggested_product_id: 'prod_polar' }),
+      ]),
+    ).toBe(false)
+  })
+
+  it('shows when the catalog price differs', () => {
+    expect(
+      shouldShowProductMappingPanel([
+        item({
+          prices: [{ amount: 500, currency: 'usd' }],
+          suggested_product_id: 'prod_polar',
+          candidates: [candidate({ incompatibilities: ['amount_mismatch'] })],
+        }),
+      ]),
+    ).toBe(true)
+  })
+
+  it('shows when the merchant must choose', () => {
+    expect(
+      shouldShowProductMappingPanel([item({ requires_choice: true })]),
+    ).toBe(true)
   })
 })
 
@@ -123,10 +145,10 @@ describe('compatibleCandidates', () => {
   })
 })
 
-describe('grandfatheredPriceWarning', () => {
-  it('warns when the selected Polar catalog price is higher than Stripe', () => {
+describe('catalogPriceNote', () => {
+  it('notes the Polar catalog price when it differs from Stripe', () => {
     expect(
-      grandfatheredPriceWarning(
+      catalogPriceNote(
         item({
           prices: [{ amount: 500, currency: 'usd' }],
           suggested_product_id: 'prod_polar',
@@ -138,12 +160,10 @@ describe('grandfatheredPriceWarning', () => {
           ],
         }),
       ),
-    ).toMatch(
-      /Imported subscribers keep .* Polar currently sells this product at/,
-    )
+    ).toBe('catalog $10.00/mo')
   })
 
   it('is silent when creating a new Polar product', () => {
-    expect(grandfatheredPriceWarning(item({ create_new: true }))).toBeNull()
+    expect(catalogPriceNote(item({ create_new: true }))).toBeNull()
   })
 })

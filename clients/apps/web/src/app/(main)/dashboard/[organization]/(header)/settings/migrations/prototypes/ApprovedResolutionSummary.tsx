@@ -124,7 +124,7 @@ export function ApprovedResolutionSummary({
                 textAlign={{ base: 'left', md: 'right' }}
               >
                 <Text variant="body">{label}</Text>
-                {impact && !compact ? (
+                {impact ? (
                   <Text variant="caption" color="muted" wrap="pretty">
                     {impact}
                   </Text>

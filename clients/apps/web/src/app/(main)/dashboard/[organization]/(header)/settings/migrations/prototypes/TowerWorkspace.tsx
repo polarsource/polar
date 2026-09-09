@@ -39,6 +39,9 @@ function towerResolveLabel(
     if (returnStage === 'receipt') {
       return 'Confirm decisions and return to receipt'
     }
+    if (returnStage === 'cards') {
+      return 'Confirm decisions and return to cards'
+    }
     return 'Resolve all demonstrated decisions'
   }
   if (remaining === total) {

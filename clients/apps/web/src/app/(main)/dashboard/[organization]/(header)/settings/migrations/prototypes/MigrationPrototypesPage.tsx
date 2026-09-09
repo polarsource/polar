@@ -10,7 +10,7 @@ import { ControlTowerVariant } from './ControlTowerVariant'
 import { CurrentEvolutionVariant } from './CurrentEvolutionVariant'
 import { GuidedVariant } from './GuidedVariant'
 import {
-  applyVariantPrototypeAction,
+  applyPrototypeAction,
   createInitialVariantStates,
   PrototypeAction,
   PrototypeState,
@@ -52,7 +52,7 @@ export default function MigrationPrototypesPage({
   const act = (action: PrototypeAction) => {
     setStates((current) => ({
       ...current,
-      [variant]: applyVariantPrototypeAction(variant, current[variant], action),
+      [variant]: applyPrototypeAction(current[variant], action),
     }))
   }
 

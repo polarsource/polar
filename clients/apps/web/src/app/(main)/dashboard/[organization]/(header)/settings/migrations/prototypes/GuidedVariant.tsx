@@ -44,6 +44,9 @@ function resolveContinueLabel(
     if (returnStage === 'receipt') {
       return 'Confirm decisions and return to receipt'
     }
+    if (returnStage === 'cards') {
+      return 'Confirm decisions and return to cards'
+    }
     return 'Confirm decisions and prepare'
   }
   if (remaining === total) {

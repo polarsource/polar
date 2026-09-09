@@ -40,6 +40,9 @@ function assistedApproveLabel(
     if (returnStage === 'receipt') {
       return 'Confirm plan and return to receipt'
     }
+    if (returnStage === 'cards') {
+      return 'Confirm plan and return to cards'
+    }
     return 'Approve plan and let Polar prepare'
   }
   return `Choose ${remaining} more proposal${remaining === 1 ? '' : 's'} before approval`

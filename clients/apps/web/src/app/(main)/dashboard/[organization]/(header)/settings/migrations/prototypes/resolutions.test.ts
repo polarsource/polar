@@ -13,7 +13,6 @@ import {
   getResolutionCompletionCount,
   isResolutionComplete,
   ProductResolution,
-  recommendedResolutionChoices,
   RESOLUTION_DOMAINS,
   SUGGESTED_BILLING_COUNTRY,
 } from './resolutions'
@@ -38,15 +37,6 @@ describe('resolution selectors', () => {
         identity: 'link_existing_customer',
       }),
     ).toBe(true)
-  })
-
-  it('exposes canonical recommended Polar proposals', () => {
-    expect(recommendedResolutionChoices()).toEqual({
-      product: 'map_existing_pro',
-      country: confirmSuggestedBillingCountry(),
-      identity: 'link_existing_customer',
-    })
-    expect(isResolutionComplete(recommendedResolutionChoices())).toBe(true)
   })
 
   it('returns null labels until a domain is chosen', () => {

@@ -159,7 +159,6 @@ export function TowerDecisionQueue({
   return (
     <Box
       as="ul"
-      role="group"
       aria-label="Decision queue"
       flexDirection="column"
       rowGap="s"

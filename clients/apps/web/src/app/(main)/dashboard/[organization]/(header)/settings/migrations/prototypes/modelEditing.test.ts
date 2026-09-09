@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyPrototypeAction,
-  applyVariantPrototypeAction,
   confirmSuggestedBillingCountry,
   createPrototypeState,
   emptyResolutionChoices,
   initialPrototypeState,
   isResolutionComplete,
   PrototypeState,
-  recommendedResolutionChoices,
 } from './model'
 import { buildTransferReceipt } from './selectors'
 
@@ -41,53 +39,7 @@ const advanceTo = (
   return target === 'transfer' ? state : applyPrototypeAction(state, 'transfer')
 }
 
-describe('migration prototype recommendations and editing', () => {
-  it('seeds recommended Polar proposals when Assisted assesses', () => {
-    const assessed = applyVariantPrototypeAction(
-      'assisted',
-      toAssessment(),
-      'assess',
-    )
-    expect(assessed.stage).toBe('decisions')
-    expect(assessed.resolutions).toEqual(recommendedResolutionChoices())
-  })
-
-  it('does not seed recommendations for other variants', () => {
-    for (const variant of ['guided', 'tower', 'current'] as const) {
-      const assessed = applyVariantPrototypeAction(
-        variant,
-        toAssessment(),
-        'assess',
-      )
-      expect(assessed.resolutions).toEqual(emptyResolutionChoices())
-    }
-  })
-
-  it('allows changing seeded Assisted recommendations', () => {
-    let state = applyVariantPrototypeAction(
-      'assisted',
-      toAssessment(),
-      'assess',
-    )
-    state = applyPrototypeAction(state, {
-      type: 'choose_product',
-      choice: 'leave_on_stripe',
-    })
-    state = applyPrototypeAction(state, {
-      type: 'choose_country',
-      choice: { disposition: 'leave_on_stripe' },
-    })
-    state = applyPrototypeAction(state, {
-      type: 'choose_identity',
-      choice: 'create_separate_customer',
-    })
-    expect(state.resolutions).toEqual({
-      product: 'leave_on_stripe',
-      country: { disposition: 'leave_on_stripe' },
-      identity: 'create_separate_customer',
-    })
-  })
-
+describe('migration prototype resolution editing', () => {
   it('returns to the stage that opened resolution editing', () => {
     for (const target of ['cards', 'transfer', 'receipt'] as const) {
       const started = advanceTo(target)

@@ -2,7 +2,7 @@
 
 import { Alert, Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ReactNode } from 'react'
+import { KeyboardEvent, ReactNode } from 'react'
 import { PrototypeVariant } from './model'
 
 export type ResolutionPresentation = PrototypeVariant
@@ -13,6 +13,44 @@ export interface ResolutionChoiceOption {
   selected: boolean
   recommended?: boolean
   onSelect: () => void
+}
+
+function nextRadioIndex(
+  key: string,
+  current: number,
+  length: number,
+): number | null {
+  if (key === 'ArrowRight' || key === 'ArrowDown') {
+    return (current + 1) % length
+  }
+  if (key === 'ArrowLeft' || key === 'ArrowUp') {
+    return (current - 1 + length) % length
+  }
+  if (key === 'Home') {
+    return 0
+  }
+  if (key === 'End') {
+    return length - 1
+  }
+  return null
+}
+
+function handleRadioKeyDown(
+  event: KeyboardEvent<HTMLButtonElement>,
+  index: number,
+  options: ResolutionChoiceOption[],
+) {
+  const next = nextRadioIndex(event.key, index, options.length)
+  if (next === null) {
+    return
+  }
+  event.preventDefault()
+  options[next].onSelect()
+  const radios =
+    event.currentTarget.parentElement?.querySelectorAll<HTMLElement>(
+      '[role="radio"]',
+    )
+  radios?.[next]?.focus()
 }
 
 export function FactLine({ label, value }: { label: string; value: string }) {
@@ -63,28 +101,32 @@ export function ResolutionChoiceGroup({
   options: ResolutionChoiceOption[]
   compact?: boolean
 }) {
+  const selectedIndex = options.findIndex((option) => option.selected)
   return (
     <Box
-      role="group"
+      role="radiogroup"
       aria-label={label}
       flexDirection="column"
       rowGap={compact ? 'xs' : 's'}
     >
-      {options.map((option) => (
+      {options.map((option, index) => (
         <Button
           key={option.id}
           type="button"
-          aria-pressed={option.selected}
+          role="radio"
+          aria-checked={option.selected}
+          tabIndex={
+            option.selected || (selectedIndex === -1 && index === 0) ? 0 : -1
+          }
           variant={option.selected ? 'default' : 'secondary'}
           size={compact ? 'sm' : 'default'}
           onClick={option.onSelect}
+          onKeyDown={(event) => handleRadioKeyDown(event, index, options)}
           fullWidth
         >
-          {option.selected
-            ? `Selected · ${option.label}`
-            : option.recommended
-              ? `Polar recommends · ${option.label}`
-              : option.label}
+          {option.recommended
+            ? `Polar recommends · ${option.label}`
+            : option.label}
         </Button>
       ))}
     </Box>

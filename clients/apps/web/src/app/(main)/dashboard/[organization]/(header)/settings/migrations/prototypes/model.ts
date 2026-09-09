@@ -5,7 +5,6 @@ import {
   IdentityResolution,
   isResolutionComplete,
   ProductResolution,
-  recommendedResolutionChoices,
   ResolutionChoices,
 } from './resolutions'
 
@@ -29,7 +28,6 @@ export {
   getResolutionChoiceLabel,
   getResolutionCompletionCount,
   isResolutionComplete,
-  recommendedResolutionChoices,
   RESOLUTION_DOMAINS,
   SUGGESTED_BILLING_COUNTRY,
 } from './resolutions'
@@ -189,21 +187,6 @@ export function applyPrototypeAction(
     }
   }
   return { ...state, stage: transition.to }
-}
-
-export function applyVariantPrototypeAction(
-  variant: PrototypeVariant,
-  state: PrototypeState,
-  action: PrototypeAction,
-): PrototypeState {
-  const next = applyPrototypeAction(state, action)
-  if (action !== 'assess' || variant !== 'assisted' || next === state) {
-    return next
-  }
-  return {
-    ...next,
-    resolutions: recommendedResolutionChoices(),
-  }
 }
 
 export const stageIndex = (stage: PrototypeStage): number => {

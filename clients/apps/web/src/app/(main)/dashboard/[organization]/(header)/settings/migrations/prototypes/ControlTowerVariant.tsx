@@ -66,6 +66,10 @@ export function ControlTowerVariant({ state, act }: Props) {
           flex={{ base: '1 1 auto', lg: '0 0 280px' }}
           aria-label="Cohort counts"
         >
+          <Text variant="label">Cohort summary</Text>
+          <Text variant="caption" color="muted">
+            Live counts; choose work from the detail pane.
+          </Text>
           <TowerQueue
             label="Ready"
             value={cohorts.ready}

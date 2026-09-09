@@ -35,12 +35,6 @@ export const confirmSuggestedBillingCountry = (): CountryResolution => ({
   country: SUGGESTED_BILLING_COUNTRY,
 })
 
-export const recommendedResolutionChoices = (): ResolutionChoices => ({
-  product: 'map_existing_pro',
-  country: confirmSuggestedBillingCountry(),
-  identity: 'link_existing_customer',
-})
-
 export const getResolutionCompletionCount = (
   resolutions: ResolutionChoices,
 ): number =>

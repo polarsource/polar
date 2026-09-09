@@ -23,6 +23,9 @@ function currentResolveLabel(returnStage: PrototypeReturnStage | null): string {
   if (returnStage === 'receipt') {
     return 'Confirm choices and return to receipt'
   }
+  if (returnStage === 'cards') {
+    return 'Confirm choices and return to cards'
+  }
   return 'Start moving cards'
 }
 
@@ -66,11 +69,14 @@ export function CurrentHandoff({
 
       <Box flexDirection="column" rowGap="xs">
         <Text variant="heading-xs" as="h3">
-          Next: move saved cards
+          {resolutionsComplete
+            ? 'Next: move saved cards'
+            : 'Resolve required records'}
         </Text>
         <Text variant="caption" color="muted">
-          Your customers&apos; cards are still at Stripe. Moving them lets Polar
-          charge them. This is a checklist. You can leave and come back.
+          {resolutionsComplete
+            ? "Your customers' cards are still at Stripe. Moving them lets Polar charge them. This is a checklist. You can leave and come back."
+            : 'Three records need an explicit product, country, or identity decision before card movement. The controls are open below.'}
         </Text>
       </Box>
 
@@ -78,13 +84,15 @@ export function CurrentHandoff({
         <Button disabled={!resolutionsComplete} onClick={() => act('resolve')}>
           {currentResolveLabel(state.returnStage)}
         </Button>
-        <Button
-          variant="secondary"
-          aria-expanded={reviewing}
-          onClick={() => setReviewing((value) => !value)}
-        >
-          {reviewing ? 'Hide records' : 'Review records'}
-        </Button>
+        {resolutionsComplete ? (
+          <Button
+            variant="secondary"
+            aria-expanded={reviewing}
+            onClick={() => setReviewing((value) => !value)}
+          >
+            {reviewing ? 'Hide records' : 'Review records'}
+          </Button>
+        ) : null}
         <Status
           status={`${resolvedCount} of ${resolutionTotal} resolved`}
           color={resolutionsComplete ? 'green' : 'yellow'}
@@ -95,8 +103,8 @@ export function CurrentHandoff({
       {!resolutionsComplete ? (
         <Text variant="caption" color="muted" role="status">
           {remainingChoices === resolutionTotal
-            ? `Review records and make all ${resolutionTotal} explicit choices before starting card movement.`
-            : `Review records and make ${remainingChoices} more explicit choice${remainingChoices === 1 ? '' : 's'} before starting card movement.`}
+            ? `Make all ${resolutionTotal} explicit choices below before starting card movement.`
+            : `Make ${remainingChoices} more explicit choice${remainingChoices === 1 ? '' : 's'} below before starting card movement.`}
         </Text>
       ) : null}
 

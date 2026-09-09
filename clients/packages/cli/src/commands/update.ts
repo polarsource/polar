@@ -10,6 +10,7 @@ import {
   getLatestRelease,
   isNewerVersion,
 } from '../services/github-releases'
+import * as ui from '../ui'
 import { VERSION } from '../version'
 
 export class UpdateError extends Data.TaggedError('UpdateError')<{
@@ -132,12 +133,6 @@ export function getArchiveExtractionCommand(
 
 const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
   Effect.gen(function* () {
-    const bold = '\x1b[1m'
-    const cyan = '\x1b[36m'
-    const green = '\x1b[32m'
-    const dim = '\x1b[2m'
-    const reset = '\x1b[0m'
-
     const { os, arch } = detectPlatform()
     const platform = `${os}-${arch}`
     const archiveName = getReleaseArchiveName({ os, arch })
@@ -166,7 +161,7 @@ const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
 
     yield* Effect.ensuring(
       Effect.gen(function* () {
-        yield* Console.log(`${dim}Downloading ${latestVersion}...${reset}`)
+        yield* Console.log(ui.step(`Downloading ${latestVersion}...`))
 
         const archiveBuffer = yield* Effect.tryPromise({
           try: () =>
@@ -194,7 +189,7 @@ const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
             }),
         })
 
-        yield* Console.log(`${dim}Verifying checksum...${reset}`)
+        yield* Console.log(ui.step('Verifying checksum...'))
 
         const checksumsText = yield* Effect.tryPromise({
           try: () =>
@@ -243,7 +238,7 @@ const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
           })
         }
 
-        yield* Console.log(`${dim}Extracting...${reset}`)
+        yield* Console.log(ui.step('Extracting...'))
 
         const extract = Bun.spawn(
           getArchiveExtractionCommand(archivePath, tempDir),
@@ -276,17 +271,19 @@ const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
         const binaryPath = process.execPath
         const newBinaryPath = join(tempDir, 'polar')
 
-        yield* Console.log(`${dim}Replacing binary...${reset}`)
+        yield* Console.log(ui.step('Replacing binary...'))
 
         yield* replaceBinary(newBinaryPath, binaryPath).pipe(
           Effect.provide(BunFileSystem.layer),
         )
 
-        yield* Console.log('')
+        yield* Console.log(ui.blank)
         yield* Console.log(
-          `  ${bold}${green}Updated successfully!${reset} ${dim}${VERSION}${reset} -> ${bold}${cyan}${latestVersion}${reset}`,
+          ui.success(
+            `Updated ${ui.dim(VERSION)} ${ui.dim('→')} ${ui.bold(ui.cyan(latestVersion))}`,
+          ),
         )
-        yield* Console.log('')
+        yield* Console.log(ui.blank)
       }),
       Effect.promise(() =>
         rm(tempDir, { recursive: true, force: true }).catch(() => {}),
@@ -296,23 +293,19 @@ const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
 
 export const update = Command.make('update', {}, () =>
   Effect.gen(function* () {
-    const green = '\x1b[32m'
-    const dim = '\x1b[2m'
-    const reset = '\x1b[0m'
-
-    yield* Console.log(`${dim}Checking for updates...${reset}`)
+    yield* Console.log(ui.blank)
+    yield* Console.log(ui.step('Checking for updates...'))
 
     const release = yield* getLatestRelease
 
     const latestVersion = release.version
 
     if (!isNewerVersion(latestVersion, VERSION)) {
-      yield* Console.log(
-        `${green}Already up to date${reset} ${dim}(${VERSION})${reset}`,
-      )
+      yield* Console.log(ui.success(`Already up to date ${ui.dim(VERSION)}`))
+      yield* Console.log(ui.blank)
       return
     }
 
     yield* downloadAndUpdate(release, latestVersion)
   }),
-)
+).pipe(Command.withDescription('Update the CLI to the latest release'))

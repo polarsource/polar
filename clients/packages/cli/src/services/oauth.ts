@@ -1,6 +1,14 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
-import { Context, DateTime, Effect, Layer, Redacted, Schema } from 'effect'
+import {
+  Console,
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Redacted,
+  Schema,
+} from 'effect'
 import {
   FetchHttpClient,
   HttpClient,
@@ -14,6 +22,8 @@ import {
   type PolarEnvironment,
   type Session,
 } from '../schemas/Auth'
+import * as ui from '../ui'
+
 const SANDBOX_CLIENT_ID = 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9'
 const PRODUCTION_CLIENT_ID = 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA'
 
@@ -203,6 +213,15 @@ const login = (environment: PolarEnvironment) =>
       code_challenge_method: 'S256',
       sub_type: 'user',
     }).toString()
+    yield* Console.log(ui.blank)
+    yield* Console.log(
+      ui.step(`Opening your browser to sign in to Polar ${environment}...`),
+    )
+    yield* Console.log(ui.step('If it does not open, visit:'))
+    yield* Console.log(`    ${ui.cyan(authorization.toString())}`)
+    yield* Console.log(ui.blank)
+    yield* Console.log(ui.step('Waiting for you to authorize the CLI...'))
+    yield* Console.log(ui.blank)
     const server = createServer()
     const code = yield* Effect.callback<string, AuthError>((resume) => {
       let completed = false

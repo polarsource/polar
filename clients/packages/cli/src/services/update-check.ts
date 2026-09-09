@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
+import * as ui from '../ui'
 import { VERSION } from '../version'
 import { getLatestRelease, isNewerVersion } from './github-releases'
 
@@ -26,14 +27,16 @@ export function showUpdateNotice(): void {
     if (!state.latestVersion || !isNewerVersion(state.latestVersion, VERSION))
       return
 
-    const dim = '\x1b[2m'
-    const cyan = '\x1b[36m'
-    const bold = '\x1b[1m'
-    const reset = '\x1b[0m'
-
     process.stderr.write(
-      `\n  ${dim}Update available:${reset} ${dim}${VERSION}${reset} ${dim}→${reset} ${bold}${cyan}${state.latestVersion}${reset}\n` +
-        `  ${dim}Run${reset} ${cyan}polar update${reset} ${dim}to update${reset}\n\n`,
+      [
+        ui.blank,
+        ui.warning(
+          `Update available ${ui.dim(VERSION)} ${ui.dim('→')} ${ui.bold(ui.cyan(state.latestVersion))}`,
+        ),
+        ui.step(`Run ${ui.command('polar update')} to install it`),
+        ui.blank,
+        ui.blank,
+      ].join('\n'),
     )
   } catch {
     // Silently ignore any errors

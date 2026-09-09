@@ -150,7 +150,7 @@ describe('startListening', () => {
   })
 
   test('logs malformed JSON without terminating the stream', async () => {
-    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const log = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     run()
     await tick()
     connections[0]!.controller.enqueue(
@@ -158,7 +158,9 @@ describe('startListening', () => {
     )
     emit({ type: 'reconnect' })
     await tick()
-    expect(log).toHaveBeenCalledWith('>> Failed to decode event')
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('could not decode'),
+    )
     expect(connections).toHaveLength(2)
   })
 

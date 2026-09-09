@@ -26,6 +26,7 @@ import {
   ListenReconnect,
   ListenWebhookEvent,
 } from '../schemas/Events'
+import * as ui from '../ui'
 
 export const LISTEN_BASE_URLS = {
   production: 'https://api.polar.sh/v1/cli/listen',
@@ -37,6 +38,48 @@ export class ListenError extends Data.TaggedError('ListenError')<{
   code: number
   cause?: unknown
 }> {}
+
+const EVENT_TYPE_WIDTH = 28
+
+const printError = (line: string) =>
+  Effect.sync(() => {
+    process.stderr.write(`${line}\n`)
+  })
+
+const describeForwardFailure = (error: unknown) => {
+  const cause =
+    error instanceof Error && error.cause instanceof Error ? error.cause : error
+  const message = cause instanceof Error ? cause.message : String(cause)
+  if (/ECONNREFUSED/i.test(message)) {
+    return 'connection refused, is your server running?'
+  }
+  return message
+}
+
+const eventLine = (eventType: string, outcome: string, startedAt: number) =>
+  `  ${ui.timestamp()}  ${ui.cyan(eventType.padEnd(EVENT_TYPE_WIDTH))}  ${outcome}  ${ui.duration(performance.now() - startedAt)}`
+
+const decodeFailure = (key: string | undefined) =>
+  ui.failure(
+    'Received an event the CLI could not decode',
+    `Event key: ${key ?? 'unknown'}. Run ${ui.command('polar update')} in case the format changed.`,
+  )
+
+const banner = (organizationName: string, secret: string, forwardUrl: string) =>
+  [
+    ui.blank,
+    `  ${ui.green('●')} ${ui.bold('Connected')}  ${ui.bold(organizationName)}`,
+    ui.keyValue([
+      ['Forwarding', forwardUrl],
+      [
+        'Secret',
+        `${secret}  ${ui.dim('use this to verify signatures locally')}`,
+      ],
+    ]),
+    ui.blank,
+    ui.step(`Waiting for events... press ${ui.bold('Ctrl+C')} to stop`),
+    ui.blank,
+  ].join('\n')
 
 export interface StartListeningOptions {
   listenUrl: string
@@ -134,7 +177,7 @@ export const startListening = ({
                 Schema.fromJsonString(Schema.Unknown),
               )(event.data)
               if (Exit.isFailure(decoded)) {
-                yield* Console.error('>> Failed to decode event')
+                yield* printError(decodeFailure(undefined))
                 return
               }
               const json = decoded.value
@@ -142,12 +185,8 @@ export const startListening = ({
               if (Exit.isSuccess(ack)) {
                 if (bannerShown) return
                 bannerShown = true
-                const dim = '\x1b[2m'
-                const bold = '\x1b[1m'
-                const cyan = '\x1b[36m'
-                const reset = '\x1b[0m'
                 yield* Console.log(
-                  `\n  ${bold}${cyan}Connected${reset}  ${bold}${organizationName}${reset}\n  ${dim}Secret${reset}     ${ack.value.secret}\n  ${dim}Forwarding${reset} ${forwardUrl}\n\n  ${dim}Waiting for events...${reset}\n`,
+                  banner(organizationName, ack.value.secret, forwardUrl),
                 )
                 return
               }
@@ -159,7 +198,11 @@ export const startListening = ({
               }
               const webhook = Schema.decodeUnknownExit(ListenWebhookEvent)(json)
               if (Exit.isFailure(webhook)) {
-                yield* Console.error('>> Failed to decode event')
+                const key =
+                  typeof json === 'object' && json !== null && 'key' in json
+                    ? String(json.key)
+                    : undefined
+                yield* printError(decodeFailure(key))
                 return
               }
               const rawPayload = webhook.value.payload.payload
@@ -171,6 +214,7 @@ export const startListening = ({
               const eventType = Exit.isSuccess(payload)
                 ? (payload.value.type ?? 'event')
                 : 'event'
+              const startedAt = performance.now()
               yield* Effect.tryPromise((signal) =>
                 forward(forwardUrl, {
                   method: 'POST',
@@ -185,13 +229,23 @@ export const startListening = ({
                   ).pipe(
                     Effect.andThen(
                       Console.log(
-                        `>> '\x1b[36m${eventType}\x1b[0m' >> ${result.status} ${result.statusText}`,
+                        eventLine(
+                          eventType,
+                          ui.statusCode(result.status, result.statusText),
+                          startedAt,
+                        ),
                       ),
                     ),
                   ),
                 ),
                 Effect.catch((error) =>
-                  Console.error(`>> Failed to forward event: ${error}`),
+                  printError(
+                    eventLine(
+                      eventType,
+                      ui.red(`failed  ${describeForwardFailure(error)}`),
+                      startedAt,
+                    ),
+                  ),
                 ),
               )
             }),
@@ -243,7 +297,11 @@ export const startListening = ({
     ),
   )
 
-const url = Argument.string('url')
+const url = Argument.string('url').pipe(
+  Argument.withDescription(
+    'Local URL to forward webhook events to, e.g. http://localhost:3000/api/webhooks',
+  ),
+)
 
 export const listen = Command.make(
   'listen',
@@ -273,4 +331,8 @@ export const listen = Command.make(
         ),
       )
     }),
+).pipe(
+  Command.withDescription(
+    'Forward webhook events for an organization to a local URL',
+  ),
 )

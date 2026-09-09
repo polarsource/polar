@@ -530,6 +530,26 @@ class Organization(RateLimitGroupMixin, RecordModel):
             text("status_updated_at ASC NULLS FIRST"),
             postgresql_where=text("deleted_at IS NULL"),
         ),
+        # Trigram GIN indexes back the backoffice search's leading-wildcard
+        # `ILIKE '%q%'` on name/slug/email, which no btree index can serve.
+        Index(
+            "ix_organizations_name_trgm",
+            "name",
+            postgresql_using="gin",
+            postgresql_ops={"name": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_organizations_slug_trgm",
+            "slug",
+            postgresql_using="gin",
+            postgresql_ops={"slug": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_organizations_email_trgm",
+            "email",
+            postgresql_using="gin",
+            postgresql_ops={"email": "gin_trgm_ops"},
+        ),
     )
 
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)

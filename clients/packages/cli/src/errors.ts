@@ -1,7 +1,7 @@
-import type { ListenError } from './commands/listen'
-import type { UpdateError } from './commands/update'
-import type { AuthError } from './schemas/Auth'
-import type { GitHubReleaseError } from './services/github-releases'
+import type { ListenError } from '@/commands/listen'
+import type { UpdateError } from '@/commands/update'
+import type { AuthError } from '@/schemas/Auth'
+import type { GitHubReleaseError } from '@/services/github-releases'
 
 export type CommandError =
   | AuthError

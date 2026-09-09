@@ -21,8 +21,8 @@ import {
   loginCommand,
   type PolarEnvironment,
   type Session,
-} from '../schemas/Auth'
-import * as ui from '../ui'
+} from '@/schemas/Auth'
+import * as ui from '@/ui'
 
 const SANDBOX_CLIENT_ID = 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9'
 const PRODUCTION_CLIENT_ID = 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA'

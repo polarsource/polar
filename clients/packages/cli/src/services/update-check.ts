@@ -4,9 +4,9 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
-import * as ui from '../ui'
-import { VERSION } from '../version'
-import { getLatestRelease, isNewerVersion } from './github-releases'
+import * as ui from '@/ui'
+import { VERSION } from '@/version'
+import { getLatestRelease, isNewerVersion } from '@/services/github-releases'
 
 const STATE_DIR = join(homedir(), '.polar')
 const STATE_FILE = join(STATE_DIR, 'update-check.json')

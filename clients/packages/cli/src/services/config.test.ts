@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunServices } from '@effect/platform-bun'
 import { Effect, Layer } from 'effect'
-import { CLIConfig, layer } from './config'
+import { CLIConfig, layer } from '@/services/config'
 
 let directory: string
 let file: string

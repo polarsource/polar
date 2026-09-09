@@ -9,9 +9,9 @@ import {
   type CLIRelease,
   getLatestRelease,
   isNewerVersion,
-} from '../services/github-releases'
-import * as ui from '../ui'
-import { VERSION } from '../version'
+} from '@/services/github-releases'
+import * as ui from '@/ui'
+import { VERSION } from '@/version'
 
 export class UpdateError extends Data.TaggedError('UpdateError')<{
   message: string

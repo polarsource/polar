@@ -1,6 +1,6 @@
 import { homedir } from 'node:os'
 import { Context, Effect, FileSystem, Layer, Path, Schema } from 'effect'
-import { AuthError, type PolarEnvironment } from '../schemas/Auth'
+import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 
 const EnvironmentConfig = Schema.Struct({
   activeOrganizationId: Schema.optional(Schema.String),

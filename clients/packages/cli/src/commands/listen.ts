@@ -17,16 +17,16 @@ import {
   HttpClientRequest,
   HttpClientResponse,
 } from 'effect/unstable/http'
-import { Auth } from '../services/auth'
-import { Organizations } from '../services/organizations'
-import { environmentOf, org, production } from './flags'
-import { type PolarEnvironment } from '../schemas/Auth'
+import { Auth } from '@/services/auth'
+import { Organizations } from '@/services/organizations'
+import { environmentOf, org, production } from '@/commands/flags'
+import { type PolarEnvironment } from '@/schemas/Auth'
 import {
   ListenAck,
   ListenReconnect,
   ListenWebhookEvent,
-} from '../schemas/Events'
-import * as ui from '../ui'
+} from '@/schemas/Events'
+import * as ui from '@/ui'
 
 export const LISTEN_BASE_URLS = {
   production: 'https://api.polar.sh/v1/cli/listen',

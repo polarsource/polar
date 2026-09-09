@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
 import { Effect, Fiber, Redacted } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
-import { AuthError, type PolarEnvironment } from '../schemas/Auth'
-import { Auth } from '../services/auth'
-import { authenticatedStreamClient, startListening } from './listen'
+import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
+import { Auth } from '@/services/auth'
+import { authenticatedStreamClient, startListening } from '@/commands/listen'
 
 describe('startListening', () => {
   const auth = Auth.of({

@@ -114,7 +114,7 @@ function ShellHeader({
     presentation === 'guided'
       ? 'One decision at a time. Completed decisions stay editable.'
       : presentation === 'assisted'
-        ? 'Approve or change each Polar proposal. The parent variant owns the final Approve control.'
+        ? 'Polar labels its recommendation, but nothing is approved yet. Choose it or an alternative for each decision.'
         : 'Pick a queue row, then resolve it in the detail pane.'
 
   return (

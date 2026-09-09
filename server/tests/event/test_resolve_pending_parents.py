@@ -378,50 +378,7 @@ class TestResolvePendingParents:
     async def test_urn_uuid_prefix_does_not_crash(
         self, save_fixture: SaveFixture, session: AsyncSession, account: Account
     ) -> None:
-        """
-        A `urn:uuid:<uuid>` pending ref must not crash the worker.
-
-        Python's UUID() accepts the URN form but Postgres's ::uuid cast
-        rejects it with a hard statement error. The ref should fall through
-        to the string-match steps and simply fail to link — the documented
-        behavior for non-linkable refs — rather than rolling back the batch.
-        """
-        organization = await create_organization(save_fixture, account)
-        repository = EventRepository.from_session(session)
-
-        parent_id = uuid.uuid4()
-        events = [
-            _make_event(
-                organization,
-                "child",
-                pending_parent_external_id=f"urn:uuid:{parent_id}",
-            ),
-            {
-                "id": parent_id,
-                "name": "event.parent",
-                "source": EventSource.user,
-                "organization_id": organization.id,
-                "external_id": "parent",
-                "root_id": parent_id,
-            },
-        ]
-        event_ids, _ = await repository.insert_batch(events)
-        resolved = await _resolve(repository, event_ids)
-
-        assert resolved == []
-        by_ext = await _get_events(session, organization)
-        child = by_ext["child"]
-        assert child.parent_id is None
-        assert child.root_id is None
-        assert child.pending_parent_external_id == f"urn:uuid:{parent_id}"
-
-    async def test_urn_uuid_prefix_does_not_crash_other_events_in_batch(
-        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
-    ) -> None:
-        """
-        A `urn:uuid:` ref in the batch must not prevent other resolvable
-        events in the same batch from linking and getting a root_id.
-        """
+        """A `urn:uuid:` ref must not crash the batch or block other resolvable events."""
         organization = await create_organization(save_fixture, account)
         repository = EventRepository.from_session(session)
 

@@ -6,8 +6,8 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.cli.fixtures import (
+    PERSONAS,
     SUPPORTED_EVENTS,
-    UNSUPPORTED_EVENTS,
     TriggerFixtures,
     with_column_defaults,
 )
@@ -57,13 +57,6 @@ class TestTriggerFixtures:
         assert raw["type"] == event
         assert raw["data"]["id"]
 
-    @pytest.mark.parametrize("event", sorted(UNSUPPORTED_EVENTS))
-    def test_rejects_unsupported_events(
-        self, organization: Organization, event: WebhookEventType
-    ) -> None:
-        with pytest.raises(ValueError, match="cannot be triggered"):
-            TriggerFixtures(organization).build(event)
-
     def test_seed_makes_generated_ids_reproducible(
         self, organization: Organization
     ) -> None:
@@ -91,10 +84,10 @@ class TestTriggerFixtures:
         assert order["product"]["organization_id"] == str(organization.id)
 
 
-def test_list_trigger_events_only_includes_supported_events() -> None:
+def test_list_trigger_events_covers_every_event_type() -> None:
     events = list_trigger_events()
 
-    assert {event.type for event in events} == set(SUPPORTED_EVENTS)
+    assert {event.type for event in events} == set(WebhookEventType)
     assert all(event.description for event in events)
 
 

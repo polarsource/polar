@@ -19,6 +19,8 @@ from polar.models import (
     Checkout,
     CheckoutProduct,
     Customer,
+    CustomerSeat,
+    Member,
     Order,
     OrderItem,
     Organization,
@@ -31,6 +33,9 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.checkout import CheckoutStatus
+from polar.models.customer_seat import SeatStatus
+from polar.models.discount import DiscountDuration, DiscountPercentage, DiscountType
+from polar.models.member import MemberRole
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.product_price import ProductPriceSource
@@ -42,23 +47,25 @@ from polar.webhook.webhooks import BaseWebhookPayload, WebhookPayloadTypeAdapter
 
 _CustomerStateAdapter: TypeAdapter[CustomerState] = TypeAdapter(CustomerState)
 
-UNSUPPORTED_EVENTS: frozenset[WebhookEventType] = frozenset(
-    {
-        WebhookEventType.customer_seat_assigned,
-        WebhookEventType.customer_seat_claimed,
-        WebhookEventType.customer_seat_revoked,
-        WebhookEventType.member_created,
-        WebhookEventType.member_updated,
-        WebhookEventType.member_deleted,
-        WebhookEventType.discount_created,
-        WebhookEventType.discount_updated,
-        WebhookEventType.discount_deleted,
-    }
+SUPPORTED_EVENTS: tuple[WebhookEventType, ...] = tuple(WebhookEventType)
+
+PERSONAS: tuple[str, ...] = (
+    "Ada Lovelace",
+    "Marie Curie",
+    "Alan Turing",
+    "Linus Torvalds",
+    "Tim Berners-Lee",
+    "Richard Feynman",
 )
 
-SUPPORTED_EVENTS: tuple[WebhookEventType, ...] = tuple(
-    event for event in WebhookEventType if event not in UNSUPPORTED_EVENTS
-)
+
+def email_for(name: str) -> str:
+    handle = "".join(
+        character
+        for character in name.lower().replace(" ", ".")
+        if character.isalnum() or character in ".-"
+    )
+    return f"{handle}@example.com"
 
 
 def with_column_defaults[ModelT](instance: ModelT) -> ModelT:
@@ -94,10 +101,9 @@ class TriggerFixtures:
         self.organization = organization
         self.random = random.Random(seed)
         self.now = utc_now()
+        self.personas = self.random.sample(PERSONAS, 2)
 
     def build(self, event: WebhookEventType) -> BaseWebhookPayload:
-        if event in UNSUPPORTED_EVENTS:
-            raise ValueError(f"Event {event} cannot be triggered")
         return WebhookPayloadTypeAdapter.validate_python(
             {
                 "type": event,
@@ -126,6 +132,30 @@ class TriggerFixtures:
                 return self.customer
             case WebhookEventType.customer_state_changed:
                 return self.customer_state
+            case WebhookEventType.customer_seat_assigned:
+                return self.seat
+            case WebhookEventType.customer_seat_claimed:
+                self.seat.status = SeatStatus.claimed
+                self.seat.claimed_at = self.now
+                self.seat.invitation_token = None
+                return self.seat
+            case WebhookEventType.customer_seat_revoked:
+                self.seat.status = SeatStatus.revoked
+                self.seat.revoked_at = self.now
+                self.seat.invitation_token = None
+                return self.seat
+            case (
+                WebhookEventType.member_created
+                | WebhookEventType.member_updated
+                | WebhookEventType.member_deleted
+            ):
+                return self.member
+            case (
+                WebhookEventType.discount_created
+                | WebhookEventType.discount_updated
+                | WebhookEventType.discount_deleted
+            ):
+                return self.discount
             case WebhookEventType.order_created:
                 self.order.status = OrderStatus.pending
                 return self.order
@@ -237,13 +267,14 @@ class TriggerFixtures:
 
     @cached_property
     def customer(self) -> Customer:
+        name = self.personas[0]
         return with_column_defaults(
             Customer(
                 id=self._uuid(),
                 created_at=self.now - timedelta(days=7),
-                email="jane.doe@example.com",
+                email=email_for(name),
                 email_verified=True,
-                name="Jane Doe",
+                name=name,
                 organization=self.organization,
                 organization_id=self.organization.id,
                 billing_address=Address.model_validate(
@@ -469,6 +500,59 @@ class TriggerFixtures:
         )
         grant.set_granted()
         return grant
+
+    @cached_property
+    def member(self) -> Member:
+        name = self.personas[1]
+        return with_column_defaults(
+            Member(
+                id=self._uuid(),
+                created_at=self.now - timedelta(days=1),
+                customer=self.customer,
+                customer_id=self.customer.id,
+                organization_id=self.organization.id,
+                email=email_for(name),
+                name=name,
+                role=MemberRole.member,
+            )
+        )
+
+    @cached_property
+    def seat(self) -> CustomerSeat:
+        return with_column_defaults(
+            CustomerSeat(
+                id=self._uuid(),
+                created_at=self.now,
+                status=SeatStatus.pending,
+                customer=self.customer,
+                customer_id=self.customer.id,
+                invitation_token=f"polar_st_{self.random.getrandbits(128):032x}",
+                seat_metadata={},
+                member=self.member,
+                member_id=self.member.id,
+                email=self.member.email,
+                subscription=self.subscription,
+                subscription_id=self.subscription.id,
+            )
+        )
+
+    @cached_property
+    def discount(self) -> DiscountPercentage:
+        return with_column_defaults(
+            DiscountPercentage(
+                id=self._uuid(),
+                created_at=self.now - timedelta(days=2),
+                name="Launch week",
+                type=DiscountType.percentage,
+                code="LAUNCH20",
+                duration=DiscountDuration.once,
+                organization=self.organization,
+                organization_id=self.organization.id,
+                discount_products=[],
+                redemptions_count=0,
+                basis_points=2000,
+            )
+        )
 
     @cached_property
     def customer_state(self) -> CustomerState:

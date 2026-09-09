@@ -959,7 +959,7 @@ class TestClientConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
         response = await client.post(
             f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
@@ -998,7 +998,7 @@ class TestClientConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         response = await client.post(

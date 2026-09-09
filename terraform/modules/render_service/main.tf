@@ -157,9 +157,7 @@ resource "render_env_group" "redis" {
   environment_id = var.render_environment_id
   name           = "redis-${var.environment}"
   env_vars = {
-    POLAR_REDIS_HOST = { value = var.redis_config.host }
-    POLAR_REDIS_PORT = { value = var.redis_config.port }
-    POLAR_REDIS_DB   = { value = var.api_service_config.redis_db }
+    POLAR_REDIS_URL = { value = "rediss://${var.redis_config.host}:${var.redis_config.port}/${var.api_service_config.redis_db}?ssl_check_hostname=false" }
   }
 }
 
@@ -266,9 +264,7 @@ resource "render_web_service" "worker" {
       POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
     },
     (each.value.redis_host != null && each.value.redis_port != null && each.value.redis_db != null) ? {
-      POLAR_REDIS_HOST = { value = each.value.redis_host }
-      POLAR_REDIS_PORT = { value = each.value.redis_port }
-      POLAR_REDIS_DB   = { value = each.value.redis_db }
+      POLAR_REDIS_URL = { value = "redis://${each.value.redis_host}:${each.value.redis_port}/${each.value.redis_db}" }
     } : {}
   )
 }

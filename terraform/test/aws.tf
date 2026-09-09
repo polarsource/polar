@@ -78,9 +78,7 @@ locals {
       POLAR_POSTGRES_PORT     = module.pgbouncer_aws[0].port
       POLAR_POSTGRES_USER     = local.db_user
       POLAR_POSTGRES_SSL      = "false"
-      POLAR_REDIS_HOST        = module.redis[0].host
-      POLAR_REDIS_PORT        = tostring(module.redis[0].port)
-      POLAR_REDIS_DB          = "1"
+      POLAR_REDIS_URL         = "rediss://${module.redis[0].host}:${tostring(module.redis[0].port)}/1"
       POLAR_JWKS_CONTENT      = var.backend_jwks
       POLAR_POSTGRES_PWD      = local.db_password
       TAILSCALE_AUTHKEY       = var.lambda_worker_tailscale_token

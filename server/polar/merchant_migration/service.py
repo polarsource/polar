@@ -791,10 +791,29 @@ class MerchantMigrationService:
             migration_step = _MIGRATION_STEP_BY_PAN_STEP.get(current.key)
             if migration_step is not None:
                 update_dict["step"] = migration_step
+
+        # Completing the cutover step enqueues the switch worker. `run_cutover`
+        # aborts on a terminal `operation`, so when the step-completion path
+        # reaches the switch step without an active cutover operation — the
+        # leftover `done` from the async precheck, or `None` from the sync one
+        # — start one before the worker runs. `start_cutover` already set its
+        # own with a selection, so leave an active operation alone.
+        task = _STEP_TASKS.get(current.key) if current else None
+        if (
+            task is not None
+            and current is not None
+            and current.key == STEP_MOVE_SUBSCRIPTIONS
+            and (migration.operation is None or not migration.operation.is_active)
+        ):
+            update_dict["operation"] = MerchantMigrationOperation(
+                status=MerchantMigrationOperationStatus.running,
+                selection=None,
+                last_progress_at=utc_now(),
+            )
+
         repository = MerchantMigrationRepository.from_session(session)
         await repository.update(migration, update_dict=update_dict)
 
-        task = _STEP_TASKS.get(current.key) if current else None
         if task is not None:
             enqueue_job(task, merchant_migration_id=migration.id)
 

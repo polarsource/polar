@@ -3287,3 +3287,164 @@ class TestListRecordsCutover:
 
         assert count == 1
         assert items[0].source_id == "sub_skipped"
+
+
+@pytest.mark.asyncio
+class TestOpsCompletesCutoverStepRegression:
+    """The async precheck (start_precheck + execute_precheck) leaves a terminal
+    `done` operation behind. Completing the cutover checklist step from the
+    backoffice enqueues the switch worker without resetting it, and `run_cutover`
+    used to abort on that terminal operation, switching nothing. The step-
+    completion path now starts a running operation before enqueuing the worker.
+    """
+
+    @pytest.mark.auth
+    async def test_ops_completing_cutover_step_switches_after_async_precheck(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog_with_subscription()),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        mocker.patch.object(
+            settings,
+            "MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID",
+            "acct_polar",
+        )
+
+        migration = await build_connected_migration(save_fixture, organization)
+
+        # Drive the real async precheck path (the change f063dd65b9 introduced),
+        # which writes a terminal `done` operation on its final page.
+        await service.start_precheck(session, auth_subject, migration.id)
+        await service.execute_precheck(session, migration.id)
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+
+        # Neither importing the catalog nor starting the pan transfer resets
+        # `operation`, so the leftover terminal operation survives up to cutover.
+        await service.import_catalog(session, auth_subject, migration.id)
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+        await service.start_pan_transfer(session, auth_subject, migration.id)
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+
+        # Walk the checklist in-fixture up to the cutover step (the merchant's
+        # confirmation), with everything before it completed.
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_CUTOVER
+        )
+        await save_fixture(migration)
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        assert record is not None
+
+        # The cutover engine and the worker's adapter are stand-ins; the real
+        # adapter was only needed for the precheck and import above.
+        runner = _fake_cutover(mocker)
+
+        # Ops completes the cutover checklist step from the backoffice — the path
+        # that used to enqueue the worker with `operation` still set to `done`.
+        enqueue.reset_mock()
+        await service.complete_pan_step_as_ops(
+            session, migration, STEP_CUTOVER, inputs={}
+        )
+        enqueue.assert_called_once_with(
+            "merchant_migration.cutover", merchant_migration_id=migration.id
+        )
+        # Advancing into the switch step now starts a running operation, so the
+        # worker no longer aborts on the precheck's leftover terminal one. Read
+        # it back from the repository rather than the in-memory object, so the
+        # earlier `done` assertions don't narrow the type past this point.
+        reloaded = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration.id
+        )
+        assert reloaded is not None
+        assert reloaded.operation is not None
+        assert reloaded.operation.status == MerchantMigrationOperationStatus.running
+
+        await service.run_cutover(session, migration.id)
+
+        await session.flush()
+        await session.refresh(record)
+        assert runner.run.await_count == 1
+        assert record.cutover_status == MerchantMigrationCutoverStatus.moved
+
+    @pytest.mark.auth
+    async def test_start_cutover_switches_after_async_precheck(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog_with_subscription()),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        mocker.patch.object(
+            settings,
+            "MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID",
+            "acct_polar",
+        )
+
+        migration = await build_connected_migration(save_fixture, organization)
+        await service.start_precheck(session, auth_subject, migration.id)
+        await service.execute_precheck(session, migration.id)
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+
+        await service.import_catalog(session, auth_subject, migration.id)
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+        await service.start_pan_transfer(session, auth_subject, migration.id)
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_CUTOVER
+        )
+        await save_fixture(migration)
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        assert record is not None
+
+        runner = _fake_cutover(mocker)
+
+        # The merchant-facing path reinitialises `operation = running` before
+        # completing the step, so the worker proceeds: the fix must not clobber
+        # that selection-bearing operation when it re-enters `_advance_checklist`.
+        await service.start_cutover(session, auth_subject, migration.id)
+
+        # Read the operation back from the repository rather than the narrowed
+        # in-memory object, so the earlier `done` assertions don't lock the type.
+        reloaded = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration.id
+        )
+        assert reloaded is not None
+        assert reloaded.operation is not None
+        assert reloaded.operation.status == MerchantMigrationOperationStatus.running
+
+        await service.run_cutover(session, migration.id)
+
+        await session.flush()
+        await session.refresh(record)
+        assert runner.run.await_count == 1
+        assert record.cutover_status == MerchantMigrationCutoverStatus.moved

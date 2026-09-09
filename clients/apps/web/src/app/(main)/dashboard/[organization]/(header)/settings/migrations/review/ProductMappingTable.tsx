@@ -19,7 +19,7 @@ import {
 } from './productMapping'
 
 const COLUMNS =
-  'minmax(0, 7.5rem) max-content max-content max-content minmax(0, 1fr)'
+  'minmax(0, 7.5rem) minmax(7rem, max-content) minmax(5.5rem, max-content) minmax(3.75rem, max-content) minmax(0, 1fr)'
 
 export function ProductMappingTable({
   items,
@@ -37,7 +37,7 @@ export function ProductMappingTable({
     <Box flexDirection="column" rowGap="s">
       <Grid
         templateColumns={COLUMNS}
-        columnGap="m"
+        columnGap="xl"
         borderWidth={1}
         borderStyle="solid"
         borderColor="border-primary"

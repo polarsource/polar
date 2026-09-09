@@ -308,7 +308,7 @@ locals {
   env_suffix      = var.environment == "production" ? "" : "-${var.environment}"
   worker_ids      = [for w in render_web_service.worker : w.id]
   cron_job_ids    = [for c in render_cron_job.cron : c.id]
-  all_service_ids = concat([render_web_service.api.id], local.worker_ids, local.cron_job_ids)
+  all_service_ids = concat([render_web_service.api.id], local.worker_ids, local.cron_job_ids, render_private_service.backoffice[*].id)
 }
 
 # Env group links
@@ -382,7 +382,7 @@ resource "render_env_group_link" "pydantic_ai_gateway" {
 
 resource "render_env_group_link" "apple" {
   env_group_id = render_env_group.apple.id
-  service_ids  = [render_web_service.api.id]
+  service_ids  = concat([render_web_service.api.id], render_private_service.backoffice[*].id)
 }
 
 resource "render_env_group_link" "prometheus" {
@@ -412,7 +412,7 @@ resource "render_env_group_link" "polar_self" {
 resource "render_env_group_link" "memory_profile" {
   count        = var.memory_profile_config != null ? 1 : 0
   env_group_id = render_env_group.memory_profile[0].id
-  service_ids  = concat([render_web_service.api.id], local.worker_ids)
+  service_ids  = concat([render_web_service.api.id], local.worker_ids, render_private_service.backoffice[*].id)
 }
 
 resource "cloudflare_dns_record" "resend_dkim" {

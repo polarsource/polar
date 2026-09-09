@@ -80,12 +80,17 @@ c733940a7dc687142848b30a491e97138ed58dc58c4cae33c44e3ee52da411cb  NotoSansKR-Reg
 CHECKSUMS
 EOF
 
+FROM caddy:2.11.4-builder AS build-backoffice-proxy
+RUN xcaddy build v2.11.4 --with github.com/caddy-dns/cloudflare@v0.2.4
+
 # Stage 5: Final production image
 FROM --platform=$BUILDPLATFORM python:3.14.6-slim AS production
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
 LABEL org.opencontainers.image.licenses=Apache-2.0
 COPY --from=ghcr.io/astral-sh/uv:0.11.24 /uv /uvx /bin/
+COPY --from=docker.io/tailscale/tailscale:v1.98.4 /usr/local/bin/tailscaled /usr/local/bin/tailscale /usr/local/bin/containerboot /usr/local/bin/
+COPY --from=build-backoffice-proxy /usr/bin/caddy /usr/local/bin/caddy
 
 ENV PYTHONUNBUFFERED=1
 ENV UV_COMPILE_BYTECODE=1
@@ -100,6 +105,7 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=cache,target=/root/.cache/uv \
   apt-get update \
   && apt-get install -y \
+  curl \
   git \
   build-essential \
   libpq5 \

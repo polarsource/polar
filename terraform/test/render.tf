@@ -25,8 +25,9 @@ data "tfe_outputs" "production" {
 }
 
 locals {
-  environment_id = data.tfe_outputs.production.values.test_environment_id
-  test_enabled   = true
+  private_backoffice_hostname = "backoffice.test.polar.sh"
+  environment_id              = data.tfe_outputs.production.values.test_environment_id
+  test_enabled                = true
 }
 
 # =============================================================================
@@ -114,7 +115,12 @@ module "test" {
   count  = local.test_enabled ? 1 : 0
   source = "../modules/render_service"
 
-  environment            = "test"
+  environment = "test"
+  private_backoffice = var.private_backoffice_enabled ? {
+    hostname             = local.private_backoffice_hostname
+    auth_key             = var.private_backoffice_tailscale_auth_key
+    cloudflare_api_token = var.private_backoffice_cloudflare_api_token
+  } : null
   render_environment_id  = local.environment_id
   registry_credential_id = render_registry_credential.ghcr.id
 
@@ -234,4 +240,19 @@ resource "cloudflare_dns_record" "test_api" {
   content = replace(module.test[0].api_service_url, "https://", "")
   proxied = true
   ttl     = 1
+}
+
+resource "cloudflare_dns_record" "private_backoffice" {
+  count = local.test_enabled && var.private_backoffice_enabled && var.private_backoffice_tailscale_ip != "" ? 1 : 0
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = local.private_backoffice_hostname
+  type    = "A"
+  content = var.private_backoffice_tailscale_ip
+  proxied = false
+  ttl     = 300
+}
+
+output "private_backoffice_service_id" {
+  value = one(module.test[*].private_backoffice_service_id)
 }

@@ -15,6 +15,7 @@ resource "render_registry_credential" "ghcr" {
 # =============================================================================
 
 locals {
+  private_backoffice_hostname = "backoffice-new.polar.sh"
   # Database connection info (derived from postgres resource)
   # db_host          = render_postgres.db.id
   db_internal_host = render_postgres.db.id
@@ -147,7 +148,12 @@ import {
 module "production" {
   source = "../modules/render_service"
 
-  environment            = "production"
+  environment = "production"
+  private_backoffice = var.private_backoffice_enabled ? {
+    hostname             = local.private_backoffice_hostname
+    auth_key             = var.private_backoffice_tailscale_auth_key
+    cloudflare_api_token = var.private_backoffice_cloudflare_api_token
+  } : null
   render_environment_id  = render_project.polar.environments["Production"].id
   registry_credential_id = render_registry_credential.ghcr.id
 
@@ -370,4 +376,19 @@ resource "cloudflare_dns_record" "worker" {
   content = replace(module.production.worker_urls["worker"], "https://", "")
   proxied = false
   ttl     = 1
+}
+
+resource "cloudflare_dns_record" "private_backoffice" {
+  count = var.private_backoffice_enabled && var.private_backoffice_tailscale_ip != "" ? 1 : 0
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = local.private_backoffice_hostname
+  type    = "A"
+  content = var.private_backoffice_tailscale_ip
+  proxied = false
+  ttl     = 300
+}
+
+output "private_backoffice_service_id" {
+  value = module.production.private_backoffice_service_id
 }

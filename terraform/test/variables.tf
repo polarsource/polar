@@ -450,3 +450,37 @@ variable "grafana_cloud_aws_external_id" {
   description = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
   type        = string
 }
+
+variable "private_backoffice_enabled" {
+  description = "Provision the private backoffice replica."
+  type        = bool
+  default     = false
+}
+
+variable "private_backoffice_tailscale_auth_key" {
+  description = "Tailscale auth key for the private backoffice replica."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "private_backoffice_cloudflare_api_token" {
+  description = "Cloudflare DNS token for private backoffice certificates."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "private_backoffice_tailscale_ip" {
+  description = "Assigned Tailscale IPv4 address; leave empty until the node is provisioned."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = var.private_backoffice_tailscale_ip == "" ? true : (
+      can(cidrnetmask("${var.private_backoffice_tailscale_ip}/32")) &&
+      try(cidrhost("${var.private_backoffice_tailscale_ip}/10", 0) == "100.64.0.0", false)
+    )
+    error_message = "private_backoffice_tailscale_ip must be an IPv4 address in Tailscale's 100.64.0.0/10 range."
+  }
+}

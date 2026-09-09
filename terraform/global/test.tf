@@ -537,3 +537,33 @@ resource "tfe_variable" "grafana_cloud_aws_external_id_test" {
   description     = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
   variable_set_id = tfe_variable_set.test.id
 }
+
+resource "tfe_variable" "private_backoffice_enabled_test" {
+  key             = "private_backoffice_enabled"
+  category        = "terraform"
+  description     = "Enable the private backoffice replica for test"
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "private_backoffice_tailscale_auth_key_test" {
+  key             = "private_backoffice_tailscale_auth_key"
+  category        = "terraform"
+  description     = "Tailscale auth key for the private backoffice replica in test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "private_backoffice_cloudflare_api_token_test" {
+  key             = "private_backoffice_cloudflare_api_token"
+  category        = "terraform"
+  description     = "Cloudflare DNS token for private backoffice certificates in test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "private_backoffice_tailscale_ip_test" {
+  key             = "private_backoffice_tailscale_ip"
+  category        = "terraform"
+  description     = "Assigned Tailscale IPv4 address for the private backoffice replica in test"
+  variable_set_id = tfe_variable_set.test.id
+}

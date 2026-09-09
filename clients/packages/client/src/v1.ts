@@ -2953,6 +2953,46 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/cli/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Events
+     * @description **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    get: operations['cli:events']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/cli/trigger/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Trigger
+     * @description **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    post: operations['cli:trigger']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/files/': {
     parameters: {
       query?: never
@@ -37917,6 +37957,52 @@ export interface components {
      * @enum {string}
      */
     TrialInterval: 'day' | 'week' | 'month' | 'year'
+    /** TriggerEvent */
+    TriggerEvent: {
+      type: components['schemas']['WebhookEventType']
+      /**
+       * Description
+       * @description One-line description of when Polar sends this event.
+       */
+      description: string
+    }
+    /** TriggerRequest */
+    TriggerRequest: {
+      event: components['schemas']['WebhookEventType']
+      /**
+       * Overrides
+       * @description Payload fields to override, keyed by dotted path relative to the payload root, e.g. `data.amount`.
+       */
+      overrides?: {
+        [key: string]: unknown
+      }
+      /**
+       * Seed
+       * @description Seed for generated IDs and numbers, for reproducible payloads.
+       */
+      seed?: number | null
+      /**
+       * Deliver
+       * @description Send the event to the organization's active CLI listener.
+       * @default true
+       */
+      deliver: boolean
+    }
+    /** TriggerResponse */
+    TriggerResponse: {
+      /**
+       * Webhook Event Id
+       * Format: uuid
+       */
+      webhook_event_id: string
+      event: components['schemas']['WebhookEventType']
+      /** Delivered */
+      delivered: boolean
+      /** Payload */
+      payload: {
+        [key: string]: unknown
+      }
+    }
     /** Unauthorized */
     Unauthorized: {
       /**
@@ -47556,6 +47642,61 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'cli:events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TriggerEvent'][]
+        }
+      }
+    }
+  }
+  'cli:trigger': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TriggerRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TriggerResponse']
         }
       }
       /** @description Validation Error */

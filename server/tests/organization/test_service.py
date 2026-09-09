@@ -68,6 +68,7 @@ from polar.organization.schemas import (
     OrganizationUpdate,
 )
 from polar.organization.service import (
+    BackofficeActivationResult,
     CannotCreateOrganizationError,
     OrganizationError,
 )
@@ -1679,57 +1680,41 @@ class TestGetActivationReadiness:
             "Review approved",
         }
 
-    async def test_ready_when_onboarding_and_review_pass(
+    @pytest.mark.parametrize("reviewed", [True, False])
+    async def test_review_is_last_gate_after_onboarding(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
         user: User,
+        reviewed: bool,
     ) -> None:
         await _setup_passing_org(save_fixture, organization, user)
         organization.status = OrganizationStatus.CREATED
         organization.details_submitted_at = datetime.now(UTC)
         await save_fixture(organization)
 
-        session.add(
-            OrganizationReview(
-                organization_id=organization.id,
-                verdict=OrganizationReview.Verdict.PASS,
-                risk_score=10.0,
-                violated_sections=[],
-                reason="Clean",
-                model_used="test",
+        if reviewed:
+            session.add(
+                OrganizationReview(
+                    organization_id=organization.id,
+                    verdict=OrganizationReview.Verdict.PASS,
+                    risk_score=10.0,
+                    violated_sections=[],
+                    reason="Clean",
+                    model_used="test",
+                )
             )
-        )
-        await session.flush()
-
-        readiness = await organization_service.get_activation_readiness(
-            session, organization
-        )
-
-        assert readiness.is_ready is True
-        assert readiness.missing == []
-
-    async def test_onboarding_ready_without_review(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        await _setup_passing_org(save_fixture, organization, user)
-        organization.status = OrganizationStatus.CREATED
-        organization.details_submitted_at = datetime.now(UTC)
-        await save_fixture(organization)
+            await session.flush()
 
         readiness = await organization_service.get_activation_readiness(
             session, organization
         )
 
         assert readiness.onboarding_ready is True
-        assert readiness.is_ready is False
-        assert readiness.review_approved.missing == (
-            "No organization review has been submitted"
+        assert readiness.is_ready is reviewed
+        assert [item.missing for item in readiness.missing] == (
+            [] if reviewed else ["No organization review has been submitted"]
         )
 
 
@@ -1782,12 +1767,11 @@ class TestBackofficeSubmitAndMaybeActivate:
         organization.details_submitted_at = None
         organization.payout_account_id = None
 
-        outcome = await organization_service.backoffice_submit_and_maybe_activate(
+        result = await organization_service.backoffice_submit_and_maybe_activate(
             session, organization
         )
 
-        assert outcome.submitted_for_review is True
-        assert outcome.activated is False
+        assert result == BackofficeActivationResult.submitted_for_review
         assert organization.status == OrganizationStatus.CREATED
         assert organization.details_submitted_at is not None
         assert organization.internal_notes is not None
@@ -1817,12 +1801,11 @@ class TestBackofficeSubmitAndMaybeActivate:
         )
         await session.flush()
 
-        outcome = await organization_service.backoffice_submit_and_maybe_activate(
+        result = await organization_service.backoffice_submit_and_maybe_activate(
             session, organization
         )
 
-        assert outcome.submitted_for_review is False
-        assert outcome.activated is True
+        assert result == BackofficeActivationResult.activated
         assert organization.status == OrganizationStatus.ACTIVE
         assert (
             organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]

@@ -578,6 +578,38 @@ class TestOverviewLazyCards:
         assert "<html" not in response.text
 
 
+@pytest_asyncio.fixture
+async def activation_ready_organization(
+    save_fixture: SaveFixture, organization: Organization, user: User
+) -> Organization:
+    organization.status = OrganizationStatus.CREATED
+    organization.details = {"about": "A merchant"}
+    organization.details_submitted_at = datetime.now(UTC)
+    await save_fixture(organization)
+
+    user.identity_verification_status = IdentityVerificationStatus.verified
+    await save_fixture(user)
+    await save_fixture(
+        UserOrganization(
+            user_id=user.id,
+            organization_id=organization.id,
+            role=OrganizationRole.owner,
+        )
+    )
+    await create_payout_account(save_fixture, organization, user)
+    await save_fixture(
+        OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Clean",
+            model_used="test",
+        )
+    )
+    return organization
+
+
 @pytest.mark.asyncio
 class TestActivateDialog:
     async def test_created_org_detail_shows_activate_button(
@@ -623,39 +655,10 @@ class TestActivateDialog:
     async def test_get_shows_ready_when_gates_pass(
         self,
         backoffice_client: httpx.AsyncClient,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
+        activation_ready_organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.CREATED
-        organization.details = {"about": "A merchant"}
-        organization.details_submitted_at = datetime.now(UTC)
-        await save_fixture(organization)
-
-        user.identity_verification_status = IdentityVerificationStatus.verified
-        await save_fixture(user)
-        await save_fixture(
-            UserOrganization(
-                user_id=user.id,
-                organization_id=organization.id,
-                role=OrganizationRole.owner,
-            )
-        )
-        await create_payout_account(save_fixture, organization, user)
-        await save_fixture(
-            OrganizationReview(
-                organization_id=organization.id,
-                verdict=OrganizationReview.Verdict.PASS,
-                risk_score=10.0,
-                violated_sections=[],
-                reason="Clean",
-                model_used="test",
-            )
-        )
-
         response = await backoffice_client.get(
-            f"/organizations/{organization.id}/activate-dialog"
+            f"/organizations/{activation_ready_organization.id}/activate-dialog"
         )
 
         assert response.status_code == 200
@@ -709,51 +712,22 @@ class TestActivateDialog:
         )
 
         assert response.status_code == 200
-        assert organization.status == OrganizationStatus.CREATED
         await session.refresh(organization)
         assert organization.status == OrganizationStatus.CREATED
 
     async def test_post_activates_when_ready(
         self,
         backoffice_client: httpx.AsyncClient,
-        save_fixture: SaveFixture,
         session: AsyncSession,
-        organization: Organization,
-        user: User,
+        activation_ready_organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.CREATED
-        organization.details = {"about": "A merchant"}
-        organization.details_submitted_at = datetime.now(UTC)
-        await save_fixture(organization)
-
-        user.identity_verification_status = IdentityVerificationStatus.verified
-        await save_fixture(user)
-        await save_fixture(
-            UserOrganization(
-                user_id=user.id,
-                organization_id=organization.id,
-                role=OrganizationRole.owner,
-            )
-        )
-        await create_payout_account(save_fixture, organization, user)
-        await save_fixture(
-            OrganizationReview(
-                organization_id=organization.id,
-                verdict=OrganizationReview.Verdict.PASS,
-                risk_score=10.0,
-                violated_sections=[],
-                reason="Clean",
-                model_used="test",
-            )
-        )
-
         response = await backoffice_client.post(
-            f"/organizations/{organization.id}/activate-dialog"
+            f"/organizations/{activation_ready_organization.id}/activate-dialog"
         )
 
         assert response.status_code == 303
-        await session.refresh(organization)
-        assert organization.status == OrganizationStatus.ACTIVE
+        await session.refresh(activation_ready_organization)
+        assert activation_ready_organization.status == OrganizationStatus.ACTIVE
 
     async def test_post_rejects_non_created(
         self,

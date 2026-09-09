@@ -75,6 +75,8 @@ from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import (
     SNOOZE_MAX_DAYS,
     SNOOZE_MIN_DAYS,
+    ActivationGate,
+    BackofficeActivationResult,
     OrganizationError,
 )
 from polar.organization.service import organization as organization_service
@@ -2537,20 +2539,22 @@ async def activate_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    detail_url = str(
+        request.url_for("organizations:detail", organization_id=organization_id)
+    )
     readiness = await organization_service.get_activation_readiness(
         session, organization
     )
     error_message: str | None = None
-    can_submit_review = organization.status == OrganizationStatus.CREATED and (
+    is_created = organization.status == OrganizationStatus.CREATED
+    can_submit_review = is_created and (
         organization.details_submitted_at is None or not readiness.review_exists
     )
-    can_activate = (
-        organization.status == OrganizationStatus.CREATED and readiness.is_ready
-    )
+    can_activate = is_created and readiness.is_ready
 
     if request.method == "POST":
         try:
-            outcome = await organization_service.backoffice_submit_and_maybe_activate(
+            result = await organization_service.backoffice_submit_and_maybe_activate(
                 session, organization
             )
         except OrganizationError as e:
@@ -2558,32 +2562,27 @@ async def activate_dialog(
         except PolarRequestValidationError as e:
             error_message = "; ".join(error["msg"] for error in e.errors())
         else:
-            if outcome.activated:
-                await add_toast(request, "Organization activated.", "success")
-            elif outcome.submitted_for_review:
-                await add_toast(
-                    request,
-                    "Submitted for review. The organization will activate "
-                    "automatically if the review passes and onboarding is complete.",
-                    "success",
-                )
-            else:
-                missing = ", ".join(item.label.lower() for item in readiness.missing)
-                await add_toast(
-                    request,
-                    "Could not activate yet. Still missing: "
-                    f"{missing or 'review or onboarding'}.",
-                    "warning",
-                )
-            return HXRedirectResponse(
-                request,
-                str(
-                    request.url_for(
-                        "organizations:detail", organization_id=organization_id
+            match result:
+                case BackofficeActivationResult.activated:
+                    await add_toast(request, "Organization activated.", "success")
+                case BackofficeActivationResult.submitted_for_review:
+                    await add_toast(
+                        request,
+                        "Submitted for review. The organization will activate "
+                        "automatically if the review passes and onboarding is "
+                        "complete.",
+                        "success",
                     )
-                ),
-                303,
-            )
+                case BackofficeActivationResult.still_incomplete:
+                    missing = ", ".join(
+                        item.label.lower() for item in readiness.missing
+                    )
+                    await add_toast(
+                        request,
+                        f"Could not activate yet. Still missing: {missing}.",
+                        "warning",
+                    )
+            return HXRedirectResponse(request, detail_url, 303)
 
         readiness = await organization_service.get_activation_readiness(
             session, organization
@@ -2595,63 +2594,51 @@ async def activate_dialog(
                 with tag.div(classes="alert alert-error"):
                     text(error_message)
 
-            if readiness.is_ready:
-                with tag.div(
-                    classes="bg-success/10 border border-success/20 p-4 rounded-lg"
-                ):
-                    with tag.p(classes="font-semibold mb-1"):
-                        text("Ready to activate")
-                    with tag.p(classes="text-sm"):
-                        text(
-                            "All onboarding and review gates have passed. "
-                            "Activate uses the same path as automatic activation."
-                        )
-            else:
-                with tag.div(
-                    classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
-                ):
-                    with tag.p(classes="font-semibold mb-1"):
-                        text("Not fully ready to activate")
-                    with tag.p(classes="text-sm"):
-                        text(
-                            "Complete the missing steps below. Submitting for "
-                            "review queues the review agent; the organization "
-                            "activates automatically if the review passes and "
-                            "payout and identity checks are ready."
-                        )
+            with tag.div(
+                classes="bg-success/10 border border-success/20 p-4 rounded-lg"
+                if readiness.is_ready
+                else "bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-1"):
+                    text(
+                        "Ready to activate"
+                        if readiness.is_ready
+                        else "Not fully ready to activate"
+                    )
+                with tag.p(classes="text-sm"):
+                    text(
+                        "All onboarding and review gates have passed. Activate "
+                        "uses the same path as automatic activation."
+                        if readiness.is_ready
+                        else "Complete the missing steps below. Submitting for "
+                        "review queues the review agent; the organization "
+                        "activates automatically if the review passes and "
+                        "payout and identity checks are ready."
+                    )
 
             with tag.ul(classes="space-y-2"):
                 for requirement in readiness.requirements:
                     with tag.li(classes="flex items-start gap-2 text-sm"):
-                        if requirement.ready:
-                            with tag.span(classes="text-success font-semibold"):
-                                text("✓")
-                            with tag.span():
+                        icon_color = (
+                            "text-success" if requirement.ready else "text-error"
+                        )
+                        with tag.span(classes=f"{icon_color} font-semibold"):
+                            text("✓" if requirement.ready else "✗")
+                        with tag.div():
+                            with tag.p(classes="font-medium"):
                                 text(requirement.label)
-                        else:
-                            with tag.span(classes="text-error font-semibold"):
-                                text("✗")
-                            with tag.div():
-                                with tag.p(classes="font-medium"):
-                                    text(requirement.label)
-                                if requirement.missing:
-                                    with tag.p(classes="text-base-content/70"):
-                                        text(requirement.missing)
-                                if requirement is readiness.payout_account_ready:
-                                    account_url = (
-                                        str(
-                                            request.url_for(
-                                                "organizations:detail",
-                                                organization_id=organization_id,
-                                            )
-                                        )
-                                        + "?section=account"
-                                    )
-                                    with tag.a(
-                                        href=account_url,
-                                        classes="link link-primary text-sm",
-                                    ):
-                                        text("Go to account")
+                            if requirement.missing:
+                                with tag.p(classes="text-base-content/70"):
+                                    text(requirement.missing)
+                            if (
+                                not requirement.ready
+                                and requirement.gate is ActivationGate.payout_account
+                            ):
+                                with tag.a(
+                                    href=f"{detail_url}?section=account",
+                                    classes="link link-primary text-sm",
+                                ):
+                                    text("Go to account")
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):

@@ -3,6 +3,7 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from typing import Any, assert_never, cast
 from urllib.parse import urlparse
 from uuid import UUID
@@ -202,6 +203,36 @@ def _append_internal_note(
         organization.internal_notes = note
 
 
+def _payout_account_missing(payout_account: PayoutAccount | None) -> str | None:
+    if payout_account is None:
+        return "No payout account is connected"
+    if not payout_account.is_payout_ready:
+        return f"Payout account is not ready ({payout_account.status.value})"
+    return None
+
+
+def _owner_identity_missing(owner_user: User | None) -> str | None:
+    if owner_user is None:
+        return "Organization has no owner"
+    if owner_user.identity_verification_status != IdentityVerificationStatus.verified:
+        return (
+            "Owner identity is "
+            f"{owner_user.identity_verification_status.get_display_name()}"
+        )
+    return None
+
+
+def _review_missing(review: OrganizationReview | None) -> str | None:
+    if review is None:
+        return "No organization review has been submitted"
+    if review.is_approved:
+        return None
+    missing = f"Review verdict is {review.verdict.value}"
+    if review.appeal_decision is not None:
+        missing += f" (appeal {review.appeal_decision.value})"
+    return missing
+
+
 def _merge_customer_portal_settings(
     stored: OrganizationCustomerPortalSettings,
     update: OrganizationCustomerPortalSettings,
@@ -249,41 +280,43 @@ class OrganizationDeletionCheckResult(BaseModel):
 class OrganizationError(PolarError): ...
 
 
+class ActivationGate(StrEnum):
+    details = "Organization details submitted"
+    payout_account = "Payout account ready"
+    owner_identity = "Owner identity verified"
+    review = "Review approved"
+
+
 @dataclass(frozen=True)
 class ActivationRequirement:
-    label: str
-    ready: bool
+    gate: ActivationGate
     missing: str | None = None
+
+    @property
+    def label(self) -> str:
+        return self.gate.value
+
+    @property
+    def ready(self) -> bool:
+        return self.missing is None
 
 
 @dataclass(frozen=True)
 class ActivationReadiness:
-    details_submitted: ActivationRequirement
-    payout_account_ready: ActivationRequirement
-    owner_identity_verified: ActivationRequirement
-    review_approved: ActivationRequirement
+    requirements: tuple[ActivationRequirement, ...]
     review_exists: bool
 
     @property
-    def requirements(self) -> tuple[ActivationRequirement, ...]:
-        return (
-            self.details_submitted,
-            self.payout_account_ready,
-            self.owner_identity_verified,
-            self.review_approved,
-        )
-
-    @property
     def onboarding_ready(self) -> bool:
-        return (
-            self.details_submitted.ready
-            and self.payout_account_ready.ready
-            and self.owner_identity_verified.ready
+        return all(
+            requirement.ready
+            for requirement in self.requirements
+            if requirement.gate is not ActivationGate.review
         )
 
     @property
     def is_ready(self) -> bool:
-        return self.onboarding_ready and self.review_approved.ready
+        return all(requirement.ready for requirement in self.requirements)
 
     @property
     def missing(self) -> list[ActivationRequirement]:
@@ -292,10 +325,10 @@ class ActivationReadiness:
         ]
 
 
-@dataclass(frozen=True)
-class BackofficeActivationOutcome:
-    submitted_for_review: bool
-    activated: bool
+class BackofficeActivationResult(StrEnum):
+    activated = "activated"
+    submitted_for_review = "submitted_for_review"
+    still_incomplete = "still_incomplete"
 
 
 class CannotChangeOwnerError(OrganizationError):
@@ -1284,108 +1317,47 @@ class OrganizationService:
         Activate dialog. Review approval is listed separately from onboarding
         (details, payout account, owner identity).
         """
-        details_ready = bool(organization.details_submitted_at and organization.details)
-        details_submitted = ActivationRequirement(
-            label="Organization details submitted",
-            ready=details_ready,
-            missing=(
-                None
-                if details_ready
-                else "Organization details have not been submitted"
-            ),
-        )
-
         payout_account: PayoutAccount | None = None
         if organization.payout_account_id is not None:
             payout_account_repository = PayoutAccountRepository.from_session(session)
             payout_account = await payout_account_repository.get_by_id(
                 organization.payout_account_id,
             )
-        payout_ready = payout_account is not None and payout_account.is_payout_ready
-        if payout_account is None:
-            payout_missing = "No payout account is connected"
-        elif not payout_account.is_payout_ready:
-            payout_missing = (
-                f"Payout account is not ready ({payout_account.status.value})"
-            )
-        else:
-            payout_missing = None
-        payout_account_ready = ActivationRequirement(
-            label="Payout account ready",
-            ready=payout_ready,
-            missing=payout_missing,
-        )
 
         organization_repository = OrganizationRepository.from_session(session)
         owner_user = await organization_repository.get_owner_user(organization)
-        owner_verified = (
-            owner_user is not None
-            and owner_user.identity_verification_status
-            == IdentityVerificationStatus.verified
-        )
-        if owner_user is None:
-            identity_missing = "Organization has no owner"
-        elif not owner_verified:
-            identity_missing = (
-                "Owner identity is "
-                f"{owner_user.identity_verification_status.get_display_name()}"
-            )
-        else:
-            identity_missing = None
-        owner_identity_verified = ActivationRequirement(
-            label="Owner identity verified",
-            ready=owner_verified,
-            missing=identity_missing,
-        )
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
-        review_approved = review is not None and review.is_approved
-        if review is None:
-            review_missing = "No organization review has been submitted"
-        elif not review.is_approved:
-            review_missing = f"Review verdict is {review.verdict.value}"
-            if review.appeal_decision is not None:
-                review_missing += f" (appeal {review.appeal_decision.value})"
-        else:
-            review_missing = None
-        review_requirement = ActivationRequirement(
-            label="Review approved",
-            ready=review_approved,
-            missing=review_missing,
-        )
 
         return ActivationReadiness(
-            details_submitted=details_submitted,
-            payout_account_ready=payout_account_ready,
-            owner_identity_verified=owner_identity_verified,
-            review_approved=review_requirement,
+            requirements=(
+                ActivationRequirement(
+                    ActivationGate.details,
+                    None
+                    if organization.details_submitted_at and organization.details
+                    else "Organization details have not been submitted",
+                ),
+                ActivationRequirement(
+                    ActivationGate.payout_account,
+                    _payout_account_missing(payout_account),
+                ),
+                ActivationRequirement(
+                    ActivationGate.owner_identity, _owner_identity_missing(owner_user)
+                ),
+                ActivationRequirement(ActivationGate.review, _review_missing(review)),
+            ),
             review_exists=review is not None,
         )
-
-    async def _is_activation_ready(
-        self, session: AsyncSession, organization: Organization
-    ) -> bool:
-        """Whether onboarding gates (details, payout account, KYC) are met.
-
-        Mirrors the non-review gates checked by `maybe_activate` so the
-        backoffice approval path can decide whether a reactivation should go
-        straight to ACTIVE or revert to CREATED to finish onboarding.
-        """
-        readiness = await self.get_activation_readiness(session, organization)
-        return readiness.onboarding_ready
 
     async def maybe_activate(
         self, session: AsyncSession, organization: Organization
     ) -> bool:
         """Transition CREATED → ACTIVE when every onboarding gate passes.
 
-        Gates:
-          1. Status is CREATED.
-          2. Review is approved: verdict PASS, or verdict FAIL with an
-             APPROVED appeal.
-          3. Details submitted, payout account ready, owner identity
-             verified (see `_is_activation_ready`).
+        Gates: status is CREATED and every `get_activation_readiness`
+        requirement passes (details submitted, payout account ready, owner
+        identity verified, review approved).
 
         Idempotent — safe to call from automated triggers (AI review, Stripe
         ``account.updated``, identity verification). Returns True iff the org
@@ -1399,12 +1371,8 @@ class OrganizationService:
         if organization.status != OrganizationStatus.CREATED:
             return False
 
-        review_repository = OrganizationReviewRepository.from_session(session)
-        review = await review_repository.get_by_organization(organization.id)
-        if review is None or not review.is_approved:
-            return False
-
-        if not await self._is_activation_ready(session, organization):
+        readiness = await self.get_activation_readiness(session, organization)
+        if not readiness.is_ready:
             return False
 
         organization.set_status(OrganizationStatus.ACTIVE)
@@ -1428,7 +1396,7 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
-    ) -> BackofficeActivationOutcome:
+    ) -> BackofficeActivationResult:
         """Complete review submission from backoffice, then try `maybe_activate`.
 
         Does not force ``CREATED → ACTIVE``. If onboarding or review is still
@@ -1442,37 +1410,37 @@ class OrganizationService:
                 409,
             )
 
-        submitted_for_review = False
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
+        needs_submission = organization.details_submitted_at is None
+        submitted_for_review = needs_submission or review is None
 
-        if organization.details_submitted_at is None:
+        if needs_submission:
+            # Sets `details_submitted_at` and queues the review agent itself.
             await self.submit_for_review(session, organization)
-            submitted_for_review = True
-            _append_internal_note(organization, "Submitted for review via backoffice.")
         elif review is None:
             enqueue_job(
                 "organization_review.run_agent",
                 organization_id=organization.id,
                 context=ReviewContext.SUBMISSION,
             )
-            submitted_for_review = True
-            _append_internal_note(
-                organization, "Queued organization review via backoffice."
-            )
+        if submitted_for_review:
+            _append_internal_note(organization, "Submitted for review via backoffice.")
 
-        activated = await self.maybe_activate(session, organization)
+        if await self.maybe_activate(session, organization):
+            result = BackofficeActivationResult.activated
+        elif submitted_for_review:
+            result = BackofficeActivationResult.submitted_for_review
+        else:
+            result = BackofficeActivationResult.still_incomplete
+
         log.info(
             "organization.backoffice_submit_and_maybe_activate",
             organization_id=str(organization.id),
             slug=organization.slug,
-            submitted_for_review=submitted_for_review,
-            activated=activated,
+            result=result.value,
         )
-        return BackofficeActivationOutcome(
-            submitted_for_review=submitted_for_review,
-            activated=activated,
-        )
+        return result
 
     async def _reactivate_organization(
         self,
@@ -1492,7 +1460,8 @@ class OrganizationService:
         if next_review_threshold is None:
             next_review_threshold = FIRST_REVIEW_THRESHOLD_CENTS
 
-        is_ready = await self._is_activation_ready(session, organization)
+        readiness = await self.get_activation_readiness(session, organization)
+        is_ready = readiness.onboarding_ready
         target_status = (
             OrganizationStatus.ACTIVE if is_ready else OrganizationStatus.CREATED
         )

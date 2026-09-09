@@ -2,6 +2,7 @@
 
 import { Alert, Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ApprovedResolutionSummary } from './ApprovedResolutionSummary'
 import { mockMigration } from './mockData'
 import { PrototypeAction, PrototypeState } from './model'
 import { Metric, OwnershipSummary, Surface } from './PrototypePrimitives'
@@ -9,12 +10,14 @@ import { RecordExplorer } from './RecordExplorer'
 import { MigrationTotals, TransferReceipt } from './selectors'
 
 export function GuidedTransferStage({
+  state,
   reviewing,
   setReviewing,
   totals,
   problemCount,
   act,
 }: {
+  state: PrototypeState
   reviewing: boolean
   setReviewing: (value: boolean) => void
   totals: MigrationTotals
@@ -28,6 +31,11 @@ export function GuidedTransferStage({
       </Text>
       {reviewing ? (
         <>
+          <ApprovedResolutionSummary
+            state={state}
+            act={act}
+            context="transfer"
+          />
           <OwnershipSummary />
           <Alert
             variant="warning"
@@ -108,6 +116,7 @@ export function GuidedReceiptStage({
           />
           <Metric label="Unknown owner" value={receipt?.unknownOwned ?? 0} />
         </Box>
+        <ApprovedResolutionSummary state={state} act={act} context="receipt" />
         <Text color="muted">
           All {remaining} problem records remain on Stripe with documented
           reasons.

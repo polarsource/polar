@@ -4,10 +4,11 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { Alert, Button, SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useMemo, useState } from 'react'
+import { ApprovedResolutionSummary } from './ApprovedResolutionSummary'
 import { HeaderCheckState, buildCurrentColumns } from './CurrentRecordColumns'
 import { CurrentDataTable, useCurrentPagination } from './CurrentDataTable'
 import { MockSubscriptionRecord } from './mockData'
-import { PrototypeAction } from './model'
+import { PrototypeAction, PrototypeState } from './model'
 import { getCleanSubscriptions, getProblemSubscriptions } from './selectors'
 
 type SwitchFilter = 'all' | 'ready' | 'stripe' | 'moved'
@@ -32,8 +33,10 @@ function filterRows(
 }
 
 export function CurrentSwitch({
+  state,
   act,
 }: {
+  state: PrototypeState
   act: (action: PrototypeAction) => void
 }) {
   const clean = getCleanSubscriptions()
@@ -114,6 +117,13 @@ export function CurrentSwitch({
           {problems.length} left on Stripe
         </Text>
       </Box>
+
+      <ApprovedResolutionSummary
+        state={state}
+        act={act}
+        compact
+        context="transfer"
+      />
 
       <Box
         alignItems={{ base: 'start', md: 'center' }}

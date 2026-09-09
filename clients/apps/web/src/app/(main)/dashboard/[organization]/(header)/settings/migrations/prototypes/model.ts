@@ -5,6 +5,7 @@ import {
   IdentityResolution,
   isResolutionComplete,
   ProductResolution,
+  recommendedResolutionChoices,
   ResolutionChoices,
 } from './resolutions'
 
@@ -28,6 +29,7 @@ export {
   getResolutionChoiceLabel,
   getResolutionCompletionCount,
   isResolutionComplete,
+  recommendedResolutionChoices,
   RESOLUTION_DOMAINS,
   SUGGESTED_BILLING_COUNTRY,
 } from './resolutions'
@@ -43,10 +45,13 @@ export type PrototypeStage =
   | 'receipt'
   | 'closed'
 
+export type PrototypeReturnStage = 'cards' | 'transfer' | 'receipt'
+
 export type PrototypeStageAction =
   | 'create'
   | 'assess'
   | 'resolve'
+  | 'edit_resolutions'
   | 'copy_cards'
   | 'transfer'
   | 'review_receipt'
@@ -65,6 +70,7 @@ export interface PrototypeState {
   receiptViewed: boolean
   receipt: TransferReceipt | null
   resolutions: ResolutionChoices
+  returnStage: PrototypeReturnStage | null
 }
 
 export const initialPrototypeState: PrototypeState = {
@@ -72,6 +78,7 @@ export const initialPrototypeState: PrototypeState = {
   receiptViewed: false,
   receipt: null,
   resolutions: emptyResolutionChoices(),
+  returnStage: null,
 }
 
 export const createPrototypeState = (): PrototypeState => ({
@@ -79,6 +86,7 @@ export const createPrototypeState = (): PrototypeState => ({
   receiptViewed: false,
   receipt: null,
   resolutions: emptyResolutionChoices(),
+  returnStage: null,
 })
 
 export const createInitialVariantStates = <
@@ -90,13 +98,21 @@ export const createInitialVariantStates = <
     variants.map((variant) => [variant, createPrototypeState()]),
   ) as Record<Variant, PrototypeState>
 
+const EDITABLE_RETURN_STAGES: readonly PrototypeReturnStage[] = [
+  'cards',
+  'transfer',
+  'receipt',
+]
+
+const isReturnStage = (stage: PrototypeStage): stage is PrototypeReturnStage =>
+  (EDITABLE_RETURN_STAGES as readonly string[]).includes(stage)
+
 const transitions: Record<
-  Exclude<PrototypeStageAction, 'reset'>,
+  Exclude<PrototypeStageAction, 'reset' | 'resolve' | 'edit_resolutions'>,
   { from: PrototypeStage; to: PrototypeStage }
 > = {
   create: { from: 'create', to: 'assessment' },
   assess: { from: 'assessment', to: 'decisions' },
-  resolve: { from: 'decisions', to: 'cards' },
   copy_cards: { from: 'cards', to: 'transfer' },
   transfer: { from: 'transfer', to: 'receipt' },
   review_receipt: { from: 'receipt', to: 'receipt' },
@@ -131,11 +147,34 @@ export function applyPrototypeAction(
   if (action === 'reset') {
     return createPrototypeState()
   }
+  if (action === 'edit_resolutions') {
+    if (!isReturnStage(state.stage)) {
+      return state
+    }
+    return {
+      ...state,
+      stage: 'decisions',
+      returnStage: state.stage,
+    }
+  }
+  if (action === 'resolve') {
+    if (
+      state.stage !== 'decisions' ||
+      !isResolutionComplete(state.resolutions)
+    ) {
+      return state
+    }
+    if (state.returnStage !== null) {
+      return {
+        ...state,
+        stage: state.returnStage,
+        returnStage: null,
+      }
+    }
+    return { ...state, stage: 'cards' }
+  }
   if (action === 'review_receipt' && state.stage === 'receipt') {
     return { ...state, receiptViewed: true }
-  }
-  if (action === 'resolve' && !isResolutionComplete(state.resolutions)) {
-    return state
   }
   const transition = transitions[action]
   if (state.stage !== transition.from) {
@@ -150,6 +189,21 @@ export function applyPrototypeAction(
     }
   }
   return { ...state, stage: transition.to }
+}
+
+export function applyVariantPrototypeAction(
+  variant: PrototypeVariant,
+  state: PrototypeState,
+  action: PrototypeAction,
+): PrototypeState {
+  const next = applyPrototypeAction(state, action)
+  if (action !== 'assess' || variant !== 'assisted' || next === state) {
+    return next
+  }
+  return {
+    ...next,
+    resolutions: recommendedResolutionChoices(),
+  }
 }
 
 export const stageIndex = (stage: PrototypeStage): number => {

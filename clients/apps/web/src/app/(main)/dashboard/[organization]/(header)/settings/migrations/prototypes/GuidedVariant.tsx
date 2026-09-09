@@ -4,10 +4,12 @@ import { Alert, Button, Input, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { mockMigration } from './mockData'
+import { ApprovedResolutionSummary } from './ApprovedResolutionSummary'
 import {
   getResolutionCompletionCount,
   isResolutionComplete,
   PrototypeAction,
+  PrototypeReturnStage,
   PrototypeState,
   RESOLUTION_DOMAINS,
 } from './model'
@@ -29,9 +31,19 @@ interface Props {
   act: (action: PrototypeAction) => void
 }
 
-function resolveContinueLabel(resolved: number, total: number): string {
+function resolveContinueLabel(
+  resolved: number,
+  total: number,
+  returnStage: PrototypeReturnStage | null,
+): string {
   const remaining = total - resolved
   if (remaining <= 0) {
+    if (returnStage === 'transfer') {
+      return 'Confirm decisions and return to transfer'
+    }
+    if (returnStage === 'receipt') {
+      return 'Confirm decisions and return to receipt'
+    }
     return 'Confirm decisions and prepare'
   }
   if (remaining === total) {
@@ -127,7 +139,11 @@ export function GuidedVariant({ state, act }: Props) {
                 disabled={!resolutionsComplete}
                 onClick={() => act('resolve')}
               >
-                {resolveContinueLabel(resolvedCount, resolutionTotal)}
+                {resolveContinueLabel(
+                  resolvedCount,
+                  resolutionTotal,
+                  state.returnStage,
+                )}
               </Button>
             </Box>
           </Surface>
@@ -145,6 +161,7 @@ export function GuidedVariant({ state, act }: Props) {
             {mockMigration.cards.customerAction} customers need a card action
             before they leave Stripe.
           </Text>
+          <ApprovedResolutionSummary state={state} act={act} context="cards" />
           <CustomerActionList />
           <Alert
             variant="warning"
@@ -160,6 +177,7 @@ export function GuidedVariant({ state, act }: Props) {
       ) : null}
       {state.stage === 'transfer' ? (
         <GuidedTransferStage
+          state={state}
           reviewing={reviewing}
           setReviewing={setReviewing}
           totals={totals}

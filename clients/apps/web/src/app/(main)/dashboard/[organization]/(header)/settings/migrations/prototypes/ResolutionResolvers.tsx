@@ -1,8 +1,7 @@
 'use client'
 
-import { Button, Grid, Status, Text } from '@polar-sh/orbit'
+import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
 import { CountryResolver } from './CountryResolver'
 import { IdentityResolver } from './IdentityResolver'
 import {
@@ -14,8 +13,14 @@ import {
   ResolutionDomain,
 } from './model'
 import { ProductResolver } from './ProductResolver'
-import { RESOLUTION_DOMAIN_LABELS } from './recordLabels'
+import {
+  AssistedProposalNav,
+  CurrentAttentionRows,
+  GuidedDomainNav,
+  TowerDecisionQueue,
+} from './resolutionChrome'
 import { ResolutionPresentation } from './resolutionControls'
+import { useResolutionDomainFocus } from './resolutionDomainFocus'
 
 export type { ResolutionPresentation } from './resolutionControls'
 
@@ -38,34 +43,105 @@ function DomainResolver({
   return <IdentityResolver {...props} index={3} />
 }
 
-function shellCopy(presentation: ResolutionPresentation): {
-  title: string
-  detail: string
-} {
+function PresentationChrome({
+  presentation,
+  resolutions,
+  activeDomain,
+  onSelect,
+}: {
+  presentation: ResolutionPresentation
+  resolutions: PrototypeState['resolutions']
+  activeDomain: ResolutionDomain
+  onSelect: (domain: ResolutionDomain) => void
+}) {
   if (presentation === 'guided') {
-    return {
-      title: 'Resolve blocking decisions in order',
-      detail:
-        'Work each numbered decision. Continue stays with the parent variant once all three are resolved.',
-    }
+    return (
+      <GuidedDomainNav
+        resolutions={resolutions}
+        activeDomain={activeDomain}
+        onSelect={onSelect}
+      />
+    )
   }
   if (presentation === 'assisted') {
-    return {
-      title: "Review Polar's proposed resolutions",
-      detail:
-        'Approve or change each Polar proposal. The parent variant owns the final Approve control.',
-    }
+    return (
+      <AssistedProposalNav
+        resolutions={resolutions}
+        activeDomain={activeDomain}
+        onSelect={onSelect}
+      />
+    )
   }
   if (presentation === 'tower') {
-    return {
-      title: 'Decision inbox',
-      detail: 'Resolve product, country, and identity in parallel.',
-    }
+    return (
+      <TowerDecisionQueue
+        resolutions={resolutions}
+        activeDomain={activeDomain}
+        onSelect={onSelect}
+      />
+    )
   }
-  return {
-    title: 'Required resolutions',
-    detail: 'Clear these before the transfer step.',
+  return (
+    <CurrentAttentionRows
+      resolutions={resolutions}
+      activeDomain={activeDomain}
+      onSelect={onSelect}
+    />
+  )
+}
+
+function ShellHeader({
+  presentation,
+  resolvedCount,
+  total,
+  complete,
+}: {
+  presentation: ResolutionPresentation
+  resolvedCount: number
+  total: number
+  complete: boolean
+}) {
+  if (presentation === 'current') {
+    return null
   }
+  const title =
+    presentation === 'guided'
+      ? 'Resolve blocking decisions in order'
+      : presentation === 'assisted'
+        ? "Review Polar's proposed resolutions"
+        : 'Decision inbox'
+  const detail =
+    presentation === 'guided'
+      ? 'One decision at a time. Completed decisions stay editable.'
+      : presentation === 'assisted'
+        ? 'Approve or change each Polar proposal. The parent variant owns the final Approve control.'
+        : 'Pick a queue row, then resolve it in the detail pane.'
+
+  return (
+    <Box
+      alignItems={{ base: 'start', md: 'center' }}
+      justifyContent="between"
+      gap="m"
+      flexWrap="wrap"
+    >
+      <Box flexDirection="column" rowGap="xs" minWidth={0}>
+        <Text
+          variant={presentation === 'tower' ? 'heading-xs' : 'heading-l'}
+          as="h2"
+        >
+          {title}
+        </Text>
+        <Text variant="caption" color="muted" wrap="pretty">
+          {detail}
+        </Text>
+      </Box>
+      <Status
+        status={`${resolvedCount} of ${total} resolved`}
+        color={complete ? 'green' : 'yellow'}
+        size={presentation === 'tower' ? 'small' : 'medium'}
+      />
+    </Box>
+  )
 }
 
 export function ResolutionResolvers({
@@ -73,43 +149,17 @@ export function ResolutionResolvers({
   act,
   presentation,
 }: ResolutionResolversProps) {
-  const resolved = getResolutionCompletionCount(state.resolutions)
+  const resolvedCount = getResolutionCompletionCount(state.resolutions)
   const total = RESOLUTION_DOMAINS.length
   const complete = isResolutionComplete(state.resolutions)
-  const copy = shellCopy(presentation)
+  const autoAdvance = presentation === 'guided' || presentation === 'assisted'
+  const { activeDomain, selectDomain, wrapAct } = useResolutionDomainFocus(
+    state.resolutions,
+    autoAdvance,
+  )
+  const focusedAct = wrapAct(act)
   const compact = presentation === 'tower' || presentation === 'current'
-  const parallel = presentation === 'tower'
-  const [assistedDomain, setAssistedDomain] = useState<ResolutionDomain | null>(
-    null,
-  )
-  const firstUnresolved = RESOLUTION_DOMAINS.find(
-    (domain) => state.resolutions[domain] === null,
-  )
-  const activeAssistedDomain =
-    assistedDomain ??
-    firstUnresolved ??
-    RESOLUTION_DOMAINS[RESOLUTION_DOMAINS.length - 1]
-  const actAndAdvance = (action: PrototypeAction) => {
-    act(action)
-    if (typeof action === 'string') {
-      return
-    }
-    const domain: ResolutionDomain =
-      action.type === 'choose_product'
-        ? 'product'
-        : action.type === 'choose_country'
-          ? 'country'
-          : 'identity'
-    if (state.resolutions[domain] !== null) {
-      setAssistedDomain(domain)
-      return
-    }
-    const nextUnresolved = RESOLUTION_DOMAINS.find(
-      (candidate) =>
-        candidate !== domain && state.resolutions[candidate] === null,
-    )
-    setAssistedDomain(nextUnresolved ?? domain)
-  }
+  const towerLayout = presentation === 'tower'
 
   return (
     <Box
@@ -118,106 +168,33 @@ export function ResolutionResolvers({
       rowGap={compact ? 'm' : 'l'}
       aria-label="Migration resolution decisions"
     >
-      <Box
-        alignItems={{ base: 'start', md: 'center' }}
-        justifyContent="between"
-        gap="m"
-        flexWrap="wrap"
-      >
-        <Box flexDirection="column" rowGap="xs" minWidth={0}>
-          <Text variant={compact ? 'heading-xs' : 'heading-l'} as="h2">
-            {copy.title}
-          </Text>
-          <Text variant="caption" color="muted" wrap="pretty">
-            {copy.detail}
-          </Text>
-        </Box>
-        <Status
-          status={`${resolved} of ${total} resolved`}
-          color={complete ? 'green' : 'yellow'}
-          size={compact ? 'small' : 'medium'}
-        />
-      </Box>
+      <ShellHeader
+        presentation={presentation}
+        resolvedCount={resolvedCount}
+        total={total}
+        complete={complete}
+      />
 
-      {presentation === 'assisted' ? (
-        <Box flexDirection="column" rowGap="l">
-          <Box
-            role="group"
-            aria-label="Proposal decisions"
-            gap="s"
-            flexWrap="wrap"
-          >
-            {RESOLUTION_DOMAINS.map((domain) => {
-              const resolved = state.resolutions[domain] !== null
-              return (
-                <Button
-                  key={domain}
-                  size="sm"
-                  variant={
-                    domain === activeAssistedDomain ? 'default' : 'secondary'
-                  }
-                  aria-pressed={domain === activeAssistedDomain}
-                  onClick={() => setAssistedDomain(domain)}
-                >
-                  {resolved ? '✓ ' : ''}
-                  {RESOLUTION_DOMAIN_LABELS[domain]}
-                </Button>
-              )
-            })}
-          </Box>
+      <Box
+        flexDirection={towerLayout ? { base: 'column', lg: 'row' } : 'column'}
+        gap={compact ? 'm' : 'l'}
+        alignItems={towerLayout ? { base: 'stretch', lg: 'start' } : undefined}
+      >
+        <PresentationChrome
+          presentation={presentation}
+          resolutions={state.resolutions}
+          activeDomain={activeDomain}
+          onSelect={selectDomain}
+        />
+        <Box flex={towerLayout ? 1 : undefined} minWidth={0}>
           <DomainResolver
-            domain={activeAssistedDomain}
+            domain={activeDomain}
             state={state}
-            act={actAndAdvance}
+            act={focusedAct}
             presentation={presentation}
           />
         </Box>
-      ) : parallel ? (
-        <Grid
-          templateColumns={{ base: '1fr', lg: 'repeat(3, minmax(0, 1fr))' }}
-          gap="m"
-        >
-          <ProductResolver
-            state={state}
-            act={act}
-            presentation={presentation}
-            index={1}
-          />
-          <CountryResolver
-            state={state}
-            act={act}
-            presentation={presentation}
-            index={2}
-          />
-          <IdentityResolver
-            state={state}
-            act={act}
-            presentation={presentation}
-            index={3}
-          />
-        </Grid>
-      ) : (
-        <Box flexDirection="column" rowGap={compact ? 'm' : 'l'}>
-          <ProductResolver
-            state={state}
-            act={act}
-            presentation={presentation}
-            index={1}
-          />
-          <CountryResolver
-            state={state}
-            act={act}
-            presentation={presentation}
-            index={2}
-          />
-          <IdentityResolver
-            state={state}
-            act={act}
-            presentation={presentation}
-            index={3}
-          />
-        </Box>
-      )}
+      </Box>
     </Box>
   )
 }

@@ -2,11 +2,13 @@
 
 import { Alert, Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ApprovedResolutionSummary } from './ApprovedResolutionSummary'
 import { mockMigration } from './mockData'
 import {
   getResolutionCompletionCount,
   isResolutionComplete,
   PrototypeAction,
+  PrototypeReturnStage,
   PrototypeState,
   RESOLUTION_DOMAINS,
 } from './model'
@@ -25,9 +27,19 @@ interface Props {
   act: (action: PrototypeAction) => void
 }
 
-function assistedApproveLabel(resolved: number, total: number): string {
+function assistedApproveLabel(
+  resolved: number,
+  total: number,
+  returnStage: PrototypeReturnStage | null,
+): string {
   const remaining = total - resolved
   if (remaining <= 0) {
+    if (returnStage === 'transfer') {
+      return 'Confirm plan and return to transfer'
+    }
+    if (returnStage === 'receipt') {
+      return 'Confirm plan and return to receipt'
+    }
     return 'Approve plan and let Polar prepare'
   }
   return `Choose ${remaining} more proposal${remaining === 1 ? '' : 's'} before approval`
@@ -98,7 +110,11 @@ export function AssistedTask({ state, act }: Props) {
               disabled={!resolutionsComplete}
               onClick={() => act('resolve')}
             >
-              {assistedApproveLabel(resolvedCount, resolutionTotal)}
+              {assistedApproveLabel(
+                resolvedCount,
+                resolutionTotal,
+                state.returnStage,
+              )}
             </Button>
           </Box>
         </Surface>
@@ -117,6 +133,7 @@ export function AssistedTask({ state, act }: Props) {
           Polar prepared the mapping. Approve the Stripe copy, then handle these
           external customer actions before later transfers.
         </Text>
+        <ApprovedResolutionSummary state={state} act={act} context="cards" />
         <CustomerActionList />
         <Alert
           variant="info"
@@ -147,6 +164,7 @@ export function AssistedTask({ state, act }: Props) {
           />
           <Metric label="Exceptions held" value={problems.length} />
         </Box>
+        <ApprovedResolutionSummary state={state} act={act} context="transfer" />
         <Alert
           variant="warning"
           title="Stripe cancellation cannot be automatically undone"
@@ -179,6 +197,7 @@ export function AssistedTask({ state, act }: Props) {
           />
           <Metric label="Unknown owner" value={receipt?.unknownOwned ?? 0} />
         </Box>
+        <ApprovedResolutionSummary state={state} act={act} context="receipt" />
         <Text color="muted">
           Polar transferred {receipt?.moved ?? clean} clean subscriptions and
           retained all {receipt?.remainingProblems ?? problems.length} problem

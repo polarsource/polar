@@ -1,7 +1,7 @@
 import { Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
-import { flowSteps, mockMigration } from './mockData'
+import { flowSteps } from './mockData'
 import { PrototypeStage, stageIndex } from './model'
 import { getOwnershipForTransfer } from './selectors'
 
@@ -111,39 +111,6 @@ export function Metric({
       <Text variant="caption" color="muted">
         {label}
       </Text>
-    </Box>
-  )
-}
-
-export function DecisionList() {
-  return (
-    <Box flexDirection="column" rowGap="s">
-      {mockMigration.decisions.map((decision) => (
-        <Box
-          key={decision.title}
-          alignItems="center"
-          justifyContent="between"
-          columnGap="l"
-          rowGap="s"
-          flexWrap="wrap"
-          padding="l"
-          borderRadius="m"
-          borderWidth={1}
-          borderStyle="solid"
-          borderColor="border-secondary"
-        >
-          <Box flexDirection="column" rowGap="xs">
-            <Box alignItems="center" columnGap="s">
-              <Text variant="body">{decision.title}</Text>
-              <Status status={decision.kind} color="yellow" size="small" />
-            </Box>
-            <Text variant="caption" color="muted">
-              {decision.detail}
-            </Text>
-          </Box>
-          <Text variant="caption">Included in this prototype</Text>
-        </Box>
-      ))}
     </Box>
   )
 }

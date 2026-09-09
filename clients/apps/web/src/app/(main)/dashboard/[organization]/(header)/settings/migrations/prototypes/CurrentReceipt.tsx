@@ -3,6 +3,7 @@
 import { Button, SegmentedControl, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useMemo, useState } from 'react'
+import { ApprovedResolutionSummary } from './ApprovedResolutionSummary'
 import { buildCurrentColumns } from './CurrentRecordColumns'
 import { CurrentDataTable, useCurrentPagination } from './CurrentDataTable'
 import { PrototypeAction, PrototypeState } from './model'
@@ -74,6 +75,12 @@ export function CurrentReceipt({
           remain on Stripe with documented outcomes and reasons. Unknown owners:{' '}
           {unknown}.
         </Text>
+        <ApprovedResolutionSummary
+          state={state}
+          act={act}
+          compact
+          context="receipt"
+        />
         <Box gap="s" flexWrap="wrap">
           <Button variant="secondary" onClick={() => act('review_receipt')}>
             Export receipt

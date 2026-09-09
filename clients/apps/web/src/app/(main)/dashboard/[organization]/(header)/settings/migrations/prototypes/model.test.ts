@@ -51,6 +51,7 @@ describe('migration prototype model', () => {
     expect(result.receipt?.stripeOwned).toBe(16)
     expect(result.receipt?.unknownOwned).toBe(0)
     expect(isResolutionComplete(result.resolutions)).toBe(true)
+    expect(result.returnStage).toBeNull()
   })
 
   it('ignores actions that do not belong to the current stage', () => {

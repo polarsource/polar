@@ -1,7 +1,49 @@
-import { PrototypeVariant } from './model'
+import { PrototypeVariant, ResolutionDomain } from './model'
+
+export function domainNavLabel(
+  domain: ResolutionDomain,
+  presentation: PrototypeVariant,
+): string {
+  if (presentation === 'assisted') {
+    if (domain === 'product') {
+      return 'Product mapping'
+    }
+    if (domain === 'country') {
+      return 'Billing country'
+    }
+    return 'Customer identity'
+  }
+  if (domain === 'product') {
+    return 'Product'
+  }
+  if (domain === 'country') {
+    return 'Country'
+  }
+  return 'Identity'
+}
+
+export function domainRiskLine(domain: ResolutionDomain): string {
+  if (domain === 'product') {
+    return 'Pro catalog collision may duplicate benefits.'
+  }
+  if (domain === 'country') {
+    return 'Missing country blocks tax on renewal.'
+  }
+  return 'Email / Stripe id mismatch risks a bad merge.'
+}
+
+export function domainAttentionLabel(domain: ResolutionDomain): string {
+  if (domain === 'product') {
+    return 'Map product'
+  }
+  if (domain === 'country') {
+    return 'Set country'
+  }
+  return 'Reconcile customer'
+}
 
 export function domainCopy(
-  domain: 'product' | 'country' | 'identity',
+  domain: ResolutionDomain,
   presentation: PrototypeVariant,
   index: number,
 ): { eyebrow: string; headline: string; context: string } {

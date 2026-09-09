@@ -83,7 +83,7 @@ export function ResolutionChoiceGroup({
           {option.selected
             ? `Selected · ${option.label}`
             : option.recommended
-              ? `Polar suggests · ${option.label}`
+              ? `Polar recommends · ${option.label}`
               : option.label}
         </Button>
       ))}

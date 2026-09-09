@@ -2,11 +2,13 @@
 
 import { Alert, Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ApprovedResolutionSummary } from './ApprovedResolutionSummary'
 import { mockMigration } from './mockData'
 import {
   getResolutionCompletionCount,
   isResolutionComplete,
   PrototypeAction,
+  PrototypeReturnStage,
   PrototypeState,
   RESOLUTION_DOMAINS,
 } from './model'
@@ -24,9 +26,19 @@ interface Props {
   act: (action: PrototypeAction) => void
 }
 
-function towerResolveLabel(resolved: number, total: number): string {
+function towerResolveLabel(
+  resolved: number,
+  total: number,
+  returnStage: PrototypeReturnStage | null,
+): string {
   const remaining = total - resolved
   if (remaining <= 0) {
+    if (returnStage === 'transfer') {
+      return 'Confirm decisions and return to transfer'
+    }
+    if (returnStage === 'receipt') {
+      return 'Confirm decisions and return to receipt'
+    }
     return 'Resolve all demonstrated decisions'
   }
   if (remaining === total) {
@@ -92,7 +104,11 @@ export function TowerWorkspace({ state, act }: Props) {
               disabled={!resolutionsComplete}
               onClick={() => act('resolve')}
             >
-              {towerResolveLabel(resolvedCount, resolutionTotal)}
+              {towerResolveLabel(
+                resolvedCount,
+                resolutionTotal,
+                state.returnStage,
+              )}
             </Button>
           </Box>
         </Surface>
@@ -116,6 +132,12 @@ export function TowerWorkspace({ state, act }: Props) {
           />
           <Metric label="Problem holds" value={holds} />
         </Box>
+        <ApprovedResolutionSummary
+          state={state}
+          act={act}
+          compact
+          context="cards"
+        />
         <Alert
           variant="warning"
           title="Matching does not prove chargeability"
@@ -139,6 +161,12 @@ export function TowerWorkspace({ state, act }: Props) {
           {clean} selected · {mockMigration.transfer.monthlyValue} monthly value
           · no renewal inside 24 hours
         </Text>
+        <ApprovedResolutionSummary
+          state={state}
+          act={act}
+          compact
+          context="transfer"
+        />
         <Alert
           variant="warning"
           title="Stripe is stopped before Polar activates"
@@ -166,6 +194,12 @@ export function TowerWorkspace({ state, act }: Props) {
           />
           <Metric label="Unknown" value={receipt?.unknownOwned ?? 0} />
         </Box>
+        <ApprovedResolutionSummary
+          state={state}
+          act={act}
+          compact
+          context="receipt"
+        />
         <Box gap="s">
           <Button variant="secondary" onClick={() => act('review_receipt')}>
             Export ledger

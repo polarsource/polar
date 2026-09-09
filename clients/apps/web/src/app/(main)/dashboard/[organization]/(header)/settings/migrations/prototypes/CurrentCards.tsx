@@ -2,8 +2,9 @@
 
 import { Alert, Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ApprovedResolutionSummary } from './ApprovedResolutionSummary'
 import { mockMigration } from './mockData'
-import { PrototypeAction } from './model'
+import { PrototypeAction, PrototypeState } from './model'
 import { CustomerActionList } from './ProblemPackages'
 import { Metric, Surface } from './PrototypePrimitives'
 
@@ -25,8 +26,10 @@ const CHECKLIST: {
 ]
 
 export function CurrentCards({
+  state,
   act,
 }: {
+  state: PrototypeState
   act: (action: PrototypeAction) => void
 }) {
   const done = CHECKLIST.filter((step) => step.state === 'done').length
@@ -50,6 +53,13 @@ export function CurrentCards({
           value={mockMigration.cards.customerAction}
         />
       </Box>
+
+      <ApprovedResolutionSummary
+        state={state}
+        act={act}
+        compact
+        context="cards"
+      />
 
       <Box as="ol" flexDirection="column" rowGap="m">
         {CHECKLIST.map((step) => (

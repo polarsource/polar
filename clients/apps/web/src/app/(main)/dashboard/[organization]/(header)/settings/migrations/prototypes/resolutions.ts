@@ -35,6 +35,12 @@ export const confirmSuggestedBillingCountry = (): CountryResolution => ({
   country: SUGGESTED_BILLING_COUNTRY,
 })
 
+export const recommendedResolutionChoices = (): ResolutionChoices => ({
+  product: 'map_existing_pro',
+  country: confirmSuggestedBillingCountry(),
+  identity: 'link_existing_customer',
+})
+
 export const getResolutionCompletionCount = (
   resolutions: ResolutionChoices,
 ): number =>
@@ -57,11 +63,11 @@ export function getProductResolutionLabel(choice: ProductResolution): string {
 export function getProductResolutionImpact(choice: ProductResolution): string {
   switch (choice) {
     case 'map_existing_pro':
-      return 'Stripe Pro subscriptions import onto the existing Polar Pro product.'
+      return 'Affects 1 subscription ($19 MRR). Stripe Pro subscriptions import onto the existing Polar Pro product.'
     case 'create_separate_product':
-      return 'Stripe Pro becomes its own Polar product instead of reusing Polar Pro.'
+      return 'Affects 1 subscription ($19 MRR). Stripe Pro becomes its own Polar product instead of reusing Polar Pro.'
     case 'leave_on_stripe':
-      return 'Colliding Pro subscriptions stay billed on Stripe.'
+      return 'Affects 1 subscription ($19 MRR). Retains Stripe ownership — colliding Pro subscriptions stay billed on Stripe.'
   }
 }
 
@@ -77,9 +83,9 @@ export function getCountryResolutionLabel(choice: CountryResolution): string {
 
 export function getCountryResolutionImpact(choice: CountryResolution): string {
   if (choice.disposition === 'leave_on_stripe') {
-    return 'The missing-country record stays billed on Stripe.'
+    return 'Affects 1 subscription ($19 MRR). Retains Stripe ownership — the missing-country record stays billed on Stripe.'
   }
-  return `Billing country set to ${choice.country} from card evidence or merchant choice.`
+  return `Affects 1 subscription ($19 MRR). Billing country set to ${choice.country} from card evidence or merchant choice.`
 }
 
 export function getIdentityResolutionLabel(choice: IdentityResolution): string {
@@ -98,11 +104,11 @@ export function getIdentityResolutionImpact(
 ): string {
   switch (choice) {
     case 'link_existing_customer':
-      return 'The Stripe identity merges onto the existing Polar customer with this email.'
+      return 'Affects 1 subscription ($9 MRR). The Stripe identity merges onto the existing Polar customer with this email.'
     case 'create_separate_customer':
-      return 'A second Polar customer is created for this Stripe identity.'
+      return 'Affects 1 subscription ($9 MRR). A second Polar customer is created for this Stripe identity.'
     case 'leave_on_stripe':
-      return 'The email conflict stays billed on Stripe.'
+      return 'Affects 1 subscription ($9 MRR). Retains Stripe ownership — the email conflict stays billed on Stripe.'
   }
 }
 

@@ -13,6 +13,7 @@ import {
   getResolutionCompletionCount,
   isResolutionComplete,
   ProductResolution,
+  recommendedResolutionChoices,
   RESOLUTION_DOMAINS,
   SUGGESTED_BILLING_COUNTRY,
 } from './resolutions'
@@ -39,6 +40,15 @@ describe('resolution selectors', () => {
     ).toBe(true)
   })
 
+  it('exposes canonical recommended Polar proposals', () => {
+    expect(recommendedResolutionChoices()).toEqual({
+      product: 'map_existing_pro',
+      country: confirmSuggestedBillingCountry(),
+      identity: 'link_existing_customer',
+    })
+    expect(isResolutionComplete(recommendedResolutionChoices())).toBe(true)
+  })
+
   it('returns null labels until a domain is chosen', () => {
     const empty = emptyResolutionChoices()
     for (const domain of RESOLUTION_DOMAINS) {
@@ -47,7 +57,7 @@ describe('resolution selectors', () => {
     }
   })
 
-  it('labels and impacts each product choice', () => {
+  it('labels and impacts each product choice with affected count and MRR', () => {
     const choices: ProductResolution[] = [
       'map_existing_pro',
       'create_separate_product',
@@ -55,11 +65,15 @@ describe('resolution selectors', () => {
     ]
     for (const choice of choices) {
       expect(getProductResolutionLabel(choice).length).toBeGreaterThan(0)
-      expect(getProductResolutionImpact(choice).length).toBeGreaterThan(0)
+      expect(getProductResolutionImpact(choice)).toContain('1 subscription')
+      expect(getProductResolutionImpact(choice)).toContain('$19 MRR')
     }
     expect(getProductResolutionLabel('map_existing_pro')).toContain('Polar Pro')
     expect(getProductResolutionImpact('create_separate_product')).toContain(
       'own Polar product',
+    )
+    expect(getProductResolutionImpact('leave_on_stripe')).toContain(
+      'Retains Stripe ownership',
     )
   })
 
@@ -71,25 +85,35 @@ describe('resolution selectors', () => {
     })
     expect(getCountryResolutionLabel(uk)).toBe('Confirm United Kingdom')
     expect(getCountryResolutionImpact(uk)).toContain('United Kingdom')
+    expect(getCountryResolutionImpact(uk)).toContain('1 subscription')
+    expect(getCountryResolutionImpact(uk)).toContain('$19 MRR')
 
     const germany = { disposition: 'set_country' as const, country: 'Germany' }
     expect(getCountryResolutionLabel(germany)).toContain('Germany')
     expect(getCountryResolutionImpact(germany)).toContain('Germany')
+    expect(getCountryResolutionImpact(germany)).toContain('$19 MRR')
 
     const leave = { disposition: 'leave_on_stripe' as const }
     expect(getCountryResolutionLabel(leave)).toContain('Stripe')
-    expect(getCountryResolutionImpact(leave)).toContain('Stripe')
+    expect(getCountryResolutionImpact(leave)).toContain(
+      'Retains Stripe ownership',
+    )
+    expect(getCountryResolutionImpact(leave)).toContain('$19 MRR')
   })
 
-  it('labels and impacts each identity choice', () => {
+  it('labels and impacts each identity choice with affected count and MRR', () => {
     for (const choice of [
       'link_existing_customer',
       'create_separate_customer',
       'leave_on_stripe',
     ] as const) {
       expect(getIdentityResolutionLabel(choice).length).toBeGreaterThan(0)
-      expect(getIdentityResolutionImpact(choice).length).toBeGreaterThan(0)
+      expect(getIdentityResolutionImpact(choice)).toContain('1 subscription')
+      expect(getIdentityResolutionImpact(choice)).toContain('$9 MRR')
     }
+    expect(getIdentityResolutionImpact('leave_on_stripe')).toContain(
+      'Retains Stripe ownership',
+    )
   })
 
   it('exposes domain selectors for leave-on-stripe selections', () => {
@@ -104,7 +128,7 @@ describe('resolution selectors', () => {
       'Stripe',
     )
     expect(getResolutionChoiceImpact('product', resolutions)).toContain(
-      'Stripe',
+      'Retains Stripe ownership',
     )
   })
 })

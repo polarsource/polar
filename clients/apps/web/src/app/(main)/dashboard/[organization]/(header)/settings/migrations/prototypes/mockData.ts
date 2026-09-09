@@ -37,23 +37,6 @@ export const mockMigration = {
     monthlyValue: '$450',
     renewalWindow: 'Sep 11–18',
   },
-  decisions: [
-    {
-      title: 'Map Stripe Pro to Polar Pro',
-      detail: 'Existing Polar product mapping needs confirmation',
-      kind: 'Product',
-    },
-    {
-      title: 'Confirm customer identities',
-      detail: 'Email matches require reconciliation',
-      kind: 'Identity',
-    },
-    {
-      title: 'Confirm billing countries',
-      detail: 'Issuer country is only a suggestion',
-      kind: 'Tax',
-    },
-  ],
 } as const
 
 export const flowSteps = [

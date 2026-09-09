@@ -7,6 +7,7 @@ import {
   getResolutionCompletionCount,
   isResolutionComplete,
   PrototypeAction,
+  PrototypeReturnStage,
   PrototypeState,
   RESOLUTION_DOMAINS,
 } from './model'
@@ -14,6 +15,16 @@ import { Surface } from './PrototypePrimitives'
 import { TOP_ISSUE_CODES } from './recordLabels'
 import { ResolutionResolvers } from './ResolutionResolvers'
 import { getCleanSubscriptions, getProblemSubscriptions } from './selectors'
+
+function currentResolveLabel(returnStage: PrototypeReturnStage | null): string {
+  if (returnStage === 'transfer') {
+    return 'Confirm choices and return to switch'
+  }
+  if (returnStage === 'receipt') {
+    return 'Confirm choices and return to receipt'
+  }
+  return 'Start moving cards'
+}
 
 export function CurrentHandoff({
   state,
@@ -27,9 +38,11 @@ export function CurrentHandoff({
   const topProblems = remaining.filter((record) =>
     TOP_ISSUE_CODES.includes(record.issueCode),
   )
-  const [reviewing, setReviewing] = useState(false)
   const resolvedCount = getResolutionCompletionCount(state.resolutions)
   const resolutionsComplete = isResolutionComplete(state.resolutions)
+  const [reviewing, setReviewing] = useState(
+    !resolutionsComplete || state.returnStage !== null,
+  )
   const resolutionTotal = RESOLUTION_DOMAINS.length
   const remainingChoices = resolutionTotal - resolvedCount
 
@@ -63,7 +76,7 @@ export function CurrentHandoff({
 
       <Box gap="s" flexWrap="wrap" alignItems="center">
         <Button disabled={!resolutionsComplete} onClick={() => act('resolve')}>
-          Start moving cards
+          {currentResolveLabel(state.returnStage)}
         </Button>
         <Button
           variant="secondary"

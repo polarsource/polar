@@ -5,8 +5,6 @@ from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalDiscount,
-    CanonicalDiscountDuration,
-    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -20,6 +18,7 @@ from polar.merchant_migration.canonical import (
     serialize,
 )
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
+from tests.merchant_migration._helpers import canonical_discount, canonical_subscription
 
 
 class TestSerialize:
@@ -137,15 +136,7 @@ class TestDeserialize:
         assert result.currency == "usd"
 
     def test_discount_round_trips(self) -> None:
-        discount = CanonicalDiscount(
-            source_id="coupon_1",
-            name="Launch",
-            discount_type=CanonicalDiscountType.percentage,
-            duration=CanonicalDiscountDuration.forever,
-            duration_in_months=None,
-            basis_points=1000,
-            amounts={},
-            code="LAUNCH",
+        discount = canonical_discount(
             extra_codes=1,
             ends_at=datetime(2027, 1, 1, tzinfo=UTC),
             max_redemptions=5,
@@ -160,52 +151,9 @@ class TestDeserialize:
         assert result.product_source_ids == ["prod_1"]
         assert result.ends_at == datetime(2027, 1, 1, tzinfo=UTC)
 
-    def test_subscription_deserializes_discount_ids(self) -> None:
-        subscription = CanonicalSubscription(
-            source_id="sub_1",
-            customer_source_id="cus_1",
-            price_source_id="price_1",
-            status=CanonicalSubscriptionStatus.active,
-            collection_method=CanonicalCollectionMethod.charge_automatically,
-            current_period_start=None,
-            current_period_end=None,
-            trialing=False,
-            paused_collection=False,
-            line_item_count=1,
-            quantity=1,
-            payment_method=None,
-            has_discount=True,
-            discount_source_ids=["coupon_1"],
-            currency="usd",
-        )
-
-        result = deserialize(
-            MerchantMigrationRecordType.subscription, serialize(subscription)
-        )
-
-        assert isinstance(result, CanonicalSubscription)
-        assert result.discount_source_ids == ["coupon_1"]
-
     def test_legacy_subscription_blob_without_discount_ids_still_skips(self) -> None:
-        data = serialize(
-            CanonicalSubscription(
-                source_id="sub_1",
-                customer_source_id="cus_1",
-                price_source_id="price_1",
-                status=CanonicalSubscriptionStatus.active,
-                collection_method=CanonicalCollectionMethod.charge_automatically,
-                current_period_start=None,
-                current_period_end=None,
-                trialing=False,
-                paused_collection=False,
-                line_item_count=1,
-                quantity=1,
-                payment_method=None,
-                currency="usd",
-            )
-        )
+        data = serialize(canonical_subscription(has_discount=True))
         data.pop("discount_source_ids", None)
-        data["has_discount"] = True
 
         result = deserialize(MerchantMigrationRecordType.subscription, data)
 
@@ -214,19 +162,13 @@ class TestDeserialize:
         assert result.discount_source_ids == []
 
 
-class TestPolarDiscountCode:
-    def test_strips_dashes(self) -> None:
+class TestPolarDiscountHelpers:
+    def test_code_strips_dashes_and_rejects_short(self) -> None:
         assert polar_discount_code("LAUNCH-10") == "LAUNCH10"
-
-    def test_rejects_too_short(self) -> None:
         assert polar_discount_code("AB") is None
 
-
-class TestPolarDiscountAmounts:
-    def test_keeps_supported_amounts(self) -> None:
+    def test_amounts_drop_values_above_polar_max(self) -> None:
+        assert polar_discount_amounts({"usd": 1_000_000_000_000}) == {}
         assert polar_discount_amounts({"USD": 100, "xyz": 50}) == {
             PresentmentCurrency.usd: 100
         }
-
-    def test_drops_amounts_above_polar_max(self) -> None:
-        assert polar_discount_amounts({"usd": 1_000_000_000_000}) == {}

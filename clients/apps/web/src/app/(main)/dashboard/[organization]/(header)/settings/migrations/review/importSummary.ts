@@ -3,12 +3,7 @@ import { CountEntity } from './recordSummary'
 export type ImportedCounts = Record<CountEntity, number>
 
 export function importedTotal(counts: ImportedCounts): number {
-  return (
-    counts.subscriptions +
-    counts.products +
-    counts.customers +
-    counts.discounts
-  )
+  return Object.values(counts).reduce((sum, n) => sum + n, 0)
 }
 
 // True only on a settled read. `isFetching` matters as much as `isLoading`:

@@ -4,13 +4,12 @@ Idempotent; subscriptions are created later, during cutover.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Any, TypeVar
 from uuid import UUID
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
-from polar.discount.repository import DiscountRepository
 from polar.discount.schemas import DiscountFixedCreate, DiscountPercentageCreate
 from polar.discount.service import discount as discount_service
 from polar.enums import SubscriptionRecurringInterval
@@ -411,14 +410,11 @@ class CatalogImporter:
             discounts, products, self.organization.default_presentment_currency
         )
         polar_product_ids_by_source: dict[str, list[UUID]] = {}
-        for record in product_records:
+        for record, product in zip(product_records, products, strict=True):
             if (
                 record.status != MerchantMigrationRecordStatus.imported
                 or record.target_id is None
             ):
-                continue
-            product = deserialize(record.type, record.canonical)
-            if not isinstance(product, CanonicalProduct):
                 continue
             polar_product_ids_by_source.setdefault(
                 product.product_source_id, []
@@ -487,53 +483,40 @@ class CatalogImporter:
     async def _create_discount(
         self, discount: CanonicalDiscount, product_ids: list[UUID]
     ) -> Discount:
-        code = await self._available_discount_code(discount.code)
         exhausted = discount.max_redemptions == 0
-        if exhausted:
-            code = None
         duration = DiscountDuration(discount.duration.value)
-        duration_in_months = (
-            discount.duration_in_months
-            if duration == DiscountDuration.repeating
-            else None
-        )
-        metadata: dict[str, str | int | float | bool] = {
-            "stripe_coupon_id": discount.source_id
-        }
-        products = product_ids or None
         ends_at = discount.ends_at
         if exhausted:
             now = utc_now()
             ends_at = now if ends_at is None or ends_at > now else ends_at
-        max_redemptions = None if exhausted else discount.max_redemptions
+        shared: dict[str, Any] = {
+            "name": discount.name,
+            "code": (
+                None
+                if exhausted
+                else await self._available_discount_code(discount.code)
+            ),
+            "duration": duration,
+            "duration_in_months": (
+                discount.duration_in_months
+                if duration == DiscountDuration.repeating
+                else None
+            ),
+            "ends_at": ends_at,
+            "max_redemptions": None if exhausted else discount.max_redemptions,
+            "products": product_ids or None,
+            "organization_id": self.organization.id,
+            "metadata": {"stripe_coupon_id": discount.source_id},
+        }
+        create: DiscountFixedCreate | DiscountPercentageCreate
         if discount.discount_type == CanonicalDiscountType.percentage:
             assert discount.basis_points is not None
-            create: DiscountFixedCreate | DiscountPercentageCreate = (
-                DiscountPercentageCreate(
-                    name=discount.name,
-                    code=code,
-                    duration=duration,
-                    duration_in_months=duration_in_months,
-                    basis_points=discount.basis_points,
-                    ends_at=ends_at,
-                    max_redemptions=max_redemptions,
-                    products=products,
-                    organization_id=self.organization.id,
-                    metadata=metadata,
-                )
+            create = DiscountPercentageCreate(
+                basis_points=discount.basis_points, **shared
             )
         else:
             create = DiscountFixedCreate(
-                name=discount.name,
-                code=code,
-                duration=duration,
-                duration_in_months=duration_in_months,
-                amounts=polar_discount_amounts(discount.amounts),
-                ends_at=ends_at,
-                max_redemptions=max_redemptions,
-                products=products,
-                organization_id=self.organization.id,
-                metadata=metadata,
+                amounts=polar_discount_amounts(discount.amounts), **shared
             )
         created = await discount_service.create(
             self.session, create, self.auth_subject, notify=False
@@ -545,9 +528,8 @@ class CatalogImporter:
     async def _available_discount_code(self, code: str | None) -> str | None:
         if code is None:
             return None
-        repository = DiscountRepository.from_session(self.session)
-        existing = await repository.get_by_code_and_organization(
-            code, self.organization.id
+        existing = await discount_service.get_by_code_and_organization(
+            self.session, code, self.organization, redeemable=False
         )
         return None if existing is not None else code
 

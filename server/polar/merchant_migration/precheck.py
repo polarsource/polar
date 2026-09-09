@@ -1317,11 +1317,7 @@ def _subscription_discount_skip(
     if not subscription.has_discount and not subscription.discount_source_ids:
         return None
     kept = kept_discount_source_id(subscription, discount_plans)
-    if kept is None:
-        return Reason(
-            "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
-        )
-    discount = discounts_by_source.get(kept)
+    discount = discounts_by_source.get(kept) if kept else None
     if discount is None:
         return Reason(
             "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON

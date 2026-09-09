@@ -12,7 +12,6 @@ from polar.merchant_migration.adapters.stripe import (
 )
 from polar.merchant_migration.canonical import (
     CanonicalDiscount,
-    CanonicalDiscountDuration,
     CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
@@ -525,41 +524,48 @@ def _stripe_coupon(
 
 @pytest.mark.asyncio
 class TestExtractCoupons:
-    async def test_coupon_page_advances_to_promotion_codes(
+    async def test_coupon_page_maps_remaining_and_advances(
         self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
         client.v1.coupons.list_async = mocker.AsyncMock(
             return_value=mocker.MagicMock(
-                data=[_stripe_coupon()],
+                data=[
+                    _stripe_coupon(),
+                    _stripe_coupon(
+                        id="coupon_exhausted", max_redemptions=10, times_redeemed=10
+                    ),
+                ],
                 has_more=False,
             )
         )
 
         page = await adapter.extract_page({"phase": "coupons"})
 
-        assert len(page.records) == 1
-        discount = page.records[0]
-        assert isinstance(discount, CanonicalDiscount)
-        assert discount.source_id == "coupon_1"
-        assert discount.discount_type == CanonicalDiscountType.percentage
-        assert discount.basis_points == 1000
-        assert discount.duration == CanonicalDiscountDuration.forever
+        launch, exhausted = page.records
+        assert isinstance(launch, CanonicalDiscount)
+        assert launch.discount_type == CanonicalDiscountType.percentage
+        assert launch.basis_points == 1000
+        assert isinstance(exhausted, CanonicalDiscount)
+        assert exhausted.max_redemptions == 0
         assert page.next_cursor == {
             "phase": "promotion_codes",
             "starting_after": None,
         }
 
-    async def test_promotion_code_page_advances_to_customers(
+    async def test_promotion_code_caps_remaining_and_advances(
         self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
-        coupon = _stripe_coupon()
         promotion_code = stripe_lib.PromotionCode.construct_from(
             {
                 "id": "promo_1",
                 "code": "LAUNCH-10",
-                "promotion": {"coupon": coupon},
+                "max_redemptions": 10,
+                "times_redeemed": 7,
+                "promotion": {
+                    "coupon": _stripe_coupon(max_redemptions=100, times_redeemed=0)
+                },
             },
             None,
         )
@@ -569,33 +575,17 @@ class TestExtractCoupons:
 
         page = await adapter.extract_page({"phase": "promotion_codes"})
 
-        assert len(page.records) == 1
         discount = page.records[0]
         assert isinstance(discount, CanonicalDiscount)
         assert discount.source_id == "coupon_1"
         assert discount.code == "LAUNCH10"
+        assert discount.max_redemptions == 3
         assert page.next_cursor == {
             "phase": "customers",
             "starting_after": None,
         }
 
-    async def test_subscription_page_expands_discounts(
-        self, mocker: MockerFixture
-    ) -> None:
-        adapter, client = _adapter(mocker)
-        client.v1.subscriptions.list_async = mocker.AsyncMock(
-            return_value=mocker.MagicMock(
-                data=[_stripe_subscription()],
-                has_more=False,
-            )
-        )
-
-        await adapter.extract_page({"phase": "subscriptions"})
-
-        kwargs = client.v1.subscriptions.list_async.await_args.kwargs
-        assert "data.discounts" in kwargs["params"]["expand"]
-
-    async def test_maps_expanded_subscription_coupon(
+    async def test_subscription_page_expands_and_maps_coupons(
         self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
@@ -613,56 +603,14 @@ class TestExtractCoupons:
 
         page = await adapter.extract_page({"phase": "subscriptions"})
 
+        kwargs = client.v1.subscriptions.list_async.await_args.kwargs
+        assert "data.discounts" in kwargs["params"]["expand"]
         record = page.records[0]
         assert isinstance(record, CanonicalSubscription)
-        assert record.has_discount is True
         assert record.discount_source_ids == ["coupon_1"]
         assert record.discount_started_at == datetime(
             2023, 11, 14, 22, 13, 20, tzinfo=UTC
         )
-
-    async def test_exhausted_coupon_keeps_zero_remaining(
-        self, mocker: MockerFixture
-    ) -> None:
-        adapter, client = _adapter(mocker)
-        client.v1.coupons.list_async = mocker.AsyncMock(
-            return_value=mocker.MagicMock(
-                data=[_stripe_coupon(max_redemptions=10, times_redeemed=10)],
-                has_more=False,
-            )
-        )
-
-        page = await adapter.extract_page({"phase": "coupons"})
-
-        discount = page.records[0]
-        assert isinstance(discount, CanonicalDiscount)
-        assert discount.max_redemptions == 0
-
-    async def test_promotion_code_caps_remaining_to_the_promo(
-        self, mocker: MockerFixture
-    ) -> None:
-        adapter, client = _adapter(mocker)
-        coupon = _stripe_coupon(max_redemptions=100, times_redeemed=0)
-        promotion_code = stripe_lib.PromotionCode.construct_from(
-            {
-                "id": "promo_1",
-                "code": "LAUNCH-10",
-                "max_redemptions": 10,
-                "times_redeemed": 7,
-                "promotion": {"coupon": coupon},
-            },
-            None,
-        )
-        client.v1.promotion_codes.list_async = mocker.AsyncMock(
-            return_value=mocker.MagicMock(data=[promotion_code], has_more=False)
-        )
-
-        page = await adapter.extract_page({"phase": "promotion_codes"})
-
-        discount = page.records[0]
-        assert isinstance(discount, CanonicalDiscount)
-        assert discount.code == "LAUNCH10"
-        assert discount.max_redemptions == 3
 
     async def test_missing_coupon_scope_is_named(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

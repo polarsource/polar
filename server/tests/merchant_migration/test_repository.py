@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -5,9 +6,6 @@ import pytest
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalCustomer,
-    CanonicalDiscount,
-    CanonicalDiscountDuration,
-    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -38,7 +36,7 @@ from polar.models.merchant_migration_record import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_payment_method
-from tests.merchant_migration._helpers import canonical_subscription
+from tests.merchant_migration._helpers import canonical_discount, canonical_subscription
 
 
 async def _create_migration(
@@ -269,56 +267,13 @@ class TestUpsert:
     ) -> None:
         migration = await _create_migration(save_fixture, organization)
         repository = MerchantMigrationRecordRepository.from_session(session)
-        coupon = CanonicalDiscount(
-            source_id="coupon_1",
-            name="Launch",
-            discount_type=CanonicalDiscountType.percentage,
-            duration=CanonicalDiscountDuration.forever,
-            duration_in_months=None,
-            basis_points=1000,
-            amounts={},
-            code=None,
-            extra_codes=0,
-            ends_at=None,
-            max_redemptions=None,
-            product_source_ids=[],
-        )
-        await repository.upsert(
-            migration, organization, coupon, merge_discount_codes=True
-        )
-        with_code = CanonicalDiscount(
-            source_id="coupon_1",
-            name="Launch",
-            discount_type=CanonicalDiscountType.percentage,
-            duration=CanonicalDiscountDuration.forever,
-            duration_in_months=None,
-            basis_points=1000,
-            amounts={},
-            code="LAUNCH",
-            extra_codes=0,
-            ends_at=None,
-            max_redemptions=None,
-            product_source_ids=[],
+        coupon = canonical_discount(code=None)
+        await repository.upsert(migration, organization, coupon)
+        merged = await repository.upsert(
+            migration, organization, replace(coupon, code="LAUNCH")
         )
         merged = await repository.upsert(
-            migration, organization, with_code, merge_discount_codes=True
-        )
-        extra = CanonicalDiscount(
-            source_id="coupon_1",
-            name="Launch",
-            discount_type=CanonicalDiscountType.percentage,
-            duration=CanonicalDiscountDuration.forever,
-            duration_in_months=None,
-            basis_points=1000,
-            amounts={},
-            code="SAVE",
-            extra_codes=0,
-            ends_at=None,
-            max_redemptions=None,
-            product_source_ids=[],
-        )
-        merged = await repository.upsert(
-            migration, organization, extra, merge_discount_codes=True
+            migration, organization, replace(coupon, code="SAVE")
         )
 
         assert merged.canonical["code"] == "LAUNCH"

@@ -524,8 +524,9 @@ class StripeAdapter:
     def _map_coupon(self, coupon: stripe_lib.Coupon) -> CanonicalDiscount | None:
         if coupon.get("deleted"):
             return None
-        duration = self._map_discount_duration(coupon.duration)
-        if duration is None:
+        try:
+            duration = CanonicalDiscountDuration(coupon.duration)
+        except TypeError, ValueError:
             return None
         percent_off = coupon.percent_off
         if percent_off is not None:
@@ -549,8 +550,6 @@ class StripeAdapter:
             duration_in_months=coupon.duration_in_months,
             basis_points=basis_points,
             amounts=amounts,
-            code=None,
-            extra_codes=0,
             ends_at=self._to_datetime(coupon.redeem_by),
             max_redemptions=remaining,
             product_source_ids=product_source_ids,
@@ -577,14 +576,6 @@ class StripeAdapter:
                 ),
             ),
         )
-
-    def _map_discount_duration(
-        self, duration: str | None
-    ) -> CanonicalDiscountDuration | None:
-        try:
-            return CanonicalDiscountDuration(duration) if duration else None
-        except ValueError:
-            return None
 
     def _coupon_amounts(self, coupon: stripe_lib.Coupon) -> dict[str, int]:
         amounts: dict[str, int] = {}

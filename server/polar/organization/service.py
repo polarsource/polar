@@ -304,7 +304,6 @@ class ActivationRequirement:
 @dataclass(frozen=True)
 class ActivationReadiness:
     requirements: tuple[ActivationRequirement, ...]
-    review_exists: bool
 
     @property
     def onboarding_ready(self) -> bool:
@@ -1347,7 +1346,6 @@ class OrganizationService:
                 ),
                 ActivationRequirement(ActivationGate.review, _review_missing(review)),
             ),
-            review_exists=review is not None,
         )
 
     async def maybe_activate(
@@ -1410,37 +1408,15 @@ class OrganizationService:
                 409,
             )
 
-        review_repository = OrganizationReviewRepository.from_session(session)
-        review = await review_repository.get_by_organization(organization.id)
-        needs_submission = organization.details_submitted_at is None
-        submitted_for_review = needs_submission or review is None
-
-        if needs_submission:
-            # Sets `details_submitted_at` and queues the review agent itself.
-            await self.submit_for_review(session, organization)
-        elif review is None:
-            enqueue_job(
-                "organization_review.run_agent",
-                organization_id=organization.id,
-                context=ReviewContext.SUBMISSION,
-            )
+        submitted_for_review = organization.details_submitted_at is None
         if submitted_for_review:
-            _append_internal_note(organization, "Submitted for review via backoffice.")
+            await self.submit_for_review(session, organization)
 
         if await self.maybe_activate(session, organization):
-            result = BackofficeActivationResult.activated
-        elif submitted_for_review:
-            result = BackofficeActivationResult.submitted_for_review
-        else:
-            result = BackofficeActivationResult.still_incomplete
-
-        log.info(
-            "organization.backoffice_submit_and_maybe_activate",
-            organization_id=str(organization.id),
-            slug=organization.slug,
-            result=result.value,
-        )
-        return result
+            return BackofficeActivationResult.activated
+        if submitted_for_review:
+            return BackofficeActivationResult.submitted_for_review
+        return BackofficeActivationResult.still_incomplete
 
     async def _reactivate_organization(
         self,

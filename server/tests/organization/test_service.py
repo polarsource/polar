@@ -1774,8 +1774,6 @@ class TestBackofficeSubmitAndMaybeActivate:
         assert result == BackofficeActivationResult.submitted_for_review
         assert organization.status == OrganizationStatus.CREATED
         assert organization.details_submitted_at is not None
-        assert organization.internal_notes is not None
-        assert "Submitted for review via backoffice" in organization.internal_notes
 
     async def test_activates_when_all_gates_pass(
         self,

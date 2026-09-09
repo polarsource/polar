@@ -2547,9 +2547,7 @@ async def activate_dialog(
     )
     error_message: str | None = None
     is_created = organization.status == OrganizationStatus.CREATED
-    can_submit_review = is_created and (
-        organization.details_submitted_at is None or not readiness.review_exists
-    )
+    can_submit_review = is_created and organization.details_submitted_at is None
     can_activate = is_created and readiness.is_ready
 
     if request.method == "POST":

@@ -14,6 +14,9 @@ From `clients/`, install dependencies with `pnpm install`, then use
 `pnpm --filter polar-cli test`, `typecheck`, `format`, or `lint`.
 Bun `1.4.2` is the runtime, test runner, and binary compiler; pnpm manages dependencies.
 
+Run the CLI from source with `bun src/cli.ts <command>` in this directory, or
+compile the release binary with `pnpm build:binary` and run `./polar`.
+
 ## Releases
 
 Add a changeset from `clients/` with `pnpm exec changeset` and select `polar-cli`.

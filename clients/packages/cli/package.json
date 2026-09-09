@@ -34,7 +34,8 @@
     "@napi-rs/keyring": "2.0.0",
     "@polar-sh/sdk": "^0.47.0",
     "effect": "4.0.0-rc.112",
-    "open": "^10.2.0"
+    "open": "^10.2.0",
+    "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@effect/language-service": "^0.87.2",

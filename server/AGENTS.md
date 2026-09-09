@@ -7,8 +7,8 @@ Python/FastAPI backend with PostgreSQL, Redis, and S3 storage.
 ```bash
 uv run task api          # Start API server (http://127.0.0.1:8000)
 uv run task worker       # Start background worker
-uv run task test         # Run tests with coverage
-uv run task test_fast    # Faster parallel tests
+uv run task test         # Run tests with coverage, serially — ~50 min for ~7700 tests
+uv run task test_fast    # Parallel, no coverage — use this interactively
 uv run task lint         # Auto-fix linting
 uv run task lint_types   # Type checking with mypy
 

@@ -308,6 +308,48 @@ By default, the web client will be available at [http://127.0.0.1:3000](http://1
 > [!TIP]
 > The processes will restart automatically if you make changes to the code.
 
+## Running the tests
+
+The test suites don't need the API, worker or web processes running — only the Docker services
+and the setup from the sections above.
+
+### Backend
+
+From `server/`:
+
+```sh
+uv run task test_fast    # parallel, no coverage
+uv run task lint         # ruff, auto-fixing
+uv run task lint_types   # mypy
+```
+
+Or a single path: `POLAR_ENV=testing uv run python -m pytest tests/<module>`.
+
+`uv run task test` is what CI measures coverage with; it runs serially and takes roughly 50
+minutes, so prefer `test_fast` locally. Tests read the committed `server/.env.testing` (forced by
+`tests/conftest.py`), not `server/.env`, and each xdist worker gets its own
+`polar_test_<worker_id>` database. Export `POLAR_TEST_DATABASE_TEMPLATE=polar_test` — with
+`polar_test` created and migrated — to have workers clone that database instead of replaying
+every migration; refresh it with `POLAR_ENV=testing uv run task db_migrate` whenever you add a
+migration.
+
+Redis, Stripe credentials and a GitHub App are not required: tests substitute a fake Redis and
+construct Stripe objects locally. Tinybird tests skip themselves if Tinybird isn't running.
+PostgreSQL is required, and the file/order/receipt tests need MinIO with its buckets created.
+
+### Frontend
+
+From `clients/`:
+
+```sh
+pnpm lint
+pnpm typecheck
+pnpm test --filter web   # scope with --filter; unscoped runs all 19 packages
+```
+
+Unit tests need neither the backend nor `.env.local`. `packages/cli` tests require
+[bun](https://bun.sh).
+
 ## Docker-Based Development (Alternative)
 
 For a fully containerized development environment with hot-reloading, you can use the Docker-based setup. This is useful for:

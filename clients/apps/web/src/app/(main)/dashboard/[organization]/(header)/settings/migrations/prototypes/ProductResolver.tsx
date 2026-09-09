@@ -81,6 +81,8 @@ export function ProductResolver({
             id: option,
             label: getProductResolutionLabel(option),
             selected: choice === option,
+            recommended:
+              presentation === 'assisted' && option === 'map_existing_pro',
             onSelect: () => act({ type: 'choose_product', choice: option }),
           }))}
         />

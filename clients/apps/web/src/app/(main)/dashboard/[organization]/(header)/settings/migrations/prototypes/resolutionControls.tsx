@@ -11,6 +11,7 @@ export interface ResolutionChoiceOption {
   id: string
   label: string
   selected: boolean
+  recommended?: boolean
   onSelect: () => void
 }
 
@@ -64,7 +65,7 @@ export function ResolutionChoiceGroup({
 }) {
   return (
     <Box
-      role="radiogroup"
+      role="group"
       aria-label={label}
       flexDirection="column"
       rowGap={compact ? 'xs' : 's'}
@@ -73,14 +74,17 @@ export function ResolutionChoiceGroup({
         <Button
           key={option.id}
           type="button"
-          role="radio"
-          aria-checked={option.selected}
+          aria-pressed={option.selected}
           variant={option.selected ? 'default' : 'secondary'}
           size={compact ? 'sm' : 'default'}
           onClick={option.onSelect}
           fullWidth
         >
-          {option.selected ? `Selected · ${option.label}` : option.label}
+          {option.selected
+            ? `Selected · ${option.label}`
+            : option.recommended
+              ? `Polar suggests · ${option.label}`
+              : option.label}
         </Button>
       ))}
     </Box>

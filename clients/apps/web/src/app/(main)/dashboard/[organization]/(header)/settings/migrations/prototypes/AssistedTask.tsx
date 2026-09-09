@@ -30,10 +30,7 @@ function assistedApproveLabel(resolved: number, total: number): string {
   if (remaining <= 0) {
     return 'Approve plan and let Polar prepare'
   }
-  if (remaining === total) {
-    return `Choose all ${total} resolutions to approve`
-  }
-  return `Choose ${remaining} more resolution${remaining === 1 ? '' : 's'} to approve`
+  return `Choose ${remaining} more proposal${remaining === 1 ? '' : 's'} before approval`
 }
 
 export function AssistedTask({ state, act }: Props) {
@@ -85,43 +82,17 @@ export function AssistedTask({ state, act }: Props) {
   if (state.stage === 'decisions') {
     return (
       <Box flexDirection="column" rowGap="l">
+        <ResolutionResolvers state={state} act={act} presentation="assisted" />
         <Surface emphasis>
-          <Status
-            status={
-              resolutionsComplete
-                ? 'Ready to approve'
-                : `${resolvedCount} of ${resolutionTotal} choices made`
-            }
-            color={resolutionsComplete ? 'green' : 'yellow'}
-          />
+          <Status status="Your approval" color="blue" />
           <Text variant="heading-xs" as="h3">
-            Approve Polar&apos;s proposed plan
+            Confirm the migration plan
           </Text>
           <Text color="muted">
-            Polar suggests a resolution for each blocking decision. Your
-            selection becomes the merchant-approved choice and sets what Polar
-            prepares versus what stays on Stripe.
+            Your three selected choices become the approved plan. The remaining
+            problem categories stay on Stripe until separately resolved.
           </Text>
-          <ResolutionResolvers
-            state={state}
-            act={act}
-            presentation="assisted"
-          />
-          <Alert
-            variant="info"
-            title="Suggestions vs your approved choices"
-            description="Each card starts as a Polar proposal. Changing an option updates the approved plan consequence before you continue."
-          />
-          <Box flexDirection="column" rowGap="s">
-            <Text variant="heading-xs" as="h3">
-              Exception summary
-            </Text>
-            <Text color="muted">
-              Packages below stay visible as context. They are not separate
-              approvals — the three choices above decide the plan.
-            </Text>
-            <ProblemPackages />
-          </Box>
+          <ProblemPackages />
           <Box>
             <Button
               disabled={!resolutionsComplete}
@@ -131,7 +102,6 @@ export function AssistedTask({ state, act }: Props) {
             </Button>
           </Box>
         </Surface>
-        <RecordExplorer title="Exception groups" />
       </Box>
     )
   }

@@ -1,7 +1,8 @@
 'use client'
 
-import { Grid, Status, Text } from '@polar-sh/orbit'
+import { Button, Grid, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { useState } from 'react'
 import { CountryResolver } from './CountryResolver'
 import { IdentityResolver } from './IdentityResolver'
 import {
@@ -10,6 +11,7 @@ import {
   PrototypeAction,
   PrototypeState,
   RESOLUTION_DOMAINS,
+  ResolutionDomain,
 } from './model'
 import { ProductResolver } from './ProductResolver'
 import { ResolutionPresentation } from './resolutionControls'
@@ -20,6 +22,25 @@ export interface ResolutionResolversProps {
   state: PrototypeState
   act: (action: PrototypeAction) => void
   presentation: ResolutionPresentation
+}
+
+const DOMAIN_LABELS: Record<ResolutionDomain, string> = {
+  product: 'Product',
+  country: 'Country',
+  identity: 'Identity',
+}
+
+function DomainResolver({
+  domain,
+  ...props
+}: ResolutionResolversProps & { domain: ResolutionDomain }) {
+  if (domain === 'product') {
+    return <ProductResolver {...props} index={1} />
+  }
+  if (domain === 'country') {
+    return <CountryResolver {...props} index={2} />
+  }
+  return <IdentityResolver {...props} index={3} />
 }
 
 function shellCopy(presentation: ResolutionPresentation): {
@@ -63,6 +84,14 @@ export function ResolutionResolvers({
   const copy = shellCopy(presentation)
   const compact = presentation === 'tower' || presentation === 'current'
   const parallel = presentation === 'tower'
+  const [assistedDomain, setAssistedDomain] = useState<ResolutionDomain | null>(
+    null,
+  )
+  const firstUnresolved = RESOLUTION_DOMAINS.find(
+    (domain) => state.resolutions[domain] === null,
+  )
+  const activeAssistedDomain =
+    assistedDomain ?? firstUnresolved ?? RESOLUTION_DOMAINS[0]
 
   return (
     <Box
@@ -92,7 +121,40 @@ export function ResolutionResolvers({
         />
       </Box>
 
-      {parallel ? (
+      {presentation === 'assisted' ? (
+        <Box flexDirection="column" rowGap="l">
+          <Box
+            role="group"
+            aria-label="Proposal decisions"
+            gap="s"
+            flexWrap="wrap"
+          >
+            {RESOLUTION_DOMAINS.map((domain) => {
+              const resolved = state.resolutions[domain] !== null
+              return (
+                <Button
+                  key={domain}
+                  size="sm"
+                  variant={
+                    domain === activeAssistedDomain ? 'default' : 'secondary'
+                  }
+                  aria-pressed={domain === activeAssistedDomain}
+                  onClick={() => setAssistedDomain(domain)}
+                >
+                  {resolved ? '✓ ' : ''}
+                  {DOMAIN_LABELS[domain]}
+                </Button>
+              )
+            })}
+          </Box>
+          <DomainResolver
+            domain={activeAssistedDomain}
+            state={state}
+            act={act}
+            presentation={presentation}
+          />
+        </Box>
+      ) : parallel ? (
         <Grid
           templateColumns={{ base: '1fr', lg: 'repeat(3, minmax(0, 1fr))' }}
           gap="m"

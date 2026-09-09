@@ -109,6 +109,7 @@ export function CountryResolver({
               id: 'confirm-uk',
               label: getCountryResolutionLabel(suggested),
               selected: isCountryChoice(choice, suggested),
+              recommended: presentation === 'assisted',
               onSelect: () =>
                 act({ type: 'choose_country', choice: suggested }),
             },

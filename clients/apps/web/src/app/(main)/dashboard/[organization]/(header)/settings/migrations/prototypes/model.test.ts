@@ -26,11 +26,10 @@ const completeResolutions = (state: PrototypeState): PrototypeState =>
     ] as const
   ).reduce(applyPrototypeAction, state)
 
-const toDecisions = (): PrototypeState =>
-  (['create', 'assess'] as const).reduce(
-    applyPrototypeAction,
-    createPrototypeState(),
-  )
+const toDecisions = (
+  state: PrototypeState = createPrototypeState(),
+): PrototypeState =>
+  (['create', 'assess'] as const).reduce(applyPrototypeAction, state)
 
 describe('migration prototype model', () => {
   it('runs the complete mocked migration flow after resolutions', () => {
@@ -58,6 +57,15 @@ describe('migration prototype model', () => {
     const result = applyPrototypeAction(initialPrototypeState, 'transfer')
     expect(result).toBe(initialPrototypeState)
     expect(result.receipt).toBeNull()
+  })
+
+  it('ignores resolution choices outside the decisions stage', () => {
+    const result = applyPrototypeAction(initialPrototypeState, {
+      type: 'choose_product',
+      choice: 'map_existing_pro',
+    })
+    expect(result).toBe(initialPrototypeState)
+    expect(result.resolutions.product).toBeNull()
   })
 
   it('gates resolve until all three domains have explicit choices', () => {
@@ -139,19 +147,19 @@ describe('migration prototype model', () => {
 
   it('keeps resolution choices independent across all four variants', () => {
     const states = createInitialVariantStates(VARIANTS)
-    const guided = applyPrototypeAction(states.guided, {
+    const guided = applyPrototypeAction(toDecisions(states.guided), {
       type: 'choose_product',
       choice: 'map_existing_pro',
     })
-    const tower = applyPrototypeAction(states.tower, {
+    const tower = applyPrototypeAction(toDecisions(states.tower), {
       type: 'choose_product',
       choice: 'create_separate_product',
     })
-    const assisted = applyPrototypeAction(states.assisted, {
+    const assisted = applyPrototypeAction(toDecisions(states.assisted), {
       type: 'choose_identity',
       choice: 'leave_on_stripe',
     })
-    const current = applyPrototypeAction(states.current, {
+    const current = applyPrototypeAction(toDecisions(states.current), {
       type: 'choose_country',
       choice: { disposition: 'set_country', country: 'France' },
     })

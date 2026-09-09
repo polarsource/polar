@@ -123,6 +123,9 @@ export function applyPrototypeAction(
   action: PrototypeAction,
 ): PrototypeState {
   if (typeof action === 'object') {
+    if (state.stage !== 'decisions') {
+      return state
+    }
     return applyResolutionAction(state, action)
   }
   if (action === 'reset') {

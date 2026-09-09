@@ -86,6 +86,9 @@ export function IdentityResolver({
             id: option,
             label: getIdentityResolutionLabel(option),
             selected: choice === option,
+            recommended:
+              presentation === 'assisted' &&
+              option === 'link_existing_customer',
             onSelect: () => act({ type: 'choose_identity', choice: option }),
           }))}
         />

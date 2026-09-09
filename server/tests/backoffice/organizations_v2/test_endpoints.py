@@ -618,9 +618,7 @@ class TestActivateDialog:
         assert "No organization review has been submitted" in response.text
         assert "Submit for review" in response.text
         assert "Go to account" in response.text
-        assert (
-            f'/organizations/{organization.id}?section=account"' in response.text
-        )
+        assert f'/organizations/{organization.id}?section=account"' in response.text
 
     async def test_get_shows_ready_when_gates_pass(
         self,

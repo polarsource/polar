@@ -1,7 +1,18 @@
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, and_, func, or_, update
+from sqlalchemy import (
+    ColumnClause,
+    CursorResult,
+    Select,
+    and_,
+    column,
+    func,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.orm import selectinload
 
 from polar.kit.repository import (
@@ -24,12 +35,16 @@ class TransactionRepository(
     async def set_unpaid_transactions_payout(
         self, account: UUID, payout_transaction_id: UUID
     ) -> None:
-        statement = (
-            update(Transaction)
+        batch_size = 500
+        transaction_ctid: ColumnClause[tuple[int, int]] = column("ctid")
+        transaction_ctid.table = Transaction.__table__
+        batch = (
+            select(transaction_ctid.label("ctid"))
+            .select_from(Transaction)
+            .join(Account, Account.id == Transaction.account_id)
             .where(
                 ~Transaction.is_deleted,
                 Transaction.account_id == account,
-                Account.id == Transaction.account_id,
                 Transaction.payout_transaction_id.is_(None),
                 or_(
                     # Balance transactions that are either :
@@ -49,9 +64,23 @@ class TransactionRepository(
                     Transaction.type == TransactionType.payout_reversal,
                 ),
             )
-            .values(payout_transaction_id=payout_transaction_id)
+            .order_by(Transaction.created_at, Transaction.id)
+            .limit(batch_size)
+            .with_for_update(of=Transaction)
+            .cte("batch")
         )
-        await self.session.execute(statement)
+        statement = (
+            update(Transaction)
+            .where(transaction_ctid == batch.c.ctid)
+            .values(payout_transaction_id=payout_transaction_id)
+            .execution_options(synchronize_session=False)
+        )
+        while True:
+            result = cast(
+                CursorResult[Transaction], await self.session.execute(statement)
+            )
+            if result.rowcount < batch_size:
+                break
 
     async def get_all_paid_transactions_by_payout(
         self, payout_transaction_id: UUID

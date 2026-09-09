@@ -184,7 +184,8 @@ fails, curl-installs nvm, calls `systemctl start docker`, prompts for GitHub/Str
 for an agent — swallows a failed email-renderer build, the artifact that blocks config import.
 
 It is idempotent, skips work already done, and reports failed steps in its output rather than
-aborting. Read the script for what it does; its log is `/tmp/polar-session-start.log`.
+aborting. It fires on session start and resume, not on every compaction. Read the script for
+what it does; its log is `polar-session-start.log` in `$TMPDIR` (`/tmp` unless overridden).
 
 Deliberately excluded, none of it needed for tests or linters: `dev seed`, `dev start`/tmux,
 Stripe keys or CLI, GitHub App setup, the Tinybird CLI, `dev docker`, and the web build. Redis is

@@ -886,9 +886,7 @@ class OrganizationService:
         organization_repository = OrganizationRepository.from_session(session)
 
         # Stripe requires one connected account per website, so a payout account
-        # serves a single organization. Lock the account so two concurrent
-        # requests can't both pass the check below.
-        await session.refresh(payout_account, with_for_update=True)
+        # serves a single organization.
         linked_organizations = await organization_repository.get_all_by_payout_account(
             payout_account.id
         )

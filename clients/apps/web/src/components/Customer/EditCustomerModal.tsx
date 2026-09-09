@@ -4,7 +4,6 @@ import {
   entriesToMetadata,
   metadataToEntries,
 } from '@/components/Metadata/utils'
-import revalidate from '@/app/actions'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateCustomer } from '@/hooks/queries'
@@ -24,6 +23,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
 import { toast } from '../Toast/use-toast'
 
 type CustomerUpdateForm = WithMetadataEntries<schemas['CustomerUpdate']>
@@ -38,6 +38,7 @@ export const EditCustomerModal = ({
     | schemas['SubscriptionCustomer']
   onClose: () => void
 }) => {
+  const router = useRouter()
   const canManageCustomers = useHasPermission(
     customer.organization_id,
     'customers:manage',
@@ -81,7 +82,7 @@ export const EditCustomerModal = ({
         title: 'Customer Updated',
         description: `Customer ${customer.email ?? customer.name ?? 'customer'} updated successfully`,
       })
-      revalidate(`customer:${customer.id}`)
+      router.refresh()
       onClose()
     })
   }

@@ -72,7 +72,7 @@ router = BackofficeRouter()
 # A failed record needs reading, not scrolling: past this many, one page of
 # examples already tells us what broke.
 FAILED_RECORDS_LIMIT = 50
-PAYMENT_METHOD_MAPPING_MAX_BYTES = 20 * 1024 * 1024
+PAYMENT_METHOD_MAPPING_MAX_BYTES = settings.API_MAX_REQUEST_BODY_SIZE
 
 
 class View(StrEnum):
@@ -475,7 +475,8 @@ async def complete_step(
                 contents = await mapping_file.read(PAYMENT_METHOD_MAPPING_MAX_BYTES + 1)
                 if len(contents) > PAYMENT_METHOD_MAPPING_MAX_BYTES:
                     raise PaymentMethodMappingCSVError(
-                        "The payment method mapping CSV is larger than 20 MB."
+                        "The payment method mapping CSV is larger than "
+                        f"{PAYMENT_METHOD_MAPPING_MAX_BYTES // (1024 * 1024)} MB."
                     )
                 async with session.begin_nested():
                     await merchant_migration_service.import_payment_method_mappings(

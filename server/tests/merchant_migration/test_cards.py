@@ -58,6 +58,9 @@ class TestParsePaymentMethodMappingCSV:
             )
         ]
 
+    def test_accepts_header_only(self) -> None:
+        assert parse_payment_method_mapping_csv(MAPPING_CSV_HEADER) == []
+
     def test_rejects_incorrect_headers(self) -> None:
         with pytest.raises(PaymentMethodMappingCSVError):
             parse_payment_method_mapping_csv(b"source_id_old,source_id_new\npm_1,pm_2")

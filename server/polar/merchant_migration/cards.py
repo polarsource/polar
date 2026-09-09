@@ -111,8 +111,6 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
         by_source[mapping.source_payment_method_id] = mapping
         by_destination[mapping.destination_payment_method_id] = mapping
 
-    if not by_source:
-        raise PaymentMethodMappingCSVError("The mapping CSV has no data rows.")
     return list(by_source.values())
 
 

@@ -361,6 +361,15 @@ class SSOEnforcementRequiresConnection(OrganizationError):
         )
 
 
+class PayoutAccountAlreadyLinked(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This payout account already belongs to another organization. "
+            "Each organization needs its own payout account.",
+            409,
+        )
+
+
 class OrganizationService:
     async def list(
         self,
@@ -956,9 +965,18 @@ class OrganizationService:
         organization: Organization,
         payout_account: PayoutAccount,
     ) -> Organization:
+        organization_repository = OrganizationRepository.from_session(session)
+
+        # Stripe requires one connected account per website, so a payout account
+        # serves a single organization.
+        linked_organizations = await organization_repository.get_all_by_payout_account(
+            payout_account.id
+        )
+        if any(linked.id != organization.id for linked in linked_organizations):
+            raise PayoutAccountAlreadyLinked()
+
         previous_payout_account_id = organization.payout_account_id
 
-        organization_repository = OrganizationRepository.from_session(session)
         await organization_repository.update(
             organization,
             update_dict={"payout_account_id": payout_account.id},

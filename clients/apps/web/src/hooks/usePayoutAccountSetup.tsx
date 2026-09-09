@@ -2,19 +2,14 @@ import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import ManagePayoutAccountModal from '@/components/Payouts/ManagePayoutAccountModal'
-import {
-  usePayoutAccount,
-  usePayoutAccounts,
-} from '@/hooks/queries/payout_accounts'
+import { usePayoutAccount } from '@/hooks/queries/payout_accounts'
 import { schemas } from '@polar-sh/client'
 import { ReactNode, useCallback } from 'react'
 
 interface UsePayoutAccountSetupResult {
   payoutAccount: schemas['PayoutAccount'] | undefined
-  hasReusableAccounts: boolean
   openCreate: () => void
   openManage: () => void
-  openPrimary: () => void
   modals: ReactNode
 }
 
@@ -25,9 +20,6 @@ export const usePayoutAccountSetup = (
   const { data: payoutAccount } = usePayoutAccount(
     organization.payout_account_id ?? undefined,
   )
-  const { data: payoutAccountsList } = usePayoutAccounts()
-  const hasReusableAccounts = (payoutAccountsList?.items?.length ?? 0) > 0
-
   const {
     isShown: isCreateShown,
     show: openCreate,
@@ -43,14 +35,6 @@ export const usePayoutAccountSetup = (
     hideManage()
     openCreate()
   }, [hideManage, openCreate])
-
-  const openPrimary = useCallback(() => {
-    if (hasReusableAccounts) {
-      openManage()
-    } else {
-      openCreate()
-    }
-  }, [hasReusableAccounts, openManage, openCreate])
 
   const modals = (
     <>
@@ -84,10 +68,8 @@ export const usePayoutAccountSetup = (
 
   return {
     payoutAccount,
-    hasReusableAccounts,
     openCreate,
     openManage,
-    openPrimary,
     modals,
   }
 }

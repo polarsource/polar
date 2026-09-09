@@ -31,7 +31,6 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
 
   const {
     payoutAccount,
-    hasReusableAccounts,
     openCreate,
     openManage,
     modals: payoutAccountModals,
@@ -119,7 +118,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           <Text variant="heading-xxs" as="h2">
             Payout Account
           </Text>
-          {payoutAccount || hasReusableAccounts ? (
+          {payoutAccount ? (
             <Button
               className="self-start"
               variant="secondary"

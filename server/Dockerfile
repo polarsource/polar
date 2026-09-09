@@ -1,4 +1,3 @@
-# Stage 1: Build the email renderer binary
 FROM node:22-slim AS build-emails-bin
 
 ENV PNPM_HOME="/pnpm"
@@ -17,7 +16,6 @@ COPY ./emails/tsup.config.js .
 
 RUN pnpm run build
 
-# Stage 2: Build the backoffice static assets
 FROM node:22-slim AS build-backoffice
 
 ENV PNPM_HOME="/pnpm"
@@ -35,7 +33,6 @@ COPY ./polar/backoffice/ .
 
 RUN pnpm run build
 
-# Stage 3: Download IPInfo database with checksum validation
 FROM alpine:3.21 AS download-ipinfo
 
 RUN apk add --no-cache curl jq
@@ -47,43 +44,16 @@ RUN --mount=type=secret,id=IPINFO_ACCESS_TOKEN \
   curl -fsSL "https://ipinfo.io/data/free/country_asn.mmdb?token=${TOKEN}" -o /data/country_asn.mmdb && \
   echo "${EXPECTED_SHA256}  /data/country_asn.mmdb" | sha256sum -c -
 
-# Stage 4: Download per-script Noto Sans CJK .ttf fonts with checksum validation.
-# URLs are pinned to versioned (v39/v40/v56) gstatic.com paths returned by
-# https://fonts.googleapis.com/css2; those paths are immutable for a given
-# version. We use TrueType (glyf) builds because PDF.js (Firefox) does not
-# render glyphs from the CFF/OTF subsets that ship in fonts-noto-cjk.
 FROM alpine:3.21 AS download-cjk-fonts
 
 RUN apk add --no-cache curl
 
-RUN <<EOF
-set -eu
-mkdir /fonts
-cd /fonts
-curl -fsSLo NotoSansTC-Regular.ttf 'https://fonts.gstatic.com/s/notosanstc/v39/-nFuOG829Oofr2wohFbTp9ifNAn722rq0MXz76Cy_Co.ttf'
-curl -fsSLo NotoSansTC-Bold.ttf    'https://fonts.gstatic.com/s/notosanstc/v39/-nFuOG829Oofr2wohFbTp9ifNAn722rq0MXz70e1_Co.ttf'
-curl -fsSLo NotoSansSC-Regular.ttf 'https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYw.ttf'
-curl -fsSLo NotoSansSC-Bold.ttf    'https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGzjCnYw.ttf'
-curl -fsSLo NotoSansJP-Regular.ttf 'https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75s.ttf'
-curl -fsSLo NotoSansJP-Bold.ttf    'https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFPYk75s.ttf'
-curl -fsSLo NotoSansKR-Regular.ttf 'https://fonts.gstatic.com/s/notosanskr/v39/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLQ.ttf'
-curl -fsSLo NotoSansKR-Bold.ttf    'https://fonts.gstatic.com/s/notosanskr/v39/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzg01eLQ.ttf'
-sha256sum -c <<CHECKSUMS
-619662a0583f38311e92666927e5edbfd30f2a1fbe8593685660bd11bdd46a10  NotoSansTC-Regular.ttf
-33e8464f3432fd9eba5fa6ff74f5fb9ee612cad703877bd71c36e6f167c0a7e3  NotoSansTC-Bold.ttf
-450625c8d46ab3df97b7904ded955ec2746d17ec76740cb1e91d1ba63a0f89af  NotoSansSC-Regular.ttf
-0066a522a1ac007c1d72bc4fccb114f80ff7294641c78cead9715bd14d43b9ea  NotoSansSC-Bold.ttf
-4593dfcdc70ee68852606c90d75dfc6e022feda12780a55615239c53c54ef086  NotoSansJP-Regular.ttf
-a3910e15eea0451ffbea62e894e951ea9f7c812c8b4b5e947593b6ecc2d4b057  NotoSansJP-Bold.ttf
-c733940a7dc687142848b30a491e97138ed58dc58c4cae33c44e3ee52da411cb  NotoSansKR-Regular.ttf
-5ebb0def0fe9e7c853253eca8ec9c1066adc479f2e248533b412ed0c6a663abc  NotoSansKR-Bold.ttf
-CHECKSUMS
-EOF
+COPY --chmod=755 docker/download_cjk_fonts.sh /usr/local/bin/download-cjk-fonts
+RUN download-cjk-fonts
 
 FROM caddy:2.11.4-builder AS build-backoffice-proxy
 RUN xcaddy build v2.11.4 --with github.com/caddy-dns/cloudflare@v0.2.4
 
-# Stage 5: Final production image
 FROM --platform=$BUILDPLATFORM python:3.14.6-slim AS production
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
@@ -131,7 +101,6 @@ ENV RELEASE_VERSION=${RELEASE_VERSION}
 
 CMD ["uv", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10000", "--limit-max-requests", "50000", "--limit-max-requests-jitter", "10000", "--timeout-graceful-shutdown", "30"]
 
-# Stage 6: AWS Lambda image (SQS-driven background tasks, POC)
 FROM public.ecr.aws/lambda/python:3.14 AS lambda-build
 COPY --from=ghcr.io/astral-sh/uv:0.11.24 /uv /uvx /bin/
 
@@ -187,56 +156,8 @@ RUN mkdir -p /var/run /var/cache /var/lib /var/task \
   && ln -s /tmp/tailscale /var/lib/tailscale \
   && ln -s /tmp/tailscale /var/task/tailscale
 
-RUN <<'EOF'
-cat > /var/runtime/export-secrets.py <<'EXPORTSECRETS'
-import json
-import os
-import re
-import shlex
-
-import boto3
-
-params = {"SecretId": os.environ["POLAR_WORKER_SECRETS_ARN"]}
-version_id = os.environ.get("POLAR_WORKER_SECRETS_VERSION")
-if version_id:
-    params["VersionId"] = version_id
-secret = boto3.client("secretsmanager").get_secret_value(**params)
-for key, value in json.loads(secret["SecretString"]).items():
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
-        raise ValueError(f"invalid env var name: {key!r}")
-    print(f"export {key}={shlex.quote(value)}")
-EXPORTSECRETS
-
-cat > /var/runtime/polar-bootstrap <<'BOOTSTRAP'
-#!/bin/sh
-set -eu
-
-if [ -n "${POLAR_WORKER_SECRETS_ARN:-}" ]; then
-  secret_exports="$(python /var/runtime/export-secrets.py)"
-  eval "$secret_exports"
-fi
-
-if [ -n "${POLAR_JWKS_CONTENT:-}" ] && [ -n "${POLAR_JWKS:-}" ]; then
-  mkdir -p "$(dirname "$POLAR_JWKS")"
-  printf "%s" "$POLAR_JWKS_CONTENT" > "$POLAR_JWKS"
-fi
-
-# Tailscale disabled: ALL_PROXY routed HTTP egress through the SOCKS proxy. Re-enable for private-network access.
-# if [ -n "${TAILSCALE_AUTHKEY:-}" ]; then
-#   mkdir -p /tmp/tailscale
-#   /var/runtime/tailscaled --tun=userspace-networking --socks5-server=localhost:1055 &
-#   tailscale_hostname="${TAILSCALE_HOSTNAME:-polar-${POLAR_ENV:-unknown}-worker-lambda}"
-#   tailscale_tags="tag:${POLAR_ENV:-unknown},tag:worker-lambda,tag:aws"
-#   until /var/runtime/tailscale up --authkey="${TAILSCALE_AUTHKEY}?ephemeral=true&preauthorized=true" --hostname="${tailscale_hostname}" --advertise-tags="${tailscale_tags}"; do
-#     sleep 0.1
-#   done
-#   export ALL_PROXY="${ALL_PROXY:-socks5://localhost:1055/}"
-# fi
-
-exec /lambda-entrypoint.sh "$@"
-BOOTSTRAP
-chmod +x /var/runtime/polar-bootstrap
-EOF
+COPY docker/export_lambda_secrets.py /var/runtime/export-secrets.py
+COPY --chmod=755 docker/run_lambda_worker.sh /var/runtime/polar-bootstrap
 
 ENTRYPOINT ["/var/runtime/polar-bootstrap"]
 CMD ["polar.worker.aws_lambda.handler"]

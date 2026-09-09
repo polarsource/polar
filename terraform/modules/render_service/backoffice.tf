@@ -18,7 +18,7 @@ resource "render_private_service" "backoffice" {
   plan           = var.private_backoffice.plan
   region         = "ohio"
   num_instances  = 1
-  start_command  = "/bin/bash /app/server/scripts/run_private_backoffice.sh"
+  start_command  = "/bin/bash /app/server/docker/run_private_backoffice.sh"
 
   runtime_source = {
     image = {

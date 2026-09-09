@@ -2243,24 +2243,25 @@ class SubscriptionService:
             product_repository = ProductRepository.from_session(session)
             new_product = await product_repository.get_by_id(pending_update.product_id)
 
+        recurring_interval = subscription.recurring_interval
+        recurring_interval_count = subscription.recurring_interval_count
+        if new_product is not None and is_recurring_product(new_product):
+            recurring_interval = new_product.recurring_interval
+            recurring_interval_count = new_product.recurring_interval_count
+
+        # Same condition as `cycle`, which leaves the period dates entirely to an
+        # update that resets the cycle: such an update has to carry the whole new
+        # period, so recompute it from the new period end.
         if (
-            new_product is not None
-            and is_recurring_product(new_product)
-            and (
-                new_product.recurring_interval != subscription.recurring_interval
-                or new_product.recurring_interval_count
-                != subscription.recurring_interval_count
-            )
+            pending_update.proration_behavior == SubscriptionProrationBehavior.reset
+            or recurring_interval != subscription.recurring_interval
+            or recurring_interval_count != subscription.recurring_interval_count
         ):
-            # The update opens a brand new cycle when it applies: move it along
-            # with the period end.
             pending_update.new_cycle_start = new_period_end
-            pending_update.new_cycle_end = (
-                new_product.recurring_interval.get_next_period(
-                    new_period_end,
-                    new_period_end.day,
-                    new_product.recurring_interval_count,
-                )
+            pending_update.new_cycle_end = recurring_interval.get_next_period(
+                new_period_end,
+                new_period_end.day,
+                recurring_interval_count,
             )
         else:
             # The update keeps the subscription's own cycle: stop pinning it, so

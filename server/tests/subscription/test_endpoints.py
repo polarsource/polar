@@ -1500,7 +1500,7 @@ class TestSubscriptionUpdateBillingPeriod:
         assert response.status_code == 403
 
     @pytest.mark.auth
-    async def test_cannot_extend_scheduled_cancellation(
+    async def test_extend_scheduled_cancellation(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -1522,7 +1522,14 @@ class TestSubscriptionUpdateBillingPeriod:
             json={"current_billing_period_end": new_period_end.isoformat()},
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert (
+            datetime.fromisoformat(updated_subscription["current_period_end"])
+            == new_period_end
+        )
+        assert datetime.fromisoformat(updated_subscription["ends_at"]) == new_period_end
+        assert updated_subscription["cancel_at_period_end"] is True
 
     @pytest.mark.auth
     async def test_inactive_subscription_past_due(

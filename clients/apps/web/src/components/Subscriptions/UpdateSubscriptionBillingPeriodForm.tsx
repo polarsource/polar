@@ -108,8 +108,9 @@ export const UpdateSubscriptionBillingPeriodForm = ({
                   <FormMessage />
                   {field.value && (
                     <FormDescription>
-                      The subscription will renew on the selected date and the
-                      customer will be charged for the next billing period.
+                      {subscription.cancel_at_period_end
+                        ? 'The subscription is set to cancel at the end of the period: it will end on the selected date instead.'
+                        : 'The subscription will renew on the selected date and the customer will be charged for the next billing period.'}
                     </FormDescription>
                   )}
                 </FormItem>

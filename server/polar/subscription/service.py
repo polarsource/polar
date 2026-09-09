@@ -2556,15 +2556,13 @@ class SubscriptionService:
         if not subscription.active:
             raise InactiveSubscription(subscription)
 
-        if subscription.cancel_at_period_end:
-            raise AlreadyCanceledSubscription(subscription)
-
-        previous_status = subscription.status
-        previous_is_canceled = subscription.canceled
         old_period_end = subscription.current_period_end
 
         subscription.current_period_end = new_period_end
         subscription.anchor_day = new_period_end.day
+
+        if subscription.cancel_at_period_end:
+            subscription.ends_at = new_period_end
 
         await event_service.create_event(
             session,

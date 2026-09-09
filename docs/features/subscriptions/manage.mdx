@@ -87,7 +87,9 @@ curl --request PATCH \
 
 ## Reschedule the next renewal
 
-If you need to move a subscription's renewal date — for example, to align several subscriptions on the same day, or to extend the current period as a goodwill gesture — you can set a new `current_billing_period_end`. The new date has to be in the future, and this operation isn't available on canceled subscriptions.
+If you need to move a subscription's renewal date — for example, to align several subscriptions on the same day, or to extend the current period as a goodwill gesture — you can set a new `current_billing_period_end`. The new date has to be in the future, and this operation isn't available on revoked subscriptions.
+
+If the subscription is scheduled to cancel at period end, its `ends_at` moves with the new date: it ends then instead of on the original period end.
 
 ```bash cURL
 curl --request PATCH \

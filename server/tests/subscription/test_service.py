@@ -9750,7 +9750,7 @@ class TestUpdateBillingPeriod:
         assert event.customer_id == customer.id
         assert event.organization_id == customer.organization_id
 
-    async def test_canceled_subscription_raises(
+    async def test_cancel_at_period_end_moves_ends_at(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -9761,6 +9761,40 @@ class TestUpdateBillingPeriod:
             save_fixture,
             product=product,
             customer=customer,
+        )
+
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at == subscription.current_period_end
+        new_period_end = subscription.current_period_end + timedelta(days=7)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = (
+                await subscription_service.update_currrent_billing_period_end(
+                    session,
+                    ctx,
+                    subscription,
+                    new_period_end=new_period_end,
+                )
+            )
+
+        assert updated_subscription.current_period_end == new_period_end
+        assert updated_subscription.ends_at == new_period_end
+        assert updated_subscription.cancel_at_period_end is True
+
+    async def test_revoked_subscription_raises(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            revoke=True,
         )
 
         new_period_end = utc_now() + timedelta(days=30)

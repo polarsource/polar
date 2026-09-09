@@ -5,6 +5,9 @@ import pytest
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalCustomer,
+    CanonicalDiscount,
+    CanonicalDiscountDuration,
+    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -257,6 +260,69 @@ class TestUpsert:
         assert [price["source_id"] for price in reused.canonical["prices"]] == [
             "price_current"
         ]
+
+    async def test_merges_promotion_codes_onto_a_pending_coupon(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        coupon = CanonicalDiscount(
+            source_id="coupon_1",
+            name="Launch",
+            discount_type=CanonicalDiscountType.percentage,
+            duration=CanonicalDiscountDuration.forever,
+            duration_in_months=None,
+            basis_points=1000,
+            amounts={},
+            code=None,
+            extra_codes=0,
+            ends_at=None,
+            max_redemptions=None,
+            product_source_ids=[],
+        )
+        await repository.upsert(
+            migration, organization, coupon, merge_discount_codes=True
+        )
+        with_code = CanonicalDiscount(
+            source_id="coupon_1",
+            name="Launch",
+            discount_type=CanonicalDiscountType.percentage,
+            duration=CanonicalDiscountDuration.forever,
+            duration_in_months=None,
+            basis_points=1000,
+            amounts={},
+            code="LAUNCH",
+            extra_codes=0,
+            ends_at=None,
+            max_redemptions=None,
+            product_source_ids=[],
+        )
+        merged = await repository.upsert(
+            migration, organization, with_code, merge_discount_codes=True
+        )
+        extra = CanonicalDiscount(
+            source_id="coupon_1",
+            name="Launch",
+            discount_type=CanonicalDiscountType.percentage,
+            duration=CanonicalDiscountDuration.forever,
+            duration_in_months=None,
+            basis_points=1000,
+            amounts={},
+            code="SAVE",
+            extra_codes=0,
+            ends_at=None,
+            max_redemptions=None,
+            product_source_ids=[],
+        )
+        merged = await repository.upsert(
+            migration, organization, extra, merge_discount_codes=True
+        )
+
+        assert merged.canonical["code"] == "LAUNCH"
+        assert merged.canonical["extra_codes"] == 1
 
 
 @pytest.mark.asyncio

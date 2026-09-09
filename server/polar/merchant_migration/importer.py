@@ -10,12 +10,17 @@ from uuid import UUID
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.discount.repository import DiscountRepository
+from polar.discount.schemas import DiscountFixedCreate, DiscountPercentageCreate
+from polar.discount.service import discount as discount_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
+    Discount,
     MerchantMigration,
     MerchantMigrationRecord,
     Organization,
@@ -23,6 +28,7 @@ from polar.models import (
     Subscription,
     User,
 )
+from polar.models.discount import DiscountDuration
 from polar.models.merchant_migration import MerchantMigrationSourcePlatform
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
@@ -39,16 +45,20 @@ from polar.subscription.service import subscription as subscription_service
 
 from .canonical import (
     CanonicalCustomer,
+    CanonicalDiscount,
+    CanonicalDiscountType,
     CanonicalProduct,
     CanonicalSubscription,
     canonical_price_key,
     deserialize,
+    polar_discount_amounts,
     subscription_price_key,
 )
 from .precheck import (
     ProductImportPlan,
     Reason,
     plan_customer_imports,
+    plan_discount_imports,
     plan_product_imports,
     plan_subscription_imports,
 )
@@ -109,7 +119,10 @@ async def create_imported_subscription(
     product: Product,
     price: ProductPriceFixed,
     customer: Customer,
+    *,
+    discount: Discount | None = None,
 ) -> Subscription:
+    applied_at = subscription.discount_started_at
     return await subscription_service.create_imported(
         session,
         product=product,
@@ -119,6 +132,8 @@ async def create_imported_subscription(
         current_period_end=subscription.current_period_end,
         anchor_day=subscription.anchor_day,
         user_metadata={"stripe_subscription_id": subscription.source_id},
+        discount=discount,
+        discount_applied_at=applied_at if discount is not None else None,
     )
 
 
@@ -179,6 +194,9 @@ class CatalogImporter:
         customer_records = self._records_of(
             records, MerchantMigrationRecordType.customer
         )
+        discount_records = self._records_of(
+            records, MerchantMigrationRecordType.discount
+        )
         subscription_records = self._records_of(
             records, MerchantMigrationRecordType.subscription
         )
@@ -188,11 +206,18 @@ class CatalogImporter:
                 subscription_records,
                 self._records_of(catalog, MerchantMigrationRecordType.product),
                 self._records_of(catalog, MerchantMigrationRecordType.customer),
+                self._records_of(catalog, MerchantMigrationRecordType.discount),
             )
         )
 
         product_result = await self._import_products(
             product_records, selected_source_ids=product_source_ids
+        )
+        discount_result = await self._import_discounts(
+            discount_records,
+            product_records=self._records_of(
+                catalog, MerchantMigrationRecordType.product
+            ),
         )
         customer_result = await self._import_customers(
             customer_records, selected_source_ids=customer_source_ids
@@ -205,7 +230,12 @@ class CatalogImporter:
 
         return MerchantMigrationImportReport(
             step=self.migration.step,
-            results=[product_result, customer_result, subscription_result],
+            results=[
+                product_result,
+                discount_result,
+                customer_result,
+                subscription_result,
+            ],
         )
 
     @staticmethod
@@ -239,6 +269,7 @@ class CatalogImporter:
         subscription_records: Sequence[MerchantMigrationRecord],
         product_records: Sequence[MerchantMigrationRecord],
         customer_records: Sequence[MerchantMigrationRecord],
+        discount_records: Sequence[MerchantMigrationRecord],
     ) -> tuple[set[str], set[str]]:
         subscriptions = [
             self._as(deserialize(record.type, record.canonical), CanonicalSubscription)
@@ -252,11 +283,16 @@ class CatalogImporter:
             self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
             for record in customer_records
         ]
+        discounts = [
+            self._as(deserialize(record.type, record.canonical), CanonicalDiscount)
+            for record in discount_records
+        ]
         plans = plan_subscription_imports(
             subscriptions,
             products,
             customers,
             self.organization.default_presentment_currency,
+            discounts,
         )
         product_by_price = {
             canonical_price_key(price): product
@@ -357,6 +393,65 @@ class CatalogImporter:
             skipped=counts.skipped,
         )
 
+    async def _import_discounts(
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        *,
+        product_records: Sequence[MerchantMigrationRecord],
+    ) -> MerchantMigrationImportResult:
+        discounts = [
+            self._as(deserialize(record.type, record.canonical), CanonicalDiscount)
+            for record in records
+        ]
+        products = [
+            self._as(deserialize(record.type, record.canonical), CanonicalProduct)
+            for record in product_records
+        ]
+        plans = plan_discount_imports(
+            discounts, products, self.organization.default_presentment_currency
+        )
+        polar_product_ids_by_source: dict[str, list[UUID]] = {}
+        for record in product_records:
+            if (
+                record.status != MerchantMigrationRecordStatus.imported
+                or record.target_id is None
+            ):
+                continue
+            product = deserialize(record.type, record.canonical)
+            if not isinstance(product, CanonicalProduct):
+                continue
+            polar_product_ids_by_source.setdefault(
+                product.product_source_id, []
+            ).append(record.target_id)
+
+        counts = ImportCounts()
+        for record, discount in zip(records, discounts, strict=True):
+            if record.status != MerchantMigrationRecordStatus.pending:
+                counts.settle(record.status)
+                continue
+            skip = plans[discount.source_id]
+            if skip is not None:
+                await self._mark_skipped(record, skip)
+                counts.skipped += 1
+                continue
+            product_ids: list[UUID] = []
+            if discount.product_source_ids:
+                for product_source_id in discount.product_source_ids:
+                    product_ids.extend(
+                        polar_product_ids_by_source.get(product_source_id, [])
+                    )
+                if not product_ids:
+                    continue
+            polar_discount = await self._create_discount(discount, product_ids)
+            await self._mark_imported(record, polar_discount.id)
+            counts.imported += 1
+
+        return MerchantMigrationImportResult(
+            entity=PrecheckEntity.discounts,
+            imported=counts.imported,
+            skipped=counts.skipped,
+        )
+
     async def _create_product(
         self, product: CanonicalProduct, plan: ProductImportPlan
     ) -> Product:
@@ -388,6 +483,73 @@ class CatalogImporter:
             self.auth_subject,
             notify=False,
         )
+
+    async def _create_discount(
+        self, discount: CanonicalDiscount, product_ids: list[UUID]
+    ) -> Discount:
+        code = await self._available_discount_code(discount.code)
+        exhausted = discount.max_redemptions == 0
+        if exhausted:
+            code = None
+        duration = DiscountDuration(discount.duration.value)
+        duration_in_months = (
+            discount.duration_in_months
+            if duration == DiscountDuration.repeating
+            else None
+        )
+        metadata: dict[str, str | int | float | bool] = {
+            "stripe_coupon_id": discount.source_id
+        }
+        products = product_ids or None
+        ends_at = discount.ends_at
+        if exhausted:
+            now = utc_now()
+            ends_at = now if ends_at is None or ends_at > now else ends_at
+        max_redemptions = None if exhausted else discount.max_redemptions
+        if discount.discount_type == CanonicalDiscountType.percentage:
+            assert discount.basis_points is not None
+            create: DiscountFixedCreate | DiscountPercentageCreate = (
+                DiscountPercentageCreate(
+                    name=discount.name,
+                    code=code,
+                    duration=duration,
+                    duration_in_months=duration_in_months,
+                    basis_points=discount.basis_points,
+                    ends_at=ends_at,
+                    max_redemptions=max_redemptions,
+                    products=products,
+                    organization_id=self.organization.id,
+                    metadata=metadata,
+                )
+            )
+        else:
+            create = DiscountFixedCreate(
+                name=discount.name,
+                code=code,
+                duration=duration,
+                duration_in_months=duration_in_months,
+                amounts=polar_discount_amounts(discount.amounts),
+                ends_at=ends_at,
+                max_redemptions=max_redemptions,
+                products=products,
+                organization_id=self.organization.id,
+                metadata=metadata,
+            )
+        created = await discount_service.create(
+            self.session, create, self.auth_subject, notify=False
+        )
+        if exhausted:
+            created.max_redemptions = 0
+        return created
+
+    async def _available_discount_code(self, code: str | None) -> str | None:
+        if code is None:
+            return None
+        repository = DiscountRepository.from_session(self.session)
+        existing = await repository.get_by_code_and_organization(
+            code, self.organization.id
+        )
+        return None if existing is not None else code
 
     async def _create_or_reuse_customer(
         self, customer: CanonicalCustomer

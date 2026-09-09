@@ -25103,6 +25103,16 @@ export interface components {
        * @description Whether the source computed tax on this subscription. None for non-subscription rows, or when the source doesn't say.
        */
       automatic_tax: boolean | null
+      /**
+       * Discount Name
+       * @description The coupon Polar will keep on this subscription. None for non-subscription rows, or when the subscription has no importable coupon.
+       */
+      discount_name: string | null
+      /**
+       * Discount Code
+       * @description The checkout code of the coupon Polar will keep on this subscription. None when there is no coupon, or the coupon has no Polar-valid code.
+       */
+      discount_code: string | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']
       /** @description The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product. */
@@ -31750,7 +31760,12 @@ export interface components {
      * PrecheckEntity
      * @enum {string}
      */
-    PrecheckEntity: 'products' | 'prices' | 'customers' | 'subscriptions'
+    PrecheckEntity:
+      | 'products'
+      | 'prices'
+      | 'customers'
+      | 'discounts'
+      | 'subscriptions'
     /**
      * PrecheckReasonLevel
      * @enum {string}
@@ -71269,7 +71284,7 @@ export const pledgeStateValues: ReadonlyArray<
 ]
 export const precheckEntityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckEntity']
-> = ['products', 'prices', 'customers', 'subscriptions']
+> = ['products', 'prices', 'customers', 'discounts', 'subscriptions']
 export const precheckReasonLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckReasonLevel']
 > = ['action_required', 'info']

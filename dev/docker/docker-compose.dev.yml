@@ -144,7 +144,6 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
       NEXT_PUBLIC_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
       NEXT_PUBLIC_BACKOFFICE_URL: http://localhost:${API_PORT:-8000}/backoffice
-      # Dummy always-pass Turnstile sitekey (pairs with POLAR_TURNSTILE_SECRET).
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
       # Note: NEXT_PUBLIC_STRIPE_KEY and NEXT_PUBLIC_GITHUB_APP_NAMESPACE
       # must be set in server/.env (they're loaded via env_file)

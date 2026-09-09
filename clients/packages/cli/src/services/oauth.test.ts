@@ -1,4 +1,4 @@
-import { afterAll, afterEach, expect, spyOn, test } from 'bun:test'
+import { afterAll, afterEach, expect, vi, test } from 'vitest'
 import { ChildProcess } from 'node:child_process'
 import * as http from 'node:http'
 import { Effect, Redacted } from 'effect'
@@ -6,7 +6,13 @@ import * as browser from 'open'
 import type { Session } from '../schemas/Auth'
 import { exchange, layer, OAuth, validateCallback } from './oauth'
 
-const fetchMock = spyOn(globalThis, 'fetch')
+vi.mock('node:http', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:http')>()
+  return { ...actual, createServer: vi.fn(actual.createServer) }
+})
+vi.mock('open', () => ({ default: vi.fn() }))
+
+const fetchMock = vi.spyOn(globalThis, 'fetch')
 afterEach(() => fetchMock.mockReset())
 afterAll(() => fetchMock.mockRestore())
 
@@ -15,12 +21,12 @@ test.each([true, false])(
   async (authorized) => {
     const server = http.createServer()
     const nativeListen = server.listen.bind(server)
-    const listen = spyOn(server, 'listen').mockImplementation(
+    const listen = vi.spyOn(server, 'listen').mockImplementation(
       (...args: unknown[]) =>
         nativeListen(0, '127.0.0.1', args[2] as () => void),
     )
-    const createServer = spyOn(http, 'createServer').mockReturnValue(server)
-    const open = spyOn(browser, 'default').mockImplementation(
+    const createServer = vi.spyOn(http, 'createServer').mockReturnValue(server)
+    const open = vi.spyOn(browser, 'default').mockImplementation(
       async (authorization) => {
         const address = server.address()
         if (!address || typeof address === 'string')
@@ -94,7 +100,7 @@ test('exchange converts seconds to milliseconds and preserves omitted refresh to
   expect(Redacted.value(updated.refreshToken!)).toBe('refresh')
   expect(updated.scopes).toEqual(session.scopes)
   expect(updated.organization).toEqual(session.organization)
-  expect(fetchMock.mock.calls[0]?.[0]).toBe(
+  expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
     'https://sandbox-api.polar.sh/v1/oauth2/token',
   )
 })
@@ -113,7 +119,7 @@ test('exchange retains rotated credentials and selects production explicitly', a
   )
   expect(Redacted.value(updated.refreshToken!)).toBe('rotated')
   expect(updated.scopes).toEqual(['organizations:read', 'webhooks:read'])
-  expect(fetchMock.mock.calls[0]?.[0]).toBe(
+  expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
     'https://api.polar.sh/v1/oauth2/token',
   )
 })

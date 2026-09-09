@@ -1,6 +1,3 @@
-import { existsSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
 import { Context, Effect, Layer, Schema } from 'effect'
 import { AuthError, Session, type PolarEnvironment } from '../schemas/Auth'
 
@@ -18,35 +15,11 @@ export class Credentials extends Context.Service<
   }
 >()('Credentials') {}
 
-export const decodeSession = (value: string | null | undefined) =>
-  Effect.gen(function* () {
-    if (value == null) return undefined
-    return yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Session))(
-      value,
-    ).pipe(
-      Effect.mapError(
-        () =>
-          new AuthError({
-            message:
-              'Saved session is corrupt or unsupported. Run polar auth logout (with --production if needed), then log in again.',
-          }),
-      ),
-    )
-  })
-
 export const layer = Layer.sync(Credentials, () => {
-  let warned = false
   const entry = (environment: PolarEnvironment) =>
     Effect.tryPromise({
       try: async () => {
-        if (!warned) {
-          warned = true
-          if (existsSync(join(homedir(), '.polar', 'tokens.json'))) {
-            console.warn(
-              'Legacy ~/.polar/tokens.json is ignored and still contains plaintext credentials. Delete it and log in again with polar auth login.',
-            )
-          }
-        }
+        // Load lazily so a missing native keyring doesn't break commands that don't need it.
         const { AsyncEntry } = await import('@napi-rs/keyring')
         return new AsyncEntry('polar-cli', environment)
       },
@@ -54,40 +27,48 @@ export const layer = Layer.sync(Credentials, () => {
     })
   return Credentials.of({
     read: (environment) =>
-      entry(environment).pipe(
-        Effect.flatMap((entry) =>
-          Effect.tryPromise({
-            try: () => entry.getPassword(),
-            catch: () => unavailable(),
-          }),
-        ),
-        Effect.flatMap(decodeSession),
-      ),
-    write: (environment, session) =>
-      Schema.encodeEffect(Schema.fromJsonString(Session))(session).pipe(
-        Effect.mapError(
-          () => new AuthError({ message: 'Unable to encode saved session.' }),
-        ),
-        Effect.flatMap((value) =>
-          entry(environment).pipe(
-            Effect.flatMap((entry) =>
-              Effect.tryPromise({
-                try: () => entry.setPassword(value),
-                catch: () => unavailable(),
+      Effect.gen(function* () {
+        const credentialEntry = yield* entry(environment)
+        const value = yield* Effect.tryPromise({
+          try: () => credentialEntry.getPassword(),
+          catch: () => unavailable(),
+        })
+        if (value == null) return undefined
+        return yield* Schema.decodeUnknownEffect(
+          Schema.fromJsonString(Session),
+        )(value).pipe(
+          Effect.mapError(
+            () =>
+              new AuthError({
+                message:
+                  'Saved session is corrupt or unsupported. Run polar auth logout (with --production if needed), then log in again.',
               }),
-            ),
           ),
-        ),
-      ),
+        )
+      }),
+    write: (environment, session) =>
+      Effect.gen(function* () {
+        const value = yield* Schema.encodeEffect(
+          Schema.fromJsonString(Session),
+        )(session).pipe(
+          Effect.mapError(
+            () => new AuthError({ message: 'Unable to encode saved session.' }),
+          ),
+        )
+        const credentialEntry = yield* entry(environment)
+        yield* Effect.tryPromise({
+          try: () => credentialEntry.setPassword(value),
+          catch: () => unavailable(),
+        })
+      }),
     delete: (environment) =>
-      entry(environment).pipe(
-        Effect.flatMap((entry) =>
-          Effect.tryPromise({
-            try: () => entry.deleteCredential(),
-            catch: () => unavailable(),
-          }),
-        ),
-      ),
+      Effect.gen(function* () {
+        const credentialEntry = yield* entry(environment)
+        return yield* Effect.tryPromise({
+          try: () => credentialEntry.deleteCredential(),
+          catch: () => unavailable(),
+        })
+      }),
   })
 })
 

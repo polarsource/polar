@@ -1,5 +1,5 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
-import { Effect, Layer } from 'effect'
+import { Cause, Console, Effect, Layer, Runtime } from 'effect'
 import { Command } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from './commands/listen'
@@ -42,4 +42,15 @@ const services = Layer.mergeAll(
 showUpdateNotice()
 checkForUpdateInBackground()
 
-cli.pipe(Effect.provide(services), BunRuntime.runMain)
+cli.pipe(
+  Effect.provide(services),
+  Effect.tapCause((cause) => {
+    if (Cause.hasInterruptsOnly(cause)) return Effect.void
+    const error = Cause.squash(cause)
+    if (!Runtime.getErrorReported(error)) return Effect.void
+    return Console.error(
+      error instanceof Error ? error.message : 'An unexpected error occurred.',
+    )
+  }),
+  BunRuntime.runMain({ disableErrorReporting: true }),
+)

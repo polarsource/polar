@@ -22,11 +22,16 @@ const selectOrganization = (environment: PolarEnvironment) =>
       )
       return
     }
+    const credential = yield* auth.resolve(environment)
+    const activeOrganizationId = credential.session?.organization?.id
     const organization = yield* Prompt.select({
       message: `Select ${environment} organization`,
       choices: items.map((organization) => ({
         value: organization,
-        title: organization.name,
+        title:
+          organization.id === activeOrganizationId
+            ? `${organization.name} (active)`
+            : organization.name,
       })),
     })
     yield* auth.select(environment, organization)
@@ -63,9 +68,7 @@ const whoami = Command.make('whoami', { production }, ({ production }) =>
     const auth = yield* Auth
     const organizations = yield* Organizations
     const credential = yield* auth.resolve(environment)
-    yield* Console.log(
-      `Environment: ${environment}\nAuthentication: ${credential.source === 'override' ? 'POLAR_ACCESS_TOKEN override' : 'saved session'}`,
-    )
+    yield* Console.log(`Environment: ${environment}`)
     if (credential.source === 'override') {
       const items = yield* organizations.list(environment)
       if (items.length !== 1) {

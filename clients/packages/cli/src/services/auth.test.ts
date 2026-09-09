@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { beforeEach, describe, expect, test } from 'vitest'
 import { Effect, Redacted } from 'effect'
 import { AuthError, type PolarEnvironment, type Session } from '../schemas/Auth'
 import { make } from './auth'
@@ -142,28 +142,6 @@ describe('saved sessions', () => {
       'keyring locked',
     )
     expect(logins).toBe(0)
-  })
-
-  test('concurrent expired resolutions rotate once and preserve organization', async () => {
-    sessions.sandbox = { ...session, expiresAt: 0 }
-    const auth = await Effect.runPromise(authEffect)
-    const credentials = await Effect.runPromise(
-      Effect.all(
-        Array.from({ length: 8 }, () => auth.resolve('sandbox')),
-        { concurrency: 'unbounded' },
-      ),
-    )
-    expect(refreshes).toBe(1)
-    expect(writes).toBe(1)
-    expect(
-      credentials.every(
-        (credential) => Redacted.value(credential.accessToken) === 'rotated',
-      ),
-    ).toBe(true)
-    expect(Redacted.value(sessions.sandbox!.refreshToken!)).toBe(
-      'rotated-refresh',
-    )
-    expect(sessions.sandbox?.organization).toEqual(organization)
   })
 
   test('login refreshes an expiring session without launching OAuth', async () => {

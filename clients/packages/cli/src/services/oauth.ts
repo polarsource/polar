@@ -1,6 +1,12 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 import { Context, DateTime, Effect, Layer, Redacted, Schema } from 'effect'
+import {
+  FetchHttpClient,
+  HttpClient,
+  HttpClientRequest,
+  HttpClientResponse,
+} from 'effect/unstable/http'
 import open from 'open'
 import {
   AuthError,
@@ -8,7 +14,82 @@ import {
   type PolarEnvironment,
   type Session,
 } from '../schemas/Auth'
-import * as settings from './oauth-config'
+const SANDBOX_CLIENT_ID = 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9'
+const PRODUCTION_CLIENT_ID = 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA'
+
+const SANDBOX_AUTHORIZATION_URL = 'https://sandbox.polar.sh/oauth2/authorize'
+const PRODUCTION_AUTHORIZATION_URL = 'https://polar.sh/oauth2/authorize'
+
+const SANDBOX_TOKEN_URL = 'https://sandbox-api.polar.sh/v1/oauth2/token'
+const PRODUCTION_TOKEN_URL = 'https://api.polar.sh/v1/oauth2/token'
+
+const config = {
+  scopes: [
+    'benefits:read',
+    'benefits:write',
+    'checkout_links:read',
+    'checkout_links:write',
+    'checkouts:read',
+    'checkouts:write',
+    'custom_fields:read',
+    'custom_fields:write',
+    'customer_meters:read',
+    'customer_portal:read',
+    'customer_portal:write',
+    'customer_seats:read',
+    'customer_seats:write',
+    'customer_sessions:write',
+    'customers:read',
+    'customers:write',
+    'discounts:read',
+    'discounts:write',
+    'disputes:read',
+    'email',
+    'events:read',
+    'events:write',
+    'files:read',
+    'files:write',
+    'license_keys:read',
+    'license_keys:write',
+    'member_sessions:write',
+    'members:read',
+    'members:write',
+    'meters:read',
+    'meters:write',
+    'metrics:read',
+    'metrics:write',
+    'notification_recipients:read',
+    'notification_recipients:write',
+    'notifications:read',
+    'notifications:write',
+    'openid',
+    'orders:read',
+    'orders:write',
+    'organization_access_tokens:read',
+    'organization_access_tokens:write',
+    'organizations:read',
+    'organizations:write',
+    'payments:read',
+    'payouts:read',
+    'payouts:write',
+    'products:read',
+    'products:write',
+    'profile',
+    'refunds:read',
+    'refunds:write',
+    'subscriptions:read',
+    'subscriptions:write',
+    'transactions:read',
+    'transactions:write',
+    'user:read',
+    'user:write',
+    'wallets:read',
+    'wallets:write',
+    'webhooks:read',
+    'webhooks:write',
+  ],
+  redirectUrl: 'http://127.0.0.1:3333/oauth/callback',
+}
 
 export class OAuth extends Context.Service<
   OAuth,
@@ -36,29 +117,22 @@ export const exchange = (
   Effect.gen(function* () {
     params.set(
       'client_id',
-      environment === 'production'
-        ? settings.PRODUCTION_CLIENT_ID
-        : settings.SANDBOX_CLIENT_ID,
+      environment === 'production' ? PRODUCTION_CLIENT_ID : SANDBOX_CLIENT_ID,
     )
-    const response = yield* Effect.tryPromise({
-      try: (signal) =>
-        fetch(
-          environment === 'production'
-            ? settings.PRODUCTION_TOKEN_URL
-            : settings.SANDBOX_TOKEN_URL,
-          {
-            method: 'POST',
-            body: params,
-            signal,
-          },
-        ),
-      catch: () =>
-        new AuthError({
-          message:
-            'OAuth network request failed. Try again; the saved session was not changed.',
-        }),
-    })
-    if (!response.ok) {
+    const client = HttpClient.withScope(yield* HttpClient.HttpClient)
+    const request = HttpClientRequest.post(
+      environment === 'production' ? PRODUCTION_TOKEN_URL : SANDBOX_TOKEN_URL,
+    ).pipe(HttpClientRequest.bodyUrlParams(params))
+    const response = yield* client.execute(request).pipe(
+      Effect.mapError(
+        () =>
+          new AuthError({
+            message:
+              'OAuth network request failed. Try again; the saved session was not changed.',
+          }),
+      ),
+    )
+    if (response.status < 200 || response.status >= 300) {
       return yield* new AuthError({
         message:
           response.status === 400 || response.status === 401
@@ -66,11 +140,9 @@ export const exchange = (
             : `OAuth service unavailable (HTTP ${response.status}). Try again.`,
       })
     }
-    const data = yield* Effect.tryPromise({
-      try: () => response.json() as Promise<unknown>,
-      catch: () => new AuthError({ message: 'Invalid OAuth response.' }),
-    }).pipe(
-      Effect.flatMap(Schema.decodeUnknownEffect(TokenResponse)),
+    const data = yield* HttpClientResponse.schemaBodyJson(TokenResponse)(
+      response,
+    ).pipe(
       Effect.mapError(
         () => new AuthError({ message: 'Invalid OAuth response.' }),
       ),
@@ -89,7 +161,7 @@ export const exchange = (
           : data.scope.split(' ').filter(Boolean),
       organization: previous?.organization,
     }
-  })
+  }).pipe(Effect.scoped, Effect.provide(FetchHttpClient.layer))
 
 export const validateCallback = (url: URL, expectedState: string) => {
   if (url.searchParams.get('state') !== expectedState) {
@@ -118,17 +190,15 @@ const login = (environment: PolarEnvironment) =>
     const verifier = randomBytes(48).toString('base64url')
     const authorization = new URL(
       environment === 'production'
-        ? settings.PRODUCTION_AUTHORIZATION_URL
-        : settings.SANDBOX_AUTHORIZATION_URL,
+        ? PRODUCTION_AUTHORIZATION_URL
+        : SANDBOX_AUTHORIZATION_URL,
     )
     authorization.search = new URLSearchParams({
       client_id:
-        environment === 'production'
-          ? settings.PRODUCTION_CLIENT_ID
-          : settings.SANDBOX_CLIENT_ID,
-      redirect_uri: settings.config.redirectUrl,
+        environment === 'production' ? PRODUCTION_CLIENT_ID : SANDBOX_CLIENT_ID,
+      redirect_uri: config.redirectUrl,
       response_type: 'code',
-      scope: settings.config.scopes.join(' '),
+      scope: config.scopes.join(' '),
       state,
       code_challenge: createHash('sha256').update(verifier).digest('base64url'),
       code_challenge_method: 'S256',
@@ -144,7 +214,7 @@ const login = (environment: PolarEnvironment) =>
         }
       }
       server.on('request', (request, response) => {
-        const url = new URL(request.url ?? '/', settings.config.redirectUrl)
+        const url = new URL(request.url ?? '/', config.redirectUrl)
         if (url.pathname !== '/oauth/callback' || request.method !== 'GET') {
           response.writeHead(404).end()
           return
@@ -215,7 +285,7 @@ const login = (environment: PolarEnvironment) =>
       environment,
       new URLSearchParams({
         grant_type: 'authorization_code',
-        redirect_uri: settings.config.redirectUrl,
+        redirect_uri: config.redirectUrl,
         code,
         code_verifier: verifier,
       }),

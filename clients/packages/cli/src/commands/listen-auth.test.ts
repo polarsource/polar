@@ -1,8 +1,9 @@
-import { beforeEach, expect, test } from 'bun:test'
+import { beforeEach, expect, test } from 'vitest'
 import { Effect, Redacted } from 'effect'
+import { FetchHttpClient } from 'effect/unstable/http'
 import { AuthError, type PolarEnvironment } from '../schemas/Auth'
 import { Auth } from '../services/auth'
-import { authenticatedStreamFetch, type StreamFetch } from './listen-auth'
+import { authenticatedStreamClient } from './listen'
 
 let token: string
 let source: 'keyring' | 'override'
@@ -27,10 +28,19 @@ const auth = Auth.of({
   logout: () => Effect.die('unused'),
   select: () => Effect.die('unused'),
 })
-const forward: StreamFetch = async (_input, init) => {
+const forward: (
+  input: Parameters<typeof fetch>[0],
+  init?: RequestInit,
+) => Promise<Response> = async (_input, init) => {
   requests.push(new Headers(init?.headers).get('Authorization') ?? '')
   return new Response(null, { status })
 }
+
+const makeClient = (environment: PolarEnvironment) =>
+  authenticatedStreamClient(environment).pipe(
+    Effect.provide(FetchHttpClient.layer),
+    Effect.provideService(FetchHttpClient.Fetch, forward as typeof fetch),
+  )
 
 beforeEach(() => {
   token = 'initial'
@@ -44,13 +54,11 @@ beforeEach(() => {
 
 test('reconnections resolve current credentials in the same environment', async () => {
   const stream = await Effect.runPromise(
-    authenticatedStreamFetch('production', forward).pipe(
-      Effect.provideService(Auth, auth),
-    ),
+    makeClient('production').pipe(Effect.provideService(Auth, auth)),
   )
-  await stream('https://example.test', {})
+  await Effect.runPromise(Effect.scoped(stream.get('https://example.test')))
   token = 'new-token'
-  await stream('https://example.test', {})
+  await Effect.runPromise(Effect.scoped(stream.get('https://example.test')))
   expect(requests).toEqual(['Bearer initial', 'Bearer new-token'])
   expect(resolutions).toEqual(['production', 'production'])
 })
@@ -58,12 +66,16 @@ test('reconnections resolve current credentials in the same environment', async 
 test('401 refresh is bounded to one retry across the entire listener', async () => {
   status = 401
   const stream = await Effect.runPromise(
-    authenticatedStreamFetch('sandbox', forward).pipe(
-      Effect.provideService(Auth, auth),
-    ),
+    makeClient('sandbox').pipe(Effect.provideService(Auth, auth)),
   )
-  expect((await stream('https://example.test', {})).status).toBe(401)
-  expect((await stream('https://example.test', {})).status).toBe(401)
+  expect(
+    (await Effect.runPromise(Effect.scoped(stream.get('https://example.test'))))
+      .status,
+  ).toBe(401)
+  expect(
+    (await Effect.runPromise(Effect.scoped(stream.get('https://example.test'))))
+      .status,
+  ).toBe(401)
   expect(requests).toEqual([
     'Bearer initial',
     'Bearer rotated',
@@ -76,11 +88,12 @@ test('override rejection never refreshes or falls back to saved credentials', as
   source = 'override'
   status = 401
   const stream = await Effect.runPromise(
-    authenticatedStreamFetch('sandbox', forward).pipe(
-      Effect.provideService(Auth, auth),
-    ),
+    makeClient('sandbox').pipe(Effect.provideService(Auth, auth)),
   )
-  expect((await stream('https://example.test', {})).status).toBe(401)
+  expect(
+    (await Effect.runPromise(Effect.scoped(stream.get('https://example.test'))))
+      .status,
+  ).toBe(401)
   expect(requests).toEqual(['Bearer initial'])
   expect(refreshes).toBe(0)
 })
@@ -88,12 +101,10 @@ test('override rejection never refreshes or falls back to saved credentials', as
 test('resolution failures reject instead of making an unauthenticated request', async () => {
   failure = true
   const stream = await Effect.runPromise(
-    authenticatedStreamFetch('sandbox', forward).pipe(
-      Effect.provideService(Auth, auth),
-    ),
+    makeClient('sandbox').pipe(Effect.provideService(Auth, auth)),
   )
-  await expect(stream('https://example.test', {})).rejects.toThrow(
-    'refresh failed',
-  )
+  await expect(
+    Effect.runPromise(Effect.scoped(stream.get('https://example.test'))),
+  ).rejects.toThrow('refresh failed')
   expect(requests).toEqual([])
 })

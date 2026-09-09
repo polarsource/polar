@@ -1,4 +1,4 @@
-import { beforeEach, expect, test } from 'bun:test'
+import { beforeEach, expect, test } from 'vitest'
 import type { Polar as PolarSDK } from '@polar-sh/sdk'
 import { Effect, Layer, Redacted } from 'effect'
 import {

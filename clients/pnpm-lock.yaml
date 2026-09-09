@@ -1020,9 +1020,6 @@ importers:
       effect:
         specifier: 4.0.0-rc.112
         version: 4.0.0-rc.112
-      eventsource:
-        specifier: ^4.1.0
-        version: 4.1.1
       open:
         specifier: ^10.2.0
         version: 10.2.0
@@ -9656,10 +9653,6 @@ packages:
   eventsource@3.0.7:
     resolution: {integrity: sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==}
     engines: {node: '>=18.0.0'}
-
-  eventsource@4.1.1:
-    resolution: {integrity: sha512-D6bTRWh6KahHTK/m4WnjPQyEinNPf9eFLEZSEoj7d6fTibspnAVYfzHvirL7u/aoX5d9YYfIkBVAhmigUELk9w==}
-    engines: {node: '>=20.0.0'}
 
   exec-async@2.2.0:
     resolution: {integrity: sha512-87OpwcEiMia/DeiKFzaQNBNFeN3XkkpYIh9FyOqq5mS2oKv3CBE67PXoEKcr6nodWdXNogTiQ0jE2NGuoffXPw==}
@@ -25778,10 +25771,6 @@ snapshots:
   eventsource-parser@3.0.6: {}
 
   eventsource@3.0.7:
-    dependencies:
-      eventsource-parser: 3.0.6
-
-  eventsource@4.1.1:
     dependencies:
       eventsource-parser: 3.0.6
 

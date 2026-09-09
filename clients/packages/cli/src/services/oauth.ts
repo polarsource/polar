@@ -104,7 +104,7 @@ export class OAuth extends Context.Service<
 
 const TokenResponse = Schema.Struct({
   access_token: Schema.NonEmptyString,
-  refresh_token: Schema.optional(Schema.NonEmptyString),
+  refresh_token: Schema.optional(Schema.NullOr(Schema.NonEmptyString)),
   expires_in: Schema.Number.check(Schema.isGreaterThan(0)),
   scope: Schema.optional(Schema.String),
 })

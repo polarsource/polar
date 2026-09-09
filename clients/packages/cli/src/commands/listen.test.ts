@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, describe, expect, vi, test } from 'vitest'
 import { Effect, Fiber } from 'effect'
 import {
   type CreateEventSource,
@@ -63,7 +63,7 @@ const baseOptions = (
   organizationName: 'Acme',
   accessToken: 'test-token',
   createEventSource: createFakeEventSource,
-  forward: mock(okResponse) as unknown as typeof fetch,
+  forward: vi.fn(okResponse) as unknown as typeof fetch,
   ...overrides,
 })
 
@@ -120,7 +120,7 @@ describe('startListening', () => {
   })
 
   test('authenticates the stream with a bearer token while preserving headers', async () => {
-    const forward = mock(okResponse) as unknown as typeof fetch
+    const forward = vi.fn(okResponse) as unknown as typeof fetch
     run({ forward })
 
     const eventSource = instanceAt(0)
@@ -141,7 +141,7 @@ describe('startListening', () => {
   })
 
   test('forwards decoded webhook events to the local url', async () => {
-    const forward = mock(okResponse) as unknown as typeof fetch
+    const forward = vi.fn(okResponse) as unknown as typeof fetch
     run({ forward })
 
     // The server sends `payload.payload` as the exact raw JSON string it

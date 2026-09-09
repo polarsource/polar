@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { beforeEach, describe, expect, vi, test } from 'vitest'
 import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { getLatestRelease, isNewerVersion } from './github-releases'
@@ -18,7 +18,7 @@ const release = {
   ],
 }
 
-const fetchMock = Object.assign(mock<typeof fetch>(), {
+const fetchMock = Object.assign(vi.fn<typeof fetch>(), {
   preconnect: fetch.preconnect,
 })
 const latestRelease = getLatestRelease.pipe(

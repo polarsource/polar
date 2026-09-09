@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { beforeEach, describe, expect, vi, test } from 'vitest'
 import { readFileSync } from 'node:fs'
 
 const workflow = Bun.YAML.parse(
@@ -40,12 +40,12 @@ const requireManifest = () => ({ version: '1.4.0' })
 const outputs = new Map<string, unknown>()
 const core = {
   setOutput: (name: string, value: unknown) => outputs.set(name, value),
-  info: mock(),
+  info: vi.fn(),
 }
-const getContent = mock(async () => ({
+const getContent = vi.fn(async () => ({
   data: { content: Buffer.from('{"version":"1.3.9"}').toString('base64') },
 }))
-const getReleaseByTag = mock(
+const getReleaseByTag = vi.fn(
   async (): Promise<{
     data: { draft: boolean; target_commitish: string }
   }> => {

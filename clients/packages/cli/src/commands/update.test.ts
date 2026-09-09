@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -129,7 +129,7 @@ describe('replaceBinary', () => {
     })
 
     // Mock Bun.spawn so sudo mv appears to succeed
-    const spawnSpy = spyOn(Bun, 'spawn').mockImplementationOnce(
+    const spawnSpy = vi.spyOn(Bun, 'spawn').mockImplementationOnce(
       () =>
         ({
           exited: Promise.resolve(0),
@@ -154,7 +154,7 @@ describe('replaceBinary', () => {
       method: 'writeFile',
     })
 
-    const spawnSpy = spyOn(Bun, 'spawn').mockImplementationOnce(
+    const spawnSpy = vi.spyOn(Bun, 'spawn').mockImplementationOnce(
       () =>
         ({
           exited: Promise.resolve(1),

@@ -42,6 +42,7 @@ const EmailOTPForm = ({
   const {
     containerRef: turnstileContainerRef,
     render: renderTurnstile,
+    execute: executeTurnstile,
     getToken: getTurnstileToken,
     reset: resetTurnstile,
   } = useTurnstile(TURNSTILE_ACTION)
@@ -112,7 +113,7 @@ const EmailOTPForm = ({
       />
       <Form {...form}>
         <form
-          className="flex w-full flex-col gap-2"
+          className="flex w-full flex-col"
           onSubmit={handleSubmit(onSubmit)}
         >
           <FormField
@@ -120,7 +121,7 @@ const EmailOTPForm = ({
             name="email"
             render={({ field }) => {
               return (
-                <FormItem>
+                <FormItem className="mb-2">
                   <FormControl>
                     <Input
                       type="email"
@@ -129,6 +130,7 @@ const EmailOTPForm = ({
                       autoComplete="off"
                       data-1p-ignore
                       {...field}
+                      onFocus={executeTurnstile}
                     />
                   </FormControl>
                   <FormMessage />
@@ -136,6 +138,8 @@ const EmailOTPForm = ({
               )
             }}
           />
+          <div ref={turnstileContainerRef} />
+
           <Button
             type="submit"
             variant="secondary"
@@ -145,7 +149,6 @@ const EmailOTPForm = ({
           >
             {signup ? 'Sign up with email' : 'Sign in with email'}
           </Button>
-          <div ref={turnstileContainerRef} />
         </form>
       </Form>
     </>

@@ -7,6 +7,7 @@ interface TurnstileRenderOptions {
   sitekey: string
   action: string
   appearance?: 'always' | 'execute' | 'interaction-only'
+  execution?: 'render' | 'execute'
   size?: 'normal' | 'flexible' | 'compact'
   callback?: (token: string) => void
   'error-callback'?: () => void
@@ -17,6 +18,7 @@ interface TurnstileWindow extends Window {
   turnstile?: {
     remove: (widgetId: string) => void
     render: (container: HTMLElement, options: TurnstileRenderOptions) => string
+    execute: (widgetId: string) => void
     reset: (widgetId: string) => void
   }
 }
@@ -42,6 +44,7 @@ const TOKEN_TIMEOUT_MS = 15000
 export const useTurnstile = (action: string) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | null>(null)
+  const executedRef = useRef(false)
   const tokenRef = useRef<string | null>(null)
   const waitersRef = useRef<((token: string | null) => void)[]>([])
 
@@ -65,6 +68,9 @@ export const useTurnstile = (action: string) => {
       sitekey: TURNSTILE_SITE_KEY,
       action,
       appearance: 'interaction-only',
+      // Hold the challenge until execute() is called (on first email focus)
+      // rather than running it eagerly at render.
+      execution: 'execute',
       size: 'flexible',
       callback: settleToken,
       'error-callback': () => settleToken(null),
@@ -86,10 +92,23 @@ export const useTurnstile = (action: string) => {
         turnstile.remove(widgetId)
       }
       widgetIdRef.current = null
+      executedRef.current = false
       tokenRef.current = null
       waitersRef.current = []
     }
   }, [render])
+
+  // Kick off the deferred challenge. Safe to call repeatedly — it runs the
+  // challenge only once per widget lifecycle.
+  const execute = useCallback(() => {
+    const turnstile = (window as TurnstileWindow).turnstile
+    const widgetId = widgetIdRef.current
+    if (!turnstile || !widgetId || executedRef.current) {
+      return
+    }
+    executedRef.current = true
+    turnstile.execute(widgetId)
+  }, [])
 
   const getToken = useCallback(
     () =>
@@ -99,23 +118,28 @@ export const useTurnstile = (action: string) => {
           return
         }
 
+        // Fallback: a submit without a prior focus (e.g. autofill) still needs
+        // the challenge started, or getToken would wait out the timeout.
+        execute()
+
         const timeoutId = setTimeout(() => resolve(null), TOKEN_TIMEOUT_MS)
         waitersRef.current.push((token) => {
           clearTimeout(timeoutId)
           resolve(token)
         })
       }),
-    [],
+    [execute],
   )
 
   const reset = useCallback(() => {
     const turnstile = (window as TurnstileWindow).turnstile
     const widgetId = widgetIdRef.current
     tokenRef.current = null
+    executedRef.current = false
     if (turnstile && widgetId) {
       turnstile.reset(widgetId)
     }
   }, [])
 
-  return { containerRef, render, getToken, reset }
+  return { containerRef, render, execute, getToken, reset }
 }

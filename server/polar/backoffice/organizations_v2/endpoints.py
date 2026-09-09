@@ -2519,6 +2519,123 @@ async def under_review_dialog(
 
 
 @router.api_route(
+    "/{organization_id}/activate-dialog",
+    name="organizations:activate_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def activate_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Activate a CREATED organization, showing onboarding readiness first."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    readiness = await organization_service.get_activation_readiness(
+        session, organization
+    )
+    error_message: str | None = None
+
+    if request.method == "POST":
+        try:
+            await organization_service.backoffice_activate(session, organization)
+        except OrganizationError as e:
+            error_message = e.message
+        else:
+            await add_toast(
+                request,
+                "Organization activated.",
+                "success",
+            )
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
+
+    can_activate = organization.status == OrganizationStatus.CREATED
+
+    with modal("Activate Organization", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
+            if readiness.is_ready:
+                with tag.div(
+                    classes="bg-success/10 border border-success/20 p-4 rounded-lg"
+                ):
+                    with tag.p(classes="font-semibold mb-1"):
+                        text("Ready to activate")
+                    with tag.p(classes="text-sm"):
+                        text(
+                            "All onboarding and review gates have passed. "
+                            "Activating will set status to Active and enable "
+                            "the default Active capabilities."
+                        )
+            else:
+                with tag.div(
+                    classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
+                ):
+                    with tag.p(classes="font-semibold mb-1"):
+                        text("Not fully ready to activate")
+                    with tag.p(classes="text-sm"):
+                        text(
+                            "Some gates have not passed. You can still activate "
+                            "from Created — capabilities will follow Active "
+                            "defaults. Review the missing items below."
+                        )
+
+            with tag.ul(classes="space-y-2"):
+                for requirement in readiness.requirements:
+                    with tag.li(classes="flex items-start gap-2 text-sm"):
+                        if requirement.ready:
+                            with tag.span(classes="text-success font-semibold"):
+                                text("✓")
+                            with tag.span():
+                                text(requirement.label)
+                        else:
+                            with tag.span(classes="text-error font-semibold"):
+                                text("✗")
+                            with tag.div():
+                                with tag.p(classes="font-medium"):
+                                    text(requirement.label)
+                                if requirement.missing:
+                                    with tag.p(classes="text-base-content/70"):
+                                        text(requirement.missing)
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                if can_activate:
+                    with tag.form(
+                        hx_post=str(
+                            request.url_for(
+                                "organizations:activate_dialog",
+                                organization_id=organization_id,
+                            )
+                        ),
+                    ):
+                        with button(
+                            variant="success" if readiness.is_ready else "warning",
+                            type="submit",
+                        ):
+                            text("Activate")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/snooze-dialog",
     name="organizations:snooze_dialog",
     methods=["GET", "POST"],

@@ -1655,6 +1655,130 @@ class TestMaybeActivate:
 
 
 @pytest.mark.asyncio
+class TestGetActivationReadiness:
+    async def test_reports_missing_gates(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        organization.details = {}
+        organization.details_submitted_at = None
+
+        readiness = await organization_service.get_activation_readiness(
+            session, organization
+        )
+
+        assert readiness.is_ready is False
+        assert readiness.onboarding_ready is False
+        missing_labels = {item.label for item in readiness.missing}
+        assert missing_labels == {
+            "Organization details submitted",
+            "Payout account ready",
+            "Owner identity verified",
+            "Review approved",
+        }
+
+    async def test_ready_when_onboarding_and_review_pass(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        session.add(
+            OrganizationReview(
+                organization_id=organization.id,
+                verdict=OrganizationReview.Verdict.PASS,
+                risk_score=10.0,
+                violated_sections=[],
+                reason="Clean",
+                model_used="test",
+            )
+        )
+        await session.flush()
+
+        readiness = await organization_service.get_activation_readiness(
+            session, organization
+        )
+
+        assert readiness.is_ready is True
+        assert readiness.missing == []
+
+    async def test_onboarding_ready_without_review(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        readiness = await organization_service.get_activation_readiness(
+            session, organization
+        )
+
+        assert readiness.onboarding_ready is True
+        assert readiness.is_ready is False
+        assert readiness.review_approved.missing == (
+            "No organization review has been submitted"
+        )
+
+
+@pytest.mark.asyncio
+class TestBackofficeActivate:
+    async def test_activates_created_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        organization.capabilities = {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]}
+        await save_fixture(organization)
+
+        result = await organization_service.backoffice_activate(session, organization)
+
+        assert result.status == OrganizationStatus.ACTIVE
+        assert result.capabilities == STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]
+        assert result.initially_reviewed_at is not None
+        assert result.internal_notes is not None
+        assert "activated from created via backoffice" in result.internal_notes
+
+    async def test_rejects_non_created(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+
+        with pytest.raises(OrganizationError, match="CREATED"):
+            await organization_service.backoffice_activate(session, organization)
+
+    async def test_activates_even_when_gates_are_missing(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        organization.details = {}
+        organization.details_submitted_at = None
+        organization.payout_account_id = None
+
+        result = await organization_service.backoffice_activate(session, organization)
+
+        assert result.status == OrganizationStatus.ACTIVE
+
+
+@pytest.mark.asyncio
 class TestBackofficeApprove:
     async def test_rejects_non_denied_or_blocked(
         self,

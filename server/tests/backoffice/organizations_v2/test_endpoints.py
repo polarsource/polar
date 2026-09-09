@@ -9,15 +9,18 @@ from pytest_mock import MockerFixture
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
-from polar.models import PayoutAccount
+from polar.models import PayoutAccount, UserOrganization
 from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization_review import OrganizationReview
 from polar.models.organization_risk_signal import OrganizationRiskSignal
-from polar.models.user import User
+from polar.models.user import IdentityVerificationStatus, User
+from polar.models.user_organization import OrganizationRole
 from polar.models.user_session import UserSession
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import AUPSection
 from polar.postgres import AsyncSession, get_db_session
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_payout_account
 
 
 @pytest_asyncio.fixture
@@ -573,3 +576,115 @@ class TestOverviewLazyCards:
         assert "Checkout Links" in response.text
         assert "Payout Account" in response.text
         assert "<html" not in response.text
+
+
+@pytest.mark.asyncio
+class TestActivateDialog:
+    async def test_created_org_detail_shows_activate_button(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        session.add(organization)
+        await session.flush()
+
+        response = await backoffice_client.get(f"/organizations/{organization.id}")
+
+        assert response.status_code == 200
+        assert "Activate" in response.text
+        assert f"/organizations/{organization.id}/activate-dialog" in response.text
+    async def test_get_shows_missing_requirements(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        session.add(organization)
+        await session.flush()
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/activate-dialog"
+        )
+
+        assert response.status_code == 200
+        assert "Activate Organization" in response.text
+        assert "Not fully ready to activate" in response.text
+        assert "Organization details have not been submitted" in response.text
+        assert "No payout account is connected" in response.text
+        assert "No organization review has been submitted" in response.text
+        assert "Activate" in response.text
+
+    async def test_get_shows_ready_when_gates_pass(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        organization.details = {"about": "A merchant"}
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
+        await create_payout_account(save_fixture, organization, user)
+        await save_fixture(
+            OrganizationReview(
+                organization_id=organization.id,
+                verdict=OrganizationReview.Verdict.PASS,
+                risk_score=10.0,
+                violated_sections=[],
+                reason="Clean",
+                model_used="test",
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/activate-dialog"
+        )
+
+        assert response.status_code == 200
+        assert "Ready to activate" in response.text
+        assert "Not fully ready to activate" not in response.text
+
+    async def test_post_activates_created_organization(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        session.add(organization)
+        await session.flush()
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/activate-dialog"
+        )
+
+        assert response.status_code == 303
+        await session.refresh(organization)
+        assert organization.status == OrganizationStatus.ACTIVE
+
+    async def test_post_rejects_non_created(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/activate-dialog"
+        )
+
+        assert response.status_code == 200
+        assert "requires CREATED status" in response.text

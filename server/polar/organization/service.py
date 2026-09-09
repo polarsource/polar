@@ -214,7 +214,7 @@ def _payout_account_missing(payout_account: PayoutAccount | None) -> str | None:
 def _owner_identity_missing(owner_user: User | None) -> str | None:
     if owner_user is None:
         return "Organization has no owner"
-    if owner_user.identity_verification_status != IdentityVerificationStatus.verified:
+    if not owner_user.identity_verified:
         return (
             "Owner identity is "
             f"{owner_user.identity_verification_status.get_display_name()}"
@@ -1309,7 +1309,7 @@ class OrganizationService:
         return confirmed
 
     async def get_activation_readiness(
-        self, session: AsyncSession, organization: Organization
+        self, session: AsyncReadSession, organization: Organization
     ) -> ActivationReadiness:
         """Checklist of gates that must pass for CREATED → ACTIVE.
 

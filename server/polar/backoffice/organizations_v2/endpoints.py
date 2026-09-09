@@ -2533,7 +2533,7 @@ async def activate_dialog(
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
     """Submit a CREATED org for review and/or run maybe_activate."""
-    repository = OrganizationRepository(session)
+    repository = OrganizationRepository.from_session(session)
 
     organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:

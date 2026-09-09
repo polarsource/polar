@@ -1697,7 +1697,7 @@ class TestGetActivationReadiness:
         if reviewed:
             session.add(
                 OrganizationReview(
-                    organization_id=organization.id,
+                    organization=organization,
                     verdict=OrganizationReview.Verdict.PASS,
                     risk_score=10.0,
                     violated_sections=[],
@@ -1791,7 +1791,7 @@ class TestBackofficeSubmitAndMaybeActivate:
         await save_fixture(organization)
         session.add(
             OrganizationReview(
-                organization_id=organization.id,
+                organization=organization,
                 verdict=OrganizationReview.Verdict.PASS,
                 risk_score=10.0,
                 violated_sections=[],

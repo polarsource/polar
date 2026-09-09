@@ -591,15 +591,15 @@ async def activation_ready_organization(
     await save_fixture(user)
     await save_fixture(
         UserOrganization(
-            user_id=user.id,
-            organization_id=organization.id,
+            user=user,
+            organization=organization,
             role=OrganizationRole.owner,
         )
     )
     await create_payout_account(save_fixture, organization, user)
     await save_fixture(
         OrganizationReview(
-            organization_id=organization.id,
+            organization=organization,
             verdict=OrganizationReview.Verdict.PASS,
             risk_score=10.0,
             violated_sections=[],

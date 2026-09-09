@@ -41,7 +41,6 @@ const AUTHORIZATION_STEPS = [
 interface SharedLayoutProps {
   client?: schemas['AuthorizeResponseOrganization']['client']
   introduction?: ReactNode
-  footer?: ReactNode
   step?: AuthorizationStep
   onStepSelect?: (step: SelectableAuthorizationStep) => void
   stepDescriptions?: Partial<Record<SelectableAuthorizationStep, ReactNode>>
@@ -55,7 +54,6 @@ interface SharedLayoutProps {
 export default function SharedLayout({
   client,
   introduction,
-  footer,
   step,
   onStepSelect,
   stepDescriptions,
@@ -95,7 +93,6 @@ export default function SharedLayout({
     <OnboardingLayout
       branding={branding}
       introduction={introduction}
-      footer={footer}
       steps={step ? AUTHORIZATION_STEPS : undefined}
       currentStepIndex={currentStepIndex}
       onStepSelect={onStepSelect}

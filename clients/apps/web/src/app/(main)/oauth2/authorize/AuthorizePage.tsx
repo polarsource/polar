@@ -144,29 +144,29 @@ const AuthorizePage = ({
         step === 'create' ? createOrganizationActionsRef : undefined
       }
       introduction={
-        <Text variant="body">
-          <span className="font-semibold text-gray-900 dark:text-white">
-            {clientName}
-          </span>{' '}
-          would like to access your Polar account.
-        </Text>
-      }
-      footer={
-        sub && (
-          <Box alignItems="center" gap="s">
-            <Avatar
-              className="h-8 w-8"
-              avatar_url={sub.avatar_url}
-              name={sub.email}
-            />
-            <Box flexDirection="column">
-              <Text variant="caption" color="muted">
-                Signed in as
-              </Text>
-              <Text variant="label">{sub.email}</Text>
+        <>
+          <Text variant="body">
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {clientName}
+            </span>{' '}
+            would like to access your Polar account.
+          </Text>
+          {sub && (
+            <Box alignItems="center" gap="s">
+              <Avatar
+                className="h-8 w-8"
+                avatar_url={sub.avatar_url}
+                name={sub.email}
+              />
+              <Box flexDirection="column">
+                <Text variant="caption" color="muted">
+                  Signed in as
+                </Text>
+                <Text variant="label">{sub.email}</Text>
+              </Box>
             </Box>
-          </Box>
-        )
+          )}
+        </>
       }
     >
       <form

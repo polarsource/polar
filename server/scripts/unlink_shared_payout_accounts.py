@@ -6,7 +6,6 @@ from sqlalchemy.orm import aliased
 
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Order, Organization
-from polar.models.order import OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.postgres import create_async_engine
 
@@ -37,7 +36,7 @@ def _sells(organization: type[Organization]) -> ColumnElement[bool]:
         select(Order.id)
         .where(
             Order.organization_id == organization.id,
-            Order.status.in_(OrderStatus.paid_statuses()),
+            Order.paid,
             Order.deleted_at.is_(None),
         )
         .exists()

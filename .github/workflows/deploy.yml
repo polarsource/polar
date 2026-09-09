@@ -264,7 +264,7 @@ jobs:
 
       - name: Configure AWS credentials (test)
         if: needs.changes.outputs.test-enabled == 'true'
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -275,7 +275,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configure AWS credentials (sandbox)
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -285,7 +285,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configure AWS credentials (production)
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -325,7 +325,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -351,7 +351,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -377,7 +377,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2

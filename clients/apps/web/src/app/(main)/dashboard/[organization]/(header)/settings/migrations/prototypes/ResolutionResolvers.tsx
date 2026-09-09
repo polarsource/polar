@@ -14,6 +14,7 @@ import {
   ResolutionDomain,
 } from './model'
 import { ProductResolver } from './ProductResolver'
+import { RESOLUTION_DOMAIN_LABELS } from './recordLabels'
 import { ResolutionPresentation } from './resolutionControls'
 
 export type { ResolutionPresentation } from './resolutionControls'
@@ -22,12 +23,6 @@ export interface ResolutionResolversProps {
   state: PrototypeState
   act: (action: PrototypeAction) => void
   presentation: ResolutionPresentation
-}
-
-const DOMAIN_LABELS: Record<ResolutionDomain, string> = {
-  product: 'Product',
-  country: 'Country',
-  identity: 'Identity',
 }
 
 function DomainResolver({
@@ -91,7 +86,30 @@ export function ResolutionResolvers({
     (domain) => state.resolutions[domain] === null,
   )
   const activeAssistedDomain =
-    assistedDomain ?? firstUnresolved ?? RESOLUTION_DOMAINS[0]
+    assistedDomain ??
+    firstUnresolved ??
+    RESOLUTION_DOMAINS[RESOLUTION_DOMAINS.length - 1]
+  const actAndAdvance = (action: PrototypeAction) => {
+    act(action)
+    if (typeof action === 'string') {
+      return
+    }
+    const domain: ResolutionDomain =
+      action.type === 'choose_product'
+        ? 'product'
+        : action.type === 'choose_country'
+          ? 'country'
+          : 'identity'
+    if (state.resolutions[domain] !== null) {
+      setAssistedDomain(domain)
+      return
+    }
+    const nextUnresolved = RESOLUTION_DOMAINS.find(
+      (candidate) =>
+        candidate !== domain && state.resolutions[candidate] === null,
+    )
+    setAssistedDomain(nextUnresolved ?? domain)
+  }
 
   return (
     <Box
@@ -142,7 +160,7 @@ export function ResolutionResolvers({
                   onClick={() => setAssistedDomain(domain)}
                 >
                   {resolved ? '✓ ' : ''}
-                  {DOMAIN_LABELS[domain]}
+                  {RESOLUTION_DOMAIN_LABELS[domain]}
                 </Button>
               )
             })}
@@ -150,7 +168,7 @@ export function ResolutionResolvers({
           <DomainResolver
             domain={activeAssistedDomain}
             state={state}
-            act={act}
+            act={actAndAdvance}
             presentation={presentation}
           />
         </Box>

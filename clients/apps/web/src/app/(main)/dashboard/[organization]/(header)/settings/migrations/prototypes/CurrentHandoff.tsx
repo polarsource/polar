@@ -133,13 +133,6 @@ export function CurrentHandoff({
             borderStyle="solid"
             borderColor="border-secondary"
           />
-          <Box flexDirection="column" rowGap="xs">
-            <Text variant="body">Resolve blocking records</Text>
-            <Text variant="caption" color="muted">
-              Product, country, and identity choices deepen the same review —
-              they do not add a new migration step.
-            </Text>
-          </Box>
           <ResolutionResolvers state={state} act={act} presentation="current" />
         </Box>
       ) : null}

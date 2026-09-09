@@ -15,6 +15,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.payout.repository import PayoutRepository
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import PayoutAccountRepository
 from .schemas import PayoutAccountCreate, PayoutAccountLink
@@ -134,6 +135,12 @@ class PayoutAccountService:
         organization_repository = OrganizationRepository.from_session(session)
         organization.payout_account = payout_account
         await organization_repository.update(organization)
+
+        # Stripe reads the organization's website off the connected account.
+        enqueue_job(
+            "organization.sync_payout_account_website",
+            organization_id=organization.id,
+        )
 
         return payout_account
 

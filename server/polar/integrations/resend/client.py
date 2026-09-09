@@ -4,6 +4,23 @@ from urllib.parse import quote
 import httpx
 
 from polar.config import settings
+from polar.exceptions import PolarError
+
+
+class ResendClientError(PolarError):
+    pass
+
+
+class ContactDoesNotExist(ResendClientError):
+    def __init__(self, identifier: str) -> None:
+        self.identifier = identifier
+        super().__init__(f"Contact does not exist: {identifier}")
+
+
+class InvalidIdentifier(ResendClientError):
+    def __init__(self, identifier: str) -> None:
+        self.identifier = identifier
+        super().__init__(f"Invalid identifier: {identifier}")
 
 
 class ResendClient:
@@ -13,10 +30,14 @@ class ResendClient:
             headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
         )
 
-    async def get_contact(self, id_or_email: str) -> dict[str, Any] | None:
-        response = await self.client.get(f"/contacts/{quote(id_or_email, safe='')}")
+    async def get_contact(self, identifier: str) -> dict[str, Any]:
+        response = await self.client.get(f"/contacts/{quote(identifier, safe='')}")
+
         if response.status_code == 404:
-            return None
+            raise ContactDoesNotExist(identifier)
+        elif response.status_code == 422:
+            raise InvalidIdentifier(identifier)
+
         response.raise_for_status()
         return response.json()
 

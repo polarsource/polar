@@ -10,6 +10,8 @@ from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.cli import auth
 from polar.cli.listener import mark_active, mark_inactive
+from polar.cli.schemas import TriggerEvent, TriggerRequest, TriggerResponse
+from polar.cli.service import list_trigger_events, trigger_event
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
@@ -63,6 +65,8 @@ async def transform_webhook_events(
                         "webhook-timestamp": str(int(ts.timestamp())),
                         "webhook-signature": signature,
                     }
+                    if payload_data.get("triggered"):
+                        event["headers"]["x-polar-triggered"] = "true"
                     yield json.dumps(event)
                     continue
         except (json.JSONDecodeError, KeyError) as e:
@@ -118,3 +122,22 @@ async def listen(
             await mark_inactive(redis, org.id)
 
     return EventSourceResponse(first_event_wrapper())
+
+
+@router.get("/events")
+async def events(auth_subject: auth.CLIRead) -> list[TriggerEvent]:
+    return list(list_trigger_events())
+
+
+@router.post("/trigger/{id}")
+async def trigger(
+    id: OrganizationID,
+    trigger_request: TriggerRequest,
+    auth_subject: auth.CLIRead,
+    redis: Redis = Depends(get_redis),
+    session: AsyncSession = Depends(get_db_session),
+) -> TriggerResponse:
+    organization = await organization_service.get(session, auth_subject, id)
+    if organization is None:
+        raise ResourceNotFound()
+    return await trigger_event(redis, organization, trigger_request)

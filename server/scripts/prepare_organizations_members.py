@@ -1,8 +1,8 @@
 """
-Script to prepare seat-based organizations for the member model migration.
+Script to prepare organizations for the member model migration.
 
 This is the Phase 0B script: it enqueues `organization.prepare_members` tasks
-for seat-based orgs that haven't yet enabled `member_model_enabled`.
+for orgs that haven't yet enabled `member_model_enabled`.
 
 The prepare task is non-destructive: it populates member_id/email on seats
 and grants without changing customer_id, deleting customers, or flipping flags.
@@ -71,9 +71,9 @@ async def prepare(
         None, help="Maximum number of organizations to prepare"
     ),
 ) -> None:
-    """Enqueue prepare_members tasks for seat-based orgs (Phase 0B).
+    """Enqueue prepare_members tasks for unmigrated orgs (Phase 0B).
 
-    Targets orgs with seat_based_pricing_enabled=True and member_model_enabled=False.
+    Targets orgs with member_model_enabled=False.
     Does NOT flip any flags.
     """
     engine = create_async_engine("script")
@@ -85,9 +85,6 @@ async def prepare(
             .where(
                 Organization.deleted_at.is_(None),
                 Organization.status != OrganizationStatus.BLOCKED,
-                Organization.feature_settings[
-                    "seat_based_pricing_enabled"
-                ].as_boolean(),
                 or_(
                     Organization.feature_settings["member_model_enabled"].is_(None),
                     ~Organization.feature_settings["member_model_enabled"].as_boolean(),

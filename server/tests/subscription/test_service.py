@@ -6505,12 +6505,6 @@ class TestUpdateProduct:
         mocker.patch.object(
             subscription_service, "_create_subscription_update_order", new=AsyncMock()
         )
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
@@ -6566,12 +6560,6 @@ class TestUpdateProduct:
         mocker.patch.object(
             subscription_service, "_create_subscription_update_order", new=AsyncMock()
         )
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
         customer.type = CustomerType.individual
         await save_fixture(customer)
 
@@ -6612,12 +6600,6 @@ class TestUpdateProduct:
         mocker.patch.object(
             subscription_service, "_create_subscription_update_order", new=AsyncMock()
         )
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
@@ -6666,12 +6648,6 @@ class TestUpdateProduct:
         organization: Organization,
         product: Product,
     ) -> None:
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )

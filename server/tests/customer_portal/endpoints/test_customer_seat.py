@@ -77,11 +77,6 @@ class TestListSeats:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         # Create a seat-based product
         product = await create_product(
             save_fixture,
@@ -129,11 +124,6 @@ class TestAssignSeat:
         organization: Organization,
         customer_second: Customer,
     ) -> None:
-        # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         # Create a seat-based product
         product = await create_product(
             save_fixture,
@@ -169,11 +159,6 @@ class TestAssignSeat:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         # Create a seat-based product
         product = await create_product(
             save_fixture,
@@ -221,10 +206,6 @@ class TestAssignSeat:
         customer: Customer,
     ) -> None:
         from tests.fixtures.random_objects import create_checkout
-
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
 
         product = await create_product(
             save_fixture,
@@ -275,7 +256,6 @@ class TestAssignSeat:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         organization.feature_settings["member_model_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
@@ -320,10 +300,6 @@ class TestAssignSeat:
         session: AsyncSession,
     ) -> None:
         from tests.fixtures.random_objects import create_checkout
-
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
 
         product = await create_product(
             save_fixture,
@@ -379,11 +355,6 @@ class TestRevokeSeat:
         customer: Customer,
         customer_second: Customer,
     ) -> None:
-        # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         # Create a seat-based product
         product = await create_product(
             save_fixture,
@@ -423,11 +394,6 @@ class TestRevokeSeat:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         # Create a seat-based product
         product = await create_product(
             save_fixture,
@@ -479,11 +445,6 @@ class TestResendInvitation:
         customer: Customer,
         customer_second: Customer,
     ) -> None:
-        # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         # Create a seat-based product
         product = await create_product(
             save_fixture,
@@ -523,11 +484,6 @@ class TestResendInvitation:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         # Create a seat-based product
         product = await create_product(
             save_fixture,
@@ -567,11 +523,6 @@ class TestResendInvitation:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         # Create a seat-based product
         product = await create_product(
             save_fixture,
@@ -824,10 +775,6 @@ class TestListSeatsForOrder:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -865,10 +812,6 @@ class TestAssignSeatForOrder:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -916,10 +859,6 @@ class TestRevokeSeatForOrder:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        organization.feature_settings["seat_based_pricing_enabled"] = True
-        attributes.flag_modified(organization, "feature_settings")
-        await save_fixture(organization)
-
         product = await create_product(
             save_fixture,
             organization=organization,

@@ -900,8 +900,8 @@ async def prepare_members(organization_id: uuid.UUID) -> None:
     Non-destructive version of backfill_members.
 
     Populates member_id/email on seats and grants without changing customer_id,
-    deleting customers, or flipping any flags. Safe to run on seat-based orgs
-    that haven't enabled member_model_enabled yet.
+    deleting customers, or flipping any flags. Safe to run on orgs that haven't
+    enabled member_model_enabled yet.
 
     Three steps:
     A. Create owner members for all customers without one
@@ -913,14 +913,6 @@ async def prepare_members(organization_id: uuid.UUID) -> None:
         organization = await repository.get_by_id(organization_id)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
-
-        if not organization.feature_settings.get("seat_based_pricing_enabled", False):
-            log.warning(
-                "organization.prepare_members.skipped",
-                reason="seat_based_pricing_not_enabled",
-                organization_id=str(organization_id),
-            )
-            return
 
     log.info(
         "organization.prepare_members.start",

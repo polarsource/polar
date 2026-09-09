@@ -283,7 +283,7 @@ class CustomerSessionService:
                 # Member not found - code is no longer valid for this email
                 raise CustomerSessionCodeInvalidOrExpired()
 
-            # Use create_member_session directly (not create() which checks seat_based_pricing)
+            # Use create_member_session directly (not create() which checks member_model_enabled)
             return await member_session_service.create_member_session(session, member)
 
         # Legacy: create CustomerSession

@@ -28905,12 +28905,6 @@ export interface components {
        */
       issue_funding_enabled: boolean
       /**
-       * Seat Based Pricing Enabled
-       * @description If this organization has seat-based pricing enabled
-       * @default false
-       */
-      seat_based_pricing_enabled: boolean
-      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false
@@ -29002,12 +28996,6 @@ export interface components {
      *     provided and keep their current value.
      */
     OrganizationFeatureSettingsUpdate: {
-      /**
-       * Seat Based Pricing Enabled
-       * @description If this organization has seat-based pricing enabled
-       * @default false
-       */
-      seat_based_pricing_enabled: boolean
       /**
        * Member Model Enabled
        * @description If this organization has the Member model enabled
@@ -53255,7 +53243,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -53316,7 +53304,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -53368,7 +53356,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -53427,7 +53415,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -55225,7 +55213,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -55286,7 +55274,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -55338,7 +55326,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -55397,7 +55385,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown

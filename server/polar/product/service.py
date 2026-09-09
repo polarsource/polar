@@ -65,7 +65,6 @@ from .schemas import (
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
     ProductPriceMeteredTiersCreate,
-    ProductPriceSeatBasedCreate,
     ProductPriceUnitBasedCreate,
     ProductUpdate,
 )
@@ -630,20 +629,6 @@ class ProductService:
                     price = model_class(
                         product=product, source=source, **price_schema.model_dump()
                     )
-                if isinstance(
-                    price_schema, ProductPriceSeatBasedCreate
-                ) and not organization.feature_settings.get(
-                    "seat_based_pricing_enabled", False
-                ):
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": (*error_prefix, index),
-                            "msg": "Seat-based pricing is not enabled for this organization.",
-                            "input": price_schema,
-                        }
-                    )
-                    continue
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):

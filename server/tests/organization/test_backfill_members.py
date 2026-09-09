@@ -202,10 +202,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -262,10 +259,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -329,10 +323,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -393,10 +384,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -440,10 +428,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         customer = await create_customer(
             save_fixture,
@@ -557,10 +542,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -743,10 +725,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -823,10 +802,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -908,10 +884,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         customer = await create_customer(
             save_fixture,
@@ -960,10 +933,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -1043,10 +1013,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -1108,10 +1075,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -1177,10 +1141,7 @@ class TestBackfillMembers:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing_customer = await create_customer(
             save_fixture,
@@ -1594,10 +1555,7 @@ class TestBackfillMembersB2B:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing = await create_customer(
             save_fixture,
@@ -1636,10 +1594,7 @@ class TestBackfillMembersB2B:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing = await create_customer(
             save_fixture,
@@ -1687,10 +1642,7 @@ class TestBackfillMembersB2B:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing = await create_customer(
             save_fixture,
@@ -1761,10 +1713,7 @@ class TestBackfillMembersB2B:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing = await create_customer(
             save_fixture,
@@ -1819,10 +1768,7 @@ class TestBackfillMembersB2B:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing = await create_customer(
             save_fixture,
@@ -1874,10 +1820,7 @@ class TestBackfillMembersB2B:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing = await create_customer(
             save_fixture,
@@ -1950,10 +1893,7 @@ class TestBackfillMembersB2B:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing = await create_customer(
             save_fixture,
@@ -2033,10 +1973,7 @@ class TestBackfillMembersB2B:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing = await create_customer(
             save_fixture,
@@ -2107,10 +2044,7 @@ class TestBackfillMembersB2B:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         billing = await create_customer(
             save_fixture,

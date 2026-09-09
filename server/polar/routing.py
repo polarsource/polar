@@ -1,5 +1,6 @@
 from polar.auth.routing import DocumentedAuthSubjectAPIRoute
 from polar.kit.routing import (
+    ETagAPIRoute,
     IncludedInSchemaAPIRoute,
     PaginationAPIRoute,
     SpeakeasyGroupAPIRoute,
@@ -15,6 +16,7 @@ from polar.kit.versioning import VersionedAPIRoute
 class APIRoute(
     VersionedAPIRoute,
     TransactionalAPIRoute,
+    ETagAPIRoute,
     IncludedInSchemaAPIRoute,
     DocumentedAuthSubjectAPIRoute,
     PaginationAPIRoute,

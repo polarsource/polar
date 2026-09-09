@@ -12,6 +12,7 @@ from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
+from polar.kit.etag import IfMatch, Precondition, PreconditionFailedResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -64,6 +65,8 @@ SubscriptionNotFound = {
     "description": "Subscription not found.",
     "model": ResourceNotFound.schema(),
 }
+
+SubscriptionPrecondition = Annotated[Precondition, Depends(IfMatch(SubscriptionSchema))]
 
 
 @router.get(
@@ -424,12 +427,14 @@ async def create(
             "model": SubscriptionLocked.schema()
             | SubscriptionNotScheduledToCancel.schema(),
         },
+        412: PreconditionFailedResponse,
     },
 )
 async def update(
     id: SubscriptionID,
     subscription_update: SubscriptionUpdate,
     auth_subject: auth.SubscriptionsWrite,
+    precondition: SubscriptionPrecondition,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     """Update a subscription."""
@@ -445,6 +450,7 @@ async def update(
         subscription.product,
         OrganizationPermission.sales_manage,
     )
+    precondition.check(subscription)
 
     log.info(
         "subscription.update",
@@ -475,11 +481,13 @@ async def update(
             "description": "Subscription is pending an update.",
             "model": SubscriptionLocked.schema(),
         },
+        412: PreconditionFailedResponse,
     },
 )
 async def revoke(
     id: SubscriptionID,
     auth_subject: auth.SubscriptionsWrite,
+    precondition: SubscriptionPrecondition,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     """Revoke a subscription, i.e cancel immediately."""
@@ -495,6 +503,7 @@ async def revoke(
         subscription.product,
         OrganizationPermission.sales_manage,
     )
+    precondition.check(subscription)
 
     log.info(
         "subscription.revoke", id=id, admin_id=auth_subject.subject.id, immediate=True

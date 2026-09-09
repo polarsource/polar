@@ -1,3 +1,4 @@
+import contextvars
 import functools
 import inspect
 import re
@@ -10,7 +11,10 @@ from fastapi.routing import APIRoute
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.config import settings
+from polar.kit.db.models import Model
+from polar.kit.etag import compute_etag
 from polar.kit.pagination import ListResource
+from polar.kit.schemas import IDSchema
 from polar.openapi import APITag
 
 
@@ -47,6 +51,73 @@ class TransactionalAPIRoute(APIRoute):
                 raise
 
         return transactional_route_handler
+
+
+_response_etag = contextvars.ContextVar[str | None]("response_etag", default=None)
+
+
+class ETagAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that sets an `ETag` header on responses returning
+    a single database-backed resource.
+
+    The tag is computed from the resource serialized with the route's
+    `response_model`, so `IfMatch` preconditions declared with the same schema
+    compare against it.
+    """
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        endpoint = self.wrap_endpoint_with_etag(endpoint)
+        super().__init__(path, endpoint, **kwargs)
+        response_model = self.response_model
+        if inspect.isclass(response_model) and issubclass(response_model, IDSchema):
+            status_code = self.status_code or 200
+            response = self.responses.get(status_code, {})
+            self.responses = {
+                **self.responses,
+                status_code: {
+                    **response,
+                    "headers": {
+                        **response.get("headers", {}),
+                        "ETag": {
+                            "description": (
+                                "Entity tag of the returned resource, "
+                                "to use in `If-Match` headers of subsequent requests."
+                            ),
+                            "schema": {"type": "string"},
+                        },
+                    },
+                },
+            }
+
+    def wrap_endpoint_with_etag(
+        self, endpoint: Callable[..., Any]
+    ) -> Callable[..., Any]:
+        @functools.wraps(endpoint)
+        async def wrapped_endpoint(*args: Any, **kwargs: Any) -> Any:
+            response = await endpoint(*args, **kwargs)
+            if isinstance(response, Model) and self.response_model is not None:
+                _response_etag.set(compute_etag(response, self.response_model))
+            return response
+
+        return wrapped_endpoint
+
+    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+        route_handler = super().get_route_handler()
+
+        @functools.wraps(route_handler)
+        async def etag_route_handler(request: Request) -> Response:
+            token = _response_etag.set(None)
+            try:
+                response = await route_handler(request)
+                etag = _response_etag.get()
+                if etag is not None:
+                    response.headers["ETag"] = etag
+                return response
+            finally:
+                _response_etag.reset(token)
+
+        return etag_route_handler
 
 
 class IncludedInSchemaAPIRoute(APIRoute):
@@ -213,6 +284,7 @@ def get_api_router_class(route_class: type[APIRoute]) -> type[_APIRouter]:
 
 
 __all__ = [
+    "ETagAPIRoute",
     "IncludedInSchemaAPIRoute",
     "PaginationAPIRoute",
     "SpeakeasyGroupAPIRoute",

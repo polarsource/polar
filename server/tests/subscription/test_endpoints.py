@@ -2277,3 +2277,125 @@ class TestSubscriptionUpdateResume:
         )
 
         assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+class TestSubscriptionETag:
+    @pytest.mark.auth
+    async def test_get_returns_stable_etag(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.get(f"/v1/subscriptions/{subscription.id}")
+        assert response.status_code == 200
+        etag = response.headers["ETag"]
+        assert etag.startswith('"')
+        assert etag.endswith('"')
+
+        response = await client.get(f"/v1/subscriptions/{subscription.id}")
+        assert response.headers["ETag"] == etag
+
+    @pytest.mark.auth
+    async def test_update_with_matching_if_match(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        response = await client.get(f"/v1/subscriptions/{subscription.id}")
+        etag = response.headers["ETag"]
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"metadata": {"reference_id": "DEF"}},
+            headers={"If-Match": etag},
+        )
+        assert response.status_code == 200
+        assert response.json()["metadata"] == {"reference_id": "DEF"}
+        new_etag = response.headers["ETag"]
+        assert new_etag != etag
+
+        response = await client.get(f"/v1/subscriptions/{subscription.id}")
+        assert response.headers["ETag"] == new_etag
+
+    @pytest.mark.auth
+    async def test_update_with_stale_if_match(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "ABC"},
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"metadata": {"reference_id": "DEF"}},
+            headers={"If-Match": '"stale"'},
+        )
+        assert response.status_code == 412
+        assert response.json()["error"] == "PreconditionFailed"
+
+        response = await client.get(f"/v1/subscriptions/{subscription.id}")
+        assert response.json()["metadata"] == {"reference_id": "ABC"}
+
+    @pytest.mark.auth
+    async def test_update_with_wildcard_if_match(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"metadata": {"reference_id": "DEF"}},
+            headers={"If-Match": "*"},
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.auth
+    async def test_revoke_with_stale_if_match(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.delete(
+            f"/v1/subscriptions/{subscription.id}",
+            headers={"If-Match": '"stale"'},
+        )
+        assert response.status_code == 412
+
+        response = await client.get(f"/v1/subscriptions/{subscription.id}")
+        assert response.json()["status"] == SubscriptionStatus.active

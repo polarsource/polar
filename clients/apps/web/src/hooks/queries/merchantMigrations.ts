@@ -324,7 +324,9 @@ export const useProductMappings = (id: string) =>
 
 export const useUpdateProductMappings = (id: string) =>
   useMutation({
-    mutationFn: (mappings: schemas['MerchantMigrationProductMappingChoice'][]) =>
+    mutationFn: (
+      mappings: schemas['MerchantMigrationProductMappingChoice'][],
+    ) =>
       dataOrThrow(
         api.PUT('/v1/merchant-migrations/{id}/product-mappings', {
           params: { path: { id } },

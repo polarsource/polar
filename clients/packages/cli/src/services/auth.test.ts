@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { Effect, Redacted } from 'effect'
-import { AuthError, type PolarEnvironment, type Session } from '../schemas/Auth'
-import { make } from './auth'
-import { Credentials } from './credentials'
-import { CLIConfig } from './config'
-import { OAuth } from './oauth'
+import { AuthError, type PolarEnvironment, type Session } from '@/schemas/Auth'
+import { make } from '@/services/auth'
+import { Credentials } from '@/services/credentials'
+import { CLIConfig } from '@/services/config'
+import { OAuth } from '@/services/oauth'
 
 const organization = { id: 'org-1', name: 'First', slug: 'first' }
 const session: Session = {

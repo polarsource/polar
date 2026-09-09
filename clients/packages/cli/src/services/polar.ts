@@ -1,7 +1,7 @@
 import { Polar as PolarSDK } from '@polar-sh/sdk'
 import { Context, Effect, Layer, Redacted } from 'effect'
-import { AuthError, loginCommand, type PolarEnvironment } from '../schemas/Auth'
-import { Auth } from './auth'
+import { AuthError, loginCommand, type PolarEnvironment } from '@/schemas/Auth'
+import { Auth } from '@/services/auth'
 
 export class Polar extends Context.Service<Polar, PolarImpl>()('Polar') {}
 

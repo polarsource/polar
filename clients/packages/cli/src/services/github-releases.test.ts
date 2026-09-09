@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, vi, test } from 'vitest'
 import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
-import { getLatestRelease, isNewerVersion } from './github-releases'
-import { VERSION } from '../version'
+import { getLatestRelease, isNewerVersion } from '@/services/github-releases'
+import { VERSION } from '@/version'
 import { version } from '../../package.json'
 
 const release = {

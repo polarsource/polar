@@ -1,9 +1,9 @@
 import { expect, test, vi } from 'vitest'
 import { Effect, Redacted } from 'effect'
 import type { Polar as PolarSDK } from '@polar-sh/sdk'
-import { AuthError, type PolarEnvironment } from '../schemas/Auth'
-import { Auth, type Credential } from './auth'
-import { make } from './polar'
+import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
+import { Auth, type Credential } from '@/services/auth'
+import { make } from '@/services/polar'
 
 test('retries a rejected saved token with refreshed credentials in the same environment', async () => {
   const accessToken = Redacted.make('saved-token')

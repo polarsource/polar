@@ -1,5 +1,5 @@
 import { Context, Effect, Layer, Schema } from 'effect'
-import { AuthError, Session, type PolarEnvironment } from '../schemas/Auth'
+import { AuthError, Session, type PolarEnvironment } from '@/schemas/Auth'
 
 export class Credentials extends Context.Service<
   Credentials,

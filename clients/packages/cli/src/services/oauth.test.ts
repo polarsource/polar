@@ -3,8 +3,8 @@ import { ChildProcess } from 'node:child_process'
 import * as http from 'node:http'
 import { Effect, Redacted } from 'effect'
 import * as browser from 'open'
-import type { Session } from '../schemas/Auth'
-import { exchange, layer, OAuth, validateCallback } from './oauth'
+import type { Session } from '@/schemas/Auth'
+import { exchange, layer, OAuth, validateCallback } from '@/services/oauth'
 
 vi.mock('node:http', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:http')>()

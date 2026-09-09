@@ -154,7 +154,11 @@ class RefundTransactionService(BaseTransactionService):
                     "tax_amount": settlement_tax_amount,
                     "tax_country": payment_transaction.tax_country,
                     "tax_state": payment_transaction.tax_state,
-                    "fee": sum(-fee.amount for fee in transaction_fees),
+                    "fee": sum(
+                        -fee.amount
+                        for fee in transaction_fees
+                        if fee.processor_fee_type is not None
+                    ),
                     "exchange_rate": exchange_rate,
                 }
                 if order is not None:

@@ -16,13 +16,9 @@ const INTERVAL_LABEL: Record<string, [string, string]> = {
   year: ['Yearly', 'years'],
 }
 
-export function compatibleCandidates(item: ProductMappingItem) {
-  return item.candidates.filter((candidate) => candidate.compatible)
-}
-
 export function mappingSelectValue(item: ProductMappingItem): string {
   if (item.create_new) return CREATE_NEW_VALUE
-  if (item.mapped_product_id) return item.mapped_product_id
+  if (item.polar_product_id) return item.polar_product_id
   if (item.suggested_product_id) return item.suggested_product_id
   if (!item.requires_choice) return CREATE_NEW_VALUE
   return ''
@@ -36,48 +32,6 @@ export function visibleMappingItems(
     return []
   }
   return items.filter((item) => item.subscriber_count > 0)
-}
-
-export function shouldShowProductMappingPanel(
-  items: ProductMappingItem[],
-): boolean {
-  return visibleMappingItems(items).length > 0
-}
-
-export const PRODUCT_MAPPING_PAGE_SIZE = 5
-
-export function paginateMappingItems(
-  items: ProductMappingItem[],
-  page: number,
-) {
-  const total = items.length
-  const pageCount = Math.max(1, Math.ceil(total / PRODUCT_MAPPING_PAGE_SIZE))
-  const currentPage = Math.min(Math.max(page, 1), pageCount)
-  const start = (currentPage - 1) * PRODUCT_MAPPING_PAGE_SIZE
-  const pageItems = items.slice(start, start + PRODUCT_MAPPING_PAGE_SIZE)
-  return {
-    page: currentPage,
-    pageCount,
-    items: pageItems,
-    showPagination: total > 0,
-    rangeStart: total === 0 ? 0 : start + 1,
-    rangeEnd: start + pageItems.length,
-    total,
-  }
-}
-
-export function mappingPaginationLabel(
-  rangeStart: number,
-  rangeEnd: number,
-  total: number,
-): string {
-  if (total === 1) {
-    return 'Viewing the only record'
-  }
-  if (rangeStart === 1 && rangeEnd === total) {
-    return `Viewing all ${total} records`
-  }
-  return `Viewing ${rangeStart}-${rangeEnd} of ${total}`
 }
 
 export function mappingChoice(

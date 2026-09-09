@@ -87,6 +87,15 @@ _CUSTOMER_STRIPE_ID_CONFLICT = Reason(
 POLAR_PRODUCT_PRICE_OPTIONS = (selectinload(Product.all_prices),)
 
 
+def _catalog_fixed_prices(product: Product) -> list[ProductPriceFixed]:
+    return [
+        price
+        for price in product.all_prices
+        if isinstance(price, ProductPriceFixed)
+        and price.source == ProductPriceSource.catalog
+    ]
+
+
 def find_imported_price(
     product: Product,
     canonical_product: CanonicalProduct,
@@ -108,9 +117,8 @@ def find_imported_price(
     currency = canonical_price.currency.lower()
     matches = [
         price
-        for price in product.all_prices
-        if isinstance(price, ProductPriceFixed)
-        and price.price_currency.lower() == currency
+        for price in _catalog_fixed_prices(product)
+        if price.price_currency.lower() == currency
         and price.price_amount == canonical_price.amount
     ]
     return next((price for price in matches if not price.is_archived), None) or (
@@ -127,8 +135,7 @@ async def ensure_mapped_prices(
     """Keep Stripe amounts as archived catalog prices when Polar's catalog moved on."""
     existing = {
         (price.price_currency.lower(), price.price_amount)
-        for price in product.all_prices
-        if isinstance(price, ProductPriceFixed)
+        for price in _catalog_fixed_prices(product)
     }
     catalog_tax = {
         price.price_currency.lower(): price.tax_behavior

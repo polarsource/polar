@@ -4,21 +4,16 @@ import {
   useProductMappings,
   useUpdateProductMappings,
 } from '@/hooks/queries/merchantMigrations'
-import { Alert, Spinner, Text } from '@polar-sh/orbit'
+import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback } from 'react'
 import { ProductMappingTable } from './ProductMappingTable'
-import {
-  mappingChoice,
-  shouldShowProductMappingPanel,
-  visibleMappingItems,
-} from './productMapping'
+import { mappingChoice, visibleMappingItems } from './productMapping'
 
 export function ProductMappingPanel({ migrationId }: { migrationId: string }) {
   const mappings = useProductMappings(migrationId)
   const updateMappings = useUpdateProductMappings(migrationId)
-  const items = mappings.data?.items ?? []
-  const visible = visibleMappingItems(items)
+  const visible = visibleMappingItems(mappings.data?.items ?? [])
   const mutateMappings = updateMappings.mutate
 
   const onChange = useCallback(
@@ -28,25 +23,7 @@ export function ProductMappingPanel({ migrationId }: { migrationId: string }) {
     [mutateMappings],
   )
 
-  if (mappings.isLoading) {
-    return (
-      <Box padding="l" alignItems="center" justifyContent="center">
-        <Spinner />
-      </Box>
-    )
-  }
-
-  if (mappings.isError) {
-    return (
-      <Alert
-        variant="danger"
-        title="We couldn't load product mappings"
-        description="Something went wrong. Please refresh and try again."
-      />
-    )
-  }
-
-  if (!shouldShowProductMappingPanel(items)) {
+  if (visible.length === 0) {
     return null
   }
 

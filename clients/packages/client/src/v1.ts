@@ -24987,13 +24987,6 @@ export interface components {
        * @description Prepare every importable subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
-      /**
-       * Product Mappings
-       * @description Stripe product → existing Polar product mappings to apply before import. Omitted mappings keep whatever was saved earlier; a null `polar_product_id` creates a new Polar product.
-       */
-      product_mappings?:
-        | components['schemas']['MerchantMigrationProductMappingChoice'][]
-        | null
     }
     /** MerchantMigrationImportResult */
     MerchantMigrationImportResult: {
@@ -25081,11 +25074,8 @@ export interface components {
        * @description The Polar product name.
        */
       name: string
-      /**
-       * Recurring Interval
-       * @description Billing interval (`month`, `year`). None for one-time products.
-       */
-      recurring_interval: string | null
+      /** @description Billing interval (`month`, `year`). None for one-time products. */
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description How many `recurring_interval` units each period spans.
@@ -25160,10 +25150,10 @@ export interface components {
       /** @description Whether this product has already been imported or skipped. */
       import_status: components['schemas']['MerchantMigrationRecordStatus']
       /**
-       * Mapped Product Id
+       * Polar Product Id
        * @description The Polar product chosen for this source product. None when creating a new Polar product or when no choice has been saved yet.
        */
-      mapped_product_id: string | null
+      polar_product_id: string | null
       /**
        * Create New
        * @description The merchant chose to create a new Polar product instead of mapping.
@@ -25186,7 +25176,7 @@ export interface components {
       requires_choice: boolean
       /**
        * Candidates
-       * @description Active Polar products the merchant can map onto.
+       * @description Active Polar products, including ones whose currency or interval does not match. Only `compatible` candidates can be mapped onto.
        */
       candidates: components['schemas']['MerchantMigrationPolarProductOption'][]
     }
@@ -25202,7 +25192,7 @@ export interface components {
     MerchantMigrationProductMappingUpdate: {
       /**
        * Mappings
-       * @description Replaces the saved mappings for the listed source products. A null `polar_product_id` creates a new Polar product.
+       * @description Replaces the saved mappings for the listed source products. None for `polar_product_id` creates a new Polar product.
        */
       mappings: components['schemas']['MerchantMigrationProductMappingChoice'][]
     }

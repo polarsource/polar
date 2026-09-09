@@ -5,6 +5,7 @@ from typing import Any
 
 from pydantic import UUID4, Field
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -278,14 +279,6 @@ class MerchantMigrationImportRequest(Schema):
             "selection for large catalogs. Ignored when `record_ids` is set."
         ),
     )
-    product_mappings: list[MerchantMigrationProductMappingChoice] | None = Field(
-        default=None,
-        description=(
-            "Stripe product → existing Polar product mappings to apply before "
-            "import. Omitted mappings keep whatever was saved earlier; a null "
-            "`polar_product_id` creates a new Polar product."
-        ),
-    )
 
 
 class MerchantMigrationImportResult(Schema):
@@ -421,7 +414,7 @@ class MerchantMigrationMappedPrice(Schema):
 class MerchantMigrationPolarProductOption(Schema):
     id: UUID4 = Field(description="The Polar product id.")
     name: str = Field(description="The Polar product name.")
-    recurring_interval: str | None = Field(
+    recurring_interval: SubscriptionRecurringInterval | None = Field(
         description="Billing interval (`month`, `year`). None for one-time products."
     )
     recurring_interval_count: int | None = Field(
@@ -465,7 +458,7 @@ class MerchantMigrationProductMappingItem(Schema):
     import_status: MerchantMigrationRecordStatus = Field(
         description="Whether this product has already been imported or skipped."
     )
-    mapped_product_id: UUID4 | None = Field(
+    polar_product_id: UUID4 | None = Field(
         description=(
             "The Polar product chosen for this source product. None when creating "
             "a new Polar product or when no choice has been saved yet."
@@ -492,7 +485,10 @@ class MerchantMigrationProductMappingItem(Schema):
         )
     )
     candidates: list[MerchantMigrationPolarProductOption] = Field(
-        description="Active Polar products the merchant can map onto."
+        description=(
+            "Active Polar products, including ones whose currency or interval "
+            "does not match. Only `compatible` candidates can be mapped onto."
+        )
     )
 
 
@@ -505,7 +501,7 @@ class MerchantMigrationProductMappingList(Schema):
 class MerchantMigrationProductMappingUpdate(Schema):
     mappings: list[MerchantMigrationProductMappingChoice] = Field(
         description=(
-            "Replaces the saved mappings for the listed source products. A null "
-            "`polar_product_id` creates a new Polar product."
+            "Replaces the saved mappings for the listed source products. None "
+            "for `polar_product_id` creates a new Polar product."
         ),
     )

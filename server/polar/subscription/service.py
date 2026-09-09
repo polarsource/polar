@@ -37,6 +37,7 @@ from polar.enums import (
     PaymentMode,
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
+    TaxBehavior,
 )
 from polar.event.service import event as event_service
 from polar.event.system import (
@@ -899,6 +900,7 @@ class SubscriptionService:
             customer=customer,
             subscription_product_prices=[SubscriptionProductPrice.from_price(price)],
             currency=price.price_currency,
+            tax_behavior=TaxBehavior.exclusive,
             user_metadata=user_metadata,
             pending_update=None,
         )

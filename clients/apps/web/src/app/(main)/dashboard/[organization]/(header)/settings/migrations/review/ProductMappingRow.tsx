@@ -11,7 +11,6 @@ import {
 import { Box } from '@polar-sh/orbit/Box'
 import {
   CREATE_NEW_VALUE,
-  compatibleCandidates,
   mappingSelectValue,
   type ProductMappingItem,
 } from './productMapping'
@@ -27,7 +26,7 @@ export function ProductMappingRow({
 }) {
   const locked = item.import_status !== 'pending'
   const value = mappingSelectValue(item)
-  const candidates = compatibleCandidates(item)
+  const candidates = item.candidates.filter((candidate) => candidate.compatible)
 
   return (
     <Box flexDirection="column" rowGap="xs" minWidth={0} width="100%">

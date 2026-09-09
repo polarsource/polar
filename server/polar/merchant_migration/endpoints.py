@@ -228,7 +228,6 @@ async def import_catalog(
         id,
         record_ids=body.record_ids if body is not None else None,
         exclude_record_ids=body.exclude_record_ids if body is not None else None,
-        product_mappings=body.product_mappings if body is not None else None,
     )
 
 

@@ -14,7 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehavior
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
@@ -100,7 +100,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
-from polar.models.product_price import ProductPriceFixed
+from polar.models.product_price import ProductPriceFixed, ProductPriceSource
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
@@ -110,6 +110,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_payment_method,
     create_product,
+    create_product_price_fixed,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
@@ -1188,8 +1189,8 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
     ]
 
 
-def _legacy_amount_catalog(*, amount: int = 500) -> list[CanonicalRecord]:
-    """Stripe still bills `amount` for Pro; Polar's catalog may have moved on."""
+def _legacy_amount_catalog() -> list[CanonicalRecord]:
+    """Stripe still bills $5 for Pro; Polar's catalog may have moved on."""
     return [
         CanonicalProduct(
             source_id="prod_1:month:1",
@@ -1201,7 +1202,7 @@ def _legacy_amount_catalog(*, amount: int = 500) -> list[CanonicalRecord]:
                 CanonicalPrice(
                     source_id="price_1",
                     currency="usd",
-                    amount=amount,
+                    amount=500,
                     pricing_scheme=CanonicalPricingScheme.fixed,
                 )
             ],
@@ -1964,6 +1965,7 @@ class TestImportCatalog:
         )
         assert subscription is not None
         assert subscription.status == SubscriptionStatus.active
+        assert subscription.tax_behavior == TaxBehavior.exclusive
         assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
 
     @pytest.mark.auth
@@ -2111,7 +2113,7 @@ class TestProductMappings:
         assert item.source_id == "prod_1:month:1"
         assert item.suggested_product_id == existing.id
         assert item.requires_choice is False
-        assert item.mapped_product_id is None
+        assert item.polar_product_id is None
         assert item.create_new is False
 
     @pytest.mark.auth
@@ -2278,6 +2280,50 @@ class TestProductMappings:
             if record.type == MerchantMigrationRecordType.product
         )
         assert imported.target_id == existing.id
+
+    @pytest.mark.auth
+    async def test_import_ignores_ad_hoc_price_when_grandfathering(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],
+        )
+        ad_hoc = await create_product_price_fixed(
+            save_fixture, product=existing, amount=500
+        )
+        ad_hoc.source = ProductPriceSource.ad_hoc
+        await save_fixture(ad_hoc)
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_legacy_amount_catalog(),
+        )
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        products = await _products(session, organization)
+        assert len(products) == 1
+        catalog_fixed = [
+            (price.price_amount, price.is_archived, price.source)
+            for price in products[0].all_prices
+            if isinstance(price, ProductPriceFixed)
+        ]
+        assert (1000, False, ProductPriceSource.catalog) in catalog_fixed
+        assert (500, True, ProductPriceSource.catalog) in catalog_fixed
+        assert (500, False, ProductPriceSource.ad_hoc) in catalog_fixed
 
     @pytest.mark.auth
     async def test_explicit_create_new_duplicates_existing_product(

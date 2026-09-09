@@ -181,7 +181,7 @@ Merchants who already sell on Polar (new checkouts) while still billing a legacy
 
 Grain is one Polar product = one source product + interval (`CanonicalProduct.source_id`, e.g. `prod_…:month:1`). Interval and currency must match to map. Amount need not: Polar's catalog can have moved on (Stripe still $5, Polar now sells $10). Imported subscribers keep the Stripe amount via an archived catalog price on that product; checkout keeps offering the active catalog price. Do not add a new currency onto the Polar product.
 
-Quantity, tax, and trial stay on the subscription / pre-check: Polar products don't carry per-subscription quantity, and cutover already preserves period and trial dates.
+Quantity, tax, and trial stay on the subscription / pre-check: Polar products don't carry per-subscription quantity, and cutover already preserves period and trial dates. Imported subscriptions pin `tax_behavior` exclusive so the first Polar cycle does not inherit the org default.
 
 UI options considered:
 
@@ -192,7 +192,7 @@ UI options considered:
 - Missing mapping + unique name among interval-compatible Polar products → reuse it at import (grandfather the Stripe amount).
 - Missing mapping + unique amount+currency+interval match → reuse it at import.
 - Missing mapping + name collision without a unique interval-compatible match → the merchant must choose map-or-create before import.
-- Explicit `null` → create a new Polar product even when a match exists.
+- Explicit `None` → create a new Polar product even when a match exists.
 - On reuse, import attaches (or creates) an archived catalog `ProductPriceFixed` at the Stripe amount so cutover can bill that price. The active catalog price is left alone.
 - Mappings persist on `MerchantMigration.source_credentials.product_mappings` (no new column: precheck deletes pending records, and a dedicated column would fail isolation CI if shipped with app code).
 

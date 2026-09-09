@@ -1,20 +1,12 @@
 'use client'
 
-import { Button, Grid, Text } from '@polar-sh/orbit'
+import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { ProductMappingRow } from './ProductMappingRow'
 import {
   formatMappingAmount,
   formatMappingInterval,
-  mappingPaginationLabel,
-  paginateMappingItems,
   type ProductMappingItem,
 } from './productMapping'
 
@@ -30,96 +22,42 @@ export function ProductMappingTable({
   saving?: boolean
   onChange: (sourceId: string, value: string) => void
 }) {
-  const [page, setPage] = useState(1)
-  const paged = paginateMappingItems(items, page)
-
   return (
-    <Box flexDirection="column" rowGap="s">
-      <Grid
-        templateColumns={COLUMNS}
-        columnGap="xl"
-        borderWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        borderRadius="l"
-        overflow="hidden"
-      >
-        <MappingGridRow header>
-          <Text variant="caption" color="muted">
-            Stripe product
-          </Text>
-          <Text variant="caption" color="muted">
-            Interval
-          </Text>
-          <Text variant="caption" color="muted">
-            Price
-          </Text>
-          <Text variant="caption" color="muted">
-            Subs
-          </Text>
-          <Text variant="caption" color="muted">
-            Polar product
-          </Text>
-        </MappingGridRow>
-        {paged.items.map((item) => (
-          <ProductMappingTableRow
-            key={item.source_id}
-            item={item}
-            saving={saving}
-            onChange={onChange}
-          />
-        ))}
-      </Grid>
-      {paged.showPagination ? (
-        <Box alignItems="center" justifyContent="end" columnGap="l">
-          <Text variant="caption" color="muted">
-            {mappingPaginationLabel(
-              paged.rangeStart,
-              paged.rangeEnd,
-              paged.total,
-            )}
-          </Text>
-          <Box alignItems="center" columnGap="xs">
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label="Go to first page"
-              disabled={paged.page <= 1}
-              onClick={() => setPage(1)}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label="Go to previous page"
-              disabled={paged.page <= 1}
-              onClick={() => setPage(paged.page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label="Go to next page"
-              disabled={paged.page >= paged.pageCount}
-              onClick={() => setPage(paged.page + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label="Go to last page"
-              disabled={paged.page >= paged.pageCount}
-              onClick={() => setPage(paged.pageCount)}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </Box>
-        </Box>
-      ) : null}
-    </Box>
+    <Grid
+      templateColumns={COLUMNS}
+      columnGap="xl"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      borderRadius="l"
+      overflow="hidden"
+    >
+      <MappingGridRow header>
+        <Text variant="caption" color="muted">
+          Stripe product
+        </Text>
+        <Text variant="caption" color="muted">
+          Interval
+        </Text>
+        <Text variant="caption" color="muted">
+          Price
+        </Text>
+        <Text variant="caption" color="muted">
+          Subs
+        </Text>
+        <Text variant="caption" color="muted">
+          Polar product
+        </Text>
+      </MappingGridRow>
+      {items.map((item) => (
+        <ProductMappingTableRow
+          key={item.source_id}
+          item={item}
+          saving={saving}
+          onChange={onChange}
+        />
+      ))}
+    </Grid>
   )
 }
 

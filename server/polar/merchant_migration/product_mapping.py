@@ -52,7 +52,6 @@ _BLOCKING = frozenset(
 class MappingDecision:
     product: Product | None = None
     skip: Reason | None = None
-    create_new: bool = False
 
 
 def incompatibilities(
@@ -125,9 +124,7 @@ def suggest_product(
 def has_name_collision(
     canonical: CanonicalProduct, products: Sequence[Product]
 ) -> bool:
-    return any(
-        product.name.lower() == canonical.name.lower() for product in products
-    )
+    return any(product.name.lower() == canonical.name.lower() for product in products)
 
 
 def subscriber_counts(
@@ -178,7 +175,7 @@ def decide_mapping(
 ) -> MappingDecision:
     if chosen is not UNSET:
         if chosen is None:
-            return MappingDecision(create_new=True)
+            return MappingDecision()
         product = next((item for item in products if item.id == chosen), None)
         if product is None:
             return MappingDecision(skip=MAPPING_NOT_FOUND)
@@ -191,4 +188,4 @@ def decide_mapping(
         return MappingDecision(product=suggested)
     if has_name_collision(canonical, products):
         return MappingDecision(skip=MAPPING_REQUIRED)
-    return MappingDecision(create_new=True)
+    return MappingDecision()

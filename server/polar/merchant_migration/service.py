@@ -280,9 +280,7 @@ def _polar_option(
     return MerchantMigrationPolarProductOption(
         id=product.id,
         name=product.name,
-        recurring_interval=(
-            product.recurring_interval.value if product.recurring_interval else None
-        ),
+        recurring_interval=product.recurring_interval,
         recurring_interval_count=(
             product.recurring_interval_count if product.recurring_interval else None
         ),
@@ -678,7 +676,6 @@ class MerchantMigrationService:
         *,
         record_ids: Sequence[UUID] | None = None,
         exclude_record_ids: Sequence[UUID] | None = None,
-        product_mappings: Sequence[MerchantMigrationProductMappingChoice] | None = None,
     ) -> MerchantMigrationImportReport:
         """Create the Polar catalog from the staged importable records, then
         advance the migration to the create-catalog step. Idempotent: re-running
@@ -699,11 +696,6 @@ class MerchantMigrationService:
         blockers = import_blockers(organization, await adapter.get_source_account())
         if blockers:
             raise CatalogImportBlocked(blockers)
-
-        if product_mappings is not None:
-            await self._save_product_mappings(
-                session, migration, organization, product_mappings
-            )
 
         report = await CatalogImporter(
             session,
@@ -857,7 +849,7 @@ class MerchantMigrationService:
                     prices=_canonical_prices(canonical),
                     subscriber_count=counts.get(canonical.source_id, 0),
                     import_status=record.status,
-                    mapped_product_id=mapped_id,
+                    polar_product_id=mapped_id,
                     create_new=create_new,
                     suggested_product_id=suggested.id
                     if suggested is not None

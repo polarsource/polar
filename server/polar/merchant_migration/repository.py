@@ -394,8 +394,7 @@ class MerchantMigrationRecordRepository(
             != "true",
         )
         discount_imported = exists().where(
-            DiscountRecord.organization_id
-            == MerchantMigrationRecord.organization_id,
+            DiscountRecord.organization_id == MerchantMigrationRecord.organization_id,
             DiscountRecord.type == MerchantMigrationRecordType.discount,
             DiscountRecord.status == MerchantMigrationRecordStatus.imported,
             DiscountRecord.target_id.is_not(None),

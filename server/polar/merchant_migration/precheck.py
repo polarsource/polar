@@ -1264,18 +1264,21 @@ def plan_discount_imports(
         skip = _drop_reason(
             precheck_engine._check_discount(discount), DISCOUNT_DROP_CODES
         )
-        if skip is None and discount.product_source_ids:
-            if not any(
+        if (
+            skip is None
+            and discount.product_source_ids
+            and not any(
                 product_source_id in importable_product_source_ids
                 for product_source_id in discount.product_source_ids
-            ):
-                skip = Reason(
-                    "discount_products_not_importable",
-                    (
-                        f"Coupon '{discount.name}' only applies to products that "
-                        "won't be imported, so it stays on the source."
-                    ),
-                )
+            )
+        ):
+            skip = Reason(
+                "discount_products_not_importable",
+                (
+                    f"Coupon '{discount.name}' only applies to products that "
+                    "won't be imported, so it stays on the source."
+                ),
+            )
         plans[discount.source_id] = skip
     return plans
 

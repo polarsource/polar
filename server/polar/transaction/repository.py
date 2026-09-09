@@ -21,12 +21,15 @@ class TransactionRepository(
 ):
     model = Transaction
 
-    async def get_all_unpaid_by_account(self, account: UUID) -> Sequence[Transaction]:
+    async def set_unpaid_transactions_payout(
+        self, account: UUID, payout_transaction_id: UUID
+    ) -> None:
         statement = (
-            self.get_base_statement()
-            .join(Account, Account.id == Transaction.account_id)
+            update(Transaction)
             .where(
+                ~Transaction.is_deleted,
                 Transaction.account_id == account,
+                Account.id == Transaction.account_id,
                 Transaction.payout_transaction_id.is_(None),
                 or_(
                     # Balance transactions that are either :
@@ -46,13 +49,9 @@ class TransactionRepository(
                     Transaction.type == TransactionType.payout_reversal,
                 ),
             )
-            .options(
-                selectinload(Transaction.balance_reversal_transaction),
-                selectinload(Transaction.balance_reversal_transactions),
-                selectinload(Transaction.payment_transaction),
-            )
+            .values(payout_transaction_id=payout_transaction_id)
         )
-        return await self.get_all(statement)
+        await self.session.execute(statement)
 
     async def get_all_paid_transactions_by_payout(
         self, payout_transaction_id: UUID

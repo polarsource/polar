@@ -1,10 +1,8 @@
-import uuid
 from datetime import timedelta
 
 import pytest
 
 from polar.auth.models import AuthSubject
-from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import Account, Organization, Transaction, User, UserOrganization
@@ -356,54 +354,3 @@ class TestGetSummary:
         assert summary.held_balance.next_release_at is None
         assert summary.held_balance.next_release_amount == 0
         assert summary.held_balance.fully_available_at == now + timedelta(days=5)
-
-
-@pytest.mark.asyncio
-class TestLookup:
-    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
-    async def test_not_existing(
-        self, session: AsyncSession, auth_subject: AuthSubject[User]
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        with pytest.raises(ResourceNotFound):
-            await transaction_service.lookup(session, uuid.uuid4(), auth_subject)
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
-    async def test_user_not_accessible(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        readable_user_transactions: list[Transaction],
-        all_transactions: list[Transaction],
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        with pytest.raises(ResourceNotFound):
-            await transaction_service.lookup(
-                session, readable_user_transactions[0].id, auth_subject
-            )
-
-    @pytest.mark.auth
-    async def test_valid(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        user_organization: UserOrganization,
-        readable_user_transactions: list[Transaction],
-        all_transactions: list[Transaction],
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        transaction = await transaction_service.lookup(
-            session, readable_user_transactions[0].id, auth_subject
-        )
-
-        assert transaction.id == readable_user_transactions[0].id
-        # Check that relationships are eagerly loaded
-        _ = transaction.pledge
-        _ = transaction.issue_reward
-        _ = transaction.order

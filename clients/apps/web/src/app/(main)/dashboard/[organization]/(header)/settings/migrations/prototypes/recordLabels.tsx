@@ -23,6 +23,12 @@ export const CATEGORY_LABELS: Record<SubscriptionCategory, string> = {
   cutover: 'Cutover',
 }
 
+export const RESOLUTION_DOMAIN_LABELS = {
+  product: 'Product',
+  country: 'Country',
+  identity: 'Identity',
+} as const
+
 export const STATUS_LABELS: Record<SubscriptionStatus, string> = {
   ready: 'Ready',
   action_required: 'Needs decision',

@@ -4,11 +4,16 @@ import { Alert, Button, Input, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { mockMigration } from './mockData'
-import { PrototypeAction, PrototypeState } from './model'
+import {
+  getResolutionCompletionCount,
+  isResolutionComplete,
+  PrototypeAction,
+  PrototypeState,
+  RESOLUTION_DOMAINS,
+} from './model'
 import { CustomerActionList, ProblemPackages } from './ProblemPackages'
 import {
   ClosedState,
-  DecisionList,
   FlowRail,
   Metric,
   PrototypeLabel,
@@ -16,6 +21,7 @@ import {
 } from './PrototypePrimitives'
 import { RecordExplorer } from './RecordExplorer'
 import { GuidedReceiptStage, GuidedTransferStage } from './GuidedLaterStages'
+import { ResolutionResolvers } from './ResolutionResolvers'
 import { getInitialTotals, getProblemSubscriptions } from './selectors'
 
 interface Props {
@@ -23,10 +29,24 @@ interface Props {
   act: (action: PrototypeAction) => void
 }
 
+function resolveContinueLabel(resolved: number, total: number): string {
+  const remaining = total - resolved
+  if (remaining <= 0) {
+    return 'Confirm decisions and prepare'
+  }
+  if (remaining === total) {
+    return `Resolve all ${total} decisions to continue`
+  }
+  return `Resolve ${remaining} more decision${remaining === 1 ? '' : 's'} to continue`
+}
+
 export function GuidedVariant({ state, act }: Props) {
   const [reviewing, setReviewing] = useState(false)
   const totals = getInitialTotals()
   const problems = getProblemSubscriptions()
+  const resolvedCount = getResolutionCompletionCount(state.resolutions)
+  const resolutionsComplete = isResolutionComplete(state.resolutions)
+  const resolutionTotal = RESOLUTION_DOMAINS.length
 
   if (state.stage === 'closed') {
     return <ClosedState onReset={() => act('reset')} />
@@ -87,15 +107,15 @@ export function GuidedVariant({ state, act }: Props) {
       ) : null}
       {state.stage === 'decisions' ? (
         <Box flexDirection="column" rowGap="l">
+          <ResolutionResolvers state={state} act={act} presentation="guided" />
           <Surface>
             <Text variant="heading-xs" as="h3">
-              Review problem categories
+              Problem categories in context
             </Text>
             <Text color="muted">
-              Confirm merchant mappings, then keep the {problems.length} problem
-              records on Stripe until each package is cleared.
+              After the three decisions above, these packages stay visible so
+              you can spot which records remain on Stripe.
             </Text>
-            <DecisionList />
             <ProblemPackages />
             <Alert
               variant="info"
@@ -103,8 +123,11 @@ export function GuidedVariant({ state, act }: Props) {
               description="Missing country, existing Polar product, and identity conflict lead the review. Open the catalog for every package."
             />
             <Box>
-              <Button onClick={() => act('resolve')}>
-                Confirm decisions and prepare
+              <Button
+                disabled={!resolutionsComplete}
+                onClick={() => act('resolve')}
+              >
+                {resolveContinueLabel(resolvedCount, resolutionTotal)}
               </Button>
             </Box>
           </Surface>

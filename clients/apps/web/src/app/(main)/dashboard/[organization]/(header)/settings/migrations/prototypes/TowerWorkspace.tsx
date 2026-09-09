@@ -3,9 +3,16 @@
 import { Alert, Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { mockMigration } from './mockData'
-import { PrototypeAction, PrototypeState } from './model'
-import { DecisionList, Metric, Surface } from './PrototypePrimitives'
+import {
+  getResolutionCompletionCount,
+  isResolutionComplete,
+  PrototypeAction,
+  PrototypeState,
+  RESOLUTION_DOMAINS,
+} from './model'
+import { Metric, Surface } from './PrototypePrimitives'
 import { RecordExplorer } from './RecordExplorer'
+import { ResolutionResolvers } from './ResolutionResolvers'
 import {
   getCleanSubscriptions,
   getInitialTotals,
@@ -17,12 +24,26 @@ interface Props {
   act: (action: PrototypeAction) => void
 }
 
+function towerResolveLabel(resolved: number, total: number): string {
+  const remaining = total - resolved
+  if (remaining <= 0) {
+    return 'Resolve all demonstrated decisions'
+  }
+  if (remaining === total) {
+    return `Resolve all ${total} decisions to continue`
+  }
+  return `Resolve ${remaining} more decision${remaining === 1 ? '' : 's'} to continue`
+}
+
 export function TowerWorkspace({ state, act }: Props) {
   const totals = getInitialTotals()
   const problems = getProblemSubscriptions()
   const clean = getCleanSubscriptions().length
   const receipt = state.receipt
   const holds = problems.filter((r) => r.status === 'cutover_hold').length
+  const resolvedCount = getResolutionCompletionCount(state.resolutions)
+  const resolutionsComplete = isResolutionComplete(state.resolutions)
+  const resolutionTotal = RESOLUTION_DOMAINS.length
 
   if (state.stage === 'create') {
     return (
@@ -65,13 +86,13 @@ export function TowerWorkspace({ state, act }: Props) {
     return (
       <Box flexDirection="column" rowGap="l">
         <Surface emphasis>
-          <Text variant="heading-xs" as="h3">
-            Decision inbox
-          </Text>
-          <DecisionList />
+          <ResolutionResolvers state={state} act={act} presentation="tower" />
           <Box>
-            <Button onClick={() => act('resolve')}>
-              Resolve all demonstrated decisions
+            <Button
+              disabled={!resolutionsComplete}
+              onClick={() => act('resolve')}
+            >
+              {towerResolveLabel(resolvedCount, resolutionTotal)}
             </Button>
           </Box>
         </Surface>

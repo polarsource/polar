@@ -31,7 +31,9 @@ export function CurrentEvolutionVariant({ state, act }: Props) {
       <CurrentStepper stage={state.stage} />
       {state.stage === 'create' ? <CurrentConnect act={act} /> : null}
       {state.stage === 'assessment' ? <CurrentAssessment act={act} /> : null}
-      {state.stage === 'decisions' ? <CurrentHandoff act={act} /> : null}
+      {state.stage === 'decisions' ? (
+        <CurrentHandoff state={state} act={act} />
+      ) : null}
       {state.stage === 'cards' ? <CurrentCards act={act} /> : null}
       {state.stage === 'transfer' ? <CurrentSwitch act={act} /> : null}
       {state.stage === 'receipt' ? (

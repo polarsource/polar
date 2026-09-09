@@ -3,14 +3,23 @@
 import { Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
-import { PrototypeAction } from './model'
+import {
+  getResolutionCompletionCount,
+  isResolutionComplete,
+  PrototypeAction,
+  PrototypeState,
+  RESOLUTION_DOMAINS,
+} from './model'
 import { Surface } from './PrototypePrimitives'
 import { TOP_ISSUE_CODES } from './recordLabels'
+import { ResolutionResolvers } from './ResolutionResolvers'
 import { getCleanSubscriptions, getProblemSubscriptions } from './selectors'
 
 export function CurrentHandoff({
+  state,
   act,
 }: {
+  state: PrototypeState
   act: (action: PrototypeAction) => void
 }) {
   const prepared = getCleanSubscriptions()
@@ -19,6 +28,10 @@ export function CurrentHandoff({
     TOP_ISSUE_CODES.includes(record.issueCode),
   )
   const [reviewing, setReviewing] = useState(false)
+  const resolvedCount = getResolutionCompletionCount(state.resolutions)
+  const resolutionsComplete = isResolutionComplete(state.resolutions)
+  const resolutionTotal = RESOLUTION_DOMAINS.length
+  const remainingChoices = resolutionTotal - resolvedCount
 
   return (
     <Surface>
@@ -48,8 +61,10 @@ export function CurrentHandoff({
         </Text>
       </Box>
 
-      <Box gap="s" flexWrap="wrap">
-        <Button onClick={() => act('resolve')}>Start moving cards</Button>
+      <Box gap="s" flexWrap="wrap" alignItems="center">
+        <Button disabled={!resolutionsComplete} onClick={() => act('resolve')}>
+          Start moving cards
+        </Button>
         <Button
           variant="secondary"
           aria-expanded={reviewing}
@@ -57,7 +72,20 @@ export function CurrentHandoff({
         >
           {reviewing ? 'Hide records' : 'Review records'}
         </Button>
+        <Status
+          status={`${resolvedCount} of ${resolutionTotal} resolved`}
+          color={resolutionsComplete ? 'green' : 'yellow'}
+          size="small"
+        />
       </Box>
+
+      {!resolutionsComplete ? (
+        <Text variant="caption" color="muted" role="status">
+          {remainingChoices === resolutionTotal
+            ? `Review records and make all ${resolutionTotal} explicit choices before starting card movement.`
+            : `Review records and make ${remainingChoices} more explicit choice${remainingChoices === 1 ? '' : 's'} before starting card movement.`}
+        </Text>
+      ) : null}
 
       {reviewing ? (
         <Box
@@ -100,6 +128,19 @@ export function CurrentHandoff({
               ))}
             </Box>
           </Box>
+          <Box
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-secondary"
+          />
+          <Box flexDirection="column" rowGap="xs">
+            <Text variant="body">Resolve blocking records</Text>
+            <Text variant="caption" color="muted">
+              Product, country, and identity choices deepen the same review —
+              they do not add a new migration step.
+            </Text>
+          </Box>
+          <ResolutionResolvers state={state} act={act} presentation="current" />
         </Box>
       ) : null}
 

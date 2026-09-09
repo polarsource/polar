@@ -3,10 +3,17 @@
 import { Alert, Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { mockMigration } from './mockData'
-import { PrototypeAction, PrototypeState } from './model'
+import {
+  getResolutionCompletionCount,
+  isResolutionComplete,
+  PrototypeAction,
+  PrototypeState,
+  RESOLUTION_DOMAINS,
+} from './model'
 import { CustomerActionList, ProblemPackages } from './ProblemPackages'
-import { DecisionList, Metric, Surface } from './PrototypePrimitives'
+import { Metric, Surface } from './PrototypePrimitives'
 import { RecordExplorer } from './RecordExplorer'
+import { ResolutionResolvers } from './ResolutionResolvers'
 import {
   getCleanSubscriptions,
   getInitialTotals,
@@ -18,11 +25,25 @@ interface Props {
   act: (action: PrototypeAction) => void
 }
 
+function assistedApproveLabel(resolved: number, total: number): string {
+  const remaining = total - resolved
+  if (remaining <= 0) {
+    return 'Approve plan and let Polar prepare'
+  }
+  if (remaining === total) {
+    return `Choose all ${total} resolutions to approve`
+  }
+  return `Choose ${remaining} more resolution${remaining === 1 ? '' : 's'} to approve`
+}
+
 export function AssistedTask({ state, act }: Props) {
   const totals = getInitialTotals()
   const problems = getProblemSubscriptions()
   const clean = getCleanSubscriptions().length
   const receipt = state.receipt
+  const resolvedCount = getResolutionCompletionCount(state.resolutions)
+  const resolutionsComplete = isResolutionComplete(state.resolutions)
+  const resolutionTotal = RESOLUTION_DOMAINS.length
 
   if (state.stage === 'create') {
     return (
@@ -66,17 +87,47 @@ export function AssistedTask({ state, act }: Props) {
       <Box flexDirection="column" rowGap="l">
         <Surface emphasis>
           <Status
-            status={`${mockMigration.decisions.length} approvals for you`}
-            color="yellow"
+            status={
+              resolutionsComplete
+                ? 'Ready to approve'
+                : `${resolvedCount} of ${resolutionTotal} choices made`
+            }
+            color={resolutionsComplete ? 'green' : 'yellow'}
           />
           <Text variant="heading-xs" as="h3">
             Approve Polar&apos;s proposed plan
           </Text>
-          <DecisionList />
-          <ProblemPackages />
+          <Text color="muted">
+            Polar suggests a resolution for each blocking decision. Your
+            selection becomes the merchant-approved choice and sets what Polar
+            prepares versus what stays on Stripe.
+          </Text>
+          <ResolutionResolvers
+            state={state}
+            act={act}
+            presentation="assisted"
+          />
+          <Alert
+            variant="info"
+            title="Suggestions vs your approved choices"
+            description="Each card starts as a Polar proposal. Changing an option updates the approved plan consequence before you continue."
+          />
+          <Box flexDirection="column" rowGap="s">
+            <Text variant="heading-xs" as="h3">
+              Exception summary
+            </Text>
+            <Text color="muted">
+              Packages below stay visible as context. They are not separate
+              approvals — the three choices above decide the plan.
+            </Text>
+            <ProblemPackages />
+          </Box>
           <Box>
-            <Button onClick={() => act('resolve')}>
-              Approve plan and let Polar prepare
+            <Button
+              disabled={!resolutionsComplete}
+              onClick={() => act('resolve')}
+            >
+              {assistedApproveLabel(resolvedCount, resolutionTotal)}
             </Button>
           </Box>
         </Surface>

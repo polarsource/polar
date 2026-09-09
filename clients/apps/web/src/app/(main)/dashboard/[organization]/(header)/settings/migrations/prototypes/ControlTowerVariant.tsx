@@ -2,7 +2,12 @@
 
 import { Box } from '@polar-sh/orbit/Box'
 import { Text } from '@polar-sh/orbit'
-import { PrototypeAction, PrototypeState } from './model'
+import {
+  getResolutionCompletionCount,
+  PrototypeAction,
+  PrototypeState,
+  RESOLUTION_DOMAINS,
+} from './model'
 import {
   ClosedState,
   OwnershipSummary,
@@ -16,15 +21,18 @@ interface Props {
   act: (action: PrototypeAction) => void
 }
 
-function cohortCounts(stage: PrototypeState['stage']) {
+function cohortCounts(state: PrototypeState) {
+  const stage = state.stage
   if (stage === 'create') {
     return { ready: 0, decisions: 0, blocked: 0, holds: 0, moved: 0 }
   }
   const problems = getProblemSubscriptions()
   const ready = getCleanSubscriptions().length
+  const unresolved =
+    RESOLUTION_DOMAINS.length - getResolutionCompletionCount(state.resolutions)
   return {
     ready: stage === 'receipt' ? 0 : ready,
-    decisions: problems.filter((r) => r.status === 'action_required').length,
+    decisions: stage === 'decisions' ? unresolved : 0,
     blocked: problems.filter((r) => r.status === 'blocked').length,
     holds: problems.filter((r) => r.status === 'cutover_hold').length,
     moved: stage === 'receipt' ? ready : 0,
@@ -33,7 +41,7 @@ function cohortCounts(stage: PrototypeState['stage']) {
 
 export function ControlTowerVariant({ state, act }: Props) {
   const transferred = state.stage === 'receipt'
-  const cohorts = cohortCounts(state.stage)
+  const cohorts = cohortCounts(state)
 
   if (state.stage === 'closed') {
     return <ClosedState onReset={() => act('reset')} />

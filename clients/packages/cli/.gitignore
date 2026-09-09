@@ -1,0 +1,10 @@
+node_modules
+dist
+bin 
+
+.env*
+
+.idea/
+.DS_STORE
+
+polar

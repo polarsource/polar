@@ -59,11 +59,25 @@ export function paginateMappingItems(
     page: currentPage,
     pageCount,
     items: pageItems,
-    showPagination: total > PRODUCT_MAPPING_PAGE_SIZE,
+    showPagination: total > 0,
     rangeStart: total === 0 ? 0 : start + 1,
     rangeEnd: start + pageItems.length,
     total,
   }
+}
+
+export function mappingPaginationLabel(
+  rangeStart: number,
+  rangeEnd: number,
+  total: number,
+): string {
+  if (total === 1) {
+    return 'Viewing the only record'
+  }
+  if (rangeStart === 1 && rangeEnd === total) {
+    return `Viewing all ${total} records`
+  }
+  return `Viewing ${rangeStart}-${rangeEnd} of ${total}`
 }
 
 export function mappingChoice(

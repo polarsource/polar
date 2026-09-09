@@ -4,6 +4,7 @@ import {
   compatibleCandidates,
   formatMappingInterval,
   mappingChoice,
+  mappingPaginationLabel,
   mappingRequiresChoice,
   mappingSelectValue,
   paginateMappingItems,
@@ -152,9 +153,10 @@ describe('paginateMappingItems', () => {
     item({ source_id: `prod_${index}:month:1` }),
   )
 
-  it('hides pagination when every product fits on one page', () => {
+  it('keeps a viewing footer when every product fits on one page', () => {
     const paged = paginateMappingItems(items.slice(0, 5), 1)
-    expect(paged.showPagination).toBe(false)
+    expect(paged.showPagination).toBe(true)
+    expect(paged.pageCount).toBe(1)
     expect(paged.items).toHaveLength(5)
   })
 
@@ -170,5 +172,13 @@ describe('paginateMappingItems', () => {
     expect(second.rangeEnd).toBe(6)
 
     expect(paginateMappingItems(items, 99).page).toBe(2)
+  })
+})
+
+describe('mappingPaginationLabel', () => {
+  it('matches the subscriptions table copy', () => {
+    expect(mappingPaginationLabel(1, 1, 1)).toBe('Viewing the only record')
+    expect(mappingPaginationLabel(1, 5, 5)).toBe('Viewing all 5 records')
+    expect(mappingPaginationLabel(1, 5, 7)).toBe('Viewing 1-5 of 7')
   })
 })

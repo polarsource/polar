@@ -2,11 +2,18 @@
 
 import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { ProductMappingRow } from './ProductMappingRow'
 import {
   formatMappingAmount,
   formatMappingInterval,
+  mappingPaginationLabel,
   paginateMappingItems,
   type ProductMappingItem,
 } from './productMapping'
@@ -64,26 +71,52 @@ export function ProductMappingTable({
         ))}
       </Grid>
       {paged.showPagination ? (
-        <Box alignItems="center" justifyContent="end" columnGap="s">
+        <Box alignItems="center" justifyContent="end" columnGap="l">
           <Text variant="caption" color="muted">
-            {paged.rangeStart}–{paged.rangeEnd} of {paged.total}
+            {mappingPaginationLabel(
+              paged.rangeStart,
+              paged.rangeEnd,
+              paged.total,
+            )}
           </Text>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={paged.page <= 1}
-            onClick={() => setPage(paged.page - 1)}
-          >
-            Previous
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={paged.page >= paged.pageCount}
-            onClick={() => setPage(paged.page + 1)}
-          >
-            Next
-          </Button>
+          <Box alignItems="center" columnGap="xs">
+            <Button
+              size="icon"
+              variant="outline"
+              aria-label="Go to first page"
+              disabled={paged.page <= 1}
+              onClick={() => setPage(1)}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              aria-label="Go to previous page"
+              disabled={paged.page <= 1}
+              onClick={() => setPage(paged.page - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              aria-label="Go to next page"
+              disabled={paged.page >= paged.pageCount}
+              onClick={() => setPage(paged.page + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              aria-label="Go to last page"
+              disabled={paged.page >= paged.pageCount}
+              onClick={() => setPage(paged.pageCount)}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </Box>
         </Box>
       ) : null}
     </Box>

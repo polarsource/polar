@@ -693,7 +693,7 @@ class MerchantMigrationService:
         session: AsyncSession,
         migration: MerchantMigration,
         contents: bytes,
-    ) -> list[str]:
+    ) -> Sequence[str]:
         mappings = parse_payment_method_mapping_csv(contents)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         customer_repository = CustomerRepository.from_session(session)

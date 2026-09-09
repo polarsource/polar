@@ -1336,6 +1336,7 @@ class CheckoutService:
                     else:
                         checkout.payment_processor_metadata = {
                             **checkout.payment_processor_metadata,
+                            "intent_id": intent.id,
                             "intent_client_secret": intent.client_secret,
                             "intent_status": intent.status,
                         }
@@ -1584,12 +1585,7 @@ class CheckoutService:
     async def handle_failure(
         self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None
     ) -> Checkout:
-        # Checkout is in an unrecoverable status: do nothing
-        if checkout.status in {
-            CheckoutStatus.expired,
-            CheckoutStatus.succeeded,
-            CheckoutStatus.failed,
-        }:
+        if checkout.status != CheckoutStatus.confirmed:
             return checkout
 
         # Put back checkout in open state so the customer can try another payment method

@@ -1451,3 +1451,163 @@ class TestCreateOrderItemsFromPending:
         for entry in old_entries:
             await session.refresh(entry)
             assert entry.order_item_id is None
+
+    async def test_non_summable_timestamps_span_all_linked_prices(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        Non-summable meter with a mid-period price switch: the persisted
+        start_timestamp/end_timestamp must span ALL linked entries across both
+        prices, since the line item links them all and the amount is computed
+        across all of them.
+
+        With distinct per-price timestamp windows, ``func.min``/``func.max`` per
+        ``(product_price_id, meter_id)`` group yields a narrowed span for whichever
+        price group is picked first, while ``PendingByMeter`` links every price's
+        entries to the one order item. The persisted period must be the global
+        ``min(start)``/``max(end)`` over all linked entries.
+        """
+        meter_max = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="servers"
+            ),
+            organization=organization,
+        )
+
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(10_00), None, "usd")],  # $10/server
+        )
+        price_a = product_a.prices[0]
+
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_a
+        )
+
+        cutoff = datetime(2026, 9, 8, 10, 0, 0, tzinfo=UTC)
+
+        # price_a entries: MAX servers = 3, window 09:59:40 .. 09:59:50
+        entries_a = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=1,
+                metadata_key="servers",
+            ),
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=3,  # MAX across all prices
+                metadata_key="servers",
+            ),
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=2,
+                metadata_key="servers",
+            ),
+        ]
+        for e in entries_a:
+            e.start_timestamp = cutoff - timedelta(minutes=20)
+            e.end_timestamp = cutoff - timedelta(minutes=19)
+            e.created_at = cutoff - timedelta(minutes=18)
+        await session.flush()
+
+        # Price switch: new product+price for the SAME meter; price_b is now active.
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(15_00), None, "usd")],  # $15/server
+        )
+        price_b = product_b.prices[0]
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_b)
+        ]
+        await save_fixture(subscription)
+
+        # price_b entries: MAX servers = 2, window 09:59:55 .. 09:59:58
+        entries_b = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_b,
+                subscription=subscription,
+                tokens=1,
+                metadata_key="servers",
+            ),
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_b,
+                subscription=subscription,
+                tokens=2,
+                metadata_key="servers",
+            ),
+        ]
+        for e in entries_b:
+            e.start_timestamp = cutoff - timedelta(seconds=5)
+            e.end_timestamp = cutoff - timedelta(seconds=2)
+            e.created_at = cutoff - timedelta(seconds=1)
+        await session.flush()
+
+        all_entries = [*entries_a, *entries_b]
+
+        # Future entry: excluded by start_timestamp >= cutoff (metered).
+        future_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_b,
+            subscription=subscription,
+            tokens=100,
+            metadata_key="servers",
+        )
+        future_entry.start_timestamp = cutoff + timedelta(seconds=1)
+        future_entry.end_timestamp = cutoff + timedelta(seconds=1)
+        future_entry.created_at = cutoff + timedelta(seconds=1)
+        await save_fixture(future_entry)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription, cutoff=cutoff
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+
+            # Amount: MAX(3, 2) = 3, billed at active price_b ($15) = $45.
+            assert order_item.amount == 45_00
+            assert order_item.product_price == price_b
+
+            order = await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        # Every pending entry across both prices is linked to the one order item.
+        for e in all_entries:
+            await session.refresh(e)
+            assert e.order_item_id == order_item.id
+        await session.refresh(future_entry)
+        assert future_entry.order_item_id is None
+
+        # The persisted period spans ALL linked entries (PendingByMeter links both
+        # prices, and the amount is computed across all of them): global
+        # min(start) .. global max(end) across both price groups, not the
+        # per-price min/max of whichever group the GROUP BY happened to return
+        # first.
+        expected_start = min(e.start_timestamp for e in all_entries)
+        expected_end = max(e.end_timestamp for e in all_entries)
+        assert order_item.start_timestamp == expected_start
+        assert order_item.end_timestamp == expected_end

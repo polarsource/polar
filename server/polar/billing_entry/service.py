@@ -261,12 +261,25 @@ class BillingEntryService:
                     )
                     continue
 
+                # The order item links every pending entry for this meter, across
+                # all prices (PendingByMeter below), and the amount is computed
+                # across all of them. The persisted period must therefore span the
+                # same set: the global min(start)/max(end) over the meter's pending
+                # entries, not the per-price min/max of whichever tuple arrived
+                # first (which is what `start_timestamp`/`end_timestamp` above hold).
+                meter_span = await repository.get_pending_metered_meter_span(
+                    subscription.id, meter_id, cutoff=cutoff
+                )
+                if meter_span is None:
+                    continue
+                meter_start, meter_end = meter_span
+
                 metered_line_item = await self._get_metered_line_item_by_meter(
                     session,
                     active_price,
                     subscription,
-                    start_timestamp,
-                    end_timestamp,
+                    meter_start,
+                    meter_end,
                     cutoff=cutoff,
                 )
                 selector: BillingEntrySelector = PendingByMeter(meter_id)
@@ -469,6 +482,12 @@ class BillingEntryService:
         Used for non-summable aggregations (max, min, avg, unique) where we must
         compute across ALL events for the meter, regardless of which price was active.
         Uses the provided price for billing (should be the most recent/current price).
+
+        ``start_timestamp``/``end_timestamp`` must span every pending entry that will
+        be linked to this line item (i.e. across all prices for the meter), since the
+        amount is computed across that same set. Callers should pass the meter-wide
+        ``min(start)``/``max(end)`` from ``get_pending_metered_meter_span``, not a
+        single price group's bounds.
         """
         event_repository = EventRepository.from_session(session)
         meter = price.meter

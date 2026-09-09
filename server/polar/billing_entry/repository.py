@@ -133,6 +133,48 @@ class BillingEntryRepository(
         finally:
             await results.close()
 
+    async def get_pending_metered_meter_span(
+        self,
+        subscription_id: UUID,
+        meter_id: UUID,
+        *,
+        cutoff: datetime,
+    ) -> tuple[datetime, datetime] | None:
+        """
+        Global start/end span of the pending metered billing entries for a meter,
+        across every product price sharing that meter.
+
+        ``get_pending_metered_by_subscription_tuples`` groups by
+        ``(product_price_id, meter_id)`` and so reports a per-price ``min``/``max``.
+        For non-summable aggregations the service consolidates all of a meter's
+        pending entries into one order item (``PendingByMeter``) and computes its
+        amount across all of them, so the persisted period must span that same set.
+        This is the meter-wide counterpart: the same predicate as the tuples
+        query, but grouped by ``meter_id`` alone and scoped to one meter.
+        """
+        statement = (
+            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
+            .join(
+                ProductPrice,
+                BillingEntry.product_price_id == ProductPrice.id,
+            )
+            .where(
+                ProductPrice.is_metered,
+                BillingEntry.created_at <= cutoff,
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id == meter_id,
+            )
+            .with_only_columns(
+                func.min(BillingEntry.start_timestamp),
+                func.max(BillingEntry.end_timestamp),
+            )
+            .group_by(ProductPrice.__table__.c.meter_id)
+            .order_by(None)  # Clear existing ORDER BY from base statement
+        )
+        result = await self.session.execute(statement)
+        row = result.one_or_none()
+        return row._tuple() if row is not None else None
+
     async def link_pending_by_subscription_and_price(
         self,
         subscription_id: UUID,

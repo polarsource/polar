@@ -252,9 +252,10 @@ class PayoutNotCancelable(PayoutError):
     def __init__(self, payout: Payout) -> None:
         self.payout = payout
         message = (
-            f"Payout {payout.id} cannot be canceled because of its current status."
+            f"Payout {payout.id} cannot be canceled because of its current status "
+            "or a pending, in-transit, or successful attempt."
         )
-        super().__init__(message)
+        super().__init__(message, 409)
 
 
 class NoSyncableAttempt(PayoutError):
@@ -782,7 +783,7 @@ class PayoutService:
         # backoffice cancel racing cancel_pending_payouts) so they can't each
         # write a reversal and double-credit the merchant.
         await session.refresh(payout, attribute_names=["status"], with_for_update=True)
-        if not payout.status.is_cancelable():
+        if not payout.is_cancelable:
             raise PayoutNotCancelable(payout)
 
         payout_transaction = payout.transaction

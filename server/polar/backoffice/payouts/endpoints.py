@@ -401,7 +401,7 @@ async def get(
                                 hx_target="#modal",
                             ):
                                 text("Retry Payout")
-                        if payout.status.is_cancelable():
+                        if payout.is_cancelable:
                             with tag.button(
                                 classes="btn btn-error",
                                 hx_get=str(

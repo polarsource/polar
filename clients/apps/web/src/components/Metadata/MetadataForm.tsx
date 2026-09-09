@@ -233,13 +233,13 @@ export const MetadataForm = ({ label }: { label?: string }) => {
                         <Select
                           value={getMetadataValueType(field.value)}
                           onValueChange={(type) =>
-                             field.onChange(
-                               convertMetadataValue(
-                                 field.value,
-                                 type as MetadataValueType,
-                               ),
-                             )
-                           }
+                            field.onChange(
+                              convertMetadataValue(
+                                field.value,
+                                type as MetadataValueType,
+                              ),
+                            )
+                          }
                         >
                           <SelectTrigger className="w-32 shrink-0">
                             <SelectValue />

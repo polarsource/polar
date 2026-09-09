@@ -406,7 +406,7 @@ class TestUpdateReviewSubmission:
         result = await organization_service.submit_for_review(session, organization)
 
         assert result.details_submitted_at is not None
-        enqueue_job_mock.assert_called_once_with(
+        enqueue_job_mock.assert_any_call(
             "organization_review.run_agent",
             organization_id=organization.id,
             context=ReviewContext.SUBMISSION,
@@ -667,6 +667,54 @@ async def test_get_next_invoice_number_multiple_customers(
     await session.refresh(customer2)
     assert customer.invoice_next_number == 3
     assert customer2.invoice_next_number == 2
+
+
+@pytest.mark.asyncio
+class TestUpdateWebsite:
+    @pytest.mark.auth
+    async def test_change_enqueues_payout_account_website_sync(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(website=cast(HttpUrl, "https://example.com")),
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "organization.sync_payout_account_website",
+            organization_id=organization.id,
+        )
+
+    @pytest.mark.auth
+    async def test_unchanged_website_does_not_enqueue_sync(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://example.com/"
+        await save_fixture(organization)
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(website=cast(HttpUrl, "https://example.com")),
+        )
+
+        sync_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args and call.args[0] == "organization.sync_payout_account_website"
+        ]
+        assert sync_calls == []
 
 
 @pytest.mark.asyncio

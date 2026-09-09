@@ -16,6 +16,7 @@ from polar.organization.tasks import (
     organization_created,
     organization_offboarded,
     organization_under_review,
+    sync_payout_account_website,
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payout_account
@@ -151,6 +152,53 @@ class TestOrganizationCancelExpiredSubscriptions:
         await organization_cancel_expired_subscriptions()
 
         cancel_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestSyncPayoutAccountWebsite:
+    async def test_pushes_website_to_stripe(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_website_sync"
+        )
+        update_website_mock = mocker.patch(
+            "polar.organization.service.stripe_service.update_account_website",
+            new=AsyncMock(),
+        )
+
+        await sync_payout_account_website(organization.id)
+
+        update_website_mock.assert_awaited_once_with(
+            payout_account.stripe_id, "https://example.com"
+        )
+
+    async def test_rejection_does_not_raise(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_website_sync"
+        )
+        mocker.patch(
+            "polar.organization.service.stripe_service.update_account_website",
+            new=AsyncMock(
+                side_effect=stripe_lib.InvalidRequestError("Invalid URL", None)
+            ),
+        )
+
+        await sync_payout_account_website(organization.id)
 
 
 @pytest.mark.asyncio

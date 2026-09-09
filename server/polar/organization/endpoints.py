@@ -135,6 +135,7 @@ from .schemas import (
 from .service import (
     CannotCreateOrganizationError,
     DisputeAutoAcceptNotEnabled,
+    PayoutAccountAlreadyLinked,
     SSOEnforcementRequiresConnection,
 )
 from .service import organization as organization_service
@@ -225,6 +226,10 @@ async def get_account(
     response_model=OrganizationSchema,
     responses={
         404: OrganizationNotFound,
+        409: {
+            "description": "Payout account already linked to another organization.",
+            "model": PayoutAccountAlreadyLinked.schema(),
+        },
     },
     tags=[APITag.private],
 )
@@ -234,9 +239,10 @@ async def set_payout_account(
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Set the payout account for an organization."""
-    # Resolve payout account and check admin ownership
+    # Resolve payout account and check admin ownership. Lock it so two
+    # concurrent requests can't link it to two organizations.
     pa_repo = PayoutAccountRepository.from_session(session)
-    payout_account = await pa_repo.get_by_id(body.payout_account_id)
+    payout_account = await pa_repo.get_by_id(body.payout_account_id, for_update=True)
     if (
         payout_account is None
         or payout_account.admin_id != authz.auth_subject.subject.id

@@ -23,7 +23,9 @@ export const convertMetadataValue = (
 ): MetadataValue => {
   switch (type) {
     case 'string':
-      return String(value)
+      return typeof value === 'number' && Number.isNaN(value)
+        ? ''
+        : String(value)
     case 'number':
       return typeof value === 'boolean'
         ? Number(value)

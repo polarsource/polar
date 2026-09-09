@@ -5,7 +5,6 @@ import { useHasPermission } from '@/hooks/permissions'
 import {
   useDeletePayoutAccount,
   usePayoutAccounts,
-  useSetOrganizationPayoutAccount,
 } from '@/hooks/queries/payout_accounts'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
@@ -55,9 +54,6 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
     refetch: refetchPayoutAccounts,
   } = usePayoutAccounts()
   const deletePayoutAccount = useDeletePayoutAccount()
-  const setOrganizationPayoutAccount = useSetOrganizationPayoutAccount(
-    _organization.id,
-  )
   const [loadingDashboardId, setLoadingDashboardId] = useState<string | null>(
     null,
   )
@@ -119,29 +115,6 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
       }
     },
     [deletePayoutAccount, refetchOrganization, refetchPayoutAccounts],
-  )
-
-  const handleSwitch = useCallback(
-    async (payoutAccountId: string) => {
-      const { error } =
-        await setOrganizationPayoutAccount.mutateAsync(payoutAccountId)
-      if (error) {
-        toast({
-          title: 'Failed to switch payout account',
-          description: extractApiErrorMessage(
-            error,
-            'An error occurred while switching the payout account.',
-          ),
-        })
-      } else {
-        toast({
-          title: 'Payout account updated',
-          description: 'Your active payout account has been updated.',
-        })
-        refetchOrganization()
-      }
-    },
-    [setOrganizationPayoutAccount, refetchOrganization],
   )
 
   const accounts = [...(payoutAccountsList?.items ?? [])].sort((a, b) => {
@@ -230,16 +203,6 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                     )}
                     {!isActive && (
                       <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleSwitch(account.id)}
-                        loading={setOrganizationPayoutAccount.isPending}
-                      >
-                        Make Active
-                      </Button>
-                    )}
-                    {!isActive && (
-                      <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDelete(account.id)}
@@ -274,13 +237,6 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                           {account.is_payout_ready
                             ? 'Open in Stripe'
                             : 'Complete Setup'}
-                        </DropdownMenuItem>
-                      )}
-                      {!isActive && (
-                        <DropdownMenuItem
-                          onClick={() => handleSwitch(account.id)}
-                        >
-                          Make Active
                         </DropdownMenuItem>
                       )}
                       {!isActive && (

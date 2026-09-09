@@ -1214,3 +1214,14 @@ async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
             raise OrganizationDoesNotExist(organization_id)
 
         await organization_service.evaluate_website_risk(session, organization)
+
+
+@actor(actor_name="organization.sync_payout_account_website", priority=TaskPriority.LOW)
+async def sync_payout_account_website(organization_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        await organization_service.sync_payout_account_website(session, organization)

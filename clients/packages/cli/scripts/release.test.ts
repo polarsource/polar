@@ -1,32 +1,5 @@
 import { beforeEach, describe, expect, vi, test } from 'vitest'
-import { readFileSync } from 'node:fs'
-
-const workflow = Bun.YAML.parse(
-  readFileSync(
-    new URL('../../../../.github/workflows/release_cli.yml', import.meta.url),
-    'utf8',
-  ),
-) as {
-  jobs: {
-    prepare: {
-      steps: { id?: string; with?: { script: string } }[]
-    }
-  }
-}
-const script = workflow.jobs.prepare.steps.find((step) => step.id === 'release')
-  ?.with?.script
-if (!script) throw new Error('Release planning step is missing')
-
-const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor as new (
-  ...args: string[]
-) => (...args: unknown[]) => Promise<void>
-const runPrepare = new AsyncFunction(
-  'require',
-  'github',
-  'context',
-  'core',
-  script,
-)
+import release from './release.js'
 
 const context = {
   eventName: 'push',
@@ -36,7 +9,6 @@ const context = {
   repo: { owner: 'polarsource', repo: 'polar' },
   payload: { before: 'previous-commit' },
 }
-const requireManifest = () => ({ version: '1.4.0' })
 const outputs = new Map<string, unknown>()
 const core = {
   setOutput: (name: string, value: unknown) => outputs.set(name, value),
@@ -62,7 +34,7 @@ beforeEach(() => {
 
 describe('CLI release planning', () => {
   test('releases a bumped version from main under a CLI-specific tag', async () => {
-    await runPrepare(requireManifest, github, context, core)
+    await release({ github, context, core, version: '1.4.0' })
 
     expect(outputs.get('enabled')).toBe(true)
     expect(outputs.get('publish')).toBe(true)
@@ -79,7 +51,7 @@ describe('CLI release planning', () => {
       data: { content: Buffer.from('{"version":"1.4.0"}').toString('base64') },
     })
 
-    await runPrepare(requireManifest, github, context, core)
+    await release({ github, context, core, version: '1.4.0' })
 
     expect(outputs.get('enabled')).toBe(false)
     expect(getReleaseByTag).not.toHaveBeenCalled()
@@ -90,7 +62,7 @@ describe('CLI release planning', () => {
       Object.assign(new Error('Not found'), { status: 404 }),
     )
 
-    await runPrepare(requireManifest, github, context, core)
+    await release({ github, context, core, version: '1.4.0' })
 
     expect(outputs.get('enabled')).toBe(false)
   })
@@ -100,7 +72,7 @@ describe('CLI release planning', () => {
       data: { draft: false, target_commitish: context.sha },
     })
 
-    await runPrepare(requireManifest, github, context, core)
+    await release({ github, context, core, version: '1.4.0' })
 
     expect(outputs.get('enabled')).toBe(false)
   })
@@ -109,14 +81,14 @@ describe('CLI release planning', () => {
     getReleaseByTag.mockResolvedValueOnce({
       data: { draft: true, target_commitish: context.sha },
     })
-    await runPrepare(requireManifest, github, context, core)
+    await release({ github, context, core, version: '1.4.0' })
     expect(outputs.get('enabled')).toBe(true)
 
     getReleaseByTag.mockResolvedValueOnce({
       data: { draft: true, target_commitish: 'another-commit' },
     })
     await expect(
-      runPrepare(requireManifest, github, context, core),
+      release({ github, context, core, version: '1.4.0' }),
     ).rejects.toThrow('Retry the original workflow run')
   })
 
@@ -126,18 +98,18 @@ describe('CLI release planning', () => {
     )
 
     await expect(
-      runPrepare(requireManifest, github, context, core),
+      release({ github, context, core, version: '1.4.0' }),
     ).rejects.toThrow('Forbidden')
     expect(outputs.get('enabled')).toBe(false)
   })
 
   test('manual runs default to a verification draft, not a stable release', async () => {
-    await runPrepare(
-      requireManifest,
+    await release({
       github,
-      { ...context, eventName: 'workflow_dispatch', payload: {} },
+      context: { ...context, eventName: 'workflow_dispatch', payload: {} },
       core,
-    )
+      version: '1.4.0',
+    })
 
     expect(outputs.get('enabled')).toBe(true)
     expect(outputs.get('publish')).toBe(false)
@@ -148,16 +120,16 @@ describe('CLI release planning', () => {
   })
 
   test('manual publishing can retry main without a new version bump', async () => {
-    await runPrepare(
-      requireManifest,
+    await release({
       github,
-      {
+      context: {
         ...context,
         eventName: 'workflow_dispatch',
         payload: { inputs: { publish: 'true' } },
       },
       core,
-    )
+      version: '1.4.0',
+    })
 
     expect(outputs.get('enabled')).toBe(true)
     expect(outputs.get('publish')).toBe(true)
@@ -167,17 +139,17 @@ describe('CLI release planning', () => {
 
   test('rejects publishing from another branch', async () => {
     await expect(
-      runPrepare(
-        requireManifest,
+      release({
         github,
-        {
+        context: {
           ...context,
           eventName: 'workflow_dispatch',
           ref: 'refs/heads/feature',
           payload: { inputs: { publish: 'true' } },
         },
         core,
-      ),
+        version: '1.4.0',
+      }),
     ).rejects.toThrow('only be published from main')
   })
 })

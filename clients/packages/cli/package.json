@@ -12,7 +12,7 @@
     "build": "tsup ./src/cli.ts --format esm --outDir bin",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "test": "bun --bun vitest run",
+    "test": "bun --bun vitest run --coverage",
     "check": "pnpm format:check && pnpm lint",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
@@ -31,16 +31,18 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@effect/platform-bun": "4.0.0-rc.112",
-    "@polar-sh/sdk": "^0.47.0",
+    "@napi-rs/keyring": "2.0.0",
+    "@polar-sh/sdk": "1.0.0-alpha.20",
     "effect": "4.0.0-rc.112",
-    "eventsource": "^4.1.0",
-    "open": "^10.2.0"
+    "open": "^10.2.0",
+    "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@effect/language-service": "^0.87.2",
     "@sindresorhus/tsconfig": "^8.0.1",
     "@types/bun": "^1.4.1",
     "@types/node": "^24.2.1",
+    "@vitest/coverage-istanbul": "^5.0.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "vitest": "catalog:"

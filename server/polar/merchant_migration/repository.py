@@ -424,6 +424,24 @@ class MerchantMigrationRecordRepository(
         )
         return await self.get_all(statement)
 
+    async def stream_imported_subscriptions(
+        self, migration_id: UUID
+    ) -> AsyncGenerator[MerchantMigrationRecord]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type
+                == MerchantMigrationRecordType.subscription,
+            )
+            .order_by(
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
+        )
+        async for record in self.stream(statement):
+            yield record
+
     def _selection_filter(
         self, selection: MerchantMigrationOperationSelection | None
     ) -> list[ColumnElement[bool]]:
@@ -501,9 +519,26 @@ class MerchantMigrationRecordRepository(
         result = await self.session.execute(statement)
         return {status: count for status, count in result.all()}
 
-    async def payment_method_coverage(self, migration_id: UUID) -> set[UUID]:
+    async def payment_method_coverage(
+        self, migration_id: UUID, *, exact: bool = False
+    ) -> set[UUID]:
         """Switchable subscription record ids whose Polar customer has a card."""
         CustomerRecord = aliased(MerchantMigrationRecord)
+        payment_method_filters = [
+            PaymentMethod.customer_id == Customer.id,
+            PaymentMethod.deleted_at.is_(None),
+            PaymentMethod.type == "card",
+        ]
+        if exact:
+            payment_method_filters.append(
+                or_(
+                    PaymentMethod.processor_id
+                    == MerchantMigrationRecord.canonical["payment_method"].op("->>")(
+                        "source_id"
+                    ),
+                    PaymentMethod.id == Customer.default_payment_method_id,
+                )
+            )
         statement = (
             self._switchable_subscriptions_statement(migration_id)
             .join(
@@ -530,11 +565,7 @@ class MerchantMigrationRecordRepository(
             )
             .join(
                 PaymentMethod,
-                and_(
-                    PaymentMethod.customer_id == Customer.id,
-                    PaymentMethod.deleted_at.is_(None),
-                    PaymentMethod.type == "card",
-                ),
+                and_(*payment_method_filters),
             )
             .with_only_columns(MerchantMigrationRecord.id)
             .order_by(None)

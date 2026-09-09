@@ -45,7 +45,7 @@ export const PayoutAccountSection = ({
     initialOrg,
   )
   const returnPath = payoutOnboardingReturnPath(organization.slug)
-  const { payoutAccount, openManage, openPrimary, modals } =
+  const { payoutAccount, openCreate, openManage, modals } =
     usePayoutAccountSetup(organization, returnPath)
 
   const [resumeLoading, setResumeLoading] = useState(false)
@@ -155,7 +155,7 @@ export const PayoutAccountSection = ({
         title={presentation.title}
         description={presentation.description}
         action={
-          <Button onClick={openPrimary}>
+          <Button onClick={openCreate}>
             Connect payout account
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>

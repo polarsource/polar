@@ -4,13 +4,17 @@ A copy lands them under the source's `cus_…` id but with fresh `pm_…` ids, s
 they stay invisible to Polar until stored as payment methods of our own.
 """
 
+import csv
+import io
 from collections.abc import Sequence
+from dataclasses import dataclass
 from uuid import UUID
 
 import stripe as stripe_lib
 
 from polar.customer.repository import CustomerRepository
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Customer, PaymentMethod
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
@@ -19,6 +23,12 @@ from .canonical import CanonicalPaymentMethod
 from .errors import MerchantMigrationError
 
 CARD_TYPE = "card"
+PAYMENT_METHOD_MAPPING_HEADERS = (
+    "customer_id_old",
+    "source_id_old",
+    "customer_id_new",
+    "source_id_new",
+)
 
 
 class AmbiguousCopiedCard(MerchantMigrationError):
@@ -34,6 +44,76 @@ class AmbiguousCopiedCard(MerchantMigrationError):
         )
 
 
+class PaymentMethodMappingCSVError(MerchantMigrationError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, 400)
+
+
+@dataclass(frozen=True)
+class PaymentMethodMapping:
+    customer_id: str
+    source_payment_method_id: str
+    destination_payment_method_id: str
+
+
+def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMapping]:
+    try:
+        decoded = contents.decode("utf-8-sig")
+    except UnicodeDecodeError as e:
+        raise PaymentMethodMappingCSVError(
+            "The mapping must be a UTF-8 CSV file."
+        ) from e
+
+    reader = csv.DictReader(io.StringIO(decoded))
+    if tuple(reader.fieldnames or ()) != PAYMENT_METHOD_MAPPING_HEADERS:
+        raise PaymentMethodMappingCSVError(
+            "The CSV headers must be: "
+            + ", ".join(PAYMENT_METHOD_MAPPING_HEADERS)
+            + "."
+        )
+
+    by_source: dict[str, PaymentMethodMapping] = {}
+    by_destination: dict[str, PaymentMethodMapping] = {}
+    for line_number, row in enumerate(reader, start=2):
+        if None in row:
+            raise PaymentMethodMappingCSVError(
+                f"Line {line_number} has more than four values."
+            )
+        values = {
+            header: (row.get(header) or "").strip()
+            for header in PAYMENT_METHOD_MAPPING_HEADERS
+        }
+        if not all(values.values()):
+            raise PaymentMethodMappingCSVError(
+                f"Line {line_number} has an empty mapping value."
+            )
+        if values["customer_id_old"] != values["customer_id_new"]:
+            raise PaymentMethodMappingCSVError(
+                f"Line {line_number} changes the Stripe customer ID."
+            )
+        mapping = PaymentMethodMapping(
+            customer_id=values["customer_id_old"],
+            source_payment_method_id=values["source_id_old"],
+            destination_payment_method_id=values["source_id_new"],
+        )
+        existing = by_source.get(mapping.source_payment_method_id)
+        if existing is not None and existing != mapping:
+            raise PaymentMethodMappingCSVError(
+                f"Source payment method {mapping.source_payment_method_id} has "
+                "conflicting mappings."
+            )
+        destination_existing = by_destination.get(mapping.destination_payment_method_id)
+        if destination_existing is not None and destination_existing != mapping:
+            raise PaymentMethodMappingCSVError(
+                f"Destination payment method {mapping.destination_payment_method_id} "
+                "is mapped more than once."
+            )
+        by_source[mapping.source_payment_method_id] = mapping
+        by_destination[mapping.destination_payment_method_id] = mapping
+
+    return list(by_source.values())
+
+
 async def link_payment_method(
     session: AsyncSession,
     customer: Customer,
@@ -47,7 +127,6 @@ async def link_payment_method(
     """
     if customer.stripe_customer_id is None:
         return None
-
     try:
         stripe_payment_methods = [
             stripe_payment_method
@@ -75,6 +154,31 @@ async def link_payment_method(
             customer, update_dict={"default_payment_method_id": preferred.id}
         )
     return preferred
+
+
+async def link_mapped_payment_method(
+    session: AsyncSession,
+    customer: Customer,
+    mapping: PaymentMethodMapping,
+) -> PaymentMethod | None:
+    try:
+        stripe_payment_method = await stripe_service.get_payment_method(
+            mapping.destination_payment_method_id
+        )
+    except stripe_lib.InvalidRequestError:
+        return None
+    stripe_customer = stripe_payment_method.customer
+    if (
+        stripe_customer is None
+        or get_expandable_id(stripe_customer) != mapping.customer_id
+    ):
+        raise PaymentMethodMappingCSVError(
+            f"Copied payment method {mapping.destination_payment_method_id} does not "
+            "belong to the customer in Stripe's mapping."
+        )
+    return await payment_method_service.upsert_from_stripe(
+        session, customer, stripe_payment_method, flush=True
+    )
 
 
 def _preferred(

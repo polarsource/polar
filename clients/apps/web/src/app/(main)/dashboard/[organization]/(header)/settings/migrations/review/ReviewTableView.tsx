@@ -3,7 +3,7 @@
 import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import {
@@ -48,8 +48,6 @@ interface Props {
   rerunning?: boolean
   refreshError?: string
   attentionCount: number
-  prepareBlocked?: boolean
-  header?: ReactNode
 }
 
 export function ReviewTableView({
@@ -73,8 +71,6 @@ export function ReviewTableView({
   rerunning = false,
   refreshError,
   attentionCount,
-  prepareBlocked = false,
-  header,
 }: Props) {
   const rowTotal = remainingSubscriptionCount(
     counts.subscriptions.total,
@@ -100,8 +96,11 @@ export function ReviewTableView({
     () =>
       buildReviewColumns({
         isSelected: (id) => isRowSelected(selection, id),
+        // The opt-out default reads as "all" even when no row can be picked,
+        // which would show as ticked-but-disabled.
         headerState:
           selectableTotal > 0 ? headerCheckState(selection) : 'unchecked',
+        // It flips every subscription, not this page, so gate it on the same scope.
         canSelectAll: selectableTotal > 0,
         onToggle,
         onToggleAll,
@@ -113,6 +112,7 @@ export function ReviewTableView({
   const onPaginationChange: OnChangeFn<PaginationState> = (updater) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater
     if (next.pageSize !== pageSize) {
+      // Resets to the first page, so don't put the old one back.
       onPageSizeChange(next.pageSize)
       return
     }
@@ -145,25 +145,8 @@ export function ReviewTableView({
           description={importError}
         />
       )}
-      {prepareBlocked && (
-        <Alert
-          variant="warning"
-          title="Map existing Polar products first"
-          description="A Stripe product shares a name with a Polar product whose billing interval doesn't match. Choose a mapping or create a new product before preparing."
-        />
-      )}
-      {header}
 
-      <Box flexDirection="column" rowGap="s">
-        <Box flexDirection="column" rowGap="xs">
-          <Text variant="heading-xs" as="h3">
-            Subscriptions
-          </Text>
-          <Text variant="caption" color="muted">
-            Preparing a subscription brings its customer and product to Polar.
-            Polar starts billing only when you switch.
-          </Text>
-        </Box>
+      <Box flexDirection="column" rowGap="m">
         <Box
           alignItems="center"
           justifyContent="between"
@@ -199,13 +182,18 @@ export function ReviewTableView({
               <Button
                 size="sm"
                 onClick={onImport}
-                disabled={importing || importCount <= 0 || prepareBlocked}
+                disabled={importing || importCount <= 0}
               >
                 {prepareLabel}
               </Button>
             ) : null}
           </Box>
         </Box>
+
+        <Text variant="caption" color="muted">
+          Preparing a subscription brings its customer and product to Polar.
+          Polar starts billing only when you switch.
+        </Text>
 
         {rows.length === 0 ? (
           <Box

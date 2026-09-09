@@ -1,17 +1,15 @@
 import { createHash } from 'node:crypto'
-import { mkdtemp, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { BunFileSystem } from '@effect/platform-bun'
 import { Console, Data, Effect, FileSystem } from 'effect'
 import { Command } from 'effect/unstable/cli'
+import { HttpClient } from 'effect/unstable/http'
 import {
   type CLIRelease,
   getLatestRelease,
   isNewerVersion,
-} from '../services/github-releases'
-import * as OAuth from '../services/oauth'
-import { VERSION } from '../version'
+} from '@/services/github-releases'
+import * as ui from '@/utils/ui'
+import { VERSION } from '@/version'
 
 export class UpdateError extends Data.TaggedError('UpdateError')<{
   message: string
@@ -131,14 +129,16 @@ export function getArchiveExtractionCommand(
   throw new Error(`Unsupported archive format: ${archivePath}`)
 }
 
-const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
+export const downloadAndUpdate = (
+  release: CLIRelease,
+  latestVersion: string,
+  binaryPath: string,
+) =>
   Effect.gen(function* () {
-    const bold = '\x1b[1m'
-    const cyan = '\x1b[36m'
-    const green = '\x1b[32m'
-    const dim = '\x1b[2m'
-    const reset = '\x1b[0m'
-
+    const fs = yield* FileSystem.FileSystem
+    const client = (yield* HttpClient.HttpClient).pipe(
+      HttpClient.filterStatusOk,
+    )
     const { os, arch } = detectPlatform()
     const platform = `${os}-${arch}`
     const archiveName = getReleaseArchiveName({ os, arch })
@@ -159,61 +159,53 @@ const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
       })
     }
 
-    const tempDir = yield* Effect.tryPromise({
-      try: () => mkdtemp(join(tmpdir(), 'polar-update-')),
-      catch: (cause) =>
-        new UpdateError({ message: 'Failed to create temp directory', cause }),
-    })
+    const download = (url: string, name: string) =>
+      client.get(url).pipe(
+        Effect.flatMap((response) => response.arrayBuffer),
+        Effect.map((buffer) => new Uint8Array(buffer)),
+        Effect.mapError(
+          (cause) =>
+            new UpdateError({
+              message: `Failed to download ${name}: ${cause.message}`,
+              cause,
+            }),
+        ),
+      )
+
+    const tempDir = yield* fs
+      .makeTempDirectory({ prefix: 'polar-update-' })
+      .pipe(
+        Effect.mapError(
+          (cause) =>
+            new UpdateError({
+              message: 'Failed to create temp directory',
+              cause,
+            }),
+        ),
+      )
 
     yield* Effect.ensuring(
       Effect.gen(function* () {
-        yield* Console.log(`${dim}Downloading ${latestVersion}...${reset}`)
+        yield* Console.log(ui.step(`Downloading ${latestVersion}...`))
 
-        const archiveBuffer = yield* Effect.tryPromise({
-          try: () =>
-            fetch(asset.browser_download_url).then((res) => {
-              if (!res.ok)
-                throw new UpdateError({
-                  message: `Download failed: ${res.status} ${res.statusText}`,
-                })
-              return res.arrayBuffer()
-            }),
-          catch: (cause) =>
-            new UpdateError({
-              message: `Failed to download binary: ${cause instanceof Error ? cause.message : cause}`,
-              cause,
-            }),
-        })
-
+        const archive = yield* download(asset.browser_download_url, archiveName)
         const archivePath = join(tempDir, archiveName)
-        yield* Effect.tryPromise({
-          try: () => Bun.write(archivePath, archiveBuffer),
-          catch: (cause) =>
-            new UpdateError({
-              message: 'Failed to write archive to disk',
-              cause,
-            }),
-        })
+        yield* fs.writeFile(archivePath, archive).pipe(
+          Effect.mapError(
+            (cause) =>
+              new UpdateError({
+                message: 'Failed to write archive to disk',
+                cause,
+              }),
+          ),
+        )
 
-        yield* Console.log(`${dim}Verifying checksum...${reset}`)
+        yield* Console.log(ui.step('Verifying checksum...'))
 
-        const checksumsText = yield* Effect.tryPromise({
-          try: () =>
-            fetch(checksumsAsset.browser_download_url).then((res) => {
-              if (!res.ok)
-                throw new UpdateError({
-                  message: 'Failed to download checksums',
-                })
-              return res.text()
-            }),
-          catch: (cause) =>
-            new UpdateError({
-              message: 'Failed to download checksums.txt',
-              cause,
-            }),
-        })
-
-        const expectedChecksum = checksumsText
+        const checksums = new TextDecoder().decode(
+          yield* download(checksumsAsset.browser_download_url, 'checksums.txt'),
+        )
+        const expectedChecksum = checksums
           .split('\n')
           .find((line) => line.includes(archiveName))
           ?.split(/\s+/)[0]
@@ -224,19 +216,9 @@ const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
           })
         }
 
-        const archiveData = yield* Effect.tryPromise({
-          try: () =>
-            Bun.file(archivePath).arrayBuffer() as Promise<ArrayBuffer>,
-          catch: (cause) =>
-            new UpdateError({
-              message: 'Failed to read archive for checksum',
-              cause,
-            }),
-        })
-
-        const hash = createHash('sha256')
-        hash.update(new Uint8Array(archiveData))
-        const actualChecksum = hash.digest('hex')
+        const actualChecksum = createHash('sha256')
+          .update(archive)
+          .digest('hex')
 
         if (expectedChecksum !== actualChecksum) {
           return yield* new UpdateError({
@@ -244,7 +226,7 @@ const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
           })
         }
 
-        yield* Console.log(`${dim}Extracting...${reset}`)
+        yield* Console.log(ui.step('Extracting...'))
 
         const extract = Bun.spawn(
           getArchiveExtractionCommand(archivePath, tempDir),
@@ -274,49 +256,37 @@ const downloadAndUpdate = (release: CLIRelease, latestVersion: string) =>
           })
         }
 
-        const binaryPath = process.execPath
-        const newBinaryPath = join(tempDir, 'polar')
+        yield* Console.log(ui.step('Replacing binary...'))
 
-        yield* Console.log(`${dim}Replacing binary...${reset}`)
+        yield* replaceBinary(join(tempDir, 'polar'), binaryPath)
 
-        yield* replaceBinary(newBinaryPath, binaryPath).pipe(
-          Effect.provide(BunFileSystem.layer),
-        )
-
-        yield* Console.log('')
+        yield* Console.log(ui.blank)
         yield* Console.log(
-          `  ${bold}${green}Updated successfully!${reset} ${dim}${VERSION}${reset} -> ${bold}${cyan}${latestVersion}${reset}`,
+          ui.success(
+            `Updated ${ui.dim(VERSION)} ${ui.dim('→')} ${ui.bold(ui.cyan(latestVersion))}`,
+          ),
         )
-        yield* Console.log('')
+        yield* Console.log(ui.blank)
       }),
-      Effect.promise(() =>
-        rm(tempDir, { recursive: true, force: true }).catch(() => {}),
-      ),
+      fs.remove(tempDir, { recursive: true }).pipe(Effect.ignore),
     )
   })
 
 export const update = Command.make('update', {}, () =>
   Effect.gen(function* () {
-    const green = '\x1b[32m'
-    const dim = '\x1b[2m'
-    const reset = '\x1b[0m'
-
-    yield* Console.log(`${dim}Checking for updates...${reset}`)
+    yield* Console.log(ui.blank)
+    yield* Console.log(ui.step('Checking for updates...'))
 
     const release = yield* getLatestRelease
 
     const latestVersion = release.version
 
     if (!isNewerVersion(latestVersion, VERSION)) {
-      yield* Console.log(
-        `${green}Already up to date${reset} ${dim}(${VERSION})${reset}`,
-      )
+      yield* Console.log(ui.success(`Already up to date ${ui.dim(VERSION)}`))
+      yield* Console.log(ui.blank)
       return
     }
 
-    yield* downloadAndUpdate(release, latestVersion)
-
-    const oauth = yield* OAuth.OAuth
-    yield* oauth.logout().pipe(Effect.catch(() => Effect.void))
+    yield* downloadAndUpdate(release, latestVersion, process.execPath)
   }),
-)
+).pipe(Command.withDescription('Update the CLI to the latest release'))

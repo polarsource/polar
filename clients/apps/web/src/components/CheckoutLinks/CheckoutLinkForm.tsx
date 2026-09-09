@@ -31,6 +31,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { XIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
@@ -57,6 +58,7 @@ export const CheckoutLinkForm = ({
   onClose,
   productIds,
 }: CheckoutLinkFormProps) => {
+  const router = useRouter()
   const [discountQuery, setDiscountQuery] = useState('')
 
   const { data: discounts, isLoading: isLoadingDiscounts } = useDiscounts(
@@ -198,6 +200,7 @@ export const CheckoutLinkForm = ({
             newCheckoutLink.label ? newCheckoutLink.label : 'Unlabeled'
           } Checkout Link was updated successfully`,
         })
+        router.refresh()
       } else {
         const { data: createdCheckoutLink, error } =
           await createCheckoutLink(body)
@@ -225,6 +228,7 @@ export const CheckoutLinkForm = ({
       checkoutLink,
       createCheckoutLink,
       updateCheckoutLink,
+      router,
       setError,
       handleValidationError,
     ],

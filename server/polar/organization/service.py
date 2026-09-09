@@ -361,6 +361,15 @@ class SSOEnforcementRequiresConnection(OrganizationError):
         )
 
 
+class PayoutAccountAlreadyLinked(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This payout account already belongs to another organization. "
+            "Each organization needs its own payout account.",
+            409,
+        )
+
+
 class OrganizationService:
     async def list(
         self,
@@ -665,7 +674,15 @@ class OrganizationService:
                 OrganizationDetails, update_schema.details.model_dump()
             )
 
+        previous_website = organization.website
+
         organization = await repository.update(organization, update_dict=update_dict)
+
+        if organization.website != previous_website:
+            enqueue_job(
+                "organization.sync_payout_account_website",
+                organization_id=organization.id,
+            )
 
         if sso_newly_enforced:
             await oauth2_token_service.revoke_for_sso_enforcement(
@@ -956,9 +973,18 @@ class OrganizationService:
         organization: Organization,
         payout_account: PayoutAccount,
     ) -> Organization:
+        organization_repository = OrganizationRepository.from_session(session)
+
+        # Stripe requires one connected account per website, so a payout account
+        # serves a single organization.
+        linked_organizations = await organization_repository.get_all_by_payout_account(
+            payout_account.id
+        )
+        if any(linked.id != organization.id for linked in linked_organizations):
+            raise PayoutAccountAlreadyLinked()
+
         previous_payout_account_id = organization.payout_account_id
 
-        organization_repository = OrganizationRepository.from_session(session)
         await organization_repository.update(
             organization,
             update_dict={"payout_account_id": payout_account.id},
@@ -1788,6 +1814,62 @@ class OrganizationService:
             enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
 
+    async def sync_payout_account_website(
+        self, session: AsyncSession, organization: Organization
+    ) -> str | None:
+        """Put the organization's website on its Stripe connected account.
+
+        Stripe requires one connected account per website, and reads that
+        website from the account itself. Returns the Stripe account id the
+        website was pushed to.
+        """
+        if organization.payout_account_id is None:
+            log.info(
+                "organization.sync_payout_account_website.skipped",
+                reason="no_payout_account",
+                organization_id=str(organization.id),
+            )
+            return None
+
+        website = organization.website.strip() if organization.website else ""
+        if not website:
+            log.info(
+                "organization.sync_payout_account_website.skipped",
+                reason="no_website",
+                organization_id=str(organization.id),
+            )
+            return None
+
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_id(
+            organization.payout_account_id
+        )
+        if payout_account is None or payout_account.stripe_id is None:
+            log.info(
+                "organization.sync_payout_account_website.skipped",
+                reason="no_stripe_account",
+                organization_id=str(organization.id),
+            )
+            return None
+
+        # InvalidRequestError is a deterministic rejection (a URL Stripe won't
+        # accept, an account missing required fields): retrying can't succeed,
+        # so log instead of raising.
+        try:
+            await stripe_service.update_account_website(
+                payout_account.stripe_id, website
+            )
+        except stripe_lib.InvalidRequestError as e:
+            log.warning(
+                "organization.sync_payout_account_website.rejected",
+                organization_id=str(organization.id),
+                stripe_account_id=payout_account.stripe_id,
+                error=str(e),
+            )
+            return None
+
+        return payout_account.stripe_id
+
     async def evaluate_website_risk(
         self, session: AsyncSession, organization: Organization
     ) -> None:
@@ -1800,63 +1882,19 @@ class OrganizationService:
             )
             return
 
-        if organization.payout_account_id is None:
-            log.info(
-                "organization.evaluate_website_risk.skipped",
-                reason="no_payout_account",
-                organization_id=str(organization.id),
-            )
-            return
-
-        website = organization.website.strip() if organization.website else ""
-        if not website:
-            log.info(
-                "organization.evaluate_website_risk.skipped",
-                reason="no_website",
-                organization_id=str(organization.id),
-            )
-            return
-
-        payout_account_repository = PayoutAccountRepository.from_session(session)
-        payout_account = await payout_account_repository.get_by_id(
-            organization.payout_account_id
-        )
-        if payout_account is None or payout_account.stripe_id is None:
-            log.info(
-                "organization.evaluate_website_risk.skipped",
-                reason="no_stripe_account",
-                organization_id=str(organization.id),
-            )
-            return
-
-        # Stripe evaluates the website attached to the account, so sync it
-        # first. InvalidRequestError is a deterministic rejection (a URL
-        # Stripe won't accept, an account missing required fields): retrying
-        # can't succeed, so log instead of raising.
-        try:
-            await stripe_service.update_account_website(
-                payout_account.stripe_id, website
-            )
-        except stripe_lib.InvalidRequestError as e:
-            log.warning(
-                "organization.evaluate_website_risk.rejected",
-                step="sync_website",
-                organization_id=str(organization.id),
-                stripe_account_id=payout_account.stripe_id,
-                error=str(e),
-            )
+        # Stripe evaluates the website attached to the account, so sync it first.
+        stripe_id = await self.sync_payout_account_website(session, organization)
+        if stripe_id is None:
             return
 
         try:
-            await stripe_service.create_website_risk_evaluation(
-                payout_account.stripe_id
-            )
+            await stripe_service.create_website_risk_evaluation(stripe_id)
         except stripe_lib.InvalidRequestError as e:
             log.warning(
                 "organization.evaluate_website_risk.rejected",
                 step="create_evaluation",
                 organization_id=str(organization.id),
-                stripe_account_id=payout_account.stripe_id,
+                stripe_account_id=stripe_id,
                 error=str(e),
             )
 

@@ -6,13 +6,11 @@ import {
   useImportMerchantMigrationCatalog,
   useMerchantMigration,
   useMigrationRecords,
-  useProductMappings,
   useRunMerchantMigrationPrecheck,
 } from '@/hooks/queries/merchantMigrations'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ProductMappingPanel } from './ProductMappingPanel'
 import { useRecordSummary } from './recordSummary'
 import {
   selectionPayload,
@@ -24,7 +22,6 @@ import {
 } from '../selection'
 import { ReviewFilter } from './ReviewStatusTabs'
 import { ReviewTableView } from './ReviewTableView'
-import { mappingRequiresChoice } from './productMapping'
 
 export function ReviewTable({ migrationId }: { migrationId: string }) {
   const [filter, setFilter] = useState<ReviewFilter>('all')
@@ -70,7 +67,6 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   } = useRecordSummary(migrationId, pollMs)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
-  const productMappings = useProductMappings(migrationId)
   const wasRefreshing = useRef(false)
 
   useEffect(() => {
@@ -110,7 +106,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
         "We couldn't refresh from Stripe. Please try again."
       : undefined
 
-  if (records.isLoading || countsLoading || productMappings.isLoading) {
+  if (records.isLoading || countsLoading) {
     return (
       <Box padding="2xl" alignItems="center" justifyContent="center">
         <Spinner />
@@ -118,7 +114,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     )
   }
 
-  if (records.isError || countsError || productMappings.isError) {
+  if (records.isError || countsError) {
     return (
       <Alert
         variant="danger"
@@ -161,8 +157,6 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={refreshing || rerunPrecheck.isPending}
       refreshError={refreshError}
-      prepareBlocked={mappingRequiresChoice(productMappings.data?.items ?? [])}
-      header={<ProductMappingPanel migrationId={migrationId} />}
     />
   )
 }

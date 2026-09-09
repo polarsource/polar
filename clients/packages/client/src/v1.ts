@@ -31577,6 +31577,17 @@ export interface components {
       is_payout_ready: boolean
       status: components['schemas']['PayoutAccountStatus']
     }
+    /** PayoutAccountAlreadyLinked */
+    PayoutAccountAlreadyLinked: {
+      /**
+       * Error
+       * @example PayoutAccountAlreadyLinked
+       * @constant
+       */
+      error: 'PayoutAccountAlreadyLinked'
+      /** Detail */
+      detail: string
+    }
     /** PayoutAccountCreate */
     PayoutAccountCreate: {
       /**
@@ -41704,6 +41715,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Payout account already linked to another organization. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountAlreadyLinked']
         }
       }
       /** @description Validation Error */

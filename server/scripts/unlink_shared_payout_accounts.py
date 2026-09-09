@@ -85,8 +85,8 @@ def _candidates() -> Select[tuple[UUID]]:
 @cli.command()
 @typer_async
 async def unlink_shared_payout_accounts(
-    dry_run: bool = typer.Option(
-        True, help="Report what would be unlinked without writing"
+    execute: bool = typer.Option(
+        False, help="Actually unlink the organizations (default: dry-run)"
     ),
     batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
@@ -126,8 +126,8 @@ async def unlink_shared_payout_accounts(
             "no organization on them qualifies as a keeper."
         )
 
-        if dry_run:
-            typer.echo("\nDry run — pass --no-dry-run to execute.")
+        if not execute:
+            typer.echo("\nDry run — pass --execute to unlink them.")
             return
 
         updated = await run_batched_update(

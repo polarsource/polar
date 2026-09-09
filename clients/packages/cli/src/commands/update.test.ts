@@ -8,7 +8,7 @@ import {
   getArchiveExtractionCommand,
   getReleaseArchiveName,
   replaceBinary,
-} from './update'
+} from '@/commands/update'
 
 async function makeTemp() {
   return mkdtemp(join(tmpdir(), 'polar-test-'))

@@ -5,11 +5,11 @@ import {
   AuthError,
   type ActiveOrganization,
   type PolarEnvironment,
-} from '../schemas/Auth'
-import { Auth, type Credential } from './auth'
-import { Organizations, layer } from './organizations'
-import { Polar } from './polar'
-import { CLIConfig } from './config'
+} from '@/schemas/Auth'
+import { Auth, type Credential } from '@/services/auth'
+import { Organizations, layer } from '@/services/organizations'
+import { Polar } from '@/services/polar'
+import { CLIConfig } from '@/services/config'
 
 const first = { id: 'org-1', name: 'First', slug: 'first' }
 const second = { id: 'org-2', name: 'Second', slug: 'second' }

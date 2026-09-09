@@ -4,10 +4,10 @@ import {
   orgCommand,
   type ActiveOrganization,
   type PolarEnvironment,
-} from '../schemas/Auth'
-import { Auth } from './auth'
-import { CLIConfig } from './config'
-import { Polar } from './polar'
+} from '@/schemas/Auth'
+import { Auth } from '@/services/auth'
+import { CLIConfig } from '@/services/config'
+import { Polar } from '@/services/polar'
 
 export class Organizations extends Context.Service<
   Organizations,

@@ -1,9 +1,9 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import { Effect, Redacted } from 'effect'
 import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
-import { AuthError, type PolarEnvironment } from '../schemas/Auth'
-import { Auth, type Credential } from './auth'
-import { make } from './polar'
+import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
+import { Auth, type Credential } from '@/services/auth'
+import { make } from '@/services/polar'
 
 afterEach(() => vi.unstubAllGlobals())
 

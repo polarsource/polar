@@ -4,10 +4,10 @@ import {
   loginCommand,
   type PolarEnvironment,
   type Session,
-} from '../schemas/Auth'
-import { Credentials } from './credentials'
-import { CLIConfig } from './config'
-import { OAuth } from './oauth'
+} from '@/schemas/Auth'
+import { Credentials } from '@/services/credentials'
+import { CLIConfig } from '@/services/config'
+import { OAuth } from '@/services/oauth'
 
 export interface Credential {
   accessToken: Redacted.Redacted<string>

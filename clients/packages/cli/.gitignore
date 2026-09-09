@@ -8,3 +8,4 @@ bin
 .DS_STORE
 
 polar
+*.bun-build

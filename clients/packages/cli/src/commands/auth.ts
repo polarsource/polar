@@ -5,11 +5,11 @@ import {
   loginCommand,
   orgCommand,
   type PolarEnvironment,
-} from '../schemas/Auth'
-import { Auth } from '../services/auth'
-import { Organizations } from '../services/organizations'
-import * as ui from '../ui'
-import { environmentOf, production } from './flags'
+} from '@/schemas/Auth'
+import { Auth } from '@/services/auth'
+import { Organizations } from '@/services/organizations'
+import * as ui from '@/ui'
+import { environmentOf, production } from '@/commands/flags'
 
 const dashboardUrl = (environment: PolarEnvironment) =>
   `https://${environment === 'sandbox' ? 'sandbox.' : ''}polar.sh`

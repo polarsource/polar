@@ -1,5 +1,5 @@
 import { Flag } from 'effect/unstable/cli'
-import type { PolarEnvironment } from '../schemas/Auth'
+import type { PolarEnvironment } from '@/schemas/Auth'
 
 export const production = Flag.boolean('production').pipe(
   Flag.withDefault(false),

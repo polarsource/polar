@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from dataclasses import replace
+from datetime import datetime
 
 import pytest
 
@@ -130,6 +131,7 @@ def build_subscription(
     payment_method: CanonicalPaymentMethod | None = None,
     has_discount: bool = False,
     discount_source_ids: list[str] | None = None,
+    discount_started_at: datetime | None = None,
     currency: str | None = "usd",
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
@@ -147,6 +149,7 @@ def build_subscription(
         payment_method=payment_method,
         has_discount=has_discount,
         discount_source_ids=discount_source_ids or [],
+        discount_started_at=discount_started_at,
         currency=currency,
     )
 
@@ -562,6 +565,30 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code is None
+        assert items[0].discount_name == "Launch"
+        assert items[0].discount_code == "LAUNCH"
+
+    def test_subscription_repeating_discount_without_start_skipped(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_discount(
+                duration=CanonicalDiscountDuration.repeating,
+                duration_in_months=3,
+            ),
+            build_subscription(
+                source_id="sub_1",
+                has_discount=True,
+                discount_source_ids=["coupon_1"],
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_discount_missing_start"
 
     def test_subscription_with_unresolved_discount_skipped(self) -> None:
         records: list[CanonicalRecord] = [
@@ -630,6 +657,19 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "unsupported_repeating_duration"
+
+    def test_discount_fixed_amount_above_polar_max_skipped(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_discount(
+                discount_type=CanonicalDiscountType.fixed,
+                amounts={"usd": 1_000_000_000_000},
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.discounts, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "unsupported_fixed_amount"
 
     def test_subscription_fixed_discount_wrong_currency_skipped(self) -> None:
         records: list[CanonicalRecord] = [

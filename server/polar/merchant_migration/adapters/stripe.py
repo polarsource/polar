@@ -3,9 +3,10 @@
 
 import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
+from dataclasses import replace
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, TypeVar
 
 import stripe as stripe_lib
 
@@ -33,6 +34,15 @@ from .base import ExtractionPage
 # Period data moved onto the subscription item in this version; read it per item.
 STRIPE_API_VERSION = "2026-01-28.clover"
 PAGE_SIZE = 100
+
+_T = TypeVar("_T")
+
+
+class StripeMissingScope(Exception):
+    def __init__(self, label: str) -> None:
+        self.label = label
+        super().__init__(label)
+
 
 SKIPPED_SUBSCRIPTION_STATUSES = frozenset(
     {"canceled", "incomplete", "incomplete_expired"}
@@ -118,6 +128,12 @@ class StripeAdapter:
         except stripe_lib.PermissionError:
             return label
 
+    async def _request(self, label: str, request: Awaitable[_T]) -> _T:
+        try:
+            return await request
+        except stripe_lib.PermissionError as e:
+            raise StripeMissingScope(label) from e
+
     async def _probe_subscription_write(self) -> None:
         # Probe write access without side effects: cancelling a non-existent
         # subscription fails with "no such subscription" (InvalidRequestError)
@@ -197,7 +213,9 @@ class StripeAdapter:
         }
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
-        prices = await self._client.v1.prices.list_async(params=params)
+        prices = await self._request(
+            "Prices", self._client.v1.prices.list_async(params=params)
+        )
         records = self._map_product_page(prices.data)
         return ExtractionPage(
             records,
@@ -246,7 +264,9 @@ class StripeAdapter:
         }
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
-        coupons = await self._client.v1.coupons.list_async(params=params)
+        coupons = await self._request(
+            "Coupons", self._client.v1.coupons.list_async(params=params)
+        )
         records = [
             mapped
             for coupon in coupons.data
@@ -276,8 +296,9 @@ class StripeAdapter:
         }
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
-        promotion_codes = await self._client.v1.promotion_codes.list_async(
-            params=params
+        promotion_codes = await self._request(
+            "Promotion codes",
+            self._client.v1.promotion_codes.list_async(params=params),
         )
         records = [
             mapped
@@ -300,7 +321,9 @@ class StripeAdapter:
         params: stripe_lib.params.CustomerListParams = {"limit": PAGE_SIZE}
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
-        customers = await self._client.v1.customers.list_async(params=params)
+        customers = await self._request(
+            "Customers", self._client.v1.customers.list_async(params=params)
+        )
         return ExtractionPage(
             [self._map_customer(customer) for customer in customers.data],
             self._next_cursor(
@@ -321,7 +344,10 @@ class StripeAdapter:
         }
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
-        subscriptions = await self._client.v1.subscriptions.list_async(params=params)
+        subscriptions = await self._request(
+            "Subscriptions",
+            self._client.v1.subscriptions.list_async(params=params),
+        )
         records = [
             self._map_subscription(subscription)
             for subscription in subscriptions.data
@@ -501,7 +527,9 @@ class StripeAdapter:
             basis_points = None
             discount_type = CanonicalDiscountType.fixed
             amounts = self._coupon_amounts(coupon)
-        remaining = self._remaining_redemptions(coupon)
+        remaining = self._remaining_redemptions(
+            coupon.max_redemptions, coupon.times_redeemed or 0
+        )
         applies_to = coupon.get("applies_to")
         product_source_ids = list(applies_to.products) if applies_to is not None else []
         return CanonicalDiscount(
@@ -529,19 +557,16 @@ class StripeAdapter:
         mapped = self._map_coupon(coupon)
         if mapped is None:
             return None
-        return CanonicalDiscount(
-            source_id=mapped.source_id,
-            name=mapped.name,
-            discount_type=mapped.discount_type,
-            duration=mapped.duration,
-            duration_in_months=mapped.duration_in_months,
-            basis_points=mapped.basis_points,
-            amounts=mapped.amounts,
+        return replace(
+            mapped,
             code=polar_discount_code(promotion_code.code),
-            extra_codes=0,
-            ends_at=mapped.ends_at,
-            max_redemptions=mapped.max_redemptions,
-            product_source_ids=mapped.product_source_ids,
+            max_redemptions=self._capped_remaining(
+                mapped.max_redemptions,
+                self._remaining_redemptions(
+                    promotion_code.get("max_redemptions"),
+                    promotion_code.get("times_redeemed") or 0,
+                ),
+            ),
         )
 
     def _map_discount_duration(
@@ -562,12 +587,19 @@ class StripeAdapter:
                 amounts[currency] = amount_off
         return amounts
 
-    def _remaining_redemptions(self, coupon: stripe_lib.Coupon) -> int | None:
-        max_redemptions = coupon.max_redemptions
+    def _remaining_redemptions(
+        self, max_redemptions: int | None, times_redeemed: int
+    ) -> int | None:
         if max_redemptions is None:
             return None
-        remaining = max_redemptions - coupon.times_redeemed
-        return remaining if remaining > 0 else None
+        return max(max_redemptions - times_redeemed, 0)
+
+    @staticmethod
+    def _capped_remaining(*caps: int | None) -> int | None:
+        defined = [cap for cap in caps if cap is not None]
+        if not defined:
+            return None
+        return min(defined)
 
     def _automatic_tax(self, subscription: stripe_lib.Subscription) -> bool | None:
         automatic_tax = subscription.get("automatic_tax")

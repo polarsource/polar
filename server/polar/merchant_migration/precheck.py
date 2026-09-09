@@ -12,7 +12,11 @@ from collections import Counter
 from collections.abc import AsyncIterable, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
+from pydantic import TypeAdapter, ValidationError
+
+from polar.discount.schemas import BasisPoints, DurationInMonths
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.currency import (
     PresentmentCurrency,
@@ -39,6 +43,7 @@ from .canonical import (
     CanonicalSubscriptionStatus,
     PriceKey,
     canonical_price_key,
+    polar_discount_amounts,
     subscription_price_key,
 )
 from .schemas import (
@@ -135,6 +140,10 @@ _SUBSCRIPTION_DISCOUNT_REASON = (
     "This subscription's coupon isn't one Polar can import, so it stays on the "
     "source rather than renewing at full price."
 )
+_SUBSCRIPTION_DISCOUNT_START_REASON = (
+    "The source doesn't say when this coupon was applied, so Polar can't "
+    "continue its remaining duration. It stays on the source."
+)
 _MULTIPLE_DISCOUNTS_REASON = (
     "This subscription has more than one coupon. Polar keeps one; the others "
     "are dropped."
@@ -143,14 +152,20 @@ _EXTRA_PROMO_CODES_REASON = (
     "This coupon has extra promotion codes. Polar imports one checkout code "
     "and drops the rest."
 )
-_PERCENTAGE_BASIS_POINTS_MIN = 1
-_PERCENTAGE_BASIS_POINTS_MAX = 10000
-_DURATION_IN_MONTHS_MIN = 1
-_DURATION_IN_MONTHS_MAX = 999
+_BASIS_POINTS = TypeAdapter(BasisPoints)
+_DURATION_IN_MONTHS = TypeAdapter(DurationInMonths)
 
 
 def _humanize_subscription_status(status: CanonicalSubscriptionStatus) -> str:
     return status.value.replace("_", " ").capitalize()
+
+
+def _is_valid(adapter: TypeAdapter[Any], value: object) -> bool:
+    try:
+        adapter.validate_python(value)
+        return True
+    except ValidationError:
+        return False
 
 
 def _is_supported_currency(currency: str) -> bool:
@@ -162,11 +177,9 @@ def _is_supported_currency(currency: str) -> bool:
 
 
 def _importable_fixed_amounts(amounts: dict[str, int]) -> dict[str, int]:
-    """Fixed amounts Polar can store, keyed by lowercase currency."""
     return {
-        currency.lower(): amount
-        for currency, amount in amounts.items()
-        if _is_supported_currency(currency) and amount >= 0
+        currency.value: amount
+        for currency, amount in polar_discount_amounts(amounts).items()
     }
 
 
@@ -602,12 +615,7 @@ class PrecheckEngine:
     def _check_discount(self, discount: CanonicalDiscount) -> Iterable[PrecheckIssue]:
         source_id = discount.source_id
         if discount.discount_type == CanonicalDiscountType.percentage:
-            if (
-                discount.basis_points is None
-                or not _PERCENTAGE_BASIS_POINTS_MIN
-                <= discount.basis_points
-                <= _PERCENTAGE_BASIS_POINTS_MAX
-            ):
+            if not _is_valid(_BASIS_POINTS, discount.basis_points):
                 yield PrecheckIssue(
                     level=PrecheckIssueLevel.warning,
                     code="unsupported_percentage",
@@ -627,11 +635,8 @@ class PrecheckEngine:
                 ),
                 source_id=source_id,
             )
-        if discount.duration == CanonicalDiscountDuration.repeating and not (
-            discount.duration_in_months is not None
-            and _DURATION_IN_MONTHS_MIN
-            <= discount.duration_in_months
-            <= _DURATION_IN_MONTHS_MAX
+        if discount.duration == CanonicalDiscountDuration.repeating and not _is_valid(
+            _DURATION_IN_MONTHS, discount.duration_in_months
         ):
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
@@ -745,6 +750,8 @@ def _item(
     customer_country: str | None = None,
     renews_at: datetime | None = None,
     automatic_tax: bool | None = None,
+    discount_name: str | None = None,
+    discount_code: str | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -779,6 +786,8 @@ def _item(
         cutover_error=None,
         renews_at=renews_at,
         automatic_tax=automatic_tax,
+        discount_name=discount_name,
+        discount_code=discount_code,
         has_payment_method=None,
         dependencies_imported=None,
     )
@@ -954,6 +963,8 @@ def _subscription_items(
     product_by_price = _product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
     price_by_key = _price_display_by_key(products)
+    discounts_by_source = {discount.source_id: discount for discount in discounts}
+    discount_plans = plan_discount_imports(discounts, products, default_currency)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
         payment_method = subscription.payment_method
@@ -978,6 +989,8 @@ def _subscription_items(
             else subscription.customer_source_id
         )
         key = subscription_price_key(subscription)
+        kept_id = kept_discount_source_id(subscription, discount_plans)
+        kept_discount = discounts_by_source.get(kept_id) if kept_id else None
         items.append(
             _item(
                 PrecheckEntity.subscriptions,
@@ -997,6 +1010,8 @@ def _subscription_items(
                 customer_country=customer.country if customer is not None else None,
                 renews_at=subscription.current_period_end,
                 automatic_tax=subscription.automatic_tax,
+                discount_name=kept_discount.name if kept_discount is not None else None,
+                discount_code=kept_discount.code if kept_discount is not None else None,
             )
         )
     return items
@@ -1318,6 +1333,13 @@ def _subscription_discount_skip(
             return Reason(
                 "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
             )
+    if (
+        discount.duration != CanonicalDiscountDuration.forever
+        and subscription.discount_started_at is None
+    ):
+        return Reason(
+            "subscription_discount_missing_start", _SUBSCRIPTION_DISCOUNT_START_REASON
+        )
     return None
 
 

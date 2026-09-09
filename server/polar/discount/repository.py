@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    Select,
     distinct,
     func,
     or_,
@@ -30,6 +31,28 @@ from polar.models.refund import RefundReason, RefundStatus
 class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
     model = Discount
 
+    def _code_and_organization_statement(
+        self, code: str, organization_id: UUID
+    ) -> Select[tuple[Discount]]:
+        return (
+            select(Discount)
+            .where(
+                func.upper(Discount.code) == code.upper(),
+                Discount.organization_id == organization_id,
+                ~Discount.is_deleted,
+            )
+            .options(raiseload(Discount.organization))
+        )
+
+    async def get_by_code_and_organization(
+        self,
+        code: str,
+        organization_id: UUID,
+    ) -> Discount | None:
+        return await self.get_one_or_none(
+            self._code_and_organization_statement(code, organization_id)
+        )
+
     async def get_by_code_and_organization_for_update(
         self,
         code: str,
@@ -37,17 +60,9 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
         *,
         nowait: bool = False,
     ) -> Discount | None:
-        """Get discount by code and organization with FOR UPDATE lock."""
-        statement = (
-            select(Discount)
-            .where(
-                func.upper(Discount.code) == code.upper(),
-                Discount.organization_id == organization_id,
-                ~Discount.is_deleted,
-            )
-            .with_for_update(nowait=nowait)
-            .options(raiseload(Discount.organization))
-        )
+        statement = self._code_and_organization_statement(
+            code, organization_id
+        ).with_for_update(nowait=nowait)
         return await self.get_one_or_none(statement)
 
 

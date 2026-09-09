@@ -36,19 +36,17 @@ export const layer = Layer.effect(
     )
     const file = path.join(directory, 'config.json')
     const read = Effect.gen(function* () {
-      const content = yield* fs
-        .readFileString(file)
-        .pipe(
-          Effect.catch((error) =>
-            error.reason._tag === 'NotFound'
-              ? Effect.void
-              : Effect.fail(
-                  new AuthError({
-                    message: `Unable to read ${file}. Check its permissions.`,
-                  }),
-                ),
-          ),
-        )
+      const content = yield* fs.readFileString(file).pipe(
+        Effect.catch((error) =>
+          error.reason._tag === 'NotFound'
+            ? Effect.void
+            : Effect.fail(
+                new AuthError({
+                  message: `Unable to read ${file}. Check its permissions.`,
+                }),
+              ),
+        ),
+      )
       if (content === undefined) return undefined
       return yield* Schema.decodeUnknownEffect(
         Schema.fromJsonString(ConfigFile),
@@ -73,7 +71,10 @@ export const layer = Layer.effect(
           if (config?.[environment]?.activeOrganizationId === id) return
           const updated = {
             ...config,
-            [environment]: { ...config?.[environment], activeOrganizationId: id },
+            [environment]: {
+              ...config?.[environment],
+              activeOrganizationId: id,
+            },
           }
           yield* fs.makeDirectory(directory, { recursive: true })
           yield* fs.writeFileString(

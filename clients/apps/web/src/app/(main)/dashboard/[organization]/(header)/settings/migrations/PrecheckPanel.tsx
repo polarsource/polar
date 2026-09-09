@@ -17,11 +17,15 @@ export function PrecheckPanel({
   const running =
     precheck.isPending || isActiveMigrationOperation(migration.operation)
   const failed = migration.operation?.status === 'failed'
-  const error =
-    (failed ? migration.operation?.error : null) ||
-    (precheck.isError
-      ? "We couldn't start the pre-check. Please try again."
-      : null)
+  // Newest failure wins: a failed retry POST does not overwrite the cached
+  // `operation` (the mutation only writes in `onSuccess`), so checking
+  // `operation.error` first would shadow the retry's own failure.
+  const error = precheck.isError
+    ? "We couldn't start the pre-check. Please try again."
+    : failed
+      ? migration.operation?.error ||
+        "We couldn't run the pre-check. Please try again."
+      : null
 
   return (
     <Box flexDirection="column" rowGap="l" marginTop="m">

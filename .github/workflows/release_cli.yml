@@ -115,7 +115,7 @@ jobs:
             sign: true
           - target: bun-darwin-x64
             archive: polar-darwin-x64.zip
-            os: macos-15
+            os: macos-15-intel
             sign: true
           - target: bun-linux-x64
             archive: polar-linux-x64.tar.gz

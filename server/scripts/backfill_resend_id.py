@@ -1,3 +1,6 @@
+import asyncio
+from uuid import UUID
+
 import dramatiq
 import typer
 from rich.progress import Progress
@@ -30,8 +33,8 @@ async def backfill() -> None:
     sessionmaker = create_async_sessionmaker(engine)
     redis = create_redis("script")
 
-    async with sessionmaker() as session:
-        async with JobQueueManager.open(dramatiq.get_broker(), redis):
+    try:
+        async with JobQueueManager.open(dramatiq.get_broker(), redis) as manager:
             with Progress() as progress:
                 task_id = progress.add_task("[cyan]Enqueuing user sync...", total=None)
 
@@ -43,18 +46,34 @@ async def backfill() -> None:
                 count_statement = statement.with_only_columns(func.count()).order_by(
                     None
                 )
-                count_result = await session.execute(count_statement)
+                async with sessionmaker() as session:
+                    count_result = await session.execute(count_statement)
                 progress.update(task_id, total=count_result.scalar_one())
 
-                stream_result = await session.stream_scalars(
-                    statement,
-                    execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
-                )
-                async for user_id in stream_result:
-                    enqueue_job("resend.sync_user", user_id)
-                    progress.advance(task_id)
+                last_id: UUID | None = None
+                while True:
+                    page_statement = statement.limit(settings.DATABASE_STREAM_YIELD_PER)
+                    if last_id is not None:
+                        page_statement = page_statement.where(User.id > last_id)
 
-    await engine.dispose()
+                    async with sessionmaker() as session:
+                        user_ids = (await session.scalars(page_statement)).all()
+
+                    if not user_ids:
+                        break
+
+                    for user_id in user_ids:
+                        enqueue_job("resend.sync_user", user_id)
+                    progress.advance(task_id, len(user_ids))
+                    last_id = user_ids[-1]
+
+                    await manager.flush(dramatiq.get_broker(), redis)
+                    if len(user_ids) < settings.DATABASE_STREAM_YIELD_PER:
+                        break
+                    await asyncio.sleep(1)
+    finally:
+        await engine.dispose()
+        await redis.close()
 
 
 if __name__ == "__main__":

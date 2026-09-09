@@ -9,6 +9,9 @@ from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
+    CanonicalDiscount,
+    CanonicalDiscountDuration,
+    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
@@ -131,6 +134,39 @@ def pan_steps_until(
             actor=_STEP_ACTORS[current.owner],
             inputs=pan_step_required_inputs(template),
         )
+
+
+def canonical_discount(
+    *,
+    source_id: str = "coupon_1",
+    name: str = "Launch",
+    discount_type: CanonicalDiscountType = CanonicalDiscountType.percentage,
+    duration: CanonicalDiscountDuration = CanonicalDiscountDuration.forever,
+    duration_in_months: int | None = None,
+    basis_points: int | None = 1000,
+    amounts: dict[str, int] | None = None,
+    code: str | None = "LAUNCH",
+    extra_codes: int = 0,
+    ends_at: datetime | None = None,
+    max_redemptions: int | None = None,
+    product_source_ids: list[str] | None = None,
+) -> CanonicalDiscount:
+    return CanonicalDiscount(
+        source_id=source_id,
+        name=name,
+        discount_type=discount_type,
+        duration=duration,
+        duration_in_months=duration_in_months,
+        basis_points=(
+            basis_points if discount_type == CanonicalDiscountType.percentage else None
+        ),
+        amounts=amounts or {},
+        code=code,
+        extra_codes=extra_codes,
+        ends_at=ends_at,
+        max_redemptions=max_redemptions,
+        product_source_ids=product_source_ids or [],
+    )
 
 
 def canonical_subscription(

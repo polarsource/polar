@@ -167,19 +167,16 @@ class CanonicalDiscount:
     name: str
     discount_type: CanonicalDiscountType
     duration: CanonicalDiscountDuration
-    duration_in_months: int | None
-    # Percentage coupons; None for fixed.
-    basis_points: int | None
-    # Fixed coupons, currency → minor units. Empty for percentage.
-    amounts: dict[str, int]
-    code: str | None
-    extra_codes: int
-    ends_at: datetime | None
+    duration_in_months: int | None = None
+    basis_points: int | None = None
+    amounts: dict[str, int] = field(default_factory=dict)
+    code: str | None = None
+    extra_codes: int = 0
+    ends_at: datetime | None = None
     # Remaining redemptions (source max minus already redeemed). None when the
     # source has no cap; 0 when the cap is already spent.
-    max_redemptions: int | None
-    # Empty means the coupon applies to every product.
-    product_source_ids: list[str]
+    max_redemptions: int | None = None
+    product_source_ids: list[str] = field(default_factory=list)
 
     type = MerchantMigrationRecordType.discount
 
@@ -335,9 +332,7 @@ def deserialize(
                 duration=CanonicalDiscountDuration(data["duration"]),
                 duration_in_months=data["duration_in_months"],
                 basis_points=data["basis_points"],
-                amounts={
-                    currency: amount for currency, amount in data["amounts"].items()
-                },
+                amounts=dict(data["amounts"]),
                 code=data["code"],
                 extra_codes=data["extra_codes"],
                 ends_at=_parse_datetime(data["ends_at"]),

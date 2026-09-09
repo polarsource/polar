@@ -24,9 +24,6 @@ from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
-    CanonicalDiscount,
-    CanonicalDiscountDuration,
-    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -113,6 +110,7 @@ from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    canonical_discount,
     canonical_subscription,
     copied_cards,
     pan_steps_until,
@@ -1186,48 +1184,16 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
     ]
 
 
-def _percentage_discount(
-    source_id: str = "coupon_1", *, max_redemptions: int | None = None
-) -> CanonicalDiscount:
-    return CanonicalDiscount(
-        source_id=source_id,
-        name="Launch",
-        discount_type=CanonicalDiscountType.percentage,
-        duration=CanonicalDiscountDuration.forever,
-        duration_in_months=None,
-        basis_points=2000,
-        amounts={},
-        code="LAUNCH",
-        extra_codes=0,
-        ends_at=None,
-        max_redemptions=max_redemptions,
-        product_source_ids=[],
-    )
-
-
 def _catalog_with_discounted_subscription(
     *, max_redemptions: int | None = None
 ) -> list[CanonicalRecord]:
     """Same catalog as `_catalog_with_subscription`, with a coupon on the sub."""
     return [
         *_importable_catalog(),
-        _percentage_discount(max_redemptions=max_redemptions),
-        CanonicalSubscription(
-            source_id="sub_1",
-            customer_source_id="cus_1",
-            price_source_id="price_1",
-            status=CanonicalSubscriptionStatus.active,
-            collection_method=CanonicalCollectionMethod.charge_automatically,
-            current_period_start=None,
-            current_period_end=None,
-            trialing=False,
-            paused_collection=False,
-            line_item_count=1,
-            quantity=1,
-            payment_method=None,
+        canonical_discount(max_redemptions=max_redemptions),
+        canonical_subscription(
             has_discount=True,
             discount_source_ids=["coupon_1"],
-            currency="usd",
         ),
     ]
 

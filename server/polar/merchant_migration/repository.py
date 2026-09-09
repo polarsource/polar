@@ -621,7 +621,6 @@ class MerchantMigrationRecordRepository(
         record: CanonicalRecord,
         *,
         merge_product_prices: bool = False,
-        merge_discount_codes: bool = False,
     ) -> MerchantMigrationRecord:
         """Idempotently stage a record, keyed per org by (type, source_id). A
         re-run refreshes a still-pending row; imported/skipped/failed rows are
@@ -654,8 +653,7 @@ class MerchantMigrationRecordRepository(
                         record = replace(record, prices=list(prices.values()))
                         canonical = serialize(record)
                 if (
-                    merge_discount_codes
-                    and existing.merchant_migration_id == merchant_migration.id
+                    existing.merchant_migration_id == merchant_migration.id
                     and isinstance(record, CanonicalDiscount)
                 ):
                     current = deserialize(existing.type, existing.canonical)

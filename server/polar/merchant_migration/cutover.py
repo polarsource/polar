@@ -138,6 +138,12 @@ class CutoverOutcome:
     message: str | None = None
 
 
+@dataclass(frozen=True)
+class ImportedDiscount:
+    discount: Discount | None = None
+    skip: str | None = None
+
+
 def _moved(message: str | None = None) -> CutoverOutcome:
     return CutoverOutcome(MerchantMigrationCutoverStatus.moved, message)
 
@@ -345,9 +351,9 @@ class SubscriptionCutover:
         ):
             return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
 
-        discount, discount_skip = await self._imported_discount(source, staged)
-        if discount_skip is not None:
-            return _skip(discount_skip)
+        imported = await self._imported_discount(source, staged)
+        if imported.skip is not None:
+            return _skip(imported.skip)
 
         payment_method = await link_payment_method(
             self.session, customer, source_method=source.payment_method
@@ -401,7 +407,7 @@ class SubscriptionCutover:
             product,
             price,
             customer,
-            discount=discount,
+            discount=imported.discount,
         )
         await self.record_repository.update(
             record,
@@ -509,9 +515,8 @@ class SubscriptionCutover:
                 and source.currency != imported_currency
             ):
                 return _PLAN_CHANGED
-            discount_reason = self._discount_mismatch(source, staged)
-            if discount_reason is not None:
-                return discount_reason
+            if self._discount_changed(source, staged):
+                return _DISCOUNT_CHANGED
         return self._renewal_reason(source)
 
     def _kept_discount_source_id(
@@ -523,40 +528,35 @@ class SubscriptionCutover:
                 return source_id
         return None
 
-    def _discount_mismatch(
+    def _discount_changed(
         self, source: CanonicalSubscription, staged: CanonicalSubscription
-    ) -> str | None:
+    ) -> bool:
         staged_has = bool(staged.discount_source_ids) or staged.has_discount
         source_has = bool(source.discount_source_ids) or source.has_discount
         if not staged_has:
-            return _DISCOUNT_CHANGED if source_has else None
-        if not staged.discount_source_ids:
-            return _DISCOUNT_CHANGED
-        if self._kept_discount_source_id(source, staged) is None:
-            return _DISCOUNT_CHANGED
-        return None
+            return source_has
+        return self._kept_discount_source_id(source, staged) is None
 
     async def _imported_discount(
         self, source: CanonicalSubscription, staged: CanonicalSubscription
-    ) -> tuple[Discount | None, str | None]:
-        mismatch = self._discount_mismatch(source, staged)
-        if mismatch is not None:
-            return None, mismatch
+    ) -> ImportedDiscount:
+        if self._discount_changed(source, staged):
+            return ImportedDiscount(skip=_DISCOUNT_CHANGED)
         kept = self._kept_discount_source_id(source, staged)
         if kept is None:
-            return None, None
+            return ImportedDiscount()
         record = await self.record_repository.get_imported_discount_dependency(
             self.migration.organization_id, kept
         )
         if record is None or record.target_id is None:
-            return None, _DISCOUNT_NOT_IMPORTED
+            return ImportedDiscount(skip=_DISCOUNT_NOT_IMPORTED)
         discount = await self.discount_repository.get_by_id(record.target_id)
         if discount is None:
-            return None, _DISCOUNT_NOT_IMPORTED
+            return ImportedDiscount(skip=_DISCOUNT_NOT_IMPORTED)
         started_at = source.discount_started_at or staged.discount_started_at
         if discount.duration != DiscountDuration.forever and started_at is None:
-            return None, _DISCOUNT_MISSING_START
-        return discount, None
+            return ImportedDiscount(skip=_DISCOUNT_MISSING_START)
+        return ImportedDiscount(discount=discount)
 
     def _renewal_reason(self, source: CanonicalSubscription) -> str | None:
         renewal = source.current_period_end

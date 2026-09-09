@@ -12,9 +12,6 @@ from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
-    CanonicalDiscount,
-    CanonicalDiscountDuration,
-    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -54,6 +51,7 @@ from tests.fixtures.random_objects import (
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     build_connected_migration,
+    canonical_discount,
     canonical_subscription,
     copied_cards,
     stage_subscription_record,
@@ -264,22 +262,7 @@ class TestRun:
                 status=MerchantMigrationRecordStatus.imported,
                 source_id="coupon_1",
                 target_id=polar_discount.id,
-                canonical=serialize(
-                    CanonicalDiscount(
-                        source_id="coupon_1",
-                        name="Launch",
-                        discount_type=CanonicalDiscountType.percentage,
-                        duration=CanonicalDiscountDuration.forever,
-                        duration_in_months=None,
-                        basis_points=2000,
-                        amounts={},
-                        code="LAUNCH",
-                        extra_codes=0,
-                        ends_at=None,
-                        max_redemptions=None,
-                        product_source_ids=[],
-                    )
-                ),
+                canonical=serialize(canonical_discount()),
             )
         )
         pending_record.canonical = serialize(

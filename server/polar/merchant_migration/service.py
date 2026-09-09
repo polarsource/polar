@@ -508,7 +508,11 @@ class MerchantMigrationService:
             organization = await self._get_organization(session, migration)
             adapter = await self._build_adapter(migration)
             page = await adapter.extract_page(cursor)
-        except StripeMissingScope as e:
+        except (
+            StripeMissingScope,
+            stripe_lib.StripeError,
+            MerchantMigrationError,
+        ) as e:
             repository = MerchantMigrationRepository.from_session(session)
             await repository.refresh_for_update(migration)
             current_operation = migration.operation
@@ -518,35 +522,13 @@ class MerchantMigrationService:
                 or current_operation.cursor != cursor
             ):
                 return
-            await self._fail_operation(
-                session, migration, MissingStripeScopes([e.label]).message
-            )
-            return
-        except stripe_lib.StripeError:
-            repository = MerchantMigrationRepository.from_session(session)
-            await repository.refresh_for_update(migration)
-            current_operation = migration.operation
-            if (
-                current_operation is None
-                or not current_operation.is_active
-                or current_operation.cursor != cursor
-            ):
-                return
-            await self._fail_operation(
-                session, migration, SourceVerificationUnavailable().message
-            )
-            return
-        except MerchantMigrationError as e:
-            repository = MerchantMigrationRepository.from_session(session)
-            await repository.refresh_for_update(migration)
-            current_operation = migration.operation
-            if (
-                current_operation is None
-                or not current_operation.is_active
-                or current_operation.cursor != cursor
-            ):
-                return
-            await self._fail_operation(session, migration, e.message)
+            if isinstance(e, StripeMissingScope):
+                message = MissingStripeScopes([e.label]).message
+            elif isinstance(e, MerchantMigrationError):
+                message = e.message
+            else:
+                message = SourceVerificationUnavailable().message
+            await self._fail_operation(session, migration, message)
             return
 
         repository = MerchantMigrationRepository.from_session(session)
@@ -576,7 +558,6 @@ class MerchantMigrationService:
                 organization,
                 record,
                 merge_product_prices=True,
-                merge_discount_codes=True,
             )
         if page.next_cursor is not None:
             await repository.update(
@@ -1595,7 +1576,6 @@ class MerchantMigrationService:
                 organization,
                 record,
                 merge_product_prices=True,
-                merge_discount_codes=True,
             )
             yield record
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CREATE_NEW_VALUE,
   compatibleCandidates,
+  grandfatheredPriceWarning,
   mappingChoice,
   mappingRequiresChoice,
   mappingSelectValue,
@@ -102,16 +103,47 @@ describe('shouldShowProductMappingPanel', () => {
 })
 
 describe('compatibleCandidates', () => {
-  it('drops Polar products whose amount or interval do not match', () => {
+  it('keeps Polar products whose amount differs but are still compatible', () => {
+    const mismatched = candidate({
+      id: 'raised',
+      compatible: true,
+      incompatibilities: ['amount_mismatch'],
+      prices: [{ amount: 1000, currency: 'usd' }],
+    })
     expect(
       compatibleCandidates(
         item({
           candidates: [
-            candidate({ compatible: true }),
+            mismatched,
             candidate({ id: 'other', compatible: false }),
           ],
         }),
       ),
-    ).toEqual([candidate({ compatible: true })])
+    ).toEqual([mismatched])
+  })
+})
+
+describe('grandfatheredPriceWarning', () => {
+  it('warns when the selected Polar catalog price is higher than Stripe', () => {
+    expect(
+      grandfatheredPriceWarning(
+        item({
+          prices: [{ amount: 500, currency: 'usd' }],
+          suggested_product_id: 'prod_polar',
+          candidates: [
+            candidate({
+              prices: [{ amount: 1000, currency: 'usd' }],
+              incompatibilities: ['amount_mismatch'],
+            }),
+          ],
+        }),
+      ),
+    ).toMatch(
+      /Imported subscribers keep .* Polar currently sells this product at/,
+    )
+  })
+
+  it('is silent when creating a new Polar product', () => {
+    expect(grandfatheredPriceWarning(item({ create_new: true }))).toBeNull()
   })
 })

@@ -1,8 +1,9 @@
 """Match a staged Stripe product onto an existing Polar product.
 
 Polar recurrence lives on the product, so the grain is one CanonicalProduct
-(source product + interval). A mapping is valid only when amount, currency, and
-cadence match: otherwise the first Polar renewal would charge a different price.
+(source product + interval). Interval and currency must match to map; amount
+need not. Imported subscribers keep the Stripe amount (an archived catalog
+price) when Polar's active catalog has moved on.
 """
 
 from collections import Counter
@@ -28,18 +29,27 @@ PRODUCT_MAPPINGS_KEY = "product_mappings"
 
 MAPPING_REQUIRED = Reason(
     "product_mapping_required",
-    "A Polar product already uses this name, but amount or billing interval "
-    "don't match. Map it to an existing product, or choose to create a new one.",
+    "A Polar product already uses this name, but the billing interval "
+    "doesn't match. Map it to an existing product, or choose to create a new one.",
 )
 MAPPING_INCOMPATIBLE = Reason(
     "product_mapping_incompatible",
-    "The chosen Polar product doesn't match this Stripe product's amount, "
-    "currency, or billing interval.",
+    "The chosen Polar product doesn't match this Stripe product's currency "
+    "or billing interval.",
 )
 MAPPING_NOT_FOUND = Reason(
     "product_mapping_not_found",
     "The chosen Polar product is missing, archived, or belongs to another "
     "organization.",
+)
+
+_BLOCKING = frozenset(
+    {
+        ProductMappingIncompatibility.not_recurring,
+        ProductMappingIncompatibility.interval_mismatch,
+        ProductMappingIncompatibility.currency_mismatch,
+        ProductMappingIncompatibility.missing_fixed_price,
+    }
 )
 
 
@@ -100,7 +110,15 @@ def incompatibilities(
 
 
 def is_compatible(canonical: CanonicalProduct, product: Product) -> bool:
-    return not incompatibilities(canonical, product)
+    return not _BLOCKING.intersection(incompatibilities(canonical, product))
+
+
+def catalog_amounts_match(canonical: CanonicalProduct, product: Product) -> bool:
+    codes = incompatibilities(canonical, product)
+    return (
+        ProductMappingIncompatibility.amount_mismatch not in codes
+        and ProductMappingIncompatibility.currency_mismatch not in codes
+    )
 
 
 def name_collision(canonical: CanonicalProduct, product: Product) -> bool:
@@ -110,19 +128,25 @@ def name_collision(canonical: CanonicalProduct, product: Product) -> bool:
 def suggest_product(
     canonical: CanonicalProduct, products: Sequence[Product]
 ) -> Product | None:
-    """The unique Polar product that matches cadence, amount, and currency.
+    """The unique Polar product this Stripe product should map onto.
 
-    Prefer a case-insensitive name match when several are compatible. Ambiguous
-    matches (two Polar products at the same price and interval) return None.
+    Prefer a unique case-insensitive name among interval-compatible products,
+    even when Polar's catalog amount has moved on. Otherwise a unique
+    amount+currency+interval match. Do not auto-map a unique compatible product
+    that differs in both name and amount.
     """
     compatible = [product for product in products if is_compatible(canonical, product)]
-    if not compatible:
-        return None
     named = [product for product in compatible if name_collision(canonical, product)]
-    pool = named or compatible
-    if len(pool) != 1:
+    if len(named) == 1:
+        return named[0]
+    if len(named) > 1:
         return None
-    return pool[0]
+    amount_matches = [
+        product for product in compatible if catalog_amounts_match(canonical, product)
+    ]
+    if len(amount_matches) == 1:
+        return amount_matches[0]
+    return None
 
 
 def has_name_collision(

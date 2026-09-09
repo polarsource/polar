@@ -2,7 +2,8 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 
 export type ProductMappingItem = schemas['MerchantMigrationProductMappingItem']
-export type ProductMappingChoice = schemas['MerchantMigrationProductMappingChoice']
+export type ProductMappingChoice =
+  schemas['MerchantMigrationProductMappingChoice']
 
 export const CREATE_NEW_VALUE = 'create_new'
 
@@ -39,8 +40,7 @@ export function mappingChoice(
 ): ProductMappingChoice {
   return {
     source_id: sourceId,
-    polar_product_id:
-      value === CREATE_NEW_VALUE || value === '' ? null : value,
+    polar_product_id: value === CREATE_NEW_VALUE || value === '' ? null : value,
   }
 }
 
@@ -48,6 +48,27 @@ export function mappingRequiresChoice(items: ProductMappingItem[]): boolean {
   return items.some(
     (item) => item.requires_choice && item.import_status === 'pending',
   )
+}
+
+export function selectedMappingCandidate(item: ProductMappingItem) {
+  const value = mappingSelectValue(item)
+  if (!value || value === CREATE_NEW_VALUE) return undefined
+  return item.candidates.find((candidate) => candidate.id === value)
+}
+
+export function grandfatheredPriceWarning(
+  item: ProductMappingItem,
+): string | null {
+  const candidate = selectedMappingCandidate(item)
+  if (!candidate?.incompatibilities.includes('amount_mismatch')) {
+    return null
+  }
+  const stripe = formatMappingPrices(item.prices, item.recurring_interval)
+  const polar = formatMappingPrices(
+    candidate.prices,
+    candidate.recurring_interval,
+  )
+  return `Imported subscribers keep ${stripe}. Polar currently sells this product at ${polar}.`
 }
 
 export function formatMappingPrices(

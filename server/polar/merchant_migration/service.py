@@ -85,6 +85,7 @@ from .product_mapping import (
     decide_mapping,
     has_name_collision,
     incompatibilities,
+    is_compatible,
     polar_interval,
     polar_interval_count,
     read_product_mappings,
@@ -292,7 +293,7 @@ def _polar_option(
             for price in product.prices
             if isinstance(price, ProductPriceFixed)
         ],
-        compatible=not codes,
+        compatible=is_compatible(canonical, product),
         incompatibilities=codes,
     )
 
@@ -793,7 +794,7 @@ class MerchantMigrationService:
             if decision.product is None:
                 raise ProductMappingInvalid(
                     f"'{canonical.name}' can't map onto that Polar product: "
-                    "amount, currency, or billing interval don't match."
+                    "currency or billing interval don't match."
                 )
             stored[choice.source_id] = choice.polar_product_id
         credentials = dict(migration.source_credentials)

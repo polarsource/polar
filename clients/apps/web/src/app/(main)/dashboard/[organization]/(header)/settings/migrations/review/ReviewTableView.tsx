@@ -149,7 +149,7 @@ export function ReviewTableView({
         <Alert
           variant="warning"
           title="Map existing Polar products first"
-          description="A Stripe product shares a name with a Polar product whose price doesn't match. Choose a mapping or create a new product before preparing."
+          description="A Stripe product shares a name with a Polar product whose billing interval doesn't match. Choose a mapping or create a new product before preparing."
         />
       )}
       {header}

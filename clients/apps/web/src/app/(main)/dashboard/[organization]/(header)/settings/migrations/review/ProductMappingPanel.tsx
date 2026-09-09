@@ -43,8 +43,9 @@ export function ProductMappingPanel({ migrationId }: { migrationId: string }) {
         <Text variant="caption" color="muted">
           If you already sell these plans on Polar, map each Stripe product onto
           the matching Polar product so subscribers keep the same benefits.
-          Polar suggests a match when amount, currency, and billing interval are
-          unique.
+          Polar suggests a match when the name is unique, or when amount,
+          currency, and billing interval uniquely match. Imported subscribers
+          keep their Stripe price if Polar&apos;s catalog has moved on.
         </Text>
       </Box>
       {updateMappings.isError ? (

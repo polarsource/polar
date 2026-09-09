@@ -14,6 +14,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
+from polar.merchant_migration.importer import find_imported_price
 from polar.merchant_migration.product_mapping import (
     UNSET,
     decide_mapping,
@@ -27,7 +28,7 @@ from polar.merchant_migration.product_mapping import (
 from polar.merchant_migration.schemas import ProductMappingIncompatibility
 from polar.models import Organization, Product
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_product
+from tests.fixtures.random_objects import create_product, create_product_price_fixed
 
 
 def _price(
@@ -135,9 +136,11 @@ class TestIncompatibilities:
         self, save_fixture: SaveFixture, organization: Organization
     ) -> None:
         polar = await _polar_product(save_fixture, organization, amount=5000)
-        assert incompatibilities(_canonical(), polar) == [
+        canonical = _canonical()
+        assert incompatibilities(canonical, polar) == [
             ProductMappingIncompatibility.amount_mismatch
         ]
+        assert is_compatible(canonical, polar)
 
     async def test_currency_mismatch(
         self, save_fixture: SaveFixture, organization: Organization
@@ -161,6 +164,14 @@ class TestSuggestProduct:
         self, save_fixture: SaveFixture, organization: Organization
     ) -> None:
         polar = await _polar_product(save_fixture, organization, name="Pro")
+        assert suggest_product(_canonical(name="Pro"), [polar]) is polar
+
+    async def test_unique_name_despite_amount_mismatch(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        polar = await _polar_product(
+            save_fixture, organization, name="Pro", amount=5000
+        )
         assert suggest_product(_canonical(name="Pro"), [polar]) is polar
 
     async def test_unique_compatible_different_name(
@@ -187,6 +198,14 @@ class TestSuggestProduct:
             prices=[(2000, "usd")],
         )
         assert suggest_product(_canonical(name="Pro"), [first, second]) is None
+
+    async def test_does_not_suggest_different_name_and_amount(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        polar = await _polar_product(
+            save_fixture, organization, name="Starter", amount=5000
+        )
+        assert suggest_product(_canonical(name="Pro"), [polar]) is None
 
     async def test_prefers_name_among_compatible(
         self, save_fixture: SaveFixture, organization: Organization
@@ -227,10 +246,22 @@ class TestDecideMapping:
         assert decision.create_new is True
         assert decision.skip is None
 
-    async def test_incompatible_explicit_map(
+    async def test_explicit_map_amount_mismatch(
         self, save_fixture: SaveFixture, organization: Organization
     ) -> None:
         polar = await _polar_product(save_fixture, organization, amount=5000)
+        decision = decide_mapping(_canonical(), [polar], polar.id)
+        assert decision.product is polar
+        assert decision.skip is None
+
+    async def test_incompatible_explicit_map(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        polar = await _polar_product(
+            save_fixture,
+            organization,
+            interval=SubscriptionRecurringInterval.year,
+        )
         decision = decide_mapping(_canonical(), [polar], polar.id)
         assert decision.product is None
         assert decision.skip is not None
@@ -253,16 +284,29 @@ class TestDecideMapping:
         assert decision.product is polar
         assert decision.skip is None
 
-    async def test_name_collision_requires_choice(
+    async def test_name_collision_interval_mismatch_requires_choice(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        polar = await _polar_product(
+            save_fixture,
+            organization,
+            name="Pro",
+            interval=SubscriptionRecurringInterval.year,
+        )
+        decision = decide_mapping(_canonical(name="Pro"), [polar], UNSET)
+        assert decision.product is None
+        assert decision.skip is not None
+        assert decision.skip.code == "product_mapping_required"
+
+    async def test_name_collision_amount_mismatch_maps(
         self, save_fixture: SaveFixture, organization: Organization
     ) -> None:
         polar = await _polar_product(
             save_fixture, organization, name="Pro", amount=5000
         )
         decision = decide_mapping(_canonical(name="Pro"), [polar], UNSET)
-        assert decision.product is None
-        assert decision.skip is not None
-        assert decision.skip.code == "product_mapping_required"
+        assert decision.product is polar
+        assert decision.skip is None
 
     async def test_no_collision_creates_new(
         self, save_fixture: SaveFixture, organization: Organization
@@ -308,3 +352,47 @@ class TestHelpers:
             ],
         )
         assert counts[product.source_id] == 1
+
+
+def _subscription() -> CanonicalSubscription:
+    return CanonicalSubscription(
+        source_id="sub_1",
+        customer_source_id="cus_1",
+        price_source_id="price_1",
+        status=CanonicalSubscriptionStatus.active,
+        collection_method=CanonicalCollectionMethod.charge_automatically,
+        current_period_start=None,
+        current_period_end=None,
+        trialing=False,
+        paused_collection=False,
+        line_item_count=1,
+        quantity=1,
+        payment_method=None,
+        currency="usd",
+    )
+
+
+@pytest.mark.asyncio
+class TestFindImportedPrice:
+    async def test_finds_archived_grandfathered_amount(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        polar = await _polar_product(save_fixture, organization, amount=1000)
+        archived = await create_product_price_fixed(
+            save_fixture, product=polar, amount=500, is_archived=True
+        )
+        found = find_imported_price(
+            polar, _canonical(prices=[_price(amount=500)]), _subscription()
+        )
+        assert found is not None
+        assert found.id == archived.id
+        assert found.is_archived is True
+
+    async def test_prefers_active_catalog_when_amounts_match(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        polar = await _polar_product(save_fixture, organization, amount=2000)
+        found = find_imported_price(polar, _canonical(), _subscription())
+        assert found is not None
+        assert found.price_amount == 2000
+        assert found.is_archived is False

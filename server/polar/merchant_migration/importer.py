@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import TypeVar
 from uuid import UUID
 
+from sqlalchemy.orm import selectinload
+
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
@@ -28,8 +30,12 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
-from polar.models.product_price import ProductPriceAmountType, ProductPriceFixed
-from polar.product.repository import ProductRepository
+from polar.models.product_price import (
+    ProductPriceAmountType,
+    ProductPriceFixed,
+    ProductPriceSource,
+)
+from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCreate,
@@ -42,6 +48,7 @@ from .canonical import (
     CanonicalCustomer,
     CanonicalProduct,
     CanonicalSubscription,
+    PriceKey,
     canonical_price_key,
     deserialize,
     subscription_price_key,
@@ -77,6 +84,9 @@ _CUSTOMER_STRIPE_ID_CONFLICT = Reason(
 )
 
 
+POLAR_PRODUCT_PRICE_OPTIONS = (selectinload(Product.all_prices),)
+
+
 def find_imported_price(
     product: Product,
     canonical_product: CanonicalProduct,
@@ -96,16 +106,56 @@ def find_imported_price(
     if canonical_price is None:
         return None
     currency = canonical_price.currency.lower()
-    return next(
-        (
-            price
-            for price in product.prices
-            if isinstance(price, ProductPriceFixed)
-            and price.price_currency.lower() == currency
-            and price.price_amount == canonical_price.amount
-        ),
-        None,
+    matches = [
+        price
+        for price in product.all_prices
+        if isinstance(price, ProductPriceFixed)
+        and price.price_currency.lower() == currency
+        and price.price_amount == canonical_price.amount
+    ]
+    return next((price for price in matches if not price.is_archived), None) or (
+        matches[0] if matches else None
     )
+
+
+async def ensure_mapped_prices(
+    session: AsyncSession,
+    product: Product,
+    canonical: CanonicalProduct,
+    importable_price_keys: set[PriceKey],
+) -> None:
+    """Keep Stripe amounts as archived catalog prices when Polar's catalog moved on."""
+    existing = {
+        (price.price_currency.lower(), price.price_amount)
+        for price in product.all_prices
+        if isinstance(price, ProductPriceFixed)
+    }
+    catalog_tax = {
+        price.price_currency.lower(): price.tax_behavior
+        for price in product.prices
+        if isinstance(price, ProductPriceFixed)
+    }
+    repository = ProductPriceRepository.from_session(session)
+    for price in canonical.prices:
+        if price.amount is None:
+            continue
+        if canonical_price_key(price) not in importable_price_keys:
+            continue
+        key = (price.currency.lower(), price.amount)
+        if key in existing:
+            continue
+        existing.add(key)
+        await repository.create(
+            ProductPriceFixed(
+                price_amount=price.amount,
+                price_currency=price.currency.lower(),
+                product=product,
+                is_archived=True,
+                source=ProductPriceSource.catalog,
+                tax_behavior=catalog_tax.get(price.currency.lower()),
+            ),
+            flush=True,
+        )
 
 
 async def create_imported_subscription(
@@ -303,7 +353,9 @@ class CatalogImporter:
         )
         polar_products = await ProductRepository.from_session(
             self.session
-        ).get_all_by_organization(self.organization.id)
+        ).get_all_by_organization(
+            self.organization.id, options=POLAR_PRODUCT_PRICE_OPTIONS
+        )
 
         counts = ImportCounts()
         for record, product in zip(records, products, strict=True):
@@ -326,6 +378,12 @@ class CatalogImporter:
                 # Leave the ledger pending so a corrected mapping can retry.
                 raise ProductMappingInvalid(decision.skip.message)
             if decision.product is not None:
+                await ensure_mapped_prices(
+                    self.session,
+                    decision.product,
+                    product,
+                    plan.importable_prices,
+                )
                 await self._mark_imported(record, decision.product.id)
                 counts.imported += 1
                 continue

@@ -432,11 +432,15 @@ class MerchantMigrationPolarProductOption(Schema):
     )
     compatible: bool = Field(
         description=(
-            "Whether amount, currency, and billing interval match the Stripe product."
+            "Whether currency and billing interval match the Stripe product. "
+            "Amount may differ: imported subscribers keep the Stripe price."
         )
     )
     incompatibilities: list[ProductMappingIncompatibility] = Field(
-        description="Why this Polar product can't be mapped, when `compatible` is false."
+        description=(
+            "Differences from the Stripe product. `amount_mismatch` is informational "
+            "and does not block mapping; other values make `compatible` false."
+        )
     )
 
 
@@ -474,16 +478,17 @@ class MerchantMigrationProductMappingItem(Schema):
     )
     suggested_product_id: UUID4 | None = Field(
         description=(
-            "The unique Polar product that matches amount, currency, and interval. "
-            "None when there is no unique match."
+            "The unique Polar product to map onto: a unique name among interval-"
+            "compatible products, or else a unique amount, currency, and interval "
+            "match. None when there is no unique match."
         )
     )
     name_collision: bool = Field(description="A Polar product already uses this name.")
     requires_choice: bool = Field(
         description=(
             "The merchant must map or explicitly create a new product before "
-            "import. True when a Polar product shares the name but isn't a unique "
-            "compatible match, and no mapping has been saved."
+            "import. True when a Polar product shares the name but there is no "
+            "unique interval-compatible match, and no mapping has been saved."
         )
     )
     candidates: list[MerchantMigrationPolarProductOption] = Field(

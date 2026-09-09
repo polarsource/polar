@@ -43,6 +43,7 @@ from .canonical import (
 from .cards import AmbiguousCopiedCard, link_payment_method
 from .importer import (
     _CUSTOMER_ALREADY_SUBSCRIBED,
+    POLAR_PRODUCT_PRICE_OPTIONS,
     create_imported_subscription,
     find_imported_price,
 )
@@ -304,7 +305,7 @@ class SubscriptionCutover:
             product_record.target_id,
             self.migration.organization_id,
             options=(
-                selectinload(Product.prices),
+                *POLAR_PRODUCT_PRICE_OPTIONS,
                 joinedload(Product.organization),
             ),
         )

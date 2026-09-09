@@ -13,6 +13,7 @@ import {
   CREATE_NEW_VALUE,
   compatibleCandidates,
   formatMappingPrices,
+  grandfatheredPriceWarning,
   mappingSelectValue,
   type ProductMappingItem,
 } from './productMapping'
@@ -29,6 +30,7 @@ export function ProductMappingRow({
   const locked = item.import_status !== 'pending'
   const value = mappingSelectValue(item)
   const candidates = compatibleCandidates(item)
+  const grandfatherWarning = grandfatheredPriceWarning(item)
   const subscriberLabel =
     item.subscriber_count === 1
       ? '1 subscription'
@@ -83,11 +85,15 @@ export function ProductMappingRow({
           </Select>
         </Box>
       </Box>
+      {grandfatherWarning ? (
+        <Text variant="caption" color="warning">
+          {grandfatherWarning}
+        </Text>
+      ) : null}
       {item.requires_choice ? (
         <Text variant="caption" color="warning">
-          A Polar product already uses this name, but the price or billing
-          interval doesn&apos;t match. Map it, or create a new product before
-          preparing.
+          A Polar product already uses this name, but the billing interval
+          doesn&apos;t match. Map it, or create a new product before preparing.
         </Text>
       ) : null}
     </Box>

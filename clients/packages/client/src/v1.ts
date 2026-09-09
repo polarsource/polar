@@ -25098,12 +25098,12 @@ export interface components {
       prices: components['schemas']['MerchantMigrationMappedPrice'][]
       /**
        * Compatible
-       * @description Whether amount, currency, and billing interval match the Stripe product.
+       * @description Whether currency and billing interval match the Stripe product. Amount may differ: imported subscribers keep the Stripe price.
        */
       compatible: boolean
       /**
        * Incompatibilities
-       * @description Why this Polar product can't be mapped, when `compatible` is false.
+       * @description Differences from the Stripe product. `amount_mismatch` is informational and does not block mapping; other values make `compatible` false.
        */
       incompatibilities: components['schemas']['ProductMappingIncompatibility'][]
     }
@@ -25171,7 +25171,7 @@ export interface components {
       create_new: boolean
       /**
        * Suggested Product Id
-       * @description The unique Polar product that matches amount, currency, and interval. None when there is no unique match.
+       * @description The unique Polar product to map onto: a unique name among interval-compatible products, or else a unique amount, currency, and interval match. None when there is no unique match.
        */
       suggested_product_id: string | null
       /**
@@ -25181,7 +25181,7 @@ export interface components {
       name_collision: boolean
       /**
        * Requires Choice
-       * @description The merchant must map or explicitly create a new product before import. True when a Polar product shares the name but isn't a unique compatible match, and no mapping has been saved.
+       * @description The merchant must map or explicitly create a new product before import. True when a Polar product shares the name but there is no unique interval-compatible match, and no mapping has been saved.
        */
       requires_choice: boolean
       /**

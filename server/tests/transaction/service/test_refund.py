@@ -17,7 +17,7 @@ from polar.models import (
     User,
 )
 from polar.models.refund import RefundStatus
-from polar.models.transaction import Processor, TransactionType
+from polar.models.transaction import Processor, ProcessorFeeType, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.repository import BalanceTransactionRepository
 from polar.transaction.service.balance import BalanceTransactionService
@@ -334,6 +334,7 @@ class TestCreate:
         fee_transaction = Transaction(
             type=TransactionType.processor_fee,
             processor=Processor.stripe,
+            processor_fee_type=ProcessorFeeType.refund,
             currency=charge.currency,
             amount=-100,
             account_currency=charge.currency,

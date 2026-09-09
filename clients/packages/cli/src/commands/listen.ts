@@ -1,15 +1,15 @@
-import { Data, Effect, Exit, Redacted, Schema } from 'effect'
+import { Data, Effect, Exit, Option, Schema } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
+import { AuthError } from '../schemas/Auth'
 import { type ErrorEvent, EventSource, type EventSourceInit } from 'eventsource'
-import { environmentPrompt } from '../prompts/environment'
-import { organizationLoginPrompt } from '../prompts/organizations'
+import { authenticatedStreamFetch, type StreamFetch } from './listen-auth'
+import { Organizations } from '../services/organizations'
+import { environmentOf, org, production } from './flags'
 import {
   ListenAck,
   ListenReconnect,
   ListenWebhookEvent,
 } from '../schemas/Events'
-import type { Token } from '../schemas/Tokens'
-import * as OAuth from '../services/oauth'
 
 export const LISTEN_BASE_URLS = {
   production: 'https://api.polar.sh/v1/cli/listen',
@@ -53,6 +53,7 @@ export interface StartListeningOptions {
   createEventSource?: CreateEventSource
   /** `fetch` implementation used to forward webhook events. Overridable for testing. */
   forward?: Forward
+  streamFetch?: StreamFetch
 }
 
 const defaultCreateEventSource: CreateEventSource = (listenUrl, init) =>
@@ -71,6 +72,7 @@ export const startListening = ({
   accessToken,
   createEventSource = defaultCreateEventSource,
   forward = fetch,
+  streamFetch,
 }: StartListeningOptions) =>
   Effect.callback<void, ListenError>((resume) => {
     let eventSource: ListenEventSource
@@ -81,14 +83,33 @@ export const startListening = ({
 
     const connect = () => {
       eventSource = createEventSource(listenUrl, {
-        fetch: (input, init) =>
-          forward(input, {
-            ...init,
-            headers: {
-              ...init.headers,
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }),
+        fetch: streamFetch
+          ? async (input, init) => {
+              try {
+                return await streamFetch(input, init)
+              } catch (error) {
+                if (!(error instanceof AuthError)) throw error
+                eventSource.close()
+                resume(
+                  Effect.fail(
+                    new ListenError({
+                      code: 0,
+                      message:
+                        'Unable to authenticate the stream. Check your connection, keyring, and token; try polar auth whoami for details.',
+                    }),
+                  ),
+                )
+                return new Response(null, { status: 401 })
+              }
+            }
+          : (input, init) =>
+              forward(input, {
+                ...init,
+                headers: {
+                  ...init.headers,
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              }),
       })
 
       eventSource.onmessage = (event) => {
@@ -194,35 +215,33 @@ export const startListening = ({
     })
   })
 
-export const listen = Command.make('listen', { url }, ({ url }) =>
-  Effect.gen(function* () {
-    const environment = yield* environmentPrompt
-    const oauth = yield* OAuth.OAuth
-    const organization = yield* organizationLoginPrompt(environment)
-    const listenUrl = `${LISTEN_BASE_URLS[environment]}/${organization.id}`
-
-    const listenWithToken = (
-      token: Token,
-      retried = false,
-    ): Effect.Effect<void, ListenError | OAuth.OAuthError, never> =>
-      startListening({
-        listenUrl,
+export const listen = Command.make(
+  'listen',
+  { url, production, org },
+  ({ url, production, org }) =>
+    Effect.gen(function* () {
+      const environment = environmentOf(production)
+      const organizations = yield* Organizations
+      const organization = yield* organizations.resolve(
+        environment,
+        Option.getOrUndefined(org),
+      )
+      const streamFetch = yield* authenticatedStreamFetch(environment)
+      yield* startListening({
+        listenUrl: `${LISTEN_BASE_URLS[environment]}/${organization.id}`,
         forwardUrl: url,
         organizationName: organization.name,
-        accessToken: Redacted.value(token.token),
+        accessToken: '',
+        streamFetch,
       }).pipe(
-        Effect.catchTag('ListenError', (error) => {
-          if (retried || error.code !== 401) {
-            return Effect.fail(error)
-          }
-
-          return oauth
-            .login(environment)
-            .pipe(Effect.flatMap((newToken) => listenWithToken(newToken, true)))
-        }),
+        Effect.mapError((error) =>
+          error.code === 401
+            ? new ListenError({
+                code: 401,
+                message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run polar auth login${production ? ' --production' : ''} --new-session.`,
+              })
+            : error,
+        ),
       )
-
-    const token = yield* oauth.resolveAccessToken(environment)
-    yield* listenWithToken(token)
-  }),
+    }),
 )

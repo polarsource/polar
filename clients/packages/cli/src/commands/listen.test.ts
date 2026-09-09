@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, vi, test } from 'vitest'
 import { Effect, Fiber } from 'effect'
+import { AuthError } from '../schemas/Auth'
 import {
   type CreateEventSource,
   type ListenEventSource,
@@ -110,6 +111,29 @@ describe('startListening', () => {
     const source = instanceAt(0)
     source.onerror?.({ message: 'Transient connection error' })
     expect(source.closed).toBe(false)
+  })
+
+  test('propagates transport failures to EventSource without closing the listener', async () => {
+    const transportError = new TypeError('Connection reset')
+    run({ streamFetch: () => Promise.reject(transportError) })
+    const source = instanceAt(0)
+    await expect(source.init.fetch(source.url)).rejects.toBe(transportError)
+    source.onerror?.({ message: 'Transient connection error' })
+    expect(source.closed).toBe(false)
+  })
+
+  test('terminates on typed credential resolution failures', async () => {
+    const { fiber } = run({
+      streamFetch: () =>
+        Effect.runPromise(
+          Effect.fail(new AuthError({ message: 'Keyring unavailable' })),
+        ),
+    })
+    const source = instanceAt(0)
+    expect((await source.init.fetch(source.url)).status).toBe(401)
+    const error = await Effect.runPromise(Fiber.join(fiber).pipe(Effect.flip))
+    expect(error).toMatchObject({ _tag: 'ListenError', code: 0 })
+    expect(source.closed).toBe(true)
   })
 
   test('opens a single event source for the listen url', () => {

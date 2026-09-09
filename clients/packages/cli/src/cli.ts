@@ -3,9 +3,11 @@ import { Effect, Layer } from 'effect'
 import { Command } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from './commands/listen'
-import { login } from './commands/login'
-import { logout } from './commands/logout'
+import { auth } from './commands/auth'
 import { update } from './commands/update'
+import * as Auth from './services/auth'
+import * as Credentials from './services/credentials'
+import * as Organizations from './services/organizations'
 import * as OAuth from './services/oauth'
 import * as Polar from './services/polar'
 import {
@@ -15,16 +17,24 @@ import {
 import { VERSION } from './version'
 
 const mainCommand = Command.make('polar').pipe(
-  Command.withSubcommands([login, logout, listen, update]),
+  Command.withSubcommands([auth, listen, update]),
 )
 
 const cli = Command.run(mainCommand, {
   version: VERSION.replace(/^v/, ''),
 })
 
+const authLayer = Auth.layer.pipe(
+  Layer.provide(Layer.mergeAll(Credentials.layer, OAuth.layer)),
+)
+const polarLayer = Polar.layer.pipe(Layer.provide(authLayer))
+const organizationsLayer = Organizations.layer.pipe(
+  Layer.provide(Layer.mergeAll(authLayer, polarLayer)),
+)
 const services = Layer.mergeAll(
-  OAuth.layer,
-  Polar.layer,
+  authLayer,
+  polarLayer,
+  organizationsLayer,
   BunServices.layer,
   FetchHttpClient.layer,
 )

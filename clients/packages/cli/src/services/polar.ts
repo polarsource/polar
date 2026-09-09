@@ -1,70 +1,63 @@
 import { Polar as PolarSDK } from '@polar-sh/sdk'
-import { Context, Data, Effect, Layer, Redacted } from 'effect'
-import * as OAuth from './oauth'
+import { Context, Effect, Layer, Redacted } from 'effect'
+import { AuthError, loginCommand, type PolarEnvironment } from '../schemas/Auth'
+import { Auth } from './auth'
 
-export class PolarError extends Data.TaggedError('PolarError')<{
-  message: string
-  cause?: unknown
-}> {}
+export class Polar extends Context.Service<
+  Polar,
+  {
+    getClient: (
+      environment?: PolarEnvironment,
+    ) => Effect.Effect<PolarSDK, AuthError>
+    use: <A>(
+      fn: (client: PolarSDK) => Promise<A>,
+      environment?: PolarEnvironment,
+    ) => Effect.Effect<A, AuthError>
+  }
+>()('Polar') {}
 
-export class Polar extends Context.Service<Polar, PolarImpl>()('Polar') {}
-
-interface PolarImpl {
-  getClient: (
-    server: OAuth.PolarEnvironment,
-  ) => Effect.Effect<PolarSDK, PolarError, never>
-  use: <A, E>(
-    fn: (client: PolarSDK) => Effect.Effect<A, E> | Promise<A>,
-    server?: OAuth.PolarEnvironment,
-  ) => Effect.Effect<A, PolarError | E, never>
-}
-
-const PolarRequirementsLayer = Layer.mergeAll(OAuth.layer)
-
-export const make = Effect.gen(function* () {
-  const oauth = yield* OAuth.OAuth
-
-  const getClient = (server: OAuth.PolarEnvironment) =>
-    Effect.gen(function* () {
-      const token = yield* oauth.resolveAccessToken(server)
-
-      const client = new PolarSDK({
-        server,
-        accessToken: Redacted.value(token.token),
-      })
-
-      return client
-    }).pipe(
-      Effect.catchTag('OAuthError', (error) =>
-        Effect.fail(
-          new PolarError({
-            message: 'Failed to get Polar SDK client',
-            cause: error,
-          }),
+export const layer = Layer.effect(
+  Polar,
+  Effect.gen(function* () {
+    const auth = yield* Auth
+    const getClient = (environment: PolarEnvironment = 'sandbox') =>
+      auth.resolve(environment).pipe(
+        Effect.map(
+          ({ accessToken }) =>
+            new PolarSDK({
+              server: environment,
+              accessToken: Redacted.value(accessToken),
+            }),
         ),
-      ),
-    )
-
-  const use = <A, E>(
-    fn: (client: PolarSDK) => Effect.Effect<A, E> | Promise<A>,
-    server: OAuth.PolarEnvironment = 'production',
-  ) =>
-    Effect.gen(function* () {
-      const client = yield* getClient(server)
-      const result = fn(client)
-
-      // Handle both Effect and Promise return types
-      return yield* Effect.isEffect(result)
-        ? result
-        : Effect.promise(() => result)
+      )
+    return Polar.of({
+      getClient,
+      use: (fn, environment = 'sandbox') =>
+        getClient(environment).pipe(
+          Effect.flatMap((client) =>
+            Effect.tryPromise({
+              try: () => fn(client),
+              catch: (error) => {
+                const status =
+                  typeof error === 'object' &&
+                  error !== null &&
+                  'statusCode' in error
+                    ? error.statusCode
+                    : undefined
+                return new AuthError({
+                  message:
+                    status === 401
+                      ? `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session.`
+                      : status === 403
+                        ? 'Access denied. Check the token permissions (organizations:read is required to list organizations).'
+                        : status === 404
+                          ? 'Organization is missing or inaccessible. Check --org or run polar auth org with the selected environment.'
+                          : 'Polar API request failed. Check your connection and try again.',
+                })
+              },
+            }),
+          ),
+        ),
     })
-
-  return Polar.of({
-    getClient,
-    use,
-  })
-})
-
-export const layer = Layer.effect(Polar, make).pipe(
-  Layer.provide(PolarRequirementsLayer),
+  }),
 )

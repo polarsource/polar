@@ -1816,27 +1816,30 @@ class TestImportPaymentMethodMappings:
         uncovered_subscription.customer_source_id = "cus_sub_1"
         uncovered.canonical = serialize(uncovered_subscription)
         await save_fixture(uncovered)
-        await _imported_subscription(
+        conflict_customer = await create_customer(
             save_fixture,
-            migration,
-            organization,
-            product,
-            source_id="sub_conflict",
+            organization=organization,
             email="conflict@example.com",
-            payment_method=CanonicalPaymentMethod(
-                source_id="pm_conflict",
-                type=CanonicalPaymentMethodType.card,
-            ),
+            stripe_customer_id="cus_different",
         )
-        conflict_record = await MerchantMigrationRecordRepository.from_session(
-            session
-        ).get_imported_customer_dependency(migration.id, "cus_sub_conflict")
-        assert conflict_record is not None
-        assert conflict_record.target_id is not None
-        conflict_customer = await session.get(Customer, conflict_record.target_id)
-        assert conflict_customer is not None
-        conflict_customer.stripe_customer_id = "cus_different"
-        await session.flush()
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_sub_conflict",
+                target_id=conflict_customer.id,
+                canonical=serialize(
+                    CanonicalCustomer(
+                        source_id="cus_sub_conflict",
+                        email="conflict@example.com",
+                        name=None,
+                        country=None,
+                    )
+                ),
+            )
+        )
         stripe_payment_method = build_stripe_payment_method(customer="cus_new")
         stripe_payment_method.id = "pm_new"
         mocker.patch(

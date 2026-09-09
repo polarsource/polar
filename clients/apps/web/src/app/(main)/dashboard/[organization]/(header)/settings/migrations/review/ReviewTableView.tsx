@@ -1,6 +1,13 @@
 'use client'
 
-import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
+import {
+  Alert,
+  Button,
+  DataTable,
+  InlineModal,
+  Text,
+  type AlertVariant,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
@@ -47,6 +54,7 @@ interface Props {
   onRerunPrecheck?: () => void
   rerunning?: boolean
   refreshError?: string
+  refreshErrorVariant?: AlertVariant
   attentionCount: number
 }
 
@@ -70,6 +78,7 @@ export function ReviewTableView({
   onRerunPrecheck,
   rerunning = false,
   refreshError,
+  refreshErrorVariant = 'danger',
   attentionCount,
 }: Props) {
   const rowTotal = remainingSubscriptionCount(
@@ -119,25 +128,34 @@ export function ReviewTableView({
     onPageChange(next.pageIndex + 1)
   }
 
+  const refreshErrorTitle =
+    refreshErrorVariant === 'warning'
+      ? "The refresh from Stripe hasn't finished"
+      : "We couldn't refresh from Stripe"
+  const refreshAlert = refreshError ? (
+    <Alert
+      variant={refreshErrorVariant}
+      title={refreshErrorTitle}
+      description={refreshError}
+    />
+  ) : null
+
   if (catalogEmpty) {
     return (
-      <CatalogEmptyPanel
-        kind={catalogEmpty}
-        onRerunPrecheck={onRerunPrecheck}
-        rerunning={rerunning}
-      />
+      <Box as="section" flexDirection="column" rowGap="xl">
+        {refreshAlert}
+        <CatalogEmptyPanel
+          kind={catalogEmpty}
+          onRerunPrecheck={onRerunPrecheck}
+          rerunning={rerunning}
+        />
+      </Box>
     )
   }
 
   return (
     <Box as="section" flexDirection="column" rowGap="xl">
-      {refreshError && (
-        <Alert
-          variant="danger"
-          title="We couldn't refresh from Stripe"
-          description={refreshError}
-        />
-      )}
+      {refreshAlert}
       {importError && (
         <Alert
           variant="danger"

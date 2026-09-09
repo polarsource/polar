@@ -8,7 +8,7 @@ import {
   useMigrationRecords,
   useRunMerchantMigrationPrecheck,
 } from '@/hooks/queries/merchantMigrations'
-import { Alert, Spinner } from '@polar-sh/orbit'
+import { Alert, Spinner, type AlertVariant } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRecordSummary } from './recordSummary'
@@ -98,13 +98,18 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     () => setSelection((prev) => toggleAll(prev)),
     [],
   )
+  const stalled = migration?.operation?.stalled === true
   const refreshError = rerunPrecheck.isError
     ? rerunPrecheck.error?.message ||
       "We couldn't start the refresh from Stripe. Please try again."
     : migration?.operation?.status === 'failed'
       ? migration.operation.error ||
         "We couldn't refresh from Stripe. Please try again."
-      : undefined
+      : stalled
+        ? "The refresh from Stripe hasn't made progress. Try again to resume."
+        : undefined
+  const refreshErrorVariant: AlertVariant =
+    stalled && !rerunPrecheck.isError ? 'warning' : 'danger'
 
   if (records.isLoading || countsLoading) {
     return (
@@ -157,6 +162,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={refreshing || rerunPrecheck.isPending}
       refreshError={refreshError}
+      refreshErrorVariant={refreshErrorVariant}
     />
   )
 }

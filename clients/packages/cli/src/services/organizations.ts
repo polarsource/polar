@@ -45,13 +45,13 @@ export const layer = Layer.effect(
             environment,
           )
           organizations.push(
-            ...response.result.items.map(({ id, name, slug }) => ({
+            ...response.items.map(({ id, name, slug }) => ({
               id,
               name,
               slug,
             })),
           )
-          if (page >= response.result.pagination.maxPage) break
+          if (page >= response.pagination.max_page) break
           page++
         }
         return organizations
@@ -82,7 +82,7 @@ export const layer = Layer.effect(
               : undefined)
           if (selected) {
             const organization = yield* polar.use(
-              (client) => client.organizations.get({ id: selected }),
+              (client) => client.organizations.get(selected),
               environment,
             )
             return {

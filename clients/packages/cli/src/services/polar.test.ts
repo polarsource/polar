@@ -1,9 +1,11 @@
-import { expect, test, vi } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import { Effect, Redacted } from 'effect'
-import type { Polar as PolarSDK } from '@polar-sh/sdk'
+import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { Auth, type Credential } from '@/services/auth'
 import { make } from '@/services/polar'
+
+afterEach(() => vi.unstubAllGlobals())
 
 test('retries a rejected saved token with refreshed credentials in the same environment', async () => {
   const accessToken = Redacted.make('saved-token')
@@ -30,26 +32,33 @@ test('retries a rejected saved token with refreshed credentials in the same envi
   const polar = await Effect.runPromise(
     make.pipe(Effect.provideService(Auth, auth)),
   )
-  const request = vi
-    .fn<(client: PolarSDK) => Promise<string>>()
-    .mockRejectedValueOnce({ statusCode: 401 })
-    .mockResolvedValueOnce('success')
+  const organization = { id: 'org-1', name: 'First', slug: 'first' }
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(
+      Response.json({ detail: 'Unauthorized' }, { status: 401 }),
+    )
+    .mockResolvedValueOnce(Response.json(organization))
+  vi.stubGlobal('fetch', fetch)
 
-  expect(await Effect.runPromise(polar.use(request, 'production'))).toBe(
-    'success',
-  )
+  expect(
+    await Effect.runPromise(
+      polar.use((client) => client.organizations.get('org-1'), 'production'),
+    ),
+  ).toEqual(organization)
   expect(resolve.mock.calls).toEqual([
     ['production'],
     ['production', accessToken],
   ])
   expect(
-    request.mock.calls.map(([client]) => client._options.accessToken),
-  ).toEqual(['saved-token', 'refreshed-token'])
-  expect(
-    request.mock.calls.every(
-      ([client]) => client._options.server === 'production',
+    fetch.mock.calls.map(([, init]) =>
+      new Headers(init?.headers).get('Authorization'),
     ),
-  ).toBe(true)
+  ).toEqual(['Bearer saved-token', 'Bearer refreshed-token'])
+  expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+    'https://api.polar.sh/v1/organizations/org-1',
+    'https://api.polar.sh/v1/organizations/org-1',
+  ])
 })
 
 test.each([

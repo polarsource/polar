@@ -1,5 +1,5 @@
 import { beforeEach, expect, test } from 'vitest'
-import type { Polar as PolarSDK } from '@polar-sh/sdk'
+import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
 import { Effect, Layer, Redacted } from 'effect'
 import {
   AuthError,
@@ -41,13 +41,11 @@ const polar = Polar.of({
               requests.push({ page, environment })
               if (denied) throw new Error('forbidden')
               return Promise.resolve({
-                result: {
-                  items: pages[page - 1] ?? [],
-                  pagination: { maxPage: pages.length },
-                },
+                items: pages[page - 1] ?? [],
+                pagination: { max_page: pages.length },
               })
             },
-            get: ({ id }: { id: string }) => {
+            get: (id: string) => {
               requests.push({ id, environment })
               const org = pages.flat().find((org) => org.id === id)
               if (!org) throw new Error('missing')

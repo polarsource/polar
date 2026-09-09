@@ -445,6 +445,14 @@ class UserService:
 
         update_dict["email"] = anonymize_email_for_deletion(user.email, user.created_at)
 
+        # Clear resend_id synchronously so the soft-deleted row releases the
+        # users.resend_id unique constraint before the LOW-priority deletion sync
+        # runs. Otherwise a signup reclaiming the freed email races the deletion
+        # sync and ends up with a stale resend_id pointing at a deleted contact,
+        # or hits an IntegrityError. The deletion sync still deletes the Resend
+        # contact by previous_email.
+        update_dict["resend_id"] = None
+
         if user.avatar_url:
             update_dict["avatar_url"] = None
 

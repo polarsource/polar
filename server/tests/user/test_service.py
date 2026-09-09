@@ -270,6 +270,52 @@ class TestRequestDeletion:
         assert user.meta == {}
         assert user.deleted_at is not None
 
+    async def test_resend_id_cleared_synchronously_on_deletion(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+    ) -> None:
+        """resend_id is cleared in the same transaction as soft-deletion, before
+        the LOW-priority deletion sync runs. A soft-deleted row must never hold a
+        resend_id, otherwise a new signup reclaiming the freed email races the
+        deletion sync and either hits an IntegrityError on the
+        users.resend_id unique constraint or is left with a stale resend_id.
+        """
+        user.resend_id = "contact-id"
+        await save_fixture(user)
+
+        result = await user_service.request_deletion(session, user)
+
+        assert result.deleted is True
+        assert user.resend_id is None
+        assert user.is_deleted
+
+    async def test_resend_id_clear_enqueues_deletion_sync_with_previous_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+    ) -> None:
+        """Even though resend_id is cleared synchronously, the deletion sync is
+        still enqueued with the previous email so the Resend contact is deleted
+        out-of-band. The synchronous clear only releases the DB constraint; it
+        must not drop the Resend-side cleanup.
+        """
+        user.resend_id = "contact-id"
+        await save_fixture(user)
+        original_email = user.email
+
+        enqueue_mock = mocker.patch(
+            "polar.user.service.resend_service.enqueue_sync_user"
+        )
+
+        result = await user_service.request_deletion(session, user)
+
+        assert result.deleted is True
+        enqueue_mock.assert_called_once_with(user.id, previous_email=original_email)
+
     async def test_oauth_accounts_deleted(
         self,
         session: AsyncSession,

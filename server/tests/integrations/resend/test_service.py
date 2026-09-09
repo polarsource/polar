@@ -5,13 +5,18 @@ import httpx
 import pytest
 import respx
 from pytest_mock import MockerFixture
+from sqlalchemy import delete
 
 from polar.config import settings
 from polar.integrations.resend.service import UserDoesNotExist
 from polar.integrations.resend.service import resend as resend_service
+from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.models import User
 from polar.postgres import AsyncSession
+from polar.user.repository import UserRepository
+from polar.user.service import user as user_service
+from tests.fixtures.database import get_database_url
 
 
 @pytest.mark.asyncio
@@ -267,3 +272,96 @@ class TestSyncUser:
             "unsubscribed": True
         }
         assert delete.called
+
+    async def test_signup_after_deletion_reclaims_resend_id_without_collision(
+        self,
+        worker_id: str,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        """End-to-end regression for the delete -> re-register race.
+
+        A soft-deletes their account (freeing the email). B registers with the
+        same email and their signup sync reuses the Resend contact that A's row
+        used to point at. Before the fix, soft_delete_user left resend_id set on
+        A's soft-deleted row until the LOW-priority deletion sync ran, so B's
+        sync_user hit the users.resend_id unique constraint (IntegrityError).
+        Now soft_delete_user clears resend_id synchronously, so B's sync commits
+        the same contact id without conflict.
+
+        Uses real commits across independent sessions, mirroring
+        tests/license_key/test_service.py::TestConcurrentActivation.
+        """
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        # Enqueuing the deletion sync is out of scope for this assertion; stub it
+        # so soft_delete_user doesn't touch the broker.
+        mocker.patch("polar.user.service.resend_service.enqueue_sync_user")
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_resend_race",
+            pool_size=8,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+        a_id = b_id = None
+        try:
+            async with sessionmaker() as setup:
+                user_a = User(email="reused@example.com", oauth_accounts=[])
+                user_a.resend_id = "contact-a"
+                setup.add(user_a)
+                await setup.commit()
+                a_id = user_a.id
+
+            # A deletes their account; resend_id is cleared in the same commit.
+            async with sessionmaker() as session_a:
+                repository = UserRepository.from_session(session_a)
+                user_a_to_delete = await repository.get_by_id(
+                    a_id, include_deleted=True
+                )
+                assert user_a_to_delete is not None
+                await user_service.soft_delete_user(session_a, user_a_to_delete)
+                await session_a.commit()
+
+            async with sessionmaker() as check:
+                a = await UserRepository.from_session(check).get_by_id(
+                    a_id, include_deleted=True
+                )
+                assert a is not None
+                assert a.resend_id is None
+                assert a.is_deleted
+
+            # B registers with the freed email.
+            async with sessionmaker() as session_b:
+                user_b = User(email="reused@example.com", oauth_accounts=[])
+                session_b.add(user_b)
+                await session_b.commit()
+                b_id = user_b.id
+
+            # B's signup sync reuses the Resend contact A used to own.
+            respx_mock.get(path="/contacts/reused@example.com").respond(
+                200,
+                json={
+                    "id": "contact-a",
+                    "email": "reused@example.com",
+                    "unsubscribed": False,
+                },
+            )
+            respx_mock.post(path="/contacts/contact-a/segments/active-users").respond(
+                200
+            )
+
+            async with sessionmaker() as session_b:
+                await resend_service.sync_user(session_b, b_id)
+                await session_b.commit()
+
+            async with sessionmaker() as check:
+                b = await UserRepository.from_session(check).get_by_id(b_id)
+                assert b is not None
+                assert b.resend_id == "contact-a"
+        finally:
+            if a_id is not None or b_id is not None:
+                ids = [id_ for id_ in (a_id, b_id) if id_ is not None]
+                async with sessionmaker() as cleanup:
+                    await cleanup.execute(delete(User).where(User.id.in_(ids)))
+                    await cleanup.commit()
+            await engine.dispose()

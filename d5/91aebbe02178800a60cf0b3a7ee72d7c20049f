@@ -1,0 +1,9 @@
+clients/packages/cli/src/services/polar.test.ts
+  ai_agent 4-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d591aebbe02178800a60cf0b3a7ee72d7c20049f",
+  "prompts": {}
+}

@@ -461,7 +461,7 @@ async def complete_step(
     step = _get_step(migration, key)
     current = current_pan_step(migration)
     inputs = step_inputs(migration, key)
-    mapping_errors: list[str] = []
+    mapping_errors: Sequence[str] = []
 
     if request.method == "POST":
         form_data = await request.form()

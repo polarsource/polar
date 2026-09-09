@@ -2637,6 +2637,21 @@ async def activate_dialog(
                                 if requirement.missing:
                                     with tag.p(classes="text-base-content/70"):
                                         text(requirement.missing)
+                                if requirement is readiness.payout_account_ready:
+                                    account_url = (
+                                        str(
+                                            request.url_for(
+                                                "organizations:detail",
+                                                organization_id=organization_id,
+                                            )
+                                        )
+                                        + "?section=account"
+                                    )
+                                    with tag.a(
+                                        href=account_url,
+                                        classes="link link-primary text-sm",
+                                    ):
+                                        text("Go to account")
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):

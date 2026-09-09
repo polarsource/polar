@@ -19,7 +19,6 @@ from redis.backoff import default_backoff
 from redis.retry import Retry
 
 from polar.config import settings
-from polar.logfire import instrument_httpx
 from polar.logging import CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
 from polar.redis import REDIS_RETRY_ON_ERRROR, SyncFailoverRedis
@@ -135,11 +134,6 @@ class LogfireMiddleware(dramatiq.Middleware):
     @property
     def ephemeral_options(self) -> set[str]:
         return {"logfire_stack"}
-
-    def before_worker_boot(
-        self, broker: dramatiq.Broker, worker: dramatiq.Worker
-    ) -> None:
-        instrument_httpx()
 
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy

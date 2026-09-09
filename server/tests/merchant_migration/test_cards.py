@@ -47,14 +47,13 @@ MAPPING_CSV_HEADER = b"customer_id_old,source_id_old,customer_id_new,source_id_n
 class TestParsePaymentMethodMappingCSV:
     def test_valid(self) -> None:
         mappings = parse_payment_method_mapping_csv(
-            MAPPING_CSV_HEADER + b"cus_old,pm_old,cus_new,pm_new\n"
+            MAPPING_CSV_HEADER + b"cus_1,pm_old,cus_1,pm_new\n"
         )
 
         assert mappings == [
             PaymentMethodMapping(
-                source_customer_id="cus_old",
+                customer_id="cus_1",
                 source_payment_method_id="pm_old",
-                destination_customer_id="cus_new",
                 destination_payment_method_id="pm_new",
             )
         ]
@@ -66,23 +65,21 @@ class TestParsePaymentMethodMappingCSV:
     def test_rejects_extra_values(self) -> None:
         with pytest.raises(PaymentMethodMappingCSVError):
             parse_payment_method_mapping_csv(
-                MAPPING_CSV_HEADER + b"cus_old,pm_old,cus_new,pm_new,unexpected\n"
+                MAPPING_CSV_HEADER + b"cus_1,pm_old,cus_1,pm_new,unexpected\n"
             )
 
     def test_rejects_conflicting_source_mapping(self) -> None:
         with pytest.raises(PaymentMethodMappingCSVError):
             parse_payment_method_mapping_csv(
                 MAPPING_CSV_HEADER
-                + b"cus_old,pm_old,cus_new,pm_new\n"
-                + b"cus_old,pm_old,cus_new,pm_different\n"
+                + b"cus_1,pm_old,cus_1,pm_new\n"
+                + b"cus_1,pm_old,cus_1,pm_different\n"
             )
 
-    def test_rejects_shared_destination_customer(self) -> None:
+    def test_rejects_changed_customer_id(self) -> None:
         with pytest.raises(PaymentMethodMappingCSVError):
             parse_payment_method_mapping_csv(
-                MAPPING_CSV_HEADER
-                + b"cus_old_1,pm_old_1,cus_new,pm_new_1\n"
-                + b"cus_old_2,pm_old_2,cus_new,pm_new_2\n"
+                MAPPING_CSV_HEADER + b"cus_old,pm_old,cus_new,pm_new\n"
             )
 
 
@@ -198,9 +195,8 @@ class TestLinkPaymentMethod:
             session,
             imported_customer,
             PaymentMethodMapping(
-                source_customer_id="cus_source",
+                customer_id="cus_1",
                 source_payment_method_id="pm_source",
-                destination_customer_id="cus_1",
                 destination_payment_method_id="pm_mapped",
             ),
         )
@@ -228,9 +224,8 @@ class TestLinkPaymentMethod:
                 session,
                 imported_customer,
                 PaymentMethodMapping(
-                    source_customer_id="cus_source",
+                    customer_id="cus_1",
                     source_payment_method_id="pm_source",
-                    destination_customer_id="cus_1",
                     destination_payment_method_id="pm_mapped",
                 ),
             )

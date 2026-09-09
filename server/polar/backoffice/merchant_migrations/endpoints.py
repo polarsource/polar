@@ -478,21 +478,18 @@ async def complete_step(
                         "The payment method mapping CSV is larger than 20 MB."
                     )
                 async with session.begin_nested():
-                    mapping_errors = (
-                        await merchant_migration_service.import_payment_method_mappings(
-                            session, migration, contents
-                        )
+                    await merchant_migration_service.import_payment_method_mappings(
+                        session, migration, contents
                     )
-            if not mapping_errors:
-                await merchant_migration_service.complete_pan_step_as_ops(
-                    session,
-                    migration,
-                    key,
-                    inputs={name: str(form_data.get(name, "")) for name, _ in inputs},
-                )
+            await merchant_migration_service.complete_pan_step_as_ops(
+                session,
+                migration,
+                key,
+                inputs={name: str(form_data.get(name, "")) for name, _ in inputs},
+            )
         except PaymentMethodMappingCSVError as e:
             mapping_errors = [str(e)]
-        if not mapping_errors:
+        else:
             await add_toast(
                 request,
                 f"Completed “{PAN_STEP_LABELS.get(key, key)}”",

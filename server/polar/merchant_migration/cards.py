@@ -51,9 +51,8 @@ class PaymentMethodMappingCSVError(MerchantMigrationError):
 
 @dataclass(frozen=True)
 class PaymentMethodMapping:
-    source_customer_id: str
+    customer_id: str
     source_payment_method_id: str
-    destination_customer_id: str
     destination_payment_method_id: str
 
 
@@ -75,8 +74,6 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
 
     by_source: dict[str, PaymentMethodMapping] = {}
     by_destination: dict[str, PaymentMethodMapping] = {}
-    customer_destinations: dict[str, str] = {}
-    destination_sources: dict[str, str] = {}
     for line_number, row in enumerate(reader, start=2):
         if None in row:
             raise PaymentMethodMappingCSVError(
@@ -90,10 +87,13 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
             raise PaymentMethodMappingCSVError(
                 f"Line {line_number} has an empty mapping value."
             )
+        if values["customer_id_old"] != values["customer_id_new"]:
+            raise PaymentMethodMappingCSVError(
+                f"Line {line_number} changes the Stripe customer ID."
+            )
         mapping = PaymentMethodMapping(
-            source_customer_id=values["customer_id_old"],
+            customer_id=values["customer_id_old"],
             source_payment_method_id=values["source_id_old"],
-            destination_customer_id=values["customer_id_new"],
             destination_payment_method_id=values["source_id_new"],
         )
         existing = by_source.get(mapping.source_payment_method_id)
@@ -108,32 +108,8 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
                 f"Destination payment method {mapping.destination_payment_method_id} "
                 "is mapped more than once."
             )
-        customer_destination = customer_destinations.get(mapping.source_customer_id)
-        if (
-            customer_destination is not None
-            and customer_destination != mapping.destination_customer_id
-        ):
-            raise PaymentMethodMappingCSVError(
-                f"Source customer {mapping.source_customer_id} has conflicting "
-                "destination customers."
-            )
         by_source[mapping.source_payment_method_id] = mapping
         by_destination[mapping.destination_payment_method_id] = mapping
-        customer_destinations[mapping.source_customer_id] = (
-            mapping.destination_customer_id
-        )
-        destination_source = destination_sources.get(mapping.destination_customer_id)
-        if (
-            destination_source is not None
-            and destination_source != mapping.source_customer_id
-        ):
-            raise PaymentMethodMappingCSVError(
-                f"Destination customer {mapping.destination_customer_id} is mapped "
-                "from more than one source customer."
-            )
-        destination_sources[mapping.destination_customer_id] = (
-            mapping.source_customer_id
-        )
 
     if not by_source:
         raise PaymentMethodMappingCSVError("The mapping CSV has no data rows.")
@@ -196,11 +172,11 @@ async def link_mapped_payment_method(
     stripe_customer = stripe_payment_method.customer
     if (
         stripe_customer is None
-        or get_expandable_id(stripe_customer) != mapping.destination_customer_id
+        or get_expandable_id(stripe_customer) != mapping.customer_id
     ):
         raise PaymentMethodMappingCSVError(
             f"Copied payment method {mapping.destination_payment_method_id} does not "
-            "belong to the destination customer in Stripe's mapping."
+            "belong to the customer in Stripe's mapping."
         )
     return await payment_method_service.upsert_from_stripe(
         session, customer, stripe_payment_method, flush=True

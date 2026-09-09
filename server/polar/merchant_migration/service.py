@@ -119,7 +119,6 @@ SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "column": "source_credentials",
 }
 type MappedPaymentMethods = dict[tuple[str, str], PaymentMethod]
-type PaymentMethodMappingErrors = list[str]
 
 _STEP_TASKS = {
     STEP_VERIFY_CARDS: "merchant_migration.verify_cards",
@@ -695,57 +694,33 @@ class MerchantMigrationService:
         session: AsyncSession,
         migration: MerchantMigration,
         contents: bytes,
-    ) -> Sequence[str]:
+    ) -> None:
         mappings = parse_payment_method_mapping_csv(contents)
-        payment_methods, errors = await self._link_mapped_payment_methods(
+        payment_methods = await self._link_mapped_payment_methods(
             session, migration, mappings
         )
         await self._rewrite_staged_payment_methods(
             session, migration.id, payment_methods
         )
-        return errors
 
     async def _link_mapped_payment_methods(
         self,
         session: AsyncSession,
         migration: MerchantMigration,
         mappings: Sequence[PaymentMethodMapping],
-    ) -> tuple[MappedPaymentMethods, PaymentMethodMappingErrors]:
+    ) -> MappedPaymentMethods:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         customer_repository = CustomerRepository.from_session(session)
-        customers: dict[str, Customer] = {}
-        errors: PaymentMethodMappingErrors = []
+        payment_methods: MappedPaymentMethods = {}
         for mapping in mappings:
             customer_record = await record_repository.get_imported_customer_dependency(
-                migration.id, mapping.source_customer_id
+                migration.id, mapping.customer_id
             )
             if customer_record is None or customer_record.target_id is None:
                 continue
             customer = await customer_repository.get_by_id(customer_record.target_id)
             if customer is None:
                 continue
-            if customer.stripe_customer_id not in (
-                None,
-                mapping.source_customer_id,
-                mapping.destination_customer_id,
-            ):
-                errors.append(
-                    f"Imported customer {mapping.source_customer_id} is linked to a "
-                    "different Stripe customer."
-                )
-                continue
-            customers[mapping.source_customer_id] = customer
-
-        payment_methods: MappedPaymentMethods = {}
-        for mapping in mappings:
-            customer = customers.get(mapping.source_customer_id)
-            if customer is None:
-                continue
-            if customer.stripe_customer_id != mapping.destination_customer_id:
-                await customer_repository.update(
-                    customer,
-                    update_dict={"stripe_customer_id": mapping.destination_customer_id},
-                )
             payment_method = await link_mapped_payment_method(
                 session,
                 customer,
@@ -756,10 +731,10 @@ class MerchantMigrationService:
                     f"Copied payment method {mapping.destination_payment_method_id} "
                     "does not exist on Polar's Stripe account."
                 )
-            payment_methods[
-                mapping.source_customer_id, mapping.source_payment_method_id
-            ] = payment_method
-        return payment_methods, errors
+            payment_methods[mapping.customer_id, mapping.source_payment_method_id] = (
+                payment_method
+            )
+        return payment_methods
 
     async def _rewrite_staged_payment_methods(
         self,

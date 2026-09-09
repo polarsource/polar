@@ -41,6 +41,12 @@ step() {
 start_dockerd() {
   docker info >/dev/null 2>&1 && return 0
   command -v dockerd >/dev/null 2>&1 || return 1
+  # A container that is resumed rather than created keeps /run from the previous
+  # session. dockerd reads the orphaned containerd.pid, concludes containerd is
+  # already running, and then times out waiting for a socket that never appears.
+  if ! pgrep -x containerd >/dev/null 2>&1; then
+    rm -f /run/docker/containerd/containerd.pid /var/run/docker.sock
+  fi
   setsid nohup dockerd >"${TMPDIR:-/tmp}/dockerd.log" 2>&1 &
   for _ in $(seq 1 30); do
     docker info >/dev/null 2>&1 && return 0
@@ -48,7 +54,8 @@ start_dockerd() {
   done
   return 1
 }
-step "docker daemon" start_dockerd || true
+DOCKER_OK=0
+step "docker daemon" start_dockerd && DOCKER_OK=1
 
 # ---------------------------------------------------------------------------
 # 2. Environment files, before Docker Compose.
@@ -64,23 +71,20 @@ step "env files" "$ROOT/dev/setup-environment" || true
 # also starts tinybird (tinybirdco/tinybird-local:latest, a large image), whose
 # tests skip themselves when it is absent.
 # ---------------------------------------------------------------------------
-step "infrastructure" docker compose --project-directory "$ROOT/server" up -d db redis minio minio-setup || true
-
 # Compose exits 0 even when a container failed to start, so check the containers.
 verify_containers() {
-  local name state exit_code failed=0
+  local name state failed=0
   for name in server-db-1 server-redis-1 server-minio-1; do
-    state=$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null) || state="missing"
-    if [ "$state" != "running" ]; then
-      exit_code=$(docker inspect -f '{{.State.ExitCode}}' "$name" 2>/dev/null || echo "?")
-      echo "$name is '$state' (exit $exit_code)"
+    state=$(docker inspect -f '{{.State.Status}} (exit {{.State.ExitCode}})' "$name" 2>/dev/null) ||
+      state="missing"
+    if [ "${state%% *}" != "running" ]; then
+      echo "$name is $state"
       docker logs --tail 20 "$name" 2>&1 || true
       failed=1
     fi
   done
   return $failed
 }
-step "verify containers" verify_containers || true
 
 wait_for_services() {
   local ok=1
@@ -96,7 +100,18 @@ wait_for_services() {
   echo "minio health check never passed (S3-backed tests may fail)"
   return 0
 }
-step "wait for services" wait_for_services || true
+
+# Every remaining infrastructure step depends on the daemon, so skip rather than
+# spend each step's timeout waiting for services that cannot come up.
+PG_OK=0
+if [ "$DOCKER_OK" -eq 1 ]; then
+  step "infrastructure" docker compose --project-directory "$ROOT/server" up -d \
+    db redis minio minio-setup || true
+  step "verify containers" verify_containers || true
+  step "wait for services" wait_for_services && PG_OK=1
+else
+  NOTES+=("Docker daemon unavailable, so PostgreSQL and MinIO are not running. Skipped the template database and the pytest warm-up; backend tests will fail until the daemon is up. See $LOG.")
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Python dependencies. --dev carries pytest, mypy, ruff, fakeredis and xdist.
@@ -134,7 +149,7 @@ build_template_db() {
     PGPASSWORD=polar createdb -h 127.0.0.1 -U polar polar_test || return 1
   POLAR_ENV=testing uv run --directory "$ROOT/server" task db_migrate
 }
-if step "test template db" build_template_db; then
+if [ "$PG_OK" -eq 1 ] && step "test template db" build_template_db; then
   if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
     echo 'export POLAR_TEST_DATABASE_TEMPLATE="polar_test"' >> "$CLAUDE_ENV_FILE"
   fi
@@ -146,8 +161,11 @@ fi
 # bytecode and absorbs a first-run database-creation flake seen on cold containers.
 # ---------------------------------------------------------------------------
 step "warm mypy cache" uv run --directory "$ROOT/server" task lint_types || true
-step "warm pytest" env POLAR_ENV=testing uv run --directory "$ROOT/server" \
-  python -m pytest tests/kit/test_address.py -q --no-cov -p no:randomly || true
+# An autouse session fixture creates a database even for tests that never query one.
+if [ "$PG_OK" -eq 1 ]; then
+  step "warm pytest" env POLAR_ENV=testing uv run --directory "$ROOT/server" \
+    python -m pytest tests/kit/test_address.py -q --no-cov -p no:randomly || true
+fi
 
 # CI installs these for the PDF/invoice rendering tests.
 if ! fc-list 2>/dev/null | grep -qi "noto sans cjk"; then

@@ -1011,15 +1011,15 @@ importers:
       '@effect/platform-bun':
         specifier: 4.0.0-rc.112
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)
+      '@napi-rs/keyring':
+        specifier: 2.0.0
+        version: 2.0.0
       '@polar-sh/sdk':
         specifier: ^0.47.0
         version: 0.47.1
       effect:
         specifier: 4.0.0-rc.112
         version: 4.0.0-rc.112
-      eventsource:
-        specifier: ^4.1.0
-        version: 4.1.1
       open:
         specifier: ^10.2.0
         version: 10.2.0
@@ -1325,6 +1325,88 @@ importers:
         version: 5.9.3
 
 packages:
+
+  '@napi-rs/keyring-darwin-arm64@2.0.0':
+    resolution: {integrity: sha512-yvIfviiXpsDSsPdyzWWd7STZt7v774biPfMBpWkiK7rwauwWbOmVjUzgiJ11rbhJbWLqXE3CuQMyLgvcbm3jIA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@napi-rs/keyring-darwin-x64@2.0.0':
+    resolution: {integrity: sha512-XJUONH0c5cg7M9/1Vj3WeIi8TtWYdZlo8Jqho09ga8OWm9cFNxUv7+4QZx5UK/3JSp2qiyhTlresyKdcpwpnRw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@napi-rs/keyring-freebsd-x64@2.0.0':
+    resolution: {integrity: sha512-u/M114J9Lp3RqtIZihIqhvreNQ5f8wgLFo9tJFy+bIIO/xEHkMR0LENrfUF8hSY6FTNyS2kSbbkN6yOItBFY5g==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@napi-rs/keyring-linux-arm-gnueabihf@2.0.0':
+    resolution: {integrity: sha512-CHMv/KTuELo/MsrGUha52KrFGPBuBkeAonnMFUd3nNcxBTSmeJbCAZTuVSXzpessdpb4tT9xIMQsv2ZdWrl8iw==}
+    engines: {node: '>= 10'}
+    cpu: [arm]
+    os: [linux]
+
+  '@napi-rs/keyring-linux-arm64-gnu@2.0.0':
+    resolution: {integrity: sha512-BeUUPGSnW026yDGT4pKuNXDnwxw0xslwiSK6cuOIsDNLi3UO93rfF/7moqKznrBldgsZr8pl9LkMdRk8bnbjEA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@napi-rs/keyring-linux-arm64-musl@2.0.0':
+    resolution: {integrity: sha512-zj7wZ23Vs7SL4odnGDbWnhZhiyrnEgBe4+8dzKHDi1mTBX1d00FYlGOubkjvx3AeK7mm6G2FyFDDFqIxyR82gA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@napi-rs/keyring-linux-riscv64-gnu@2.0.0':
+    resolution: {integrity: sha512-xk/1SOhuk2yQvXiN+pBhR4njSfquLm1SUKUIJcPIeYV1bHFXbUsYrXdfy4NtynSW0lhs41zWjLXSdE8TLeTt2g==}
+    engines: {node: '>= 10'}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [glibc]
+
+  '@napi-rs/keyring-linux-x64-gnu@2.0.0':
+    resolution: {integrity: sha512-12Dq6t2TOrQTibcJcfV5bnHbTvMwEz6zSDqQLHMO2x388gGFQBAeEvw7Hmt+R1QavxspTa2ptgI7axomu9TH+w==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@napi-rs/keyring-linux-x64-musl@2.0.0':
+    resolution: {integrity: sha512-7NJZvFUiL1FPCrSIQ1L4IUzN6l/2zoxT3IN6j3rHTuDdIEunJaycrUovDMvPlBNP1Vh3fSYz6Pp7tFjdt/1/oQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@napi-rs/keyring-win32-arm64-msvc@2.0.0':
+    resolution: {integrity: sha512-JTktZGXKow0HF/rhaZiQYB8DUS/iSX7S7FvJDoGxPT8mGavKE3w/vadtfKSBNDL4uGef3wu2Ll0XxSfDKBsm2Q==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@napi-rs/keyring-win32-ia32-msvc@2.0.0':
+    resolution: {integrity: sha512-AzvIFTqn1hJzCPu0foeYWn+kXruAIrVq3Z2IfJ24WPbIXUdD7+rcj49fqco7b14Z6C1aUfsSTyvrAgDfUWhKvA==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@napi-rs/keyring-win32-x64-msvc@2.0.0':
+    resolution: {integrity: sha512-POpEUTV6U+pb69cpuOgtLV4xhcyEWDWq+/9zdiZmNxTL1AenE0MllWrbepS+Hng4M7EarQ5TB3kX69ASqGwfIw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@napi-rs/keyring@2.0.0':
+    resolution: {integrity: sha512-TnrIt0nO9U2Ue9E9vJQjso1hqhIYiGrn2Ew1HBsMSqQe4+ceOqPJJwRVsV0/Wy7pqp04/doOLASyIFM3gGwZJw==}
+    engines: {node: '>= 10'}
+
 
   '@0no-co/graphql.web@1.2.0':
     resolution: {integrity: sha512-/1iHy9TTr63gE1YcR5idjx8UREz1s0kFhydf3bBLCXyqjhkIc6igAzTOx3zPifCwFR87tsh/4Pa9cNts6d2otw==}
@@ -9572,10 +9654,6 @@ packages:
     resolution: {integrity: sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==}
     engines: {node: '>=18.0.0'}
 
-  eventsource@4.1.1:
-    resolution: {integrity: sha512-D6bTRWh6KahHTK/m4WnjPQyEinNPf9eFLEZSEoj7d6fTibspnAVYfzHvirL7u/aoX5d9YYfIkBVAhmigUELk9w==}
-    engines: {node: '>=20.0.0'}
-
   exec-async@2.2.0:
     resolution: {integrity: sha512-87OpwcEiMia/DeiKFzaQNBNFeN3XkkpYIh9FyOqq5mS2oKv3CBE67PXoEKcr6nodWdXNogTiQ0jE2NGuoffXPw==}
 
@@ -15902,6 +15980,58 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@napi-rs/keyring-darwin-arm64@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-darwin-x64@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-freebsd-x64@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-linux-arm-gnueabihf@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-linux-arm64-gnu@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-linux-arm64-musl@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-linux-riscv64-gnu@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-linux-x64-gnu@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-linux-x64-musl@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-win32-arm64-msvc@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-win32-ia32-msvc@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring-win32-x64-msvc@2.0.0':
+    optional: true
+
+  '@napi-rs/keyring@2.0.0':
+    optionalDependencies:
+      '@napi-rs/keyring-darwin-arm64': 2.0.0
+      '@napi-rs/keyring-darwin-x64': 2.0.0
+      '@napi-rs/keyring-freebsd-x64': 2.0.0
+      '@napi-rs/keyring-linux-arm-gnueabihf': 2.0.0
+      '@napi-rs/keyring-linux-arm64-gnu': 2.0.0
+      '@napi-rs/keyring-linux-arm64-musl': 2.0.0
+      '@napi-rs/keyring-linux-riscv64-gnu': 2.0.0
+      '@napi-rs/keyring-linux-x64-gnu': 2.0.0
+      '@napi-rs/keyring-linux-x64-musl': 2.0.0
+      '@napi-rs/keyring-win32-arm64-msvc': 2.0.0
+      '@napi-rs/keyring-win32-ia32-msvc': 2.0.0
+      '@napi-rs/keyring-win32-x64-msvc': 2.0.0
+
 
   '@0no-co/graphql.web@1.2.0(graphql@16.8.1)':
     optionalDependencies:
@@ -25641,10 +25771,6 @@ snapshots:
   eventsource-parser@3.0.6: {}
 
   eventsource@3.0.7:
-    dependencies:
-      eventsource-parser: 3.0.6
-
-  eventsource@4.1.1:
     dependencies:
       eventsource-parser: 3.0.6
 

@@ -10,7 +10,6 @@ import {
   getLatestRelease,
   isNewerVersion,
 } from '../services/github-releases'
-import * as OAuth from '../services/oauth'
 import { VERSION } from '../version'
 
 export class UpdateError extends Data.TaggedError('UpdateError')<{
@@ -315,8 +314,5 @@ export const update = Command.make('update', {}, () =>
     }
 
     yield* downloadAndUpdate(release, latestVersion)
-
-    const oauth = yield* OAuth.OAuth
-    yield* oauth.logout().pipe(Effect.catch(() => Effect.void))
   }),
 )

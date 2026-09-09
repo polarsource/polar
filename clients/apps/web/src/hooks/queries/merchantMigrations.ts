@@ -64,6 +64,9 @@ export const invalidateMigrationRecords = (id: string) => {
   client.invalidateQueries({
     queryKey: ['merchantMigrationRecordSummary', { id }],
   })
+  client.invalidateQueries({
+    queryKey: ['merchantMigrationProductMappings', { id }],
+  })
 }
 
 export const useRunMerchantMigrationPrecheck = (id: string) =>
@@ -299,4 +302,39 @@ export const useMerchantMigrationRecordSummary = (
     retry: defaultRetry,
     enabled: !!id,
     refetchInterval: refetchInterval ?? false,
+  })
+
+const productMappingsKey = (id: string) => [
+  'merchantMigrationProductMappings',
+  { id },
+]
+
+export const useProductMappings = (id: string) =>
+  useQuery({
+    queryKey: productMappingsKey(id),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/product-mappings', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
+export const useUpdateProductMappings = (id: string) =>
+  useMutation({
+    mutationFn: (
+      mappings: schemas['MerchantMigrationProductMappingChoice'][],
+    ) =>
+      dataOrThrow(
+        api.PUT('/v1/merchant-migrations/{id}/product-mappings', {
+          params: { path: { id } },
+          body: { mappings },
+        }),
+        "We couldn't save that mapping.",
+      ),
+    onSuccess: (listing) => {
+      getQueryClient().setQueryData(productMappingsKey(id), listing)
+    },
   })

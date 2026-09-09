@@ -32,15 +32,42 @@ export const make = Effect.gen(function* () {
     environment: PolarEnvironment = 'sandbox',
   ) =>
     Effect.gen(function* () {
-      const client = yield* getClient(environment)
-      return yield* Effect.tryPromise({
-        try: () => fn(client),
-        catch: (error) => {
-          const status =
-            typeof error === 'object' && error !== null && 'statusCode' in error
-              ? error.statusCode
-              : undefined
-          switch (status) {
+      const credential = yield* auth.resolve(environment)
+      const request = (accessToken: Redacted.Redacted<string>) =>
+        Effect.tryPromise({
+          try: () =>
+            fn(
+              new PolarSDK({
+                server: environment,
+                accessToken: Redacted.value(accessToken),
+              }),
+            ),
+          catch: (error) => ({
+            statusCode:
+              typeof error === 'object' &&
+              error !== null &&
+              'statusCode' in error
+                ? error.statusCode
+                : undefined,
+          }),
+        })
+
+      return yield* request(credential.accessToken).pipe(
+        Effect.catch((error) =>
+          Effect.gen(function* () {
+            if (credential.source !== 'keyring' || error.statusCode !== 401)
+              return yield* Effect.fail(error)
+
+            const refreshed = yield* auth.resolve(
+              environment,
+              credential.accessToken,
+            )
+            return yield* request(refreshed.accessToken)
+          }),
+        ),
+        Effect.mapError((error) => {
+          if (error instanceof AuthError) return error
+          switch (error.statusCode) {
             case 401:
               return new AuthError({
                 message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session.`,
@@ -61,8 +88,8 @@ export const make = Effect.gen(function* () {
                   'Polar API request failed. Check your connection and try again.',
               })
           }
-        },
-      })
+        }),
+      )
     })
 
   return Polar.of({ getClient, use })

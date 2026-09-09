@@ -31,6 +31,7 @@ from polar.account_credit.service import account_credit_service
 from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
 from polar.enums import PayoutAccountType
+from polar.exceptions import PolarRequestValidationError
 from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
 from polar.integrations.plain.service import (
@@ -74,6 +75,8 @@ from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import (
     SNOOZE_MAX_DAYS,
     SNOOZE_MIN_DAYS,
+    ActivationGate,
+    BackofficeActivationResult,
     OrganizationError,
 )
 from polar.organization.service import organization as organization_service
@@ -2514,6 +2517,145 @@ async def under_review_dialog(
                 ):
                     with button(variant="warning", type="submit"):
                         text("Set Under Review")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/activate-dialog",
+    name="organizations:activate_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def activate_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Submit a CREATED org for review and/or run maybe_activate."""
+    repository = OrganizationRepository.from_session(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    detail_url = str(
+        request.url_for("organizations:detail", organization_id=organization_id)
+    )
+    readiness = await organization_service.get_activation_readiness(
+        session, organization
+    )
+    error_message: str | None = None
+    is_created = organization.status == OrganizationStatus.CREATED
+    can_submit_review = is_created and organization.details_submitted_at is None
+    can_activate = is_created and readiness.is_ready
+
+    if request.method == "POST":
+        try:
+            result = await organization_service.backoffice_submit_and_maybe_activate(
+                session, organization
+            )
+        except OrganizationError as e:
+            error_message = e.message
+        except PolarRequestValidationError as e:
+            error_message = "; ".join(error["msg"] for error in e.errors())
+        else:
+            match result:
+                case BackofficeActivationResult.activated:
+                    await add_toast(request, "Organization activated.", "success")
+                case BackofficeActivationResult.submitted_for_review:
+                    await add_toast(
+                        request,
+                        "Submitted for review. The organization will activate "
+                        "automatically if the review passes and onboarding is "
+                        "complete.",
+                        "success",
+                    )
+                case BackofficeActivationResult.still_incomplete:
+                    missing = ", ".join(
+                        item.label.lower() for item in readiness.missing
+                    )
+                    await add_toast(
+                        request,
+                        f"Could not activate yet. Still missing: {missing}.",
+                        "warning",
+                    )
+            return HXRedirectResponse(request, detail_url, 303)
+
+        readiness = await organization_service.get_activation_readiness(
+            session, organization
+        )
+
+    with modal("Activate Organization", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
+            with tag.div(
+                classes="bg-success/10 border border-success/20 p-4 rounded-lg"
+                if readiness.is_ready
+                else "bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-1"):
+                    text(
+                        "Ready to activate"
+                        if readiness.is_ready
+                        else "Not fully ready to activate"
+                    )
+                with tag.p(classes="text-sm"):
+                    text(
+                        "All onboarding and review gates have passed. Activate "
+                        "uses the same path as automatic activation."
+                        if readiness.is_ready
+                        else "Complete the missing steps below. Submitting for "
+                        "review queues the review agent; the organization "
+                        "activates automatically if the review passes and "
+                        "payout and identity checks are ready."
+                    )
+
+            with tag.ul(classes="space-y-2"):
+                for requirement in readiness.requirements:
+                    with tag.li(classes="flex items-start gap-2 text-sm"):
+                        icon_color = (
+                            "text-success" if requirement.ready else "text-error"
+                        )
+                        with tag.span(classes=f"{icon_color} font-semibold"):
+                            text("✓" if requirement.ready else "✗")
+                        with tag.div():
+                            with tag.p(classes="font-medium"):
+                                text(requirement.label)
+                            if requirement.missing:
+                                with tag.p(classes="text-base-content/70"):
+                                    text(requirement.missing)
+                            if (
+                                not requirement.ready
+                                and requirement.gate is ActivationGate.payout_account
+                            ):
+                                with tag.a(
+                                    href=f"{detail_url}?section=account",
+                                    classes="link link-primary text-sm",
+                                ):
+                                    text("Go to account")
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                if can_activate or can_submit_review:
+                    with tag.form(
+                        hx_post=str(
+                            request.url_for(
+                                "organizations:activate_dialog",
+                                organization_id=organization_id,
+                            )
+                        ),
+                    ):
+                        with button(
+                            variant="success" if can_activate else "warning",
+                            type="submit",
+                        ):
+                            text("Activate" if can_activate else "Submit for review")
 
     return None
 

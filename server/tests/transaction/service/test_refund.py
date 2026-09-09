@@ -21,9 +21,6 @@ from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.repository import BalanceTransactionRepository
 from polar.transaction.service.balance import BalanceTransactionService
-from polar.transaction.service.balance import (
-    balance_transaction as balance_transaction_service,
-)
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from polar.transaction.service.refund import (  # type: ignore[attr-defined]
     NotCanceledRefundError,

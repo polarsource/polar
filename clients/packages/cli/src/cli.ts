@@ -1,10 +1,11 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
-import { Cause, Console, Effect, Layer, Runtime } from 'effect'
+import { Cause, Effect, Layer, Runtime } from 'effect'
 import { Command } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from './commands/listen'
 import { auth } from './commands/auth'
 import { update } from './commands/update'
+import { describeError } from './errors'
 import * as Auth from './services/auth'
 import * as Credentials from './services/credentials'
 import * as Config from './services/config'
@@ -15,6 +16,7 @@ import {
   checkForUpdateInBackground,
   showUpdateNotice,
 } from './services/update-check'
+import * as ui from './ui'
 import { VERSION } from './version'
 
 const mainCommand = Command.make('polar').pipe(
@@ -41,18 +43,24 @@ const services = Layer.mergeAll(
   FetchHttpClient.layer,
 )
 
+const reportError = (cause: Cause.Cause<unknown>) => {
+  if (Cause.hasInterruptsOnly(cause)) return Effect.void
+  const error = Cause.squash(cause)
+  if (!Runtime.getErrorReported(error)) return Effect.void
+  const { title, hint } = describeError(error)
+  return Effect.gen(function* () {
+    yield* Effect.sync(() => {
+      process.stderr.write(`\n${ui.failure(title, hint)}\n\n`)
+    })
+    yield* Effect.logDebug(cause)
+  })
+}
+
 showUpdateNotice()
 checkForUpdateInBackground()
 
 cli.pipe(
   Effect.provide(services),
-  Effect.tapCause((cause) => {
-    if (Cause.hasInterruptsOnly(cause)) return Effect.void
-    const error = Cause.squash(cause)
-    if (!Runtime.getErrorReported(error)) return Effect.void
-    return Console.error(
-      error instanceof Error ? error.message : 'An unexpected error occurred.',
-    )
-  }),
+  Effect.tapCause(reportError),
   BunRuntime.runMain({ disableErrorReporting: true }),
 )

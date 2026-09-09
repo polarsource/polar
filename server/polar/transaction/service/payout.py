@@ -42,18 +42,10 @@ class PayoutTransactionService(BaseTransactionService):
             payout=payout,
         )
 
-        transaction_repository = TransactionRepository.from_session(session)
-        unpaid_balance_transactions = (
-            await transaction_repository.get_all_unpaid_by_account(account.id)
-        )
-
         if payout.processor == PayoutAccountType.stripe:
             transaction.processor = Processor.stripe
         elif payout.processor == PayoutAccountType.manual:
             transaction.processor = Processor.manual
-
-        for balance_transaction in unpaid_balance_transactions:
-            transaction.paid_transactions.append(balance_transaction)
 
         for outgoing, incoming in fees_balances:
             transaction.incurred_transactions.append(outgoing)
@@ -61,7 +53,14 @@ class PayoutTransactionService(BaseTransactionService):
             transaction.incurred_transactions.append(incoming)
 
         repository = PayoutTransactionRepository.from_session(session)
-        return await repository.create(transaction, flush=True)
+        transaction = await repository.create(transaction, flush=True)
+
+        transaction_repository = TransactionRepository.from_session(session)
+        await transaction_repository.set_unpaid_transactions_payout(
+            account.id, transaction.id
+        )
+
+        return transaction
 
     async def reverse(
         self,

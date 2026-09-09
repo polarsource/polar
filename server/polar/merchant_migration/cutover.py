@@ -218,9 +218,7 @@ class SubscriptionCutover:
 
         # Behind the gate above because resolving writes: it upserts the copied
         # methods and may set the customer's default.
-        payment_method = await self._resolve_payment_method(
-            record, customer, source, subscription
-        )
+        payment_method = await self._resolve_payment_method(record, customer, source)
         if already_stopped:
             # An unproven card beats no biller at all: a failed first renewal
             # goes to dunning, which is recoverable.
@@ -493,13 +491,8 @@ class SubscriptionCutover:
         record: MerchantMigrationRecord,
         customer: Customer,
         source: CanonicalSubscription,
-        subscription: Subscription | None = None,
     ) -> PaymentMethod | None:
         repository = PaymentMethodRepository.from_session(self.session)
-        if subscription is not None and subscription.payment_method_id is not None:
-            payment_method = await repository.get_by_id(subscription.payment_method_id)
-            if payment_method is not None:
-                return payment_method
         if pan_transfer.stripe_mapping_applied(
             self.migration.pan_transfer_method, self.migration.pan_transfer_steps
         ):

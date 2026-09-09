@@ -39,7 +39,6 @@ from polar.models.merchant_migration_record import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
-from polar.subscription.repository import SubscriptionRepository
 from polar.worker import enqueue_job
 
 from . import pan_transfer
@@ -701,7 +700,7 @@ class MerchantMigrationService:
         payment_methods, errors = await self._link_mapped_payment_methods(
             session, migration, mappings
         )
-        await self._assign_mapped_payment_methods(
+        await self._rewrite_staged_payment_methods(
             session, migration.id, payment_methods
         )
         return errors
@@ -762,44 +761,28 @@ class MerchantMigrationService:
             ] = payment_method
         return payment_methods, errors
 
-    async def _assign_mapped_payment_methods(
+    async def _rewrite_staged_payment_methods(
         self,
         session: AsyncSession,
         migration_id: UUID,
         payment_methods: MappedPaymentMethods,
     ) -> None:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        subscription_repository = SubscriptionRepository.from_session(session)
         async for record in record_repository.stream_imported_subscriptions(
             migration_id
         ):
             staged = _staged_subscription(record)
-            if staged is None:
+            if staged is None or staged.payment_method is None:
                 continue
-            source_method = staged.payment_method
-            payment_method = None
-            if source_method is not None:
-                payment_method = payment_methods.get(
-                    (staged.customer_source_id, source_method.source_id)
-                )
-                if payment_method is not None:
-                    source_method.source_id = payment_method.processor_id
-                    await record_repository.update(
-                        record, update_dict={"canonical": serialize(staged)}
-                    )
-            if record.target_id is not None:
-                subscription = await subscription_repository.get_by_id(record.target_id)
-                if subscription is not None:
-                    await subscription_repository.update(
-                        subscription,
-                        update_dict={
-                            "payment_method_id": (
-                                payment_method.id
-                                if payment_method is not None
-                                else None
-                            )
-                        },
-                    )
+            payment_method = payment_methods.get(
+                (staged.customer_source_id, staged.payment_method.source_id)
+            )
+            if payment_method is None:
+                continue
+            staged.payment_method.source_id = payment_method.processor_id
+            await record_repository.update(
+                record, update_dict={"canonical": serialize(staged)}
+            )
 
     async def run_card_verification(
         self, session: AsyncSession, migration_id: UUID, *, offset: int = 0

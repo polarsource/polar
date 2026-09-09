@@ -89,8 +89,6 @@ tests in a new worktree, from the repo root:
 uv run --directory server task emails   # builds server/emails/bin/react-email-pkg
 ```
 Without these, pytest fails at config load with `JWKS` and `EMAIL_RENDERER_BINARY_PATH` errors.
-`setup-environment` already writes `.jwks.json`, so `task generate_dev_jwks` is only needed if
-that file goes missing on its own.
 
 Only two artifacts actually block config import: `server/.jwks.json` and *any existing file* at
 `EMAIL_RENDERER_BINARY_PATH` — the validator only checks that the path exists. When you need to
@@ -185,18 +183,13 @@ because `dev up` targets interactive local development: it aborts if the Tinybir
 fails, curl-installs nvm, calls `systemctl start docker`, prompts for GitHub/Stripe, and — worst
 for an agent — swallows a failed email-renderer build, the artifact that blocks config import.
 
-The hook starts `dockerd` under `setsid` when it isn't running (a plain background `dockerd &`
-from a tool call is reaped when that call ends), generates the env files *before* `docker compose
-up -d`, verifies the containers with `docker inspect` instead of trusting compose's exit code,
-starts only `db redis minio minio-setup` (a bare `docker compose up -d` also pulls the large
-`tinybirdco/tinybird-local:latest`, whose tests skip themselves when absent), then syncs `uv`,
-ensures the email renderer, builds and migrates the `polar_test` template database, warms the
-mypy and bytecode caches, and installs `clients/` dependencies. It is idempotent and skips work
-that is already done. Log: `/tmp/polar-session-start.log`.
+It is idempotent, skips work already done, and reports failed steps in its output rather than
+aborting. Read the script for what it does; its log is `/tmp/polar-session-start.log`.
 
 Deliberately excluded, none of it needed for tests or linters: `dev seed`, `dev start`/tmux,
 Stripe keys or CLI, GitHub App setup, the Tinybird CLI, `dev docker`, and the web build. Redis is
 replaced by `FakeAsyncRedis` in tests, Stripe objects are fakes, and Tinybird tests self-skip.
+`fonts-noto-cjk` is also left out — install it only if a PDF or invoice test fails on glyphs.
 
 Two things to know when running tests here:
 

@@ -52,6 +52,7 @@ from .service import (
     MerchantMigrationNotFound,
     MigrationOperationInProgress,
     MissingStripeScopes,
+    PrecheckNotAvailable,
     SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
@@ -166,8 +167,10 @@ async def get(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "A pre-check is already running.",
-            "model": MigrationOperationInProgress.schema(),
+            "description": "A pre-check is already running, or the migration has "
+            "already moved past the pre-check step.",
+            "model": MigrationOperationInProgress.schema()
+            | PrecheckNotAvailable.schema(),
         },
     },
 )

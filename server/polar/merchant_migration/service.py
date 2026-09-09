@@ -106,6 +106,11 @@ IMPORTABLE_STEPS = {
     MerchantMigrationStep.create_catalog,
 }
 
+PRECHECKABLE_STEPS = {
+    MerchantMigrationStep.source_setup,
+    MerchantMigrationStep.pre_check,
+}
+
 # Entities whose records map 1:1 to a ledger row. Prices live inside a product
 # record and are excluded.
 _ENTITY_RECORD_TYPE = {
@@ -215,6 +220,14 @@ class MigrationOperationInProgress(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
             "This migration already has a job running. Wait for it to finish.",
+            409,
+        )
+
+
+class PrecheckNotAvailable(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "The pre-check can only run before the catalog is imported.",
             409,
         )
 
@@ -466,6 +479,8 @@ class MerchantMigrationService:
         )
         if self._operation_blocks_new_work(migration):
             raise MigrationOperationInProgress()
+        if migration.step not in PRECHECKABLE_STEPS:
+            raise PrecheckNotAvailable()
         # Fail before enqueueing if the key is gone or the source isn't Stripe.
         await self._build_adapter(migration)
 

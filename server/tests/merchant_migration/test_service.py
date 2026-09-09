@@ -62,6 +62,7 @@ from polar.merchant_migration.service import (
     InvalidSourceCredentials,
     MigrationOperationInProgress,
     MissingStripeScopes,
+    PrecheckNotAvailable,
     SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
@@ -662,6 +663,127 @@ class TestStartPrecheck:
         assert started.operation is not None
         assert started.operation.status == MerchantMigrationOperationStatus.pending
         enqueue.assert_called_once()
+
+    @pytest.mark.auth
+    async def test_allows_a_rerun_at_the_pre_check_step(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.pre_check
+        await save_fixture(migration)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        started = await service.start_precheck(session, auth_subject, migration.id)
+
+        assert started.operation is not None
+        assert started.operation.status == MerchantMigrationOperationStatus.pending
+        enqueue.assert_called_once_with(
+            "merchant_migration.precheck", merchant_migration_id=migration.id
+        )
+
+    @pytest.mark.auth
+    async def test_rejects_after_the_catalog_is_imported(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.create_catalog
+        await save_fixture(migration)
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        with pytest.raises(PrecheckNotAvailable):
+            await service.start_precheck(session, auth_subject, migration.id)
+
+    @pytest.mark.auth
+    async def test_rejects_after_cutover_and_keeps_settled_rows(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        # A post-cutover migration resting at the cleanup step with a settled
+        # skipped subscription row: re-running precheck must be rejected and the
+        # audit row must survive (regression for the delete_pending wipe).
+        _fake_cutover(
+            mocker,
+            outcome=CutoverOutcome(
+                MerchantMigrationCutoverStatus.skipped,
+                message="Customer has no card.",
+            ),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running
+        )
+        await save_fixture(migration)
+        record = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_skip",
+            email="skip@example.com",
+        )
+
+        # First cutover pass: the record is settled as skipped. run_cutover
+        # writes cutover_status but never status, so the row stays pending.
+        await service.run_cutover(session, migration.id)
+        await session.flush()
+        await session.refresh(record)
+        assert record.status == MerchantMigrationRecordStatus.pending
+        assert record.cutover_status == MerchantMigrationCutoverStatus.skipped
+        assert record.cutover_error == "Customer has no card."
+
+        # Second cutover pass: the settled row isn't a candidate any more, so the
+        # run finishes and the migration rests at the cleanup step.
+        await service.run_cutover(session, migration.id)
+        await session.flush()
+        await session.refresh(migration)
+        assert migration.step == MerchantMigrationStep.cleanup
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+
+        with pytest.raises(PrecheckNotAvailable):
+            await service.start_precheck(session, auth_subject, migration.id)
+
+        # The settled audit row survives: the step guard rejects before any wipe,
+        # and delete_pending would preserve it as defence in depth regardless.
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await session.refresh(record)
+        assert record.status == MerchantMigrationRecordStatus.pending
+        assert record.cutover_status == MerchantMigrationCutoverStatus.skipped
+        assert record.cutover_error == "Customer has no card."
+        assert (
+            await record_repository.get_by_source(
+                organization_id=organization.id,
+                type=MerchantMigrationRecordType.subscription,
+                source_id="sub_skip",
+            )
+            is not None
+        )
 
 
 @pytest.mark.asyncio

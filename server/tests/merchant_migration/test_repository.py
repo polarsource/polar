@@ -29,6 +29,7 @@ from polar.models.merchant_migration import (
     MerchantMigrationStep,
 )
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
@@ -488,3 +489,140 @@ class TestSwitchableSubscriptions:
         )
         assert found is not None
         assert found.merchant_migration_id == earlier.id
+
+
+@pytest.mark.asyncio
+class TestDeletePending:
+    async def test_deletes_untried_pending_rows(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        untried = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_untried",
+            canonical={},
+        )
+        await save_fixture(untried)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+
+        await repository.delete_pending(migration.id)
+        await session.flush()
+
+        assert (
+            await repository.get_by_source(
+                organization_id=organization.id,
+                type=MerchantMigrationRecordType.subscription,
+                source_id="sub_untried",
+            )
+            is None
+        )
+
+    async def test_preserves_settled_cutover_rows_while_deleting_untried(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        # A skipped/failed cutover keeps status=pending with a non-null
+        # cutover_status; that settled audit trail must survive the wipe while
+        # an untried, same-status row is removed.
+        migration = await _create_migration(save_fixture, organization)
+        untried = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_untried",
+            canonical={},
+        )
+        skipped = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_skipped",
+            canonical={},
+            cutover_status=MerchantMigrationCutoverStatus.skipped,
+            cutover_error="Customer has no card.",
+        )
+        failed = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_failed",
+            canonical={},
+            cutover_status=MerchantMigrationCutoverStatus.failed,
+            cutover_error="Stranded — no resumable payment method.",
+        )
+        await save_fixture(untried)
+        await save_fixture(skipped)
+        await save_fixture(failed)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+
+        await repository.delete_pending(migration.id)
+        await session.flush()
+
+        assert (
+            await repository.get_by_source(
+                organization_id=organization.id,
+                type=MerchantMigrationRecordType.subscription,
+                source_id="sub_untried",
+            )
+            is None
+        )
+        kept_skipped = await repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_skipped",
+        )
+        assert kept_skipped is not None
+        assert kept_skipped.status == MerchantMigrationRecordStatus.pending
+        assert kept_skipped.cutover_status == MerchantMigrationCutoverStatus.skipped
+        assert kept_skipped.cutover_error == "Customer has no card."
+        kept_failed = await repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_failed",
+        )
+        assert kept_failed is not None
+        assert kept_failed.status == MerchantMigrationRecordStatus.pending
+        assert kept_failed.cutover_status == MerchantMigrationCutoverStatus.failed
+        assert kept_failed.cutover_error == "Stranded — no resumable payment method."
+
+    async def test_does_not_touch_other_migrations(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        other = await _create_migration(save_fixture, organization)
+        untried = MerchantMigrationRecord(
+            merchant_migration=other,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_other",
+            canonical={},
+        )
+        await save_fixture(untried)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+
+        await repository.delete_pending(migration.id)
+        await session.flush()
+
+        assert (
+            await repository.get_by_source(
+                organization_id=organization.id,
+                type=MerchantMigrationRecordType.subscription,
+                source_id="sub_other",
+            )
+            is not None
+        )

@@ -599,10 +599,18 @@ class MerchantMigrationRecordRepository(
             )
 
     async def delete_pending(self, migration_id: UUID) -> None:
+        """Clear the untried staged rows so a pre-check re-extract can restage them.
+
+        Settled cutover rows are preserved: a subscription the cutover passed over
+        keeps ``status = pending`` with a non-null ``cutover_status`` (skipped or
+        failed), and that audit trail must survive a re-run. Only rows the
+        cutover has never looked at (``cutover_status IS NULL``) are removed.
+        """
         await self.session.execute(
             delete(MerchantMigrationRecord).where(
                 MerchantMigrationRecord.merchant_migration_id == migration_id,
                 MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+                MerchantMigrationRecord.cutover_status.is_(None),
             )
         )
 

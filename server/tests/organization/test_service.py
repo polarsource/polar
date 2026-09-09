@@ -69,6 +69,7 @@ from polar.organization.schemas import (
 from polar.organization.service import (
     CannotCreateOrganizationError,
     OrganizationError,
+    PayoutAccountAlreadyLinked,
 )
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
@@ -85,11 +86,13 @@ from polar.user_organization.service import (
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_active_subscription,
     create_benefit,
     create_checkout_link,
     create_dispute,
     create_order,
+    create_organization,
     create_payment,
     create_payout_account,
     create_product,
@@ -4949,6 +4952,28 @@ class TestSetPayoutAccount:
         )
 
         assert updated_org.payout_account_id == payout_account.id
+
+    @pytest.mark.auth
+    async def test_rejects_account_linked_to_another_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+
+        other_organization = await create_organization(
+            save_fixture, await create_account(save_fixture, user)
+        )
+
+        with pytest.raises(PayoutAccountAlreadyLinked):
+            await organization_service.set_payout_account(
+                session, other_organization, payout_account
+            )
 
     @pytest.mark.auth
     async def test_activates_when_all_gates_pass(

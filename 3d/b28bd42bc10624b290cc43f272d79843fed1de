@@ -1,0 +1,22 @@
+server/migrations/versions/2026-06-29-1148_add_migration_jobs_and_migration_records.py
+  s_5b6c091dc91776::t_22bd711daf80ee 30-34
+server/polar/models/migration_job.py
+  s_5b6c091dc91776::t_9c4ded89c40211 5
+  s_5b6c091dc91776::t_79eab1624421a1 55-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "3db28bd42bc10624b290cc43f272d79843fed1de",
+  "prompts": {},
+  "sessions": {
+    "s_5b6c091dc91776": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "625cc146-48a6-444d-94b1-11bf8c52669e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

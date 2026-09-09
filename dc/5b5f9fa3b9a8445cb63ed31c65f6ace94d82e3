@@ -1,0 +1,56 @@
+server/polar/merchant_migration/service.py
+  s_28ea492cb26938::t_857d8940189a76 132
+  s_28ea492cb26938::t_53a8cd68ec397d 20
+  s_28ea492cb26938::t_9bf107ad32482e 104,109-112,127-131,133-138,150-154,156-161,166
+server/polar/merchant_migration/tasks.py
+  s_28ea492cb26938::t_021d95b3b6cd41 1-11
+server/polar/tasks.py
+  s_28ea492cb26938::t_a62871bb771222 22
+  s_28ea492cb26938::t_436b0818f31585 61
+server/polar/merchant_migration/endpoints.py
+  s_28ea492cb26938::t_f3ced2f22fd18e 91-92,95,110-111
+server/polar/merchant_migration/adapters/stripe.py
+  s_28ea492cb26938::t_857d8940189a76 148-150
+  s_28ea492cb26938::t_e6c3de6bb8d510 129,132-147,151-155
+  s_28ea492cb26938::t_59521ad9bc620c 20
+  s_28ea492cb26938::t_b12c8cb91b3f1f 66,69
+  s_28ea492cb26938::t_291757904db0d3 156
+server/migrations/versions/2026-07-02-1200_add_precheck_report_to_merchant_.py
+  s_28ea492cb26938::t_e92da474a1113e 1-34
+server/tests/merchant_migration/test_endpoints.py
+  s_28ea492cb26938::t_25f6f5e5649c36 219,232,251,253-257
+server/tests/merchant_migration/test_service.py
+  s_28ea492cb26938::t_857d8940189a76 168
+  s_28ea492cb26938::t_05206b0c62797a 156,158,170,172-175,194,213-262
+server/polar/merchant_migration/precheck.py
+  s_28ea492cb26938::t_104dc46167aad4 132-142
+  s_28ea492cb26938::t_c2d5135ed15984 39,51-52,59
+server/polar/merchant_migration/canonical.py
+  s_28ea492cb26938::t_6c91d6f5da26a4 32-38
+  s_28ea492cb26938::t_c6fa5721a8b45a 82-86,103-104
+server/polar/models/merchant_migration.py
+  s_28ea492cb26938::t_a0f2e0c3214700 66-70
+server/polar/merchant_migration/schemas.py
+  s_28ea492cb26938::t_e847d39ec85143 24-30
+server/tests/merchant_migration/test_precheck.py
+  s_28ea492cb26938::t_4abece2739f302 37-40,42-49
+  s_28ea492cb26938::t_8f1119532e5811 15
+  s_28ea492cb26938::t_e485717932b191 83,96
+  s_28ea492cb26938::t_7ba41b1f6ea2fd 191-202
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "dc5b5f9fa3b9a8445cb63ed31c65f6ace94d82e3",
+  "prompts": {},
+  "sessions": {
+    "s_28ea492cb26938": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3cdc938-a7ce-4baa-bd20-7ff6afb5d3d6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+server/tests/organization/test_service.py
+  s_a708218e2a68df::t_371ac47feae769 409
+server/polar/organization/tasks.py
+  s_a708218e2a68df::t_4efac7ab30d090 193-196
+server/tests/organization/test_tasks.py
+  s_a708218e2a68df::t_f4cc27e9321326 68,73-75
+  s_a708218e2a68df::t_476691f1755a58 95,100-102
+  s_a708218e2a68df::t_42769a5f70cbf8 76
+  s_a708218e2a68df::t_d2677456123441 103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5d058f6f415e0044b21d4efb960bc8e3312764b5",
+  "prompts": {},
+  "sessions": {
+    "s_a708218e2a68df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e245698-ccbc-4607-a33c-cd991533bd54",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

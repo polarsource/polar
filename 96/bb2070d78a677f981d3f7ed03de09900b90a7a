@@ -1,0 +1,23 @@
+.agents/skills/local-environment/rules/manage-instances.md
+  s_3e0979df60fe40::t_8f290cbb59e2f7 30-31,36-38
+.agents/skills/local-environment/rules/payment-testing.md
+  s_3e0979df60fe40::t_728ccd5e246c15 39
+.agents/skills/local-environment/SKILL.md
+  s_3e0979df60fe40::t_14834914f433d7 95-96,101-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "96bb2070d78a677f981d3f7ed03de09900b90a7a",
+  "prompts": {},
+  "sessions": {
+    "s_3e0979df60fe40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3446067f-3784-4449-a319-add08039e8af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

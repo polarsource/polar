@@ -1,0 +1,21 @@
+server/polar/organization_review/analyzer.py
+  s_0afe79787bbecd::t_0bd277dc943494 792,794-816,818-819,821-822,824-844,846-847,849-850,852-861,863-879
+  s_0afe79787bbecd::t_a501a982f8e0a2 410-411
+  s_0afe79787bbecd::t_aef30ba86dadd9 408-409
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "63d01d7a379010f6253fc0c6464741461de20b38",
+  "prompts": {},
+  "sessions": {
+    "s_0afe79787bbecd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "74a23f9c-8fb0-42da-8303-a3925f1fd407",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

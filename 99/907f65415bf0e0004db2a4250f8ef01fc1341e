@@ -1,0 +1,27 @@
+server/polar/backoffice/payouts/endpoints.py
+  s_8a46ea16860881::t_24d167b73fcf53 426-431
+  s_8a46ea16860881::t_017228788b6e9c 280-283
+server/tests/payout/test_service.py
+  s_8a46ea16860881::t_0fad2706621049 29-30
+  s_8a46ea16860881::t_9400b5a3ff3a66 643-699
+  s_8a46ea16860881::t_eddbb6e0d037b2 642
+server/polar/payout/service.py
+  s_8a46ea16860881::t_25a1f5521d3bd1 677-679
+  s_8a46ea16860881::t_035095b3aa73d1 227-236
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "99907f65415bf0e0004db2a4250f8ef01fc1341e",
+  "prompts": {},
+  "sessions": {
+    "s_8a46ea16860881": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ca03c5a0-58ee-4a8f-bf7d-bd8aaeb90377",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

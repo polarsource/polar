@@ -1,0 +1,19 @@
+docs/docs.json
+  s_6235e3dc756ce9::t_3ab31dd4501383 1101-1108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "c8e4a02197b348a27eb41f88ad5455d248917766",
+  "prompts": {},
+  "sessions": {
+    "s_6235e3dc756ce9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee90536f-4bee-4cb1-8a12-6bfa7483ec20",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

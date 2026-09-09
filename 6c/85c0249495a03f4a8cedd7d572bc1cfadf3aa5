@@ -1,0 +1,19 @@
+docs/features/seat-based-pricing.mdx
+  s_83cb3369b84958::t_54e1cd7c0e433a 17,19-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.1",
+  "base_commit_sha": "6c85c0249495a03f4a8cedd7d572bc1cfadf3aa5",
+  "prompts": {},
+  "sessions": {
+    "s_83cb3369b84958": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "975c39b6-3e6c-49ec-b5ff-77d3de8a46ee",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

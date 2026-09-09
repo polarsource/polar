@@ -1,0 +1,56 @@
+server/migrations/versions/2026-07-30-1219_add_deduplication_key_to_email_logs.py
+  s_c8cf2107f4871e::t_46476b32a41414 1-36
+server/polar/subscription/service.py
+  s_c8cf2107f4871e::t_777eee6aeea821 3367
+  s_c8cf2107f4871e::t_726b77aba1e46c 3322-3324
+  s_c8cf2107f4871e::t_4d341ff6a47993 30-33
+  s_c8cf2107f4871e::t_4970c84412146f 3344-3346
+  s_c8cf2107f4871e::t_77671a0dd2d53a 3438
+server/polar/payment_method/service.py
+  s_c8cf2107f4871e::t_3e52921aeb49a3 191-195
+  s_c8cf2107f4871e::t_00923322725491 13
+  s_c8cf2107f4871e::t_bead300bf24f5b 230
+server/tests/subscription/test_service.py
+  s_c8cf2107f4871e::t_ee74c55298d7fa 5640-5643
+  s_c8cf2107f4871e::t_cc3cf1449013d9 5671-5674
+server/polar/email/deduplication.py
+  s_c8cf2107f4871e::t_cecf2409b4b97c 1-38
+server/polar/email/repository.py
+  s_c8cf2107f4871e::t_47dece395dc456 63,78
+server/polar/email/tasks.py
+  s_c8cf2107f4871e::t_b8ecf83bb05f4c 74
+  s_c8cf2107f4871e::t_62e7349d7d1dbc 30
+server/polar/email/sender.py
+  s_c8cf2107f4871e::t_8dc39bd753e318 188,203
+server/scripts/backfill_email_log_deduplication_key.py
+  s_c8cf2107f4871e::t_110e5ae4f75832 1-4,6-8,10-25,32,35,37-44,46,48-56,58-60,62-82,84-86,94-97,102-131,133-137,139,150-153
+  s_c8cf2107f4871e::t_3197063860ca4f 9
+  s_c8cf2107f4871e::t_3b4aa0db4a5346 87-93,132,138,140-149
+  s_c8cf2107f4871e::t_82724ba837ed73 5,26-31,33-34,36,45,47,57,61,83,98-101
+server/polar/models/email_log.py
+  s_c8cf2107f4871e::t_17a366e5997daa 36
+server/tests/payment_method/test_service.py
+  s_c8cf2107f4871e::t_f80f4feb839ba1 347-371
+server/tests/scripts/test_backfill_email_log_deduplication_key.py
+  s_c8cf2107f4871e::t_ed98506b83d3eb 1-186
+server/tests/email/test_deduplication.py
+  s_c8cf2107f4871e::t_f49d053fb5f611 1-31
+server/tests/email/test_tasks.py
+  s_c8cf2107f4871e::t_976d34c973dfd9 73-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "f85eda80371f2d897b6fba6ca77d69b15a372dac",
+  "prompts": {},
+  "sessions": {
+    "s_c8cf2107f4871e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3ef8d40f-d68f-4b36-a8d9-6f70208fe886",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

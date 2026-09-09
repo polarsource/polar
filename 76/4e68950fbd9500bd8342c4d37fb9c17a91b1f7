@@ -1,0 +1,22 @@
+clients/apps/web/src/components/Payouts/useInvoiceDownload.ts
+  s_d1ec3514b66118::t_040a312472bffd 107-108,113,115-122,132
+  s_d1ec3514b66118::t_355044ddd85de4 141
+clients/apps/web/src/components/Payouts/DownloadInvoice.tsx
+  s_d1ec3514b66118::t_bbfc0b59f77968 306-308
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "764e68950fbd9500bd8342c4d37fb9c17a91b1f7",
+  "prompts": {},
+  "sessions": {
+    "s_d1ec3514b66118": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36668af6-b5e4-46fa-bfec-cafb24674157",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+dev/cli/secrets_io.py
+  s_e92c10b92a1a9d::t_5d76befad82f0c 107-112,115-116
+  s_e92c10b92a1a9d::t_c334978286cb4c 12
+dev/cli/stripe_config.py
+  s_e92c10b92a1a9d::t_497f104a52d9b6 14
+  s_e92c10b92a1a9d::t_8aace0cc152c94 352-354
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "78aa557780df0c93c26b2544896212e77955d7e8",
+  "prompts": {},
+  "sessions": {
+    "s_e92c10b92a1a9d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "74f2da85-babf-4537-983e-9db3057751aa",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

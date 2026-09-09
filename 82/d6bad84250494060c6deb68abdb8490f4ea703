@@ -1,0 +1,28 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewRecordModal.tsx
+  s_81f519e3bb364f::t_f281d6a4e2164b 48-57
+  s_81f519e3bb364f::t_b26306ab9afd7f 1-47,58-114
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewColumns.tsx
+  s_81f519e3bb364f::t_ce26e4565f6149 218-222,226
+  s_81f519e3bb364f::t_45c8ca0ecf0bdd 58-59,66-73,79,84-85,92-95
+  s_81f519e3bb364f::t_e25a6d2de2c359 1
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTableView.tsx
+  s_81f519e3bb364f::t_67e511cbd641e8 4,7,9
+  s_81f519e3bb364f::t_8f58ffb3229f26 214,218-229
+  s_81f519e3bb364f::t_a6764ec288c715 94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "82d6bad84250494060c6deb68abdb8490f4ea703",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

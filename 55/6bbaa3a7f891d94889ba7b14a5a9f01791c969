@@ -1,0 +1,19 @@
+server/polar/merchant_migration/canonical.py
+  s_99ecc0a8ca0004::t_02b95be52ef06f 140-181,183-184,186-187
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "556bbaa3a7f891d94889ba7b14a5a9f01791c969",
+  "prompts": {},
+  "sessions": {
+    "s_99ecc0a8ca0004": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "89dd1fec-b689-4953-b1e1-328d7c5b0281",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

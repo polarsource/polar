@@ -1,0 +1,19 @@
+server/scripts/find_subscriptions_missing_reset_events.py
+  s_8a39d133f46c78::t_aea545da849fa1 1,5-7,9-10,12-25,41,43,45-49,81-93,95-117,120-125,127,130-131,134,138-142,144-146,149,152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "df7314f62c5f34abdfce9a5414c76d039d21b926",
+  "prompts": {},
+  "sessions": {
+    "s_8a39d133f46c78": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e94844dc-5671-4db5-a1fd-6d42c61ed62c",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

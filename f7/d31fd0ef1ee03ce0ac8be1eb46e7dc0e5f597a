@@ -1,0 +1,21 @@
+handbook/engineering/decisions/index.mdx
+  s_5861e605661360::t_5ee8a5c85b07a8 80
+.agents/skills/adr-check/SKILL.md
+  s_5861e605661360::t_d5e549e11315b9 1-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "f7d31fd0ef1ee03ce0ac8be1eb46e7dc0e5f597a",
+  "prompts": {},
+  "sessions": {
+    "s_5861e605661360": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "398f2c87-0e83-40a9-a21d-f3d84e9d6674",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

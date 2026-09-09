@@ -1,0 +1,35 @@
+server/polar/customer/endpoints.py
+  s_5db13c87a6d395::t_263cd430e831e7 52
+server/polar/organization_access_token/endpoints.py
+  s_5db13c87a6d395::t_263cd430e831e7 27
+server/polar/order/endpoints.py
+  s_5db13c87a6d395::t_263cd430e831e7 55
+server/polar/member/endpoints.py
+  s_5db13c87a6d395::t_263cd430e831e7 24
+server/polar/customer_meter/endpoints.py
+  s_5db13c87a6d395::t_263cd430e831e7 21
+server/polar/payment/endpoints.py
+  s_5db13c87a6d395::t_263cd430e831e7 20
+server/polar/product/endpoints.py
+  s_5db13c87a6d395::t_263cd430e831e7 32
+server/polar/subscription/endpoints.py
+  s_5db13c87a6d395::t_ba355ce26ead26 47
+server/polar/metrics/endpoints.py
+  s_5db13c87a6d395::t_263cd430e831e7 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "24eaec29c48e60cb271997d0e8ceb1ecd2ebff62",
+  "prompts": {},
+  "sessions": {
+    "s_5db13c87a6d395": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41e275b3-0ccd-4510-b4f2-e3901b60d786",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

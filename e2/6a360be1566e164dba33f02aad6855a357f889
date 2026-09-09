@@ -1,0 +1,89 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/stepMarker.tsx
+  s_8636cda35c2e86::t_c601d9ce64e2ae 2-3,6-16,24,27-28,40-41
+  s_8636cda35c2e86::t_831b1aff100807 4-5,17-18
+  s_8636cda35c2e86::t_349c69213faadd 1,19-23,25-26,29-39
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_8636cda35c2e86::t_180086d85ff21f 8,45,64
+  s_8636cda35c2e86::t_831b1aff100807 44
+  s_8636cda35c2e86::t_5644c6d175aeab 48
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepItem.tsx
+  s_8636cda35c2e86::t_f75335732128e4 72-73,94-95
+  s_8636cda35c2e86::t_34d400282a124b 1-6,15-19,21-26,28-29,31-32,34-35,45-46,48-56,58-62,65-69,75,89-93,103-107,109-111,113,119-122
+  s_8636cda35c2e86::t_6897a88d7ff3d0 70
+  s_8636cda35c2e86::t_dd40b85690c353 13,71,74
+  s_8636cda35c2e86::t_f4e301738a2ccc 63,108,115
+  s_8636cda35c2e86::t_f980cf6d53a4d9 47,114,116-118
+  s_8636cda35c2e86::t_831b1aff100807 30,112
+  s_8636cda35c2e86::t_a2c70e34ab23ba 76-81,83-88
+  s_8636cda35c2e86::t_90c8f8b398ad5f 7-12,20,27,33,44,57,64,82,96-102
+  s_8636cda35c2e86::t_fe471ec011583d 36-42
+  s_8636cda35c2e86::t_198c1de654eff8 14,43
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_8636cda35c2e86::t_33739b6a8d2c61 50
+  s_8636cda35c2e86::t_198c1de654eff8 49,51
+  s_8636cda35c2e86::t_6897a88d7ff3d0 4
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_8636cda35c2e86::t_8f3dbb4c727171 95-96,99,121-125,127-128,170
+  s_8636cda35c2e86::t_f63c3bbbe30f68 1
+  s_8636cda35c2e86::t_180086d85ff21f 131-133,135-138,140-143,147-151,153-154,158-165,176-184
+  s_8636cda35c2e86::t_51dfd0abe461a8 112-118,126
+  s_8636cda35c2e86::t_07b39ea6abcb42 97-98,100-109,155-157,166-169,171-175,185-186
+  s_8636cda35c2e86::t_fb7a3fcb123c56 152
+  s_8636cda35c2e86::t_5c7304f3d8c26a 110-111,119-120,129-130,144-146
+  s_8636cda35c2e86::t_fabf02fe992a4b 134,139
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferPanel.tsx
+  s_8636cda35c2e86::t_f4e301738a2ccc 65
+  s_8636cda35c2e86::t_7c7c71ab3a9fdc 48-49,74-75
+  s_8636cda35c2e86::t_fc9b5bb6a87962 1-2,4-47,51-53,70,72-73,77-79,81-86
+  s_8636cda35c2e86::t_c302ef8af738c8 76
+  s_8636cda35c2e86::t_dd5dc6f30365f1 3,71,80
+  s_8636cda35c2e86::t_25e2999c4bcc60 50,54-64,66-69
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/StartPanTransfer.tsx
+  s_8636cda35c2e86::t_33fa7a38a90529 43,45
+  s_8636cda35c2e86::t_7ca498873f064c 1-29,33-36,40-42,44,46-50
+  s_8636cda35c2e86::t_7c7c71ab3a9fdc 37-39
+  s_8636cda35c2e86::t_1fdd3a4b70f2ee 30,32
+  s_8636cda35c2e86::t_c302ef8af738c8 31
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepForm.tsx
+  s_8636cda35c2e86::t_dd5dc6f30365f1 3,11-12,18-19,33,37,56,58,63-68
+  s_8636cda35c2e86::t_c302ef8af738c8 57
+  s_8636cda35c2e86::t_71850eccfeda2a 1-2,4-10,13-14,20-32,34-36,38-55,59-62,69-73
+  s_8636cda35c2e86::t_7c7c71ab3a9fdc 15-17
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepBody.tsx
+  s_8636cda35c2e86::t_96ec274aed5b2b 35-43,45-50
+  s_8636cda35c2e86::t_7c7c71ab3a9fdc 44,56,101
+  s_8636cda35c2e86::t_f4e301738a2ccc 57
+  s_8636cda35c2e86::t_1f6bef4a4291a5 68
+  s_8636cda35c2e86::t_34cd760289dbd0 24,27
+  s_8636cda35c2e86::t_dd40b85690c353 88
+  s_8636cda35c2e86::t_831b1aff100807 25-26
+  s_8636cda35c2e86::t_f980cf6d53a4d9 102-106
+  s_8636cda35c2e86::t_dd5dc6f30365f1 15,22,53,55
+  s_8636cda35c2e86::t_6c6dfc1340a78e 1-14,16-21,23,28-34,51-52,60-67,69-71,84-87,89-100,107-114
+  s_8636cda35c2e86::t_6b8e3e7dd010ce 54,58-59
+  s_8636cda35c2e86::t_7955df517a00f6 72-83
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_8636cda35c2e86::t_157b226ca9f7d3 10-11
+  s_8636cda35c2e86::t_2f17d48b6263d8 130-132,135-148
+  s_8636cda35c2e86::t_831b1aff100807 133-134
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/panTransferCopy.ts
+  s_8636cda35c2e86::t_fa4e699ec1747f 1-64,74-154,156-162,164-169
+  s_8636cda35c2e86::t_2d282da12647fa 155,163,170-177
+  s_8636cda35c2e86::t_d5158ac1e49344 65-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "e26a360be1566e164dba33f02aad6855a357f889",
+  "prompts": {},
+  "sessions": {
+    "s_8636cda35c2e86": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e88eee69-62d9-4fcd-bf27-b32d20db4ed8",
+        "model": "claude-opus-5"
+      },
+      "human_author": null
+    }
+  }
+}

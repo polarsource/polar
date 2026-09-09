@@ -1,0 +1,33 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ConnectGuide.tsx
+  s_e52d7854cce576::t_3b2378d889bab2 23-24
+server/tests/merchant_migration/test_service.py
+  s_e52d7854cce576::t_3dc27111aa38e4 26
+  s_e52d7854cce576::t_6e784f60f231cb 8
+  s_e52d7854cce576::t_caaa14c56c1bc7 207-262
+server/polar/merchant_migration/endpoints.py
+  s_e52d7854cce576::t_08550765599736 28
+  s_e52d7854cce576::t_b7709a3a62cbf7 72-73,76
+server/polar/merchant_migration/service.py
+  s_e52d7854cce576::t_e5b2f485034e46 105-119
+  s_e52d7854cce576::t_490970d147465f 170-175
+  s_e52d7854cce576::t_91b954d2aa1fd7 302
+  s_e52d7854cce576::t_06c8da277a34bb 10
+clients/packages/client/src/v1.ts
+  s_e52d7854cce576::t_e2bbf05d36c47d 31036-31046,49738,49747
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f3f82320da4f065d15fd226c7e1a8166c8971125",
+  "prompts": {},
+  "sessions": {
+    "s_e52d7854cce576": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2b5e835b-8844-4d3c-9759-8779161d6acc",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

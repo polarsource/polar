@@ -1,0 +1,24 @@
+server/polar/models/subscription.py
+  s_6f32a2b1915810::t_87cb4ff30a5c46 125-142
+server/migrations/versions/2026-07-27-1553_add_partial_indexes_for_subscription_.py
+  s_6f32a2b1915810::t_0c45ffb59995c8 29
+  s_6f32a2b1915810::t_d44ac8ba9efa98 20-25,27-28,30-32,34-64,68-80
+  s_6f32a2b1915810::t_2a029a46583186 1-15,17-19,26,33,65-67
+  s_6f32a2b1915810::t_e08733615af237 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "0345f973efb0bea74f2acbbd08daeacdeb722d2f",
+  "prompts": {},
+  "sessions": {
+    "s_6f32a2b1915810": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6025f7d1-117d-420b-b9fe-a5eb535520c9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

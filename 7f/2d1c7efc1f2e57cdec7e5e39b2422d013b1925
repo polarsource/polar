@@ -1,0 +1,31 @@
+server/tests/observability/invariants/test_service.py
+  s_560b79dace0543::t_7efc79e6d65ca0 41,54
+  s_560b79dace0543::t_6832ed44ce3387 1-40,42-53,55-59
+server/polar/observability/invariants/service.py
+  s_560b79dace0543::t_914dafb449997f 74-84
+server/polar/observability/invariants/rules/base.py
+  s_560b79dace0543::t_5594ae4322d55d 30-32
+  s_560b79dace0543::t_b8ee06ddda9114 4
+server/polar/observability/invariants/rules/no_recent_subscriptions.py
+  s_560b79dace0543::t_ba364c4376bd13 5
+  s_560b79dace0543::t_f6048d3a56def1 40-42,45
+server/polar/observability/invariants/rules/no_recent_orders.py
+  s_560b79dace0543::t_13cda28e674d89 5
+  s_560b79dace0543::t_1f01d4ff8a5960 36-37,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "7f2d1c7efc1f2e57cdec7e5e39b2422d013b1925",
+  "prompts": {},
+  "sessions": {
+    "s_560b79dace0543": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "826db7a9-e82d-46ad-a40c-de21684256a6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

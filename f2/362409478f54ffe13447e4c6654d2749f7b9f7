@@ -1,0 +1,22 @@
+clients/apps/web/src/components/Products/ProductForm/Pricing/MeterCycleField.tsx
+  s_1fa46e2a821bdd::t_f51195ca316486 7,124,148
+  s_1fa46e2a821bdd::t_80d0cb6c40715b 56-64
+clients/apps/web/src/components/Products/ProductForm/ProductPricingSection.tsx
+  s_1fa46e2a821bdd::t_fa62f07ee934a9 161,163,167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "f2362409478f54ffe13447e4c6654d2749f7b9f7",
+  "prompts": {},
+  "sessions": {
+    "s_1fa46e2a821bdd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c651a8d5-be94-4dc9-8aee-c2ecfd422654",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

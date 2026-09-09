@@ -1,0 +1,47 @@
+server/tests/subscription/test_tasks.py
+  s_fb6165b946ae98::t_76e714288ff11a 50-88
+server/tests/subscription/test_service.py
+  s_fb6165b946ae98::t_638f3542443ec0 7322-7323,7333,7341-7377,7381-7383
+  s_fb6165b946ae98::t_7eff553113d7ac 7378-7380,7384-7393
+server/polar/subscription/service.py
+  s_fb6165b946ae98::t_0cd8501f6bd850 130-134
+  s_fb6165b946ae98::t_f3026739217e7e 1857-1875,1883-1884,1894,1897-1902,1904-1905,1916
+  s_fb6165b946ae98::t_171aed386cc56a 1917
+server/polar/subscription/tasks.py
+  s_fb6165b946ae98::t_bd2ac3a7f8cdec 85-88,91-98
+terraform/organization/test.tf
+  s_5b881bade6edbb::t_93bd65d9e97028 17-18
+terraform/organization/sandbox.tf
+  s_5b881bade6edbb::t_53c373698800c3 18-19
+terraform/modules/render_service/main.tf
+  s_5b881bade6edbb::t_b47fc7e1af9337 127
+terraform/modules/application_access/main.tf
+  s_5b881bade6edbb::t_d6e6e4f6a241cc 37-41
+  s_5b881bade6edbb::t_7612a1247c0696 190-234
+terraform/organization/production.tf
+  s_5b881bade6edbb::t_4022d267165732 341-342
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "fb11252a67ca86c80e034020c473e8759745fc9c",
+  "prompts": {},
+  "sessions": {
+    "s_5b881bade6edbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a11f7bb0-49de-45e4-8617-e4cbaad4b68d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_fb6165b946ae98": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88b37180-9dcc-4214-81e9-a0ad0db4d5be",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

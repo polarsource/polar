@@ -1,0 +1,19 @@
+dev/docker/scripts/startup.sh
+  s_246eec3fe1cfe7::t_b179f43825748e 32-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "94a27806fb6565f7fec431ea8e847949af1a0a89",
+  "prompts": {},
+  "sessions": {
+    "s_246eec3fe1cfe7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96aeef22-dca8-4096-b236-60a2484a8e7d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

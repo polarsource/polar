@@ -1,0 +1,43 @@
+sdk/generator/typescript/template/src/webhooks.ts
+  s_8328894b8c4ada::t_2c093779c26652 93-102,111-124,131-158
+  s_8328894b8c4ada::t_3b6881ae5a0012 159
+sdk/generator/python/template/polar/webhooks.py
+  s_8328894b8c4ada::t_2c093779c26652 90-103,106-117
+sdk/generator/typescript/template/README.md
+  s_8328894b8c4ada::t_04810a5e705b2b 128-130
+sdk/generator/python/template/tests/test_webhooks.py
+  s_8328894b8c4ada::t_2c093779c26652 5,63-75
+  s_8328894b8c4ada::t_4c4a0d45c390c2 76-79
+sdk/generator/python/template/README.md
+  s_8328894b8c4ada::t_84667c0c807c8d 168-173
+docs/integrate/webhooks/delivery.mdx
+  s_8328894b8c4ada::t_bb9691ef51282d 109-112
+  s_8328894b8c4ada::t_335e3011244555 105-107
+  s_8328894b8c4ada::t_f0a610b9a701b2 108
+sdk/generator/typescript/template/src/webhooks.test.ts
+  s_8328894b8c4ada::t_2c093779c26652 62-81
+sdk/python/polar/webhooks.py
+  s_8328894b8c4ada::t_a12e2281bc27bc 90-103,106-117
+sdk/python/tests/test_webhooks.py
+  s_8328894b8c4ada::t_45992ac5f51fad 5,63-79
+sdk/typescript/src/webhooks.test.ts
+  s_8328894b8c4ada::t_bb58b66c8673b3 52-71
+sdk/typescript/src/webhooks.ts
+  s_8328894b8c4ada::t_8fc2102c50d788 93-102,111-124,131-159
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "0b156a1edb4bc8d56d867540eb28b23a826be88d",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

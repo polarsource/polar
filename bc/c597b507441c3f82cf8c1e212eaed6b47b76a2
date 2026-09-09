@@ -1,0 +1,34 @@
+server/polar/integrations/slack/service.py
+  s_3fdbc7df8c9e35::t_03dfb7b10bb6ee 82-88,98-99,107
+  s_3fdbc7df8c9e35::t_58a1c422266a75 258,264
+  s_3fdbc7df8c9e35::t_731c8ff7075e3c 91,219,254
+  s_3fdbc7df8c9e35::t_0fc0f944548969 212-213
+server/polar/benefit/strategies/slack_shared_channel/service.py
+  s_3fdbc7df8c9e35::t_56a58b8eb26b3d 88
+  s_3fdbc7df8c9e35::t_b92214c8d6b427 125
+  s_3fdbc7df8c9e35::t_dd45f396b2b4ac 244-245,251
+server/tests/models/test_slack_app.py
+  s_3fdbc7df8c9e35::t_286d827d6d832b 110-124
+  s_3fdbc7df8c9e35::t_e97a8a4162d47b 70-109,125
+  s_3fdbc7df8c9e35::t_e0d6c147b45ef0 69
+server/polar/integrations/slack/endpoints.py
+  s_3fdbc7df8c9e35::t_f4f6c09422c403 284-285,289
+server/polar/models/slack_app.py
+  s_3fdbc7df8c9e35::t_5bbe97501cf8f3 95-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "bcc597b507441c3f82cf8c1e212eaed6b47b76a2",
+  "prompts": {},
+  "sessions": {
+    "s_3fdbc7df8c9e35": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db41ec7a-210a-4431-b8dc-4a9a8e12678d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,81 @@
+server/polar/backoffice/organizations_v2/views/list_view.py
+  s_7b93f39d2fd53e::t_f8f8ff948af14c 378-380,385-389
+  s_7b93f39d2fd53e::t_58be3493f0ff6b 434-439
+server/emails/src/types/openapi.ts
+  s_7b93f39d2fd53e::t_562b04ba31f407 2097-2115,2154
+server/polar/organization/repository.py
+  s_7b93f39d2fd53e::t_8b9b2839104d14 32
+  s_7b93f39d2fd53e::t_6b4561e0cbd945 48-50
+  s_7b93f39d2fd53e::t_65b21d62ca10c8 202
+  s_7b93f39d2fd53e::t_0dbb1d963a5567 189-201,203-219
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_7b93f39d2fd53e::t_16ffd7a45f7982 441-442
+  s_7b93f39d2fd53e::t_e6aded670b57c9 472-473,479
+server/tests/payout/test_service.py
+  s_7b93f39d2fd53e::t_6cfa7f297b0e71 265-301
+server/polar/models/organization.py
+  s_7b93f39d2fd53e::t_a09b3a6f1ba2a1 201,212
+  s_7b93f39d2fd53e::t_c6ee10a0079025 338-347
+  s_7b93f39d2fd53e::t_f9b7533e048031 436-442
+server/polar/email/schemas.py
+  s_7b93f39d2fd53e::t_0c60afd7dab2c0 40
+  s_7b93f39d2fd53e::t_d2e0f83f9610e8 484-495
+  s_7b93f39d2fd53e::t_e137637e823a64 508
+server/tests/organization/test_tasks.py
+  s_7b93f39d2fd53e::t_32ce6a24481d1d 7,12
+  s_7b93f39d2fd53e::t_4bc3ec478a980b 91-120
+server/polar/organization/schemas.py
+  s_7b93f39d2fd53e::t_0981cc13af1782 373
+server/polar/backoffice/components/_status_badge.py
+  s_7b93f39d2fd53e::t_f860d350c8aae3 22
+  s_7b93f39d2fd53e::t_0546944a0cba38 66-69
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/OrganizationStatusBanner.tsx
+  s_7b93f39d2fd53e::t_eff5451ddd81d8 5
+  s_7b93f39d2fd53e::t_9feea368cb1345 32-35
+server/polar/organization/service.py
+  s_7b93f39d2fd53e::t_120a0fe24184fb 1420-1447
+server/emails/src/emails/organization_offboarded.tsx
+  s_7b93f39d2fd53e::t_c9795dd0e1f5a4 1-7,16-18,28-29
+  s_7b93f39d2fd53e::t_ecc10e1e2ebfc6 8-15,19-27,30-47
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/finance/account/AccountPageRouter.tsx
+  s_7b93f39d2fd53e::t_c816eabf77484d 45-49
+server/emails/src/emails/index.ts
+  s_7b93f39d2fd53e::t_cf6a6d5653d57e 16
+  s_7b93f39d2fd53e::t_d070cd6a8fb604 48
+server/polar/config.py
+  s_7b93f39d2fd53e::t_97c3db81e69890 250-254
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/OffboardedBanner.tsx
+  s_7b93f39d2fd53e::t_28acc5313e4a65 1-38
+server/polar/organization/tasks.py
+  s_7b93f39d2fd53e::t_d2e922c5d4e056 8-12,24-26
+  s_7b93f39d2fd53e::t_7b37efd5598a5f 88-104,106-108,110-126
+  s_7b93f39d2fd53e::t_65b21d62ca10c8 109
+  s_7b93f39d2fd53e::t_61cffa5fa9758e 105
+server/polar/backoffice/organizations_v2/views/detail_view.py
+  s_7b93f39d2fd53e::t_be6e7d3e5ebb59 720-730
+server/tests/organization/test_service.py
+  s_7b93f39d2fd53e::t_d04478a9b2e2c9 3910-4078
+  s_7b93f39d2fd53e::t_bb0c3d7a52b1f7 4210-4211,4213-4225
+  s_7b93f39d2fd53e::t_b242a1870bddc3 4212
+  s_7b93f39d2fd53e::t_c168361dd57202 25
+  s_7b93f39d2fd53e::t_62e56b1c3b8428 4240,4252-4263,4275-4291
+  s_7b93f39d2fd53e::t_64d1a1f47a611c 4264-4274
+  s_7b93f39d2fd53e::t_bad3a59fbfd3b7 42
+  s_7b93f39d2fd53e::t_7d0af712c10808 3909
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "fdd74595ff0666a2bfdbaf858ee4421ffa4c4ee4",
+  "prompts": {},
+  "sessions": {
+    "s_7b93f39d2fd53e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5d3c363c-d423-4267-a211-daba00db6857",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

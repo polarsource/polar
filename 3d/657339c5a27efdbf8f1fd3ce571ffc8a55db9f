@@ -1,0 +1,43 @@
+.agents/skills/local-environment/rules/stop-environment.md
+  s_3e0979df60fe40::t_80655150ea4e3b 9-11,13-15,20-23,25,30,32-33,35,38-43,45-47,49,51,53-54,57,63-64
+.agents/skills/local-environment/SKILL.md
+  s_3e0979df60fe40::t_325208cc395d37 64
+  s_3e0979df60fe40::t_e9a20639a42e41 42-45
+  s_3e0979df60fe40::t_6851209b61f90a 7,12-13,15,17-18,20-26,28-30,32,34-35,37-40,46-55,59-63,65-75,80-91,93,95-96,98-102,104-106,108,112-115,117,119
+  s_3e0979df60fe40::t_901b8f008688fc 41
+.agents/skills/local-environment/rules/start-environment.md
+  s_3e0979df60fe40::t_a26ced29ba3161 9-11,13,15,20,22,24-34,38-40,47-54,56,59-60,62-65,67,69-77,79,81,83-86,88-90
+.agents/skills/local-environment/rules/payment-testing.md
+  s_3e0979df60fe40::t_c106faea5c3e77 53-54
+.agents/skills/local-environment/rules/manage-instances.md
+  s_3e0979df60fe40::t_e055dfc24f0cd4 9,11-12,14-26,30-34,36-37,39,41,43,46-49,52-53,55,57,59-65,67,69-71,73,75-77
+.agents/skills/local-environment/rules/service-architecture.md
+  s_3e0979df60fe40::t_2816aa4b743eda 9-11,13,15-19,22-64,68-71,74,76-84,86,88-90
+.agents/skills/local-environment/rules/troubleshooting.md
+  s_3e0979df60fe40::t_7e9e369443671e 35-78
+  s_3e0979df60fe40::t_a2e84004d6f5e0 157-159,165-172
+.agents/skills/local-environment/AGENTS.md
+  s_3e0979df60fe40::t_d1aa3c4d8be2f6 1-20
+.agents/skills/local-environment/rules/view-logs.md
+  s_3e0979df60fe40::t_cd840252ff2369 9-12,15,20,22-23,25-26,33,38
+.agents/skills/local-environment/rules/shell-and-workflows.md
+  s_3e0979df60fe40::t_c8f85cd5afad40 1-34,36,38-67,71-73,81-89
+  s_3e0979df60fe40::t_d8e499c5b3d65a 35,37
+  s_3e0979df60fe40::t_bc132c54e54780 68-70,74-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "3d657339c5a27efdbf8f1fd3ce571ffc8a55db9f",
+  "prompts": {},
+  "sessions": {
+    "s_3e0979df60fe40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3446067f-3784-4449-a319-add08039e8af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

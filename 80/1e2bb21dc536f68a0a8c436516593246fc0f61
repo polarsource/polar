@@ -1,0 +1,22 @@
+server/polar/models/email_log.py
+  s_792ceaf1bcc059::t_800733f27eb055 31-33
+server/migrations/versions/2026-08-11-0830_add_index_on_email_template_to_email_.py
+  s_792ceaf1bcc059::t_2688485cc330d2 1-19,21,23,39-41
+  s_792ceaf1bcc059::t_43e0a2d4717068 20,22,24-38,42-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "801e2bb21dc536f68a0a8c436516593246fc0f61",
+  "prompts": {},
+  "sessions": {
+    "s_792ceaf1bcc059": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1bbf0a25-e4e8-4371-bc70-e52caf795569",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+handbook/engineering/design-documents/secrets-encryption.mdx
+  s_a59256419c04d2::t_26e6a7aa567197 104
+  s_a59256419c04d2::t_8b212a7d60a7d1 120
+  s_a59256419c04d2::t_540f3223a545e5 127
+  s_a59256419c04d2::t_cec7189c0136c5 175,178-179,181-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "a14da026d9cfcceef0026f483ed9534bdbb8e112",
+  "prompts": {},
+  "sessions": {
+    "s_a59256419c04d2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1a3271c0-dee4-428d-ae74-ddb08ae4f1d5",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

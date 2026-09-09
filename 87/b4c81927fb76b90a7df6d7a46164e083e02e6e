@@ -1,0 +1,40 @@
+server/polar/integrations/stripe/account_risk.py
+  s_a708218e2a68df::t_4eeb981a918380 34-35
+  s_a708218e2a68df::t_a2853dc1d88f77 1,3
+  s_a708218e2a68df::t_f9762e1c60253a 28
+  s_a708218e2a68df::t_ae6892a107cdad 68
+  s_a708218e2a68df::t_9d41067d439ae4 83
+  s_a708218e2a68df::t_bd3ef4e8f40b68 24
+server/polar/organization/service.py
+  s_a708218e2a68df::t_4c2909f6ffd4ff 1524
+  s_a708218e2a68df::t_fa1a45e2be3e05 1553,1555-1557,1563-1564,1566-1568
+server/polar/models/organization.py
+  s_a708218e2a68df::t_5276ab3ee0f370 227-228
+server/polar/integrations/stripe/endpoints.py
+  s_a708218e2a68df::t_24da78ed2c4eea 55
+  s_a708218e2a68df::t_a0995394dac95c 76-77
+server/polar/integrations/stripe/tasks.py
+  s_a708218e2a68df::t_7627ef1a1bcd70 77
+  s_a708218e2a68df::t_1c000c6787c25e 90
+server/tests/organization/test_service.py
+  s_a708218e2a68df::t_3b8d59414eaf2f 1725
+  s_a708218e2a68df::t_62a7322c371ee6 1623,1641,1643,1662-1682
+server/polar/config.py
+  s_a708218e2a68df::t_f388676c1aecde 268
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "87b4c81927fb76b90a7df6d7a46164e083e02e6e",
+  "prompts": {},
+  "sessions": {
+    "s_a708218e2a68df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e245698-ccbc-4607-a33c-cd991533bd54",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

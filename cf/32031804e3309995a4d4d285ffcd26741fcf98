@@ -1,0 +1,40 @@
+server/Dockerfile
+  s_84a3b93dd4ffc2::t_602a87c5f0aa75 127
+.github/workflows/deploy_server.sh
+  s_84a3b93dd4ffc2::t_580ae783e34ddb 5,7-8
+  s_84a3b93dd4ffc2::t_9e54022fee9206 137
+.github/workflows/deploy.yml
+  s_84a3b93dd4ffc2::t_b83f4f4f6c3394 356
+  s_84a3b93dd4ffc2::t_6616e6d01bd1eb 336
+server/polar/organization_review/collectors/website.py
+  s_84a3b93dd4ffc2::t_07176ae02357a8 77
+  s_84a3b93dd4ffc2::t_e43ea1fd4d61db 272-275
+  s_84a3b93dd4ffc2::t_35454ff45ad7fc 397-403,405-417
+server/polar/config.py
+  s_84a3b93dd4ffc2::t_dab27ce77b6ca5 241-243
+server/polar/organization_review/collectors/firecrawl_client.py
+  s_84a3b93dd4ffc2::t_d648234bbe62f5 4-5
+  s_84a3b93dd4ffc2::t_7368174f2c4d80 45-47
+.github/workflows/deploy-environment.yml
+  s_84a3b93dd4ffc2::t_e8ce58c1df85b2 102
+server/polar/organization_review/collectors/setup.py
+  s_84a3b93dd4ffc2::t_91fd9aafb0ce0f 156,160
+server/tests/organization_review/collectors/test_website.py
+  s_84a3b93dd4ffc2::t_58fcb0435fd300 580
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "cf32031804e3309995a4d4d285ffcd26741fcf98",
+  "prompts": {},
+  "sessions": {
+    "s_84a3b93dd4ffc2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c782eb45-791b-4469-ba4a-2d9d130ee86c",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

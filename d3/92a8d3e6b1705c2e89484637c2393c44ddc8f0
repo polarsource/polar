@@ -1,0 +1,24 @@
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_19497599cb040c 5876-5929
+  s_055272d137234c::t_2f21a84028f1bb 2089-2129
+server/emails/src/types/openapi.ts
+  s_055272d137234c::t_277cccb2dddb77 1322,1335
+server/polar/subscription/service.py
+  s_055272d137234c::t_905fd62e4fe324 937-942
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "d392a8d3e6b1705c2e89484637c2393c44ddc8f0",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

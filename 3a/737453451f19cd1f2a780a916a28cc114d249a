@@ -1,0 +1,28 @@
+server/polar/worker/_broker.py
+  s_55425a4ea3c9b4::t_2d99af3eed791f 178,196
+terraform/sandbox/render.tf
+  s_55425a4ea3c9b4::t_e58f2f39a64b98 123
+server/polar/worker/run_without_db.py
+  s_55425a4ea3c9b4::t_cebaaf11aefd39 6
+  s_55425a4ea3c9b4::t_61b8ea5f7ea6df 7-10
+terraform/production/render.tf
+  s_55425a4ea3c9b4::t_97c4daf7b9ac49 202
+  s_55425a4ea3c9b4::t_0e4c72918aac0f 198
+  s_55425a4ea3c9b4::t_9dcafb8a20ac64 199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "3a737453451f19cd1f2a780a916a28cc114d249a",
+  "prompts": {},
+  "sessions": {
+    "s_55425a4ea3c9b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "142d8293-14bc-46bf-a97c-7bc7f8358d23",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

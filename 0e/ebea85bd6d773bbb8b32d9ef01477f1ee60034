@@ -1,0 +1,50 @@
+clients/apps/web/src/components/Settings/Webhook/WebhookSigningSchemeStatus.tsx
+  s_8328894b8c4ada::t_fc5a0c0db05136 2-4,6-7,9-10,16-26
+  s_8328894b8c4ada::t_ea329f948b58cc 15
+  s_8328894b8c4ada::t_dfe98ed94f09e6 1,5,8,11-14
+server/tests/webhooks/test_webhooks.py
+  s_8328894b8c4ada::t_0ca005b8149361 6
+  s_8328894b8c4ada::t_7b49b3e4b97a25 31,34
+  s_8328894b8c4ada::t_2c5f6f31e76c81 74-104
+  s_8328894b8c4ada::t_2bbd0aa2d0dc7d 105-106
+clients/apps/web/src/components/Settings/Webhook/WebhookSignatureNotice.tsx
+  s_8328894b8c4ada::t_ccd80a0ef3242e 3
+  s_8328894b8c4ada::t_828e17525a5ccf 8-16
+server/polar/webhook/schemas.py
+  s_8328894b8c4ada::t_4e99ef5dcf0625 2,6-13
+  s_8328894b8c4ada::t_7e0fdfc673656a 123
+  s_8328894b8c4ada::t_f89fbf5f30aa50 111-122
+  s_8328894b8c4ada::t_02a752c2713be3 19-21
+server/polar/webhook/constants.py
+  s_8328894b8c4ada::t_0d894105e7a1b0 11-19
+server/polar/webhook/tasks.py
+  s_8328894b8c4ada::t_c701fc719f6b44 3
+  s_8328894b8c4ada::t_9b975bd1ac59a7 30
+  s_8328894b8c4ada::t_a280f816e7811f 44-49
+clients/apps/web/src/components/Settings/Webhook/WebhookSettings.tsx
+  s_8328894b8c4ada::t_94f55407dde61a 33
+  s_8328894b8c4ada::t_8291f938ebad8b 122-127
+  s_8328894b8c4ada::t_cd6ebc12e6392a 15
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/webhooks/endpoints/[id]/EndpointsPage.tsx
+  s_8328894b8c4ada::t_db1b6afe47c2ca 164-166
+  s_8328894b8c4ada::t_ba5140fd503c0a 11
+  s_8328894b8c4ada::t_c0e601be7afed0 180-185
+clients/packages/client/src/v1.ts
+  s_8328894b8c4ada::t_c39ca004465129 38805-38809
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "0eebea85bd6d773bbb8b32d9ef01477f1ee60034",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,39 @@
+terraform/modules/render_service/main.tf
+  s_c297d764f40f7b::t_206c233ae9d302 14-16
+terraform/sandbox/render.tf
+  s_c297d764f40f7b::t_b23674af4d7d3c 179-181
+terraform/global/sandbox.tf
+  s_c297d764f40f7b::t_36f1daa13cc208 31-38
+terraform/modules/render_service/variables.tf
+  s_c297d764f40f7b::t_01015e7bae3e70 91-93
+terraform/global/test.tf
+  s_c297d764f40f7b::t_1391357dda7186 31-38
+terraform/production/variables.tf
+  s_c297d764f40f7b::t_1dbd5acf051478 30-35
+terraform/test/variables.tf
+  s_c297d764f40f7b::t_792a0679a7a582 26-31
+terraform/test/render.tf
+  s_c297d764f40f7b::t_a8697f8f1e3207 164-166
+terraform/production/render.tf
+  s_c297d764f40f7b::t_11a249088c2968 223-225
+terraform/sandbox/variables.tf
+  s_c297d764f40f7b::t_58d45cdb76f119 29-34
+terraform/global/production.tf
+  s_c297d764f40f7b::t_42d800c532e68f 31-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "60fa9a6dcb7c04028518e80682541ca41a57a667",
+  "prompts": {},
+  "sessions": {
+    "s_c297d764f40f7b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f650e816-8a0f-4090-9247-5e53bd1b64c9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+server/polar/organization/service.py
+  s_955c14dbcb5886::t_f8d2fc41d6e043 1438-1439,1446-1471
+server/tests/organization/test_service.py
+  s_955c14dbcb5886::t_c3e228d79ffb54 3677-3723
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_955c14dbcb5886::t_0d420d5e7c0680 2619,2634-2641
+  s_955c14dbcb5886::t_13ae1c25d6d997 11
+  s_955c14dbcb5886::t_76fd74f1abae34 2615-2618,2620-2633,2642-2665,2667-2742
+  s_955c14dbcb5886::t_7d578baf70a9ad 2666
+server/polar/organization/repository.py
+  s_955c14dbcb5886::t_47724bdaf9f192 51-55
+  s_955c14dbcb5886::t_9b40c4923bb0d2 235
+  s_955c14dbcb5886::t_c61009f1bb71e4 244
+  s_955c14dbcb5886::t_c0e9d417dd173a 236-243,245-249
+  s_955c14dbcb5886::t_f0de96a8bed9a5 216
+server/polar/backoffice/organizations_v2/views/detail_view.py
+  s_955c14dbcb5886::t_2a9eebbbd7dc49 673-674,691-703
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "4c5067f770cbf3850eb8d3e30c0fc9adc24592ef",
+  "prompts": {},
+  "sessions": {
+    "s_955c14dbcb5886": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6d81c208-ce3f-4b8e-8f2d-96ad3efbb374",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

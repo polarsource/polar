@@ -1,0 +1,26 @@
+sdk/python/polar/__init__.py
+  h_cc2173b7b86bcc 11
+sdk/typescript/package.json
+  h_cc2173b7b86bcc 3
+sdk/typescript/pnpm-lock.yaml
+  h_cc2173b7b86bcc 38-39,288-289,294-295,300-301,306-307,312-313,318-319,324-325,331-332,338-339,345-346,352-353,359-360,366-367,372-373,378-379,797-798,992,1112,1115,1118,1121,1124,1127,1130,1133,1136,1139,1142,1145,1148,1151,1154,1453,1458,1467,1469,1472-1486,1526-1527,1557
+sdk/typescript/src/2026-04/models.ts
+  h_cc2173b7b86bcc 940
+sdk/typescript/src/2026-10/models.ts
+  h_cc2173b7b86bcc 940
+sdk/typescript/src/webhooks.test.ts
+  h_cc2173b7b86bcc 64-69
+sdk/typescript/src/webhooks.ts
+  h_cc2173b7b86bcc 95-97,130,132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "744c41dce29acdbfd9d5980529b37697a5fa8199",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

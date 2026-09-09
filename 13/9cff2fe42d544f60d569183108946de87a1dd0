@@ -1,0 +1,36 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/reasons.ts
+  s_7debf674f53741::t_71850afe736ed0 1-45
+server/polar/merchant_migration/precheck.py
+  s_7debf674f53741::t_36fff43f44b123 1-2,18,31-37,48-74,84-87,100-107,110,114-123,125,131-135,141-159,162,168-176,205,221,236,247,258,277,293,309,322,338,350,361,372,383,391,403
+  s_7debf674f53741::t_97e815d5ca95d8 177-178
+server/polar/merchant_migration/schemas.py
+  s_7debf674f53741::t_937c7a7e10815e 27-33,39-54,60-63
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckPanel.tsx
+  s_7debf674f53741::t_5059e6ee6ad2fb 7
+  s_7debf674f53741::t_c9be76d27de74f 60,72,74-89,94-95
+server/tests/merchant_migration/test_service.py
+  s_7debf674f53741::t_9f8c1ff324c57a 244-249
+server/tests/merchant_migration/test_precheck.py
+  s_7debf674f53741::t_99c35169ee10ce 287-316
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckSummary.tsx
+  s_7debf674f53741::t_7e000eca440587 1-13,16,18-142
+  s_7debf674f53741::t_614fe3f4923aec 14-15,17
+clients/packages/client/src/v1.ts
+  s_7debf674f53741::t_4d1834001601b0 28113-28139,28149-28150,28163-28167,61557-61559
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "139cff2fe42d544f60d569183108946de87a1dd0",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

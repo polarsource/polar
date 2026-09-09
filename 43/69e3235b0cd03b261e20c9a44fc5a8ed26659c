@@ -1,0 +1,23 @@
+server/polar/worker/_asyncio.py
+  s_5fe726f203c6ff::t_6ecd9334a228a7 30-32,99-100,120-122,178-179
+server/polar/config.py
+  s_5fe726f203c6ff::t_6ecd9334a228a7 70-71,368-369
+server/tests/worker/test_asyncio_watchdog.py
+  s_5fe726f203c6ff::t_6ecd9334a228a7 27,134,160,162-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "4369e3235b0cd03b261e20c9a44fc5a8ed26659c",
+  "prompts": {},
+  "sessions": {
+    "s_5fe726f203c6ff": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "300f6a39-bf47-41b7-8691-7f1ecd4257bb",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

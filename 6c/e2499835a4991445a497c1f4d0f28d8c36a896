@@ -1,0 +1,26 @@
+server/polar/backoffice/organizations_v2/views/sections/overview_section.py
+  s_606b6e86b401bd::t_314305d0e9ad80 230
+  s_606b6e86b401bd::t_fedec52bf624a2 30
+server/polar/backoffice/organizations_v2/views/sections/reviews_section.py
+  s_606b6e86b401bd::t_ade91283b20b32 15-20
+  s_606b6e86b401bd::t_292828137eda50 82
+server/polar/backoffice/organizations_v2/views/sections/_shared.py
+  s_606b6e86b401bd::t_cf70ce15fd54c9 27-52,54-81
+  s_606b6e86b401bd::t_9e643d628d3299 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "6ce2499835a4991445a497c1f4d0f28d8c36a896",
+  "prompts": {},
+  "sessions": {
+    "s_606b6e86b401bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a4b78308-fd87-492f-a598-116c7a2802d7",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

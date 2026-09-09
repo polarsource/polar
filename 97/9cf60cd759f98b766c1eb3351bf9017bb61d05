@@ -1,0 +1,25 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewSelection.test.ts
+  s_151f5b1b3b0a9c::t_25331952f51322 1-53
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTable.tsx
+  s_151f5b1b3b0a9c::t_e4d37c1a79d023 16
+  s_151f5b1b3b0a9c::t_2dcd5d74990501 109-110,112
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewSelection.ts
+  s_151f5b1b3b0a9c::t_480f3cd3076c88 56-70,74-79
+  s_151f5b1b3b0a9c::t_408b544ed4182c 71-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "979cf60cd759f98b766c1eb3351bf9017bb61d05",
+  "prompts": {},
+  "sessions": {
+    "s_151f5b1b3b0a9c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bdbe59d6-8531-45ce-b4c1-476d7178c275",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

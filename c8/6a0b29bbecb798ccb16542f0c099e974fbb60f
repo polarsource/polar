@@ -1,0 +1,21 @@
+server/scripts/backfill_seat_based_pricing_enabled.py
+  s_bc4326b8642247::t_70d00422303986 1-6,10-46,49-119
+  s_bc4326b8642247::t_b496bed608657c 7-9
+  s_bc4326b8642247::t_f4547dd48d3e4b 47-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "c86a0b29bbecb798ccb16542f0c099e974fbb60f",
+  "prompts": {},
+  "sessions": {
+    "s_bc4326b8642247": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1bb6236d-79b4-4666-8bf7-c947685b4705",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

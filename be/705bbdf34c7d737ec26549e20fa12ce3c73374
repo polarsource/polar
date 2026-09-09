@@ -1,0 +1,28 @@
+.agents/commands/polar-code-review.md
+  s_d3b1f35ea84a3a::t_9b4ba4698720d8 14,38-39,42,44-45,47-48,63
+  s_d3b1f35ea84a3a::t_dfc1ec2027259a 92
+  s_d3b1f35ea84a3a::t_73792e980db32b 19-20
+.agents/skills/polar-code-review/SKILL.md
+  s_d3b1f35ea84a3a::t_0a0ec4e7e212b4 1-13
+.agents/skills/create-pr/SKILL.md
+  s_d3b1f35ea84a3a::t_c31db93d21b8bf 73-74,85-89,99-100,105
+  s_d3b1f35ea84a3a::t_8ebae9556435b9 23,26,28-29,32-38,54,61,63,69-70,72,76,82-83,97,101-102,104
+  s_d3b1f35ea84a3a::t_6a6638292e9a4f 75
+  s_d3b1f35ea84a3a::t_8b88b7b5c0c69b 98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "be705bbdf34c7d737ec26549e20fa12ce3c73374",
+  "prompts": {},
+  "sessions": {
+    "s_d3b1f35ea84a3a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "11df69ee-0dd4-45d2-ad75-3f8eaef0a421",
+        "model": "auto-smart"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

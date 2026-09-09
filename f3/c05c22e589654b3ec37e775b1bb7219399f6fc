@@ -1,0 +1,22 @@
+server/polar/merchant_migration/adapters/stripe.py
+  s_28ea492cb26938::t_8de4e50ec663cf 58-63
+server/tests/merchant_migration/test_stripe_adapter.py
+  s_28ea492cb26938::t_9a575785b5628b 1,3-59
+  s_28ea492cb26938::t_83cf2fd759f6cb 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "f3c05c22e589654b3ec37e775b1bb7219399f6fc",
+  "prompts": {},
+  "sessions": {
+    "s_28ea492cb26938": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3cdc938-a7ce-4baa-bd20-7ff6afb5d3d6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

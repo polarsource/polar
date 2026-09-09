@@ -1,0 +1,26 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_81f519e3bb364f::t_fadec96e0fd19f 68
+  s_81f519e3bb364f::t_026657a0e3c818 5,9-10,16,19,22,24-29,36-67,69-75,78-79,85-86,92
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_81f519e3bb364f::t_d62b2f345bc4cb 11,13,17-19,24-25,30,33-34,36,38-39,42-43,48,51,53-54,57,67-72,74,76-84
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_81f519e3bb364f::t_776fadba084565 14-15,44-45,53,74,84-113,119-120,129,134,146-152,156-158
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationCard.tsx
+  s_81f519e3bb364f::t_f01f0ee8a045e3 7,13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "58f84ca56057cda486d4bc124632e5fcfa51adc0",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

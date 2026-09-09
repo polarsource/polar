@@ -1,0 +1,21 @@
+server/tests/subscription/test_service.py
+  s_12f50c3568cc40::t_2562341f540d41 1346-1383,1506,1838,1931,2025,2319,2449,4866,5142,5373,5413
+server/polar/subscription/service.py
+  s_12f50c3568cc40::t_2562341f540d41 1238-1241,1247
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "7d97bccbe7dbc3a7d5c7de901e55ebb0c4fb72e5",
+  "prompts": {},
+  "sessions": {
+    "s_12f50c3568cc40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "776cb36c-a4a2-4a52-8ec1-9fafe0ec55b5",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

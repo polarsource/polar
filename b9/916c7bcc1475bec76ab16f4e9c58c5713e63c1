@@ -1,0 +1,45 @@
+server/polar/webhook/schemas.py
+  s_8328894b8c4ada::t_0e7d74efc90c30 124-128,153
+  s_8328894b8c4ada::t_9b1eee098846c5 148
+  s_8328894b8c4ada::t_07bd20a3824e36 149-152
+  s_8328894b8c4ada::t_783a5b12028e00 123
+  s_8328894b8c4ada::t_1ff63d12685dc2 129-130
+  s_8328894b8c4ada::t_888c00a935ea47 154-155
+server/tests/webhooks/test_endpoints.py
+  s_8328894b8c4ada::t_866851d6a5c8cf 214-249
+  s_8328894b8c4ada::t_9d601061745de0 127
+  s_8328894b8c4ada::t_cf7a2884ae266a 124-126,128-160
+clients/apps/web/src/components/Settings/Webhook/WebhookContextView.tsx
+  s_8328894b8c4ada::t_fb0f785ce39da7 24,26,33-36,39
+server/polar/webhook/service.py
+  s_8328894b8c4ada::t_1384cfcba930af 68
+  s_8328894b8c4ada::t_70a2218ab7f2b0 152-153,155-156
+  s_8328894b8c4ada::t_a08d516236ed4c 154
+server/polar/webhook/endpoints.py
+  s_8328894b8c4ada::t_42b2863e44d29a 8
+  s_8328894b8c4ada::t_3c7b0ea9d27eba 90-107,127,132-157
+  s_8328894b8c4ada::t_3ab184df291503 128-131
+  s_8328894b8c4ada::t_c15c888c6ab1b8 9,16,19,22-24
+  s_8328894b8c4ada::t_390b1dbd8cebd8 20-21
+  s_8328894b8c4ada::t_249439334c2cb7 86-89
+clients/apps/web/src/hooks/queries/webhooks.ts
+  s_8328894b8c4ada::t_bd5ae6c8b5df6f 7-8
+  s_8328894b8c4ada::t_850317ed9ebe01 85-88
+  s_8328894b8c4ada::t_db3d2fd9529fb6 112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "b9916c7bcc1475bec76ab16f4e9c58c5713e63c1",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

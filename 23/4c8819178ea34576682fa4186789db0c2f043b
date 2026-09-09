@@ -1,0 +1,30 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ConnectGuide.tsx
+  s_7debf674f53741::t_c37b942d26566b 38
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/CreateMigrationModal.tsx
+  s_7debf674f53741::t_f4cc54c8dcc292 21-24,26-31,33-36
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationTimeline.tsx
+  s_7debf674f53741::t_633e043b2c53cc 106
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_7debf674f53741::t_87d74d4ec972ed 26-30,38-39
+  s_7debf674f53741::t_a32a9730d3b668 73-78
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationsPage.tsx
+  s_7debf674f53741::t_6681966e6a9f0b 27
+  s_7debf674f53741::t_8d51d7408db43d 65-70
+  s_7debf674f53741::t_62a0813b52ddec 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "234c8819178ea34576682fa4186789db0c2f043b",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

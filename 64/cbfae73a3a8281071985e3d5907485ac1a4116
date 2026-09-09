@@ -1,0 +1,26 @@
+server/scripts/backfill_slack_app_encrypted_secrets.py
+  s_711ed15bc7908e::t_714ba63c282a6c 11
+  s_711ed15bc7908e::t_96e991ff29577b 23
+  s_711ed15bc7908e::t_e2e678fa88294c 28,32,36
+  s_711ed15bc7908e::t_4c8b1b1d6ed131 1-10,12-22,24-27,29-31,33-35,37-186
+server/tests/scripts/test_backfill_slack_app_encrypted_secrets.py
+  s_711ed15bc7908e::t_5a7f8789fbd0e3 1-136,138-173,175-220
+  s_711ed15bc7908e::t_636d23a0c6ce40 137
+  s_711ed15bc7908e::t_faff768b7244d6 174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "64cbfae73a3a8281071985e3d5907485ac1a4116",
+  "prompts": {},
+  "sessions": {
+    "s_711ed15bc7908e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9d059d1b-1eae-47cc-b536-922b615b1446",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

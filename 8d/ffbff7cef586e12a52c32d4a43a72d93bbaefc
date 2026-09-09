@@ -1,0 +1,25 @@
+server/polar/backoffice/organizations_v2/forms.py
+  s_82f15943feb081::t_975af0cd9545a8 2,4-10,13-15,30-272
+server/polar/backoffice/AGENTS.md
+  s_82f15943feb081::t_ccbc502f00568d 233
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_82f15943feb081::t_6691b3e1557e38 112-126
+server/polar/backoffice/users/endpoints.py
+  s_82f15943feb081::t_50fe18a731db46 570-571
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "8dffbff7cef586e12a52c32d4a43a72d93bbaefc",
+  "prompts": {},
+  "sessions": {
+    "s_82f15943feb081": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9f9f229f-a335-41a1-8779-3cc3f367f216",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

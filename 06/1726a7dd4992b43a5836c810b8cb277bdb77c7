@@ -1,0 +1,30 @@
+server/polar/observability/invariants/rules/subscriptions_current_period_end.py
+  s_c27efde036d9d8::t_f9742141eff7d0 39-40
+  s_c27efde036d9d8::t_d7e0f14039c88b 41-42
+  s_c27efde036d9d8::t_d30f4005e57b21 37-38,43-44,48,57
+server/tests/observability/invariants/rules/test_subscriptions_current_period_end.py
+  s_c27efde036d9d8::t_30a3b91ef0e187 14,31,37-39,58,64-65,90-92,128,142-167
+  s_c27efde036d9d8::t_9f9890b91ffda7 125-127,129-133,135-141,168-169
+  s_c27efde036d9d8::t_8fb4a4431702b7 57
+  s_c27efde036d9d8::t_97375f60dbfc9c 134
+  s_c27efde036d9d8::t_ed3ad47a5921b0 40-56,59-63,83
+server/tests/fixtures/random_objects.py
+  s_c27efde036d9d8::t_6303519cf9261d 1159-1160
+  s_c27efde036d9d8::t_b9f8aea002c3e1 1198-1199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "061726a7dd4992b43a5836c810b8cb277bdb77c7",
+  "prompts": {},
+  "sessions": {
+    "s_c27efde036d9d8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b519e67d-18a3-463d-a0b4-5016bdb4cde2",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

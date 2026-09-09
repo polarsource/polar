@@ -1,0 +1,20 @@
+server/polar/billing_entry/repository.py
+  s_e0136046a79e1c::t_4dc4d8adbf1707 75-79
+  s_e0136046a79e1c::t_3bb0bd35c83f40 80-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "14d85fc11c6a84b030d7cd478a2aaa81b9d17b9b",
+  "prompts": {},
+  "sessions": {
+    "s_e0136046a79e1c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8065b434-ba1e-4448-8d3d-aa6958a1e0bd",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

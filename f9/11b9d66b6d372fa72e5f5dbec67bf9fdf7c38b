@@ -1,0 +1,46 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationTimeline.tsx
+  s_7debf674f53741::t_7478988c38011d 1-131
+clients/apps/web/src/components/Dashboard/navigation.tsx
+  s_7debf674f53741::t_e6001bcbb98394 388-392
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ConnectGuide.tsx
+  s_7debf674f53741::t_7478988c38011d 1-54
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationsPage.tsx
+  s_7debf674f53741::t_7478988c38011d 1-152
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_7debf674f53741::t_7478988c38011d 1-3,5-6,8-96,99-106,108,110-120,123-140
+  s_7debf674f53741::t_064ab19949a956 4,7,97-98,107,109,121-122
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationSteps.tsx
+  s_7debf674f53741::t_7478988c38011d 1-37
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/page.tsx
+  s_7debf674f53741::t_7478988c38011d 1-40
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationCard.tsx
+  s_7debf674f53741::t_be48cef0564e93 60,62
+  s_7debf674f53741::t_7478988c38011d 1-59,61,63-85
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_7debf674f53741::t_7478988c38011d 1-75
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/page.tsx
+  s_7debf674f53741::t_7478988c38011d 1-28
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/CreateMigrationModal.tsx
+  s_7debf674f53741::t_7478988c38011d 1-53,56-60,62-67
+  s_7debf674f53741::t_442013fe2bbf5e 54-55,61
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/StripeMark.tsx
+  s_7debf674f53741::t_7478988c38011d 1-32
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_7debf674f53741::t_7478988c38011d 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f911b9d66b6d372fa72e5f5dbec67bf9fdf7c38b",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

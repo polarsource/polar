@@ -1,0 +1,21 @@
+clients/apps/web/src/components/Settings/OrganizationCustomerEmailSettings.tsx
+  s_c048718634e803::t_8ecd0aae01c3fd 76-78
+  s_c048718634e803::t_0a3e60e6713ad7 75
+  s_c048718634e803::t_a5a06fcf4fc049 74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "e05819beae2014e534840e01ce2610ea0b00a169",
+  "prompts": {},
+  "sessions": {
+    "s_c048718634e803": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c4cab576-6da1-43cb-9272-0cd01c564d76",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

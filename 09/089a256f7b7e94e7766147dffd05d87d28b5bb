@@ -1,0 +1,37 @@
+dev/docker/docker-compose.dev.yml
+  s_3e0979df60fe40::t_ae77273934e792 98-107
+  s_3e0979df60fe40::t_5e2db9c6d535ad 164-174
+dev/docker/scripts/startup.sh
+  s_3e0979df60fe40::t_32c82617ca6b05 13-35
+.gitignore
+  s_3e0979df60fe40::t_1537566c08f713 157-159
+dev/cli/commands/docker.py
+  s_3e0979df60fe40::t_5c2615440a05f3 210-214,217-220
+  s_3e0979df60fe40::t_2021f160d7d21f 215-216
+  s_3e0979df60fe40::t_610a45ef00b1e1 661-666,671-682
+  s_3e0979df60fe40::t_3df166df75acd7 727,729-732,738-743,747-748
+  s_3e0979df60fe40::t_8397828c42d296 869-875,886-889
+  s_3e0979df60fe40::t_315393955fa3d0 998-1036
+  s_3e0979df60fe40::t_0fb905b9b3c51a 683,1037-1096
+  s_3e0979df60fe40::t_f53477b3f48325 803-808
+  s_3e0979df60fe40::t_05800c7090756c 702
+dev/docker/Dockerfile.api.dev
+  s_3e0979df60fe40::t_6a8a2fcff35c4a 21-22
+  s_3e0979df60fe40::t_670464385fb584 4-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "09089a256f7b7e94e7766147dffd05d87d28b5bb",
+  "prompts": {},
+  "sessions": {
+    "s_3e0979df60fe40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3446067f-3784-4449-a319-add08039e8af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+.github/workflows/test_server.yaml
+  s_99f1ecbc78a357::t_914277dad4cc55 285
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "7414ee5a51aff6e4952709dffc4ae544d1017e65",
+  "prompts": {},
+  "sessions": {
+    "s_99f1ecbc78a357": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9c0b85cd-93b3-4245-8dbd-7bd8059e5029",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

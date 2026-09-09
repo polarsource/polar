@@ -1,0 +1,19 @@
+server/emails/src/emails/payment_method_expiration_reminder.tsx
+  s_b5593f89d03373::t_000522cc477e3a 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "ba24613c3558d6532c4b6c9c25e811224b6c879c",
+  "prompts": {},
+  "sessions": {
+    "s_b5593f89d03373": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1729b04c-772f-4235-acb6-5b17bddfa1eb",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

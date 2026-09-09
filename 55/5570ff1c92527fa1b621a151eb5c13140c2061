@@ -1,0 +1,46 @@
+server/tests/order/test_service.py
+  s_055272d137234c::t_03714b182e5504 2291-2293
+  s_055272d137234c::t_2e2a4a6445eb5e 2437
+  s_055272d137234c::t_5b676bd67d42ae 2267,2272-2288,2309-2310,2313,2345-2346,2349,2356-2370,2393-2395,2406,2435-2436,2448
+  s_055272d137234c::t_b7330e1202a27b 2289-2290,2294,2296-2301,2303-2307,2315-2317,2319,2321,2335-2337,2342,2355
+server/polar/billing_entry/repository.py
+  s_055272d137234c::t_93d48a15887382 124,130,141,151,158,160
+server/polar/customer_meter/service.py
+  s_055272d137234c::t_b5d54808a377c4 247,249,253,255,258,260,274
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_b9c5815e6f52a6 2173-2174
+server/polar/subscription/service.py
+  s_055272d137234c::t_a2a0b5b64bd8c3 1006,1008,1029,1044,1054,1064
+  s_055272d137234c::t_e772bc47547cb7 2076
+  s_055272d137234c::t_50217da6363788 910
+  s_055272d137234c::t_69b9f697cd7768 995-1000
+  s_055272d137234c::t_135e2d6c6925ab 1437
+  s_055272d137234c::t_460bad556c680d 1058
+  s_055272d137234c::t_f2c2019009b159 2073-2074
+  s_055272d137234c::t_3e8a5e1798cb9a 979,982,987
+  s_055272d137234c::t_adc744be9449b3 983
+  s_055272d137234c::t_832476c8915887 2944
+  s_055272d137234c::t_484e9f6f9c51bc 906-908
+  s_055272d137234c::t_67bbbcc198abaa 1431-1432
+server/polar/billing_entry/service.py
+  s_055272d137234c::t_c4ab2ea9e9671c 129-139
+  s_055272d137234c::t_8ff28461f7b175 83-114
+server/polar/order/service.py
+  s_055272d137234c::t_584b60992ab8da 1527-1536
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "555570ff1c92527fa1b621a151eb5c13140c2061",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

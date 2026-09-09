@@ -1,0 +1,14 @@
+terraform/test/render.tf
+  h_cc2173b7b86bcc 40,56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "22c2de8968781cd57390ecb3a09031839bd13ec9",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

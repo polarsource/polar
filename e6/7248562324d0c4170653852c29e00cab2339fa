@@ -1,0 +1,25 @@
+server/tests/models/test_oauth_account.py
+  s_eb87cbcf635926::t_4ce332eeca369a 128
+  s_eb87cbcf635926::t_832230bccc414d 107,116,121-122
+server/polar/models/user.py
+  s_eb87cbcf635926::t_db6052acbbd92a 116,121-123,126-128
+server/tests/fixtures/random_objects.py
+  s_eb87cbcf635926::t_e8d3f48e900160 260
+  s_eb87cbcf635926::t_e7d7450cebb342 244
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "e67248562324d0c4170653852c29e00cab2339fa",
+  "prompts": {},
+  "sessions": {
+    "s_eb87cbcf635926": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "065c9e8d-64ad-4cdc-8713-9276a0ac8b9a",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

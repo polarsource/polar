@@ -1,0 +1,50 @@
+server/polar/webhook/tasks.py
+  s_8328894b8c4ada::t_63c9bc99820652 134-139
+  s_8328894b8c4ada::t_cbb821b9f21638 30,36-56
+  s_8328894b8c4ada::t_0264ac922dc208 3
+  s_8328894b8c4ada::t_5eefc8707cb6b0 57-58
+server/tests/webhooks/test_webhooks.py
+  s_8328894b8c4ada::t_14c966faea658d 1-2
+  s_8328894b8c4ada::t_9839d91c8129b9 32,34-39
+  s_8328894b8c4ada::t_3886934778f796 48-166
+  s_8328894b8c4ada::t_ca20e612d54288 26-30
+  s_8328894b8c4ada::t_5b21e028e08062 3
+  s_8328894b8c4ada::t_e2ad093480d868 411-481
+  s_8328894b8c4ada::t_c230f218842925 16
+docs/guides/encore.mdx
+  s_8328894b8c4ada::t_abad96d70a7f9f 211-212
+  s_8328894b8c4ada::t_63f4eea300c240 207-210
+  s_8328894b8c4ada::t_a4a04d1d54891a 213
+server/polar/webhook/service.py
+  s_8328894b8c4ada::t_67f5ab29e6577b 84-88
+  s_8328894b8c4ada::t_e176c33169427e 1,4
+  s_8328894b8c4ada::t_d3818b7d90c612 165
+  s_8328894b8c4ada::t_e025fccf0f851f 235
+  s_8328894b8c4ada::t_9aaf17f339c232 67-71
+  s_8328894b8c4ada::t_da8ec75eb337dc 89-90
+server/polar/webhook/constants.py
+  s_8328894b8c4ada::t_cc1941c8bbbe2f 1-2,4-10
+server/scripts/seeds_load.py
+  s_8328894b8c4ada::t_b9e0e3e9cbf491 127
+  s_8328894b8c4ada::t_9489a402002aa5 3142
+docs/integrate/webhooks/delivery.mdx
+  s_8328894b8c4ada::t_005829facac2cb 110-113
+  s_8328894b8c4ada::t_a2b7689f5df8f4 231-234
+  s_8328894b8c4ada::t_d8c651d1b7a30b 105,107-108,114-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "6c7f19e6e271a2c472c0255914b2919229f74ff1",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

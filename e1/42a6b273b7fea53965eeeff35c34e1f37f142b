@@ -1,0 +1,75 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/stepMarker.tsx
+  s_8636cda35c2e86::t_349c69213faadd 1,17-24,26-27,30-40
+  s_8636cda35c2e86::t_c601d9ce64e2ae 2-16,25,28-29,41-42
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepForm.tsx
+  s_8636cda35c2e86::t_71850eccfeda2a 1-2,4-10,13-14,21-33,35-37,39-56,60-63,70-74
+  s_8636cda35c2e86::t_c302ef8af738c8 58
+  s_8636cda35c2e86::t_dd5dc6f30365f1 3,11-12,15-20,34,38,57,59,64-69
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_8636cda35c2e86::t_fabf02fe992a4b 135,140
+  s_8636cda35c2e86::t_f63c3bbbe30f68 1
+  s_8636cda35c2e86::t_07b39ea6abcb42 97-98,100-109,158-160,169-172,174-178,188-189
+  s_8636cda35c2e86::t_8f3dbb4c727171 95-96,99,119-120,122-126,128-129,145,173
+  s_8636cda35c2e86::t_fb7a3fcb123c56 146-149,155
+  s_8636cda35c2e86::t_51dfd0abe461a8 110-118,121,127
+  s_8636cda35c2e86::t_180086d85ff21f 130-134,136-139,141-144,150-154,156-157,161-168,179-187
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/panTransferCopy.ts
+  s_8636cda35c2e86::t_fa4e699ec1747f 1-68,78-158,160-166,168-173
+  s_8636cda35c2e86::t_d5158ac1e49344 69-77
+  s_8636cda35c2e86::t_2d282da12647fa 159,167,174-181
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferPanel.tsx
+  s_8636cda35c2e86::t_fc9b5bb6a87962 1-2,4-47,51-53,70,72-73,78-80,82-87
+  s_8636cda35c2e86::t_dd5dc6f30365f1 3,71,81
+  s_8636cda35c2e86::t_c302ef8af738c8 74-77
+  s_8636cda35c2e86::t_25e2999c4bcc60 48-50,54-69
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepItem.tsx
+  s_8636cda35c2e86::t_f980cf6d53a4d9 49,116-118,120-124
+  s_8636cda35c2e86::t_198c1de654eff8 14,45
+  s_8636cda35c2e86::t_6897a88d7ff3d0 72
+  s_8636cda35c2e86::t_90c8f8b398ad5f 7-12,20,27,34,46,59,66,84,100-106
+  s_8636cda35c2e86::t_34d400282a124b 1-6,15-19,21-26,28-33,35-36,47-48,50-58,60-65,67-71,77,93-99,107-115,119,125-128
+  s_8636cda35c2e86::t_fe471ec011583d 37-44
+  s_8636cda35c2e86::t_dd40b85690c353 13,73-76
+  s_8636cda35c2e86::t_a2c70e34ab23ba 78-83,85-92
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepBody.tsx
+  s_8636cda35c2e86::t_1f6bef4a4291a5 72
+  s_8636cda35c2e86::t_6b8e3e7dd010ce 58,60-63
+  s_8636cda35c2e86::t_34cd760289dbd0 24-30
+  s_8636cda35c2e86::t_7955df517a00f6 76-87
+  s_8636cda35c2e86::t_dd5dc6f30365f1 15,22,57,59
+  s_8636cda35c2e86::t_dd40b85690c353 94-96
+  s_8636cda35c2e86::t_f980cf6d53a4d9 109-115
+  s_8636cda35c2e86::t_6c6dfc1340a78e 1-14,16-21,23,31-37,55-56,64-71,73-75,88-93,97-108,116-123
+  s_8636cda35c2e86::t_96ec274aed5b2b 38-54
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_8636cda35c2e86::t_180086d85ff21f 8,44-46,65
+  s_8636cda35c2e86::t_5644c6d175aeab 49
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_8636cda35c2e86::t_2f17d48b6263d8 130-148
+  s_8636cda35c2e86::t_157b226ca9f7d3 10-11
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/StartPanTransfer.tsx
+  s_8636cda35c2e86::t_33fa7a38a90529 40-43,47,49
+  s_8636cda35c2e86::t_c302ef8af738c8 34
+  s_8636cda35c2e86::t_7ca498873f064c 1-29,36-39,44-46,48,50-54
+  s_8636cda35c2e86::t_1fdd3a4b70f2ee 30-33,35
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_8636cda35c2e86::t_198c1de654eff8 49,51
+  s_8636cda35c2e86::t_6897a88d7ff3d0 4
+  s_8636cda35c2e86::t_33739b6a8d2c61 50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "e142a6b273b7fea53965eeeff35c34e1f37f142b",
+  "prompts": {},
+  "sessions": {
+    "s_8636cda35c2e86": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e88eee69-62d9-4fcd-bf27-b32d20db4ed8",
+        "model": "claude-opus-5"
+      },
+      "human_author": null
+    }
+  }
+}

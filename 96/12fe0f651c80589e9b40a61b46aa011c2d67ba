@@ -1,0 +1,28 @@
+docs/integrate/webhooks/endpoints.mdx
+  s_8328894b8c4ada::t_02ac8ab71db4c6 8-13
+clients/apps/web/src/components/Settings/Webhook/WebhookSignatureNotice.tsx
+  s_8328894b8c4ada::t_834d058f1dca82 20,23-27,29-33
+  s_8328894b8c4ada::t_bcef8fd480e174 28
+docs/integrate/webhooks/delivery.mdx
+  s_8328894b8c4ada::t_f610af7f1e6353 117-118
+  s_8328894b8c4ada::t_2b061e927ba041 229-232
+  s_8328894b8c4ada::t_b7dcdc436676af 98-103,108,110-112,114-115
+clients/apps/web/src/components/Settings/Webhook/WebhookSigningSchemeStatus.tsx
+  s_8328894b8c4ada::t_6a9f0e865ad58a 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "9612fe0f651c80589e9b40a61b46aa011c2d67ba",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": null
+    }
+  }
+}

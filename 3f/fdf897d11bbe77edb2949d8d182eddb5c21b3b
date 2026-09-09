@@ -1,0 +1,21 @@
+server/migrations/versions/2026-08-17-1200_add_pending_link_billing_entry_index.py
+  s_7245646c656b56::t_cedc6668db2c58 1-50
+server/polar/models/billing_entry.py
+  s_7245646c656b56::t_98b77fbe0d7998 57-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "3ffdf897d11bbe77edb2949d8d182eddb5c21b3b",
+  "prompts": {},
+  "sessions": {
+    "s_7245646c656b56": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7cf9f0ba-d7de-4149-8d9c-a45d5c61101f",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+docs/guides/encore.mdx
+  s_8328894b8c4ada::t_e025bf7d536420 168,181
+  s_8328894b8c4ada::t_ce0d59186c9432 166-167
+  s_8328894b8c4ada::t_faf6cc2a303cb9 171-180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "2b5e60289fdd17a15653259417f4320370f2af0c",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

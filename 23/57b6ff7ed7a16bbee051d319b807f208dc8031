@@ -1,0 +1,21 @@
+server/polar/merchant_migration/service.py
+  s_623aabf115ece1::t_4c2703d9378427 207-210,215
+server/polar/config.py
+  s_623aabf115ece1::t_2bc8fc3bc8590a 262-263
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "2357b6ff7ed7a16bbee051d319b807f208dc8031",
+  "prompts": {},
+  "sessions": {
+    "s_623aabf115ece1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bd927cd5-ae76-4ec4-9f66-e3d2a97f26cf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

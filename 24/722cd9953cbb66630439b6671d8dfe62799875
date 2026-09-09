@@ -1,0 +1,19 @@
+clients/packages/client/src/v1.ts
+  s_0dd233b9308c8b::t_c617852e2e2b4c 27657-27662
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "24722cd9953cbb66630439b6671d8dfe62799875",
+  "prompts": {},
+  "sessions": {
+    "s_0dd233b9308c8b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "35e727d9-9aa6-41dc-b6d7-da50cdaea860",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

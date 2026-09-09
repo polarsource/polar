@@ -1,0 +1,20 @@
+server/scripts/reject_denied_stripe_accounts.py
+  s_ea7b47e1432957::t_e844f5e1ef3203 254
+  s_ea7b47e1432957::t_ecdad7d28e7707 1-253,255-313
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0e4031128476bfec26d0e9588cb2a6411bc8c21b",
+  "prompts": {},
+  "sessions": {
+    "s_ea7b47e1432957": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bd6ce4f3-2624-46fe-a30b-4966aadb58c3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+server/tests/organization_review/test_policy.py
+  s_c297d764f40f7b::t_31b2176d56fce2 17-32,36-38,40,43,59,63,67,76-103,105-106,108-115,117-119,124-126
+  s_c297d764f40f7b::t_93ad6eac39e00b 44-45,57,104,116
+  s_c297d764f40f7b::t_5d8d9898563871 107
+  s_c297d764f40f7b::t_60c99c95056e9c 120-123
+  s_c297d764f40f7b::t_a7b979661ddc76 35
+  s_c297d764f40f7b::t_4befc3a53f6f59 12-16
+server/polar/organization_review/policy.py
+  s_c297d764f40f7b::t_7e976f5da56781 32-35
+  s_c297d764f40f7b::t_1ef89d2bb0f649 128-133,137,139-142,145
+  s_c297d764f40f7b::t_e3e5dffbc390e6 59-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ea48be689be4668997c0e1bccecde5813b60ba46",
+  "prompts": {},
+  "sessions": {
+    "s_c297d764f40f7b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f650e816-8a0f-4090-9247-5e53bd1b64c9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

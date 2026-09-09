@@ -1,0 +1,23 @@
+server/tests/benefit/grant/test_scope.py
+  s_c63c99b2b1efc5::t_7b2c043b8a6dc8 99-194
+server/polar/benefit/grant/scope.py
+  s_c63c99b2b1efc5::t_22babfaf92fb8d 89-115,135-145,162-163,166-171
+docs/guides/migrate-seat-based-to-member-model.mdx
+  s_c63c99b2b1efc5::t_d74a41220a20d0 29-30,284-285,288
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "a31cc67a412d42c9f571d5ad664855974867aa32",
+  "prompts": {},
+  "sessions": {
+    "s_c63c99b2b1efc5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c8671948-e8fa-4692-8c71-21e158292daf",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

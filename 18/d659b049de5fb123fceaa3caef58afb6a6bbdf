@@ -1,0 +1,32 @@
+.agents/skills/verifier-web/SKILL.md
+  s_890c6fdfea364d::t_b7f916aaab79cd 132-133,135-138,141,143-146,148-152,154-158,161,166,175-179
+  s_890c6fdfea364d::t_60c0b176aaaee1 81-82
+  s_890c6fdfea364d::t_50e7e63564a0e7 98
+  s_890c6fdfea364d::t_1437fe12bdab2e 68-70
+  s_890c6fdfea364d::t_9c51c6ae0cc38c 194-195,199-204
+  s_890c6fdfea364d::t_6a091b3b8569a2 235-236
+  s_890c6fdfea364d::t_923cabe57b338d 1-14,16-22,24-39,41-60,63-67,71-80,83-84,99-131,134,139-140,142,147,153,159-160,164-165,167,170,174,180-193,196-198,205-217,231-234,237-263
+  s_890c6fdfea364d::t_4a3f8a8abf5171 85-97
+  s_890c6fdfea364d::t_1e2a71cde087a6 40
+  s_890c6fdfea364d::t_f181c09be8c4b0 23
+  s_890c6fdfea364d::t_d913b2aadf499e 162-163,168-169,171-173
+  s_890c6fdfea364d::t_d35efa1790b54d 218-230
+  s_890c6fdfea364d::t_2d8e2125748d44 15
+  s_890c6fdfea364d::t_fffd609fc5820e 61-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "18d659b049de5fb123fceaa3caef58afb6a6bbdf",
+  "prompts": {},
+  "sessions": {
+    "s_890c6fdfea364d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2800dfa9-4c6d-4110-93b9-b54d03eec24e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

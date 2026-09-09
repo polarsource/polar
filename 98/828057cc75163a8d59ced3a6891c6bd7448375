@@ -1,0 +1,25 @@
+server/polar/backoffice/organizations_v2/views/detail_view.py
+  s_00d8db6041d126::t_f153ee4f528c51 429-431,447-461
+server/polar/models/organization.py
+  s_00d8db6041d126::t_6f0ddf1f185572 428
+server/polar/organization/service.py
+  s_00d8db6041d126::t_cf2098e7f08158 1513-1516,1518
+server/tests/organization/test_service.py
+  s_00d8db6041d126::t_af02f2a03f6dca 3736-3749,3758,4529-4536,4546
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "98828057cc75163a8d59ced3a6891c6bd7448375",
+  "prompts": {},
+  "sessions": {
+    "s_00d8db6041d126": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c3d5f431-67f6-4790-818e-77c949a81a79",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

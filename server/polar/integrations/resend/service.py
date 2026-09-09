@@ -48,14 +48,40 @@ class ResendService:
 
         if user.is_deleted:
             contact_ids: set[str] = set()
-            for identifier in (user.resend_id, previous_email or user.email):
-                if identifier is None:
-                    continue
+
+            # The contact linked via `resend_id` is provably this user's: the
+            # UNIQUE constraint on `users.resend_id` means no other row can
+            # reference it while this one does, so it is always safe to delete.
+            if user.resend_id is not None:
                 try:
-                    contact = await client.get_contact(identifier)
+                    contact = await client.get_contact(user.resend_id)
                 except ContactDoesNotExist, InvalidIdentifier:
-                    continue
-                contact_ids.add(contact["id"])
+                    contact = None
+                if contact is not None:
+                    contact_ids.add(contact["id"])
+
+            # `previous_email` (falling back to the anonymized `user.email`) is
+            # a bare email, not a per-user handle. It is freed the moment the
+            # soft-delete transaction commits and can be reused by a different
+            # user signing up at that address, so the contact resolved there is
+            # not provably this user's. Only delete it when no non-deleted user
+            # has claimed it through their own `resend_id` (blocked users count
+            # as owners too — blocking is not deletion); otherwise we would
+            # destroy the reuser's contact and leave their `resend_id` dangling.
+            email_identifier = previous_email or user.email
+            try:
+                email_contact = await client.get_contact(email_identifier)
+            except ContactDoesNotExist, InvalidIdentifier:
+                email_contact = None
+            if email_contact is not None:
+                owner = await repository.get_by_resend_id(
+                    email_contact["id"],
+                    include_deleted=False,
+                    included_blocked=True,
+                )
+                if owner is None:
+                    contact_ids.add(email_contact["id"])
+
             for contact_id in contact_ids:
                 await client.delete_contact(contact_id)
             return await repository.update(user, update_dict={"resend_id": None})

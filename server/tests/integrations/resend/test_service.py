@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 from polar.config import settings
 from polar.integrations.resend.service import UserDoesNotExist
 from polar.integrations.resend.service import resend as resend_service
+from polar.kit.anonymization import anonymize_email_for_deletion
 from polar.kit.utils import utc_now
 from polar.models import User
 from polar.postgres import AsyncSession
@@ -218,6 +219,151 @@ class TestSyncUser:
         assert delete_new.call_count == 1
         if old_contact_exists:
             assert delete_old.call_count == 1
+
+    async def test_deleted_user_preserves_contact_reused_by_active_user(
+        self,
+        session: AsyncSession,
+        user: User,
+        user_second: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        # A soft-deleted user with no resend_id frees their email; an active
+        # user reuses it and links their own contact. The deletion job must NOT
+        # destroy the active user's contact.
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        freed_email = user.email
+        user.resend_id = None
+        user.deleted_at = utc_now()
+        user.email = anonymize_email_for_deletion(freed_email, user.created_at)
+        session.add(user)
+        await session.flush()
+
+        user_second.email = freed_email
+        user_second.resend_id = "contact-B"
+        session.add(user_second)
+        await session.flush()
+
+        respx_mock.get(path=f"/contacts/{freed_email}").respond(
+            200, json={"id": "contact-B", "email": freed_email}
+        )
+        delete_b = respx_mock.delete(path="/contacts/contact-B").respond(200)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email=freed_email
+        )
+
+        assert user.resend_id is None
+        assert user.is_deleted
+        assert delete_b.call_count == 0
+
+    async def test_deleted_user_with_resend_id_preserves_contact_reused_by_active_user(
+        self,
+        session: AsyncSession,
+        user: User,
+        user_second: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        # A soft-deleted user whose resend_id points at an older contact
+        # (e.g. a crashed email-change left resend_id stale) still has
+        # previous_email freed and reused by an active user. The deletion job
+        # must delete the user's own resend_id contact but NOT the reuser's.
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        freed_email = user.email
+        user.resend_id = "old-contact"
+        user.deleted_at = utc_now()
+        user.email = anonymize_email_for_deletion(freed_email, user.created_at)
+        session.add(user)
+        await session.flush()
+
+        user_second.email = freed_email
+        user_second.resend_id = "contact-B"
+        session.add(user_second)
+        await session.flush()
+
+        respx_mock.get(path="/contacts/old-contact").respond(
+            200, json={"id": "old-contact", "email": "old@example.com"}
+        )
+        respx_mock.get(path=f"/contacts/{freed_email}").respond(
+            200, json={"id": "contact-B", "email": freed_email}
+        )
+        delete_old = respx_mock.delete(path="/contacts/old-contact").respond(200)
+        delete_b = respx_mock.delete(path="/contacts/contact-B").respond(200)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email=freed_email
+        )
+
+        assert user.resend_id is None
+        assert delete_old.call_count == 1
+        assert delete_b.call_count == 0
+
+    async def test_deleted_user_preserves_contact_owned_by_blocked_user(
+        self,
+        session: AsyncSession,
+        user: User,
+        user_second: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        # Blocking is not deletion: a blocked (but non-deleted) user's contact
+        # at the freed email must not be swept up by another user's deletion.
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        freed_email = user.email
+        user.resend_id = None
+        user.deleted_at = utc_now()
+        user.email = anonymize_email_for_deletion(freed_email, user.created_at)
+        session.add(user)
+        await session.flush()
+
+        user_second.email = freed_email
+        user_second.resend_id = "contact-B"
+        user_second.blocked_at = utc_now()
+        session.add(user_second)
+        await session.flush()
+
+        respx_mock.get(path=f"/contacts/{freed_email}").respond(
+            200, json={"id": "contact-B", "email": freed_email}
+        )
+        delete_b = respx_mock.delete(path="/contacts/contact-B").respond(200)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email=freed_email
+        )
+
+        assert user.resend_id is None
+        assert delete_b.call_count == 0
+
+    async def test_deleted_user_without_resend_id_deletes_unowned_orphan(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        # An orphan contact at the freed email that no active user has claimed
+        # (e.g. a crashed sync left it behind) is still cleaned up even when the
+        # deleted user has no resend_id anchor.
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        freed_email = user.email
+        user.resend_id = None
+        user.deleted_at = utc_now()
+        user.email = anonymize_email_for_deletion(freed_email, user.created_at)
+        session.add(user)
+        await session.flush()
+
+        respx_mock.get(path=f"/contacts/{freed_email}").respond(
+            200, json={"id": "orphan-contact", "email": freed_email}
+        )
+        delete_orphan = respx_mock.delete(path="/contacts/orphan-contact").respond(200)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email=freed_email
+        )
+
+        assert user.resend_id is None
+        assert delete_orphan.call_count == 1
 
     async def test_user_does_not_exist(
         self,

@@ -21,13 +21,15 @@ test.each([true, false])(
   async (authorized) => {
     const server = http.createServer()
     const nativeListen = server.listen.bind(server)
-    const listen = vi.spyOn(server, 'listen').mockImplementation(
-      (...args: unknown[]) =>
+    const listen = vi
+      .spyOn(server, 'listen')
+      .mockImplementation((...args: unknown[]) =>
         nativeListen(0, '127.0.0.1', args[2] as () => void),
-    )
+      )
     const createServer = vi.spyOn(http, 'createServer').mockReturnValue(server)
-    const open = vi.spyOn(browser, 'default').mockImplementation(
-      async (authorization) => {
+    const open = vi
+      .spyOn(browser, 'default')
+      .mockImplementation(async (authorization) => {
         const address = server.address()
         if (!address || typeof address === 'string')
           throw new Error('Expected a TCP listener')
@@ -50,8 +52,7 @@ test.each([true, false])(
             .on('error', reject)
         })
         return new ChildProcess()
-      },
-    )
+      })
     fetchMock.mockResolvedValue(
       Response.json({ access_token: 'test-token', expires_in: 60 }),
     )

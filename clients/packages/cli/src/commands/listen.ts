@@ -36,7 +36,7 @@ export class ListenError extends Data.TaggedError('ListenError')<{
   message: string
   code: number
   cause?: unknown
-}> { }
+}> {}
 
 export interface StartListeningOptions {
   listenUrl: string
@@ -50,12 +50,12 @@ export interface StartListeningOptions {
 }
 
 export const authenticatedStreamClient = (environment: PolarEnvironment) =>
-  Effect.gen(function*() {
+  Effect.gen(function* () {
     const auth = yield* Auth
     const client = HttpClient.withScope(yield* HttpClient.HttpClient)
     let retried = false
     return HttpClient.transform(client, (_response, request) =>
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const credential = yield* auth.resolve(environment)
         const requestScope = yield* Scope.fork(yield* Effect.scope)
         const response = yield* client
@@ -89,13 +89,13 @@ export const startListening = ({
   environment,
   forward = fetch,
 }: StartListeningOptions) =>
-  Effect.gen(function*() {
+  Effect.gen(function* () {
     const client = yield* authenticatedStreamClient(environment)
     let bannerShown = false
     let retryDelay = Duration.millis(3000)
     let lastEventId: string | undefined
     const connection = Effect.scoped(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         let request = HttpClientRequest.get(listenUrl).pipe(
           HttpClientRequest.setHeader('Accept', 'text/event-stream'),
         )
@@ -127,7 +127,7 @@ export const startListening = ({
           Stream.decodeText(),
           Stream.pipeThroughChannel(Sse.decode()),
           Stream.mapEffect((event) =>
-            Effect.gen(function*() {
+            Effect.gen(function* () {
               if (event.id !== undefined) lastEventId = event.id
               if (event.event !== 'message') return
               const decoded = Schema.decodeUnknownExit(
@@ -210,15 +210,15 @@ export const startListening = ({
       }),
       Effect.catchTag('HttpClientError', (error) =>
         error.reason._tag === 'TransportError' ||
-          error.reason._tag === 'DecodeError'
+        error.reason._tag === 'DecodeError'
           ? Effect.succeed(false)
           : Effect.fail(
-            new ListenError({
-              code: 0,
-              message: error.message,
-              cause: error,
-            }),
-          ),
+              new ListenError({
+                code: 0,
+                message: error.message,
+                cause: error,
+              }),
+            ),
       ),
       Effect.flatMap((reconnect) =>
         reconnect ? Effect.void : Effect.sleep(retryDelay),
@@ -249,7 +249,7 @@ export const listen = Command.make(
   'listen',
   { url, production, org },
   ({ url, production, org }) =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const environment = environmentOf(production)
       const organizations = yield* Organizations
       const organization = yield* organizations.resolve(
@@ -266,9 +266,9 @@ export const listen = Command.make(
         Effect.mapError((error) =>
           error.code === 401
             ? new ListenError({
-              code: 401,
-              message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run polar auth login${production ? ' --production' : ''} --new-session.`,
-            })
+                code: 401,
+                message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run polar auth login${production ? ' --production' : ''} --new-session.`,
+              })
             : error,
         ),
       )

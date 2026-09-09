@@ -1,7 +1,7 @@
 """Provider-agnostic records the adapters normalize into, so the precheck
 engine and importer don't need to know which billing provider data came from."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
@@ -113,9 +113,15 @@ class CanonicalSubscription:
     line_item_count: int
     quantity: int
     payment_method: CanonicalPaymentMethod | None
-    # A discount/coupon on the source. Its amount isn't migrated yet, so importing
-    # at list price would overcharge; such subscriptions are skipped for now.
+    # True when the source subscription has any coupon. Kept so already-staged
+    # rows still skip until a re-precheck fills ``discount_source_ids``.
     has_discount: bool = False
+    # Coupon ids on the source, first one Polar will keep. Empty means none, or
+    # the discounts array couldn't be expanded.
+    discount_source_ids: list[str] = field(default_factory=list)
+    # When the kept coupon was first applied, so repeating/once duration
+    # continues from that date instead of restarting at cutover.
+    discount_started_at: datetime | None = None
     # The customer already asked to stop: the source won't renew it. Nothing left
     # for Polar to take over, so the cutover leaves it where it is.
     cancel_at_period_end: bool = False
@@ -137,6 +143,47 @@ class CanonicalSubscription:
 
     type = MerchantMigrationRecordType.subscription
 
+    @property
+    def discount_source_id(self) -> str | None:
+        return self.discount_source_ids[0] if self.discount_source_ids else None
+
+
+class CanonicalDiscountType(StrEnum):
+    fixed = "fixed"
+    percentage = "percentage"
+
+
+class CanonicalDiscountDuration(StrEnum):
+    once = "once"
+    forever = "forever"
+    repeating = "repeating"
+
+
+@dataclass
+class CanonicalDiscount:
+    """A source coupon. Polar stores one discount per coupon; extra promotion
+    codes are counted on ``extra_codes`` and dropped."""
+
+    source_id: str
+    name: str
+    discount_type: CanonicalDiscountType
+    duration: CanonicalDiscountDuration
+    duration_in_months: int | None
+    # Percentage coupons; None for fixed.
+    basis_points: int | None
+    # Fixed coupons, currency → minor units. Empty for percentage.
+    amounts: dict[str, int]
+    code: str | None
+    extra_codes: int
+    ends_at: datetime | None
+    # Remaining redemptions (source max minus already redeemed), or None
+    # when the source has no cap.
+    max_redemptions: int | None
+    # Empty means the coupon applies to every product.
+    product_source_ids: list[str]
+
+    type = MerchantMigrationRecordType.discount
+
 
 @dataclass
 class CanonicalAccount:
@@ -148,7 +195,9 @@ class CanonicalAccount:
     has_connected_accounts: bool
 
 
-CanonicalRecord = CanonicalProduct | CanonicalCustomer | CanonicalSubscription
+CanonicalRecord = (
+    CanonicalProduct | CanonicalCustomer | CanonicalSubscription | CanonicalDiscount
+)
 PriceKey = tuple[str, str]
 
 
@@ -173,6 +222,16 @@ def subscription_price_key_values(
     if currency is None:
         return None
     return price_key(source_id, currency)
+
+
+def polar_discount_code(raw: str | None) -> str | None:
+    """Stripe promotion codes may include dashes; Polar codes are alphanumeric."""
+    if raw is None:
+        return None
+    cleaned = "".join(character for character in raw if character.isalnum())
+    if 3 <= len(cleaned) <= 256:
+        return cleaned
+    return None
 
 
 def serialize(record: CanonicalRecord) -> dict[str, Any]:
@@ -240,13 +299,33 @@ def deserialize(
                 )
                 if payment_method is not None
                 else None,
-                has_discount=data.get("has_discount", False),
+                has_discount=data.get("has_discount", False)
+                or bool(data.get("discount_source_ids")),
+                discount_source_ids=list(data.get("discount_source_ids") or []),
+                discount_started_at=_parse_datetime(data.get("discount_started_at")),
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
                 anchor_day=data.get("anchor_day"),
                 currency=data.get("currency"),
                 automatic_tax=data.get("automatic_tax"),
+            )
+        case MerchantMigrationRecordType.discount:
+            return CanonicalDiscount(
+                source_id=data["source_id"],
+                name=data["name"],
+                discount_type=CanonicalDiscountType(data["discount_type"]),
+                duration=CanonicalDiscountDuration(data["duration"]),
+                duration_in_months=data["duration_in_months"],
+                basis_points=data["basis_points"],
+                amounts={
+                    currency: amount for currency, amount in data["amounts"].items()
+                },
+                code=data["code"],
+                extra_codes=data["extra_codes"],
+                ends_at=_parse_datetime(data["ends_at"]),
+                max_redemptions=data["max_redemptions"],
+                product_source_ids=list(data["product_source_ids"]),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

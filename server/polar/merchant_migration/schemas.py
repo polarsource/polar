@@ -53,6 +53,7 @@ class PrecheckEntity(StrEnum):
     products = "products"
     prices = "prices"
     customers = "customers"
+    discounts = "discounts"
     subscriptions = "subscriptions"
 
 

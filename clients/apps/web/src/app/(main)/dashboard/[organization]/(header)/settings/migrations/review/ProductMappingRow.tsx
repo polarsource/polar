@@ -30,7 +30,7 @@ export function ProductMappingRow({
   const candidates = compatibleCandidates(item)
 
   return (
-    <Box flexDirection="column" rowGap="xs" minWidth={0}>
+    <Box flexDirection="column" rowGap="xs" minWidth={0} width="100%">
       <Select
         value={value || undefined}
         onValueChange={onChange}

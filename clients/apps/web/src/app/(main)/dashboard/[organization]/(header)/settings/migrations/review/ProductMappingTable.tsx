@@ -1,8 +1,8 @@
 'use client'
 
-import { Button, Text } from '@polar-sh/orbit'
+import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ProductMappingRow } from './ProductMappingRow'
 import {
   formatMappingAmount,
@@ -28,15 +28,32 @@ export function ProductMappingTable({
 
   return (
     <Box flexDirection="column" rowGap="s">
-      <Box
+      <Grid
+        templateColumns={COLUMNS}
+        columnGap="m"
         borderWidth={1}
         borderStyle="solid"
         borderColor="border-primary"
         borderRadius="l"
         overflow="hidden"
-        flexDirection="column"
       >
-        <ProductMappingTableHeader />
+        <MappingGridRow header>
+          <Text variant="caption" color="muted">
+            Stripe product
+          </Text>
+          <Text variant="caption" color="muted">
+            Interval
+          </Text>
+          <Text variant="caption" color="muted">
+            Price
+          </Text>
+          <Text variant="caption" color="muted">
+            Subs
+          </Text>
+          <Text variant="caption" color="muted">
+            Polar product
+          </Text>
+        </MappingGridRow>
         {paged.items.map((item) => (
           <ProductMappingTableRow
             key={item.source_id}
@@ -45,7 +62,7 @@ export function ProductMappingTable({
             onChange={onChange}
           />
         ))}
-      </Box>
+      </Grid>
       {paged.showPagination ? (
         <Box alignItems="center" justifyContent="end" columnGap="s">
           <Text variant="caption" color="muted">
@@ -73,32 +90,27 @@ export function ProductMappingTable({
   )
 }
 
-function ProductMappingTableHeader() {
+function MappingGridRow({
+  children,
+  header = false,
+}: {
+  children: ReactNode
+  header?: boolean
+}) {
   return (
     <Box
       display="grid"
-      gridTemplateColumns={COLUMNS}
-      columnGap="m"
+      gridTemplateColumns="subgrid"
+      gridColumn="1 / -1"
       alignItems="center"
       paddingHorizontal="m"
       paddingVertical="s"
-      backgroundColor="background-secondary"
+      backgroundColor={header ? 'background-secondary' : undefined}
+      borderTopWidth={header ? 0 : 1}
+      borderStyle="solid"
+      borderColor="border-primary"
     >
-      <Text variant="caption" color="muted">
-        Stripe product
-      </Text>
-      <Text variant="caption" color="muted">
-        Interval
-      </Text>
-      <Text variant="caption" color="muted">
-        Price
-      </Text>
-      <Text variant="caption" color="muted">
-        Subs
-      </Text>
-      <Text variant="caption" color="muted">
-        Polar product
-      </Text>
+      {children}
     </Box>
   )
 }
@@ -113,17 +125,7 @@ function ProductMappingTableRow({
   onChange: (sourceId: string, value: string) => void
 }) {
   return (
-    <Box
-      display="grid"
-      gridTemplateColumns={COLUMNS}
-      columnGap="m"
-      alignItems="center"
-      paddingHorizontal="m"
-      paddingVertical="s"
-      borderTopWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-    >
+    <MappingGridRow>
       <Box minWidth={0}>
         <Text variant="caption" truncate>
           {item.name}
@@ -141,11 +143,13 @@ function ProductMappingTableRow({
       <Text variant="caption" tabularNums>
         {item.subscriber_count}
       </Text>
-      <ProductMappingRow
-        item={item}
-        saving={saving}
-        onChange={(value) => onChange(item.source_id, value)}
-      />
-    </Box>
+      <Box minWidth={0} width="100%">
+        <ProductMappingRow
+          item={item}
+          saving={saving}
+          onChange={(value) => onChange(item.source_id, value)}
+        />
+      </Box>
+    </MappingGridRow>
   )
 }

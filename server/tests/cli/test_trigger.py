@@ -57,6 +57,17 @@ class TestTriggerFixtures:
         assert raw["type"] == event
         assert raw["data"]["id"]
 
+    def test_seed_picks_the_same_people_regardless_of_build_order(
+        self, organization: Organization
+    ) -> None:
+        first = TriggerFixtures(organization, seed=5)
+        first.build(WebhookEventType.customer_seat_claimed)
+        second = TriggerFixtures(organization, seed=5)
+        second.build(WebhookEventType.customer_created)
+
+        assert first.customer.name == second.customer.name
+        assert first.member.name == second.member.name
+
     def test_seed_makes_generated_ids_reproducible(
         self, organization: Organization
     ) -> None:

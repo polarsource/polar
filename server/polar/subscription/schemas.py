@@ -25,6 +25,7 @@ from polar.kit.schemas import (
     PRODUCT_ID_EXAMPLE,
     IDSchema,
     Int32,
+    ISO8601Duration,
     MergeJSONSchema,
     Schema,
     SetSchemaReference,
@@ -401,10 +402,12 @@ class SubscriptionUpdateUnits(Schema):
 class SubscriptionUpdateBillingPeriod(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    current_billing_period_end: FutureDatetime = Field(
+    current_billing_period_end: FutureDatetime | ISO8601Duration = Field(
         description=inspect.cleandoc(
             """
             Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future.
+
+            Alternatively, you can pass an ISO 8601 duration, like `P1M` or `P14D`, to extend the current billing period by that duration. Months and years are calendar-aware: `P1M` moves the renewal to the same day of the next month.
 
             If the subscription is set to cancel at the end of the period, it'll end on this new date instead.
 

@@ -99,6 +99,16 @@ curl --request PATCH \
   --data '{ "current_billing_period_end": "2026-07-15T00:00:00Z" }'
 ```
 
+Instead of a date, you can pass an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) to extend the current period by that much, without computing the new date yourself. Months and years are calendar-aware: `P1M` on a period ending January 31st moves the renewal to February 28th.
+
+```bash cURL
+curl --request PATCH \
+  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
+  --header 'Authorization: Bearer <TOKEN>' \
+  --header 'Content-Type: application/json' \
+  --data '{ "current_billing_period_end": "P1M" }'
+```
+
 ## Pause and resume
 
 Pausing stops billing without ending the subscription. Use it for seasonal plans or account "freezes", where a customer steps away for a while and comes back to the same subscription and payment method.

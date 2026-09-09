@@ -9,6 +9,7 @@ import freezegun
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
+from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
 from sqlalchemy.util.typing import TypeAlias
@@ -9725,6 +9726,61 @@ class TestUpdateBillingPeriod:
         assert event.user_metadata["billing_period_end"] == new_period_end.isoformat()
         assert event.customer_id == customer.id
         assert event.organization_id == customer.organization_id
+
+    async def test_duration_extends_current_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=datetime(2030, 1, 31, tzinfo=UTC),
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = (
+                await subscription_service.update_currrent_billing_period_end(
+                    session,
+                    ctx,
+                    subscription,
+                    new_period_end=relativedelta(months=1),
+                )
+            )
+
+        assert updated_subscription.current_period_end == datetime(
+            2030, 2, 28, tzinfo=UTC
+        )
+
+    async def test_duration_resulting_in_past_period_end_raises(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=utc_now() - timedelta(days=10),
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_currrent_billing_period_end(
+                    session,
+                    ctx,
+                    subscription,
+                    new_period_end=relativedelta(days=1),
+                )
 
     async def test_cancel_at_period_end_moves_ends_at(
         self,

@@ -8,6 +8,7 @@ from typing import Any, Literal, Self, Unpack, cast, overload
 from urllib.parse import urlencode
 
 import structlog
+from dateutil.relativedelta import relativedelta
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
@@ -2548,7 +2549,7 @@ class SubscriptionService:
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
-        new_period_end: datetime,
+        new_period_end: datetime | relativedelta,
     ) -> Subscription:
         if subscription.revoked:
             raise AlreadyCanceledSubscription(subscription)
@@ -2557,6 +2558,21 @@ class SubscriptionService:
             raise InactiveSubscription(subscription)
 
         old_period_end = subscription.current_period_end
+
+        # A duration extends the current period, so it's relative to its end
+        if isinstance(new_period_end, relativedelta):
+            new_period_end = old_period_end + new_period_end
+            if new_period_end <= utc_now():
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "current_billing_period_end"),
+                            "msg": "The resulting billing period end must be in the future.",
+                            "input": new_period_end,
+                        }
+                    ]
+                )
 
         subscription.current_period_end = new_period_end
         subscription.anchor_day = new_period_end.day

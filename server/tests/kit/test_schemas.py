@@ -2,10 +2,16 @@ from datetime import datetime
 from typing import Any
 
 import pytest
+from dateutil.relativedelta import relativedelta
 from pydantic import Field, ValidationError
 from pydantic.json_schema import JsonSchemaMode
 
-from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.schemas import (
+    Schema,
+    TimestampedSchema,
+    format_iso8601_duration,
+    parse_iso8601_duration,
+)
 
 
 class StringSchema(Schema):
@@ -107,3 +113,26 @@ def test_rejects_nul_character_in_circular_collection() -> None:
 
     with pytest.raises(ValidationError, match="This value contains invalid characters"):
         AnySchema(value=circular_dict)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("P1M", relativedelta(months=1)),
+        ("P14D", relativedelta(days=14)),
+        ("P1W", relativedelta(weeks=1)),
+        ("P1Y2M10D", relativedelta(years=1, months=2, days=10)),
+        ("PT12H", relativedelta(hours=12)),
+    ],
+)
+def test_parse_iso8601_duration(value: str, expected: relativedelta) -> None:
+    duration = parse_iso8601_duration(value)
+
+    assert duration == expected
+    assert parse_iso8601_duration(format_iso8601_duration(duration)) == expected
+
+
+@pytest.mark.parametrize("value", ["", "P", "PT", "1 month", "-P1M", "p1m", "P0D"])
+def test_parse_iso8601_duration_invalid(value: str) -> None:
+    with pytest.raises(ValueError, match="Input should be"):
+        parse_iso8601_duration(value)

@@ -1559,6 +1559,55 @@ class TestSubscriptionUpdateBillingPeriod:
         assert response.status_code == 403
         assert response.json()["error"] == "InactiveSubscription"
 
+    @pytest.mark.auth
+    async def test_iso8601_duration(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2030, 1, 31, tzinfo=UTC),
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"current_billing_period_end": "P1M"},
+        )
+
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert datetime.fromisoformat(
+            updated_subscription["current_period_end"]
+        ) == datetime(2030, 2, 28, tzinfo=UTC)
+
+    @pytest.mark.auth
+    async def test_invalid_iso8601_duration(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"current_billing_period_end": "1 month"},
+        )
+
+        assert response.status_code == 422
+
 
 EXPORT_DEFAULT_HEADER = (
     "Email,Started At,Product,Amount,Currency,Status,Billing Interval"

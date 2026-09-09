@@ -1,9 +1,11 @@
 import dataclasses
+import re
 from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime
 from typing import Annotated, Any, Literal, cast, get_args, overload
 
 from annotated_types import Ge, Le
+from dateutil.relativedelta import relativedelta
 from pydantic import (
     UUID4,
     AfterValidator,
@@ -13,6 +15,7 @@ from pydantic import (
     Field,
     GetCoreSchemaHandler,
     GetJsonSchemaHandler,
+    GetPydanticSchema,
     HttpUrl,
     PlainSerializer,
     UrlConstraints,
@@ -170,6 +173,84 @@ class MergeJSONSchema:
 
     def __hash__(self) -> int:
         return hash(type(self.mode))
+
+
+_ISO8601_DURATION_JSON_SCHEMA_PATTERN = (
+    r"^P(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+S)?)?$"
+)
+_ISO8601_DURATION_PATTERN = re.compile(
+    r"^P(?!$)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?"
+    r"(?:T(?!$)(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$"
+)
+
+
+def parse_iso8601_duration(value: str) -> relativedelta:
+    """
+    Parse an ISO 8601 duration, e.g. `P1M`, into a calendar-aware `relativedelta`.
+
+    Unlike a `timedelta`, it keeps months and years as such: adding `P1M` to a date
+    lands on the same day of the next month, matching how billing periods are computed.
+    """
+    match = _ISO8601_DURATION_PATTERN.match(value)
+    if match is None:
+        raise ValueError(
+            "Input should be a valid ISO 8601 duration, like `P1M` or `P14D`"
+        )
+
+    years, months, weeks, days, hours, minutes, seconds = (
+        int(group) if group else 0 for group in match.groups()
+    )
+    duration = relativedelta(
+        years=years,
+        months=months,
+        weeks=weeks,
+        days=days,
+        hours=hours,
+        minutes=minutes,
+        seconds=seconds,
+    )
+
+    if not duration:
+        raise ValueError("Input should be a duration greater than zero")
+
+    return duration
+
+
+def format_iso8601_duration(duration: relativedelta) -> str:
+    date_designators = (
+        (duration.years, "Y"),
+        (duration.months, "M"),
+        (duration.days, "D"),
+    )
+    time_designators = (
+        (duration.hours, "H"),
+        (duration.minutes, "M"),
+        (duration.seconds, "S"),
+    )
+    date_part = "".join(
+        f"{value}{designator}" for value, designator in date_designators if value
+    )
+    time_part = "".join(
+        f"{value}{designator}" for value, designator in time_designators if value
+    )
+    return f"P{date_part}" + (f"T{time_part}" if time_part else "")
+
+
+ISO8601Duration = Annotated[
+    relativedelta,
+    GetPydanticSchema(
+        lambda source_type, handler: core_schema.no_info_after_validator_function(
+            parse_iso8601_duration, core_schema.str_schema()
+        )
+    ),
+    PlainSerializer(format_iso8601_duration, return_type=str),
+    MergeJSONSchema(
+        {
+            "pattern": _ISO8601_DURATION_JSON_SCHEMA_PATTERN,
+            "examples": ["P1M", "P14D"],
+        }
+    ),
+]
 
 
 @dataclasses.dataclass(slots=True)

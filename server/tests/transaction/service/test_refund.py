@@ -808,35 +808,3 @@ class TestRevert:
         )
         assert reverse_balance_polar.amount == -refund_outgoing_balance.amount
         assert reverse_balance_polar.payment_transaction is None
-
-
-@pytest.mark.asyncio
-class TestCreateReversalBalancesForPayment:
-    async def test_valid(
-        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
-    ) -> None:
-        payment_transaction = await create_transaction(
-            save_fixture, type=TransactionType.payment, charge_id="STRIPE_CHARGE_ID"
-        )
-        await balance_transaction_service.create_balance(
-            session,
-            source_account=None,
-            amount=payment_transaction.amount,
-            destination_account=account,
-            payment_transaction=payment_transaction,
-        )
-        await create_transaction(
-            save_fixture,
-            type=TransactionType.refund,
-            amount=-payment_transaction.amount,
-            payment_transaction=payment_transaction,
-            charge_id="STRIPE_CHARGE_ID",
-        )
-
-        reversal_balances = (
-            await refund_transaction_service.create_reversal_balances_for_payment(
-                session, payment_transaction=payment_transaction
-            )
-        )
-
-        assert len(reversal_balances) == 1

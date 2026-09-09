@@ -13,7 +13,6 @@ import {
   CREATE_NEW_VALUE,
   catalogPriceNote,
   compatibleCandidates,
-  formatMappingPrices,
   mappingSelectValue,
   type ProductMappingItem,
 } from './productMapping'
@@ -31,50 +30,33 @@ export function ProductMappingRow({
   const value = mappingSelectValue(item)
   const candidates = compatibleCandidates(item)
   const catalogNote = catalogPriceNote(item)
-  const subscriberLabel =
-    item.subscriber_count === 1 ? '1 sub' : `${item.subscriber_count} subs`
 
   return (
-    <Box flexDirection="column" rowGap="xs">
-      <Box
-        alignItems="center"
-        justifyContent="between"
-        columnGap="m"
-        rowGap="xs"
-        flexWrap="wrap"
+    <Box flexDirection="column" rowGap="xs" minWidth={0}>
+      <Select
+        value={value || undefined}
+        onValueChange={onChange}
+        disabled={locked || saving}
       >
-        <Text variant="body">
-          {item.name} ·{' '}
-          {formatMappingPrices(item.prices, item.recurring_interval)} ·{' '}
-          {subscriberLabel}
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Choose a Polar product" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={CREATE_NEW_VALUE}>
+            Create a new Polar product
+          </SelectItem>
+          {candidates.map((candidate) => (
+            <SelectItem key={candidate.id} value={candidate.id}>
+              {candidate.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {catalogNote ? (
+        <Text variant="caption" color="muted">
+          {catalogNote}
         </Text>
-        <Box alignItems="center" columnGap="s" minWidth={0}>
-          <Select
-            value={value || undefined}
-            onValueChange={onChange}
-            disabled={locked || saving}
-          >
-            <SelectTrigger className="w-auto min-w-40">
-              <SelectValue placeholder="Polar product" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={CREATE_NEW_VALUE}>
-                Create a new Polar product
-              </SelectItem>
-              {candidates.map((candidate) => (
-                <SelectItem key={candidate.id} value={candidate.id}>
-                  {candidate.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {catalogNote ? (
-            <Text variant="caption" color="muted">
-              {catalogNote}
-            </Text>
-          ) : null}
-        </Box>
-      </Box>
+      ) : null}
       {item.requires_choice ? (
         <Text variant="caption" color="warning">
           A Polar product already uses this name, but the billing interval

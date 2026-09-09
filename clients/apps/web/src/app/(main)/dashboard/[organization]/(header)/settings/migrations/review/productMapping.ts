@@ -16,6 +16,13 @@ const INTERVAL_ABBREVIATION: Record<string, string> = {
   year: '/yr',
 }
 
+const INTERVAL_LABEL: Record<string, [string, string]> = {
+  day: ['Daily', 'days'],
+  week: ['Weekly', 'weeks'],
+  month: ['Monthly', 'months'],
+  year: ['Yearly', 'years'],
+}
+
 export function compatibleCandidates(item: ProductMappingItem) {
   return item.candidates.filter((candidate) => candidate.compatible)
 }
@@ -28,23 +35,14 @@ export function mappingSelectValue(item: ProductMappingItem): string {
   return ''
 }
 
-export function isSilentAutoMap(item: ProductMappingItem): boolean {
-  if (item.requires_choice || item.create_new) {
-    return false
-  }
-  const candidate = selectedMappingCandidate(item)
-  if (!candidate) {
-    return false
-  }
-  return !candidate.incompatibilities.includes('amount_mismatch')
-}
-
 export function visibleMappingItems(
   items: ProductMappingItem[],
 ): ProductMappingItem[] {
-  return items.filter(
-    (item) => item.candidates.length > 0 && !isSilentAutoMap(item),
-  )
+  const hasCatalog = items.some((item) => item.candidates.length > 0)
+  if (!hasCatalog) {
+    return []
+  }
+  return items.filter((item) => item.subscriber_count > 0)
 }
 
 export function shouldShowProductMappingPanel(
@@ -65,7 +63,10 @@ export function mappingChoice(
 
 export function mappingRequiresChoice(items: ProductMappingItem[]): boolean {
   return items.some(
-    (item) => item.requires_choice && item.import_status === 'pending',
+    (item) =>
+      item.requires_choice &&
+      item.import_status === 'pending' &&
+      item.subscriber_count > 0,
   )
 }
 
@@ -86,13 +87,40 @@ export function catalogPriceNote(item: ProductMappingItem): string | null {
   )}`
 }
 
+export function formatMappingAmount(
+  prices: ProductMappingItem['prices'],
+): string {
+  if (prices.length === 0) {
+    return '—'
+  }
+  return prices
+    .map((price) => formatAmount(price.amount, price.currency))
+    .join(', ')
+}
+
+export function formatMappingInterval(
+  interval: string | null,
+  count: number,
+): string {
+  if (!interval) {
+    return '—'
+  }
+  const labels = INTERVAL_LABEL[interval]
+  if (!labels) {
+    return interval
+  }
+  const [once, plural] = labels
+  return count <= 1 ? once : `Every ${count} ${plural}`
+}
+
 export function formatMappingPrices(
   prices: ProductMappingItem['prices'],
   interval: string | null,
 ): string {
-  const money = prices
-    .map((price) => formatAmount(price.amount, price.currency))
-    .join(', ')
+  const money = formatMappingAmount(prices)
+  if (money === '—') {
+    return money
+  }
   const suffix = interval ? (INTERVAL_ABBREVIATION[interval] ?? '') : ''
   return `${money}${suffix}`
 }

@@ -3,6 +3,7 @@ import {
   CREATE_NEW_VALUE,
   catalogPriceNote,
   compatibleCandidates,
+  formatMappingInterval,
   mappingChoice,
   mappingRequiresChoice,
   mappingSelectValue,
@@ -87,6 +88,11 @@ describe('mappingRequiresChoice', () => {
         item({ requires_choice: true, import_status: 'imported' }),
       ]),
     ).toBe(false)
+    expect(
+      mappingRequiresChoice([
+        item({ requires_choice: true, subscriber_count: 0 }),
+      ]),
+    ).toBe(false)
   })
 })
 
@@ -97,29 +103,17 @@ describe('shouldShowProductMappingPanel', () => {
     )
   })
 
-  it('hides a unique same-price match', () => {
+  it('hides Stripe products with no subscribers', () => {
+    expect(shouldShowProductMappingPanel([item({ subscriber_count: 0 })])).toBe(
+      false,
+    )
+  })
+
+  it('shows products that still have subscribers', () => {
     expect(
       shouldShowProductMappingPanel([
         item({ suggested_product_id: 'prod_polar' }),
       ]),
-    ).toBe(false)
-  })
-
-  it('shows when the catalog price differs', () => {
-    expect(
-      shouldShowProductMappingPanel([
-        item({
-          prices: [{ amount: 500, currency: 'usd' }],
-          suggested_product_id: 'prod_polar',
-          candidates: [candidate({ incompatibilities: ['amount_mismatch'] })],
-        }),
-      ]),
-    ).toBe(true)
-  })
-
-  it('shows when the merchant must choose', () => {
-    expect(
-      shouldShowProductMappingPanel([item({ requires_choice: true })]),
     ).toBe(true)
   })
 })
@@ -165,5 +159,13 @@ describe('catalogPriceNote', () => {
 
   it('is silent when creating a new Polar product', () => {
     expect(catalogPriceNote(item({ create_new: true }))).toBeNull()
+  })
+})
+
+describe('formatMappingInterval', () => {
+  it('labels a monthly and a multi-month cadence', () => {
+    expect(formatMappingInterval('month', 1)).toBe('Monthly')
+    expect(formatMappingInterval('month', 3)).toBe('Every 3 months')
+    expect(formatMappingInterval(null, 1)).toBe('—')
   })
 })

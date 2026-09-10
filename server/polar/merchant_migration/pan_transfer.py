@@ -360,8 +360,7 @@ def build(method: PanTransferMethod) -> list[PanTransferStep]:
         )
         for template in templates_for(method)
     ]
-    _advance(method, steps)
-    return steps
+    return advance(method, steps)
 
 
 def current(steps: Sequence[PanTransferStep]) -> PanTransferStep | None:
@@ -384,13 +383,6 @@ def advance(
 ) -> list[PanTransferStep]:
     """Make the next unfinished step actionable, walking past auto-completing
     and retired keys."""
-    _advance(method, steps)
-    return steps
-
-
-def _advance(method: PanTransferMethod, steps: list[PanTransferStep]) -> None:
-    """Make the first unfinished step actionable, walking past any that complete
-    on their own."""
     templates = _TEMPLATES_BY_KEY[method]
     for step in steps:
         if step.status == PanStepStatus.completed:
@@ -402,8 +394,9 @@ def _advance(method: PanTransferMethod, steps: list[PanTransferStep]) -> None:
         # No template: the step left the checklist. Complete it so stored
         # migrations don't stall on a key Polar no longer asks anyone to do.
         if template is not None and not template.auto_complete:
-            return
+            return steps
         _settle(step, PanStepActor.system)
+    return steps
 
 
 def _settle(step: PanTransferStep, actor: PanStepActor) -> None:
@@ -468,18 +461,21 @@ def complete(
     step = _get(steps, key)
     if step.status not in _ACTIONABLE:
         raise PanStepNotActionable(key)
+    template = _TEMPLATES_BY_KEY[method].get(key)
+    if template is None:
+        _settle(step, PanStepActor.system)
+        return advance(method, steps)
     if step.owner not in _ACTOR_OWNERS[actor]:
         raise PanStepNotOwned(key, step.owner)
 
     # Blank is the same as absent, so an untouched optional field doesn't get
     # stored and an all-whitespace required one still reads as missing.
     provided = {k: v.strip() for k, v in inputs.items() if v.strip()}
-    _validate_inputs(_template(method, key), provided)
+    _validate_inputs(template, provided)
 
     step.inputs = {**step.inputs, **provided}
     _settle(step, actor)
-    _advance(method, steps)
-    return steps
+    return advance(method, steps)
 
 
 def annotate(

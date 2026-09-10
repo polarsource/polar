@@ -11,12 +11,16 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { PanTransferPanel } from '../cards/PanTransferPanel'
-import { isSwitchChecklistKey } from '../cards/panTransferCopy'
 import { ImportedStep } from '../ImportedStep'
 import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
-import { currentStepDef, MigrationStepDef, OWNER_LABELS } from '../steps'
+import {
+  currentStepDef,
+  MigrationStepDef,
+  OWNER_LABELS,
+  visibleMigrationStep,
+} from '../steps'
 import { SwitchPanel } from '../switch/SwitchPanel'
 import { StripeMark } from '../StripeMark'
 
@@ -153,7 +157,7 @@ function StepContent({
     )
   }
   const def = currentStepDef(migration, panCurrentStepKey)
-  switch (migration.step) {
+  switch (visibleMigrationStep(migration, panCurrentStepKey)) {
     // The stepper shows a connected migration as assessing, but nothing is
     // staged until the first pre-check runs.
     case 'source_setup':
@@ -169,14 +173,6 @@ function StepContent({
     case 'create_catalog':
       return <ImportedStep migrationId={migration.id} />
     case 'copy_cards':
-      if (isSwitchChecklistKey(panCurrentStepKey)) {
-        return (
-          <Box flexDirection="column" rowGap="l">
-            <StepHeading def={def} />
-            <SwitchPanel migrationId={migration.id} />
-          </Box>
-        )
-      }
       return (
         <Box flexDirection="column" rowGap="l">
           <StepHeading def={def} />

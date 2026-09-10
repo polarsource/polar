@@ -679,7 +679,7 @@ class MerchantMigrationService:
         if steps:
             # Copies only: a GET must not persist, but stored checklists can
             # still be sitting on a key Polar no longer asks anyone to complete.
-            pan_transfer.advance(migration.pan_transfer_method, steps)
+            self._advance_retired_steps(migration, steps)
         return self._checklist(migration, steps)
 
     async def stream_imported_customer_source_ids(
@@ -1027,10 +1027,7 @@ class MerchantMigrationService:
         )
         if migration.pan_transfer_steps:
             steps = list(migration.pan_transfer_steps)
-            before = pan_transfer.current(steps)
-            pan_transfer.advance(migration.pan_transfer_method, steps)
-            after = pan_transfer.current(steps)
-            if (before.key if before else None) != (after.key if after else None):
+            if self._advance_retired_steps(migration, steps):
                 await self._advance_checklist(session, migration, steps)
         if not self._cutover_reachable(migration):
             raise CutoverNotStarted()
@@ -1300,6 +1297,16 @@ class MerchantMigrationService:
                 exclude_record_ids=list(exclude_record_ids)
             )
         return None
+
+    def _advance_retired_steps(
+        self, migration: MerchantMigration, steps: list[PanTransferStep]
+    ) -> bool:
+        """Walk past keys Polar no longer asks anyone to complete. True if the
+        current step moved, so the caller can persist."""
+        before = pan_transfer.current(steps)
+        pan_transfer.advance(migration.pan_transfer_method, steps)
+        after = pan_transfer.current(steps)
+        return (before.key if before else None) != (after.key if after else None)
 
     def _cutover_reachable(self, migration: MerchantMigration) -> bool:
         """The merchant may switch once the card checklist has reached the switch

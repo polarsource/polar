@@ -75,6 +75,21 @@ export type MigrationPosition =
   | { kind: 'step'; index: number }
   | { kind: 'completed' }
 
+// Card-checklist keys after the last card step belong on Switch, even if the
+// backend still reports `copy_cards` for an in-progress migration.
+export function visibleMigrationStep(
+  migration: schemas['MerchantMigration'],
+  panCurrentStepKey?: string | null,
+): Step {
+  if (
+    migration.step === 'copy_cards' &&
+    isSwitchChecklistKey(panCurrentStepKey)
+  ) {
+    return 'activate_subscriptions'
+  }
+  return migration.step
+}
+
 // Backend steps map to a visible step through `MIGRATION_STEPS`, with two
 // exceptions: `source_setup`, where connecting completes Connect even though
 // the backend still reads it, so once connected we surface Assessment; and the
@@ -87,15 +102,8 @@ export function currentPosition(
   if (!migration.source_connected) {
     return { kind: 'step', index: 0 }
   }
-  // Card-checklist keys after the last card step belong on Switch, even if
-  // the backend still reports `copy_cards` for an in-progress migration.
-  if (
-    migration.step === 'copy_cards' &&
-    isSwitchChecklistKey(panCurrentStepKey)
-  ) {
-    return { kind: 'step', index: SWITCH_STEP_INDEX }
-  }
-  const step = migration.step === 'source_setup' ? 'pre_check' : migration.step
+  const visible = visibleMigrationStep(migration, panCurrentStepKey)
+  const step = visible === 'source_setup' ? 'pre_check' : visible
   const index = MIGRATION_STEPS.findIndex((def) => def.steps.includes(step))
   return index === -1 ? { kind: 'completed' } : { kind: 'step', index }
 }
@@ -107,7 +115,3 @@ export function currentStepDef(
   const position = currentPosition(migration, panCurrentStepKey)
   return position.kind === 'completed' ? null : MIGRATION_STEPS[position.index]
 }
-
-const SWITCH_STEP_INDEX = MIGRATION_STEPS.findIndex(
-  (def) => def.key === 'cutover',
-)

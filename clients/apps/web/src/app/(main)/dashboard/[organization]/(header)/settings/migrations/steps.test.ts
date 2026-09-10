@@ -31,10 +31,7 @@ describe('currentPosition', () => {
   it('surfaces Switch once cards are done, including a retired uncovered step', () => {
     expect(
       currentPosition(migration('copy_cards'), 'resolve_uncovered'),
-    ).toEqual({
-      kind: 'step',
-      index: 3,
-    })
+    ).toEqual(currentPosition(migration('activate_subscriptions')))
   })
 
   it('maps activate_subscriptions to Switch without a pan key', () => {

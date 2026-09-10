@@ -167,5 +167,5 @@ export function isSwitchChecklistKey(key: string | null | undefined): boolean {
 }
 
 export function cardMovementSteps<T extends { key: string }>(steps: T[]): T[] {
-  return steps.filter((step) => !AFTER_CARD_MOVEMENT_KEYS.has(step.key))
+  return steps.filter((step) => !isSwitchChecklistKey(step.key))
 }

@@ -6,6 +6,7 @@ from pytest_mock import MockerFixture
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
+from polar.integrations.slack.manifest import BOT_SCOPES
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.integrations.slack.schemas import SlackIntegrationCredentialsUpdate
 from polar.integrations.slack.service import (
@@ -105,7 +106,7 @@ def _service_with_mock(
                 "bot_user_id": "U1",
                 "access_token": "xoxb-new-token",
                 "authed_user": {"id": "U2"},
-                "scope": "channels:manage,chat:write",
+                "scope": ",".join(BOT_SCOPES),
             },
         )
     )
@@ -312,7 +313,7 @@ class TestCompleteInstall:
         assert await integration.get_bot_token() == "xoxb-new-token"
         assert integration.team_id == "T1"
         assert integration.team_name == "Test team"
-        assert integration.scopes == ["channels:manage", "chat:write"]
+        assert integration.scopes == BOT_SCOPES
         assert integration.installed_at is not None
         assert integration.revoked_at is None
 
@@ -331,7 +332,7 @@ class TestCompleteInstall:
                 "app_id": "A0OTHERAPP",
                 "team": {"id": "T1"},
                 "access_token": "xoxb-x",
-                "scope": "channels:manage",
+                "scope": ",".join(BOT_SCOPES),
             }
         )
 
@@ -351,7 +352,41 @@ class TestCompleteInstall:
                 session, uuid4(), code="abc", redirect_uri=_REDIRECT_URI
             )
 
-    async def test_empty_scope_string_yields_none(
+    async def test_rejects_insufficient_scopes(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+    ) -> None:
+        created = await _create_integration(save_fixture, organization, bot_token=None)
+        service, client = _service_with_mock(mocker)
+        client.oauth_v2_access = AsyncMock(
+            return_value={
+                "ok": True,
+                "app_id": "A0TESTAPPID",
+                "team": {"id": "T1", "name": "Test team"},
+                "bot_user_id": "U1",
+                "access_token": "xoxb-reduced",
+                "authed_user": {"id": "U2"},
+                "scope": "chat:write",
+            }
+        )
+
+        with pytest.raises(
+            SlackIntegrationInvalidCredentials, match="insufficient_scopes"
+        ):
+            await service.complete_install(
+                session, created.id, code="abc", redirect_uri=_REDIRECT_URI
+            )
+
+        repo = SlackAppRepository.from_session(session)
+        integration = await repo.get_by_id(created.id)
+        assert integration is not None
+        assert await integration.get_bot_token() is None
+        assert integration.installed_at is None
+
+    async def test_rejects_empty_scope_string(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -370,10 +405,12 @@ class TestCompleteInstall:
             }
         )
 
-        integration = await service.complete_install(
-            session, created.id, code="abc", redirect_uri=_REDIRECT_URI
-        )
-        assert integration.scopes is None
+        with pytest.raises(
+            SlackIntegrationInvalidCredentials, match="insufficient_scopes"
+        ):
+            await service.complete_install(
+                session, created.id, code="abc", redirect_uri=_REDIRECT_URI
+            )
 
 
 @pytest.mark.asyncio

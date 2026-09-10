@@ -271,6 +271,14 @@ class SlackAppService:
         if installed_app_id and installed_app_id != integration.slack_app_id:
             raise SlackIntegrationInvalidCredentials("app_id_mismatch")
 
+        # oauth.v2.access returns ok even when an admin reduced the app's bot
+        # scopes at api.slack.com, so verify all BOT_SCOPES were actually granted.
+        granted_scopes = (
+            set(result["scope"].split(",")) if result.get("scope") else set()
+        )
+        if set(BOT_SCOPES) - granted_scopes:
+            raise SlackIntegrationInvalidCredentials("insufficient_scopes")
+
         team = result.get("team") or {}
         bot_token = result.get("access_token")
         return await repository.update(

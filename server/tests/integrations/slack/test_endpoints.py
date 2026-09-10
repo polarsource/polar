@@ -12,6 +12,7 @@ from pytest_mock import MockerFixture
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.integrations.slack.repository import SlackAppRepository
+from polar.integrations.slack.service import SlackIntegrationInvalidCredentials
 from polar.kit import jwt
 from polar.models import (
     Organization,
@@ -591,6 +592,50 @@ class TestCallback:
         assert "tab=oauth" in location
         assert "error=access_denied" in location
         complete_install.assert_not_awaited()
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.organizations_write}),
+    )
+    async def test_insufficient_scopes_surfaces_as_400(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+    ) -> None:
+        integration = await _create_integration(
+            save_fixture, organization, bot_token=None
+        )
+
+        async def _raise_insufficient_scopes(
+            *args: object, **kwargs: object
+        ) -> SlackApp:
+            raise SlackIntegrationInvalidCredentials("insufficient_scopes")
+
+        mocker.patch(
+            "polar.integrations.slack.service.SlackAppService.complete_install",
+            side_effect=_raise_insufficient_scopes,
+        )
+
+        state = jwt.encode(
+            data={
+                "integration_id": str(integration.id),
+                "subject_id": str(user_organization.user_id),
+                "return_to": "/dashboard/slack?tab=oauth",
+            },
+            secret=settings.SECRET,
+            type="slack_integration_oauth",
+        )
+
+        response = await client.get(
+            "/v1/integrations/slack/callback",
+            params={"code": "abc", "state": state},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 400
+        assert "insufficient_scopes" in response.json()["detail"]
 
 
 @pytest.mark.asyncio

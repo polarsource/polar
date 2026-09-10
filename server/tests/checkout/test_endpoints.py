@@ -1123,6 +1123,7 @@ class TestClientEmbedPolicy:
         checkout_open: Checkout,
     ) -> None:
         organization.embed_hosts = ["example.com", "*.shop.example.com"]
+        organization.feature_settings = {"frame_ancestors_enforced": True}
         await save_fixture(organization)
 
         response = await client.get(
@@ -1140,14 +1141,42 @@ class TestClientEmbedPolicy:
         ]
 
     async def test_not_configured(
-        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        checkout_open: Checkout,
     ) -> None:
+        organization.feature_settings = {"frame_ancestors_enforced": True}
+        await save_fixture(organization)
+
         response = await client.get(
             f"{api_prefix}/client/{checkout_open.client_secret}/embed-policy"
         )
 
         assert response.status_code == 200
         assert response.json()["frame_ancestors"] == ["'none'"]
+
+    async def test_not_enforced(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        checkout_open: Checkout,
+    ) -> None:
+        """Until an organization is switched on, its checkout stays embeddable."""
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+
+        response = await client.get(
+            f"{api_prefix}/client/{checkout_open.client_secret}/embed-policy",
+            headers={"Referer": "https://evil.com/", "Sec-Fetch-Dest": "iframe"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["frame_ancestors"] == ["*"]
 
     async def test_expired_checkout_keeps_its_policy(
         self,
@@ -1158,6 +1187,7 @@ class TestClientEmbedPolicy:
         product: Product,
     ) -> None:
         organization.embed_hosts = ["example.com"]
+        organization.feature_settings = {"frame_ancestors_enforced": True}
         await save_fixture(organization)
         checkout = await create_checkout(
             save_fixture,

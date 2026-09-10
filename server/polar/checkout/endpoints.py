@@ -337,7 +337,9 @@ async def client_embed_policy(
     if checkout is None:
         raise ResourceNotFound()
 
-    hosts = checkout.organization.embed_hosts
+    organization = checkout.organization
+    hosts = organization.embed_hosts
+    enforced = organization.is_frame_ancestors_enforced
     parsed = parse_origin(referer) if referer is not None else None
     frame_origin = str(parsed) if parsed is not None else None
     allowed = (
@@ -351,10 +353,13 @@ async def client_embed_policy(
         frame_origin=frame_origin,
         fetch_dest=sec_fetch_dest,
         allowed=allowed,
+        enforced=enforced,
         embed_hosts=hosts,
     )
 
-    return CheckoutEmbedPolicy(frame_ancestors=csp_frame_ancestors(hosts))
+    return CheckoutEmbedPolicy(
+        frame_ancestors=csp_frame_ancestors(hosts) if enforced else ["*"]
+    )
 
 
 @inner_router.get("/client/{client_secret}/stream", include_in_schema=False)

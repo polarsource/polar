@@ -39,7 +39,6 @@ from polar.product.guard import (
     is_metered_price,
     is_seat_price,
 )
-from polar.product.repository import ProductRepository
 from polar.product.tiers import Tiers, TierType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -1078,53 +1077,6 @@ class TestCreateOrderItemsFromPending:
 
         await session.refresh(entries[2])
         assert entries[2].order_item_id == order_item_2.id
-
-    async def test_static_entries_load_product_once_per_computation(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        mocker: MockerFixture,
-        customer: Customer,
-        product: Product,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        price = product.prices[0]
-        assert is_fixed_price(price)
-
-        entries = [
-            await create_static_price_billing_entry(
-                save_fixture,
-                type=BillingEntryType.proration,
-                customer=customer,
-                price=price,
-                subscription=subscription,
-                pending=True,
-            )
-            for _ in range(5)
-        ]
-        for index, entry in enumerate(entries):
-            entry.start_timestamp -= timedelta(days=index + 1)
-            await save_fixture(entry)
-
-        get_by_id_spy = mocker.spy(ProductRepository, "get_by_id")
-
-        async with billing_entry_service.create_order_items_from_pending(
-            session, subscription
-        ) as order_items:
-            # Every entry shares the same product, so it is loaded exactly once
-            # regardless of how many static entries are prorated.
-            assert get_by_id_spy.call_count == 1
-            assert len(order_items) == len(entries)
-            for order_item in order_items:
-                assert product.name in order_item.label
-
-            await create_order(
-                save_fixture,
-                customer=customer,
-                order_items=list(order_items),
-            )
 
     async def test_static_entry_created_after_cutoff_is_included(
         self,

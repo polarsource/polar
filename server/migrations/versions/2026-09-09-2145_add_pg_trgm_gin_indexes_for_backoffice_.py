@@ -6,6 +6,7 @@ Create Date: 2026-09-09 21:45:27.915455
 
 """
 
+import sqlalchemy as sa
 from alembic import op
 
 # Polar Custom Imports
@@ -32,9 +33,12 @@ def upgrade() -> None:
     # CREATE INDEX CONCURRENTLY cannot run inside a transaction; autocommit_block
     # commits the pending extension change and runs each build in autocommit.
     with op.get_context().autocommit_block():
-        for index_name, column in (
+        for index_name, expression in (
             (NAME_INDEX, "name"),
-            (SLUG_INDEX, "slug"),
+            # `slug` is CITEXT: `slug ILIKE ...` resolves to citext's operator,
+            # which `gin_trgm_ops` (a `text` opclass) doesn't serve, so index
+            # the `slug::text` expression the search casts to.
+            (SLUG_INDEX, "(slug::text)"),
             (EMAIL_INDEX, "email"),
         ):
             # A previously-interrupted concurrent build leaves an INVALID index of
@@ -49,10 +53,9 @@ def upgrade() -> None:
             op.create_index(
                 index_name,
                 "organizations",
-                [column],
+                [sa.text(f"{expression} gin_trgm_ops")],
                 postgresql_concurrently=True,
                 postgresql_using="gin",
-                postgresql_ops={column: "gin_trgm_ops"},
             )
 
 

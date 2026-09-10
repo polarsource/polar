@@ -31,6 +31,11 @@ from ..priority import Signals
 
 FIRST_REVIEW_THRESHOLD_LABEL = formatters.currency(FIRST_REVIEW_THRESHOLD_CENTS, "usd")
 
+# Shorter searches can't use the trigram indexes backing the name/slug/email
+# `ILIKE` filters: pg_trgm extracts no trigram from a one- or two-character
+# pattern, leaving a seq scan of the whole organizations table.
+MIN_SEARCH_LENGTH = 3
+
 DeletedFilter = Literal["exclude", "include", "only"]
 
 
@@ -478,6 +483,7 @@ class OrganizationListView:
         awaiting_reply_org_ids: set[uuid.UUID] | None = None,
         selected_open_cases: bool = False,
         open_cases_count: int = 0,
+        search_too_short: bool = False,
         lazy_counts_url: str | None = None,
     ) -> Generator[None]:
         """Render the complete list view."""
@@ -734,6 +740,7 @@ class OrganizationListView:
             open_case_org_ids,
             awaiting_reply_org_ids,
             selected_open_cases,
+            search_too_short,
         )
 
         yield
@@ -751,6 +758,7 @@ class OrganizationListView:
         open_case_org_ids: set[uuid.UUID] | None = None,
         awaiting_reply_org_ids: set[uuid.UUID] | None = None,
         selected_open_cases: bool = False,
+        search_too_short: bool = False,
     ) -> None:
         """Render the ``#org-list`` block — table with Review-only columns.
 
@@ -771,11 +779,18 @@ class OrganizationListView:
 
         with tag.div(id="org-list", classes="overflow-x-auto"):
             if not organizations:
-                with empty_state(
-                    "No Organizations Found",
-                    "No organizations match your current filters.",
-                ):
-                    pass
+                if search_too_short:
+                    with empty_state(
+                        "Keep Typing",
+                        f"Enter at least {MIN_SEARCH_LENGTH} characters to search.",
+                    ):
+                        pass
+                else:
+                    with empty_state(
+                        "No Organizations Found",
+                        "No organizations match your current filters.",
+                    ):
+                        pass
             else:
                 with tag.table(classes="table table-zebra w-full"):
                     with tag.thead():
@@ -899,6 +914,7 @@ class OrganizationListView:
         open_case_org_ids: set[uuid.UUID] | None = None,
         awaiting_reply_org_ids: set[uuid.UUID] | None = None,
         selected_open_cases: bool = False,
+        search_too_short: bool = False,
     ) -> Generator[None]:
         """Render only the organization table (for HTMX updates)."""
 
@@ -914,9 +930,10 @@ class OrganizationListView:
             open_case_org_ids,
             awaiting_reply_org_ids,
             selected_open_cases,
+            search_too_short,
         )
 
         yield
 
 
-__all__ = ["OrganizationListView"]
+__all__ = ["MIN_SEARCH_LENGTH", "OrganizationListView"]

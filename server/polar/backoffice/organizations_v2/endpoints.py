@@ -20,7 +20,7 @@ from fastapi import Depends, HTTPException, Query, Request
 from fastapi.datastructures import FormData
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
-from sqlalchemy import Select, and_, func, or_, select
+from sqlalchemy import Select, Text, and_, false, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
@@ -140,6 +140,7 @@ from .orders_import import orders_import_sse
 from .priority import Signals
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import (
+    MIN_SEARCH_LENGTH,
     DeletedFilter,
     OrganizationListView,
     apply_deleted_filter,
@@ -592,6 +593,7 @@ async def list_organizations(
     list_view = OrganizationListView(session)
 
     # Convert empty strings to None and parse numbers
+    q = (q.strip() or None) if q else None
     country = country if country else None
     risk_level = risk_level if risk_level else None
     has_appeal = has_appeal if has_appeal else None
@@ -635,18 +637,28 @@ async def list_organizations(
             )
         )
 
+    search_too_short = False
     if q:
         try:
             stmt = stmt.where(Organization.id == uuid.UUID(q))
         except ValueError:
-            search_term = f"%{q}%"
-            stmt = stmt.where(
-                or_(
-                    Organization.name.ilike(search_term),
-                    Organization.slug.ilike(search_term),
-                    Organization.email.ilike(search_term),
+            if len(q) < MIN_SEARCH_LENGTH:
+                # pg_trgm can't extract a trigram from a shorter pattern, so
+                # the search would fall back to a seq scan of the whole table
+                # (the search box fires on every keystroke).
+                search_too_short = True
+                stmt = stmt.where(false())
+            else:
+                search_term = f"%{q}%"
+                stmt = stmt.where(
+                    or_(
+                        Organization.name.ilike(search_term),
+                        # `slug` is CITEXT: without the cast, ILIKE resolves to
+                        # citext's operator and skips the trigram index.
+                        Organization.slug.cast(Text).ilike(search_term),
+                        Organization.email.ilike(search_term),
+                    )
                 )
-            )
 
     # Country filter
     if country:
@@ -772,6 +784,7 @@ async def list_organizations(
             open_case_org_ids=open_case_org_ids,
             awaiting_reply_org_ids=awaiting_reply_org_ids,
             selected_open_cases=selected_open_cases,
+            search_too_short=search_too_short,
         ):
             pass
     else:
@@ -811,6 +824,7 @@ async def list_organizations(
                 awaiting_reply_org_ids=awaiting_reply_org_ids,
                 selected_open_cases=selected_open_cases,
                 open_cases_count=open_cases_count,
+                search_too_short=search_too_short,
                 lazy_counts_url=str(
                     request.url_for("organizations:status_counts").include_query_params(
                         **{k: v for k, v in request.query_params.items() if v}

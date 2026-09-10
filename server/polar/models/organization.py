@@ -538,11 +538,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
             postgresql_using="gin",
             postgresql_ops={"name": "gin_trgm_ops"},
         ),
+        # `slug` is CITEXT, so `slug ILIKE ...` resolves to citext's operator,
+        # which `gin_trgm_ops` (a `text` opclass) doesn't serve. Index the
+        # `slug::text` expression; searches must cast the column the same way.
         Index(
             "ix_organizations_slug_trgm",
-            "slug",
+            text("(slug::text) gin_trgm_ops"),
             postgresql_using="gin",
-            postgresql_ops={"slug": "gin_trgm_ops"},
         ),
         Index(
             "ix_organizations_email_trgm",

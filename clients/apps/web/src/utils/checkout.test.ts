@@ -52,6 +52,46 @@ describe('isOrderSummaryCollapsible', () => {
     expect(isOrderSummaryCollapsible(checkout)).toBe(false)
   })
 
+  it('keeps a free checkout open when the checkout currency is free but another is paid', () => {
+    const freeUsdPrice = createPrice({
+      id: 'price_usd',
+      price_amount: 0,
+      price_currency: 'usd',
+    })
+    const paidEurPrice = createPrice({
+      id: 'price_eur',
+      price_amount: 1000,
+      price_currency: 'eur',
+    })
+    const checkout = createCheckout({
+      currency: 'usd',
+      product_price: freeUsdPrice,
+      prices: { prod_1: [freeUsdPrice, paidEurPrice] },
+      is_free_product_price: false,
+    })
+    expect(isOrderSummaryCollapsible(checkout)).toBe(false)
+  })
+
+  it('collapses a paid checkout even when another currency is free', () => {
+    const paidUsdPrice = createPrice({
+      id: 'price_usd',
+      price_amount: 1000,
+      price_currency: 'usd',
+    })
+    const freeEurPrice = createPrice({
+      id: 'price_eur',
+      price_amount: 0,
+      price_currency: 'eur',
+    })
+    const checkout = createCheckout({
+      currency: 'usd',
+      product_price: paidUsdPrice,
+      prices: { prod_1: [paidUsdPrice, freeEurPrice] },
+      is_free_product_price: false,
+    })
+    expect(isOrderSummaryCollapsible(checkout)).toBe(true)
+  })
+
   it('keeps pay-what-you-want open', () => {
     const customPrice = createPrice({ amount_type: 'custom' })
     const checkout = createCheckout({

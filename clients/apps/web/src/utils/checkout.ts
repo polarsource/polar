@@ -49,12 +49,22 @@ export const CheckoutStatusDisplayColor: Record<
 
 export const isOrderSummaryCollapsible = (
   checkout: ProductCheckoutPublic,
-): boolean =>
-  checkout.products.length === 1 &&
-  !checkout.is_free_product_price &&
-  (checkout.prices[checkout.product.id] ?? []).every(
+): boolean => {
+  if (checkout.products.length !== 1) return false
+  const productPrices = checkout.prices[checkout.product.id] ?? []
+  const currencyPrices = productPrices.filter(
+    (price) => price.price_currency === checkout.currency,
+  )
+  const isFree =
+    currencyPrices.length > 0 &&
+    currencyPrices.every(
+      (price) => 'price_amount' in price && price.price_amount === 0,
+    )
+  if (isFree) return false
+  return productPrices.every(
     (price) => price.amount_type === 'fixed' && !('legacy' in price),
   )
+}
 
 export const isExpiredCheckoutError = (error: unknown): boolean =>
   typeof error === 'object' &&

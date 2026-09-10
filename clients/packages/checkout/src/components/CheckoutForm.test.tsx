@@ -814,6 +814,33 @@ describe('CheckoutForm', () => {
   })
 
   describe('contact capture', () => {
+    it('accepts checkbox toggles while a contact update is pending', async () => {
+      const update = vi.fn(async () => createCheckout())
+      render(
+        <FormWrapper
+          checkout={createCheckout()}
+          {...defaultProps}
+          update={update}
+          isUpdatePending
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('checkbox', { name: /purchasing as a business/i }),
+        )
+      })
+      expect(update).toHaveBeenLastCalledWith({ is_business_customer: true })
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('checkbox', { name: /purchasing as a business/i }),
+        )
+      })
+      expect(update).toHaveBeenLastCalledWith({ is_business_customer: false })
+    })
+
     const rejectingUpdate = () =>
       vi.fn(async () => {
         throw new Error('rejected')

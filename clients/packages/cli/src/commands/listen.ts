@@ -19,8 +19,8 @@ import {
 } from 'effect/unstable/http'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
-import { environmentOf, org, production } from '@/commands/flags'
-import { type PolarEnvironment } from '@/schemas/Auth'
+import { org } from '@/commands/flags'
+import { loginCommand, type PolarEnvironment } from '@/schemas/Auth'
 import {
   ListenAck,
   ListenReconnect,
@@ -303,34 +303,30 @@ const url = Argument.string('url').pipe(
   ),
 )
 
-export const listen = Command.make(
-  'listen',
-  { url, production, org },
-  ({ url, production, org }) =>
-    Effect.gen(function* () {
-      const environment = environmentOf(production)
-      const organizations = yield* Organizations
-      const organization = yield* organizations.resolve(
-        environment,
-        Option.getOrUndefined(org),
-      )
-      return yield* startListening({
-        listenUrl: `${LISTEN_BASE_URLS[environment]}/${organization.id}`,
-        forwardUrl: url,
-        organizationName: organization.name,
-        environment,
-      }).pipe(
-        Effect.provide(FetchHttpClient.layer),
-        Effect.mapError((error) =>
-          error.code === 401
-            ? new ListenError({
-                code: 401,
-                message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run polar auth login${production ? ' --production' : ''} --new-session.`,
-              })
-            : error,
-        ),
-      )
-    }),
+export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
+  Effect.gen(function* () {
+    const organizations = yield* Organizations
+    const organization = yield* organizations.resolve(
+      Option.getOrUndefined(org),
+    )
+    const { environment } = organization
+    return yield* startListening({
+      listenUrl: `${LISTEN_BASE_URLS[environment]}/${organization.id}`,
+      forwardUrl: url,
+      organizationName: organization.name,
+      environment,
+    }).pipe(
+      Effect.provide(FetchHttpClient.layer),
+      Effect.mapError((error) =>
+        error.code === 401
+          ? new ListenError({
+              code: 401,
+              message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session.`,
+            })
+          : error,
+      ),
+    )
+  }),
 ).pipe(
   Command.withDescription(
     'Forward webhook events for an organization to a local URL',

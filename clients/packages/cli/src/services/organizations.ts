@@ -3,6 +3,7 @@ import {
   AuthError,
   orgCommand,
   type ActiveOrganization,
+  type OrganizationSelection,
   type PolarEnvironment,
 } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
@@ -12,20 +13,13 @@ import { Polar } from '@/services/polar'
 export class Organizations extends Context.Service<
   Organizations,
   {
-    selected: (
-      environment: PolarEnvironment,
-    ) => Effect.Effect<string | undefined, AuthError>
-    select: (
-      environment: PolarEnvironment,
-      id: string,
-    ) => Effect.Effect<void, AuthError>
     list: (
       environment: PolarEnvironment,
     ) => Effect.Effect<ActiveOrganization[], AuthError>
-    resolve: (
-      environment: PolarEnvironment,
-      id?: string,
-    ) => Effect.Effect<ActiveOrganization, AuthError>
+    listAll: Effect.Effect<ActiveOrganization[], AuthError>
+    selected: Effect.Effect<OrganizationSelection | undefined, AuthError>
+    select: (selection: OrganizationSelection) => Effect.Effect<void, AuthError>
+    resolve: (id?: string) => Effect.Effect<ActiveOrganization, AuthError>
   }
 >()('Organizations') {}
 
@@ -49,6 +43,7 @@ export const layer = Layer.effect(
               id,
               name,
               slug,
+              environment,
             })),
           )
           if (page >= response.pagination.max_page) break
@@ -56,52 +51,76 @@ export const layer = Layer.effect(
         }
         return organizations
       })
+    const listAll = Effect.gen(function* () {
+      const organizations: ActiveOrganization[] = []
+      for (const environment of yield* auth.environments) {
+        organizations.push(...(yield* list(environment)))
+      }
+      return organizations
+    })
+    const get = (id: string, environment: PolarEnvironment) =>
+      Effect.map(
+        polar.use((client) => client.organizations.get(id), environment),
+        (organization) => ({
+          id: organization.id,
+          name: organization.name,
+          slug: organization.slug,
+          environment,
+        }),
+      )
+    const find = (id: string) =>
+      Effect.gen(function* () {
+        const available = yield* auth.environments
+        if (available.length === 0) {
+          return yield* new AuthError({
+            message: 'Not logged in. Run polar auth login.',
+          })
+        }
+        if (available.length === 1) return yield* get(id, available[0]!)
+        for (const environment of available) {
+          const found = yield* get(id, environment).pipe(
+            Effect.catch(() => Effect.succeed(undefined)),
+          )
+          if (found) return found
+        }
+        return yield* new AuthError({
+          message: `Organization ${id} is missing or inaccessible in ${available.join(' and ')}. Check --org or run polar auth list.`,
+        })
+      })
     return Organizations.of({
       list,
-      selected: (environment) =>
-        Effect.gen(function* () {
-          if (yield* auth.override) return undefined
-          return yield* config.getActiveOrganization(environment)
-        }),
-      select: (environment, id) =>
+      listAll,
+      selected: Effect.gen(function* () {
+        if (yield* auth.override) return undefined
+        return yield* config.getActiveOrganization
+      }),
+      select: (selection) =>
         Effect.gen(function* () {
           if (yield* auth.override)
             return yield* new AuthError({
               message: 'Unset POLAR_ACCESS_TOKEN to manage saved sessions.',
             })
-          yield* auth.resolve(environment)
-          yield* config.setActiveOrganization(environment, id)
+          yield* auth.resolve(selection.environment)
+          yield* config.setActiveOrganization(selection)
         }),
-      resolve: (environment, id) =>
+      resolve: (id) =>
         Effect.gen(function* () {
-          const credential = yield* auth.resolve(environment)
-          const selected =
-            id ??
-            (credential.source === 'keyring'
-              ? yield* config.getActiveOrganization(environment)
-              : undefined)
-          if (selected) {
-            const organization = yield* polar.use(
-              (client) => client.organizations.get(selected),
-              environment,
-            )
-            return {
-              id: organization.id,
-              name: organization.name,
-              slug: organization.slug,
-            }
-          }
-          if (credential.source === 'override') {
-            const organizations = yield* list(environment)
+          if (id) return yield* find(id)
+          if (yield* auth.override) {
+            const organizations = yield* listAll
             if (organizations.length === 1) return organizations[0]!
             return yield* new AuthError({
               message:
                 'POLAR_ACCESS_TOKEN has no unique active organization. Supply --org <id> for an accessible organization.',
             })
           }
-          return yield* new AuthError({
-            message: `No active organization for ${environment}. Run ${orgCommand(environment)} or supply --org <id>.`,
-          })
+          const selection = yield* config.getActiveOrganization
+          if (!selection) {
+            return yield* new AuthError({
+              message: `No active organization. Run ${orgCommand} or supply --org <id>.`,
+            })
+          }
+          return yield* get(selection.id, selection.environment)
         }),
     })
   }),

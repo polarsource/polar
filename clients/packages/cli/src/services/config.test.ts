@@ -11,6 +11,11 @@ let file: string
 const configEffect = Effect.service(CLIConfig).pipe(
   Effect.provide(layer.pipe(Layer.provide(BunServices.layer))),
 )
+const sandboxOrg = { id: 'org_sandbox', environment: 'sandbox' as const }
+const productionOrg = {
+  id: 'org_production',
+  environment: 'production' as const,
+}
 
 beforeEach(async () => {
   directory = await mkdtemp(join(tmpdir(), 'polar-cli-config-'))
@@ -26,49 +31,37 @@ afterEach(async () => {
 
 test('missing config means no selection and clearing it creates no file', async () => {
   const config = await Effect.runPromise(configEffect)
-  expect(
-    await Effect.runPromise(config.getActiveOrganization('sandbox')),
-  ).toBeUndefined()
-  await Effect.runPromise(config.setActiveOrganization('sandbox', undefined))
+  expect(await Effect.runPromise(config.getActiveOrganization)).toBeUndefined()
+  await Effect.runPromise(config.setActiveOrganization(undefined))
   await expect(readFile(file)).rejects.toMatchObject({ code: 'ENOENT' })
 })
 
-test('persists only organization IDs and preserves the other environment when changing selection', async () => {
+test('persists the selected organization with its environment', async () => {
   const config = await Effect.runPromise(configEffect)
-  await Effect.runPromise(
-    config.setActiveOrganization('sandbox', 'org_sandbox'),
-  )
-  await Effect.runPromise(
-    config.setActiveOrganization('production', 'org_production'),
-  )
+  await Effect.runPromise(config.setActiveOrganization(sandboxOrg))
+  await Effect.runPromise(config.setActiveOrganization(productionOrg))
   const freshConfig = await Effect.runPromise(configEffect)
-  expect(
-    await Effect.runPromise(freshConfig.getActiveOrganization('sandbox')),
-  ).toBe('org_sandbox')
-  expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({
-    sandbox: { activeOrganizationId: 'org_sandbox' },
-    production: { activeOrganizationId: 'org_production' },
-  })
-  await Effect.runPromise(
-    freshConfig.setActiveOrganization('sandbox', undefined),
+  expect(await Effect.runPromise(freshConfig.getActiveOrganization)).toEqual(
+    productionOrg,
   )
   expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({
-    sandbox: {},
-    production: { activeOrganizationId: 'org_production' },
+    activeOrganization: productionOrg,
   })
+  await Effect.runPromise(freshConfig.setActiveOrganization(undefined))
+  expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({})
 })
 
-test.each(['{invalid', '{"sandbox":{"activeOrganizationId":123}}'])(
+test.each(['{invalid', '{"activeOrganization":{"id":123}}'])(
   'does not overwrite invalid config: %s',
   async (content) => {
     const config = await Effect.runPromise(configEffect)
-    await Effect.runPromise(config.setActiveOrganization('sandbox', 'org'))
+    await Effect.runPromise(config.setActiveOrganization(sandboxOrg))
     await writeFile(file, content)
     await expect(
-      Effect.runPromise(config.getActiveOrganization('sandbox')),
+      Effect.runPromise(config.getActiveOrganization),
     ).rejects.toThrow('Invalid config')
     await expect(
-      Effect.runPromise(config.setActiveOrganization('production', 'other')),
+      Effect.runPromise(config.setActiveOrganization(productionOrg)),
     ).rejects.toThrow('Invalid config')
     expect(await readFile(file, 'utf8')).toBe(content)
   },

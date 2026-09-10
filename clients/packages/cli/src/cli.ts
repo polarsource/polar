@@ -1,5 +1,5 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
-import { Cause, Effect, Layer, Runtime } from 'effect'
+import { Cause, Effect, Layer, Runtime, Stdio } from 'effect'
 import { CliConfig, Command, GlobalFlag } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from '@/commands/listen'
@@ -12,6 +12,7 @@ import * as Config from '@/services/config'
 import * as Organizations from '@/services/organizations'
 import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
+import * as Telemetry from '@/services/telemetry'
 import {
   checkForUpdateInBackground,
   showUpdateNotice,
@@ -36,10 +37,14 @@ const polarLayer = Polar.layer.pipe(Layer.provide(authLayer))
 const organizationsLayer = Organizations.layer.pipe(
   Layer.provide(Layer.mergeAll(authLayer, polarLayer, configLayer)),
 )
+const telemetryLayer = Telemetry.layer.pipe(
+  Layer.provide(Layer.mergeAll(BunServices.layer, Telemetry.detachedSender)),
+)
 const services = Layer.mergeAll(
   authLayer,
   polarLayer,
   organizationsLayer,
+  telemetryLayer,
   BunServices.layer,
   FetchHttpClient.layer,
   CliConfig.layer({
@@ -65,11 +70,33 @@ const reportError = (cause: Cause.Cause<unknown>) => {
   })
 }
 
-showUpdateNotice()
-checkForUpdateInBackground()
+const instrumented = Effect.gen(function* () {
+  const args = yield* (yield* Stdio.Stdio).args
+  const telemetry = yield* Telemetry.Telemetry
+  const startedAt = performance.now()
+  return yield* cli.pipe(
+    Effect.tapCause(reportError),
+    Effect.onExit((exit) =>
+      telemetry.record({
+        command: Telemetry.commandPath(mainCommand, args),
+        flags: Telemetry.flagNames(args),
+        ...Telemetry.outcomeOf(exit),
+        durationMs: performance.now() - startedAt,
+      }),
+    ),
+  )
+})
 
-cli.pipe(
-  Effect.provide(services),
-  Effect.tapCause(reportError),
-  BunRuntime.runMain({ disableErrorReporting: true }),
-)
+if (process.argv[2] === Telemetry.SENDER_COMMAND) {
+  Telemetry.sendFromStdin.pipe(
+    Effect.provide(FetchHttpClient.layer),
+    BunRuntime.runMain({ disableErrorReporting: true }),
+  )
+} else {
+  showUpdateNotice()
+  checkForUpdateInBackground()
+  instrumented.pipe(
+    Effect.provide(services),
+    BunRuntime.runMain({ disableErrorReporting: true }),
+  )
+}

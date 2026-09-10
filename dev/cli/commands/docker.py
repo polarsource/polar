@@ -535,6 +535,7 @@ def _drop_instance_data(instance: int) -> bool:
             + [
                 "run",
                 "--rm",
+                "--no-deps",
                 "--entrypoint",
                 "sh",
                 "minio-setup",

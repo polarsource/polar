@@ -50,22 +50,41 @@ _CustomerStateAdapter: TypeAdapter[CustomerState] = TypeAdapter(CustomerState)
 SUPPORTED_EVENTS: tuple[WebhookEventType, ...] = tuple(WebhookEventType)
 
 PERSONAS: tuple[str, ...] = (
-    "Ada Lovelace",
-    "Marie Curie",
-    "Alan Turing",
-    "Linus Torvalds",
-    "Tim Berners-Lee",
-    "Richard Feynman",
+    "Astrid Lindgren",
+    "Selma Lagerlöf",
+    "Greta Garbo",
+    "Karin Boye",
+    "Elsa Beskow",
+    "Monica Zetterlund",
+    "Hilma af Klint",
+    "Alfred Nobel",
+    "Anders Celsius",
+    "Anders Ångström",
+    "August Strindberg",
+    "Tomas Tranströmer",
 )
+
+ADDRESSES: tuple[dict[str, str], ...] = (
+    {"line1": "Drottninggatan 12", "postal_code": "111 51", "city": "Stockholm"},
+    {"line1": "Kungsportsavenyen 7", "postal_code": "411 36", "city": "Göteborg"},
+    {"line1": "Södergatan 3", "postal_code": "211 34", "city": "Malmö"},
+    {"line1": "Fyristorg 4", "postal_code": "753 10", "city": "Uppsala"},
+    {"line1": "Storgatan 28", "postal_code": "903 26", "city": "Umeå"},
+    {"line1": "Stora Torget 1", "postal_code": "582 19", "city": "Linköping"},
+    {"line1": "Kyrkogatan 9", "postal_code": "222 22", "city": "Lund"},
+    {"line1": "Hamngatan 15", "postal_code": "831 30", "city": "Östersund"},
+)
+
+TRANSLITERATIONS = str.maketrans({"å": "a", "ä": "a", "ö": "o", "é": "e", " ": "."})
 
 
 def email_for(name: str) -> str:
     handle = "".join(
         character
-        for character in name.lower().replace(" ", ".")
+        for character in name.lower().translate(TRANSLITERATIONS)
         if character.isalnum() or character in ".-"
     )
-    return f"{handle}@example.com"
+    return f"{handle}@polar.sh"
 
 
 def with_column_defaults[ModelT](instance: ModelT) -> ModelT:
@@ -278,13 +297,7 @@ class TriggerFixtures:
                 organization=self.organization,
                 organization_id=self.organization.id,
                 billing_address=Address.model_validate(
-                    {
-                        "line1": "1 Infinite Loop",
-                        "postal_code": "95014",
-                        "city": "Cupertino",
-                        "state": "US-CA",
-                        "country": "US",
-                    }
+                    {**self.random.choice(ADDRESSES), "country": "SE"}
                 ),
                 user_metadata={},
             )
@@ -472,7 +485,7 @@ class TriggerFixtures:
                 id=self._uuid(),
                 created_at=self.now - timedelta(days=30),
                 type=BenefitType.custom,
-                description="Access to the private community",
+                description="Access to the fika room",
                 is_tax_applicable=True,
                 organization=self.organization,
                 organization_id=self.organization.id,
@@ -542,9 +555,9 @@ class TriggerFixtures:
             DiscountPercentage(
                 id=self._uuid(),
                 created_at=self.now - timedelta(days=2),
-                name="Launch week",
+                name="Fika week",
                 type=DiscountType.percentage,
-                code="LAUNCH20",
+                code="FIKA20",
                 duration=DiscountDuration.once,
                 organization=self.organization,
                 organization_id=self.organization.id,

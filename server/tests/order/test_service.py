@@ -21,6 +21,7 @@ from polar.enums import (
     InvoiceNumbering,
     PaymentMode,
     PaymentProcessor,
+    SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
     TaxBehavior,
     TaxBehaviorOption,
@@ -51,6 +52,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    Meter,
     Order,
     PaymentMethod,
     Product,
@@ -95,10 +97,19 @@ from polar.order.service import (
     SubscriptionNotTrialing,
 )
 from polar.order.service import order as order_service
-from polar.product.guard import is_fixed_price, is_seat_price, is_static_price
+from polar.product.guard import (
+    is_fixed_price,
+    is_metered_price,
+    is_seat_price,
+    is_static_price,
+)
 from polar.product.price_set import PriceSet
 from polar.product.tiers import Tiers, TierType
-from polar.subscription.service import SubscriptionService
+from polar.subscription.service import (
+    SubscriptionService,
+    SubscriptionUpdateContext,
+)
+from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
     TaxabilityReason,
@@ -1999,6 +2010,126 @@ class TestCreateSubscriptionOrder:
         assert metered_entry.order_item_id is None
 
         subscription_service_mock.reset_meters.assert_not_awaited()
+
+    async def test_renewal_bills_both_prices_after_metered_product_switch(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """
+        End-to-end through the real settlement path: a metered product change
+        on the default `prorate` behavior (immediate price swap, no meter clock
+        — the default config) must not drop the old price's pending usage.
+
+        The renewal order (`subscription_cycle`, `include_metered=True`) bills
+        both the old price's usage at its own rate and the new price's usage at
+        the new rate. Before the fix, the `is_active_price` guard skipped the
+        old-price entries forever after `update_product` swapped
+        `subscription_product_prices`, a permanent revenue loss.
+        """
+        # Avoid the reset_meters side effect during order creation.
+        mocker.patch(
+            "polar.order.service.subscription_service", spec=SubscriptionService
+        )
+
+        # Product A: metered, $1.00 per unit (count meter).
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        price_a = product_a.prices[0]
+        assert is_metered_price(price_a)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product_a, customer=customer
+        )
+        period_start = subscription.current_period_start
+        assert period_start is not None
+
+        # Ingest 3 units of usage on the old price (3 events = 3 count units).
+        old_entries: list[BillingEntry] = []
+        for i in range(3):
+            event = await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                timestamp=period_start + timedelta(seconds=i),
+            )
+            entry = BillingEntry.from_metered_event(
+                customer, subscription.subscription_product_prices[0], event
+            )
+            await save_fixture(entry)
+            old_entries.append(entry)
+
+        # Switch products on the default `prorate` behavior. With no meter clock
+        # there is no pre-swap settle, so the old-price entries stay pending.
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],  # $0.50 per unit
+        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_b.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+        price_b = product_b.prices[0]
+        assert is_metered_price(price_b)
+        assert price_b.id != price_a.id
+
+        # Ingest 1 unit of usage on the new price after the switch.
+        event_b = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            timestamp=updated_subscription.current_period_start + timedelta(seconds=10),
+        )
+        new_entry = BillingEntry(
+            start_timestamp=event_b.timestamp,
+            end_timestamp=event_b.timestamp,
+            type=BillingEntryType.metered,
+            direction=BillingEntryDirection.debit,
+            customer=customer,
+            product_price=price_b,
+            subscription=updated_subscription,
+            event=event_b,
+        )
+        await save_fixture(new_entry)
+
+        # The renewal order settles all pending metered usage (include_metered=True).
+        # The renewal task passes `cutoff=cycle_at` (= current_period_end), so all
+        # usage within the closing period — including the old price's — is in scope.
+        order = await order_service.create_subscription_order(
+            session,
+            updated_subscription,
+            OrderBillingReasonInternal.subscription_cycle,
+            cutoff=updated_subscription.current_period_end,
+        )
+
+        by_price = {item.product_price_id: item for item in order.items}
+        assert len(order.items) == 2
+        # 3 units at the old rate ($1.00/unit) = $3.00
+        assert by_price[price_a.id].amount == 300
+        # 1 unit at the new rate ($0.50/unit) = $0.50
+        assert by_price[price_b.id].amount == 50
+
+        for entry in old_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id is not None
+        await session.refresh(new_entry)
+        assert new_entry.order_item_id is not None
 
     async def test_positive_order_positive_customer_balance(
         self,

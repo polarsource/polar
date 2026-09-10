@@ -273,21 +273,14 @@ class BillingEntryService:
                 )
                 selector: BillingEntrySelector = PendingByMeter(meter_id)
             else:
-                # For summable aggregations (sum, count), we also need to verify
-                # the price is still active on the subscription. This prevents
-                # billing entries from discontinued prices being re-billed
-                # every cycle after a product/price change.
-                is_active_price = any(
-                    spp.product_price_id == product_price_id
-                    for spp in subscription.subscription_product_prices
-                )
-                if not is_active_price:
-                    log.info(
-                        f"Skipping billing entry for inactive price {product_price_id} "
-                        f"in subscription {subscription.id}"
-                    )
-                    continue
-
+                # For summable aggregations (sum, count), each price's usage is
+                # billed at that price's own rate. Pending entries are already
+                # deduplicated across cycles by the `order_item_id` link: once an
+                # entry is billed it is linked and stops appearing in the pending
+                # query, so an old price's entries cannot be "re-billed every
+                # cycle". Filtering out a price the subscription has moved off of
+                # would instead drop that usage forever — a permanent revenue
+                # loss — so we bill it here regardless of the current prices.
                 metered_line_item = await self._get_metered_line_item(
                     session,
                     metered_price,

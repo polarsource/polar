@@ -18,6 +18,12 @@ subparsers = parser.add_subparsers(dest="command")
 parser_openapi = subparsers.add_parser(
     "openapi", help="Regenerate all OpenAPI specs from the server"
 )
+parser_cli = subparsers.add_parser(
+    "generate-cli", help="Generate the customer CLI command prototype"
+)
+parser_cli.add_argument("spec_path", type=pathlib.Path)
+parser_cli.add_argument("output", type=pathlib.Path)
+
 # Generate subcommand
 parser_generate = subparsers.add_parser(
     "generate", help="Generate SDK from OpenAPI spec"
@@ -101,6 +107,14 @@ if args.command is None:
 
 if args.command == "openapi":
     regenerate_openapi()
+
+elif args.command == "generate-cli":
+    from cli_commands.emitter import CLICommandsEmitter
+
+    spec = op.OpenAPI.model_validate_json(args.spec_path.read_text(encoding="utf-8"))
+    cli_emitter = CLICommandsEmitter(generate_ir(spec))
+    cli_emitter.emit(args.output)
+    cli_emitter.run_post_actions(args.output)
 
 elif args.command == "generate":
     specs: list[op.OpenAPI] = []

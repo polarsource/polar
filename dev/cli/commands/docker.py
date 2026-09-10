@@ -467,9 +467,9 @@ def _drop_instance_data(instance: int) -> bool:
     """Drop per-instance state in the shared infra.
 
     Drops the postgres database, flushes the redis DB, and removes the S3
-    buckets. A missing DB or bucket is success (DROP IF EXISTS / rb || true)
-    because the api recreates them on next boot. Returns False if shared
-    infra is down or a command fails, so callers can require a retry.
+    buckets. A missing DB or bucket is success because the api recreates
+    them on next boot. Returns False if shared infra is down or a command
+    fails, so callers can require a retry.
     """
     if not _shared_is_running():
         console.print(
@@ -526,9 +526,9 @@ def _drop_instance_data(instance: int) -> bool:
     bucket = s3_bucket(instance)
     public_bucket = s3_public_bucket(instance)
     console.print(f"[dim]  Removing S3 buckets {bucket}, {public_bucket}...[/dim]")
-    # `set -e` aborts on alias-set failure (e.g. minio unreachable).
-    # `|| true` on rb makes a missing bucket non-fatal — that's the expected
-    # case for any instance that never created buckets.
+    # `set -e` aborts on alias-set failure (e.g. minio unreachable). A
+    # missing bucket is success; `mc rb` errors on a bucket that exists
+    # still fail the step.
     if not _drop_step_ok(
         run_command(
             _shared_compose_cmd()
@@ -540,8 +540,10 @@ def _drop_instance_data(instance: int) -> bool:
                 "minio-setup",
                 "-c",
                 'set -e; mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; '
-                f"mc rb --force local/{bucket} || true; "
-                f"mc rb --force local/{public_bucket} || true",
+                f"if mc ls local/{bucket} >/dev/null 2>&1; then "
+                f"mc rb --force local/{bucket}; fi; "
+                f"if mc ls local/{public_bucket} >/dev/null 2>&1; then "
+                f"mc rb --force local/{public_bucket}; fi",
             ],
             capture=True,
         ),
@@ -1288,6 +1290,8 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         if not force and not typer.confirm("Continue?"):
             raise typer.Abort()
 
+        pruned: list[dict] = []
+        failed: list[int] = []
         for entry in stale:
             instance = entry["instance"]
             console.print(f"\n[dim]Pruning instance {instance}...[/dim]")
@@ -1295,10 +1299,22 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                 _build_compose_cmd(instance) + ["down", "-v", "--remove-orphans"],
                 env=_build_compose_env(instance),
             )
-            _drop_instance_data(instance)
+            if _drop_instance_data(instance):
+                pruned.append(entry)
+            else:
+                failed.append(instance)
 
-        data["instances"] = [e for e in data["instances"] if e not in stale]
+        pruned_instances = {entry["instance"] for entry in pruned}
+        data["instances"] = [
+            e for e in data["instances"] if e["instance"] not in pruned_instances
+        ]
         _save_registry(data)
-        console.print(
-            f"\n[green]Pruned {len(stale)} stale instances.[/green]"
-        )
+        if pruned:
+            console.print(f"\n[green]Pruned {len(pruned)} stale instances.[/green]")
+        if failed:
+            ids = ", ".join(str(i) for i in failed)
+            console.print(
+                f"\n[red]Failed to drop data for instance(s) {ids}. "
+                "Re-run prune after `dev docker up`.[/red]"
+            )
+            raise typer.Exit(1)

@@ -248,7 +248,32 @@ class TestCreate:
         )
 
         assert response.status_code == 409
-        assert "already used by another merchant migration" in response.text
+        assert (
+            "already used by another organization's merchant migration"
+            in response.text
+        )
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_same_organization_can_reuse_stripe_account(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        existing = await build_connected_migration(save_fixture, organization)
+        _mock_stripe_adapter(mocker)
+
+        response = await client.post(
+            "/v1/merchant-migrations/", json=_body(organization)
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        assert body["id"] != str(existing.id)
+        assert body["source"]["stripe_user_id"] == "acct_test"
 
 
 @pytest.mark.asyncio

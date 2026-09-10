@@ -251,6 +251,30 @@ class TestCreate:
         await assert_no_migrations(session, organization)
 
     @pytest.mark.auth
+    async def test_allows_stripe_account_from_same_organization_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        existing = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id="acct_test"),
+        )
+
+        migration = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
+
+        assert migration.id != existing.id
+        assert migration.source_credentials["stripe_user_id"] == "acct_test"
+
+    @pytest.mark.auth
     async def test_allows_stripe_account_from_soft_deleted_migration(
         self,
         mocker: MockerFixture,

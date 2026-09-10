@@ -3,6 +3,7 @@ import { Cause, Effect, Layer, Runtime, Stdio } from 'effect'
 import { CliConfig, Command, GlobalFlag } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from '@/commands/listen'
+import { trigger } from '@/commands/trigger'
 import { auth } from '@/commands/auth'
 import { update } from '@/commands/update'
 import { describeError } from '@/utils/errors'
@@ -21,7 +22,7 @@ import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
 const mainCommand = Command.make('polar').pipe(
-  Command.withSubcommands([auth, listen, update]),
+  Command.withSubcommands([auth, listen, trigger, update]),
 )
 
 const cli = Command.run(mainCommand, {

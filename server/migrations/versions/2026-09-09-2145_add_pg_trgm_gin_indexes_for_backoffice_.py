@@ -1,7 +1,7 @@
 """add pg_trgm gin indexes for backoffice organization search
 
 Revision ID: 1b299ae956f3
-Revises: a0bc64d272f1
+Revises: 382c4661fdb2
 Create Date: 2026-09-09 21:45:27.915455
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1b299ae956f3"
-down_revision = "a0bc64d272f1"
+down_revision = "382c4661fdb2"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

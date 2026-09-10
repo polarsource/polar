@@ -452,76 +452,104 @@ def _shared_is_running() -> bool:
     return result.returncode == 0 and bool(result.stdout.strip())
 
 
-def _drop_instance_data(instance: int) -> None:
-    """Best-effort cleanup of per-instance state in the shared infra.
+def _drop_step_ok(result: subprocess.CompletedProcess | None, label: str) -> bool:
+    if result is not None and result.returncode == 0:
+        return True
+    detail = ""
+    if result is not None:
+        detail = (result.stderr or result.stdout or "").strip()
+    suffix = f": {detail}" if detail else ""
+    console.print(f"[red]  Failed to clean {label}{suffix}[/red]")
+    return False
+
+
+def _drop_instance_data(instance: int) -> bool:
+    """Drop per-instance state in the shared infra.
 
     Drops the postgres database, flushes the redis DB, and removes the S3
-    buckets. Each step is non-fatal — a missing DB or bucket is fine since the
-    api auto-creates them on next boot.
+    buckets. A missing DB or bucket is success (DROP IF EXISTS / rb || true)
+    because the api recreates them on next boot. Returns False if shared
+    infra is down or a command fails, so callers can require a retry.
     """
     if not _shared_is_running():
         console.print(
             f"[yellow]Shared infra not running — skipping data cleanup for instance {instance}. "
             "Start it with `dev docker up` and re-run cleanup (or prune) to drop the DB / buckets.[/yellow]"
         )
-        return
+        return False
+
+    ok = True
 
     db = db_name(instance)
     console.print(f"[dim]  Dropping postgres database {db}...[/dim]")
-    run_command(
-        _shared_compose_cmd()
-        + [
-            "exec",
-            "-T",
-            "db",
-            "psql",
-            "-U",
-            "polar",
-            "-d",
-            "postgres",
-            "-c",
-            f"DROP DATABASE IF EXISTS {db} WITH (FORCE);",
-        ],
-        capture=True,
-    )
+    if not _drop_step_ok(
+        run_command(
+            _shared_compose_cmd()
+            + [
+                "exec",
+                "-T",
+                "db",
+                "psql",
+                "-U",
+                "polar",
+                "-d",
+                "postgres",
+                "-c",
+                f"DROP DATABASE IF EXISTS {db} WITH (FORCE);",
+            ],
+            capture=True,
+        ),
+        f"postgres database {db}",
+    ):
+        ok = False
 
     redis_index = redis_db(instance)
     console.print(f"[dim]  Flushing redis DB {redis_index}...[/dim]")
-    run_command(
-        _shared_compose_cmd()
-        + [
-            "exec",
-            "-T",
-            "redis",
-            "redis-cli",
-            "-n",
-            str(redis_index),
-            "FLUSHDB",
-        ],
-        capture=True,
-    )
+    if not _drop_step_ok(
+        run_command(
+            _shared_compose_cmd()
+            + [
+                "exec",
+                "-T",
+                "redis",
+                "redis-cli",
+                "-n",
+                str(redis_index),
+                "FLUSHDB",
+            ],
+            capture=True,
+        ),
+        f"redis DB {redis_index}",
+    ):
+        ok = False
 
     bucket = s3_bucket(instance)
     public_bucket = s3_public_bucket(instance)
     console.print(f"[dim]  Removing S3 buckets {bucket}, {public_bucket}...[/dim]")
-    # `set -e` aborts on alias-set failure (e.g. minio unreachable) so the user
-    # sees the error. `|| true` on rb makes a missing bucket non-fatal — that's
-    # the expected case for any instance that never created buckets.
-    run_command(
-        _shared_compose_cmd()
-        + [
-            "run",
-            "--rm",
-            "--entrypoint",
-            "sh",
-            "minio-setup",
-            "-c",
-            'set -e; mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; '
-            f"mc rb --force local/{bucket} || true; "
-            f"mc rb --force local/{public_bucket} || true",
-        ],
-        capture=True,
-    )
+    # `set -e` aborts on alias-set failure (e.g. minio unreachable).
+    # `|| true` on rb makes a missing bucket non-fatal — that's the expected
+    # case for any instance that never created buckets.
+    if not _drop_step_ok(
+        run_command(
+            _shared_compose_cmd()
+            + [
+                "run",
+                "--rm",
+                "--entrypoint",
+                "sh",
+                "minio-setup",
+                "-c",
+                'set -e; mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; '
+                f"mc rb --force local/{bucket} || true; "
+                f"mc rb --force local/{public_bucket} || true",
+            ],
+            capture=True,
+        ),
+        f"S3 buckets {bucket}, {public_bucket}",
+    ):
+        ok = False
+
+    return ok
 
 
 # --------------------------------------------------------------------------- #
@@ -998,7 +1026,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                 f"[dim]Dropping instance {instance} data "
                 f"({db_name(instance)}, redis DB {redis_db(instance)}, buckets)...[/dim]"
             )
-            _drop_instance_data(instance)
+            if not _drop_instance_data(instance):
+                console.print(
+                    "[red]Instance data cleanup failed — this instance's data may remain. "
+                    "Retry after `dev docker up`.[/red]"
+                )
+                raise typer.Exit(1)
+            console.print("[green]Instance data dropped[/green]")
 
         if all_:
             console.print("[dim]Wiping shared infra volumes...[/dim]")

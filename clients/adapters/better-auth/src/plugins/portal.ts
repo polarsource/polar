@@ -75,7 +75,7 @@ export const portal =
               ...(principal?.kind === 'team'
                 ? { external_member_id: principal.externalMemberId }
                 : {}),
-              return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
+              return_url: retUrl ? retUrl.toString() : undefined,
             })
 
             const portalUrl = new URL(customerSession.customer_portal_url)

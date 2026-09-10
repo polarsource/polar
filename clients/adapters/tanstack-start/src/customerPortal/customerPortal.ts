@@ -32,7 +32,7 @@ export const CustomerPortal = <TPath extends string = string>({
     try {
       const result = await createCustomerSessions(polar)({
         customer_id: customerId,
-        return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
+        return_url: retUrl ? retUrl.toString() : undefined,
       })
 
       return Response.redirect(result.customer_portal_url)

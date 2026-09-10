@@ -188,4 +188,61 @@ describe('CustomerPortal', () => {
       consoleSpy.mockRestore()
     })
   })
+
+  describe('returnUrl percent-escape preservation', () => {
+    it.each([
+      ['%2541', '%41'],
+      ['%2500', '%00'],
+      ['%7Bx%7D', '{x}'],
+    ])('preserves URL escapes %s on return_url', async (encoded, decoded) => {
+      const getCustomerId = vi.fn().mockResolvedValue('cust_123')
+      mockCustomerSessionCreate.mockResolvedValue({
+        customer_portal_url: 'https://polar.sh/portal/session_123',
+      })
+
+      const portal = CustomerPortal({
+        accessToken: 'test-token',
+        environment: 'production',
+        getCustomerId,
+        returnUrl: `https://example.com/return?data=${encoded}`,
+      })
+
+      const request = new NextRequest('https://example.com/portal')
+      await portal(request)
+
+      expect(mockCustomerSessionCreate).toHaveBeenCalledWith({
+        customer_id: 'cust_123',
+        return_url: `https://example.com/return?data=${encoded}`,
+      })
+      const wire = mockCustomerSessionCreate.mock.calls[0][0].return_url
+      expect(new URL(wire).searchParams.get('data')).toBe(decoded)
+    })
+
+    it('preserves returnUrl percent-escapes on the externalCustomerId path too', async () => {
+      const getExternalCustomerId = vi.fn().mockResolvedValue('external_123')
+      mockCustomerSessionCreate.mockResolvedValue({
+        customer_portal_url: 'https://polar.sh/portal/session_123',
+      })
+
+      const portal = CustomerPortal({
+        accessToken: 'test-token',
+        environment: 'production',
+        getExternalCustomerId,
+        returnUrl: 'https://example.com/return?data=%2541',
+      })
+
+      const request = new NextRequest('https://example.com/portal')
+      await portal(request)
+
+      expect(mockCustomerSessionCreate).toHaveBeenCalledWith({
+        external_customer_id: 'external_123',
+        return_url: 'https://example.com/return?data=%2541',
+      })
+      expect(
+        new URL(
+          mockCustomerSessionCreate.mock.calls[0][0].return_url,
+        ).searchParams.get('data'),
+      ).toBe('%41')
+    })
+  })
 })

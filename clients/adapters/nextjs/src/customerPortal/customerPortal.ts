@@ -37,8 +37,8 @@ export const CustomerPortal = (config: CustomerPortalConfig) => {
   })
 
   return async (req: NextRequest) => {
-    const decodedReturnUrl = returnUrl
-      ? decodeURI(new URL(returnUrl).toString())
+    const resolvedReturnUrl = returnUrl
+      ? new URL(returnUrl).toString()
       : undefined
 
     if (configIsExternalCustomerIdConfig(config)) {
@@ -53,7 +53,7 @@ export const CustomerPortal = (config: CustomerPortalConfig) => {
 
       try {
         const { customer_portal_url } = await createCustomerSessions(polar)({
-          return_url: decodedReturnUrl,
+          return_url: resolvedReturnUrl,
           external_customer_id: externalCustomerId,
         })
 
@@ -75,7 +75,7 @@ export const CustomerPortal = (config: CustomerPortalConfig) => {
 
     try {
       const { customer_portal_url } = await createCustomerSessions(polar)({
-        return_url: decodedReturnUrl,
+        return_url: resolvedReturnUrl,
         customer_id: customerId,
       })
 

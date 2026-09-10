@@ -72,6 +72,40 @@ describe('portal plugin', () => {
     })
   })
 
+  describe('returnUrl percent-escape preservation', () => {
+    it.each([
+      ['%2541', '%41'],
+      ['%2500', '%00'],
+      ['%7Bx%7D', '{x}'],
+    ])('preserves URL escapes %s on return_url', async (encoded, decoded) => {
+      const plugin = portal({
+        returnUrl: `https://example.com/return?data=${encoded}`,
+      })
+      const endpoints = plugin(mockClient) as any
+      const handler = endpoints.portal.handler
+
+      vi.mocked(mockClient.customerSessions.create).mockResolvedValue({
+        token: 'session-token-123',
+        customer_portal_url: 'https://polar.sh/portal/session-123',
+      })
+
+      const ctx = {
+        context: { session: { user: { id: 'user-123' } } },
+        json: vi.fn(),
+      }
+
+      await handler(ctx)
+
+      expect(mockClient.customerSessions.create).toHaveBeenCalledWith({
+        external_customer_id: 'user-123',
+        return_url: `https://example.com/return?data=${encoded}`,
+      })
+      const wire = mockClient.customerSessions.create.mock.calls[0][0]
+        .return_url as string
+      expect(new URL(wire).searchParams.get('data')).toBe(decoded)
+    })
+  })
+
   describe('portal endpoint', () => {
     let handler: Function
 
@@ -718,7 +752,6 @@ describe('portal plugin', () => {
         'organization-123',
       )
     })
-
     it.each([
       ['benefits', 'benefitGrants'],
       ['subscriptions', 'subscriptions'],

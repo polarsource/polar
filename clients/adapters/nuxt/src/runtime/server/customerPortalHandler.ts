@@ -36,7 +36,7 @@ export const CustomerPortal = ({
     try {
       const result = await createCustomerSessions(polar)({
         customer_id: customerId,
-        return_url: retUrl ? decodeURI(retUrl.toString()) : undefined,
+        return_url: retUrl ? retUrl.toString() : undefined,
       })
 
       return sendRedirect(event, result.customer_portal_url)

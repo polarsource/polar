@@ -288,9 +288,17 @@ async def run_task(
         )
 
 
-def bootstrap(*, pool_pre_ping: bool = False) -> None:
+def bootstrap(
+    *,
+    pool_pre_ping: bool = False,
+    idle_in_transaction_session_timeout_seconds: int | None = None,
+) -> None:
     """Initialize worker resources (DB engine + Redis + HTTPX) for the SQS runner."""
-    setup_sqlalchemy(pool_name="worker-sqs", pool_pre_ping=pool_pre_ping)
+    setup_sqlalchemy(
+        pool_name="worker-sqs",
+        pool_pre_ping=pool_pre_ping,
+        idle_in_transaction_session_timeout_seconds=idle_in_transaction_session_timeout_seconds,
+    )
     setup_redis()
     setup_httpx()
     validate_allowlist()

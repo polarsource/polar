@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { createServer } from 'node:http'
+import { createServer, type Server } from 'node:http'
 import {
   Console,
   Context,
@@ -96,8 +96,64 @@ const config = {
     'webhooks:read',
     'webhooks:write',
   ],
-  redirectUrl: 'http://127.0.0.1:3333/oauth/callback',
 }
+
+const CALLBACK_HOST = '127.0.0.1'
+const CALLBACK_PATH = '/oauth/callback'
+export const PREFERRED_CALLBACK_PORT = 3333
+
+export const callbackUrl = (port: number) =>
+  `http://${CALLBACK_HOST}:${port}${CALLBACK_PATH}`
+
+const boundPort = (server: Server) => {
+  const address = server.address()
+  return address !== null && typeof address === 'object'
+    ? address.port
+    : undefined
+}
+
+export interface CallbackListener {
+  port: number
+  fallback: boolean
+}
+
+export const listenOnFreePort = (
+  server: Server,
+  preferredPort: number,
+): Effect.Effect<CallbackListener, AuthError> =>
+  Effect.callback<CallbackListener, AuthError>((resume) => {
+    const fail = (message: string) =>
+      resume(
+        Effect.fail(
+          new AuthError({
+            message: `Cannot start the sign-in callback server on ${CALLBACK_HOST}: ${message}`,
+          }),
+        ),
+      )
+    const attempt = (port: number, fallback: boolean) => {
+      const onError = (error: NodeJS.ErrnoException) => {
+        server.off('listening', onListening)
+        if (error.code === 'EADDRINUSE' && !fallback) {
+          attempt(0, true)
+          return
+        }
+        fail(error.message)
+      }
+      const onListening = () => {
+        server.off('error', onError)
+        const port = boundPort(server)
+        if (port === undefined) {
+          fail('no TCP port was assigned')
+          return
+        }
+        resume(Effect.succeed({ port, fallback }))
+      }
+      server.once('error', onError)
+      server.once('listening', onListening)
+      server.listen(port, CALLBACK_HOST)
+    }
+    attempt(preferredPort, false)
+  })
 
 export class OAuth extends Context.Service<
   OAuth,
@@ -203,120 +259,136 @@ export const validateCallback = (url: URL, expectedState: string) => {
     : Effect.fail(new AuthError({ message: result.message }))
 }
 
+const authorizationUrl = (
+  environment: PolarEnvironment,
+  redirectUrl: string,
+  state: string,
+  verifier: string,
+) => {
+  const authorization = new URL(
+    environment === 'production'
+      ? PRODUCTION_AUTHORIZATION_URL
+      : SANDBOX_AUTHORIZATION_URL,
+  )
+  authorization.search = new URLSearchParams({
+    client_id:
+      environment === 'production' ? PRODUCTION_CLIENT_ID : SANDBOX_CLIENT_ID,
+    redirect_uri: redirectUrl,
+    response_type: 'code',
+    scope: config.scopes.join(' '),
+    state,
+    code_challenge: createHash('sha256').update(verifier).digest('base64url'),
+    code_challenge_method: 'S256',
+    sub_type: 'user',
+  }).toString()
+  return authorization
+}
+
+const browserFailure = Effect.fail(
+  new AuthError({ message: 'Could not open the browser for login.' }),
+)
+
+const waitForCallback = (
+  server: Server,
+  redirectUrl: string,
+  state: string,
+  authorization: URL,
+) =>
+  Effect.callback<string, AuthError>((resume) => {
+    let completed = false
+    const finish = (result: Effect.Effect<string, AuthError>) => {
+      if (!completed) {
+        completed = true
+        resume(result)
+      }
+    }
+    server.on('request', (request, response) => {
+      const url = new URL(request.url ?? '/', redirectUrl)
+      if (url.pathname !== CALLBACK_PATH || request.method !== 'GET') {
+        response.writeHead(404).end()
+        return
+      }
+      const result = parseCallback(url, state)
+      response
+        .writeHead(result.outcome === 'invalid' ? 400 : 200, {
+          'Content-Type': 'text/html; charset=utf-8',
+        })
+        .end(callbackPage(result.outcome))
+      finish(validateCallback(url, state))
+    })
+    server.on('error', (error) =>
+      finish(
+        Effect.fail(
+          new AuthError({
+            message: `The sign-in callback server failed: ${error.message}`,
+          }),
+        ),
+      ),
+    )
+    void open(authorization.toString())
+      .then((child) => {
+        child.on('error', () => finish(browserFailure))
+        child.on('exit', (code) => {
+          if (code) finish(browserFailure)
+        })
+      })
+      .catch(() => finish(browserFailure))
+  }).pipe(
+    Effect.timeout('5 minutes'),
+    Effect.mapError((error) =>
+      error instanceof AuthError
+        ? error
+        : new AuthError({ message: 'OAuth login timed out. Try again.' }),
+    ),
+  )
+
 const login = (environment: PolarEnvironment) =>
   Effect.gen(function* () {
     const state = randomBytes(32).toString('hex')
     const verifier = randomBytes(48).toString('base64url')
-    const authorization = new URL(
-      environment === 'production'
-        ? PRODUCTION_AUTHORIZATION_URL
-        : SANDBOX_AUTHORIZATION_URL,
-    )
-    authorization.search = new URLSearchParams({
-      client_id:
-        environment === 'production' ? PRODUCTION_CLIENT_ID : SANDBOX_CLIENT_ID,
-      redirect_uri: config.redirectUrl,
-      response_type: 'code',
-      scope: config.scopes.join(' '),
-      state,
-      code_challenge: createHash('sha256').update(verifier).digest('base64url'),
-      code_challenge_method: 'S256',
-      sub_type: 'user',
-    }).toString()
-    yield* Console.log(ui.blank)
-    yield* Console.log(
-      ui.step(`Opening your browser to sign in to Polar ${environment}...`),
-    )
-    yield* Console.log(ui.step('If it does not open, visit:'))
-    yield* Console.log(`    ${ui.cyan(authorization.toString())}`)
-    yield* Console.log(ui.blank)
-    yield* Console.log(ui.step('Waiting for you to authorize the CLI...'))
-    yield* Console.log(ui.blank)
     const server = createServer()
-    const code = yield* Effect.callback<string, AuthError>((resume) => {
-      let completed = false
-      const finish = (result: Effect.Effect<string, AuthError>) => {
-        if (!completed) {
-          completed = true
-          resume(result)
-        }
-      }
-      server.on('request', (request, response) => {
-        const url = new URL(request.url ?? '/', config.redirectUrl)
-        if (url.pathname !== '/oauth/callback' || request.method !== 'GET') {
-          response.writeHead(404).end()
-          return
-        }
-        const result = parseCallback(url, state)
-        response
-          .writeHead(result.outcome === 'invalid' ? 400 : 200, {
-            'Content-Type': 'text/html; charset=utf-8',
-          })
-          .end(callbackPage(result.outcome))
-        finish(validateCallback(url, state))
-      })
-      server.on('error', () =>
-        finish(
-          Effect.fail(
-            new AuthError({
-              message:
-                'Cannot start OAuth callback server on 127.0.0.1:3333. Check whether the port is occupied.',
-            }),
-          ),
-        ),
+    const closeServer = Effect.sync(() => {
+      server.close()
+      server.closeAllConnections()
+    })
+    const { code, redirectUrl } = yield* Effect.gen(function* () {
+      const listener = yield* listenOnFreePort(server, PREFERRED_CALLBACK_PORT)
+      const redirectUrl = callbackUrl(listener.port)
+      const authorization = authorizationUrl(
+        environment,
+        redirectUrl,
+        state,
+        verifier,
       )
-      server.listen(3333, '127.0.0.1', () => {
-        void open(authorization.toString())
-          .then((child) => {
-            child.on('error', () =>
-              finish(
-                Effect.fail(
-                  new AuthError({
-                    message: 'Could not open the browser for login.',
-                  }),
-                ),
-              ),
-            )
-            child.on('exit', (code) => {
-              if (code)
-                finish(
-                  Effect.fail(
-                    new AuthError({
-                      message: 'Could not open the browser for login.',
-                    }),
-                  ),
-                )
-            })
-          })
-          .catch(() =>
-            finish(
-              Effect.fail(
-                new AuthError({
-                  message: 'Could not open the browser for login.',
-                }),
-              ),
-            ),
-          )
-      })
-    }).pipe(
-      Effect.ensuring(
-        Effect.sync(() => {
-          server.close()
-          server.closeAllConnections()
-        }),
-      ),
-      Effect.timeout('5 minutes'),
-      Effect.mapError((error) =>
-        error instanceof AuthError
-          ? error
-          : new AuthError({ message: 'OAuth login timed out. Try again.' }),
-      ),
-    )
+      yield* Console.log(ui.blank)
+      if (listener.fallback) {
+        yield* Console.log(
+          ui.step(
+            `Port ${PREFERRED_CALLBACK_PORT} is busy, using port ${listener.port} for the sign-in callback instead`,
+          ),
+        )
+      }
+      yield* Console.log(
+        ui.step(`Opening your browser to sign in to Polar ${environment}...`),
+      )
+      yield* Console.log(ui.step('If it does not open, visit:'))
+      yield* Console.log(`    ${ui.cyan(authorization.toString())}`)
+      yield* Console.log(ui.blank)
+      yield* Console.log(ui.step('Waiting for you to authorize the CLI...'))
+      yield* Console.log(ui.blank)
+      const code = yield* waitForCallback(
+        server,
+        redirectUrl,
+        state,
+        authorization,
+      )
+      return { code, redirectUrl }
+    }).pipe(Effect.ensuring(closeServer))
     return yield* exchange(
       environment,
       new URLSearchParams({
         grant_type: 'authorization_code',
-        redirect_uri: config.redirectUrl,
+        redirect_uri: redirectUrl,
         code,
         code_verifier: verifier,
       }),

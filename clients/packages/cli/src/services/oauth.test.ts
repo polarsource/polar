@@ -3,7 +3,15 @@ import { ChildProcess } from 'node:child_process'
 import * as http from 'node:http'
 import { Console, Effect, Layer, Redacted } from 'effect'
 import * as browser from 'open'
-import { exchange, layer, OAuth, validateCallback } from '@/services/oauth'
+import {
+  callbackUrl,
+  exchange,
+  layer,
+  listenOnFreePort,
+  OAuth,
+  PREFERRED_CALLBACK_PORT,
+  validateCallback,
+} from '@/services/oauth'
 import { captureConsole } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { session } from '@/utils/test-utils/services'
@@ -21,9 +29,138 @@ const tokenUrls = {
 
 let api: ReturnType<typeof fakeHttp>
 
-const respond = (handler: () => Response) => {
+const respond = (
+  handler: (request: Request) => Response | Promise<Response>,
+) => {
   api.routes[`POST ${tokenUrls.sandbox}`] = handler
   api.routes[`POST ${tokenUrls.production}`] = handler
+}
+
+const portOf = (server: http.Server) => {
+  const address = server.address()
+  if (!address || typeof address === 'string')
+    throw new Error('Expected a TCP listener')
+  return address.port
+}
+
+const occupyPort = () =>
+  new Promise<http.Server>((resolve) => {
+    const blocker = http.createServer()
+    blocker.listen(0, '127.0.0.1', () => resolve(blocker))
+  })
+
+const closeServer = (server: http.Server) =>
+  new Promise<void>((resolve) => {
+    server.closeAllConnections()
+    server.close(() => resolve())
+  })
+
+const listenError = (code: string, message: string) =>
+  Object.assign(new Error(message), { code })
+
+interface CallbackResponse {
+  status: number | undefined
+  type: string | undefined
+  body: string
+}
+
+interface BrowserLoginOptions {
+  authorized: boolean
+  busyPreferredPort?: boolean
+}
+
+const loginThroughBrowser = async ({
+  authorized,
+  busyPreferredPort = false,
+}: BrowserLoginOptions) => {
+  let callbackResponse: CallbackResponse | undefined
+  let browserDone: Promise<void> | undefined
+  let callbackPort: number | undefined
+  let authorizationRedirectUri: string | null | undefined
+  let exchangeRedirectUri: string | null | undefined
+  let listenAttempts = 0
+  const server = http.createServer()
+  const nativeListen = server.listen.bind(server)
+  const listen = vi.spyOn(server, 'listen').mockImplementation(() => {
+    listenAttempts++
+    if (busyPreferredPort && listenAttempts === 1) {
+      process.nextTick(() =>
+        server.emit('error', listenError('EADDRINUSE', 'address in use')),
+      )
+      return server
+    }
+    return nativeListen(0, '127.0.0.1')
+  })
+  const createServer = vi.spyOn(http, 'createServer').mockReturnValue(server)
+  const open = vi
+    .spyOn(browser, 'default')
+    .mockImplementation(async (authorization) => {
+      callbackPort = portOf(server)
+      const url = new URL(authorization)
+      authorizationRedirectUri = url.searchParams.get('redirect_uri')
+      const callback = new URL(
+        `http://127.0.0.1:${callbackPort}/oauth/callback`,
+      )
+      callback.searchParams.set('state', url.searchParams.get('state')!)
+      callback.searchParams.set(
+        authorized ? 'code' : 'error',
+        authorized ? 'test-code' : 'access_denied',
+      )
+      browserDone = new Promise<void>((resolve, reject) => {
+        http
+          .get(callback, (response) => {
+            callbackResponse = {
+              status: response.statusCode,
+              type: response.headers['content-type'],
+              body: '',
+            }
+            response.on('data', (chunk) => {
+              callbackResponse!.body += chunk
+            })
+            response.on('end', resolve)
+            response.on('error', reject)
+          })
+          .on('error', reject)
+      })
+      await browserDone
+      return new ChildProcess()
+    })
+  respond(async (request) => {
+    exchangeRedirectUri = new URLSearchParams(await request.text()).get(
+      'redirect_uri',
+    )
+    return Response.json({ access_token: 'test-token', expires_in: 60 })
+  })
+  const { lines, console } = captureConsole()
+  try {
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const oauth = yield* OAuth
+        return yield* oauth.login('sandbox')
+      }).pipe(
+        Effect.provide(layer.pipe(Layer.provide(api.layer))),
+        Effect.provideService(Console.Console, console),
+        Effect.result,
+      ),
+    )
+    await browserDone
+    return {
+      result,
+      server,
+      output: lines.join('\n'),
+      callbackResponse,
+      callbackPort,
+      authorizationRedirectUri,
+      exchangeRedirectUri,
+      listenAttempts,
+    }
+  } finally {
+    server.closeAllConnections()
+    server.close()
+    open.mockRestore()
+    createServer.mockRestore()
+    listen.mockRestore()
+  }
 }
 
 beforeEach(() => {
@@ -33,81 +170,88 @@ beforeEach(() => {
 test.each([true, false])(
   'closes the callback server after OAuth completion (authorized: %s)',
   async (authorized) => {
-    let callbackResponse:
-      | { status: number | undefined; type: string | undefined; body: string }
-      | undefined
-    let browserDone: Promise<void> | undefined
+    const login = await loginThroughBrowser({ authorized })
+    expect(login.result._tag).toBe(authorized ? 'Success' : 'Failure')
+    expect(login.server.listening).toBe(false)
+    expect(login.callbackResponse).toMatchObject({
+      status: 200,
+      type: 'text/html; charset=utf-8',
+    })
+    expect(login.callbackResponse!.body).toContain(
+      authorized ? 'You are signed in' : 'Sign-in canceled',
+    )
+  },
+)
+
+test('authorization and token requests use the port the callback server bound', async () => {
+  const login = await loginThroughBrowser({ authorized: true })
+  expect(login.result._tag).toBe('Success')
+  expect(login.listenAttempts).toBe(1)
+  expect(login.authorizationRedirectUri).toBe(callbackUrl(login.callbackPort!))
+  expect(login.exchangeRedirectUri).toBe(callbackUrl(login.callbackPort!))
+  expect(login.output).not.toContain('is busy')
+})
+
+test('falls back to a free port when the preferred one is busy', async () => {
+  const login = await loginThroughBrowser({
+    authorized: true,
+    busyPreferredPort: true,
+  })
+  expect(login.result._tag).toBe('Success')
+  expect(login.listenAttempts).toBe(2)
+  expect(login.authorizationRedirectUri).toBe(callbackUrl(login.callbackPort!))
+  expect(login.exchangeRedirectUri).toBe(callbackUrl(login.callbackPort!))
+  expect(login.output).toContain(
+    `Port ${PREFERRED_CALLBACK_PORT} is busy, using port ${login.callbackPort}`,
+  )
+})
+
+test('listenOnFreePort binds the preferred port when it is free', async () => {
+  const probe = await occupyPort()
+  const port = portOf(probe)
+  await closeServer(probe)
+  const server = http.createServer()
+  try {
+    expect(await Effect.runPromise(listenOnFreePort(server, port))).toEqual({
+      port,
+      fallback: false,
+    })
+    expect(portOf(server)).toBe(port)
+  } finally {
+    await closeServer(server)
+  }
+})
+
+test('listenOnFreePort picks another port when the preferred one is taken', async () => {
+  const blocker = await occupyPort()
+  const server = http.createServer()
+  try {
+    const listener = await Effect.runPromise(
+      listenOnFreePort(server, portOf(blocker)),
+    )
+    expect(listener.fallback).toBe(true)
+    expect(listener.port).not.toBe(portOf(blocker))
+    expect(portOf(server)).toBe(listener.port)
+  } finally {
+    await closeServer(server)
+    await closeServer(blocker)
+  }
+})
+
+test.each([
+  ['EADDRINUSE', 'address in use', 'Cannot start the sign-in callback server'],
+  ['EACCES', 'permission denied', 'permission denied'],
+])(
+  'listenOnFreePort fails when binding keeps failing (%s)',
+  async (code, message, expected) => {
     const server = http.createServer()
-    const nativeListen = server.listen.bind(server)
-    const listen = vi
-      .spyOn(server, 'listen')
-      .mockImplementation((...args: unknown[]) =>
-        nativeListen(0, '127.0.0.1', args[2] as () => void),
-      )
-    const createServer = vi.spyOn(http, 'createServer').mockReturnValue(server)
-    const open = vi
-      .spyOn(browser, 'default')
-      .mockImplementation(async (authorization) => {
-        const address = server.address()
-        if (!address || typeof address === 'string')
-          throw new Error('Expected a TCP listener')
-        const url = new URL(authorization)
-        const callback = new URL(
-          `http://127.0.0.1:${address.port}/oauth/callback`,
-        )
-        callback.searchParams.set('state', url.searchParams.get('state')!)
-        callback.searchParams.set(
-          authorized ? 'code' : 'error',
-          authorized ? 'test-code' : 'access_denied',
-        )
-        browserDone = new Promise<void>((resolve, reject) => {
-          http
-            .get(callback, (response) => {
-              callbackResponse = {
-                status: response.statusCode,
-                type: response.headers['content-type'],
-                body: '',
-              }
-              response.on('data', (chunk) => {
-                callbackResponse!.body += chunk
-              })
-              response.on('end', resolve)
-              response.on('error', reject)
-            })
-            .on('error', reject)
-        })
-        await browserDone
-        return new ChildProcess()
-      })
-    respond(() => Response.json({ access_token: 'test-token', expires_in: 60 }))
-    try {
-      const result = await Effect.runPromise(
-        Effect.gen(function* () {
-          const oauth = yield* OAuth
-          return yield* oauth.login('sandbox')
-        }).pipe(
-          Effect.provide(layer.pipe(Layer.provide(api.layer))),
-          Effect.provideService(Console.Console, captureConsole().console),
-          Effect.result,
-        ),
-      )
-      expect(result._tag).toBe(authorized ? 'Success' : 'Failure')
-      expect(server.listening).toBe(false)
-      await browserDone
-      expect(callbackResponse).toMatchObject({
-        status: 200,
-        type: 'text/html; charset=utf-8',
-      })
-      expect(callbackResponse!.body).toContain(
-        authorized ? 'You are signed in' : 'Sign-in canceled',
-      )
-    } finally {
-      server.closeAllConnections()
-      server.close()
-      open.mockRestore()
-      createServer.mockRestore()
-      listen.mockRestore()
-    }
+    vi.spyOn(server, 'listen').mockImplementation(() => {
+      process.nextTick(() => server.emit('error', listenError(code, message)))
+      return server
+    })
+    await expect(
+      Effect.runPromise(listenOnFreePort(server, PREFERRED_CALLBACK_PORT)),
+    ).rejects.toThrow(expected)
   },
 )
 

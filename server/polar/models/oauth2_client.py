@@ -1,4 +1,6 @@
+import ipaddress
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
@@ -22,6 +24,28 @@ OAUTH2_CLIENT_REGISTRATION_ACCESS_TOKEN_CONTEXT = {
     "table": "oauth2_clients",
     "column": "registration_access_token",
 }
+
+LoopbackRedirectURI = tuple[str, str, str, str]
+
+
+def _loopback_redirect_uri(uri: str) -> LoopbackRedirectURI | None:
+    """
+    Return the port-independent parts of ``uri`` when it targets the loopback
+    interface over plain HTTP, as native apps do for their OAuth callback.
+
+    RFC 8252 §7.3 requires authorization servers to accept any port for such
+    URIs, since the app can't know ahead of time which port will be free.
+    """
+    try:
+        parts = urlsplit(uri)
+        hostname = parts.hostname
+        if parts.scheme != "http" or hostname is None:
+            return None
+        if not ipaddress.ip_address(hostname).is_loopback:
+            return None
+    except ValueError:
+        return None
+    return (hostname, parts.path, parts.query, parts.fragment)
 
 
 class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
@@ -60,6 +84,17 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     @declared_attr
     def user(cls) -> "Mapped[User | None]":
         return relationship("User", lazy="raise")
+
+    def check_redirect_uri(self, redirect_uri: str) -> bool:
+        if super().check_redirect_uri(redirect_uri):
+            return True
+        requested = _loopback_redirect_uri(redirect_uri)
+        if requested is None:
+            return False
+        return any(
+            _loopback_redirect_uri(registered) == requested
+            for registered in self.redirect_uris
+        )
 
     @property
     def default_sub_type(self) -> SubType:

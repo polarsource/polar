@@ -36,6 +36,74 @@ class TestHashSecret:
         assert OAuth2Client.hash_secret(None) is None
 
 
+def _build_with_redirect_uris(*redirect_uris: str) -> OAuth2Client:
+    client = OAuth2Client(
+        client_id="polar_ci_test",
+        client_secret="polar_cs_test",
+        registration_access_token="polar_crt_test",
+    )
+    client.set_client_metadata({"redirect_uris": list(redirect_uris)})
+    return client
+
+
+class TestCheckRedirectUri:
+    def test_registered_uri(self) -> None:
+        client = _build_with_redirect_uris("https://example.com/callback")
+        assert client.check_redirect_uri("https://example.com/callback")
+
+    def test_unregistered_uri(self) -> None:
+        client = _build_with_redirect_uris("https://example.com/callback")
+        assert not client.check_redirect_uri("https://example.com/other")
+
+    @pytest.mark.parametrize(
+        "redirect_uri",
+        [
+            "http://127.0.0.1:3333/oauth/callback",
+            "http://127.0.0.1:51234/oauth/callback",
+            "http://127.0.0.1/oauth/callback",
+        ],
+    )
+    def test_loopback_accepts_any_port(self, redirect_uri: str) -> None:
+        client = _build_with_redirect_uris("http://127.0.0.1:3333/oauth/callback")
+        assert client.check_redirect_uri(redirect_uri)
+
+    def test_loopback_ipv6_accepts_any_port(self) -> None:
+        client = _build_with_redirect_uris("http://[::1]:3333/oauth/callback")
+        assert client.check_redirect_uri("http://[::1]:51234/oauth/callback")
+
+    @pytest.mark.parametrize(
+        "redirect_uri",
+        [
+            "http://127.0.0.1:51234/oauth/other",
+            "http://127.0.0.1:51234/oauth/callback?extra=1",
+            "https://127.0.0.1:51234/oauth/callback",
+            "http://localhost:51234/oauth/callback",
+            "http://127.0.0.2:51234/oauth/callback",
+            "http://[::1]:51234/oauth/callback",
+            "http://[::1/oauth/callback",
+        ],
+    )
+    def test_loopback_rejects_other_differences(self, redirect_uri: str) -> None:
+        client = _build_with_redirect_uris("http://127.0.0.1:3333/oauth/callback")
+        assert not client.check_redirect_uri(redirect_uri)
+
+    @pytest.mark.parametrize(
+        "registered",
+        [
+            "https://example.com/callback",
+            "http://localhost:3333/oauth/callback",
+            "https://127.0.0.1:3333/oauth/callback",
+        ],
+    )
+    def test_non_loopback_registration_requires_exact_match(
+        self, registered: str
+    ) -> None:
+        client = _build_with_redirect_uris(registered)
+        assert client.check_redirect_uri(registered)
+        assert not client.check_redirect_uri("http://127.0.0.1:51234/oauth/callback")
+        assert not client.check_redirect_uri("https://example.com:8443/callback")
+
+
 @pytest.mark.asyncio
 class TestEncryptClassmethods:
     async def test_encrypt_client_secret(self, user: User) -> None:

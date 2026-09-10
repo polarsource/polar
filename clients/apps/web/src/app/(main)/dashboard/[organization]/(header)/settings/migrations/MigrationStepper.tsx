@@ -10,10 +10,12 @@ import { currentPosition, MIGRATION_STEPS } from './steps'
 // current step alone (its marker and its label).
 export function MigrationStepper({
   migration,
+  panCurrentStepKey,
 }: {
   migration: schemas['MerchantMigration']
+  panCurrentStepKey?: string | null
 }) {
-  const position = currentPosition(migration)
+  const position = currentPosition(migration, panCurrentStepKey)
   // A completed migration has every step behind it.
   const current =
     position.kind === 'completed' ? MIGRATION_STEPS.length : position.index

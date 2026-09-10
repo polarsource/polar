@@ -126,6 +126,7 @@ _STEP_TASKS = {
 }
 
 _MIGRATION_STEP_BY_PAN_STEP = {
+    STEP_CUTOVER: MerchantMigrationStep.activate_subscriptions,
     STEP_MOVE_SUBSCRIPTIONS: MerchantMigrationStep.activate_subscriptions,
 }
 
@@ -674,7 +675,12 @@ class MerchantMigrationService:
         """The card-move checklist. Returns an empty one before it's started, so
         the client can show the method and the destination account up front."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
-        return self._checklist(migration)
+        steps = [step.model_copy() for step in migration.pan_transfer_steps]
+        if steps:
+            # Copies only: a GET must not persist, but stored checklists can
+            # still be sitting on a key Polar no longer asks anyone to complete.
+            self._advance_retired_steps(migration, steps)
+        return self._checklist(migration, steps)
 
     async def stream_imported_customer_source_ids(
         self,
@@ -1019,6 +1025,10 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        if migration.pan_transfer_steps:
+            steps = list(migration.pan_transfer_steps)
+            if self._advance_retired_steps(migration, steps):
+                await self._advance_checklist(session, migration, steps)
         if not self._cutover_reachable(migration):
             raise CutoverNotStarted()
 
@@ -1287,6 +1297,21 @@ class MerchantMigrationService:
                 exclude_record_ids=list(exclude_record_ids)
             )
         return None
+
+    def _advance_retired_steps(
+        self,
+        migration: MerchantMigration,
+        # `Sequence`, not `list`: this class defines a `list` method, which would
+        # shadow the builtin in an annotation evaluated in the class body.
+        steps: Sequence[PanTransferStep],
+    ) -> bool:
+        """Walk past keys Polar no longer asks anyone to complete. True if the
+        current step moved, so the caller can persist."""
+        working = list(steps)
+        before = pan_transfer.current(working)
+        pan_transfer.advance(migration.pan_transfer_method, working)
+        after = pan_transfer.current(working)
+        return (before.key if before else None) != (after.key if after else None)
 
     def _cutover_reachable(self, migration: MerchantMigration) -> bool:
         """The merchant may switch once the card checklist has reached the switch

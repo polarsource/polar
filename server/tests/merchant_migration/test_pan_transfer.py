@@ -1,8 +1,12 @@
 import pytest
 
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.pan_transfer import (
+    STEP_CUTOVER,
+    STEP_RESOLVE_UNCOVERED,
+    STEP_VERIFY_CARDS,
     PanStepActor,
     PanStepKind,
     PanStepNotActionable,
@@ -124,6 +128,71 @@ class TestBuild:
         # Cutover is the last thing the merchant does before we take over billing.
         assert templates[-2].key == "cutover"
         assert templates[-2].owner == PanStepOwner.merchant
+
+
+class TestAdvance:
+    def test_completing_card_checks_lands_on_switch(self) -> None:
+        steps = pan_transfer.complete(
+            PanTransferMethod.pan_copy,
+            _advance_to(_copy_steps(), STEP_VERIFY_CARDS),
+            STEP_VERIFY_CARDS,
+            actor=PanStepActor.system,
+            inputs={},
+        )
+
+        current = pan_transfer.current(steps)
+        assert current is not None
+        assert current.key == STEP_CUTOVER
+
+    def test_walks_past_a_retired_uncovered_step(self) -> None:
+        steps = _stuck_on_uncovered()
+
+        pan_transfer.advance(PanTransferMethod.pan_copy, steps)
+
+        _assert_skipped_uncovered(steps)
+
+    def test_completing_a_retired_uncovered_step_lands_on_switch(self) -> None:
+        steps = pan_transfer.complete(
+            PanTransferMethod.pan_copy,
+            _stuck_on_uncovered(),
+            STEP_RESOLVE_UNCOVERED,
+            actor=PanStepActor.merchant,
+            inputs={},
+        )
+
+        _assert_skipped_uncovered(steps)
+
+
+def _stuck_on_uncovered() -> list[PanTransferStep]:
+    steps = _advance_to(_copy_steps(), STEP_CUTOVER)
+    cutover = next(step for step in steps if step.key == STEP_CUTOVER)
+    cutover.status = PanStepStatus.blocked
+    cutover.started_at = None
+    steps.insert(
+        steps.index(cutover),
+        PanTransferStep(
+            key=STEP_RESOLVE_UNCOVERED,
+            owner=PanStepOwner.merchant,
+            kind=PanStepKind.confirm,
+            status=PanStepStatus.pending,
+            inputs={},
+            note=None,
+            expected_at=None,
+            started_at=utc_now(),
+            completed_at=None,
+            completed_by=None,
+        ),
+    )
+    return steps
+
+
+def _assert_skipped_uncovered(steps: list[PanTransferStep]) -> None:
+    current = pan_transfer.current(steps)
+    assert current is not None
+    assert current.key == STEP_CUTOVER
+    retired = next(step for step in steps if step.key == STEP_RESOLVE_UNCOVERED)
+    assert retired.status == PanStepStatus.completed
+    assert retired.completed_by == PanStepActor.system
 
 
 class TestComplete:

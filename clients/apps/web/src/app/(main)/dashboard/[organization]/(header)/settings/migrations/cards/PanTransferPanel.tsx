@@ -3,6 +3,7 @@
 import { usePanTransfer } from '@/hooks/queries/merchantMigrations'
 import { Alert, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { cardMovementSteps } from './panTransferCopy'
 import { PanTransferStepItem } from './PanTransferStepItem'
 
 export function PanTransferPanel({
@@ -40,12 +41,11 @@ export function PanTransferPanel({
     )
   }
 
-  const done = checklist.steps.filter(
-    (step) => step.status === 'completed',
-  ).length
+  const steps = cardMovementSteps(checklist.steps)
+  const done = steps.filter((step) => step.status === 'completed').length
   // Off the steps, not a null `current_step_key`: a checklist stuck with
   // nothing actionable would report that too.
-  const finished = done === checklist.steps.length
+  const finished = done === steps.length
 
   return (
     <Box flexDirection="column" rowGap="l">
@@ -55,12 +55,12 @@ export function PanTransferPanel({
         </Text>
       ) : (
         <Text variant="caption" color="muted">
-          {done} of {checklist.steps.length} complete
+          {done} of {steps.length} complete
         </Text>
       )}
 
       <Box as="ol" flexDirection="column" rowGap="l">
-        {checklist.steps.map((step) => (
+        {steps.map((step) => (
           <PanTransferStepItem
             // Migration-scoped: another migration lands on the same step key,
             // and a bare key would keep its unsaved form values alive.

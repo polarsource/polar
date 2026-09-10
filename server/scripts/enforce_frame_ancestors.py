@@ -45,11 +45,12 @@ from uuid import UUID
 import structlog
 import typer
 from rich.console import Console
-from rich.table import Table
 from sqlalchemy import select
 
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import Organization
+from polar.organization.embed_hosts import InvalidEmbedHost
+from polar.organization.schemas import validate_embed_hosts
 from polar.postgres import create_async_engine
 from scripts.frame_ancestors_observations import RETENTION, Observation, load
 from scripts.helper import configure_script_console_logging, typer_async
@@ -137,74 +138,190 @@ async def _load_reviews(
     return reviews
 
 
-def _decisions_table(title: str, reviews: list[Review], *, style: str) -> Table:
-    table = Table(title=title, title_justify="left", title_style=style)
-    table.add_column("Organization")
-    table.add_column("Framed", justify="right")
-    table.add_column("Listed", justify="right")
-    table.add_column("Origins the list refuses")
-    for review in reviews:
-        table.add_row(
-            review.slug,
-            str(review.candidate.embeds),
-            str(len(review.candidate.current_hosts)),
-            "\n".join(
-                f"{host}  {stat.checkouts} loads"
-                + (f"  [{', '.join(stat.signals)}]" if stat.signals else "")
-                + (f"  ({review.reasons[host]})" if host in review.reasons else "")
-                for host, stat in review.decisions
-            ),
-        )
-    return table
+@dataclass
+class Groups:
+    breaking: list[Review]
+    deciding: list[Review]
+    ready: list[Review]
+    done: list[Review]
+
+    @property
+    def walked(self) -> list[Review]:
+        """The organizations worth a question, the live outage first."""
+        return self.breaking + self.deciding
 
 
-def _render(reviews: list[Review]) -> None:
-    breaking = [review for review in reviews if review.breaking]
-    deciding = [
-        review for review in reviews if not review.enforced and review.decisions
-    ]
-    ready = [review for review in reviews if review.ready]
-    done = [review for review in reviews if review.enforced and not review.decisions]
-
-    if breaking:
-        console.print(
-            _decisions_table("Breaking now", breaking, style="bold red"),
-        )
-
-    if deciding:
-        console.print(_decisions_table("Waiting on a decision", deciding, style=""))
-
-    blocked = [review for review in reviews if review.candidate.blocked]
-    if blocked:
-        table = Table(
-            title="Cannot be listed (plain HTTP on a public host)",
-            title_justify="left",
-        )
-        table.add_column("Organization")
-        table.add_column("Origin")
-        for review in blocked:
-            table.add_row(
-                review.slug,
-                "\n".join(origin for origin, _ in review.candidate.blocked),
-            )
-        console.print(table)
-
-    if ready:
-        console.print(
-            f"\n[bold]{len(ready)} organizations ready to switch on[/bold] "
-            "— every origin we have seen is covered"
-        )
-        console.print(", ".join(review.slug for review in ready))
-
-    console.print(
-        f"\n{len(reviews)} observed, {len(breaking)} breaking, "
-        f"{len(deciding)} to decide, {len(ready)} ready, {len(done)} done"
+def _partition(reviews: list[Review]) -> Groups:
+    return Groups(
+        breaking=[r for r in reviews if r.breaking],
+        deciding=[r for r in reviews if not r.enforced and r.decisions],
+        ready=[r for r in reviews if r.ready],
+        done=[r for r in reviews if r.enforced and not r.decisions],
     )
+
+
+def _describe(review: Review, host: str, stat: HostStat) -> str:
+    signals = f"  [{', '.join(stat.signals)}]" if stat.signals else ""
+    reason = f"  ({review.reasons[host]})" if host in review.reasons else ""
+    return f"{host}  {stat.checkouts} loads{signals}{reason}"
+
+
+def _summary(groups: Groups) -> None:
+    if groups.breaking:
+        console.print(
+            f"[bold red]{len(groups.breaking)} switched on and being refused "
+            "right now:[/bold red] "
+            + ", ".join(review.slug for review in groups.breaking)
+        )
+    console.print(
+        f"{len(groups.walked) + len(groups.ready) + len(groups.done)} observed, "
+        f"{len(groups.breaking)} breaking, {len(groups.deciding)} to decide, "
+        f"{len(groups.ready)} ready, {len(groups.done)} done\n"
+    )
+
+
+@dataclass
+class Decision:
+    organization_id: UUID
+    slug: str
+    current_hosts: list[str]
+    hosts: list[str] = field(default_factory=list)
+    enable: bool = False
+
+
+def _decide(groups: Groups) -> list[Decision]:
+    """Walk the organizations that need an answer, one origin at a time."""
+    decisions: list[Decision] = []
+
+    for review in groups.walked:
+        candidate = review.candidate
+        console.rule(
+            f"[bold]{review.slug}[/bold]  "
+            + ("[red]enforced, breaking[/red]" if review.enforced else "not enforced")
+        )
+        console.print(f"  listed: {candidate.current_hosts or 'nothing'}")
+        for origin, _ in candidate.blocked:
+            console.print(
+                f"  [yellow]{origin}: plain HTTP on a public host, no entry can "
+                "admit it[/yellow]"
+            )
+
+        chosen: list[str] = []
+        for host, stat in review.decisions:
+            if typer.confirm(f"  add {_describe(review, host, stat)}?", default=False):
+                chosen.append(host)
+
+        enable = review.enforced
+        if not review.enforced:
+            remaining = [host for host, _ in review.decisions if host not in chosen]
+            if remaining:
+                console.print(
+                    f"  [yellow]{len(remaining)} origin(s) would still be "
+                    f"refused: {', '.join(remaining)}[/yellow]"
+                )
+            enable = typer.confirm("  enable enforcement?", default=False)
+
+        if chosen or (enable and not review.enforced):
+            decisions.append(
+                Decision(
+                    organization_id=candidate.organization_id,
+                    slug=review.slug,
+                    current_hosts=candidate.current_hosts,
+                    hosts=chosen,
+                    enable=enable,
+                )
+            )
+
+    # A covered organization can still carry an origin no entry can admit, and
+    # nothing above would have shown it.
+    for review in groups.ready:
+        for origin, _ in review.candidate.blocked:
+            console.print(
+                f"[yellow]{review.slug}: {origin} is plain HTTP on a public "
+                "host, no entry can admit it[/yellow]"
+            )
+
+    if groups.ready and typer.confirm(
+        f"\nEnable enforcement for the {len(groups.ready)} covered organizations?",
+        default=False,
+    ):
+        decisions += [
+            Decision(
+                organization_id=review.candidate.organization_id,
+                slug=review.slug,
+                current_hosts=review.candidate.current_hosts,
+                enable=True,
+            )
+            for review in groups.ready
+        ]
+
+    return decisions
+
+
+async def _apply(session: AsyncSession, decisions: list[Decision]) -> None:
+    """Re-read under lock: a merchant may have edited their own list since."""
+    organizations = {
+        organization.id: organization
+        for organization in (
+            await session.execute(
+                select(Organization)
+                .where(
+                    Organization.id.in_([d.organization_id for d in decisions]),
+                    Organization.deleted_at.is_(None),
+                )
+                .with_for_update()
+            )
+        )
+        .scalars()
+        .all()
+    }
+
+    written = 0
+    for decision in decisions:
+        organization = organizations.get(decision.organization_id)
+        if organization is None:
+            console.print(f"[yellow]{decision.slug}: gone, left alone.")
+            continue
+        if organization.embed_hosts != decision.current_hosts:
+            console.print(
+                f"[yellow]{decision.slug}: list changed since we read it, left alone."
+            )
+            continue
+
+        if decision.hosts:
+            try:
+                organization.embed_hosts = validate_embed_hosts(
+                    [*organization.embed_hosts, *decision.hosts]
+                )
+            except (InvalidEmbedHost, ValueError) as e:
+                console.print(f"[red]{decision.slug}: {e}")
+                continue
+        if decision.enable:
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "frame_ancestors_enforced": True,
+            }
+
+        session.add(organization)
+        written += 1
+        log.info(
+            "frame_ancestors.set",
+            organization_id=str(organization.id),
+            slug=decision.slug,
+            embed_hosts=organization.embed_hosts,
+            enforced=organization.is_frame_ancestors_enforced,
+        )
+
+    await session.commit()
+    console.print(f"\n[green]Wrote {written} organization(s).")
 
 
 @cli.command()
 @typer_async
 async def enforce_frame_ancestors(
+    execute: bool = typer.Option(
+        False, help="Write the answers (default: rehearse, write nothing)"
+    ),
     slug: list[str] = typer.Option([], help="Only these organizations."),
     window: int = typer.Option(
         RETENTION.days, help="Days of observations to read from Logfire."
@@ -216,10 +333,26 @@ async def enforce_frame_ancestors(
     try:
         async with sessionmaker() as session:
             reviews = await _load_reviews(session, observations, slug)
+            groups = _partition(reviews)
+            _summary(groups)
+
+            decisions = _decide(groups)
+            if not decisions:
+                console.print("[green]Nothing to write.")
+                return
+
+            hosts = sum(len(decision.hosts) for decision in decisions)
+            enabled = sum(1 for decision in decisions if decision.enable)
+            if not execute:
+                console.print(
+                    f"[yellow]Rehearsal — --execute would add {hosts} host(s) "
+                    f"and switch on {enabled} organization(s)."
+                )
+                return
+
+            await _apply(session, decisions)
     finally:
         await engine.dispose()
-
-    _render(reviews)
 
 
 if __name__ == "__main__":

@@ -52,7 +52,12 @@ def _assert_mutable(file: File) -> None:
         )
 
 
-@router.get("/", summary="List Files", response_model=ListResource[FileRead])
+@router.get(
+    "/",
+    summary="List Files",
+    response_model=ListResource[FileRead],
+    tags=[APITag.mcp, APITag.cli],
+)
 async def list(
     auth_subject: auth.FileRead,
     pagination: PaginationParamsQuery,

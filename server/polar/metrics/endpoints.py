@@ -257,7 +257,12 @@ async def export(
     return CSVStreamingResponse(create_csv(), "polar-metrics.csv")
 
 
-@router.get("/limits", summary="Get Metrics Limits", response_model=MetricsLimits)
+@router.get(
+    "/limits",
+    summary="Get Metrics Limits",
+    response_model=MetricsLimits,
+    tags=[APITag.mcp, APITag.cli],
+)
 async def limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
     """Get the interval limits for the metrics endpoint."""
     return MetricsLimits.model_validate(

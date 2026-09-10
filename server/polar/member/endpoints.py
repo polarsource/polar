@@ -137,6 +137,7 @@ async def list_members(
     "/{id}/members",
     summary="List Members",
     response_model=ListResource[Member],
+    tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Members retrieved."},
         404: CustomerNotFound,

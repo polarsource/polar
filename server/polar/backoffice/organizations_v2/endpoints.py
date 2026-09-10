@@ -514,6 +514,10 @@ def _parse_status_filter(status: str | None) -> OrganizationStatus | None:
     return _STATUS_FILTERS.get(status) if status else None
 
 
+def _normalize_search(q: str | None) -> str | None:
+    return (q.strip() or None) if q else None
+
+
 def _apply_sql_sort(stmt: Select[Any], sort: str, direction: str) -> Select[Any]:
     is_desc = direction == "desc"
     if sort == "name":
@@ -593,7 +597,7 @@ async def list_organizations(
     list_view = OrganizationListView(session)
 
     # Convert empty strings to None and parse numbers
-    q = (q.strip() or None) if q else None
+    q = _normalize_search(q)
     country = country if country else None
     risk_level = risk_level if risk_level else None
     has_appeal = has_appeal if has_appeal else None
@@ -843,6 +847,10 @@ async def status_counts(
     deleted: DeletedFilter | None = Query(None),
 ) -> None:
     list_view = OrganizationListView(session)
+    # Same normalization as the list: `lazy_counts_url` forwards the raw query
+    # params, so a whitespace-only `q` must not flip the deleted filter here
+    # while the list treats it as no search at all.
+    q = _normalize_search(q)
     deleted_filter: DeletedFilter = deleted or ("include" if q else "exclude")
     open_cases_count = (
         await session.scalar(

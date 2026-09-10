@@ -605,3 +605,24 @@ class TestListSearch:
         assert response.status_code == 200
         assert "Enter at least 3 characters to search." in response.text
         assert organization.name not in response.text
+
+
+@pytest.mark.asyncio
+class TestStatusCounts:
+    async def test_whitespace_only_search_excludes_deleted(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.set_deleted_at()
+        await save_fixture(organization)
+
+        response = await backoffice_client.get(
+            "/organizations/status-counts", params={"q": "  "}
+        )
+
+        assert response.status_code == 200
+        # Active tab badge: the list treats a blank search as no search and
+        # hides deleted organizations, so the counts must agree.
+        assert 'badge badge-success ml-2">0<' in response.text

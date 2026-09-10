@@ -1,6 +1,7 @@
 import { Context, DateTime, Effect, Layer, Redacted, Semaphore } from 'effect'
 import {
   AuthError,
+  environments,
   loginCommand,
   type PolarEnvironment,
   type Session,
@@ -26,14 +27,23 @@ export class Auth extends Context.Service<
       environment: PolarEnvironment,
       newSession: boolean,
     ) => Effect.Effect<boolean, AuthError>
-    logout: (environment: PolarEnvironment) => Effect.Effect<boolean, AuthError>
+    logout: (
+      targets: ReadonlyArray<PolarEnvironment>,
+    ) => Effect.Effect<PolarEnvironment[], AuthError>
     override: Effect.Effect<boolean>
+    environments: Effect.Effect<PolarEnvironment[], AuthError>
   }
 >()('Auth') {}
+
+const isEnvironment = (value: string): value is PolarEnvironment =>
+  (environments as readonly string[]).includes(value)
 
 export const make = (
   tokenOverride: Effect.Effect<string | undefined> = Effect.sync(
     () => process.env['POLAR_ACCESS_TOKEN'],
+  ),
+  environmentOverride: Effect.Effect<string | undefined> = Effect.sync(
+    () => process.env['POLAR_ENVIRONMENT'],
   ),
 ) =>
   Effect.gen(function* () {
@@ -47,6 +57,14 @@ export const make = (
     const override = tokenOverride.pipe(
       Effect.map((token) => token !== undefined),
     )
+    const overrideEnvironment = Effect.gen(function* () {
+      const value = yield* environmentOverride
+      if (value === undefined) return 'production' as const
+      if (isEnvironment(value)) return value
+      return yield* new AuthError({
+        message: 'POLAR_ENVIRONMENT must be "sandbox" or "production".',
+      })
+    })
     const requireSavedMode = Effect.gen(function* () {
       if (yield* override)
         return yield* new AuthError({
@@ -108,6 +126,14 @@ export const make = (
     return Auth.of({
       override,
       resolve,
+      environments: Effect.gen(function* () {
+        if (yield* override) return [yield* overrideEnvironment]
+        const available: PolarEnvironment[] = []
+        for (const environment of environments) {
+          if (yield* store.read(environment)) available.push(environment)
+        }
+        return available
+      }),
       login: (environment, newSession) =>
         Effect.gen(function* () {
           yield* requireSavedMode
@@ -119,19 +145,27 @@ export const make = (
           yield* locks[environment].withPermit(
             Effect.gen(function* () {
               yield* store.write(environment, session)
-              yield* config.setActiveOrganization(environment, undefined)
+              const selection = yield* config.getActiveOrganization
+              if (selection?.environment === environment) {
+                yield* config.setActiveOrganization(undefined)
+              }
             }),
           )
           return true
         }),
-      logout: (environment) =>
-        locks[environment].withPermit(
-          Effect.gen(function* () {
-            const deleted = yield* store.delete(environment)
-            yield* config.setActiveOrganization(environment, undefined)
-            return deleted
-          }),
-        ),
+      logout: (targets) =>
+        Effect.gen(function* () {
+          const deleted: PolarEnvironment[] = []
+          for (const environment of targets) {
+            if (yield* locks[environment].withPermit(store.delete(environment)))
+              deleted.push(environment)
+          }
+          const selection = yield* config.getActiveOrganization
+          if (selection && targets.includes(selection.environment)) {
+            yield* config.setActiveOrganization(undefined)
+          }
+          return deleted
+        }),
     })
   })
 

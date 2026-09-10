@@ -1,13 +1,14 @@
 import { Flag } from 'effect/unstable/cli'
-import type { PolarEnvironment } from '@/schemas/Auth'
 
+export const sandbox = Flag.boolean('sandbox').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Use the sandbox environment'),
+)
 export const production = Flag.boolean('production').pipe(
   Flag.withDefault(false),
-  Flag.withDescription('Use production instead of sandbox'),
+  Flag.withDescription('Use the production environment'),
 )
 export const org = Flag.string('org').pipe(
   Flag.optional,
   Flag.withDescription('Organization ID for this invocation only'),
 )
-export const environmentOf = (production: boolean): PolarEnvironment =>
-  production ? 'production' : 'sandbox'

@@ -1,27 +1,28 @@
 import { homedir } from 'node:os'
 import { Context, Effect, FileSystem, Layer, Path, Schema } from 'effect'
-import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
+import { AuthError, OrganizationSelection } from '@/schemas/Auth'
 
-const EnvironmentConfig = Schema.Struct({
-  activeOrganizationId: Schema.optional(Schema.String),
-})
 const ConfigFile = Schema.Struct({
-  sandbox: Schema.optional(EnvironmentConfig),
-  production: Schema.optional(EnvironmentConfig),
+  activeOrganization: Schema.optional(OrganizationSelection),
 })
 
 export class CLIConfig extends Context.Service<
   CLIConfig,
   {
-    getActiveOrganization: (
-      environment: PolarEnvironment,
-    ) => Effect.Effect<string | undefined, AuthError>
+    getActiveOrganization: Effect.Effect<
+      OrganizationSelection | undefined,
+      AuthError
+    >
     setActiveOrganization: (
-      environment: PolarEnvironment,
-      id: string | undefined,
+      selection: OrganizationSelection | undefined,
     ) => Effect.Effect<void, AuthError>
   }
 >()('CLIConfig') {}
+
+const sameSelection = (
+  a: OrganizationSelection | undefined,
+  b: OrganizationSelection | undefined,
+) => a?.id === b?.id && a?.environment === b?.environment
 
 export const layer = Layer.effect(
   CLIConfig,
@@ -60,26 +61,23 @@ export const layer = Layer.effect(
       )
     })
     return CLIConfig.of({
-      getActiveOrganization: (environment) =>
+      getActiveOrganization: Effect.map(
+        read,
+        (config) => config?.activeOrganization,
+      ),
+      setActiveOrganization: (selection) =>
         Effect.gen(function* () {
           const config = yield* read
-          return config?.[environment]?.activeOrganizationId
-        }),
-      setActiveOrganization: (environment, id) =>
-        Effect.gen(function* () {
-          const config = yield* read
-          if (config?.[environment]?.activeOrganizationId === id) return
-          const updated = {
-            ...config,
-            [environment]: {
-              ...config?.[environment],
-              activeOrganizationId: id,
-            },
-          }
+          if (
+            config?.activeOrganization !== undefined &&
+            sameSelection(config.activeOrganization, selection)
+          )
+            return
+          if (config === undefined && selection === undefined) return
           yield* fs.makeDirectory(directory, { recursive: true })
           yield* fs.writeFileString(
             file,
-            `${JSON.stringify(updated, null, 2)}\n`,
+            `${JSON.stringify({ activeOrganization: selection }, null, 2)}\n`,
           )
         }).pipe(
           Effect.mapError((error) =>

@@ -29038,6 +29038,12 @@ export interface components {
        * @default false
        */
       merchant_migration_enabled: boolean
+      /**
+       * Frame Ancestors Enforced
+       * @description If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
+       * @default false
+       */
+      frame_ancestors_enforced: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate

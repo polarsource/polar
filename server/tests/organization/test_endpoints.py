@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.auth.scope import READ_ONLY_SCOPES, Scope
 from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
 from polar.models import OrganizationSSOConnection, Product, User
@@ -1752,3 +1753,144 @@ class TestUpdateSSOEnforced:
 
         assert response.status_code == 200
         assert response.json()["sso_enforced"] is False
+
+
+@pytest.mark.asyncio
+class TestGetOrderInvoice:
+    """Authorization for GET /organizations/{id}/orders/{order_id}/invoice.
+
+    The invoice PDF embeds admin-only billing PII (billing_name,
+    billing_address, tax_id) — the same fields ``get_billing_details`` gates
+    with ``AuthorizeOrgManageUserRead``. This endpoint must match that gate so
+    the invoice PDF is not an alternate path to admin-only billing data.
+    """
+
+    async def test_anonymous_returns_401(self, client: AsyncClient) -> None:
+        response = await client.get(
+            f"/v1/organizations/{uuid.uuid4()}/orders/order_123/invoice"
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_non_member_returns_404(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/orders/order_123/invoice"
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_member_returns_403(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        """A member-role user must not reach the invoice PDF (admin-only billing PII)."""
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+
+        invoice_url_mock = mocker.patch(
+            "polar.organization.endpoints.polar_self_service.get_order_invoice_url",
+            return_value="https://example.com/inv.pdf",
+        )
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/orders/order_123/invoice"
+        )
+
+        assert response.status_code == 403
+        assert (
+            response.json()["detail"]
+            == "You don't have permission to manage the organization"
+        )
+        invoice_url_mock.assert_not_awaited()
+
+    @pytest.mark.auth
+    async def test_admin_returns_200(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        invoice_url_mock = mocker.patch(
+            "polar.organization.endpoints.polar_self_service.get_order_invoice_url",
+            return_value="https://example.com/inv.pdf",
+        )
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/orders/order_123/invoice"
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"url": "https://example.com/inv.pdf"}
+        invoice_url_mock.assert_awaited_once_with(organization.id, "order_123")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user", scopes={Scope.organizations_read})
+    )
+    async def test_member_oauth_read_only_scope_returns_403(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        """A member-role OAuth2 token with only organizations:read is blocked.
+
+        This mirrors the third-party OAuth2 exploit scenario: a member grants
+        a third-party app the read-only organizations:read scope. The role
+        policy (not the scope) must deny access to the invoice PDF.
+        """
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+
+        invoice_url_mock = mocker.patch(
+            "polar.organization.endpoints.polar_self_service.get_order_invoice_url",
+            return_value="https://example.com/inv.pdf",
+        )
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/orders/order_123/invoice"
+        )
+
+        assert response.status_code == 403
+        invoice_url_mock.assert_not_awaited()
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_read_only_admin_returns_200(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        """A read-only admin session can still fetch the invoice (matches ``get_billing_details``)."""
+        mocker.patch(
+            "polar.organization.endpoints.polar_self_service.get_order_invoice_url",
+            return_value="https://example.com/inv.pdf",
+        )
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/orders/order_123/invoice"
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"url": "https://example.com/inv.pdf"}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_organization_token_returns_401(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        """An organization access token must not reach the invoice endpoint."""
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/orders/order_123/invoice"
+        )
+        assert response.status_code == 401

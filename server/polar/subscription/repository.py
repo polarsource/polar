@@ -39,6 +39,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import (
+    BenefitGrant,
     Customer,
     CustomerSeat,
     Discount,
@@ -551,6 +552,46 @@ class SubscriptionRepository(
             .options(*options)
         )
         return await self.get_all(statement)
+
+    async def get_grace_expired_past_due_ids(self, now: datetime) -> Sequence[UUID]:
+        """
+        Find past_due/unpaid subscriptions whose organization benefit revocation
+        grace period has expired but which still have at least one active grant,
+        so their benefits can be re-evaluated for revocation.
+        """
+        grace_period_days = Organization.subscription_settings[
+            "benefit_revocation_grace_period"
+        ].as_integer()
+
+        active_grant_exists = (
+            select(BenefitGrant.id)
+            .where(
+                BenefitGrant.subscription_id == Subscription.id,
+                BenefitGrant.granted_at.is_not(None),
+                BenefitGrant.revoked_at.is_(None),
+                BenefitGrant.deleted_at.is_(None),
+            )
+            .correlate(Subscription)
+            .exists()
+        )
+
+        statement = (
+            select(Subscription.id)
+            .join(Organization, Organization.id == Subscription.organization_id)
+            .where(
+                Subscription.status.in_(
+                    [SubscriptionStatus.past_due, SubscriptionStatus.unpaid]
+                ),
+                Subscription.past_due_at.is_not(None),
+                grace_period_days > 0,
+                Subscription.past_due_at + grace_period_days * timedelta(days=1)
+                <= sa.literal(now, sa.TIMESTAMP(timezone=True)),
+                active_grant_exists,
+                ~Subscription.is_deleted,
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
 
     def get_sorting_clause(self, property: SubscriptionSortProperty) -> SortingClause:
         match property:

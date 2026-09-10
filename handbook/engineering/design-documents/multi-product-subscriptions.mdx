@@ -79,6 +79,12 @@ The unit count of a line whose price is unit-based.
 The add-on equivalence of `SubscriptionUpdate`, to carry any pending changes to the add-on
 products associated with the subscription.
 
+#### New models `CheckoutLinkAddOn` & `CheckoutAddOn`
+
+We'll need these to model specific add-on configurations made for checkout links and
+actual checkouts. The former is decided by the merchant, the latter by the customer.
+Basically we'll mirror `CheckoutLinkProduct` and `CheckoutProduct`.
+
 ### Benefits
 
 - A subscription grants the union of its primary product's benefits and those of its add-ons, and

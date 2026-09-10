@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 from urllib.parse import parse_qs, unquote, urlparse
 
 from annotated_types import Ge
-from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn, model_validator
+from pydantic import AfterValidator, DirectoryPath, Field, model_validator
 from pydantic_ai.models import Model, infer_model, parse_model_id
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -709,16 +709,14 @@ class Settings(BaseSettings):
         fallback_port: int | None,
     ) -> str:
         if fallback_host is None:
-            return str(
-                PostgresDsn.build(
-                    scheme=f"postgresql+{driver}",
-                    username=username,
-                    password=password,
-                    host=host,
-                    port=port,
-                    path=database,
-                )
-            )
+            return URL.create(
+                f"postgresql+{driver}",
+                username=username,
+                password=password,
+                host=host,
+                port=port,
+                database=database,
+            ).render_as_string(hide_password=False)
         return URL.create(
             f"postgresql+{driver}",
             username=username,

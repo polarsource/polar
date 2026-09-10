@@ -43,6 +43,31 @@ class TestBuildPostgresDsn:
 
         assert dsn == "postgresql+asyncpg://polar:s3cret@primary.example.com:6432/polar"
 
+    @pytest.mark.parametrize(
+        "password",
+        ["abc/123XYZ", "p@ss/w0rd"],
+    )
+    @pytest.mark.parametrize("driver", ["asyncpg", "psycopg2"])
+    def test_no_fallback_password_with_reserved_chars(
+        self, driver: Literal["asyncpg", "psycopg2"], password: str
+    ) -> None:
+        dsn = settings._build_postgres_dsn(
+            driver,
+            username="polar",
+            password=password,
+            host="primary.example.com",
+            port=6432,
+            database="polar",
+            fallback_host=None,
+            fallback_port=None,
+        )
+        connect_args = get_connect_args(dsn)
+
+        assert connect_args["password"] == password
+        assert connect_args["host"] == "primary.example.com"
+        database_key = "database" if driver == "asyncpg" else "dbname"
+        assert connect_args[database_key] == "polar"
+
     def test_fallback_asyncpg(self) -> None:
         connect_args = get_connect_args(build_dsn("asyncpg"))
 

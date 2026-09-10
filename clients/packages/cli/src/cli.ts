@@ -3,6 +3,7 @@ import { Cause, Effect, Layer, Runtime, Stdio } from 'effect'
 import { CliConfig, Command, GlobalFlag } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from '@/commands/listen'
+import { trigger } from '@/commands/trigger'
 import { auth } from '@/commands/auth'
 import { update } from '@/commands/update'
 import { describeError } from '@/utils/errors'
@@ -13,6 +14,7 @@ import * as Organizations from '@/services/organizations'
 import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
 import * as Telemetry from '@/services/telemetry'
+import * as Trigger from '@/services/trigger'
 import {
   checkForUpdateInBackground,
   showUpdateNotice,
@@ -21,7 +23,7 @@ import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
 const mainCommand = Command.make('polar').pipe(
-  Command.withSubcommands([auth, listen, update]),
+  Command.withSubcommands([auth, listen, trigger, update]),
 )
 
 const cli = Command.run(mainCommand, {
@@ -37,6 +39,9 @@ const polarLayer = Polar.layer.pipe(Layer.provide(authLayer))
 const organizationsLayer = Organizations.layer.pipe(
   Layer.provide(Layer.mergeAll(authLayer, polarLayer, configLayer)),
 )
+const triggerLayer = Trigger.layer.pipe(
+  Layer.provide(Layer.mergeAll(authLayer, FetchHttpClient.layer)),
+)
 const telemetryLayer = Telemetry.layer.pipe(
   Layer.provide(Layer.mergeAll(BunServices.layer, Telemetry.detachedSender)),
 )
@@ -44,6 +49,7 @@ const services = Layer.mergeAll(
   authLayer,
   polarLayer,
   organizationsLayer,
+  triggerLayer,
   telemetryLayer,
   BunServices.layer,
   FetchHttpClient.layer,

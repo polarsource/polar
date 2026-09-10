@@ -3,7 +3,8 @@ import { Console, Effect, Fiber, Redacted } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
-import { authenticatedStreamClient, startListening } from '@/commands/listen'
+import { startListening } from '@/commands/listen'
+import { authenticatedClient } from '@/services/api'
 import { captureConsole } from '@/utils/test-utils/cli'
 import { fakeAuth, overrideCredential } from '@/utils/test-utils/services'
 
@@ -107,6 +108,7 @@ describe('startListening', () => {
     await tick()
     const rawPayload = '{ "type": "order.created", "data": {} }'
     const headers = {
+      'x-polar-triggered': 'true',
       'user-agent': 'polar.sh webhooks',
       'content-type': 'application/json',
       'webhook-id': 'wh_1',
@@ -196,7 +198,7 @@ describe('startListening', () => {
   })
 })
 
-describe('authenticatedStreamClient', () => {
+describe('authenticatedClient', () => {
   let token: string
   let source: 'keyring' | 'override'
   let requests: string[]
@@ -226,7 +228,7 @@ describe('authenticatedStreamClient', () => {
   }
 
   const makeClient = (environment: PolarEnvironment) =>
-    authenticatedStreamClient(environment).pipe(
+    authenticatedClient(environment).pipe(
       Effect.provide(FetchHttpClient.layer),
       Effect.provideService(FetchHttpClient.Fetch, forward as typeof fetch),
     )

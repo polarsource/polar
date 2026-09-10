@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Literal
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -25,6 +26,12 @@ from polar.models import (
 )
 from polar.models.user_organization import OrganizationRole
 from polar.models.user_session_organization import UserSessionOrganization
+from polar.oauth2.authorization_server import (
+    AuthorizationServer,
+    IntrospectionEndpoint,
+    RevocationEndpoint,
+)
+from polar.oauth2.constants import ACCESS_TOKEN_PREFIX, REFRESH_TOKEN_PREFIX
 from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from polar.oauth2.sub_type import SubType
 from tests.fixtures.auth import AuthSubjectFixture
@@ -2335,3 +2342,376 @@ class TestOAuth2Token:
         response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 400
+
+
+async def _seed_token_pair(
+    save_fixture: SaveFixture, oauth2_client: OAuth2Client, user: User
+) -> tuple[str, str]:
+    access_token, _ = generate_token_hash_pair(
+        secret=settings.SECRET, prefix=ACCESS_TOKEN_PREFIX[SubType.user]
+    )
+    refresh_token, _ = generate_token_hash_pair(
+        secret=settings.SECRET, prefix=REFRESH_TOKEN_PREFIX[SubType.user]
+    )
+    await create_oauth2_token(
+        save_fixture,
+        client=oauth2_client,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        scopes=["openid", "profile", "email"],
+        user=user,
+    )
+    return access_token, refresh_token
+
+
+def _row_by_access_token(sync_session: Session, access_token: str) -> OAuth2Token:
+    return (
+        sync_session.execute(
+            select(OAuth2Token).where(
+                OAuth2Token.access_token
+                == get_token_hash(access_token, secret=settings.SECRET)
+            )
+        )
+        .unique()
+        .scalar_one()
+    )
+
+
+@pytest.mark.asyncio
+class TestOAuth2QueryToken:
+    @pytest.mark.parametrize(
+        ("token_kind", "token_type_hint"),
+        [
+            pytest.param("access_token", "access_token", id="access-correct-hint"),
+            pytest.param("access_token", "refresh_token", id="access-wrong-hint"),
+            pytest.param("access_token", None, id="access-no-hint"),
+            pytest.param("refresh_token", "refresh_token", id="refresh-correct-hint"),
+            pytest.param("refresh_token", "access_token", id="refresh-wrong-hint"),
+            pytest.param("refresh_token", None, id="refresh-no-hint"),
+        ],
+    )
+    async def test_finds_token_regardless_of_hint(
+        self,
+        token_kind: str,
+        token_type_hint: Literal["access_token", "refresh_token"] | None,
+        sync_session: Session,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        access_token, refresh_token = await _seed_token_pair(
+            save_fixture, oauth2_client, user
+        )
+        token_string = access_token if token_kind == "access_token" else refresh_token
+
+        endpoint = RevocationEndpoint(AuthorizationServer.build(sync_session))
+        token = endpoint.query_token(token_string, token_type_hint)
+
+        assert token is not None
+        assert token.refresh_token == get_token_hash(
+            refresh_token, secret=settings.SECRET
+        )
+
+    async def test_finds_organization_sub_type_refresh_token_with_wrong_hint(
+        self,
+        sync_session: Session,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+        organization: Organization,
+    ) -> None:
+        access_token, _ = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=ACCESS_TOKEN_PREFIX[SubType.organization]
+        )
+        refresh_token, _ = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=REFRESH_TOKEN_PREFIX[SubType.organization]
+        )
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            scopes=["openid"],
+            organization=organization,
+        )
+
+        endpoint = RevocationEndpoint(AuthorizationServer.build(sync_session))
+        token = endpoint.query_token(refresh_token, "access_token")
+
+        assert token is not None
+        assert token.refresh_token == get_token_hash(
+            refresh_token, secret=settings.SECRET
+        )
+
+    async def test_returns_none_for_unknown_token(
+        self,
+        sync_session: Session,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        fake_refresh_token, _ = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=REFRESH_TOKEN_PREFIX[SubType.user]
+        )
+
+        endpoint = RevocationEndpoint(AuthorizationServer.build(sync_session))
+        token = endpoint.query_token(fake_refresh_token, "refresh_token")
+
+        assert token is None
+
+    async def test_revocation_and_introspection_share_query_token(self) -> None:
+        assert RevocationEndpoint.query_token is IntrospectionEndpoint.query_token
+
+
+@pytest.mark.asyncio
+class TestOAuth2Revoke:
+    @pytest.mark.parametrize(
+        "token_type_hint",
+        [
+            pytest.param("refresh_token", id="correct_hint"),
+            pytest.param("access_token", id="wrong_hint"),
+            pytest.param(None, id="no_hint"),
+        ],
+    )
+    async def test_revoke_refresh_token_sets_both_timestamps_and_kills_chain(
+        self,
+        token_type_hint: str | None,
+        client: AsyncClient,
+        sync_session: Session,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        access_token, refresh_token = await _seed_token_pair(
+            save_fixture, oauth2_client, user
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={
+                "token": refresh_token,
+                **({"token_type_hint": token_type_hint} if token_type_hint else {}),
+                "client_id": oauth2_client.client_id,
+                "client_secret": oauth2_client.client_secret,
+            },
+        )
+        assert response.status_code == 200
+
+        row = _row_by_access_token(sync_session, access_token)
+        assert row.access_token_revoked_at > 0
+        assert row.refresh_token_revoked_at > 0
+        assert row.is_revoked()
+
+        refresh_response = await client.post(
+            "/v1/oauth2/token",
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": oauth2_client.client_id,
+                "client_secret": oauth2_client.client_secret,
+            },
+        )
+        assert refresh_response.status_code == 400
+        assert refresh_response.json()["error"] == "invalid_grant"
+
+    @pytest.mark.parametrize(
+        "token_type_hint",
+        [
+            pytest.param("access_token", id="correct_hint"),
+            pytest.param("refresh_token", id="wrong_hint"),
+            pytest.param(None, id="no_hint"),
+        ],
+    )
+    async def test_revoke_access_token_sets_access_timestamp_only(
+        self,
+        token_type_hint: str | None,
+        client: AsyncClient,
+        sync_session: Session,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        access_token, refresh_token = await _seed_token_pair(
+            save_fixture, oauth2_client, user
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={
+                "token": access_token,
+                **({"token_type_hint": token_type_hint} if token_type_hint else {}),
+                "client_id": oauth2_client.client_id,
+                "client_secret": oauth2_client.client_secret,
+            },
+        )
+        assert response.status_code == 200
+
+        row = _row_by_access_token(sync_session, access_token)
+        assert row.access_token_revoked_at > 0
+        assert row.refresh_token_revoked_at == 0
+
+    async def test_revoke_unknown_token_returns_200(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        fake_refresh_token, _ = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=REFRESH_TOKEN_PREFIX[SubType.user]
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={
+                "token": fake_refresh_token,
+                "token_type_hint": "refresh_token",
+                "client_id": oauth2_client.client_id,
+                "client_secret": oauth2_client.client_secret,
+            },
+        )
+
+        assert response.status_code == 200
+
+    async def test_revoke_requires_client_authentication(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        _, refresh_token = await _seed_token_pair(save_fixture, oauth2_client, user)
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={"token": refresh_token, "client_id": oauth2_client.client_id},
+        )
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestOAuth2Introspect:
+    @pytest.mark.parametrize(
+        "token_type_hint",
+        [
+            pytest.param("access_token", id="correct_hint"),
+            pytest.param("refresh_token", id="wrong_hint"),
+            pytest.param(None, id="no_hint"),
+        ],
+    )
+    async def test_introspect_access_token_active_regardless_of_hint(
+        self,
+        token_type_hint: str | None,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        access_token, _ = await _seed_token_pair(save_fixture, oauth2_client, user)
+
+        response = await client.post(
+            "/v1/oauth2/introspect",
+            data={
+                "token": access_token,
+                **({"token_type_hint": token_type_hint} if token_type_hint else {}),
+                "client_id": oauth2_client.client_id,
+                "client_secret": oauth2_client.client_secret,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["active"] is True
+        assert response.json()["client_id"] == oauth2_client.client_id
+
+    @pytest.mark.parametrize(
+        "token_type_hint",
+        [
+            pytest.param("refresh_token", id="correct_hint"),
+            pytest.param("access_token", id="wrong_hint"),
+            pytest.param(None, id="no_hint"),
+        ],
+    )
+    async def test_introspect_refresh_token_active_regardless_of_hint(
+        self,
+        token_type_hint: str | None,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        _, refresh_token = await _seed_token_pair(save_fixture, oauth2_client, user)
+
+        response = await client.post(
+            "/v1/oauth2/introspect",
+            data={
+                "token": refresh_token,
+                **({"token_type_hint": token_type_hint} if token_type_hint else {}),
+                "client_id": oauth2_client.client_id,
+                "client_secret": oauth2_client.client_secret,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["active"] is True
+
+    async def test_introspect_revoked_token_is_inactive(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        access_token, _ = await _seed_token_pair(save_fixture, oauth2_client, user)
+
+        revoke_response = await client.post(
+            "/v1/oauth2/revoke",
+            data={
+                "token": access_token,
+                "token_type_hint": "refresh_token",
+                "client_id": oauth2_client.client_id,
+                "client_secret": oauth2_client.client_secret,
+            },
+        )
+        assert revoke_response.status_code == 200
+
+        response = await client.post(
+            "/v1/oauth2/introspect",
+            data={
+                "token": access_token,
+                "client_id": oauth2_client.client_id,
+                "client_secret": oauth2_client.client_secret,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["active"] is False
+
+    async def test_introspect_unknown_token_is_inactive(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        fake_access_token, _ = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=ACCESS_TOKEN_PREFIX[SubType.user]
+        )
+
+        response = await client.post(
+            "/v1/oauth2/introspect",
+            data={
+                "token": fake_access_token,
+                "client_id": oauth2_client.client_id,
+                "client_secret": oauth2_client.client_secret,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["active"] is False
+
+    async def test_introspect_requires_client_authentication(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        access_token, _ = await _seed_token_pair(save_fixture, oauth2_client, user)
+
+        response = await client.post(
+            "/v1/oauth2/introspect",
+            data={"token": access_token, "client_id": oauth2_client.client_id},
+        )
+
+        assert response.status_code == 401

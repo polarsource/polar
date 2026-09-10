@@ -41,6 +41,8 @@ from .constants import (
     CLIENT_SECRET_PREFIX,
     ISSUER,
     REFRESH_TOKEN_PREFIX,
+    is_access_token_prefix,
+    is_refresh_token_prefix,
 )
 from .grants import AuthorizationCodeGrant, CodeChallenge, register_grants
 from .metadata import get_server_metadata
@@ -261,13 +263,16 @@ class _QueryTokenMixin:
         token_type_hint: typing.Literal["access_token", "refresh_token"] | None,
     ) -> OAuth2Token | None:
         token_hash = get_token_hash(token_string, secret=settings.SECRET)
-        statement = select(OAuth2Token)
-        if token_type_hint == "access_token":
-            statement = statement.where(OAuth2Token.access_token == token_hash)
-        elif token_type_hint == "refresh_token":
-            statement = statement.where(OAuth2Token.refresh_token == token_hash)
+        if is_refresh_token_prefix(token_string):
+            statement = select(OAuth2Token).where(
+                OAuth2Token.refresh_token == token_hash
+            )
+        elif is_access_token_prefix(token_string):
+            statement = select(OAuth2Token).where(
+                OAuth2Token.access_token == token_hash
+            )
         else:
-            statement = statement.where(
+            statement = select(OAuth2Token).where(
                 or_(
                     OAuth2Token.access_token == token_hash,
                     OAuth2Token.refresh_token == token_hash,
@@ -283,9 +288,9 @@ class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
 
     def revoke_token(self, token: OAuth2Token, request: StarletteOAuth2Request) -> None:
         now = int(time.time())
-        hint = request.form.get("token_type_hint")
+        token_string = request.form.get("token", "")
         token.access_token_revoked_at = now  # pyright: ignore
-        if hint != "access_token":
+        if is_refresh_token_prefix(token_string):
             token.refresh_token_revoked_at = now  # pyright: ignore
         self.server.session.add(token)
         self.server.session.flush()

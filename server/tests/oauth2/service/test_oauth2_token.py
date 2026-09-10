@@ -517,3 +517,53 @@ class TestRevokeForSSOEnforcement:
         await session.refresh(token)
         assert token.access_token_revoked_at == 1
         assert token.refresh_token_revoked_at == 1
+
+
+@pytest.mark.asyncio
+class TestRevokedTokenReaperEligibility:
+    async def test_fully_revoked_expired_row_is_reaped(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        expired = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_fully_revoked",
+            refresh_token="polar_rt_u_fully_revoked",
+            scopes=["openid"],
+            user=user,
+            issued_at=int(time.time()) - 7200,
+            expires_in=3600,
+            access_token_revoked_at=int(time.time()) - 7200,
+            refresh_token_revoked_at=int(time.time()) - 7200,
+        )
+
+        await oauth2_token_service.delete_expired(session)
+
+        assert await session.get(OAuth2Token, expired.id) is None
+
+    async def test_access_only_revoked_expired_row_not_reaped(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        expired = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_access_only",
+            refresh_token="polar_rt_u_access_only",
+            scopes=["openid"],
+            user=user,
+            issued_at=int(time.time()) - 7200,
+            expires_in=3600,
+            access_token_revoked_at=int(time.time()) - 7200,
+        )
+
+        await oauth2_token_service.delete_expired(session)
+
+        assert await session.get(OAuth2Token, expired.id) is not None

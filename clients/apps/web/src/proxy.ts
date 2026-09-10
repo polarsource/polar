@@ -8,6 +8,7 @@ import {
   DISTINCT_ID_COOKIE,
   DISTINCT_ID_HEADER,
 } from './experiments/constants'
+import { checkoutCSP } from './csp.mjs'
 import { getServerURL } from './utils/api'
 import { createServerSideAPI } from './utils/client'
 import { CONFIG } from './utils/config'
@@ -97,11 +98,11 @@ const requiresAuthentication = (request: NextRequest): boolean => {
 const CHECKOUT_CLIENT_SECRET = /^\/checkout\/([^/]+)/
 const NO_FRAME_ANCESTORS = ["'none'"]
 
+const FRAMING_DESTINATIONS = ['iframe', 'frame', 'object', 'embed']
+
 const isFramed = (request: NextRequest): boolean => {
   const destination = request.headers.get('Sec-Fetch-Dest')
-  return (
-    destination === null || destination === 'iframe' || destination === 'frame'
-  )
+  return destination === null || FRAMING_DESTINATIONS.includes(destination)
 }
 
 const getFrameAncestors = async (
@@ -328,16 +329,22 @@ export async function proxy(request: NextRequest) {
     )
   }
 
-  const checkout = request.nextUrl.pathname.match(CHECKOUT_CLIENT_SECRET)
-  if (checkout && isFramed(request)) {
-    await getFrameAncestors(request, checkout[1])
-  }
-
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },
   })
+
+  const checkout = request.nextUrl.pathname.match(CHECKOUT_CLIENT_SECRET)
+  if (checkout) {
+    const frameAncestors = isFramed(request)
+      ? await getFrameAncestors(request, checkout[1])
+      : NO_FRAME_ANCESTORS
+    response.headers.set(
+      'Content-Security-Policy',
+      checkoutCSP(frameAncestors.join(' ')),
+    )
+  }
 
   if (isNewDistinctId) {
     response.cookies.set(DISTINCT_ID_COOKIE, distinctId, {

@@ -1,0 +1,72 @@
+server/polar/meter/endpoints.py
+  s_7f8a341d1e843c::t_9c835a8fbdb25d 31
+  s_7f8a341d1e843c::t_299c4c29de3e44 30,32
+server/polar/openapi.py
+  s_7f8a341d1e843c::t_1f8fe31823fa6f 44-45,64-69
+  ai_agent 70
+server/polar/customer_meter/endpoints.py
+  s_7f8a341d1e843c::t_6cacd5103c1271 21
+server/polar/refund/endpoints.py
+  s_7f8a341d1e843c::t_fb393101bc810a 21,23
+  s_7f8a341d1e843c::t_05ec586e7f508b 22
+server/polar/license_key/endpoints.py
+  s_7f8a341d1e843c::t_f49a2ff7136260 54,97,120,148,180
+server/polar/metrics/endpoints.py
+  s_7f8a341d1e843c::t_edcb72363eabf1 56
+server/polar/event_type/endpoints.py
+  s_7f8a341d1e843c::t_78e7177fc02da7 83
+server/polar/customer/endpoints.py
+  s_7f8a341d1e843c::t_5d08b5e0f46adc 73,264,285,306,336,380,410,441,457,485,513,565
+server/polar/benefit/grant/endpoints.py
+  s_7f8a341d1e843c::t_12437b484b083d 17-18
+  s_7f8a341d1e843c::t_0ca20b279393ec 16,19
+server/polar/custom_field/endpoints.py
+  s_7f8a341d1e843c::t_fd00cd045b1184 26,29
+  s_7f8a341d1e843c::t_12437b484b083d 27-28
+server/polar/payment/endpoints.py
+  s_7f8a341d1e843c::t_028df63e3ceef0 21
+  s_7f8a341d1e843c::t_54e0ad6477953b 20,22
+server/polar/webhook/endpoints.py
+  s_7f8a341d1e843c::t_c05264ce6ad43c 29,31
+  s_7f8a341d1e843c::t_97e8f26cf6829d 30
+server/polar/member/endpoints.py
+  s_7f8a341d1e843c::t_5fdcb281a9d9a4 38
+server/polar/order/endpoints.py
+  s_7f8a341d1e843c::t_f60d195b6d55d8 97,238,286,350,386,408
+server/polar/discount/endpoints.py
+  s_7f8a341d1e843c::t_a3c8563f4e8fa8 25
+  s_7f8a341d1e843c::t_73b3555a200dff 24,26
+server/polar/product/endpoints.py
+  s_7f8a341d1e843c::t_feaadb2983cd1a 32
+server/polar/checkout_link/endpoints.py
+  s_7f8a341d1e843c::t_12437b484b083d 29-30
+  s_7f8a341d1e843c::t_d14b1989e871ea 28,31
+server/polar/benefit/endpoints.py
+  s_7f8a341d1e843c::t_4c108f72242ab9 38,40
+  s_7f8a341d1e843c::t_fdccff5201b73a 39
+server/polar/checkout/endpoints.py
+  s_7f8a341d1e843c::t_a0942c2a8379b1 100,152
+  s_7f8a341d1e843c::t_aaf0954d0c1fa9 97-99
+server/polar/subscription/endpoints.py
+  s_7f8a341d1e843c::t_080205bf6614ac 73,232,407,470
+server/polar/event/endpoints.py
+  s_7f8a341d1e843c::t_3d51eccddae5b7 518-521,565
+server/polar/file/endpoints.py
+  s_7f8a341d1e843c::t_c9d6e7bcaf6338 214
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "93b6f61e19df65fdc8b6b3ab429fcb3b6904152b",
+  "prompts": {},
+  "sessions": {
+    "s_7f8a341d1e843c": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a08a60-e172-709d-b095-1cea89cf389b",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

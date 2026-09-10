@@ -545,11 +545,3 @@ resource "tfe_variable" "grafana_cloud_aws_external_id_test" {
   description     = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
   variable_set_id = tfe_variable_set.test.id
 }
-
-resource "tfe_variable" "merchant_migration_destination_stripe_account_id_test" {
-  key             = "merchant_migration_destination_stripe_account_id"
-  category        = "terraform"
-  description     = "Stripe account ID merchants copy or import saved cards into for test"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.test.id
-}

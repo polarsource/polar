@@ -117,6 +117,11 @@ async def update_member(
         if e.status_code == 404 and can_retry():
             raise Retry(delay=1000) from e
         if e.status_code == 404:
+            customer = await client.get_customer_by_external_id_or_none(
+                external_customer_id
+            )
+            if customer is None:
+                raise
             return
         raise
 

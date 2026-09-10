@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from dramatiq import Retry
+from polar.base import PolarServerError
 from polar.v2026_04.errors import ResourceNotFound
 from polar.v2026_04.outputs import ResourceNotFound as ResourceNotFoundData
 from pytest_mock import MockerFixture
@@ -328,7 +329,7 @@ class TestUpdateMember:
 
         client.update_member.assert_not_called()
 
-    async def test_noops_when_member_never_appears(
+    async def test_noops_when_customer_exists_but_member_is_gone(
         self,
         mocker: MockerFixture,
     ) -> None:
@@ -336,6 +337,9 @@ class TestUpdateMember:
         client.get_member_by_external_id.side_effect = ResourceNotFound(
             404,
             ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
+        )
+        client.get_customer_by_external_id_or_none.return_value = MagicMock(
+            id="polar-customer-123"
         )
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
         mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=False)
@@ -347,6 +351,59 @@ class TestUpdateMember:
             role="billing_manager",
         )
 
+        client.get_customer_by_external_id_or_none.assert_called_once_with("org-123")
+        client.update_member.assert_not_called()
+
+    async def test_raises_when_customer_not_yet_created_and_retries_exhausted(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        not_found = ResourceNotFound(
+            404,
+            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
+        )
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_member_by_external_id.side_effect = not_found
+        client.get_customer_by_external_id_or_none.return_value = None
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+        mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=False)
+
+        with pytest.raises(ResourceNotFound):
+            await update_member(
+                external_customer_id="org-123",
+                external_id="user-123",
+                name="Updated Name",
+                role="billing_manager",
+            )
+
+        client.get_customer_by_external_id_or_none.assert_called_once_with("org-123")
+        client.update_member.assert_not_called()
+
+    async def test_propagates_error_when_customer_lookup_fails_on_exhausted_404(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        not_found = ResourceNotFound(
+            404,
+            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
+        )
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_member_by_external_id.side_effect = not_found
+        client.get_customer_by_external_id_or_none.side_effect = PolarServerError(
+            503, "Service Unavailable"
+        )
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+        mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=False)
+
+        with pytest.raises(PolarServerError):
+            await update_member(
+                external_customer_id="org-123",
+                external_id="user-123",
+                name="Updated Name",
+                role="billing_manager",
+            )
+
+        client.get_customer_by_external_id_or_none.assert_called_once_with("org-123")
         client.update_member.assert_not_called()
 
 

@@ -199,7 +199,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan, openapi_url=None)
 
-    app.add_middleware(OperationalErrorMiddleware)
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
     if not settings.is_development() and not settings.is_testing():
@@ -211,6 +210,12 @@ def create_app() -> FastAPI:
         app.add_middleware(AuthSubjectMiddleware, redis=rate_limit_redis)
         app.add_middleware(TransactionalMiddleware)
         app.add_middleware(rate_limit.get_middleware, redis=rate_limit_redis)
+
+    # Must be outer to the DB-issuing middleware below it: AuthSubjectMiddleware
+    # resolves the auth subject via DB lookups *before* delegating to the inner
+    # app, so an operational DB error there only gets classified if this wraps
+    # it. Starlette resolves "last added = outermost".
+    app.add_middleware(OperationalErrorMiddleware)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     if settings.is_vercel():
         # The app origin mounts the API at /api (api.* hosts serve it

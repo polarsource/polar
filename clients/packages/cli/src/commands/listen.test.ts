@@ -107,6 +107,7 @@ describe('startListening', () => {
     await tick()
     const rawPayload = '{ "type": "order.created", "data": {} }'
     const headers = {
+      'x-polar-triggered': 'true',
       'user-agent': 'polar.sh webhooks',
       'content-type': 'application/json',
       'webhook-id': 'wh_1',

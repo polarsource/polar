@@ -15,6 +15,7 @@ import {
   HttpClientResponse,
 } from 'effect/unstable/http'
 import open from 'open'
+import { apiUrl } from '@/services/api'
 import {
   AuthError,
   loginCommand,
@@ -29,9 +30,6 @@ const PRODUCTION_CLIENT_ID = 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA'
 
 const SANDBOX_AUTHORIZATION_URL = 'https://sandbox.polar.sh/oauth2/authorize'
 const PRODUCTION_AUTHORIZATION_URL = 'https://polar.sh/oauth2/authorize'
-
-const SANDBOX_TOKEN_URL = 'https://sandbox-api.polar.sh/v1/oauth2/token'
-const PRODUCTION_TOKEN_URL = 'https://api.polar.sh/v1/oauth2/token'
 
 const config = {
   scopes: [
@@ -131,7 +129,7 @@ export const exchange = (
     )
     const client = HttpClient.withScope(yield* HttpClient.HttpClient)
     const request = HttpClientRequest.post(
-      environment === 'production' ? PRODUCTION_TOKEN_URL : SANDBOX_TOKEN_URL,
+      yield* apiUrl(environment, '/oauth2/token'),
     ).pipe(HttpClientRequest.bodyUrlParams(params))
     const response = yield* client.execute(request).pipe(
       Effect.mapError(

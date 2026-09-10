@@ -37,15 +37,6 @@ export class ListenError extends Data.TaggedError('ListenError')<{
 
 const EVENT_TYPE_WIDTH = 28
 
-const forwardedHeaders = (
-  headers: Record<string, string | undefined>,
-): Record<string, string> =>
-  Object.fromEntries(
-    Object.entries(headers).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined,
-    ),
-  )
-
 const printError = (line: string) =>
   Effect.sync(() => {
     process.stderr.write(`${line}\n`)
@@ -223,7 +214,7 @@ export const startListening = ({
               yield* Effect.tryPromise((signal) =>
                 forward(forwardUrl, {
                   method: 'POST',
-                  headers: forwardedHeaders(webhook.value.headers),
+                  headers: webhook.value.headers,
                   body: rawPayload,
                   signal,
                 }),
@@ -315,8 +306,12 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
       Option.getOrUndefined(org),
     )
     const { environment } = organization
+    const listenUrl = yield* apiUrl(
+      environment,
+      `/cli/listen/${organization.id}`,
+    )
     return yield* startListening({
-      listenUrl: apiUrl(environment, `/cli/listen/${organization.id}`),
+      listenUrl,
       forwardUrl: url,
       organizationName: organization.name,
       environment,

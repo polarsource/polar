@@ -22,9 +22,10 @@ export const make = Effect.gen(function* () {
   const getClient = (environment: PolarEnvironment = 'sandbox') =>
     Effect.gen(function* () {
       const { accessToken } = yield* auth.resolve(environment)
+      const baseUrl = yield* apiOrigin(environment)
       return createPolar({
         environment,
-        baseUrl: apiOrigin(environment),
+        baseUrl,
         accessToken: Redacted.value(accessToken),
       })
     })
@@ -35,13 +36,14 @@ export const make = Effect.gen(function* () {
   ) =>
     Effect.gen(function* () {
       const credential = yield* auth.resolve(environment)
+      const baseUrl = yield* apiOrigin(environment)
       const request = (accessToken: Redacted.Redacted<string>) =>
         Effect.tryPromise({
           try: () =>
             fn(
               createPolar({
                 environment,
-                baseUrl: apiOrigin(environment),
+                baseUrl,
                 accessToken: Redacted.value(accessToken),
               }),
             ),

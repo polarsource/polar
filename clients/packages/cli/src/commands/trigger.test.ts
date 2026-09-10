@@ -3,6 +3,7 @@ import { Effect } from 'effect'
 import {
   describeValidationDetail,
   parseOverride,
+  parseOverrides,
   trigger as triggerCommand,
 } from '@/commands/trigger'
 import type { ActiveOrganization } from '@/schemas/Auth'
@@ -65,15 +66,22 @@ beforeEach(() => {
 
 describe('parseOverride', () => {
   test.each([
-    ['data.amount=2000', ['data.amount', 2000]],
+    ['data.amount=2000', ['data.amount', '2000']],
+    [
+      'data.customer.billing_address.postal_code=90210',
+      ['data.customer.billing_address.postal_code', '90210'],
+    ],
     [
       'data.customer.email=jane@example.com',
       ['data.customer.email', 'jane@example.com'],
     ],
     ['data.metadata.plan="pro"', ['data.metadata.plan', 'pro']],
-    ['data.paid=true', ['data.paid', true]],
+    ['data.paid=true', ['data.paid', 'true']],
     ['data.discount=null', ['data.discount', null]],
+    ['data.metadata={"plan":"pro"}', ['data.metadata', { plan: 'pro' }]],
+    ['data.items=[1]', ['data.items', [1]]],
     ['data.items.0.label=a=b', ['data.items.0.label', 'a=b']],
+    ['data.note={not json', ['data.note', '{not json']],
   ])('parses %s', async (input, expected) => {
     expect(await Effect.runPromise(parseOverride(input))).toEqual(expected)
   })
@@ -84,6 +92,15 @@ describe('parseOverride', () => {
     )
     expect(error._tag).toBe('TriggerError')
     expect(error.hint).toContain('path=value')
+  })
+})
+
+describe('parseOverrides', () => {
+  test('rejects a path given twice', async () => {
+    const error = await Effect.runPromise(
+      parseOverrides(['data.amount=1', 'data.amount=2']).pipe(Effect.flip),
+    )
+    expect(error.message).toContain('more than once')
   })
 })
 
@@ -137,7 +154,7 @@ describe('trigger', () => {
       event: 'order.paid',
       overrides: {
         'data.customer.email': 'vip@example.com',
-        'data.subtotal_amount': 5000,
+        'data.subtotal_amount': '5000',
       },
       seed: 42,
       deliver: true,
@@ -197,7 +214,52 @@ describe('trigger', () => {
   test('explains when the event list cannot be loaded', async () => {
     const { promise } = run(['--list'])
 
-    await expect(promise).rejects.toThrow('Could not load the list of events')
+    await expect(promise).rejects.toThrow('Could not reach the Polar API')
+  })
+
+  test('maps auth failures when loading the event list', async () => {
+    api.routes[`GET ${eventsUrl}`] = Response.json(
+      { error: 'NotPermitted', detail: 'Missing scope' },
+      { status: 403 },
+    )
+    const { promise } = run(['--list'])
+
+    await expect(promise).rejects.toThrow('You do not have access')
+  })
+
+  test('lists events for the organization environment', async () => {
+    api.routes['GET https://api.polar.sh/v1/cli/events'] = Response.json([
+      { type: 'order.paid', description: 'Sent when an order is paid.' },
+    ])
+    const { promise, output } = run(['--list', '--org', 'org-2'])
+    await promise
+
+    expect(output()).toContain('order.paid')
+  })
+
+  test.each([
+    [401, 'Authentication rejected for sandbox'],
+    [403, 'You do not have access to this organization'],
+    [404, 'could not be found in sandbox'],
+    [503, 'returned an error (503)'],
+  ])('maps a %d from the trigger request', async (status, message) => {
+    api.routes[`POST ${triggerUrl}`] = new Response(null, { status })
+    const { promise } = run(['order.created'])
+
+    await expect(promise).rejects.toThrow(message)
+  })
+
+  test('rejects duplicate overrides before resolving anything', async () => {
+    const { promise } = run([
+      'order.created',
+      '--override',
+      'data.amount=1',
+      '--override',
+      'data.amount=2',
+    ])
+
+    await expect(promise).rejects.toThrow('more than once')
+    expect(api.requests).toHaveLength(0)
   })
 
   test('requires an event name when not interactive', async () => {
@@ -240,10 +302,10 @@ describe('trigger', () => {
   })
 
   test('reports unexpected statuses', async () => {
-    api.routes[`POST ${triggerUrl}`] = new Response(null, { status: 500 })
+    api.routes[`POST ${triggerUrl}`] = new Response(null, { status: 418 })
     const { promise } = run(['order.created'])
 
-    await expect(promise).rejects.toThrow('unexpected status (500)')
+    await expect(promise).rejects.toThrow('unexpected status (418)')
   })
 
   test('reports network failures', async () => {

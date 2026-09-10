@@ -1,9 +1,8 @@
 import { Console, Data, Effect, Option, Schema, Stdio } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { HttpClientRequest, HttpClientResponse } from 'effect/unstable/http'
-import { loginCommand, type PolarEnvironment } from '@/schemas/Auth'
-import { apiUrl } from '@/services/api'
-import { Auth } from '@/services/auth'
+import type { PolarEnvironment } from '@/schemas/Auth'
+import { apiUrl, describeApiFailure } from '@/services/api'
 import { Organizations } from '@/services/organizations'
 import * as ui from '@/utils/ui'
 import { org } from '@/commands/flags'
@@ -27,11 +26,20 @@ const TriggerResponse = Schema.Struct({
 })
 
 const ErrorResponse = Schema.Struct({
-  error: Schema.String,
   detail: Schema.Unknown,
 })
 
-export type Override = readonly [path: string, value: unknown]
+type Override = readonly [path: string, value: unknown]
+
+const parseValue = (raw: string): unknown => {
+  if (raw === 'null') return null
+  if (!/^[[{"]/.test(raw)) return raw
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return raw
+  }
+}
 
 export const parseOverride = (
   input: string,
@@ -45,14 +53,26 @@ export const parseOverride = (
       }),
     )
   }
-  const path = input.slice(0, separator)
-  const raw = input.slice(separator + 1)
-  try {
-    return Effect.succeed([path, JSON.parse(raw)] as const)
-  } catch {
-    return Effect.succeed([path, raw] as const)
-  }
+  return Effect.succeed([
+    input.slice(0, separator),
+    parseValue(input.slice(separator + 1)),
+  ] as const)
 }
+
+export const parseOverrides = (inputs: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const entries = yield* Effect.forEach(inputs, parseOverride)
+    const seen = new Set<string>()
+    for (const [path] of entries) {
+      if (seen.has(path)) {
+        return yield* new TriggerError({
+          message: `Override "${path}" was given more than once`,
+        })
+      }
+      seen.add(path)
+    }
+    return Object.fromEntries(entries)
+  })
 
 export const describeValidationDetail = (detail: unknown) => {
   if (!Array.isArray(detail)) return String(detail)
@@ -66,6 +86,15 @@ export const describeValidationDetail = (detail: unknown) => {
     .join('\n    ')
 }
 
+type ApiClient = Effect.Success<ReturnType<typeof authenticatedStreamClient>>
+
+const apiFailure = (status: number, environment: PolarEnvironment) => {
+  const { message, hint } = describeApiFailure(status, environment)
+  return hint
+    ? new TriggerError({ message, hint })
+    : new TriggerError({ message })
+}
+
 const event = Argument.string('event').pipe(
   Argument.withDescription(
     'Webhook event to send, e.g. order.created. Omit to pick from a list.',
@@ -74,7 +103,9 @@ const event = Argument.string('event').pipe(
 )
 
 const override = Flag.string('override').pipe(
-  Flag.withDescription('Override a payload field, as path=value. Repeatable.'),
+  Flag.withDescription(
+    'Override a payload field, as path=value. Values are sent as text; use null, a JSON object, array or quoted string for other types. Repeatable.',
+  ),
   Flag.atLeast(0),
 )
 
@@ -93,68 +124,52 @@ const list = Flag.boolean('list').pipe(
   Flag.withDescription('List every event you can trigger, with descriptions'),
 )
 
-const fetchEvents = (environment: PolarEnvironment) =>
+const interactive = Effect.gen(function* () {
+  const stdio = yield* Stdio.Stdio
+  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
+})
+
+const fetchEvents = (client: ApiClient, environment: PolarEnvironment) =>
   Effect.gen(function* () {
-    const client = yield* authenticatedStreamClient(environment)
     const response = yield* client.execute(
-      HttpClientRequest.get(apiUrl(environment, '/cli/events')),
+      HttpClientRequest.get(yield* apiUrl(environment, '/cli/events')),
     )
+    if (response.status !== 200) {
+      return yield* apiFailure(response.status, environment)
+    }
     return yield* HttpClientResponse.schemaBodyJson(Schema.Array(TriggerEvent))(
       response,
     )
-  }).pipe(
-    Effect.catchTags({
-      HttpClientError: (error) =>
-        new TriggerError({
-          message: 'Could not load the list of events',
-          hint: error.message,
-        }),
-      SchemaError: () =>
-        new TriggerError({ message: 'Unexpected response from the API' }),
-    }),
-  )
+  })
 
-const printEvents = Effect.gen(function* () {
-  const auth = yield* Auth
-  const [environment] = yield* auth.environments
-  if (environment === undefined) {
-    return yield* new TriggerError({
-      message: 'Not logged in to Polar',
-      hint: `Run ${ui.command(loginCommand('sandbox'))} first`,
-    })
-  }
-  const events = yield* fetchEvents(environment)
-  const width = Math.max(0, ...events.map((event) => event.type.length))
-  let resource = ''
-  yield* Console.log(ui.blank)
-  for (const event of events) {
-    const [eventResource = event.type] = event.type.split('.')
-    if (eventResource !== resource) {
-      if (resource) yield* Console.log(ui.blank)
-      resource = eventResource
-      yield* Console.log(`  ${ui.bold(resource)}`)
-    }
-    yield* Console.log(
-      `    ${ui.cyan(event.type.padEnd(width))}  ${ui.dim(event.description)}`,
-    )
-  }
-  yield* Console.log(ui.blank)
-  yield* Console.log(
-    ui.step(`Send one with ${ui.command('polar trigger <event>')}`),
-  )
-  yield* Console.log(ui.blank)
-})
-
-const selectEvent = (environment: PolarEnvironment) =>
+const printEvents = (client: ApiClient, environment: PolarEnvironment) =>
   Effect.gen(function* () {
-    const stdio = yield* Stdio.Stdio
-    if (!(yield* stdio.stdinIsTerminal) || !(yield* stdio.stdoutIsTerminal)) {
-      return yield* new TriggerError({
-        message: 'An event name is required when not running interactively',
-        hint: `Try ${ui.command('polar trigger order.created')} or ${ui.command('polar trigger --list')}`,
-      })
+    const events = yield* fetchEvents(client, environment)
+    const width = Math.max(0, ...events.map((event) => event.type.length))
+    const lines: string[] = [ui.blank]
+    let resource = ''
+    for (const event of events) {
+      const [eventResource = event.type] = event.type.split('.')
+      if (eventResource !== resource) {
+        if (resource) lines.push(ui.blank)
+        resource = eventResource
+        lines.push(`  ${ui.bold(resource)}`)
+      }
+      lines.push(
+        `    ${ui.cyan(event.type.padEnd(width))}  ${ui.dim(event.description)}`,
+      )
     }
-    const events = yield* fetchEvents(environment)
+    lines.push(
+      ui.blank,
+      ui.step(`Send one with ${ui.command('polar trigger <event>')}`),
+      ui.blank,
+    )
+    yield* Console.log(lines.join('\n'))
+  })
+
+const selectEvent = (client: ApiClient, environment: PolarEnvironment) =>
+  Effect.gen(function* () {
+    const events = yield* fetchEvents(client, environment)
     return yield* Prompt.autoComplete({
       message: 'Select an event to send',
       filterPlaceholder: 'Type to filter, e.g. order',
@@ -171,24 +186,30 @@ export const trigger = Command.make(
   { event, org, override, seed, json, list },
   ({ event, org, override, seed, json, list }) =>
     Effect.gen(function* () {
-      if (list) {
-        return yield* printEvents
+      const overrides = yield* parseOverrides(override)
+      if (!list && Option.isNone(event) && !(yield* interactive)) {
+        return yield* new TriggerError({
+          message: 'An event name is required when not running interactively',
+          hint: `Try ${ui.command('polar trigger order.created')} or ${ui.command('polar trigger --list')}`,
+        })
       }
+
       const organizations = yield* Organizations
       const organization = yield* organizations.resolve(
         Option.getOrUndefined(org),
       )
       const { environment } = organization
+      const client = yield* authenticatedStreamClient(environment)
+
+      if (list) {
+        return yield* printEvents(client, environment)
+      }
+
       const eventType = Option.isSome(event)
         ? event.value
-        : yield* selectEvent(environment)
-      const overrides = Object.fromEntries(
-        yield* Effect.forEach(override, parseOverride),
-      )
-
-      const client = yield* authenticatedStreamClient(environment)
+        : yield* selectEvent(client, environment)
       const request = yield* HttpClientRequest.post(
-        apiUrl(environment, `/cli/trigger/${organization.id}`),
+        yield* apiUrl(environment, `/cli/trigger/${organization.id}`),
       ).pipe(
         HttpClientRequest.bodyJson({
           event: eventType,
@@ -214,9 +235,7 @@ export const trigger = Command.make(
         })
       }
       if (response.status !== 200) {
-        return yield* new TriggerError({
-          message: `The API returned an unexpected status (${response.status})`,
-        })
+        return yield* apiFailure(response.status, environment)
       }
 
       const result =
@@ -225,19 +244,19 @@ export const trigger = Command.make(
         yield* Console.log(JSON.stringify(result.payload, null, 2))
         return
       }
-      yield* Console.log(ui.blank)
       yield* Console.log(
-        ui.success(
-          `Sent ${ui.cyan(result.event)} to ${ui.bold(organization.name)} ${ui.dim(`(${environment})`)}`,
-        ),
+        [
+          ui.blank,
+          ui.success(
+            `Sent ${ui.cyan(result.event)} to ${ui.bold(organization.name)} ${ui.dim(`(${environment})`)}`,
+          ),
+          ui.keyValue([
+            ['Event ID', ui.dim(result.webhook_event_id)],
+            ['Delivered to', `your ${ui.command('polar listen')} terminal`],
+          ]),
+          ui.blank,
+        ].join('\n'),
       )
-      yield* Console.log(
-        ui.keyValue([
-          ['Event ID', ui.dim(result.webhook_event_id)],
-          ['Delivered to', `your ${ui.command('polar listen')} terminal`],
-        ]),
-      )
-      yield* Console.log(ui.blank)
     }).pipe(
       Effect.scoped,
       Effect.catchTags({

@@ -608,9 +608,9 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
 resource "tfe_variable" "worker_sqs_actors_production" {
   key             = "worker_sqs_actors"
   category        = "terraform"
-  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for production"
+  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for production, or [\"*\"] for all of them"
   sensitive       = false
-  value           = jsonencode(["dummy", "observability.invariants.enqueue", "observability.invariants.check", "merchant_migration.precheck", "merchant_migration.verify_cards", "merchant_migration.cutover"])
+  value           = jsonencode(["*"])
   variable_set_id = tfe_variable_set.production.id
 }
 

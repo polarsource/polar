@@ -98,11 +98,11 @@ const requiresAuthentication = (request: NextRequest): boolean => {
 const CHECKOUT_CLIENT_SECRET = /^\/checkout\/([^/]+)/
 const NO_FRAME_ANCESTORS = ["'none'"]
 
+const FRAMING_DESTINATIONS = ['iframe', 'frame', 'object', 'embed']
+
 const isFramed = (request: NextRequest): boolean => {
   const destination = request.headers.get('Sec-Fetch-Dest')
-  return (
-    destination === null || destination === 'iframe' || destination === 'frame'
-  )
+  return destination === null || FRAMING_DESTINATIONS.includes(destination)
 }
 
 const getFrameAncestors = async (

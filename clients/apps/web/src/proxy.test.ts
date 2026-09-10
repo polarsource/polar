@@ -516,6 +516,19 @@ describe('checkout frame ancestors', () => {
     expect(response.headers.get('Content-Security-Policy')).toBeNull()
   })
 
+  it.each(['iframe', 'frame', 'object', 'embed'])(
+    'asks for every destination that can hold a document: %s',
+    async (destination) => {
+      await proxy(
+        new NextRequest('https://polar.sh/checkout/polar_c_123', {
+          headers: { 'Sec-Fetch-Dest': destination },
+        }),
+      )
+
+      expect(mockFetch).toHaveBeenCalledOnce()
+    },
+  )
+
   it('asks when the browser sends no fetch destination', async () => {
     await proxy(new NextRequest('https://polar.sh/checkout/polar_c_123'))
 

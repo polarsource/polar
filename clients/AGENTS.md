@@ -10,6 +10,7 @@ All of these are root scripts, run from `clients/`:
 pnpm dev          # Start dev server (http://127.0.0.1:3000)
 pnpm build        # Production build
 pnpm lint         # oxlint across the repo — prints nothing when clean
+pnpm format:check # oxfmt --check, a CI gate; covers Markdown too. `pnpm exec oxfmt <file>` fixes
 pnpm test         # turbo test across the workspace (12 packages define tests)
 pnpm typecheck    # turbo tsc across the workspace (15 packages define typecheck)
 pnpm generate     # Regenerate the API client (in packages/client)
@@ -26,10 +27,9 @@ Notes that save time:
   `adapters/nuxt` (builds a Nuxt fixture).
 - Unit tests need neither a running backend nor `.env.local`; `apps/web/vitest.config.ts`
   injects the `NEXT_PUBLIC_*` values itself. Only `test:e2e` (Playwright) needs a live stack.
-- `pnpm generate` shells into the server's Python env (`uv run --directory ../../../server -m
-  scripts.generate_openapi`), so it needs the two import-blocking backend artifacts —
-  `server/.jwks.json` and the email-renderer binary. You rarely need it: the generated
-  `packages/client/src/v1.ts` is committed.
+- `pnpm generate` shells into the server's Python env to run `scripts.generate_openapi`, so it
+  needs the two import-blocking backend artifacts — `server/.jwks.json` and the email-renderer
+  binary. You rarely need it: the generated `packages/client/src/v1.ts` is committed.
 
 ## Post-Feature Checklist
 

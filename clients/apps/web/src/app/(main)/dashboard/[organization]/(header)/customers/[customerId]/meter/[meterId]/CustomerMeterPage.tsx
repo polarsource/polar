@@ -358,10 +358,7 @@ export const CustomerMeterActivityCards = ({
         },
         {
           title: 'All Time',
-          value: allTimeQuantities?.quantities.reduce(
-            (acc, curr) => acc + curr.quantity,
-            0,
-          ),
+          value: allTimeQuantities?.total,
           startDate: dates.allTimeStart,
           endDate: dates.allTimeEnd,
         },

@@ -370,6 +370,17 @@ class PayoutAccountAlreadyLinked(OrganizationError):
         )
 
 
+_NON_NULLABLE_UPDATE_FIELDS: tuple[str, ...] = (
+    "name",
+    "socials",
+    "default_presentment_currency",
+    "default_tax_behavior",
+    "customer_email_settings",
+    "embed_hosts",
+    "sso_enforced",
+)
+
+
 class OrganizationService:
     async def list(
         self,
@@ -573,6 +584,23 @@ class OrganizationService:
         update_schema: OrganizationUpdate,
     ) -> Organization:
         repository = OrganizationRepository.from_session(session)
+
+        null_errors: list[ValidationError] = []
+        for field in _NON_NULLABLE_UPDATE_FIELDS:
+            if (
+                field in update_schema.model_fields_set
+                and getattr(update_schema, field) is None
+            ):
+                null_errors.append(
+                    {
+                        "loc": ("body", field),
+                        "msg": "This field cannot be set to null.",
+                        "type": "value_error",
+                        "input": None,
+                    }
+                )
+        if null_errors:
+            raise PolarRequestValidationError(null_errors)
 
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)

@@ -270,6 +270,37 @@ class TestUpdateOrganization:
         assert json["name"] == "Updated"
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "field",
+        [
+            pytest.param("name", id="name"),
+            pytest.param("socials", id="socials"),
+            pytest.param(
+                "default_presentment_currency", id="default_presentment_currency"
+            ),
+            pytest.param("default_tax_behavior", id="default_tax_behavior"),
+            pytest.param("customer_email_settings", id="customer_email_settings"),
+            pytest.param("embed_hosts", id="embed_hosts"),
+            pytest.param("sso_enforced", id="sso_enforced"),
+        ],
+    )
+    async def test_null_non_nullable_field_returns_422(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        field: str,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={field: None},
+        )
+
+        assert response.status_code == 422
+        locs = [tuple(error["loc"]) for error in response.json()["detail"]]
+        assert ("body", field) in locs
+
+    @pytest.mark.auth
     async def test_negative_revenue_validation(
         self,
         client: AsyncClient,

@@ -84,6 +84,7 @@ from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.webhook.service import webhook as webhook_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -5953,3 +5954,83 @@ class TestUpdateSSOEnforcement:
         )
 
         revoke_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+class TestUpdateRejectsExplicitNullOnNonNullFields:
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "field",
+        [
+            pytest.param("name", id="name"),
+            pytest.param("socials", id="socials"),
+            pytest.param(
+                "default_presentment_currency", id="default_presentment_currency"
+            ),
+            pytest.param("default_tax_behavior", id="default_tax_behavior"),
+            pytest.param("customer_email_settings", id="customer_email_settings"),
+            pytest.param("embed_hosts", id="embed_hosts"),
+            pytest.param("sso_enforced", id="sso_enforced"),
+        ],
+    )
+    async def test_explicit_null_raises_request_validation_error(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        field: str,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await organization_service.update(
+                session, organization, OrganizationUpdate(**{field: None})
+            )
+
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("body", field) for error in errors)
+
+    @pytest.mark.auth
+    async def test_explicit_null_rejected_before_webhook_and_mutation(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        webhook_send_mock = mocker.patch.object(
+            webhook_service, "send", new_callable=AsyncMock
+        )
+        repository_update_mock = mocker.patch.object(
+            OrganizationRepository, "update", new_callable=AsyncMock
+        )
+
+        original_currency = organization.default_presentment_currency
+
+        with pytest.raises(PolarRequestValidationError):
+            await organization_service.update(
+                session,
+                organization,
+                OrganizationUpdate(default_presentment_currency=None),
+            )
+
+        webhook_send_mock.assert_not_awaited()
+        repository_update_mock.assert_not_awaited()
+        assert organization.default_presentment_currency == original_currency
+
+    @pytest.mark.auth
+    async def test_omitting_all_fields_is_noop(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        original_name = organization.name
+        result = await organization_service.update(
+            session, organization, OrganizationUpdate()
+        )
+
+        assert result.id == organization.id
+        assert result.name == original_name

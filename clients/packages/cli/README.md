@@ -33,6 +33,17 @@ Bun `1.4.2` is the runtime, test runner, and binary compiler; pnpm manages depen
 Run the CLI from source with `bun src/cli.ts <command>` in this directory, or
 compile the release binary with `pnpm build:binary` and run `./polar`.
 
+To run against a local Polar API instead of sandbox or production, point the CLI
+at it and authenticate with an organization access token created in the local
+dashboard (scopes `webhooks:read`, `webhooks:write`, `organizations:read`):
+
+```bash
+export POLAR_API_URL=http://127.0.0.1:8000
+export POLAR_ACCESS_TOKEN=polar_oat_...
+bun src/cli.ts listen http://localhost:3000/api/webhooks
+bun src/cli.ts trigger order.created
+```
+
 ## Releases
 
 Add a changeset from `clients/` with `pnpm exec changeset` and select `polar-cli`.

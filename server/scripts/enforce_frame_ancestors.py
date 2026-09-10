@@ -266,7 +266,11 @@ def _decide(groups: Groups) -> list[Decision]:
 
 
 async def _apply(session: AsyncSession, decisions: list[Decision]) -> None:
-    """Re-read under lock: a merchant may have edited their own list since."""
+    """Re-read under lock: a merchant may have edited their own list while the
+    prompts were open. `populate_existing` is what makes that re-read real —
+    without it the rows already in the identity map keep the values loaded
+    before the questions, and the comparison below compares stale with stale.
+    """
     organizations = {
         organization.id: organization
         for organization in (
@@ -277,6 +281,7 @@ async def _apply(session: AsyncSession, decisions: list[Decision]) -> None:
                     Organization.deleted_at.is_(None),
                 )
                 .with_for_update()
+                .execution_options(populate_existing=True)
             )
         )
         .scalars()

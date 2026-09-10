@@ -97,6 +97,12 @@ variable "task_role_arn" {
   default     = null
 }
 
+variable "enable_execute_command" {
+  description = "Enable ECS Exec. The task role must grant the required ssmmessages permissions."
+  type        = bool
+  default     = false
+}
+
 variable "service_registry" {
   description = "Cloud Map service the tasks register in, if any. Wrapped in an object so the null-check stays decidable when the ARN is computed."
   type = object({

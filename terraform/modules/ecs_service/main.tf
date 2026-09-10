@@ -211,12 +211,13 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = local.aws_names.service.value
-  cluster         = var.cluster_arn
-  task_definition = aws_ecs_task_definition.this.arn
-  desired_count   = var.desired_count
-  launch_type     = "FARGATE"
-  tags            = var.tags
+  name                   = local.aws_names.service.value
+  cluster                = var.cluster_arn
+  task_definition        = aws_ecs_task_definition.this.arn
+  desired_count          = var.desired_count
+  launch_type            = "FARGATE"
+  enable_execute_command = var.enable_execute_command
+  tags                   = var.tags
 
   network_configuration {
     subnets         = var.subnet_ids

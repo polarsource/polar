@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_
 
 from polar.kit.repository import (
     RepositoryBase,
@@ -10,8 +10,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
 )
 from polar.kit.repository.base import SortingClause
-from polar.models import OAuthAccount, User, UserOrganization
-from polar.models.user import OAuthPlatform
+from polar.models import OAuthAccount, User
 
 from .sorting import UserSortProperty
 
@@ -61,26 +60,6 @@ class UserRepository(
             statement = statement.where(User.blocked_at.is_(None))
         return await self.get_all(statement)
 
-    async def get_by_oauth_account(
-        self,
-        platform: OAuthPlatform,
-        account_id: str,
-        *,
-        include_deleted: bool = False,
-        included_blocked: bool = False,
-    ) -> User | None:
-        statement = (
-            self.get_base_statement(include_deleted=include_deleted)
-            .join(User.oauth_accounts)
-            .where(
-                OAuthAccount.platform == platform,
-                OAuthAccount.account_id == account_id,
-            )
-        )
-        if not included_blocked:
-            statement = statement.where(User.blocked_at.is_(None))
-        return await self.get_one_or_none(statement)
-
     async def get_by_identity_verification_id(
         self,
         identity_verification_id: str,
@@ -97,38 +76,6 @@ class UserRepository(
         if for_update:
             statement = statement.with_for_update(of=User)
         return await self.get_one_or_none(statement)
-
-    async def get_all_by_organization(
-        self,
-        organization_id: UUID,
-        *,
-        include_deleted: bool = False,
-        included_blocked: bool = False,
-    ) -> Sequence[User]:
-        statement = (
-            self.get_base_statement(include_deleted=include_deleted)
-            .join(UserOrganization, UserOrganization.user_id == User.id)
-            .where(
-                ~UserOrganization.is_deleted,
-                UserOrganization.organization_id == organization_id,
-            )
-        )
-        if not included_blocked:
-            statement = statement.where(User.blocked_at.is_(None))
-        return await self.get_all(statement)
-
-    async def is_organization_member(
-        self,
-        user_id: UUID,
-        organization_id: UUID,
-    ) -> bool:
-        statement = select(UserOrganization).where(
-            UserOrganization.user_id == user_id,
-            UserOrganization.organization_id == organization_id,
-            ~UserOrganization.is_deleted,
-        )
-        result = await self.session.execute(statement)
-        return result.scalar_one_or_none() is not None
 
     def get_sorting_clause(self, property: UserSortProperty) -> SortingClause:
         match property:

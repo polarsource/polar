@@ -13,7 +13,10 @@ from ..schemas import BenefitGrant
 from .service import benefit_grant as benefit_grant_service
 from .sorting import ListSorting
 
-router = APIRouter(prefix="/benefit-grants", tags=["benefit-grants", APITag.public])
+router = APIRouter(
+    prefix="/benefit-grants",
+    tags=["benefit-grants", APITag.public, APITag.mcp, APITag.cli],
+)
 
 
 @router.get(

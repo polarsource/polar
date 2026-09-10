@@ -515,7 +515,10 @@ async def list_statistics_timeseries(
 
 
 @router.get(
-    "/names", summary="List Event Names", response_model=ListResource[EventName]
+    "/names",
+    summary="List Event Names",
+    response_model=ListResource[EventName],
+    tags=[APITag.mcp, APITag.cli],
 )
 async def list_names(
     auth_subject: auth.EventRead,
@@ -559,6 +562,7 @@ async def list_names(
     "/{id}",
     summary="Get Event",
     response_model=EventSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: EventNotFound},
 )
 async def get(

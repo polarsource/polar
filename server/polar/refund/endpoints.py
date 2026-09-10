@@ -18,7 +18,9 @@ from .service import RefundedAlready
 from .service import refund as refund_service
 from .sorting import RefundListSorting
 
-router = APIRouter(prefix="/refunds", tags=["refunds", APITag.public])
+router = APIRouter(
+    prefix="/refunds", tags=["refunds", APITag.public, APITag.mcp, APITag.cli]
+)
 
 
 @router.get("/", summary="List Refunds", response_model=ListResource[RefundSchema])

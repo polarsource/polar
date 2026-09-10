@@ -53,6 +53,7 @@ MetricDashboardID = Annotated[UUID4, Path(description="The metric dashboard ID."
     "/",
     summary="Get Metrics",
     response_model=MetricsResponse,
+    tags=[APITag.mcp, APITag.cli],
     response_model_exclude_none=True,
 )
 async def get(

@@ -80,6 +80,7 @@ async def list(
     "/{id}",
     response_model=schemas.EventType,
     summary="Update Event Type",
+    tags=[APITag.mcp, APITag.cli],
     description="Update an event type's label.",
     status_code=200,
     responses={404: {}},

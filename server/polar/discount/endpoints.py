@@ -21,7 +21,9 @@ from .schemas import (
 )
 from .service import discount as discount_service
 
-router = APIRouter(prefix="/discounts", tags=["discounts", APITag.public])
+router = APIRouter(
+    prefix="/discounts", tags=["discounts", APITag.public, APITag.mcp, APITag.cli]
+)
 
 
 DiscountID = Annotated[UUID4, Path(description="The discount ID.")]

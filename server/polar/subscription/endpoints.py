@@ -70,6 +70,7 @@ SubscriptionNotFound = {
     "/",
     response_model=ListResource[SubscriptionSchema],
     summary="List Subscriptions",
+    tags=[APITag.mcp, APITag.cli],
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
@@ -228,6 +229,7 @@ async def export(
     "/{id}",
     summary="Get Subscription",
     response_model=SubscriptionSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: SubscriptionNotFound},
 )
 async def get(
@@ -402,6 +404,7 @@ async def create(
     "/{id}",
     summary="Update Subscription",
     response_model=SubscriptionSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Subscription updated."},
         402: {
@@ -464,6 +467,7 @@ async def update(
     "/{id}",
     summary="Revoke Subscription",
     response_model=SubscriptionSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Subscription revoked."},
         403: {

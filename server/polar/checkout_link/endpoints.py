@@ -25,7 +25,10 @@ from .schemas import CheckoutLink as CheckoutLinkSchema
 from .schemas import CheckoutLinkCreate, CheckoutLinkUpdate
 from .service import checkout_link as checkout_link_service
 
-router = APIRouter(prefix="/checkout-links", tags=["checkout-links", APITag.public])
+router = APIRouter(
+    prefix="/checkout-links",
+    tags=["checkout-links", APITag.public, APITag.mcp, APITag.cli],
+)
 
 CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT = dedent(
     """

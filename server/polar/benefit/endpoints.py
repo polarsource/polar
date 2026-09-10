@@ -35,7 +35,9 @@ from .strategies.downloadables.service import (
     benefit_downloadable_file as benefit_downloadable_file_service,
 )
 
-router = APIRouter(prefix="/benefits", tags=["benefits", APITag.public])
+router = APIRouter(
+    prefix="/benefits", tags=["benefits", APITag.public, APITag.mcp, APITag.cli]
+)
 
 BenefitNotFound = {
     "description": "Benefit not found.",

@@ -211,6 +211,7 @@ async def update(
 @router.delete(
     "/{id}",
     summary="Delete File",
+    tags=[APITag.mcp, APITag.cli],
     status_code=204,
     responses={
         204: {"description": "File deleted."},

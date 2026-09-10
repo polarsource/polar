@@ -51,6 +51,41 @@ resource "aws_security_group" "this" {
   }
 }
 
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "task" {
+  name                 = "polar-${var.environment}-pgbouncer-task"
+  assume_role_policy   = data.aws_iam_policy_document.assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
+}
+
+data "aws_iam_policy_document" "execute_command" {
+  statement {
+    actions = [
+      "ssmmessages:CreateControlChannel",
+      "ssmmessages:CreateDataChannel",
+      "ssmmessages:OpenControlChannel",
+      "ssmmessages:OpenDataChannel",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "execute_command" {
+  name   = "execute-command"
+  role   = aws_iam_role.task.id
+  policy = data.aws_iam_policy_document.execute_command.json
+}
+
 module "service" {
   source = "../../ecs_service"
 
@@ -63,6 +98,8 @@ module "service" {
   subnet_ids               = var.subnet_ids
   security_group_ids       = [aws_security_group.this.id]
   permissions_boundary_arn = var.permissions_boundary_arn
+  task_role_arn            = aws_iam_role.task.arn
+  enable_execute_command   = true
   logfire                  = var.logfire
 
   service_registry = {
@@ -83,4 +120,6 @@ module "service" {
   secrets = {
     DB_PASSWORD = aws_secretsmanager_secret.database_password.arn
   }
+
+  depends_on = [aws_iam_role_policy.execute_command]
 }

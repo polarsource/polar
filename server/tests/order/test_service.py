@@ -1400,6 +1400,70 @@ class TestCreateSubscriptionOrder:
         assert billing_entry.order_item is not None
         assert billing_entry.order_item.order_id == order.id
 
+    async def test_cycle_free_order_forever_fixed_discount_equal_to_price(
+        self,
+        enqueue_job_mock: MagicMock,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """A forever ``fixed`` discount equal to the price yields a permanently
+        $0 subscription that cycles to a paid $0 order, never enqueues a payment,
+        and stays active — the row ``count_paid_active_subscriptions_by_organization``
+        must recognize as not a real payment.
+        """
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        assert subscription.amount == 0
+
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        billing_entry = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
+        )
+
+        assert order.net_amount == 0
+        assert order.status == OrderStatus.paid
+
+        enqueued_jobs = [call[0][0] for call in enqueue_job_mock.call_args_list]
+        assert "order.trigger_payment" not in enqueued_jobs
+
+        calculate_tax_mock.assert_not_called()
+
+        await session.refresh(billing_entry)
+        assert billing_entry.order_item is not None
+        assert billing_entry.order_item.order_id == order.id
+
+        # The $0 cycle never enters dunning/past_due, so the subscription
+        # stays active — the counted row survives to gate deletion.
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.active
+
     async def test_cycle_tax_exempted(
         self,
         calculate_tax_mock: MagicMock,

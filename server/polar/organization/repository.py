@@ -396,6 +396,10 @@ class OrganizationRepository(
                             & (DiscountPercentage.basis_points == 10000)
                             & (Discount.duration == DiscountDuration.forever)
                         )
+                        | (
+                            (Discount.type == DiscountType.fixed)
+                            & (Discount.duration == DiscountDuration.forever)
+                        )
                     )
                 ),
             )

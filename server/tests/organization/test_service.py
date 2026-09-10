@@ -3961,6 +3961,53 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is True
         assert result.blocked_reasons == []
 
+    async def test_not_blocked_with_forever_fixed_discounted_free_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Subscriptions made permanently free by a fixed-forever discount that
+        zeroes the recurring amount don't block self-serve deletion.
+
+        A ``fixed`` discount whose amount equals (or exceeds) the price drives
+        ``Subscription.amount`` to ``0`` via ``DiscountFixed.get_discount_amount``
+        (clamped by ``min``), and ``forever`` never expires
+        (``is_repetition_expired`` returns ``False``), so the subscription is
+        permanently free — just like the 100%-percentage-forever case the
+        repository predicate already recognizes.
+        """
+        from polar.models.discount import DiscountDuration, DiscountType
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_discount, create_subscription
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            discount=discount,
+        )
+
+        # Sanity: confirm the fixture produced the permanently-$0 row the predicate must exclude.
+        assert subscription.amount == 0
+        assert subscription.discount_id is not None
+        assert discount.duration == DiscountDuration.forever
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
     async def test_blocked_with_non_forever_discounted_free_subscriptions(
         self,
         session: AsyncSession,
@@ -3978,6 +4025,41 @@ class TestCheckCanDelete:
             save_fixture,
             type=DiscountType.percentage,
             basis_points=10000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            discount=discount,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is False
+        assert "has_active_subscriptions" in [r.value for r in result.blocked_reasons]
+
+    async def test_blocked_with_non_forever_fixed_discounted_free_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """A fixed discount that only zeroes the price for the first cycle still
+        blocks deletion, since the subscription becomes paid when it expires.
+        """
+        from polar.models.discount import DiscountDuration, DiscountType
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_discount, create_subscription
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
             duration=DiscountDuration.once,
             organization=organization,
         )

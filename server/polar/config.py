@@ -348,6 +348,7 @@ class Settings(BaseSettings):
 
     # Logfire
     LOGFIRE_TOKEN: str | None = None
+    LOGFIRE_READ_TOKEN: str | None = None
     LOGFIRE_IGNORED_ACTORS: set[str] = {
         "organization_access_token.record_usage",
         "personal_access_token.record_usage",

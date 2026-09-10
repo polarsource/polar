@@ -59,11 +59,17 @@ API, run `pnpm run generate` in `clients/packages/client`.
 
 **Backend** (http://127.0.0.1:8000) — from `server/`:
 ```bash
+../dev/setup-environment      # generates server/.env — must run BEFORE docker compose
 docker compose up -d          # PostgreSQL, Redis, Minio
 uv sync                       # install deps
 uv run task api               # API server
 uv run task worker            # background worker (separate terminal)
 ```
+
+`docker-compose.yml` interpolates the Postgres credentials and MinIO bucket names from
+`server/.env`. Without that file they expand to empty strings and the `db` and `minio-setup`
+containers exit 1 — **while `docker compose up -d` still exits 0**. Verify with `docker ps -a`,
+not the exit code. (`dev up` gets this order right; only the manual sequence above used to not.)
 
 **Frontend** (http://127.0.0.1:3000) — from `clients/`:
 ```bash
@@ -77,14 +83,19 @@ pnpm install && pnpm dev
 - `POLAR_STRIPE_CONNECT_WEBHOOK_SECRET`
 
 **Fresh worktrees** (`.claude/worktrees/`) don't carry `.env` or built artifacts. Before running
-tests in a new worktree:
+tests in a new worktree, from the repo root:
 ```bash
-cd server
-./dev/setup-environment       # generates .env
-uv run task generate_dev_jwks # creates .jwks.json
-uv run task emails            # builds emails/bin/react-email-pkg
+./dev/setup-environment       # generates server/.env, server/.jwks.json, clients/apps/web/.env.local
+uv run --directory server task emails   # builds server/emails/bin/react-email-pkg
 ```
 Without these, pytest fails at config load with `JWKS` and `EMAIL_RENDERER_BINARY_PATH` errors.
+
+Only two artifacts actually block config import: `server/.jwks.json` and *any existing file* at
+`EMAIL_RENDERER_BINARY_PATH` — the validator only checks that the path exists. When you need to
+collect tests, lint or typecheck without waiting on the ~60s email build, do what
+`test_sdk.yaml` does: `touch /tmp/email-renderer` and set
+`POLAR_EMAIL_RENDERER_BINARY_PATH=/tmp/email-renderer`. Tests that render an email will fail,
+nothing else will.
 
 ## Development Workflow
 
@@ -93,11 +104,20 @@ project dependencies, environment variables, and virtualenv context.
 
 ```bash
 cd server
-uv run task test                                          # backend tests (pnpm test for frontend)
+uv run task test_fast                                     # backend tests, parallel, no coverage
 uv run task lint && uv run task lint_types                # lint + type-check
 uv run alembic revision --autogenerate -m "description"   # generate a migration from model changes
 uv run alembic upgrade head                               # apply migrations
 ```
+
+`uv run task test` adds coverage and runs serially. Use `task test_fast` (`-n auto`, no coverage)
+interactively, or scope to a path: `POLAR_ENV=testing uv run python -m pytest tests/<module>`.
+
+Set `POLAR_TEST_DATABASE_TEMPLATE=polar_test` (with `polar_test` created and migrated) and each
+xdist worker clones that database instead of replaying the whole migration history into its own
+— see `tests/fixtures/database.py`. CI does this in `test_server.yaml`. **If you add a migration,
+re-run `POLAR_ENV=testing uv run task db_migrate` to refresh the template**, or workers will
+clone a stale schema.
 
 **Visual regression testing** — use `dev snap` to capture before/after screenshots across branches:
 ```bash
@@ -155,6 +175,30 @@ Treat **Accepted** ADRs as binding:
 - **Redis**: cache and job queue.
 - **PostgreSQL**: primary database.
 
+## Claude Code on the web
+
+`.claude/hooks/session-start.sh` runs as a `SessionStart` hook and leaves the container ready to
+run tests and linters. It mirrors `.github/workflows/test_server.yaml` rather than `dev up`,
+because `dev up` targets interactive local development: it aborts if the Tinybird CLI install
+fails, curl-installs nvm, calls `systemctl start docker`, prompts for GitHub/Stripe, and — worst
+for an agent — swallows a failed email-renderer build, the artifact that blocks config import.
+
+It is idempotent, skips work already done, and reports failed steps in its output rather than
+aborting. It fires on session start and resume, not on every compaction. Read the script for
+what it does; its log is `polar-session-start.log` in `$TMPDIR` (`/tmp` unless overridden).
+
+Deliberately excluded, none of it needed for tests or linters: `dev seed`, `dev start`/tmux,
+Stripe keys or CLI, GitHub App setup, the Tinybird CLI, `dev docker`, and the web build. Redis is
+replaced by `FakeAsyncRedis` in tests, Stripe objects are fakes, and Tinybird tests self-skip.
+`fonts-noto-cjk` is also left out — install it only if a PDF or invoice test fails on glyphs.
+
+Two things to know when running tests here:
+
+- An unscoped `pnpm test` runs 19 turbo tasks at concurrency 10 on 4 CPUs and produces spurious
+  `Test timed out in 5000ms` failures in `packages/checkout` and `apps/web` that pass in
+  isolation. Scope with `--filter`, or pass `--concurrency=2`.
+- `packages/cli` tests need `bun`.
+
 ## Cursor Cloud specific instructions
 
 Prefer the Polar Development CLI (`dev/cli/`, alias `dev`) — the same path local developers use.
@@ -189,24 +233,32 @@ install the Stripe CLI via Homebrew — decline on Linux (no Homebrew); checkout
 needs a real Stripe sandbox later (`dev stripe`, see the `local-environment` skill's
 `payment-testing` rule).
 
-**One-time shell wiring** (already done in this VM snapshot): `./dev/cli/install` adds the
-`dev` alias; Node 24 is installed via nvm (`clients/` requires it — `.nvmrc` is `24`); `uv` is
-at `~/.local/bin/uv`. Source `~/.bashrc` (or start a login shell) so `nvm use 24` and the
-`dev` alias are active.
+**One-time shell wiring** (specific to the Cursor Cloud VM snapshot — verify before relying on
+any of it, none of it holds in other cloud containers): `./dev/cli/install` adds the `dev`
+alias; Node 24 is installed via nvm; `uv` is at `~/.local/bin/uv`. Source `~/.bashrc` (or start
+a login shell) so `nvm use 24` and the `dev` alias are active. Where the alias is absent, call
+`./dev/cli/dev` directly. `clients/` pins Node 24 via `.nvmrc`/`.node-version`, but pnpm's
+`engine-strict` is off and the repo ships no `.npmrc`, so those pins are warnings — install,
+lint, typecheck, test and `next build` all pass on Node 22.
 
-**Docker caveats.** `/etc/docker/daemon.json` is pinned to `fuse-overlayfs` with
-`features.containerd-snapshotter: false` — required for Docker 29 in this VM; don't remove it.
-The `ubuntu` user is in the `docker` group.
+**Docker caveats** (again Cursor Cloud VM specific). `/etc/docker/daemon.json` is pinned to
+`fuse-overlayfs` with `features.containerd-snapshotter: false` — required for Docker 29 in that
+VM; don't remove it. The `ubuntu` user is in the `docker` group. Elsewhere the file may not
+exist and the daemon may run as root on `overlayfs`; check `docker info` rather than assuming.
 
 **Backend config artifacts.** Config import fails without the email renderer binary
 (`server/emails/bin/react-email-pkg`, built by `dev up` / `uv run task emails`) and
-`server/.jwks.json` + `server/.env` (from `./dev/setup-environment` / `dev up`). Missing →
-pydantic `EMAIL_RENDERER_BINARY_PATH` / `JWKS` errors. `dev status` reports "Worker unknown
-(check manually)" by design — confirm with `pgrep -af dramatiq` or the `polar` tmux pane.
+`server/.jwks.json` (from `./dev/setup-environment` / `dev up`). Missing → pydantic
+`EMAIL_RENDERER_BINARY_PATH` / `JWKS` errors. `server/.env` is **not** among them for tests:
+under `POLAR_ENV=testing` (which `tests/conftest.py` forces) `polar/config.py` loads the
+committed `server/.env.testing`. `server/.env` is still required before `docker compose up -d`,
+which interpolates it. `dev status` reports "Worker unknown (check manually)" by design —
+confirm with `pgrep -af dramatiq` or the `polar` tmux pane.
 
-**Tests need no manual DB setup** — the `polar_test` database is auto-created/dropped by a
-`sqlalchemy_utils` fixture. Run `uv run task test` or a subset with
-`POLAR_ENV=testing uv run python -m pytest <path>`.
+**Tests need no manual DB setup** — an autouse `sqlalchemy_utils` fixture creates and drops
+`polar_test_<worker_id>` (`polar_test_master` without xdist), not `polar_test` itself. Run
+`uv run task test_fast` or a subset with `POLAR_ENV=testing uv run python -m pytest <path>`.
+`dev/create-test-db` creates a plain, unmigrated `polar_test` and is not part of this path.
 
 **Login.** Email OTP codes are printed in the API pane / log (`LOGIN CODE: …`). Grab with
 `tmux capture-pane -t polar:services.0 -p | grep -a "LOGIN CODE" | tail -1`. `admin@polar.sh`

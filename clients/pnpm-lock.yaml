@@ -1050,6 +1050,9 @@ importers:
       '@napi-rs/keyring':
         specifier: 2.1.0
         version: 2.1.0
+      '@polar-sh/cli-commands':
+        specifier: file:../../../sdk/cli-commands
+        version: file:../sdk/cli-commands(@polar-sh/sdk@1.0.0-alpha.22)(effect@4.0.0-rc.117)
       '@polar-sh/sdk':
         specifier: 1.0.0-alpha.22
         version: 1.0.0-alpha.22
@@ -4499,6 +4502,12 @@ packages:
   '@pnpm/npm-conf@3.0.3':
     resolution: {integrity: sha512-//0sR/cow/s4ICQaYoAobOl4aU8cjU6x/V24V7XkKotb9+O+3zySIYp146vpaobYHnxa4pZX8NkV54Z5AwbDKA==}
     engines: {node: '>=12'}
+
+  '@polar-sh/cli-commands@file:../sdk/cli-commands':
+    resolution: {directory: ../sdk/cli-commands, type: directory}
+    peerDependencies:
+      '@polar-sh/sdk': 1.0.0-alpha.22
+      effect: 4.0.0-rc.117
 
   '@polar-sh/sdk@0.46.7':
     resolution: {integrity: sha512-g8/goRQFfnik9Ood2Ej5AsbEXv2rohzhVlmW7wjkCuwdc8i59FWhdBjolX2tUwcXXjugziXrhCZJLivY3W6ytQ==}
@@ -18158,6 +18167,11 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
+  '@polar-sh/cli-commands@file:../sdk/cli-commands(@polar-sh/sdk@1.0.0-alpha.22)(effect@4.0.0-rc.117)':
+    dependencies:
+      '@polar-sh/sdk': 1.0.0-alpha.22
+      effect: 4.0.0-rc.117
+
   '@polar-sh/sdk@0.46.7':
     dependencies:
       standardwebhooks: 1.1.1
@@ -19219,7 +19233,9 @@ snapshots:
       metro-runtime: 0.84.6
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

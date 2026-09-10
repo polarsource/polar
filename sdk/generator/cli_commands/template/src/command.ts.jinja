@@ -1,0 +1,54 @@
+// Generated from {{ method.operation_id }} ({{ api.version }}). Do not edit.
+{% if input_type %}
+import type { Polar } from '@polar-sh/sdk/{{ api.version }}'
+{% endif %}
+import { Effect } from 'effect'
+import { {% if method.path_params %}Argument, {% endif %}Command{% if fields %}, Flag{% endif %} } from 'effect/unstable/cli'
+import { ApiRuntime } from '../runtime'
+import { {{ helpers | join(', ') }} } from '../inputs'
+{% if input_type %}
+
+type {{ input_type }} = NonNullable<Parameters<Polar['customers']['{{ sdk_method }}']>[{{ input_index }}]>
+{% endif %}
+
+export const command = Command.make(
+  {{ method.name | quote }},
+  {
+    production,
+{% if method.http_method == 'DELETE' %}
+    confirm,
+{% endif %}
+{% for param in method.path_params %}
+    {{ param.name }}: Argument.string({{ param.name | quote }}),
+{% endfor %}
+{% if input_type %}
+    data,
+{% endif %}
+{% for field in fields %}
+    {{ field.name }}: {{ field.expression }}.pipe(
+{% if field.name == 'organization_id' %}
+      Flag.withAlias('org'),
+{% endif %}
+      Flag.optional,
+      Flag.withDescription({{ field.description | quote }}),
+    ),
+{% endfor %}
+  },
+  (config) => Effect.gen(function* () {
+    const api = yield* ApiRuntime
+{% if input_type %}
+    const {{ input_type | lower }} = mergeInput<{{ input_type }}>(config.data, {
+{% for field in fields %}
+      {{ field.name }}: config.{{ field.name }},
+{% endfor %}
+    })
+{% endif %}
+    yield* api.execute({
+      operationId: {{ method.operation_id | quote }},
+      method: {{ method.http_method | quote }},
+      environment: config.production ? 'production' : 'sandbox',
+      confirm: {% if method.http_method == 'DELETE' %}config.confirm{% else %}false{% endif %},
+      invoke: (client) => client.customers.{{ sdk_method }}({{ arguments | join(', ') }}),
+    })
+  }),
+).pipe(Command.withDescription({{ description | quote }}))

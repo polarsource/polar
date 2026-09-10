@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { ListenError } from '@/commands/listen'
+import { TriggerError } from '@/services/trigger'
 import { UpdateError } from '@/commands/update'
 import { describeError } from '@/utils/errors'
 import { AuthError } from '@/schemas/Auth'
@@ -22,6 +23,15 @@ describe('describeError', () => {
     })
     expect(describeError({ _tag: 'Other' })).toEqual({
       title: 'An unexpected error occurred',
+    })
+  })
+
+  test('describes trigger errors with their own hint', () => {
+    expect(
+      describeError(new TriggerError({ message: 'Nope', hint: 'Do this' })),
+    ).toEqual({ title: 'Nope', hint: 'Do this' })
+    expect(describeError(new TriggerError({ message: 'Nope' }))).toEqual({
+      title: 'Nope',
     })
   })
 

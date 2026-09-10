@@ -6,18 +6,16 @@ import {
   Exit,
   Option,
   Schema,
-  Scope,
   Stream,
 } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { Sse } from 'effect/unstable/encoding'
 import {
   FetchHttpClient,
-  HttpClient,
   HttpClientRequest,
   HttpClientResponse,
 } from 'effect/unstable/http'
-import { Auth } from '@/services/auth'
+import { apiUrl, authenticatedClient } from '@/services/api'
 import { Organizations } from '@/services/organizations'
 import { org } from '@/commands/flags'
 import { loginCommand, type PolarEnvironment } from '@/schemas/Auth'
@@ -27,11 +25,6 @@ import {
   ListenWebhookEvent,
 } from '@/schemas/Events'
 import * as ui from '@/utils/ui'
-
-export const LISTEN_BASE_URLS = {
-  production: 'https://api.polar.sh/v1/cli/listen',
-  sandbox: 'https://sandbox-api.polar.sh/v1/cli/listen',
-} as const
 
 export class ListenError extends Data.TaggedError('ListenError')<{
   message: string
@@ -92,39 +85,6 @@ export interface StartListeningOptions {
   ) => Promise<Response>
 }
 
-export const authenticatedStreamClient = (environment: PolarEnvironment) =>
-  Effect.gen(function* () {
-    const auth = yield* Auth
-    const client = HttpClient.withScope(yield* HttpClient.HttpClient)
-    let retried = false
-    return HttpClient.transform(client, (_response, request) =>
-      Effect.gen(function* () {
-        const credential = yield* auth.resolve(environment)
-        const requestScope = yield* Scope.fork(yield* Effect.scope)
-        const response = yield* client
-          .execute(
-            HttpClientRequest.bearerToken(request, credential.accessToken),
-          )
-          .pipe(Effect.provideService(Scope.Scope, requestScope))
-        if (
-          response.status !== 401 ||
-          retried ||
-          credential.source === 'override'
-        )
-          return response
-        retried = true
-        yield* Scope.close(requestScope, Exit.void)
-        const refreshed = yield* auth.resolve(
-          environment,
-          credential.accessToken,
-        )
-        return yield* client.execute(
-          HttpClientRequest.bearerToken(request, refreshed.accessToken),
-        )
-      }),
-    )
-  })
-
 export const startListening = ({
   listenUrl,
   forwardUrl,
@@ -133,7 +93,7 @@ export const startListening = ({
   forward = fetch,
 }: StartListeningOptions) =>
   Effect.gen(function* () {
-    const client = yield* authenticatedStreamClient(environment)
+    const client = yield* authenticatedClient(environment)
     let bannerShown = false
     let retryDelay = Duration.millis(3000)
     let lastEventId: string | undefined
@@ -310,8 +270,12 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
       Option.getOrUndefined(org),
     )
     const { environment } = organization
+    const listenUrl = yield* apiUrl(
+      environment,
+      `/cli/listen/${organization.id}`,
+    )
     return yield* startListening({
-      listenUrl: `${LISTEN_BASE_URLS[environment]}/${organization.id}`,
+      listenUrl,
       forwardUrl: url,
       organizationName: organization.name,
       environment,

@@ -17,13 +17,7 @@ export const ListenWebhookEvent = Schema.Struct({
     webhook_event_id: Schema.String,
     payload: Schema.String,
   }),
-  headers: Schema.Struct({
-    'user-agent': Schema.Literal('polar.sh webhooks'),
-    'content-type': Schema.Literal('application/json'),
-    'webhook-id': Schema.String,
-    'webhook-timestamp': Schema.String,
-    'webhook-signature': Schema.String,
-  }),
+  headers: Schema.Record(Schema.String, Schema.String),
 })
 
 export const ListenEvent = Schema.Union([

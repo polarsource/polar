@@ -14,6 +14,14 @@ import { Credentials } from '@/services/credentials'
 import { OAuth } from '@/services/oauth'
 import { Organizations } from '@/services/organizations'
 import { Polar } from '@/services/polar'
+import {
+  type SendError,
+  Trigger,
+  type TriggerError,
+  type TriggerEvent,
+  type TriggerRequest,
+  type TriggerResult,
+} from '@/services/trigger'
 
 export const session = (
   accessToken = 'access',
@@ -264,4 +272,44 @@ export const fakePolar = (client: unknown) => {
       }),
   })
   return { polar, state }
+}
+
+interface TriggerState {
+  events: TriggerEvent[]
+  result: TriggerResult
+  failure: SendError | undefined
+  listFailure: TriggerError | undefined
+  sent: Array<{ organization: ActiveOrganization; request: TriggerRequest }>
+}
+
+export const fakeTrigger = (initial: Partial<TriggerState> = {}) => {
+  const state: TriggerState = {
+    events: [],
+    result: {
+      webhookEventId: 'evt-1',
+      event: 'order.created',
+      delivered: true,
+      payload: { type: 'order.created', data: { id: 'ord-1' } },
+    },
+    failure: undefined,
+    listFailure: undefined,
+    sent: [],
+    ...initial,
+  }
+  const trigger = Trigger.of({
+    listEvents: () =>
+      Effect.suspend(() =>
+        state.listFailure
+          ? Effect.fail(state.listFailure)
+          : Effect.succeed(state.events),
+      ),
+    send: (organization, request) =>
+      Effect.suspend(() => {
+        state.sent.push({ organization, request })
+        return state.failure
+          ? Effect.fail(state.failure)
+          : Effect.succeed({ ...state.result, event: request.event })
+      }),
+  })
+  return { trigger, state }
 }

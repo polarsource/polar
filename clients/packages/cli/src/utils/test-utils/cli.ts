@@ -10,6 +10,7 @@ import {
   Terminal,
 } from 'effect'
 import { Command } from 'effect/unstable/cli'
+import { Environment as ApiEnvironment } from '@/services/api'
 
 export const stripAnsi = (text: string) => Bun.stripANSI(text)
 
@@ -115,6 +116,7 @@ export const runCli = <Name extends string, Input, E, R, ContextInput>(
       ),
     ),
     Effect.provideService(Console.Console, console),
+    Effect.provideService(ApiEnvironment, {}),
   )
   return {
     effect,

@@ -526,9 +526,9 @@ def _drop_instance_data(instance: int) -> bool:
     bucket = s3_bucket(instance)
     public_bucket = s3_public_bucket(instance)
     console.print(f"[dim]  Removing S3 buckets {bucket}, {public_bucket}...[/dim]")
-    # `set -e` aborts on alias-set failure (e.g. minio unreachable). A
-    # missing bucket is success; `mc rb` errors on a bucket that exists
-    # still fail the step.
+    # `mc alias set` fails if MinIO is unreachable. `mc ls` failing with
+    # "does not exist" is the only missing-bucket case we ignore; any other
+    # listing or `mc rb` error fails the step.
     if not _drop_step_ok(
         run_command(
             _shared_compose_cmd()
@@ -540,10 +540,12 @@ def _drop_instance_data(instance: int) -> bool:
                 "minio-setup",
                 "-c",
                 'set -e; mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; '
-                f"if mc ls local/{bucket} >/dev/null 2>&1; then "
-                f"mc rb --force local/{bucket}; fi; "
-                f"if mc ls local/{public_bucket} >/dev/null 2>&1; then "
-                f"mc rb --force local/{public_bucket}; fi",
+                'rm_bucket() { '
+                'if mc ls "local/$1" >/dev/null 2>/tmp/mc-ls.err; then '
+                'mc rb --force "local/$1"; '
+                'elif grep -q "does not exist" /tmp/mc-ls.err; then :; '
+                'else cat /tmp/mc-ls.err >&2; return 1; fi; }; '
+                f"rm_bucket {bucket}; rm_bucket {public_bucket}",
             ],
             capture=True,
         ),

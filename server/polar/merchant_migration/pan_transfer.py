@@ -250,11 +250,6 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
         kind=PanStepKind.auto,
     ),
     PanStepTemplate(
-        key=STEP_RESOLVE_UNCOVERED,
-        owner=PanStepOwner.merchant,
-        kind=PanStepKind.confirm,
-    ),
-    PanStepTemplate(
         key=STEP_CUTOVER,
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
@@ -310,11 +305,6 @@ PAN_IMPORT_TEMPLATES: tuple[PanStepTemplate, ...] = (
         key=STEP_VERIFY_CARDS,
         owner=PanStepOwner.polar_app,
         kind=PanStepKind.auto,
-    ),
-    PanStepTemplate(
-        key=STEP_RESOLVE_UNCOVERED,
-        owner=PanStepOwner.merchant,
-        kind=PanStepKind.confirm,
     ),
     PanStepTemplate(
         key=STEP_CUTOVER,
@@ -389,16 +379,29 @@ def _get(steps: Sequence[PanTransferStep], key: str) -> PanTransferStep:
     raise PanStepNotFound(key)
 
 
+def advance(
+    method: PanTransferMethod, steps: list[PanTransferStep]
+) -> list[PanTransferStep]:
+    """Make the next unfinished step actionable, walking past auto-completing
+    and retired keys."""
+    _advance(method, steps)
+    return steps
+
+
 def _advance(method: PanTransferMethod, steps: list[PanTransferStep]) -> None:
     """Make the first unfinished step actionable, walking past any that complete
     on their own."""
+    templates = _TEMPLATES_BY_KEY[method]
     for step in steps:
         if step.status == PanStepStatus.completed:
             continue
         if step.status == PanStepStatus.blocked:
             step.status = PanStepStatus.pending
             step.started_at = utc_now()
-        if not _template(method, step.key).auto_complete:
+        template = templates.get(step.key)
+        # No template: the step left the checklist. Complete it so stored
+        # migrations don't stall on a key Polar no longer asks anyone to do.
+        if template is not None and not template.auto_complete:
             return
         _settle(step, PanStepActor.system)
 

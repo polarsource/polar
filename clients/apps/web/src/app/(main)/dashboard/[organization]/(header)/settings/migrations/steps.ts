@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import { isSwitchChecklistKey } from './cards/panTransferCopy'
 
 type Step = schemas['MerchantMigrationStep']
 
@@ -81,9 +82,18 @@ export type MigrationPosition =
 // fall through to `completed` below.
 export function currentPosition(
   migration: schemas['MerchantMigration'],
+  panCurrentStepKey?: string | null,
 ): MigrationPosition {
   if (!migration.source_connected) {
     return { kind: 'step', index: 0 }
+  }
+  // Card-checklist keys after the last card step belong on Switch, even if
+  // the backend still reports `copy_cards` for an in-progress migration.
+  if (
+    migration.step === 'copy_cards' &&
+    isSwitchChecklistKey(panCurrentStepKey)
+  ) {
+    return { kind: 'step', index: SWITCH_STEP_INDEX }
   }
   const step = migration.step === 'source_setup' ? 'pre_check' : migration.step
   const index = MIGRATION_STEPS.findIndex((def) => def.steps.includes(step))
@@ -92,7 +102,12 @@ export function currentPosition(
 
 export function currentStepDef(
   migration: schemas['MerchantMigration'],
+  panCurrentStepKey?: string | null,
 ): MigrationStepDef | null {
-  const position = currentPosition(migration)
+  const position = currentPosition(migration, panCurrentStepKey)
   return position.kind === 'completed' ? null : MIGRATION_STEPS[position.index]
 }
+
+const SWITCH_STEP_INDEX = MIGRATION_STEPS.findIndex(
+  (def) => def.key === 'cutover',
+)

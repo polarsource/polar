@@ -126,6 +126,7 @@ _STEP_TASKS = {
 }
 
 _MIGRATION_STEP_BY_PAN_STEP = {
+    STEP_CUTOVER: MerchantMigrationStep.activate_subscriptions,
     STEP_MOVE_SUBSCRIPTIONS: MerchantMigrationStep.activate_subscriptions,
 }
 
@@ -674,7 +675,12 @@ class MerchantMigrationService:
         """The card-move checklist. Returns an empty one before it's started, so
         the client can show the method and the destination account up front."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
-        return self._checklist(migration)
+        steps = [step.model_copy() for step in migration.pan_transfer_steps]
+        if steps:
+            # Copies only: a GET must not persist, but stored checklists can
+            # still be sitting on a key Polar no longer asks anyone to complete.
+            pan_transfer.advance(migration.pan_transfer_method, steps)
+        return self._checklist(migration, steps)
 
     async def stream_imported_customer_source_ids(
         self,
@@ -1019,6 +1025,13 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        if migration.pan_transfer_steps:
+            steps = list(migration.pan_transfer_steps)
+            before = pan_transfer.current(steps)
+            pan_transfer.advance(migration.pan_transfer_method, steps)
+            after = pan_transfer.current(steps)
+            if (before.key if before else None) != (after.key if after else None):
+                await self._advance_checklist(session, migration, steps)
         if not self._cutover_reachable(migration):
             raise CutoverNotStarted()
 

@@ -1,13 +1,17 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useMerchantMigration } from '@/hooks/queries/merchantMigrations'
+import {
+  useMerchantMigration,
+  usePanTransfer,
+} from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
 import { Alert, Spinner, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { PanTransferPanel } from '../cards/PanTransferPanel'
+import { isSwitchChecklistKey } from '../cards/panTransferCopy'
 import { ImportedStep } from '../ImportedStep'
 import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
@@ -62,11 +66,7 @@ export default function MigrationDetailPage({
         ) : !migration ? (
           <Text color="muted">This migration no longer exists.</Text>
         ) : (
-          <Box as="section" flexDirection="column" rowGap="xl">
-            <SourceHeader migration={migration} />
-            <MigrationStepper migration={migration} />
-            <StepContent migration={migration} />
-          </Box>
+          <MigrationLoaded migration={migration} />
         )}
       </Box>
     </DashboardBody>
@@ -103,10 +103,47 @@ function SourceHeader({
   )
 }
 
-function StepContent({
+function MigrationLoaded({
   migration,
 }: {
   migration: schemas['MerchantMigration']
+}) {
+  const needsPan = migration.step === 'copy_cards'
+  const pan = usePanTransfer(needsPan ? migration.id : '')
+  const panCurrentStepKey = pan.data?.current_step_key ?? null
+
+  if (needsPan && pan.isLoading) {
+    return (
+      <Box as="section" flexDirection="column" rowGap="xl">
+        <SourceHeader migration={migration} />
+        <Box padding="3xl" alignItems="center" justifyContent="center">
+          <Spinner />
+        </Box>
+      </Box>
+    )
+  }
+
+  return (
+    <Box as="section" flexDirection="column" rowGap="xl">
+      <SourceHeader migration={migration} />
+      <MigrationStepper
+        migration={migration}
+        panCurrentStepKey={panCurrentStepKey}
+      />
+      <StepContent
+        migration={migration}
+        panCurrentStepKey={panCurrentStepKey}
+      />
+    </Box>
+  )
+}
+
+function StepContent({
+  migration,
+  panCurrentStepKey,
+}: {
+  migration: schemas['MerchantMigration']
+  panCurrentStepKey: string | null
 }) {
   if (!migration.source_connected) {
     return (
@@ -115,7 +152,7 @@ function StepContent({
       </Text>
     )
   }
-  const def = currentStepDef(migration)
+  const def = currentStepDef(migration, panCurrentStepKey)
   switch (migration.step) {
     // The stepper shows a connected migration as assessing, but nothing is
     // staged until the first pre-check runs.
@@ -132,6 +169,14 @@ function StepContent({
     case 'create_catalog':
       return <ImportedStep migrationId={migration.id} />
     case 'copy_cards':
+      if (isSwitchChecklistKey(panCurrentStepKey)) {
+        return (
+          <Box flexDirection="column" rowGap="l">
+            <StepHeading def={def} />
+            <SwitchPanel migrationId={migration.id} />
+          </Box>
+        )
+      }
       return (
         <Box flexDirection="column" rowGap="l">
           <StepHeading def={def} />

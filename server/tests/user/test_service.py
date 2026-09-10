@@ -12,6 +12,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.organization import OrganizationStatus
 from polar.models.user import IdentityVerificationStatus, OAuthPlatform
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
@@ -136,6 +137,63 @@ class TestCheckCanDelete:
         assert result.blocked_reasons == []
         assert result.blocking_organizations == []
 
+    async def test_blocked_with_blocked_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """A user whose only non-deleted organization is BLOCKED cannot be deleted.
+
+        A BLOCKED org is live (deleted_at IS NULL) and recoverable — it is not a
+        deletion-equivalent. Regression test for the silent BLOCKED exclusion that
+        `get_all_by_user` applies for UI/listing callers, which previously let
+        `request_deletion` orphan a recoverable organization.
+        """
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        result = await user_service.check_can_delete(session, user)
+
+        assert (
+            UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS in result.blocked_reasons
+        )
+        assert len(result.blocking_organizations) == 1
+        assert result.blocking_organizations[0].id == organization.id
+        assert result.blocking_organizations[0].slug == organization.slug
+
+    async def test_blocked_with_non_owner_member_role(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        """A non-owner member (member/admin/finance) of an active org blocks deletion.
+
+        Guards against narrowing the deletion gate to owner-only memberships: the
+        contract blocks deletion for *any* non-deleted membership, not only owner
+        memberships. An owner-only query would orphan a `UserOrganization` row
+        pointing at a soft-deleted user.
+        """
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization,
+                role=OrganizationRole.member,
+            )
+        )
+
+        result = await user_service.check_can_delete(session, user)
+
+        assert (
+            UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS in result.blocked_reasons
+        )
+        assert len(result.blocking_organizations) == 1
+        assert result.blocking_organizations[0].id == organization.id
+
 
 @pytest.mark.asyncio
 class TestUpdate:
@@ -246,6 +304,35 @@ class TestRequestDeletion:
             UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS in result.blocked_reasons
         )
         assert len(result.blocking_organizations) == 1
+        assert user.deleted_at is None
+
+    async def test_blocked_with_blocked_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """End-to-end: a user whose only non-deleted organization is BLOCKED is
+        not soft-deleted, so a recoverable organization cannot be orphaned.
+
+        Before the fix, `check_can_delete` reused `get_all_by_user` (which
+        excludes BLOCKED orgs), reported zero blocking orgs, and let
+        `soft_delete_user` proceed — orphaning a recoverable org whose owner
+        then vanished from `get_owner_user`, jamming the reactivation gate.
+        """
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        result = await user_service.request_deletion(session, user)
+
+        assert result.deleted is False
+        assert (
+            UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS in result.blocked_reasons
+        )
+        assert len(result.blocking_organizations) == 1
+        assert result.blocking_organizations[0].id == organization.id
         assert user.deleted_at is None
 
     async def test_anonymization(

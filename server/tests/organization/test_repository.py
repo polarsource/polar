@@ -56,6 +56,52 @@ class TestGetOwnerUser:
         assert owner_after_removal is None
 
 
+@pytest.mark.asyncio
+class TestGetAllByUserForDeletionCheck:
+    async def test_includes_blocked_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        """The deletion-safety query returns BLOCKED orgs — unlike
+        `get_all_by_user`, which excludes them for UI/listing callers."""
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        repo = OrganizationRepository.from_session(session)
+        results = await repo.get_all_by_user_for_deletion_check(user.id)
+
+        assert [org.id for org in results] == [organization.id]
+
+        # Contrast: the UI/listing helper still excludes the BLOCKED org.
+        listing = await repo.get_all_by_user(user.id)
+        assert listing == []
+
+    async def test_includes_any_role_not_only_owner(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """The deletion-safety query matches any role, not only owner."""
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.member,
+            )
+        )
+
+        repo = OrganizationRepository.from_session(session)
+        results = await repo.get_all_by_user_for_deletion_check(user.id)
+
+        assert [org.id for org in results] == [organization.id]
+
+
 async def _set_status(
     save_fixture: SaveFixture,
     organization: Organization,

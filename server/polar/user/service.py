@@ -380,9 +380,11 @@ class UserService:
         blocked_reasons: list[UserDeletionBlockedReason] = []
         blocking_organizations: list[BlockingOrganization] = []
 
-        # Get all organizations the user is a member of (excluding deleted orgs)
+        # Get all organizations the user is a member of, including BLOCKED
+        # orgs — a BLOCKED org is live (deleted_at IS NULL) and recoverable,
+        # so it must block deletion just like an active org.
         org_repository = OrganizationRepository.from_session(session)
-        organizations = await org_repository.get_all_by_user(user.id)
+        organizations = await org_repository.get_all_by_user_for_deletion_check(user.id)
 
         if organizations:
             blocked_reasons.append(UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS)

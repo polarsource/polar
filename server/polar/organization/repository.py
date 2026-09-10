@@ -186,6 +186,27 @@ class OrganizationRepository(
         )
         return await self.get_all(statement)
 
+    async def get_all_by_user_for_deletion_check(
+        self, user: UUID
+    ) -> Sequence[Organization]:
+        """All non-soft-deleted organizations ``user`` is a member of, including
+        BLOCKED orgs.
+
+        Unlike `get_all_by_user` (which excludes BLOCKED orgs for UI/listing
+        callers), this is the deletion-safety view: a BLOCKED org is live
+        (``deleted_at IS NULL``) and recoverable, so it must block account
+        self-deletion. See `UserService.check_can_delete`.
+        """
+        statement = (
+            self.get_base_statement()
+            .join(UserOrganization)
+            .where(
+                UserOrganization.user_id == user,
+                ~UserOrganization.is_deleted,
+            )
+        )
+        return await self.get_all(statement)
+
     async def get_all_by_account(
         self, account: UUID, *, options: Options = ()
     ) -> Sequence[Organization]:

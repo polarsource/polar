@@ -1,0 +1,110 @@
+clients/packages/cli/tsup.config.ts
+  s_ce40663d818538::t_8e4119e8dd31fe 1-5
+sdk/generator/cli_commands/template/src/command.ts.jinja
+  s_ce40663d818538::t_6636e6ef6de78b 1-54
+clients/packages/cli/API_COMMANDS_PLAN.md
+  s_ce40663d818538::t_335eca3c127294 192-196
+  s_ce40663d818538::t_b7c5aa36c04791 137-143,279-285
+  s_ce40663d818538::t_53843b6973dfe4 1-136,144-191,197-278,286-289
+sdk/generator/cli_commands/template/src/inputs.ts
+  s_ce40663d818538::t_f57631bab902db 28,34
+  s_ce40663d818538::t_1bb678f2106402 1-27,29-33,35-49
+sdk/cli-commands/src/customers/get_external.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-24
+sdk/cli-commands/.gitignore
+  s_ce40663d818538::t_04f2356f272fa7 1-3
+sdk/generator/cli.py
+  s_ce40663d818538::t_5fa59dc52863d4 21-26,111-117
+sdk/cli-commands/src/customers/delete.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-38
+sdk/generator/cli_commands/emitter.py
+  s_ce40663d818538::t_1cca2759f8c84b 3
+  s_ce40663d818538::t_07becd0326e6b8 63,65-69,101-103,107-109,193-196
+  s_ce40663d818538::t_7f7353b51b2f37 64
+  s_ce40663d818538::t_d42f297e6a5fa3 1-2,4-62,70-100,104-106,110-187,197-198,202,208
+  s_ce40663d818538::t_f35e400c693031 188,191-192
+  s_ce40663d818538::t_f8931ee9c57d4a 189-190
+  s_ce40663d818538::t_feae34afc0570f 199-201,203-207
+clients/packages/cli/package.json
+  s_ce40663d818538::t_6d5c211720cba1 12,36
+sdk/cli-commands/src/index.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-36
+sdk/cli-commands/README.md
+  s_ce40663d818538::t_c7f91779a6bb50 73,90
+  s_ce40663d818538::t_4da2075f2afcd5 3-5,7-10,32-33,88-89,94-96
+  s_ce40663d818538::t_6b9bc1608cd7f9 1-2,6,11-31,34-72,74-87,91-93,97
+sdk/cli-commands/src/customers/get_state_external.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-25
+sdk/cli-commands/src/customers/list_payment_methods.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-43
+sdk/cli-commands/src/customers/list_payment_methods_external.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-50
+sdk/cli-commands/src/customers/delete_external.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-39
+sdk/generator/tests/test_cli_commands.py
+  s_ce40663d818538::t_25768b7a695f60 20-31,46-48,56-60,63-67,83-85
+  s_ce40663d818538::t_22bbc7d822f920 1-19,32-45,49-55,61-62,68-82,86-91
+sdk/generator/cli_commands/template/src/runtime.ts
+  s_ce40663d818538::t_3c7e9df9affdcb 1-23
+clients/packages/cli/src/cli.ts
+  s_ce40663d818538::t_7ad1691a83086a 2,10,25,42
+sdk/generator/cli_commands/template/package.json
+  s_ce40663d818538::t_8494d7620a077d 1-8,10,12-17
+  s_ce40663d818538::t_ecf8fcc58c9122 9,11
+sdk/cli-commands/tsconfig.json
+  s_ce40663d818538::t_9c11a0551fe02f 1-12
+sdk/cli-commands/src/customers/create.ts
+  s_ce40663d818538::t_b496b822785af3 57
+  s_ce40663d818538::t_9c11a0551fe02f 1-56,58-87
+sdk/cli-commands/src/customers/update_external.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-62
+sdk/generator/cli_commands/template/src/index.ts.jinja
+  s_ce40663d818538::t_bde85699424eda 1-18
+sdk/cli-commands/src/customers/get.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-24
+sdk/cli-commands/src/customers/list.ts
+  s_ce40663d818538::t_323c4a0812082c 15-21
+  s_ce40663d818538::t_9c11a0551fe02f 1-14,22-87
+sdk/cli-commands/src/customers/update.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-75
+sdk/cli-commands/src/inputs.ts
+  s_ce40663d818538::t_323c4a0812082c 30,36
+  s_ce40663d818538::t_9c11a0551fe02f 1-29,31-35,37-53
+sdk/generator/cli_commands/template/.gitignore
+  s_ce40663d818538::t_dfcb72a0f2a84e 1-3
+sdk/generator/justfile
+  s_ce40663d818538::t_7d4e001da66f1f 25-27
+sdk/generator/cli_commands/template/tsconfig.json
+  s_ce40663d818538::t_9089d9d3996d28 1-12
+clients/packages/cli/README.md
+  s_ce40663d818538::t_8c0ae2d22c954c 20-22,24-40
+  s_ce40663d818538::t_93757c191a1abd 23
+sdk/cli-commands/src/customers/get_state.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-24
+sdk/cli-commands/package.json
+  s_ce40663d818538::t_713e87d3546079 9-11,13
+  s_ce40663d818538::t_9c11a0551fe02f 1-8,12,14-19
+clients/packages/cli/src/services/api-runtime.ts
+  s_ce40663d818538::t_22e78ca869da71 1-33
+sdk/cli-commands/src/runtime.ts
+  s_ce40663d818538::t_9c11a0551fe02f 1-25
+clients/packages/cli/src/commands/customers.test.ts
+  s_ce40663d818538::t_25768b7a695f60 41-95,106-116,122-125,128-131,146-151,159-164,167-172,178-183,186-188,193-195,208-214
+  s_ce40663d818538::t_ed68693bf1c0c7 1-40,96-105,117-121,126-127,132-145,152-158,165-166,173-177,184-185,189-192,196-207,215-231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8ef2ec00d7d6468e9e6ae93d7539b086c3101574",
+  "prompts": {},
+  "sessions": {
+    "s_ce40663d818538": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a08629-e886-7252-84cc-06590948dfbe",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

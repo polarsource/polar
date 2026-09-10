@@ -462,7 +462,7 @@ def _drop_instance_data(instance: int) -> None:
     if not _shared_is_running():
         console.print(
             f"[yellow]Shared infra not running — skipping data cleanup for instance {instance}. "
-            "Start it with `dev docker up` and re-run prune to drop the DB / buckets.[/yellow]"
+            "Start it with `dev docker up` and re-run cleanup (or prune) to drop the DB / buckets.[/yellow]"
         )
         return
 
@@ -955,7 +955,11 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             bool, typer.Option("--force", help="Skip confirmation")
         ] = False,
     ) -> None:
-        """Remove this instance's app containers and volumes (use --all to nuke shared infra too)."""
+        """Remove this instance's app stack and its postgres/redis/S3 data.
+
+        Shared infra stays running. Use --all to also wipe shared volumes
+        (destroys data for every instance on the machine).
+        """
         instance = _get_instance(ctx)
         if not force:
             if all_:
@@ -969,10 +973,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                     raise typer.Abort()
             else:
                 console.print(
-                    "[yellow]This will remove this instance's api/worker/web containers and their build/cache volumes.[/yellow]"
+                    "[yellow]This will remove this instance's api/worker/web containers, "
+                    "build/cache volumes, postgres database "
+                    f"({db_name(instance)}), redis DB, and S3 buckets.[/yellow]"
                 )
                 console.print(
-                    "[dim]Shared infra (postgres, redis, minio, tinybird) is left untouched. Use --all to wipe that too.[/dim]"
+                    "[dim]Shared infra (postgres, redis, minio, tinybird) stays running. "
+                    "Use --all to wipe that too.[/dim]"
                 )
                 if not typer.confirm("Continue?"):
                     raise typer.Abort()
@@ -985,6 +992,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             console.print("[red]Cleanup failed[/red]")
             raise typer.Exit(1)
         console.print("[green]App stack cleaned up[/green]")
+
+        if not all_:
+            console.print(
+                f"[dim]Dropping instance {instance} data "
+                f"({db_name(instance)}, redis DB {redis_db(instance)}, buckets)...[/dim]"
+            )
+            _drop_instance_data(instance)
 
         if all_:
             console.print("[dim]Wiping shared infra volumes...[/dim]")

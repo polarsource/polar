@@ -9,9 +9,11 @@ from polar.models import Organization, User, UserOrganization
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.payout_account.schemas import (
     PayoutAccountCreate,
+    PayoutAccountLink,
     StripeAccountCountry,
 )
 from polar.payout_account.service import (
+    PayoutAccountExternalLinkUnsupported,
     PayoutAccountHasPendingPayouts,
     PayoutAccountLinkedToOrganization,
     PayoutAccountNonZeroBalance,
@@ -381,3 +383,169 @@ class TestSyncFromStripe:
 
         with pytest.raises(PayoutAccountSyncFailed):
             await payout_account_service.sync_from_stripe(session, payout_account)
+
+
+@pytest.mark.asyncio
+class TestOnboardingLink:
+    async def test_returns_link_url(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_account_link.return_value = (  # type: ignore[attr-defined]
+            stripe_lib.AccountLink.construct_from(
+                {"url": "https://onboarding.example.com"}, None
+            )
+        )
+
+        result = await payout_account_service.onboarding_link(
+            payout_account, "/finance/account"
+        )
+
+        assert isinstance(result, PayoutAccountLink)
+        assert result.url == "https://onboarding.example.com"
+        stripe_service_mock.create_account_link.assert_called_once_with(  # type: ignore[attr-defined]
+            payout_account.stripe_id, "/finance/account", payout_account.id
+        )
+
+    async def test_manual_account_is_unsupported(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
+        )
+
+        with pytest.raises(PayoutAccountExternalLinkUnsupported):
+            await payout_account_service.onboarding_link(payout_account, "/path")
+
+        stripe_service_mock.create_account_link.assert_not_called()  # type: ignore[attr-defined]
+
+    @pytest.mark.parametrize(
+        "error",
+        [
+            stripe_lib.PermissionError("no access"),
+            stripe_lib.InvalidRequestError("no such account", param="account"),
+        ],
+    )
+    async def test_inaccessible_account_is_not_transient(
+        self,
+        error: stripe_lib.StripeError,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_account_link.side_effect = error  # type: ignore[attr-defined]
+
+        with pytest.raises(PayoutAccountStripeAccountDoesNotExist) as excinfo:
+            await payout_account_service.onboarding_link(payout_account, "/path")
+
+        assert excinfo.value.__cause__ is error
+
+    async def test_unreachable_stripe_raises_sync_failed(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        original_error = stripe_lib.APIConnectionError("boom")
+        stripe_service_mock.create_account_link.side_effect = (  # type: ignore[attr-defined]
+            original_error
+        )
+
+        with pytest.raises(PayoutAccountSyncFailed) as excinfo:
+            await payout_account_service.onboarding_link(payout_account, "/path")
+
+        assert excinfo.value.__cause__ is original_error
+
+
+@pytest.mark.asyncio
+class TestDashboardLink:
+    async def test_returns_link_url(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_login_link.return_value = (  # type: ignore[attr-defined]
+            stripe_lib.LoginLink.construct_from(
+                {"url": "https://dashboard.example.com"}, None
+            )
+        )
+
+        result = await payout_account_service.dashboard_link(payout_account)
+
+        assert isinstance(result, PayoutAccountLink)
+        assert result.url == "https://dashboard.example.com"
+        stripe_service_mock.create_login_link.assert_called_once_with(  # type: ignore[attr-defined]
+            payout_account.stripe_id
+        )
+
+    async def test_manual_account_is_unsupported(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
+        )
+
+        with pytest.raises(PayoutAccountExternalLinkUnsupported):
+            await payout_account_service.dashboard_link(payout_account)
+
+        stripe_service_mock.create_login_link.assert_not_called()  # type: ignore[attr-defined]
+
+    @pytest.mark.parametrize(
+        "error",
+        [
+            stripe_lib.PermissionError("no access"),
+            stripe_lib.InvalidRequestError("no such account", param="account"),
+        ],
+    )
+    async def test_inaccessible_account_is_not_transient(
+        self,
+        error: stripe_lib.StripeError,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_login_link.side_effect = error  # type: ignore[attr-defined]
+
+        with pytest.raises(PayoutAccountStripeAccountDoesNotExist) as excinfo:
+            await payout_account_service.dashboard_link(payout_account)
+
+        assert excinfo.value.__cause__ is error
+
+    async def test_unreachable_stripe_raises_sync_failed(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        original_error = stripe_lib.APIConnectionError("boom")
+        stripe_service_mock.create_login_link.side_effect = (  # type: ignore[attr-defined]
+            original_error
+        )
+
+        with pytest.raises(PayoutAccountSyncFailed) as excinfo:
+            await payout_account_service.dashboard_link(payout_account)
+
+        assert excinfo.value.__cause__ is original_error

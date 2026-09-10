@@ -2,9 +2,12 @@ import uuid
 
 import pytest
 import pytest_asyncio
+import stripe as stripe_lib
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.auth.scope import READ_ONLY_SCOPES
+from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, PayoutAccount, User, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -14,6 +17,13 @@ from tests.fixtures.random_objects import (
     create_payout_account,
     create_user,
 )
+
+
+@pytest.fixture
+def stripe_service_mock(mocker: MockerFixture) -> StripeService:
+    mock = mocker.MagicMock(spec=StripeService)
+    mocker.patch("polar.payout_account.service.stripe", new=mock)
+    return mock
 
 
 @pytest_asyncio.fixture
@@ -233,6 +243,77 @@ class TestOnboardingLink:
 
         assert response.status_code == 404
 
+    @pytest.mark.auth
+    async def test_returns_link(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_account_link.return_value = (  # type: ignore[attr-defined]
+            stripe_lib.AccountLink.construct_from(
+                {"url": "https://connect.stripe.com/setup/s1"}, None
+            )
+        )
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/onboarding-link",
+            params={"return_path": "/finance/account"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"url": "https://connect.stripe.com/setup/s1"}
+
+    @pytest.mark.auth
+    async def test_inaccessible_account_returns_422(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_account_link.side_effect = (  # type: ignore[attr-defined]
+            stripe_lib.InvalidRequestError("no such account", param="account")
+        )
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/onboarding-link",
+            params={"return_path": "/finance/account"},
+        )
+
+        assert response.status_code == 422
+        assert response.json()["error"] == "PayoutAccountStripeAccountDoesNotExist"
+
+    @pytest.mark.auth
+    async def test_transient_error_returns_503(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_account_link.side_effect = (  # type: ignore[attr-defined]
+            stripe_lib.APIConnectionError("boom")
+        )
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/onboarding-link",
+            params={"return_path": "/finance/account"},
+        )
+
+        assert response.status_code == 503
+        assert response.json()["error"] == "PayoutAccountSyncFailed"
+
 
 @pytest.mark.asyncio
 class TestDashboardLink:
@@ -255,6 +336,74 @@ class TestDashboardLink:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_returns_link(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_login_link.return_value = (  # type: ignore[attr-defined]
+            stripe_lib.LoginLink.construct_from(
+                {"url": "https://connect.stripe.com/login/s1"}, None
+            )
+        )
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/dashboard-link"
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"url": "https://connect.stripe.com/login/s1"}
+
+    @pytest.mark.auth
+    async def test_inaccessible_account_returns_422(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_login_link.side_effect = (  # type: ignore[attr-defined]
+            stripe_lib.InvalidRequestError("no such account", param="account")
+        )
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/dashboard-link"
+        )
+
+        assert response.status_code == 422
+        assert response.json()["error"] == "PayoutAccountStripeAccountDoesNotExist"
+
+    @pytest.mark.auth
+    async def test_transient_error_returns_503(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_login_link.side_effect = (  # type: ignore[attr-defined]
+            stripe_lib.APIConnectionError("boom")
+        )
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/dashboard-link"
+        )
+
+        assert response.status_code == 503
+        assert response.json()["error"] == "PayoutAccountSyncFailed"
 
 
 @pytest.mark.asyncio

@@ -150,9 +150,21 @@ class PayoutAccountService:
         match payout_account.type:
             case PayoutAccountType.stripe:
                 assert payout_account.stripe_id is not None
-                account_link = await stripe.create_account_link(
-                    payout_account.stripe_id, return_path, payout_account.id
-                )
+                try:
+                    account_link = await stripe.create_account_link(
+                        payout_account.stripe_id, return_path, payout_account.id
+                    )
+                except (
+                    stripe_lib.PermissionError,
+                    stripe_lib.InvalidRequestError,
+                ) as e:
+                    # Deleted, or we lost access. Retrying can't repair it, so it
+                    # must not read as a transient outage.
+                    raise PayoutAccountStripeAccountDoesNotExist(
+                        payout_account.stripe_id
+                    ) from e
+                except stripe_lib.StripeError as e:
+                    raise PayoutAccountSyncFailed(payout_account.stripe_id) from e
                 return PayoutAccountLink(url=account_link.url)
             case _:
                 raise PayoutAccountExternalLinkUnsupported(payout_account.type)
@@ -161,7 +173,21 @@ class PayoutAccountService:
         match payout_account.type:
             case PayoutAccountType.stripe:
                 assert payout_account.stripe_id is not None
-                account_link = await stripe.create_login_link(payout_account.stripe_id)
+                try:
+                    account_link = await stripe.create_login_link(
+                        payout_account.stripe_id
+                    )
+                except (
+                    stripe_lib.PermissionError,
+                    stripe_lib.InvalidRequestError,
+                ) as e:
+                    # Deleted, or we lost access. Retrying can't repair it, so it
+                    # must not read as a transient outage.
+                    raise PayoutAccountStripeAccountDoesNotExist(
+                        payout_account.stripe_id
+                    ) from e
+                except stripe_lib.StripeError as e:
+                    raise PayoutAccountSyncFailed(payout_account.stripe_id) from e
                 return PayoutAccountLink(url=account_link.url)
             case _:
                 raise PayoutAccountExternalLinkUnsupported(payout_account.type)

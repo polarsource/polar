@@ -130,6 +130,24 @@ describe('Checkout', () => {
     })
   })
 
+  describe('products envelope parsing', () => {
+    it.each([
+      ['?products='],
+      ['?products=prod_1,'],
+      ['?products=prod_1,,prod_2'],
+    ])(
+      'rejects malformed %s with a 400 and does not forward to createCheckouts',
+      async (query) => {
+        const checkout = Checkout({ accessToken: 'test-token' })
+
+        await expect(checkout(makeEvent(query))).rejects.toMatchObject({
+          statusCode: 400,
+        })
+        expect(mockCheckoutCreate).not.toHaveBeenCalled()
+      },
+    )
+  })
+
   describe('other query params (regression)', () => {
     it('forwards products, customer fields, allowDiscountCodes, discountId, and seats together', async () => {
       const checkout = Checkout({ accessToken: 'test-token' })

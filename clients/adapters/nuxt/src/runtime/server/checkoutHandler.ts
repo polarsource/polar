@@ -20,7 +20,7 @@ const checkoutQuerySchema = z.object({
   products: z
     .string()
     .transform((value) => value.split(','))
-    .pipe(z.string().array()),
+    .pipe(z.string().min(1).array().min(1)),
   customer_id: z.string().nonempty().optional(),
   external_customer_id: z.string().nonempty().optional(),
   customer_email: z.string().email().optional(),

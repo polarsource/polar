@@ -36,11 +36,14 @@ class TestHashSecret:
         assert OAuth2Client.hash_secret(None) is None
 
 
-def _build_with_redirect_uris(*redirect_uris: str) -> OAuth2Client:
+def _build_with_redirect_uris(
+    *redirect_uris: str, first_party: bool = True
+) -> OAuth2Client:
     client = OAuth2Client(
         client_id="polar_ci_test",
         client_secret="polar_cs_test",
         registration_access_token="polar_crt_test",
+        first_party=first_party,
     )
     client.set_client_metadata({"redirect_uris": list(redirect_uris)})
     return client
@@ -63,13 +66,22 @@ class TestCheckRedirectUri:
             "http://127.0.0.1/oauth/callback",
         ],
     )
-    def test_loopback_accepts_any_port(self, redirect_uri: str) -> None:
+    def test_loopback_accepts_any_port_for_first_party_client(
+        self, redirect_uri: str
+    ) -> None:
         client = _build_with_redirect_uris("http://127.0.0.1:3333/oauth/callback")
         assert client.check_redirect_uri(redirect_uri)
 
-    def test_loopback_ipv6_accepts_any_port(self) -> None:
+    def test_loopback_ipv6_accepts_any_port_for_first_party_client(self) -> None:
         client = _build_with_redirect_uris("http://[::1]:3333/oauth/callback")
         assert client.check_redirect_uri("http://[::1]:51234/oauth/callback")
+
+    def test_loopback_requires_exact_port_for_third_party_clients(self) -> None:
+        client = _build_with_redirect_uris(
+            "http://127.0.0.1:3333/oauth/callback", first_party=False
+        )
+        assert client.check_redirect_uri("http://127.0.0.1:3333/oauth/callback")
+        assert not client.check_redirect_uri("http://127.0.0.1:51234/oauth/callback")
 
     @pytest.mark.parametrize(
         "redirect_uri",

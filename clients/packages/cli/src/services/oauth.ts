@@ -363,19 +363,17 @@ const login = (environment: PolarEnvironment) =>
       yield* Console.log(ui.blank)
       if (listener.fallback) {
         yield* Console.log(
-          ui.step(
-            `Port ${PREFERRED_CALLBACK_PORT} is busy, using port ${listener.port} for the sign-in callback instead`,
+          ui.warning(
+            ui.yellow(
+              `Port ${ui.bold(String(PREFERRED_CALLBACK_PORT))} is busy, using port ${ui.bold(String(listener.port))} for the sign-in callback instead`,
+            ),
           ),
         )
       }
       yield* Console.log(
         ui.step(`Opening your browser to sign in to Polar ${environment}...`),
       )
-      yield* Console.log(ui.step('If it does not open, visit:'))
-      yield* Console.log(`    ${ui.cyan(authorization.toString())}`)
-      yield* Console.log(ui.blank)
       yield* Console.log(ui.step('Waiting for you to authorize the CLI...'))
-      yield* Console.log(ui.blank)
       const code = yield* waitForCallback(
         server,
         redirectUrl,

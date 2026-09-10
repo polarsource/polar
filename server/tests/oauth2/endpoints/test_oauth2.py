@@ -694,21 +694,11 @@ class TestOAuth2Authorize:
         assert "code=" in location
 
     @pytest.mark.auth
-    async def test_granted_loopback_redirect_uri_on_another_port(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user: User,
-        oauth2_client: OAuth2Client,
+    async def test_granted_first_party_loopback_redirect_uri_on_another_port(
+        self, client: AsyncClient, first_party_oauth2_client: OAuth2Client
     ) -> None:
-        await create_oauth2_grant(
-            save_fixture,
-            client=oauth2_client,
-            user=user,
-            scopes=["openid", "profile", "email"],
-        )
         params = {
-            "client_id": oauth2_client.client_id,
+            "client_id": first_party_oauth2_client.client_id,
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:51234/docs/oauth2-redirect",
             "scope": "openid profile email",
@@ -722,13 +712,28 @@ class TestOAuth2Authorize:
         assert "code=" in location
 
     @pytest.mark.auth
-    async def test_loopback_redirect_uri_with_another_path(
+    async def test_first_party_loopback_redirect_uri_with_another_path(
+        self, client: AsyncClient, first_party_oauth2_client: OAuth2Client
+    ) -> None:
+        params = {
+            "client_id": first_party_oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:51234/docs/other",
+            "scope": "openid profile email",
+            "sub_type": "user",
+        }
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 400
+
+    @pytest.mark.auth
+    async def test_third_party_loopback_redirect_uri_on_another_port(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
         params = {
             "client_id": oauth2_client.client_id,
             "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:51234/docs/other",
+            "redirect_uri": "http://127.0.0.1:51234/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "user",
         }

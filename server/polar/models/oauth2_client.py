@@ -88,6 +88,8 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     def check_redirect_uri(self, redirect_uri: str) -> bool:
         if super().check_redirect_uri(redirect_uri):
             return True
+        if not self.first_party:
+            return False
         requested = _loopback_redirect_uri(redirect_uri)
         if requested is None:
             return False

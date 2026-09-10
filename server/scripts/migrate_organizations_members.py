@@ -616,6 +616,11 @@ def _chunked(
 
 
 def _seat_products_cte(organization_ids: Sequence[uuid.UUID]) -> CTE:
+    """Products that ever carried a seat price.
+
+    Archived prices count: editing a product's prices archives the old rows,
+    and the subscriptions running on them keep their seats.
+    """
     return (
         select(Product.id.label("product_id"), Product.organization_id)
         .join(ProductPrice, ProductPrice.product_id == Product.id)
@@ -623,7 +628,6 @@ def _seat_products_cte(organization_ids: Sequence[uuid.UUID]) -> CTE:
             Product.organization_id.in_(organization_ids),
             Product.deleted_at.is_(None),
             ProductPrice.deleted_at.is_(None),
-            ProductPrice.is_archived.is_(False),
             ProductPrice.amount_type == ProductPriceAmountType.seat_based,
         )
         .distinct()
@@ -787,7 +791,7 @@ async def audit(
     ),
     slug: str | None = typer.Option(None, help="Audit a single organization by slug"),
     chunk_size: int = typer.Option(
-        20, help="Organizations per query for the customer-wide counts"
+        20, min=1, help="Organizations per query for the customer-wide counts"
     ),
     command_timeout: float = typer.Option(
         120.0, help="Seconds a single query may run before the server kills it"

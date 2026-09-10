@@ -201,7 +201,16 @@ class PaymentService:
         assert payment_method is not None
         payment.method = payment_method.type
         payment.method_metadata = dict(payment_method[payment_method.type])
-        payment.customer_email = payment_intent.receipt_email
+        payment.customer_email = (
+            payment_intent.receipt_email
+            or (checkout.customer_email if checkout is not None else None)
+            or (
+                checkout.customer.email
+                if checkout is not None and checkout.customer is not None
+                else None
+            )
+            or (order.customer.email if order is not None else None)
+        )
 
         payment.decline_reason = getattr(payment_error, "code", None)
         payment.decline_message = payment_error.message

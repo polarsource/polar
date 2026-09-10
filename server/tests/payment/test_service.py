@@ -606,3 +606,77 @@ class TestUpsertFromStripePaymentIntent:
         )
 
         assert payment.trigger is None
+
+    async def test_no_receipt_email_falls_back_to_checkout_customer_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_test_no_receipt",
+            amount=1000,
+            currency="usd",
+            receipt_email=None,
+            metadata={"checkout_id": str(checkout.id)},
+            latest_charge=None,
+            last_payment_error={
+                "code": "authentication_required",
+                "message": "3D Secure authentication required",
+                "payment_method": {
+                    "id": "pm_test123",
+                    "type": "card",
+                    "card": {"brand": "visa", "last4": "4242"},
+                },
+            },
+        )
+
+        payment = await payment_service.upsert_from_stripe_payment_intent(
+            session, payment_intent, organization, checkout, None
+        )
+
+        assert payment.customer_email == customer.email
+
+    async def test_no_receipt_email_falls_back_to_order_customer_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_test_no_receipt",
+            amount=1000,
+            currency="usd",
+            receipt_email=None,
+            metadata={"order_id": str(order.id)},
+            latest_charge=None,
+            last_payment_error={
+                "code": "authentication_required",
+                "message": "3D Secure authentication required",
+                "payment_method": {
+                    "id": "pm_test123",
+                    "type": "card",
+                    "card": {"brand": "visa", "last4": "4242"},
+                },
+            },
+        )
+
+        payment = await payment_service.upsert_from_stripe_payment_intent(
+            session, payment_intent, organization, None, order
+        )
+
+        assert payment.customer_email == customer.email

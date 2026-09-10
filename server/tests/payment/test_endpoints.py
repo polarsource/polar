@@ -7,9 +7,12 @@ from httpx import AsyncClient
 from polar.auth.scope import Scope
 from polar.models import Customer, Organization, Payment, Product, UserOrganization
 from polar.models.payment import PaymentTrigger
+from polar.payment.service import payment as payment_service
+from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_order, create_payment
+from tests.fixtures.stripe import build_stripe_payment_intent
 
 
 @pytest_asyncio.fixture
@@ -88,6 +91,55 @@ class TestListPayments:
         json = response.json()
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(failed_checkout_payment.id)
+
+    @pytest.mark.auth
+    async def test_filter_by_customer_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+        payment_intent = build_stripe_payment_intent(
+            id="pi_test_email_filter",
+            amount=1000,
+            currency="usd",
+            receipt_email=None,
+            metadata={"checkout_id": str(checkout.id)},
+            latest_charge=None,
+            last_payment_error={
+                "code": "authentication_required",
+                "message": "3D Secure authentication required",
+                "payment_method": {
+                    "id": "pm_test123",
+                    "type": "card",
+                    "card": {"brand": "visa", "last4": "4242"},
+                },
+            },
+        )
+        failed_payment = await payment_service.upsert_from_stripe_payment_intent(
+            session, payment_intent, organization, checkout, None
+        )
+        await session.flush()
+
+        await create_payment(
+            save_fixture, organization, customer_email="other@example.com"
+        )
+
+        response = await client.get(
+            "/v1/payments/", params={"customer_email": customer.email}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(failed_payment.id)
 
 
 @pytest.mark.asyncio

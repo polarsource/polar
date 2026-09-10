@@ -6,6 +6,7 @@ from freezegun.api import freeze_time
 from pytest_mock import MockerFixture
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
 from polar.models import Customer, Organization, Product, Subscription
 from polar.models.organization import OrganizationStatus
@@ -23,6 +24,7 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     subscription_update_product_benefits_grants,
 )
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_subscription,
@@ -353,3 +355,52 @@ class TestSubscriptionCycle:
         assert refreshed.scheduler_locked_at is None
         assert refreshed.current_period_end is not None
         assert refreshed.current_period_end > old_period_end
+
+    async def test_scheduled_cancel_period_end_does_not_re_send_canceled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """End-to-end guard for the scheduler period-end completion of a
+        scheduled cancellation: only the documented ``subscription.updated`` +
+        ``subscription.revoked`` are emitted, not a duplicate
+        ``subscription.canceled``. Exercises the real ``subscription_cycle``
+        actor so the ``scheduled_completion=True`` flag passed by the task is
+        covered (not just the service-level ``cycle()`` call).
+        """
+        now = utc_now()
+        old_period_end = now - timedelta(days=2)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=now,
+            cancel_at_period_end=True,
+            current_period_start=now - timedelta(days=32),
+            current_period_end=old_period_end,  # billing_due=True
+        )
+        assert subscription.canceled_at is not None
+        assert subscription.cancel_at_period_end is True
+
+        session.expunge_all()
+
+        await subscription_cycle(subscription.id)
+
+        refreshed = await session.get(Subscription, subscription.id)
+        assert refreshed is not None
+        assert refreshed.status == SubscriptionStatus.canceled
+        assert refreshed.ended_at is not None
+        assert refreshed.scheduler_locked_at is None
+
+        revoked_events = await get_all_by_name(
+            session, SystemEvent.subscription_revoked
+        )
+        assert len(revoked_events) == 1
+        canceled_events = await get_all_by_name(
+            session, SystemEvent.subscription_canceled
+        )
+        assert len(canceled_events) == 0, (
+            "subscription.canceled must not be re-created at the period-end cycle"
+        )

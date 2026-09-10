@@ -96,7 +96,13 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
-                await subscription_service.cycle(session, ctx, subscription)
+                # This cycle completes a scheduled cancellation at period end:
+                # suppress the duplicate ``subscription.canceled`` (already
+                # sent at schedule time) so only the documented
+                # ``subscription.updated`` + ``subscription.revoked`` fire.
+                await subscription_service.cycle(
+                    session, ctx, subscription, scheduled_completion=True
+                )
         else:
             # cycle_meters raises SubscriptionMeterCycleLag on a multi-period lag; we
             # let it propagate — the subscription stays halted (lock set) for a human.

@@ -1728,7 +1728,15 @@ class TestCycle:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
+        """The scheduler-driven period-end completion of a scheduled
+        cancellation emits the documented End-of-Period sequence only:
+        ``subscription.updated`` + ``subscription.revoked``. The
+        ``subscription.canceled`` webhook and system event were already sent
+        at schedule time and must NOT be re-sent here (regression: the
+        ``became_revoked and previous_is_canceled`` arm used to re-fire it).
+        """
         subscription = await create_active_subscription(
             save_fixture,
             product=product,
@@ -1740,11 +1748,13 @@ class TestCycle:
         previous_current_period_start = subscription.current_period_start
         previous_current_period_end = subscription.current_period_end
 
+        # Mirror the scheduler (tasks.subscription_cycle), which marks this
+        # cycle as the scheduled period-end completion.
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
         ) as ctx:
             updated_subscription = await subscription_service.cycle(
-                session, ctx, subscription
+                session, ctx, subscription, scheduled_completion=True
             )
 
         assert updated_subscription.status == SubscriptionStatus.canceled
@@ -1802,6 +1812,30 @@ class TestCycle:
             webhook_service_send_mock, WebhookEventType.subscription_cycled
         )
 
+        # Documented End-of-Period contract: updated + revoked only.
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated_subscription,
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_revoked,
+            organization,
+            updated_subscription,
+        )
+        # subscription.canceled must NOT be re-sent at period end.
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_canceled
+        )
+        canceled_events = await get_all_by_name(
+            session, SystemEvent.subscription_canceled
+        )
+        assert len(canceled_events) == 0, (
+            "subscription.canceled system event must not be re-created at period end"
+        )
+
         enqueue_email_mock.assert_called_once()
         assert isinstance(enqueue_email_mock.call_args[0][0], SubscriptionRevokedEmail)
         subject = enqueue_email_mock.call_args.kwargs["subject"]
@@ -1838,7 +1872,7 @@ class TestCycle:
             session, subscription, subscription_service
         ) as ctx:
             updated_subscription = await subscription_service.cycle(
-                session, ctx, subscription
+                session, ctx, subscription, scheduled_completion=True
             )
 
         # ended_at should be set to the current time when the cycle ran, not to ends_at
@@ -1940,12 +1974,13 @@ class TestCycle:
         # cancel() only schedules; status stays trialing until the period ends.
         assert subscription.status == SubscriptionStatus.trialing
 
-        # Now cycle (trial period ending, cancellation takes effect).
+        # Now cycle (trial period ending, cancellation takes effect), mirroring
+        # the scheduler which marks this as the scheduled period-end completion.
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
         ) as ctx:
             updated_subscription = await subscription_service.cycle(
-                session, ctx, subscription
+                session, ctx, subscription, scheduled_completion=True
             )
 
         # The revoke path must win: status is canceled, not active.
@@ -1992,6 +2027,35 @@ class TestCycle:
         # The cycled webhook is only sent on the non-revoke path.
         assert_webhook_not_sent(
             webhook_service_send_mock, WebhookEventType.subscription_cycled
+        )
+        # The period-end cycle sends the documented subscription.revoked exactly
+        # once (the cancel() schedule step does not revoke).
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_revoked,
+            organization,
+            updated_subscription,
+        )
+        # subscription.canceled was sent once at schedule time by cancel() and
+        # must NOT be re-sent at period end (regression: the scheduler cycle
+        # used to re-fire it via the ``became_revoked and previous_is_canceled``
+        # arm). Count across both blocks to assert the schedule-time one is the
+        # only occurrence.
+        canceled_webhook_calls = [
+            call
+            for call in webhook_service_send_mock.call_args_list
+            if call.args[2] == WebhookEventType.subscription_canceled
+        ]
+        assert len(canceled_webhook_calls) == 1, (
+            "subscription.canceled webhook must be sent once (at schedule "
+            "time), not re-sent at period end"
+        )
+        canceled_events = await get_all_by_name(
+            session, SystemEvent.subscription_canceled
+        )
+        assert len(canceled_events) == 1, (
+            "subscription.canceled system event must be created once (at "
+            "schedule time), not re-created at period end"
         )
         # The revoked email is sent by the cycle (the cancellation email was
         # already sent earlier by cancel(), so we check for the revoked one

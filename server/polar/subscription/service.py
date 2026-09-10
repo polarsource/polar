@@ -483,6 +483,14 @@ class SubscriptionUpdateContext:
         self._billing_effect: Literal["invoice", "cycle"] | None = None
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
         self._has_changes = True
+        # Set by ``cycle()`` when the scheduler completes a scheduled
+        # cancellation at period end. Suppresses the duplicate
+        # ``subscription.canceled`` (already sent at schedule time) on that
+        # path, so only the documented ``subscription.updated`` +
+        # ``subscription.revoked`` are emitted. The merchant immediate revoke
+        # of an already-scheduled cancel leaves this ``False`` and still
+        # re-sends ``subscription.canceled``.
+        self._scheduled_completion = False
 
     async def __aenter__(self) -> Self:
         return self
@@ -526,10 +534,14 @@ class SubscriptionUpdateContext:
                 previous_status=self._previous_status,
                 previous_is_canceled=self._previous_is_canceled,
                 notify_customer=self._notify_customer,
+                scheduled_completion=self._scheduled_completion,
             )
 
     def mark_unchanged(self) -> None:
         self._has_changes = False
+
+    def mark_scheduled_completion(self) -> None:
+        self._scheduled_completion = True
 
     def set_billing_effect(self, effect: Literal["invoice", "cycle"]) -> None:
         if effect == "cycle":
@@ -1121,7 +1133,12 @@ class SubscriptionService:
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         update_cycle_dates: bool = True,
+        *,
+        scheduled_completion: bool = False,
     ) -> Subscription:
+        if scheduled_completion:
+            ctx.mark_scheduled_completion()
+
         if not subscription.billable:
             raise NotBillableSubscription(subscription)
 
@@ -3499,6 +3516,7 @@ class SubscriptionService:
         previous_status: SubscriptionStatus,
         previous_is_canceled: bool,
         notify_customer: bool = True,
+        scheduled_completion: bool = False,
     ) -> None:
         await self._on_subscription_updated(session, subscription)
 
@@ -3555,7 +3573,9 @@ class SubscriptionService:
         if became_past_due:
             await self._on_subscription_past_due(session, subscription)
 
-        if became_canceled or (became_revoked and previous_is_canceled):
+        if became_canceled or (
+            became_revoked and previous_is_canceled and not scheduled_completion
+        ):
             await self._on_subscription_canceled(
                 session,
                 subscription,

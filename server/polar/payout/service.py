@@ -383,7 +383,7 @@ class PayoutService:
         if await locker.is_locked(lock_name):
             raise PendingPayoutCreation(account)
 
-        async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
+        async with locker.lock(lock_name, timeout=120, blocking_timeout=1):
             # Lock the org row so a concurrent approval can't land between the
             # status read and the payout insert and strand a held payout on an
             # already-active org. Refresh only status/capabilities to keep the

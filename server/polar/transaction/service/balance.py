@@ -3,8 +3,6 @@ import uuid
 import structlog
 
 from polar.account.repository import AccountRepository
-from polar.integrations.stripe.service import stripe as stripe_service
-from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.models import Account, IssueReward, Order, Pledge, Transaction
@@ -112,33 +110,6 @@ class BalanceTransactionService(BaseTransactionService):
             source_account=source_account,
             destination_account=destination_account,
             payment_transaction=payment_transaction,
-            amount=amount,
-            pledge=pledge,
-            order=order,
-            issue_reward=issue_reward,
-        )
-
-    async def create_balance_from_payment_intent(
-        self,
-        session: AsyncSession,
-        *,
-        source_account: Account | None,
-        destination_account: Account | None,
-        payment_intent_id: str,
-        amount: int,
-        pledge: Pledge | None = None,
-        order: Order | None = None,
-        issue_reward: IssueReward | None = None,
-    ) -> tuple[Transaction, Transaction]:
-        payment_intent = await stripe_service.retrieve_intent(payment_intent_id)
-        assert payment_intent.latest_charge is not None
-        charge_id = get_expandable_id(payment_intent.latest_charge)
-
-        return await self.create_balance_from_charge(
-            session,
-            source_account=source_account,
-            destination_account=destination_account,
-            charge_id=charge_id,
             amount=amount,
             pledge=pledge,
             order=order,

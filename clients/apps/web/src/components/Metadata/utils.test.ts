@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { validateMetadataKey, validateMetadataValue } from './utils'
+import {
+  convertMetadataValue,
+  validateMetadataKey,
+  validateMetadataValue,
+} from './utils'
+
+describe('convertMetadataValue', () => {
+  it('converts an empty number to an empty string', () => {
+    expect(convertMetadataValue(Number.NaN, 'string')).toBe('')
+  })
+})
 
 describe('validateMetadataKey', () => {
   it('rejects an empty key', () => {

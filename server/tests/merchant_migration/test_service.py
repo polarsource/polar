@@ -14,6 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.enums import PaymentProcessor
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
@@ -34,7 +35,9 @@ from polar.merchant_migration.canonical import (
     deserialize,
     serialize,
 )
-from polar.merchant_migration.cards import AmbiguousCopiedCard
+from polar.merchant_migration.cards import (
+    AmbiguousCopiedCard,
+)
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
@@ -96,6 +99,7 @@ from polar.models.merchant_migration_record import (
 from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.models.product_price import ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
@@ -2154,7 +2158,10 @@ async def _imported_subscription(
 ) -> MerchantMigrationRecord:
     """A pending subscription whose customer and product are already in Polar."""
     customer = await create_customer(
-        save_fixture, organization=organization, email=email
+        save_fixture,
+        organization=organization,
+        email=email,
+        stripe_customer_id=f"cus_{source_id}",
     )
     await save_fixture(
         MerchantMigrationRecord(
@@ -2216,6 +2223,113 @@ async def _imported_subscription(
 
 
 @pytest.mark.asyncio
+class TestImportPaymentMethodMappings:
+    async def test_imports_and_assigns_the_exact_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mapped = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="mapped@example.com",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_old",
+                type=CanonicalPaymentMethodType.card,
+            ),
+        )
+        uncovered = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_uncovered",
+            email="uncovered@example.com",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_uncovered",
+                type=CanonicalPaymentMethodType.card,
+            ),
+        )
+        uncovered_subscription = deserialize(uncovered.type, uncovered.canonical)
+        assert isinstance(uncovered_subscription, CanonicalSubscription)
+        uncovered_subscription.customer_source_id = "cus_sub_1"
+        uncovered.canonical = serialize(uncovered_subscription)
+        await save_fixture(uncovered)
+        stripe_payment_method = build_stripe_payment_method(customer="cus_sub_1")
+        stripe_payment_method.id = "pm_new"
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=stripe_payment_method),
+        )
+
+        await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_sub_1,pm_old,cus_sub_1,pm_new\n"
+            ),
+        )
+
+        customer_record = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_imported_customer_dependency(migration.organization_id, "cus_sub_1")
+        assert customer_record is not None
+        assert customer_record.target_id is not None
+        customer = await session.get(Customer, customer_record.target_id)
+        assert customer is not None
+        assert customer.stripe_customer_id == "cus_sub_1"
+        payment_method = await PaymentMethodRepository.from_session(
+            session
+        ).get_by_customer_and_processor_id(
+            customer.id, PaymentProcessor.stripe, "pm_new"
+        )
+        assert payment_method is not None
+        mapped_subscription = deserialize(mapped.type, mapped.canonical)
+        assert isinstance(mapped_subscription, CanonicalSubscription)
+        assert mapped_subscription.payment_method is not None
+        assert mapped_subscription.payment_method.source_id == "pm_new"
+        uncovered_subscription = deserialize(uncovered.type, uncovered.canonical)
+        assert isinstance(uncovered_subscription, CanonicalSubscription)
+        assert uncovered_subscription.payment_method is not None
+        assert uncovered_subscription.payment_method.source_id == "pm_uncovered"
+        coverage = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).payment_method_coverage(migration.id, exact=True)
+        assert coverage == {mapped.id}
+        customer.default_payment_method_id = payment_method.id
+        await session.flush()
+        coverage = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).payment_method_coverage(migration.id, exact=True)
+        assert coverage == {mapped.id, uncovered.id}
+
+    async def test_skips_a_mapping_for_another_migration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+
+        await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_unknown,pm_old,cus_unknown,pm_new\n"
+            ),
+        )
+
+
+@pytest.mark.asyncio
 class TestRunCardVerification:
     @pytest.mark.auth
     async def test_links_card_to_pending_subscription_customer(
@@ -2240,6 +2354,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         customer = await CustomerRepository.from_session(
             session
@@ -2274,6 +2389,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         await _imported_subscription(
             save_fixture,
@@ -2327,6 +2443,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         await _imported_subscription(
             save_fixture,
@@ -2395,6 +2512,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         charged = CanonicalPaymentMethod(
             source_id="pm_source",
@@ -2444,6 +2562,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         await _imported_subscription(
             save_fixture,
@@ -2504,6 +2623,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         first = await _imported_subscription(
             save_fixture,

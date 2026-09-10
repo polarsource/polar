@@ -5,17 +5,6 @@ import Link from 'next/link'
 
 const JOBS = [
   {
-    category: 'Design',
-    roles: [
-      {
-        role: 'Senior Product Designer',
-        location: 'Remote, Europe',
-        experience: '8+ Years Experience',
-        link: 'https://jobs.ashbyhq.com/polar/ec140cc5-fe50-4c7a-9131-3dd718d2b02d',
-      },
-    ],
-  },
-  {
     category: 'Product & Engineering',
     roles: [
       {

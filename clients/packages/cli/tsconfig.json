@@ -3,12 +3,16 @@
   "extends": "@sindresorhus/tsconfig",
   "compilerOptions": {
     "outDir": "dist",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "target": "ES2022",
     "module": "preserve",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
     "verbatimModuleSyntax": true,
     "rewriteRelativeImportExtensions": true,
+    "allowJs": true,
     "noEmit": true,
     "declaration": false,
     "incremental": true,
@@ -25,5 +29,5 @@
       }
     ]
   },
-  "include": ["src"]
+  "include": ["src", "scripts"]
 }

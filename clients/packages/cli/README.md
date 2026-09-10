@@ -8,11 +8,30 @@ A Polar CLI for your terminal.
 
 Currently in development.
 
+## Telemetry
+
+Every command reports one anonymous `cli_command` event straight to PostHog when
+it finishes: the command path (for example `auth login`), the names of the flags
+used (never their values), whether it succeeded, failed or was interrupted, the
+error type, the duration, the CLI version, OS, architecture, Bun version, whether
+it ran in CI, and which AI coding agent (if any) invoked it. Events are keyed by a
+random install id stored in `~/.polar/telemetry.json`. Access tokens,
+organization IDs, URLs and payloads are never sent. The PostHog project key is a
+public write-only token, the same one the website uses.
+
+Telemetry is wired around the root command in `src/cli.ts`, so new commands are
+covered automatically. Only the compiled release binary sends events; running
+from source or from `bin/cli.js` sends nothing. Opt out with
+`POLAR_CLI_TELEMETRY_OPTOUT=1` (`DO_NOT_TRACK=1` is honoured too).
+
 ## Development
 
 From `clients/`, install dependencies with `pnpm install`, then use
 `pnpm --filter polar-cli test`, `typecheck`, `format`, or `lint`.
 Bun `1.4.2` is the runtime, test runner, and binary compiler; pnpm manages dependencies.
+
+Run the CLI from source with `bun src/cli.ts <command>` in this directory, or
+compile the release binary with `pnpm build:binary` and run `./polar`.
 
 ## Releases
 

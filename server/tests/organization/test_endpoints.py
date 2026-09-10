@@ -22,6 +22,7 @@ from polar.models.organization_sso_connection import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole, UserOrganization
 from polar.organization.schemas import DISPUTE_AUTO_ACCEPT_MAX_AMOUNT
+from polar.organization_review.schemas import ReviewContext
 from polar.payout_account.service import PayoutAccountServiceError
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -604,7 +605,11 @@ class TestUpdateOrganization:
 
         assert response.status_code == 200
         assert response.json()["details_submitted_at"] is not None
-        enqueue_job_mock.assert_called_once()
+        enqueue_job_mock.assert_any_call(
+            "organization_review.run_agent",
+            organization_id=organization.id,
+            context=ReviewContext.SUBMISSION,
+        )
 
     @pytest.mark.auth
     async def test_submit_for_review_not_existing(self, client: AsyncClient) -> None:

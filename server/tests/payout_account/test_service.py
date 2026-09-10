@@ -5,8 +5,12 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.enums import PayoutAccountStatus, PayoutAccountType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Organization, User
+from polar.models import Organization, User, UserOrganization
 from polar.models.payout_attempt import PayoutAttemptStatus
+from polar.payout_account.schemas import (
+    PayoutAccountCreate,
+    StripeAccountCountry,
+)
 from polar.payout_account.service import (
     PayoutAccountHasPendingPayouts,
     PayoutAccountLinkedToOrganization,
@@ -32,6 +36,51 @@ def stripe_service_mock(mocker: MockerFixture) -> StripeService:
     mock = mocker.MagicMock(spec=StripeService)
     mocker.patch("polar.payout_account.service.stripe", new=mock)
     return mock
+
+
+@pytest.mark.asyncio
+class TestCreate:
+    @pytest.mark.auth
+    async def test_enqueues_website_sync(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        stripe_service_mock.create_account.return_value = (  # type: ignore[attr-defined]
+            stripe_lib.Account.construct_from(
+                {
+                    "id": "acct_created",
+                    "email": "merchant@example.com",
+                    "country": "US",
+                    "default_currency": "usd",
+                    "details_submitted": False,
+                    "charges_enabled": False,
+                    "payouts_enabled": False,
+                    "business_type": None,
+                },
+                None,
+            )
+        )
+        enqueue_job_mock = mocker.patch("polar.payout_account.service.enqueue_job")
+
+        await payout_account_service.create(
+            auth_subject,
+            session,
+            PayoutAccountCreate(
+                type=PayoutAccountType.stripe,
+                organization_id=organization.id,
+                country=StripeAccountCountry.US,
+            ),
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "organization.sync_payout_account_website",
+            organization_id=organization.id,
+        )
 
 
 @pytest.mark.asyncio

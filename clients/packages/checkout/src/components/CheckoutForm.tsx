@@ -597,7 +597,6 @@ const BaseCheckoutForm = ({
                               )}
                               checked={field.value ? field.value : false}
                               onCheckedChange={(checked) => {
-                                if (isUpdatePending) return
                                 field.onChange(checked)
                                 updateBusinessCustomer(!!checked)
                               }}

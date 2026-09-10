@@ -1,9 +1,12 @@
-import { beforeEach, describe, expect, vi, test } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 import { Effect } from 'effect'
-import { FetchHttpClient } from 'effect/unstable/http'
-import { getLatestRelease, isNewerVersion } from './github-releases'
-import { VERSION } from '../version'
+import { getLatestRelease, isNewerVersion } from '@/services/github-releases'
+import { fakeHttp } from '@/utils/test-utils/http'
+import { VERSION } from '@/version'
 import { version } from '../../package.json'
+
+const page = (number: number) =>
+  `https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=${number}`
 
 const release = {
   tag_name: 'polar-cli@1.4.0',
@@ -18,65 +21,50 @@ const release = {
   ],
 }
 
-const fetchMock = Object.assign(vi.fn<typeof fetch>(), {
-  preconnect: fetch.preconnect,
-})
-const latestRelease = getLatestRelease.pipe(
-  Effect.provide(FetchHttpClient.layer),
-  Effect.provideService(FetchHttpClient.Fetch, fetchMock),
-)
+let http: ReturnType<typeof fakeHttp>
 
-beforeEach(() => fetchMock.mockReset())
+const latestRelease = () =>
+  Effect.runPromise(getLatestRelease.pipe(Effect.provide(http.layer)))
+
+beforeEach(() => {
+  http = fakeHttp()
+})
 
 describe('getLatestRelease', () => {
   test('ignores other packages, drafts, prereleases, and non-version tags', async () => {
-    fetchMock.mockResolvedValueOnce(
-      Response.json([
-        { ...release, tag_name: '@polar-sh/sdk@99.0.0' },
-        { ...release, tag_name: 'polar-cli@2.0.0', draft: true },
-        { ...release, tag_name: 'polar-cli@3.0.0', prerelease: true },
-        { ...release, tag_name: 'polar-cli@4.0.0-beta.1' },
-        { ...release, tag_name: 'polar-cli@verification' },
-        release,
-      ]),
-    )
+    http.routes[page(1)] = Response.json([
+      { ...release, tag_name: '@polar-sh/sdk@99.0.0' },
+      { ...release, tag_name: 'polar-cli@2.0.0', draft: true },
+      { ...release, tag_name: 'polar-cli@3.0.0', prerelease: true },
+      { ...release, tag_name: 'polar-cli@4.0.0-beta.1' },
+      { ...release, tag_name: 'polar-cli@verification' },
+      release,
+    ])
 
-    expect(await Effect.runPromise(latestRelease)).toEqual({
-      ...release,
-      version: 'v1.4.0',
-    })
+    expect(await latestRelease()).toEqual({ ...release, version: 'v1.4.0' })
   })
 
   test('paginates past unrelated releases and selects the highest semantic version', async () => {
-    fetchMock
-      .mockResolvedValueOnce(
-        Response.json([{ ...release, tag_name: '@polar-sh/sdk@99.0.0' }], {
-          headers: {
-            link: '<https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=2>; rel="next"',
-          },
-        }),
-      )
-      .mockResolvedValueOnce(
-        Response.json([
-          { ...release, tag_name: 'polar-cli@1.9.0' },
-          { ...release, tag_name: 'polar-cli@1.10.0' },
-          release,
-        ]),
-      )
-
-    expect((await Effect.runPromise(latestRelease)).version).toBe('v1.10.0')
-    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
-      'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1',
-      'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=2',
+    http.routes[page(1)] = Response.json(
+      [{ ...release, tag_name: '@polar-sh/sdk@99.0.0' }],
+      { headers: { link: `<${page(2)}>; rel="next"` } },
+    )
+    http.routes[page(2)] = Response.json([
+      { ...release, tag_name: 'polar-cli@1.9.0' },
+      { ...release, tag_name: 'polar-cli@1.10.0' },
+      release,
     ])
+
+    expect((await latestRelease()).version).toBe('v1.10.0')
+    expect(http.urls()).toEqual([page(1), page(2)])
   })
 
   test('reports GitHub failures instead of treating them as no updates', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response('Rate limit exceeded', { status: 403 }),
-    )
+    http.routes[page(1)] = new Response('Rate limit exceeded', { status: 403 })
 
-    const error = await Effect.runPromise(Effect.flip(latestRelease))
+    const error = await Effect.runPromise(
+      getLatestRelease.pipe(Effect.provide(http.layer), Effect.flip),
+    )
     expect(error).toMatchObject({
       _tag: 'HttpClientError',
       reason: { _tag: 'StatusCodeError', response: { status: 403 } },
@@ -84,9 +72,11 @@ describe('getLatestRelease', () => {
   })
 
   test('reports when no stable CLI release exists', async () => {
-    fetchMock.mockResolvedValueOnce(Response.json([]))
+    http.routes[page(1)] = Response.json([])
 
-    const error = await Effect.runPromise(Effect.flip(latestRelease))
+    const error = await Effect.runPromise(
+      getLatestRelease.pipe(Effect.provide(http.layer), Effect.flip),
+    )
     expect(error).toMatchObject({
       _tag: 'GitHubReleaseError',
       message: 'No stable CLI release found',

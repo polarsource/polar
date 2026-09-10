@@ -1,18 +1,31 @@
 import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
-import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { writeFileSync } from 'node:fs'
+import {
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunFileSystem } from '@effect/platform-bun'
-import { Effect, FileSystem, PlatformError } from 'effect'
+import { Console, Effect, FileSystem, Layer, PlatformError } from 'effect'
 import {
+  downloadAndUpdate,
   getArchiveExtractionCommand,
   getReleaseArchiveName,
   replaceBinary,
-} from './update'
+  update,
+} from '@/commands/update'
+import type { CLIRelease } from '@/services/github-releases'
+import { captureConsole, runCli } from '@/utils/test-utils/cli'
+import { fakeHttp } from '@/utils/test-utils/http'
+import { VERSION } from '@/version'
 
-async function makeTemp() {
-  return mkdtemp(join(tmpdir(), 'polar-test-'))
-}
+const makeTemp = () => mkdtemp(join(tmpdir(), 'polar-test-'))
 
 describe('getReleaseArchiveName', () => {
   test('uses zip archives for darwin releases', () => {
@@ -67,6 +80,9 @@ describe('replaceBinary', () => {
       )
     }).pipe(Effect.provide(BunFileSystem.layer))
 
+  const tempFiles = async () =>
+    (await readdir(dir)).filter((file) => file.startsWith('.polar-update-'))
+
   beforeEach(async () => {
     writeError = undefined
     dir = await makeTemp()
@@ -77,32 +93,29 @@ describe('replaceBinary', () => {
   })
 
   afterEach(async () => {
+    vi.restoreAllMocks()
     await rm(dir, { recursive: true, force: true })
   })
 
   test('replaces target binary with new binary content', async () => {
     await Effect.runPromise(runReplace())
 
-    const content = await readFile(binaryPath, 'utf8')
-    expect(content).toBe('#!/bin/sh\necho new')
+    await expect(readFile(binaryPath, 'utf8')).resolves.toBe(
+      '#!/bin/sh\necho new',
+    )
   })
 
   test('sets executable permissions on target binary', async () => {
     await Effect.runPromise(runReplace())
 
     const s = await stat(binaryPath)
-    // check owner execute bit
     expect(s.mode & 0o111).toBeGreaterThan(0)
   })
 
   test('leaves no temp file behind after success', async () => {
     await Effect.runPromise(runReplace())
 
-    // list files in dir — only the replaced binary should remain
-    const { readdir } = await import('node:fs/promises')
-    const files = await readdir(dir)
-    const tempFiles = files.filter((f) => f.startsWith('.polar-update-'))
-    expect(tempFiles).toHaveLength(0)
+    await expect(tempFiles()).resolves.toHaveLength(0)
   })
 
   test('throws and cleans up temp file on non-permission write error', async () => {
@@ -114,11 +127,7 @@ describe('replaceBinary', () => {
     })
 
     await expect(Effect.runPromise(runReplace())).rejects.toThrow('EIO')
-
-    const { readdir } = await import('node:fs/promises')
-    const files = await readdir(dir)
-    const tempFiles = files.filter((f) => f.startsWith('.polar-update-'))
-    expect(tempFiles).toHaveLength(0)
+    await expect(tempFiles()).resolves.toHaveLength(0)
   })
 
   test('does not throw when PermissionDenied triggers sudo fallback', async () => {
@@ -127,24 +136,18 @@ describe('replaceBinary', () => {
       module: 'FileSystem',
       method: 'writeFile',
     })
-
-    // Mock Bun.spawn so sudo mv appears to succeed
-    const spawnSpy = vi.spyOn(Bun, 'spawn').mockImplementationOnce(
-      () =>
-        ({
-          exited: Promise.resolve(0),
-        }) as ReturnType<typeof Bun.spawn>,
-    )
+    const spawn = vi
+      .spyOn(Bun, 'spawn')
+      .mockImplementationOnce(
+        () => ({ exited: Promise.resolve(0) }) as ReturnType<typeof Bun.spawn>,
+      )
 
     await Effect.runPromise(runReplace())
 
-    // Verify sudo mv was called with the right args
-    expect(spawnSpy).toHaveBeenCalledWith(
+    expect(spawn).toHaveBeenCalledWith(
       ['sudo', 'mv', newBinaryPath, binaryPath],
       expect.objectContaining({ stdin: 'inherit' }),
     )
-
-    spawnSpy.mockRestore()
   })
 
   test('throws when sudo mv exits non-zero', async () => {
@@ -153,18 +156,168 @@ describe('replaceBinary', () => {
       module: 'FileSystem',
       method: 'writeFile',
     })
-
-    const spawnSpy = vi.spyOn(Bun, 'spawn').mockImplementationOnce(
-      () =>
-        ({
-          exited: Promise.resolve(1),
-        }) as ReturnType<typeof Bun.spawn>,
+    vi.spyOn(Bun, 'spawn').mockImplementationOnce(
+      () => ({ exited: Promise.resolve(1) }) as ReturnType<typeof Bun.spawn>,
     )
 
     await expect(Effect.runPromise(runReplace())).rejects.toThrow(
       'sudo mv failed',
     )
+  })
+})
 
-    spawnSpy.mockRestore()
+describe('update command', () => {
+  test('reports when the CLI is already up to date', async () => {
+    const http = fakeHttp({
+      'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1':
+        Response.json([
+          {
+            tag_name: `polar-cli@${VERSION.slice(1)}`,
+            draft: false,
+            prerelease: false,
+            assets: [],
+          },
+        ]),
+    })
+    const cli = runCli(update, [])
+    await Effect.runPromise(cli.effect.pipe(Effect.provide(http.layer)))
+
+    expect(cli.output()).toContain('Checking for updates...')
+    expect(cli.output()).toContain(`Already up to date ${VERSION}`)
+  })
+})
+
+describe('downloadAndUpdate', () => {
+  const archiveName = getReleaseArchiveName({
+    os: process.platform,
+    arch: process.arch,
+  })
+  const archiveUrl = `https://example.test/${archiveName}`
+  const checksumsUrl = 'https://example.test/checksums.txt'
+  const archive = new TextEncoder().encode('archive bytes')
+  const checksum = createHash('sha256').update(archive).digest('hex')
+  const release = (
+    assets: string[] = [archiveName, 'checksums.txt'],
+  ): CLIRelease => ({
+    tag_name: 'polar-cli@9.9.9',
+    draft: false,
+    prerelease: false,
+    version: 'v9.9.9',
+    assets: assets.map((name) => ({
+      name,
+      browser_download_url: `https://example.test/${name}`,
+    })),
+  })
+  let dir: string
+  let binaryPath: string
+  let http: ReturnType<typeof fakeHttp>
+  let extraction: { exitCode: number; stderr: string }
+
+  const run = (target = release()) => {
+    const { lines, console } = captureConsole()
+    const promise = Effect.runPromise(
+      downloadAndUpdate(target, 'v9.9.9', binaryPath).pipe(
+        Effect.provide(Layer.mergeAll(BunFileSystem.layer, http.layer)),
+        Effect.provideService(Console.Console, console),
+      ),
+    )
+    return { promise, lines }
+  }
+
+  beforeEach(async () => {
+    dir = await makeTemp()
+    binaryPath = join(dir, 'polar')
+    await writeFile(binaryPath, 'old binary')
+    http = fakeHttp({
+      [archiveUrl]: () => new Response(archive),
+      [checksumsUrl]: () => new Response(`${checksum}  ${archiveName}`),
+    })
+    extraction = { exitCode: 0, stderr: '' }
+    vi.spyOn(Bun, 'spawn').mockImplementation(((command: string[]) => {
+      writeFileSync(join(command.at(-1)!, 'polar'), 'new binary')
+      return {
+        exited: Promise.resolve(extraction.exitCode),
+        stderr: extraction.stderr,
+      }
+    }) as unknown as typeof Bun.spawn)
+  })
+
+  afterEach(async () => {
+    vi.restoreAllMocks()
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  test('downloads, verifies, extracts and replaces the binary', async () => {
+    const { promise, lines } = run()
+    await promise
+
+    await expect(readFile(binaryPath, 'utf8')).resolves.toBe('new binary')
+    expect(lines.join('\n')).toContain('Downloading v9.9.9...')
+    expect(lines.join('\n')).toContain('Verifying checksum...')
+    expect(lines.join('\n')).toContain('Extracting...')
+    expect(lines.join('\n')).toContain(`Updated ${VERSION} → v9.9.9`)
+    expect(http.urls()).toEqual([archiveUrl, checksumsUrl])
+  })
+
+  test('fails without an asset for the current platform', async () => {
+    await expect(run(release(['checksums.txt'])).promise).rejects.toThrow(
+      'No release asset found for platform',
+    )
+  })
+
+  test('fails without a checksums file', async () => {
+    await expect(run(release([archiveName])).promise).rejects.toThrow(
+      'No checksums.txt found in release',
+    )
+  })
+
+  test('fails when the download is rejected', async () => {
+    http.routes[archiveUrl] = () => new Response(null, { status: 404 })
+
+    await expect(run().promise).rejects.toThrow(
+      `Failed to download ${archiveName}`,
+    )
+  })
+
+  test('fails when the download throws', async () => {
+    http.routes[archiveUrl] = () => {
+      throw new Error('network down')
+    }
+
+    await expect(run().promise).rejects.toThrow(
+      `Failed to download ${archiveName}`,
+    )
+  })
+
+  test('fails when the checksums cannot be downloaded', async () => {
+    http.routes[checksumsUrl] = () => new Response(null, { status: 500 })
+
+    await expect(run().promise).rejects.toThrow(
+      'Failed to download checksums.txt',
+    )
+  })
+
+  test('fails when the archive has no checksum entry', async () => {
+    http.routes[checksumsUrl] = () => new Response('abc  other.zip')
+
+    await expect(run().promise).rejects.toThrow(
+      `No checksum found for ${archiveName}`,
+    )
+  })
+
+  test('fails on a checksum mismatch', async () => {
+    http.routes[checksumsUrl] = () =>
+      new Response(`${'0'.repeat(64)}  ${archiveName}`)
+
+    await expect(run().promise).rejects.toThrow('Checksum mismatch!')
+    await expect(readFile(binaryPath, 'utf8')).resolves.toBe('old binary')
+  })
+
+  test('surfaces extraction errors', async () => {
+    extraction = { exitCode: 1, stderr: 'corrupt archive' }
+
+    await expect(run().promise).rejects.toThrow(
+      'Failed to extract archive: corrupt archive',
+    )
   })
 })

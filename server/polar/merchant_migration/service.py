@@ -1003,7 +1003,12 @@ class MerchantMigrationService:
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
     ) -> MerchantMigrationCutoverReport:
-        migration = await self._get_manageable(session, auth_subject, migration_id)
+        # Re-read under the row lock so the stall check and any failure write
+        # serialize against a worker ``_bump_operation`` resume, matching the
+        # ``execute_precheck`` / ``run_card_verification`` lock-then-fail pattern.
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
         await self._fail_stalled_cutover(session, migration)
         return await self._cutover_report(session, migration)
 

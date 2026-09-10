@@ -3211,6 +3211,39 @@ class TestGetCutoverReport:
         assert migration.operation is not None
         assert migration.operation.status == MerchantMigrationOperationStatus.failed
 
+    @pytest.mark.auth
+    async def test_leaves_a_resumed_operation_running(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A worker bumped ``last_progress_at`` (resumed) inside the stall
+        # threshold. The poll must read the current state under the row lock and
+        # leave the operation running rather than stamping a stale ``failed``.
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        resumed_at = utc_now() - timedelta(seconds=30)
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=resumed_at,
+        )
+        await save_fixture(migration)
+
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+
+        await session.refresh(migration)
+        assert report.running is True
+        assert report.completed is False
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
+        assert migration.operation.last_progress_at == resumed_at
+        assert migration.operation.error is None
+
 
 @pytest.mark.asyncio
 class TestListRecordsCutover:
@@ -3312,3 +3345,149 @@ class TestListRecordsCutover:
 
         assert count == 1
         assert items[0].source_id == "sub_skipped"
+
+
+@pytest.mark.asyncio
+class TestGetCutoverReportConcurrency:
+    """Regression for the lost-write race between the cutover GET poll and the
+    cutover worker's ``_bump_operation``.
+
+    ``get_cutover_report`` reads the migration, evaluates ``is_stalled()`` and
+    may write ``failed``. Without a row lock a worker can bump
+    ``last_progress_at`` (resuming the cutover) between the read and the write,
+    and the poll's stale snapshot then clobbers the resume. These tests run
+    against real, isolated Postgres sessions (one per contender) on the per-worker
+    test database, mirroring ``tests/license_key/test_service.py::TestConcurrentActivation``.
+    """
+
+    async def test_holds_a_row_lock_across_the_stall_check(
+        self, worker_id: str, mocker: MockerFixture
+    ) -> None:
+        import asyncio
+        import contextlib
+
+        from sqlalchemy import delete, select
+        from sqlalchemy.exc import DBAPIError
+
+        from polar.config import settings
+        from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
+        from polar.models import Account, User
+        from tests.fixtures.database import get_database_url, save_fixture_factory
+        from tests.fixtures.random_objects import (
+            create_account,
+            create_organization,
+            create_user,
+        )
+
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_cutover_lock",
+            pool_size=8,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+        try:
+            async with sessionmaker() as setup:
+                save_fixture = save_fixture_factory(setup)
+                user = await create_user(save_fixture)
+                account = await create_account(save_fixture, user)
+                organization = await create_organization(save_fixture, account)
+                migration = MerchantMigration(
+                    organization_id=organization.id,
+                    source_platform=MerchantMigrationSourcePlatform.stripe,
+                    step=MerchantMigrationStep.activate_subscriptions,
+                )
+                migration.operation = MerchantMigrationOperation(
+                    status=MerchantMigrationOperationStatus.running,
+                    last_progress_at=utc_now() - STALL_THRESHOLD - timedelta(minutes=1),
+                )
+                setup.add(migration)
+                await setup.commit()
+
+            # The dashboard polls as the organization itself; an Organization
+            # subject always holds `organization_manage` on its own row, so no
+            # UserOrganization grant is needed. Built directly because the
+            # `auth_subject` fixture is bound to the rolled-back `session` fixture
+            # and so cannot reach this isolated engine.
+            auth_subject = AuthSubject(organization, set(), None)
+
+            read_done = asyncio.Event()
+            release = asyncio.Event()
+            # Capture the real writer before patching so the gated stand-in can
+            # delegate to it once the probe has measured the lock.
+            original_fail = service._fail_operation
+
+            async def gated_fail(
+                fail_session: AsyncSession,
+                fail_migration: MerchantMigration,
+                error: str,
+            ) -> None:
+                # The poll has read the snapshot and decided to fail — it is now
+                # between its read and its write, the exact race window.
+                read_done.set()
+                await release.wait()
+                await original_fail(fail_session, fail_migration, error)
+
+            poll_session = sessionmaker()
+            mocker.patch.object(service, "_fail_operation", new=gated_fail)
+            try:
+                poll_task = asyncio.create_task(
+                    service.get_cutover_report(poll_session, auth_subject, migration.id)
+                )
+                await read_done.wait()
+
+                # With the FOR UPDATE re-read the migration row is locked across
+                # the read→write, so a worker progress-bump cannot commit until
+                # the poll commits; a NOWAIT probe from another session must be
+                # refused. Without the lock the probe grabs the row, reproducing
+                # the race the fix closes.
+                held: bool
+                async with sessionmaker() as probe_session:
+                    try:
+                        await probe_session.execute(
+                            select(MerchantMigration)
+                            .where(MerchantMigration.id == migration.id)
+                            .with_for_update(nowait=True)
+                        )
+                        held = False
+                    except DBAPIError:
+                        held = True
+                    await probe_session.rollback()
+
+                release.set()
+                await poll_task
+                await poll_session.commit()
+
+                assert held is True
+
+                async with sessionmaker() as verify:
+                    verified = await MerchantMigrationRepository.from_session(
+                        verify
+                    ).get_by_id(migration.id)
+                    assert verified is not None
+                    assert verified.operation is not None
+                    assert (
+                        verified.operation.status
+                        == MerchantMigrationOperationStatus.failed
+                    )
+            finally:
+                # Let the poll finish (or unwind it) so no task or session leaks if
+                # an assertion short-circuited before release.
+                release.set()
+                with contextlib.suppress(BaseException):
+                    await poll_task
+                await poll_session.close()
+        finally:
+            async with sessionmaker() as cleanup:
+                await cleanup.execute(
+                    delete(MerchantMigration).where(
+                        MerchantMigration.id == migration.id
+                    )
+                )
+                await cleanup.execute(
+                    delete(Organization).where(Organization.id == organization.id)
+                )
+                await cleanup.execute(delete(Account).where(Account.id == account.id))
+                await cleanup.execute(delete(User).where(User.id == user.id))
+                await cleanup.commit()
+            await engine.dispose()

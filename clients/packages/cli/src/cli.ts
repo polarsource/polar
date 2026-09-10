@@ -14,6 +14,7 @@ import * as Organizations from '@/services/organizations'
 import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
 import * as Telemetry from '@/services/telemetry'
+import * as Trigger from '@/services/trigger'
 import {
   checkForUpdateInBackground,
   showUpdateNotice,
@@ -38,6 +39,9 @@ const polarLayer = Polar.layer.pipe(Layer.provide(authLayer))
 const organizationsLayer = Organizations.layer.pipe(
   Layer.provide(Layer.mergeAll(authLayer, polarLayer, configLayer)),
 )
+const triggerLayer = Trigger.layer.pipe(
+  Layer.provide(Layer.mergeAll(authLayer, FetchHttpClient.layer)),
+)
 const telemetryLayer = Telemetry.layer.pipe(
   Layer.provide(Layer.mergeAll(BunServices.layer, Telemetry.detachedSender)),
 )
@@ -45,6 +49,7 @@ const services = Layer.mergeAll(
   authLayer,
   polarLayer,
   organizationsLayer,
+  triggerLayer,
   telemetryLayer,
   BunServices.layer,
   FetchHttpClient.layer,

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { ListenError } from '@/commands/listen'
-import { TriggerError } from '@/commands/trigger'
+import { TriggerError } from '@/services/trigger'
 import { UpdateError } from '@/commands/update'
 import { describeError } from '@/utils/errors'
 import { AuthError } from '@/schemas/Auth'

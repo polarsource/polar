@@ -285,34 +285,6 @@ class RefundTransactionService(BaseTransactionService):
         )
         return refund_reversal_transaction
 
-    async def create_reversal_balances_for_payment(
-        self, session: AsyncSession, *, payment_transaction: Transaction
-    ) -> list[tuple[Transaction, Transaction]]:
-        """
-        Create reversal balances for a refunded payment transaction.
-
-        Mostly useful when releasing held balances: if a payment transaction has
-        been refunded before the Account creation, we need to create the reversal
-        balances so the refund is correctly accounted for.
-        """
-        statement = select(Transaction).where(
-            Transaction.type == TransactionType.refund,
-            Transaction.charge_id == payment_transaction.charge_id,
-        )
-
-        result = await session.execute(statement)
-        refunds = result.scalars().all()
-
-        reversal_balances: list[tuple[Transaction, Transaction]] = []
-        for refund in refunds:
-            reversal_balances += await self._create_reversal_balances(
-                session,
-                payment_transaction=payment_transaction,
-                refund_amount=refund.amount,
-            )
-
-        return reversal_balances
-
     async def _create_reversal_balances(
         self,
         session: AsyncSession,

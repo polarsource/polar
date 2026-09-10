@@ -10,6 +10,7 @@ import {
 import { getProducts } from '@polar-sh/sdk/2026-04/services/products'
 import type { models, PolarCore } from '@polar-sh/sdk/2026-04'
 import type { AuthContext, BetterAuthPlugin } from 'better-auth'
+import { APIError } from 'better-auth/api'
 import {
   type OrganizationOptions,
   getOrgAdapter,
@@ -164,9 +165,30 @@ const getMinimumSeats = (
   return Math.max(...minimums)
 }
 
+const getMaximumSeats = (
+  prices: models.Product['prices'],
+  productId: string,
+): number | null => {
+  const maximums = prices.flatMap((price) =>
+    price.amount_type === 'seat_based'
+      ? [price.seat_tiers.maximum_seats ?? null]
+      : [],
+  )
+  if (maximums.length === 0) {
+    throw new Error(
+      `Polar seat product "${productId}" has no seat-based price with a maximum quantity`,
+    )
+  }
+  const finite = maximums.filter(
+    (maximum): maximum is number => maximum != null,
+  )
+  return finite.length === 0 ? null : Math.min(...finite)
+}
+
 interface ManagedSeatProduct {
   product: models.Product
   minimumSeats: number
+  maximumSeats: number | null
 }
 
 const toManagedSeatProduct = (
@@ -175,6 +197,7 @@ const toManagedSeatProduct = (
 ): ManagedSeatProduct => ({
   product,
   minimumSeats: getMinimumSeats(prices, product.id),
+  maximumSeats: getMaximumSeats(prices, product.id),
 })
 
 const isRecurringSeatProduct = (product: models.Product): boolean =>
@@ -240,6 +263,7 @@ const selectMemberProductIds = async (
 interface ProductSeatAllocation {
   memberIds: ReadonlySet<string>
   minimumSeats: number
+  maximumSeats: number | null
 }
 
 export const resolveRosterProductAllocations = async (input: {
@@ -273,9 +297,9 @@ export const resolveRosterProductAllocations = async (input: {
   )
 
   return new Map(
-    input.products.map(({ product, minimumSeats }) => {
+    input.products.map(({ product, minimumSeats, maximumSeats }) => {
       const memberIds = selectedByProduct.get(product.id) ?? new Set<string>()
-      return [product.id, { memberIds, minimumSeats }]
+      return [product.id, { memberIds, minimumSeats, maximumSeats }]
     }),
   )
 }
@@ -322,6 +346,14 @@ const synchronizeOrganizationSubscriptionSeats = async (
     allocation.memberIds.size,
     allocation.minimumSeats,
   )
+  if (
+    allocation.maximumSeats != null &&
+    allocation.memberIds.size > allocation.maximumSeats
+  ) {
+    throw new APIError('BAD_REQUEST', {
+      message: `Organization members (${allocation.memberIds.size}) exceed the maximum number of seats (${allocation.maximumSeats}) allowed for seat product "${subscription.product_id}". Remove members to bring the roster within the seat cap.`,
+    })
+  }
   if (targetQuantity > currentQuantity) {
     await updateSubscriptionSeatCount(client, subscription.id, targetQuantity)
   }

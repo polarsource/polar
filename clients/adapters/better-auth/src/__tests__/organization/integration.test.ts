@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth'
 import { type MemoryDB, memoryAdapter } from 'better-auth/adapters/memory'
 import { organization } from 'better-auth/plugins'
 import { memberAc } from 'better-auth/plugins/organization/access'
+import { APIError } from 'better-auth/api'
 import { describe, expect, it, vi } from 'vitest'
 import { errors, type models } from '@polar-sh/sdk/2026-04'
 import type {
@@ -2181,5 +2182,206 @@ describe('organization seat integration', () => {
           .invocationCallOrder[deleteIndex] ?? 0,
       )
     }
+  })
+
+  it('clamps seat requests to a finite maximum_seats and surfaces a structured 400 when the roster exceeds it', async () => {
+    const MAXIMUM_SEATS = 5
+    const {
+      auth,
+      client,
+      post,
+      signUp,
+      createOrganization,
+      database,
+      subscriptions,
+    } = createSeatIntegrationHarness()
+
+    const owner = await signUp({
+      email: 'owner@example.com',
+      password: 'password123',
+      name: 'Owner',
+    })
+    const extra: { sessionCookie: string; user: { id: string } }[] = []
+    for (let i = 1; i <= 5; i++) {
+      extra.push(
+        await signUp({
+          email: `m${i}@example.com`,
+          password: 'password123',
+          name: `M${i}`,
+        }),
+      )
+    }
+    const createdOrganization = await createOrganization(owner.sessionCookie, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+
+    // Seed a subscription on a seat product whose last tier caps seats at 5
+    // (finite maximum_seats), instead of the default unlimited product.
+    const product = {
+      id: 'product-pro',
+      name: 'Capped seat product',
+      metadata: {},
+      is_recurring: true,
+      prices: [
+        {
+          amount_type: 'seat_based',
+          seat_tiers: { minimum_seats: 1, maximum_seats: MAXIMUM_SEATS },
+        },
+      ],
+    } as Product
+    const subscriptionId = `subscription-${createdOrganization.id}`
+    subscriptions.set(subscriptionId, {
+      id: subscriptionId,
+      product_id: product.id,
+      product,
+      prices: product.prices,
+      status: 'active',
+      seats: 1,
+      customer: { type: 'team', external_id: createdOrganization.id },
+    } as Subscription)
+
+    clearSeatWrites(client)
+
+    // Grow the roster to exactly the cap (owner + four members = 5).
+    // Each sync stays within the cap; seats grow 2..5.
+    for (let i = 0; i < 4; i++) {
+      await auth.api.addMember({
+        headers: new Headers({ cookie: owner.sessionCookie }),
+        body: {
+          organizationId: createdOrganization.id,
+          userId: extra[i].user.id,
+          role: 'member',
+        },
+      })
+    }
+    expect(client.subscriptions.update).toHaveBeenCalledWith(subscriptionId, {
+      seats: 5,
+    })
+    // No within-cap sync ever asked Polar for more seats than the cap.
+    for (const call of vi.mocked(client.subscriptions.update).mock.calls) {
+      const seats = (call[1] as { seats?: number }).seats
+      expect(seats).toBeLessThanOrEqual(MAXIMUM_SEATS)
+    }
+
+    // The sixth member pushes the roster past the cap. The adapter must reject
+    // BEFORE requesting seats above the cap, surfacing a structured Better Auth
+    // APIError (statusCode 400) rather than letting an SDK HTTPValidationError
+    // escape as an opaque 500.
+    clearSeatWrites(client)
+    const overCap = auth.api.addMember({
+      headers: new Headers({ cookie: owner.sessionCookie }),
+      body: {
+        organizationId: createdOrganization.id,
+        userId: extra[4].user.id,
+        role: 'member',
+      },
+    })
+    await expect(overCap).rejects.toThrow(/maximum number of seats/i)
+    const thrown = (await overCap.catch((error: unknown) => error)) as APIError
+    expect(thrown).toBeInstanceOf(APIError)
+    expect(thrown.statusCode).toBe(400)
+    // The adapter never asked Polar for seats above the cap, nor assigned any.
+    expect(client.subscriptions.update).not.toHaveBeenCalled()
+    expect(client.customerSeats.assignSeat).not.toHaveBeenCalled()
+
+    // The membership still committed before the after-hook threw (the wedge).
+    const rosterAfterFailure = database.member.filter(
+      (member) => member.organizationId === createdOrganization.id,
+    )
+    expect(rosterAfterFailure.length).toBe(6)
+    expect(
+      rosterAfterFailure.some((member) => member.userId === extra[4].user.id),
+    ).toBe(true)
+
+    // A subsequent org op re-runs seat sync against the still-over-cap roster.
+    // Over HTTP it now surfaces as a structured 400 (not an opaque 500), and
+    // still never requests seats above the cap.
+    vi.mocked(client.subscriptions.update).mockClear()
+    const renameResponse = await post(
+      '/organization/update',
+      {
+        organizationId: createdOrganization.id,
+        data: { name: 'Acme Renamed' },
+      },
+      owner.sessionCookie,
+    )
+    expect(renameResponse.status).toBe(400)
+    expect(client.subscriptions.update).not.toHaveBeenCalled()
+  })
+
+  it('treats a product with no maximum_seats as unlimited', async () => {
+    const MAXIMUM_SEATS = 2
+    const {
+      auth,
+      client,
+      signUp,
+      createOrganization,
+      database,
+      subscriptions,
+    } = createSeatIntegrationHarness()
+
+    const owner = await signUp({
+      email: 'owner@example.com',
+      password: 'password123',
+      name: 'Owner',
+    })
+    const extra: { sessionCookie: string; user: { id: string } }[] = []
+    for (let i = 1; i <= 3; i++) {
+      extra.push(
+        await signUp({
+          email: `m${i}@example.com`,
+          password: 'password123',
+          name: `M${i}`,
+        }),
+      )
+    }
+    const createdOrganization = await createOrganization(owner.sessionCookie, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+
+    // An unlimited product (maximum_seats omitted/null) must never trigger the
+    // cap check, even with a roster larger than an arbitrary bound.
+    const product = {
+      id: 'product-pro',
+      name: 'Unlimited seat product',
+      metadata: {},
+      is_recurring: true,
+      prices: [{ amount_type: 'seat_based', seat_tiers: { minimum_seats: 1 } }],
+    } as Product
+    const subscriptionId = `subscription-${createdOrganization.id}`
+    subscriptions.set(subscriptionId, {
+      id: subscriptionId,
+      product_id: product.id,
+      product,
+      prices: product.prices,
+      status: 'active',
+      seats: 1,
+      customer: { type: 'team', external_id: createdOrganization.id },
+    } as Subscription)
+
+    clearSeatWrites(client)
+
+    // Add three members (roster 1 -> 4), well past MAXIMUM_SEATS used as a
+    // sentinel. unlimited products must grow seats without throwing.
+    for (let i = 0; i < 3; i++) {
+      await auth.api.addMember({
+        headers: new Headers({ cookie: owner.sessionCookie }),
+        body: {
+          organizationId: createdOrganization.id,
+          userId: extra[i].user.id,
+          role: 'member',
+        },
+      })
+    }
+    expect(client.subscriptions.update).toHaveBeenCalledWith(subscriptionId, {
+      seats: 4,
+    })
+    const roster = database.member.filter(
+      (member) => member.organizationId === createdOrganization.id,
+    )
+    expect(roster.length).toBe(4)
+    expect(MAXIMUM_SEATS).toBe(2) // sentinel: roster (4) exceeds it, yet no throw
   })
 })

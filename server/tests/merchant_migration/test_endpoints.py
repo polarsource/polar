@@ -249,8 +249,7 @@ class TestCreate:
 
         assert response.status_code == 409
         assert (
-            "already used by another organization's merchant migration"
-            in response.text
+            "already used by another organization's merchant migration" in response.text
         )
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))

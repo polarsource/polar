@@ -205,6 +205,26 @@ describe('Checkout page', () => {
     )
   })
 
+  it('clears the submit-button loading state after an embed + external-URL success resolves without navigating', async () => {
+    const { router } = renderCheckout({
+      embed: true,
+      checkout: {
+        ...freeProductCheckout(),
+        success_url: 'https://merchant.example/thanks',
+      },
+    })
+
+    submitCheckout('Get for free')
+
+    await waitFor(() => expect(router.push).not.toHaveBeenCalled())
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Get for free' }),
+      ).toBeEnabled(),
+    )
+  })
+
   it('offers a gallery when the product has several images', () => {
     renderCheckout({
       checkout: {

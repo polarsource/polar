@@ -217,7 +217,7 @@ const Checkout = ({
       await checkoutConfirmedRedirect(
         confirmedCheckout,
         confirmedCheckout.customer_session_token,
-      )
+      ).finally(() => setFullLoading(false))
 
       return confirmedCheckout
     },

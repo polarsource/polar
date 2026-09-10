@@ -2527,7 +2527,10 @@ class CheckoutService:
 
         if not (checkout.is_payment_form_required and is_tax_applicable):
             checkout.tax_amount = 0
+            checkout.tax_processor = None
             checkout.tax_processor_id = None
+            checkout.tax_behavior = None
+            checkout.tax_breakdown = None
             return checkout
 
         if checkout.customer_billing_address is not None:

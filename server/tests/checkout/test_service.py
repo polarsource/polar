@@ -50,7 +50,8 @@ from polar.enums import (
 from polar.event.system import SystemEvent
 from polar.exceptions import NotPermitted, PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import AddressInput
+from polar.invoice.generator import Invoice, InvoiceItem
+from polar.kit.address import Address, AddressInput, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
@@ -3878,6 +3879,121 @@ class TestUpdate:
         assert checkout.tax_processor_id is None
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
+
+    async def test_product_switch_to_tax_not_applicable_clears_stale_tax_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        calculate_tax_mock: AsyncMock,
+        product: Product,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        """Switching a checkout from a tax-applicable product to a non-tax-applicable
+        one takes the no-tax-needed early return in ``_update_checkout_tax``, which
+        must clear *all* tax fields (like the ``TaxCalculationLogicalError`` branch),
+        not just ``tax_amount``/``tax_processor_id``. Otherwise the stale,
+        non-zero ``tax_breakdown``/``tax_behavior`` leak onto the order and render a
+        non-reconciling tax line on the invoice while ``tax_amount`` is 0.
+        """
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 848,
+                "tax_behavior": TaxBehavior.exclusive,
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.2,
+                        "display_name": "VAT",
+                        "country": "FR",
+                        "state": None,
+                        "subdivision": None,
+                        "amount": 848,
+                        "taxability_reason": TaxabilityReason.standard_rated,
+                    }
+                ],
+            },
+            TaxProcessor.numeral,
+        )
+        checkout = await checkout_service.update(
+            session,
+            checkout_recurring_fixed,
+            CheckoutUpdate(
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
+            ),
+        )
+        assert checkout.tax_amount == 848
+        assert checkout.tax_processor == TaxProcessor.numeral
+        assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
+        assert checkout.tax_behavior == TaxBehavior.exclusive
+        assert checkout.tax_breakdown is not None
+        assert checkout.tax_breakdown[0]["amount"] == 848
+
+        new_product = await create_product(
+            save_fixture,
+            organization=product.organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(4242, "usd")],
+            is_tax_applicable=False,
+        )
+        checkout_recurring_fixed.checkout_products.append(
+            CheckoutProduct(product=new_product, order=1, ad_hoc_prices=[])
+        )
+        await save_fixture(checkout_recurring_fixed)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=new_product.id),
+        )
+
+        assert checkout.tax_amount == 0
+        assert checkout.tax_processor is None
+        assert checkout.tax_processor_id is None
+        assert checkout.tax_behavior is None
+        assert checkout.tax_breakdown is None
+
+        invoice = Invoice(
+            number="12345",
+            date=datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC),
+            seller_name="Polar Software Inc",
+            seller_address=Address(
+                line1="123 Polar St",
+                city="San Francisco",
+                state="CA",
+                postal_code="94107",
+                country=CountryAlpha2("US"),
+            ),
+            customer_name="John Doe",
+            customer_address=Address(
+                line1="456 Customer Ave",
+                city="Los Angeles",
+                state="CA",
+                postal_code="90001",
+                country=CountryAlpha2("US"),
+            ),
+            subtotal_amount=checkout.amount,
+            discount_amount=checkout.discount_amount,
+            tax_amount=checkout.tax_amount or 0,
+            tax_breakdown=checkout.tax_breakdown or [],
+            net_amount=checkout.net_amount,
+            currency=checkout.currency,
+            items=[
+                InvoiceItem(
+                    description="SaaS Subscription",
+                    quantity=1,
+                    unit_amount=checkout.amount,
+                    amount=checkout.amount,
+                )
+            ],
+        )
+        assert invoice.tax_items == []
+        assert invoice.tax_amount == 0
+        total_item = next(
+            item for item in invoice.totals_items if item.label == "Total"
+        )
+        assert total_item.amount == checkout.net_amount
+        assert total_item.amount == invoice.net_amount + invoice.tax_amount
 
     async def test_valid_discount_id(
         self,

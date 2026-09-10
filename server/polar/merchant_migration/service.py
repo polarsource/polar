@@ -1290,7 +1290,7 @@ class MerchantMigrationService:
         record_ids: Sequence[UUID] | None,
         exclude_record_ids: Sequence[UUID] | None,
     ) -> MerchantMigrationOperationSelection | None:
-        if record_ids is not None:
+        if record_ids:
             return MerchantMigrationOperationSelection(record_ids=list(record_ids))
         if exclude_record_ids is not None:
             return MerchantMigrationOperationSelection(

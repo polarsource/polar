@@ -2971,6 +2971,96 @@ class TestRunCutover:
         # Outside the selection: never looked at.
         assert untouched.cutover_status is None
 
+    @pytest.mark.auth
+    async def test_empty_record_ids_switches_everything(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_CUTOVER
+        )
+        await save_fixture(migration)
+        pending = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_pending",
+            email="pending@example.com",
+        )
+
+        # An empty opt-in list collapses to "switch everything", the documented
+        # contract for an absent selection — never a zero-match filter.
+        await service.start_cutover(session, auth_subject, migration.id, record_ids=[])
+        await session.refresh(migration)
+        assert migration.operation is not None
+        assert migration.operation.selection is None
+
+        await service.run_cutover(session, migration.id)
+        await session.flush()
+        await session.refresh(migration)
+        await session.refresh(pending)
+
+        assert runner.run.await_count == 1
+        assert pending.cutover_status == MerchantMigrationCutoverStatus.moved
+        # The lifecycle does not advance to cleanup with zero moves.
+        assert migration.step != MerchantMigrationStep.cleanup
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
+        assert not service._step_completed(migration, STEP_MOVE_SUBSCRIPTIONS)
+
+    async def test_empty_record_id_selection_switches_everything(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        pending = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_pending",
+            email="pending@example.com",
+        )
+        # A selection built directly with an empty opt-in (bypassing
+        # `start_cutover`) still collapses at the repository filter, so the
+        # worker claims the switchable subscription instead of finalizing early.
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            selection=MerchantMigrationOperationSelection(record_ids=[]),
+        )
+        await save_fixture(migration)
+
+        await service.run_cutover(session, migration.id)
+        await session.flush()
+        await session.refresh(pending)
+        await session.refresh(migration)
+
+        assert migration.operation is not None
+        assert migration.operation.selection is not None
+        assert migration.operation.selection.record_ids == []
+        assert runner.run.await_count == 1
+        assert pending.cutover_status == MerchantMigrationCutoverStatus.moved
+        assert migration.step != MerchantMigrationStep.cleanup
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
+
     async def test_skips_when_renewals_disabled(
         self,
         mocker: MockerFixture,

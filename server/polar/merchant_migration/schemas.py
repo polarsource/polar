@@ -277,6 +277,7 @@ class MerchantMigrationImportReport(Schema):
 class MerchantMigrationCutoverRequest(Schema):
     record_ids: list[UUID4] | None = Field(
         default=None,
+        min_length=1,
         description=(
             "Subscription ledger record ids to switch (from the records listing). "
             "When omitted, every subscription whose customer and product are in "

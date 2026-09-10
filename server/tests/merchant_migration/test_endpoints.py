@@ -948,6 +948,28 @@ class TestCutover:
         )
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_rejects_empty_record_ids(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "cutover"
+        )
+        await save_fixture(migration)
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/cutover",
+            json={"record_ids": []},
+        )
+        # An empty opt-in list has no documented meaning: reject it at the
+        # boundary instead of silently switching nothing and finalizing.
+        assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_get_report_before_confirmation(
         self,
         client: AsyncClient,

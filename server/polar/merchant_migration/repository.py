@@ -452,7 +452,7 @@ class MerchantMigrationRecordRepository(
         """
         if selection is None:
             return []
-        if selection.record_ids is not None:
+        if selection.record_ids:
             return [MerchantMigrationRecord.id.in_(selection.record_ids)]
         if selection.exclude_record_ids is not None:
             return [MerchantMigrationRecord.id.not_in(selection.exclude_record_ids)]

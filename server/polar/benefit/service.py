@@ -231,6 +231,21 @@ class BenefitService:
                 ]
             )
 
+        if (
+            "description" in benefit_update.model_fields_set
+            and benefit_update.description is None
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "description"),
+                        "msg": "Description cannot be null.",
+                        "input": benefit_update.description,
+                    }
+                ]
+            )
+
         update_dict = benefit_update.model_dump(
             by_alias=True, exclude_unset=True, exclude={"type", "properties"}
         )

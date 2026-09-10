@@ -248,6 +248,56 @@ class TestUpdate:
                 auth_subject=auth_subject,
             )
 
+    @pytest.mark.auth
+    async def test_type_explicit_null(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await discount_service.update(
+                session,
+                discount,
+                discount_update=DiscountUpdate.model_validate({"type": None}),
+                auth_subject=auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_name_explicit_null(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await discount_service.update(
+                session,
+                discount,
+                discount_update=DiscountUpdate.model_validate({"name": None}),
+                auth_subject=auth_subject,
+            )
+
     @pytest.mark.parametrize(
         ("field", "value"),
         [

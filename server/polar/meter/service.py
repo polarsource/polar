@@ -205,15 +205,24 @@ class MeterService:
         if errors:
             raise PolarRequestValidationError(errors)
 
+        # `name` and `unit` map to NOT NULL columns. Like `filter` and
+        # `aggregation`, exclude them from the raw dump and re-add only when a
+        # non-null value was provided, so an explicitly-sent `null` (which
+        # `exclude_unset` keeps) preserves the current value instead of raising a
+        # NOT NULL violation.
         update_dict = meter_update.model_dump(
             by_alias=True,
             exclude_unset=True,
-            exclude={"filter", "aggregation", "is_archived"},
+            exclude={"filter", "aggregation", "is_archived", "name", "unit"},
         )
         if meter_update.filter is not None:
             update_dict["filter"] = meter_update.filter
         if meter_update.aggregation is not None:
             update_dict["aggregation"] = meter_update.aggregation
+        if meter_update.name is not None:
+            update_dict["name"] = meter_update.name
+        if meter_update.unit is not None:
+            update_dict["unit"] = meter_update.unit
 
         # Handle archiving/unarchiving
         if meter_update.is_archived is not None:

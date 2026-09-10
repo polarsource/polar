@@ -12,7 +12,18 @@ import { keys, runCli, type RunCliOptions } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 
-const acme: ActiveOrganization = { id: 'org-1', name: 'Acme', slug: 'acme' }
+const acme: ActiveOrganization = {
+  id: 'org-1',
+  name: 'Acme',
+  slug: 'acme',
+  environment: 'sandbox',
+}
+const beta: ActiveOrganization = {
+  id: 'org-2',
+  name: 'Beta',
+  slug: 'beta',
+  environment: 'production',
+}
 const triggerUrl = 'https://sandbox-api.polar.sh/v1/cli/trigger/org-1'
 const eventsUrl = 'https://sandbox-api.polar.sh/v1/cli/events'
 
@@ -44,10 +55,10 @@ const requestBody = async (index = 0) =>
   (await api.requests[index]!.clone().json()) as Record<string, unknown>
 
 beforeEach(() => {
-  auth = fakeAuth()
+  auth = fakeAuth({ environment: 'sandbox' })
   organizations = fakeOrganizations({
-    items: [acme],
-    selected: { sandbox: acme.id },
+    items: [acme, beta],
+    selected: { id: acme.id, environment: acme.environment },
   })
   api = fakeHttp()
 })
@@ -107,12 +118,12 @@ describe('trigger', () => {
     expect(output()).toContain('evt-1')
   })
 
-  test('passes overrides, seed and the production environment', async () => {
-    organizations.state.selected.production = acme.id
-    api.routes['POST https://api.polar.sh/v1/cli/trigger/org-1'] = triggered()
+  test('passes overrides and seed, using the organization environment', async () => {
+    api.routes['POST https://api.polar.sh/v1/cli/trigger/org-2'] = triggered()
     const { promise } = run([
       'order.paid',
-      '--production',
+      '--org',
+      'org-2',
       '--override',
       'data.customer.email=vip@example.com',
       '--override',

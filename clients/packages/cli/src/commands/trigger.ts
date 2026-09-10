@@ -1,11 +1,12 @@
 import { Console, Data, Effect, Option, Schema, Stdio } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { HttpClientRequest, HttpClientResponse } from 'effect/unstable/http'
-import type { PolarEnvironment } from '@/schemas/Auth'
+import { loginCommand, type PolarEnvironment } from '@/schemas/Auth'
 import { apiUrl } from '@/services/api'
+import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
 import * as ui from '@/utils/ui'
-import { environmentOf, org, production } from '@/commands/flags'
+import { org } from '@/commands/flags'
 import { authenticatedStreamClient } from '@/commands/listen'
 
 export class TriggerError extends Data.TaggedError('TriggerError')<{
@@ -113,29 +114,36 @@ const fetchEvents = (environment: PolarEnvironment) =>
     }),
   )
 
-const printEvents = (environment: PolarEnvironment) =>
-  Effect.gen(function* () {
-    const events = yield* fetchEvents(environment)
-    const width = Math.max(0, ...events.map((event) => event.type.length))
-    let resource = ''
-    yield* Console.log(ui.blank)
-    for (const event of events) {
-      const [eventResource = event.type] = event.type.split('.')
-      if (eventResource !== resource) {
-        if (resource) yield* Console.log(ui.blank)
-        resource = eventResource
-        yield* Console.log(`  ${ui.bold(resource)}`)
-      }
-      yield* Console.log(
-        `    ${ui.cyan(event.type.padEnd(width))}  ${ui.dim(event.description)}`,
-      )
+const printEvents = Effect.gen(function* () {
+  const auth = yield* Auth
+  const [environment] = yield* auth.environments
+  if (environment === undefined) {
+    return yield* new TriggerError({
+      message: 'Not logged in to Polar',
+      hint: `Run ${ui.command(loginCommand('sandbox'))} first`,
+    })
+  }
+  const events = yield* fetchEvents(environment)
+  const width = Math.max(0, ...events.map((event) => event.type.length))
+  let resource = ''
+  yield* Console.log(ui.blank)
+  for (const event of events) {
+    const [eventResource = event.type] = event.type.split('.')
+    if (eventResource !== resource) {
+      if (resource) yield* Console.log(ui.blank)
+      resource = eventResource
+      yield* Console.log(`  ${ui.bold(resource)}`)
     }
-    yield* Console.log(ui.blank)
     yield* Console.log(
-      ui.step(`Send one with ${ui.command('polar trigger <event>')}`),
+      `    ${ui.cyan(event.type.padEnd(width))}  ${ui.dim(event.description)}`,
     )
-    yield* Console.log(ui.blank)
-  })
+  }
+  yield* Console.log(ui.blank)
+  yield* Console.log(
+    ui.step(`Send one with ${ui.command('polar trigger <event>')}`),
+  )
+  yield* Console.log(ui.blank)
+})
 
 const selectEvent = (environment: PolarEnvironment) =>
   Effect.gen(function* () {
@@ -160,18 +168,17 @@ const selectEvent = (environment: PolarEnvironment) =>
 
 export const trigger = Command.make(
   'trigger',
-  { event, production, org, override, seed, json, list },
-  ({ event, production, org, override, seed, json, list }) =>
+  { event, org, override, seed, json, list },
+  ({ event, org, override, seed, json, list }) =>
     Effect.gen(function* () {
-      const environment = environmentOf(production)
       if (list) {
-        return yield* printEvents(environment)
+        return yield* printEvents
       }
       const organizations = yield* Organizations
       const organization = yield* organizations.resolve(
-        environment,
         Option.getOrUndefined(org),
       )
+      const { environment } = organization
       const eventType = Option.isSome(event)
         ? event.value
         : yield* selectEvent(environment)

@@ -24,18 +24,25 @@ Four groups come out of it:
   switched on;
 - done, switched on with nothing outstanding.
 
+The first two are walked one origin at a time: add it or leave it, then switch
+the organization on or not. The third is offered as a single batch.
+
 An organization in `ready` is a bet: we know it frames from hosts it has
 listed, not that it never frames from anywhere else. The `breaking` group is
-how that bet is settled.
+how that bet is settled, which is why this is worth running regularly.
 
 Usage:
     cd server
 
     # Needs a Logfire read token, see POLAR_LOGFIRE_READ_TOKEN in .env.template
+    # Rehearsal: the questions run, nothing is written
     uv run python -m scripts.enforce_frame_ancestors
 
+    # For real
+    uv run python -m scripts.enforce_frame_ancestors --execute
+
     # A shortlist
-    uv run python -m scripts.enforce_frame_ancestors --slug acme --slug acme-labs
+    uv run python -m scripts.enforce_frame_ancestors --slug acme --execute
 """
 
 from dataclasses import dataclass, field
@@ -85,12 +92,21 @@ class Review:
         return self.candidate.ready + self.candidate.uncovered_after
 
     @property
+    def blocked(self) -> bool:
+        """Plain HTTP on a public host: refused, and no entry can change that."""
+        return bool(self.candidate.blocked)
+
+    @property
+    def outstanding(self) -> bool:
+        return bool(self.decisions) or self.blocked
+
+    @property
     def breaking(self) -> bool:
-        return self.enforced and bool(self.decisions)
+        return self.enforced and self.outstanding
 
     @property
     def ready(self) -> bool:
-        return not self.enforced and not self.decisions
+        return not self.enforced and not self.outstanding
 
 
 async def _load_reviews(
@@ -154,9 +170,9 @@ class Groups:
 def _partition(reviews: list[Review]) -> Groups:
     return Groups(
         breaking=[r for r in reviews if r.breaking],
-        deciding=[r for r in reviews if not r.enforced and r.decisions],
+        deciding=[r for r in reviews if not r.enforced and r.outstanding],
         ready=[r for r in reviews if r.ready],
-        done=[r for r in reviews if r.enforced and not r.decisions],
+        done=[r for r in reviews if r.enforced and not r.outstanding],
     )
 
 
@@ -230,15 +246,6 @@ def _decide(groups: Groups) -> list[Decision]:
                     hosts=chosen,
                     enable=enable,
                 )
-            )
-
-    # A covered organization can still carry an origin no entry can admit, and
-    # nothing above would have shown it.
-    for review in groups.ready:
-        for origin, _ in review.candidate.blocked:
-            console.print(
-                f"[yellow]{review.slug}: {origin} is plain HTTP on a public "
-                "host, no entry can admit it[/yellow]"
             )
 
     if groups.ready and typer.confirm(

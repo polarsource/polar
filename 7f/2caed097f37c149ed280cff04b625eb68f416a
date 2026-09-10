@@ -1,0 +1,33 @@
+server/polar/member/endpoints.py
+  s_7f8a341d1e843c::t_7993bb5c587712 140
+  2eb55101178ce897 494-495,649-652,655-675
+  b3576dc38cbfb4b0 1-4,7,9,16-18,27-29,39-45,62,90-92,95-101,106-119,122-130
+  6bbff0c8f601f870 10-15,131-132,459-463,466-493
+  d83254264a5afd2a 496-499,502-524,562-565,568-581,583-594,597-601
+server/polar/metrics/endpoints.py
+  s_7f8a341d1e843c::t_bcaf79160a4315 56,260-265
+  2d13f9be37bf9fed 148
+server/polar/checkout_link/endpoints.py
+  s_7f8a341d1e843c::t_37cad4c74a4cc8 57-60,96,118,140,167
+server/polar/kit/routing.py
+  s_7f8a341d1e843c::t_3e3594ee47ced2 108-110
+  s_7f8a341d1e843c::t_d32180766bccfe 192-194
+server/polar/file/endpoints.py
+  s_7f8a341d1e843c::t_8a095a83b20445 55-60,219
+server/polar/customer_seat/endpoints.py
+  s_7f8a341d1e843c::t_3741ab3736f7f6 36
+server/polar/organization/endpoints.py
+  8fa941bc521f12cc 132-133,891-892,917-927,929-931
+  s_7f8a341d1e843c::t_1e3011ade59faf 155,186
+  0b8cca69fbd11712 124,223-228,233-236,238-241,260-261,263-265
+server/polar/openapi.py
+  s_7f8a341d1e843c::t_3cf72b7acdd8a9 44-45,64-70
+server/polar/event_type/endpoints.py
+  s_7f8a341d1e843c::t_4c7674aa37c51f 24,84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7f2caed097f37c149ed280cff04b625eb68f416a",
+  "prompts": {}
+}

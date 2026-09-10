@@ -13284,6 +13284,9 @@ export interface components {
        */
       confirmation_token_id?: string | null
     }
+    CheckoutConflictError:
+      | components['schemas']['CheckoutLocked']
+      | components['schemas']['CheckoutCustomerDeleted']
     CheckoutCreate: components['schemas']['CheckoutProductsCreate']
     /**
      * CheckoutCreatedEvent
@@ -13369,6 +13372,17 @@ export interface components {
       checkout_status: string
       /** Product Id */
       product_id?: string
+    }
+    /** CheckoutCustomerDeleted */
+    CheckoutCustomerDeleted: {
+      /**
+       * Error
+       * @example CheckoutCustomerDeleted
+       * @constant
+       */
+      error: 'CheckoutCustomerDeleted'
+      /** Detail */
+      detail: string
     }
     /**
      * CheckoutDiscountFixedOnceForeverDuration
@@ -14044,6 +14058,17 @@ export interface components {
        * @description When set, a back button will be shown in the checkout to return to this URL.
        */
       return_url?: string | null
+    }
+    /** CheckoutLocked */
+    CheckoutLocked: {
+      /**
+       * Error
+       * @example CheckoutLocked
+       * @constant
+       */
+      error: 'CheckoutLocked'
+      /** Detail */
+      detail: string
     }
     /** CheckoutOrganization */
     CheckoutOrganization: {
@@ -47445,6 +47470,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description The checkout session is locked by another request. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutLocked']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -47549,6 +47583,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description The checkout session is locked by another request. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutLocked']
+        }
+      }
       /** @description The checkout session is expired. */
       410: {
         headers: {
@@ -47619,6 +47662,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The checkout is locked by another request, or its customer has been deleted. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutConflictError']
         }
       }
       /** @description The checkout session is expired. */

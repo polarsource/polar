@@ -51,6 +51,8 @@ from .schemas import (
 )
 from .service import (
     AlreadyActiveSubscriptionError,
+    CheckoutCustomerDeleted,
+    CheckoutLocked,
     DiscountRedemptionLimitReached,
     ExpiredCheckoutError,
     NotOpenCheckout,
@@ -89,6 +91,13 @@ CheckoutForbiddenError = {
         | TrialAlreadyRedeemed.schema()
         | DiscountRedemptionLimitReached.schema(),
         SetSchemaReference("CheckoutForbiddenError"),
+    ],
+}
+CheckoutConflictError = {
+    "description": "The checkout is locked by another request, or its customer has been deleted.",
+    "model": Annotated[
+        CheckoutLocked.schema() | CheckoutCustomerDeleted.schema(),
+        SetSchemaReference("CheckoutConflictError"),
     ],
 }
 
@@ -190,6 +199,10 @@ async def create(
         200: {"description": "Checkout session updated."},
         404: CheckoutNotFound,
         403: CheckoutForbiddenError,
+        409: {
+            "description": "The checkout session is locked by another request.",
+            "model": CheckoutLocked.schema(),
+        },
     },
 )
 async def update(
@@ -238,6 +251,10 @@ async def client_get(
         200: {"description": "Checkout session updated."},
         404: CheckoutNotFound,
         403: CheckoutForbiddenError,
+        409: {
+            "description": "The checkout session is locked by another request.",
+            "model": CheckoutLocked.schema(),
+        },
         410: CheckoutExpired,
     },
 )
@@ -266,6 +283,7 @@ async def client_update(
         400: CheckoutPaymentError,
         404: CheckoutNotFound,
         403: CheckoutForbiddenError,
+        409: CheckoutConflictError,
         410: CheckoutExpired,
     },
 )

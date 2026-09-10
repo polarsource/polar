@@ -41,6 +41,7 @@ from tests.fixtures.random_objects import (
     create_account,
     create_benefit,
     create_checkout,
+    create_customer,
     create_discount,
     create_organization,
     create_product,
@@ -975,6 +976,37 @@ class TestClientConfirm:
 
         json = response.json()
         assert "customer_session_token" in json
+
+    @pytest.mark.auth
+    async def test_confirm_deleted_customer_conflict(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        customer.set_deleted_at()
+        await save_fixture(customer)
+        checkout_open.customer = customer
+        await save_fixture(checkout_open)
+
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": customer.email,
+                "customer_billing_address": {"country": "FR"},
+                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json() == {
+            "error": "CheckoutCustomerDeleted",
+            "detail": "The customer associated with this checkout has been deleted.",
+        }
 
     async def test_confirm_with_discount_code(
         self,

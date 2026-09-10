@@ -1,0 +1,31 @@
+dev/cli/commands/docker.py
+  s_7135f7ba91de29::t_28bc347d2daa9f 958-962,976-978,981-982,996-1001
+  s_7135f7ba91de29::t_c8cfe48d68dbc3 465
+  s_4c1d23dc6b1e7e::t_90aada876e1343 1002
+.agents/skills/local-environment/rules/stop-environment.md
+  s_7135f7ba91de29::t_504b64f8424e48 32-34,46-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a9ff282a2abe75e2fb58b014a06ac94d8003526e",
+  "prompts": {},
+  "sessions": {
+    "s_4c1d23dc6b1e7e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a08741-9060-70d3-bd80-f3ced4dfd193",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_7135f7ba91de29": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8ae9ab6b-edf6-40a9-a6bd-339767b9f031",
+        "model": "grok-4.6"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

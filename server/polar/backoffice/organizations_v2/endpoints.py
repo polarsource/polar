@@ -20,7 +20,7 @@ from fastapi import Depends, HTTPException, Query, Request
 from fastapi.datastructures import FormData
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
-from sqlalchemy import Select, and_, func, or_, select
+from sqlalchemy import Select, and_, false, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
@@ -118,6 +118,7 @@ from ..components import button, input, modal
 from ..dependencies import get_admin
 from ..layout import layout
 from ..responses import HXRedirectResponse
+from ..search import organization_ilike
 from ..support_cases.queries import cases_statement, open_case_organization_ids
 from ..support_cases.urls import append_return_to, case_detail_url
 from ..toast import add_toast
@@ -140,6 +141,7 @@ from .orders_import import orders_import_sse
 from .priority import Signals
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import (
+    MIN_SEARCH_LENGTH,
     DeletedFilter,
     OrganizationListView,
     apply_deleted_filter,
@@ -513,6 +515,10 @@ def _parse_status_filter(status: str | None) -> OrganizationStatus | None:
     return _STATUS_FILTERS.get(status) if status else None
 
 
+def _normalize_search(q: str | None) -> str | None:
+    return (q.strip() or None) if q else None
+
+
 def _apply_sql_sort(stmt: Select[Any], sort: str, direction: str) -> Select[Any]:
     is_desc = direction == "desc"
     if sort == "name":
@@ -592,6 +598,7 @@ async def list_organizations(
     list_view = OrganizationListView(session)
 
     # Convert empty strings to None and parse numbers
+    q = _normalize_search(q)
     country = country if country else None
     risk_level = risk_level if risk_level else None
     has_appeal = has_appeal if has_appeal else None
@@ -635,18 +642,25 @@ async def list_organizations(
             )
         )
 
+    search_too_short = False
     if q:
         try:
             stmt = stmt.where(Organization.id == uuid.UUID(q))
         except ValueError:
-            search_term = f"%{q}%"
-            stmt = stmt.where(
-                or_(
-                    Organization.name.ilike(search_term),
-                    Organization.slug.ilike(search_term),
-                    Organization.email.ilike(search_term),
+            if len(q) < MIN_SEARCH_LENGTH:
+                # pg_trgm can't extract a trigram from a shorter pattern, so
+                # the search would fall back to a seq scan of the whole table
+                # (the search box fires on every keystroke).
+                search_too_short = True
+                stmt = stmt.where(false())
+            else:
+                search_term = f"%{q}%"
+                stmt = stmt.where(
+                    or_(
+                        organization_ilike(search_term),
+                        Organization.email.ilike(search_term),
+                    )
                 )
-            )
 
     # Country filter
     if country:
@@ -772,6 +786,7 @@ async def list_organizations(
             open_case_org_ids=open_case_org_ids,
             awaiting_reply_org_ids=awaiting_reply_org_ids,
             selected_open_cases=selected_open_cases,
+            search_too_short=search_too_short,
         ):
             pass
     else:
@@ -811,6 +826,7 @@ async def list_organizations(
                 awaiting_reply_org_ids=awaiting_reply_org_ids,
                 selected_open_cases=selected_open_cases,
                 open_cases_count=open_cases_count,
+                search_too_short=search_too_short,
                 lazy_counts_url=str(
                     request.url_for("organizations:status_counts").include_query_params(
                         **{k: v for k, v in request.query_params.items() if v}
@@ -829,6 +845,10 @@ async def status_counts(
     deleted: DeletedFilter | None = Query(None),
 ) -> None:
     list_view = OrganizationListView(session)
+    # Same normalization as the list: `lazy_counts_url` forwards the raw query
+    # params, so a whitespace-only `q` must not flip the deleted filter here
+    # while the list treats it as no search at all.
+    q = _normalize_search(q)
     deleted_filter: DeletedFilter = deleted or ("include" if q else "exclude")
     open_cases_count = (
         await session.scalar(

@@ -58,6 +58,7 @@ from ..components import button, datatable, description_list, modal
 from ..formatters import currency
 from ..layout import layout
 from ..responses import HXRedirectResponse
+from ..search import organization_ilike
 from ..toast import add_toast
 from .components import customers_datatable, email_verified_badge
 
@@ -181,8 +182,7 @@ async def list(
                 or_(
                     Customer.search_vector.op("@@")(ts_query_simple),
                     Customer.external_id.ilike(ilike_term),
-                    Organization.slug.ilike(ilike_term),
-                    Organization.name.ilike(ilike_term),
+                    organization_ilike(ilike_term),
                 )
             )
 

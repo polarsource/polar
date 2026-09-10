@@ -15,7 +15,7 @@ from polar.kit.math import non_negative_running_sum
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction
 from polar.meter.service import meter as meter_service
-from polar.models import BillingEntry, Event, OrderItem, Subscription
+from polar.models import BillingEntry, Event, OrderItem, Product, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -170,6 +170,7 @@ class BillingEntryService:
         cutoff = cutoff or utc_now()
         repository = BillingEntryRepository.from_session(session)
 
+        products: dict[uuid.UUID, Product] = {}
         async for entry in repository.get_static_pending_by_subscription(
             subscription.id, cutoff=cutoff
         ):
@@ -180,6 +181,7 @@ class BillingEntryService:
                 entry,
                 seats=subscription.seats,
                 units=subscription.units,
+                products=products,
             )
             yield static_line_item, [entry.id]
 
@@ -306,13 +308,17 @@ class BillingEntryService:
         *,
         seats: int | None,
         units: int | None = None,
+        products: dict[uuid.UUID, Product],
     ) -> StaticLineItem:
         assert entry.amount is not None
         assert entry.currency is not None
 
-        product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(price.product_id)
-        assert product is not None
+        product = products.get(price.product_id)
+        if product is None:
+            product_repository = ProductRepository.from_session(session)
+            product = await product_repository.get_by_id(price.product_id)
+            assert product is not None
+            products[price.product_id] = product
 
         start = format_date(entry.start_timestamp.date(), locale="en_US")
         end = format_date(entry.end_timestamp.date(), locale="en_US")

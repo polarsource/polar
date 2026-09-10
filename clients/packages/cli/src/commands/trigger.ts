@@ -87,31 +87,20 @@ const json = Flag.boolean('json').pipe(
   Flag.withDescription('Print the payload as JSON instead of sending it'),
 )
 
-const selectEvent = (environment: PolarEnvironment) =>
+const list = Flag.boolean('list').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('List every event you can trigger, with descriptions'),
+)
+
+const fetchEvents = (environment: PolarEnvironment) =>
   Effect.gen(function* () {
-    const stdio = yield* Stdio.Stdio
-    if (!(yield* stdio.stdinIsTerminal) || !(yield* stdio.stdoutIsTerminal)) {
-      return yield* new TriggerError({
-        message: 'An event name is required when not running interactively',
-        hint: `Try ${ui.command('polar trigger order.created')}`,
-      })
-    }
     const client = yield* authenticatedStreamClient(environment)
     const response = yield* client.execute(
       HttpClientRequest.get(apiUrl(environment, '/cli/events')),
     )
-    const events = yield* HttpClientResponse.schemaBodyJson(
-      Schema.Array(TriggerEvent),
-    )(response)
-    return yield* Prompt.autoComplete({
-      message: 'Select an event to send',
-      filterPlaceholder: 'Type to filter, e.g. order',
-      choices: events.map((item) => ({
-        value: item.type,
-        title: item.type,
-        description: item.description,
-      })),
-    })
+    return yield* HttpClientResponse.schemaBodyJson(Schema.Array(TriggerEvent))(
+      response,
+    )
   }).pipe(
     Effect.catchTags({
       HttpClientError: (error) =>
@@ -124,12 +113,60 @@ const selectEvent = (environment: PolarEnvironment) =>
     }),
   )
 
+const printEvents = (environment: PolarEnvironment) =>
+  Effect.gen(function* () {
+    const events = yield* fetchEvents(environment)
+    const width = Math.max(0, ...events.map((event) => event.type.length))
+    let resource = ''
+    yield* Console.log(ui.blank)
+    for (const event of events) {
+      const [eventResource = event.type] = event.type.split('.')
+      if (eventResource !== resource) {
+        if (resource) yield* Console.log(ui.blank)
+        resource = eventResource
+        yield* Console.log(`  ${ui.bold(resource)}`)
+      }
+      yield* Console.log(
+        `    ${ui.cyan(event.type.padEnd(width))}  ${ui.dim(event.description)}`,
+      )
+    }
+    yield* Console.log(ui.blank)
+    yield* Console.log(
+      ui.step(`Send one with ${ui.command('polar trigger <event>')}`),
+    )
+    yield* Console.log(ui.blank)
+  })
+
+const selectEvent = (environment: PolarEnvironment) =>
+  Effect.gen(function* () {
+    const stdio = yield* Stdio.Stdio
+    if (!(yield* stdio.stdinIsTerminal) || !(yield* stdio.stdoutIsTerminal)) {
+      return yield* new TriggerError({
+        message: 'An event name is required when not running interactively',
+        hint: `Try ${ui.command('polar trigger order.created')} or ${ui.command('polar trigger --list')}`,
+      })
+    }
+    const events = yield* fetchEvents(environment)
+    return yield* Prompt.autoComplete({
+      message: 'Select an event to send',
+      filterPlaceholder: 'Type to filter, e.g. order',
+      choices: events.map((item) => ({
+        value: item.type,
+        title: item.type,
+        description: item.description,
+      })),
+    })
+  })
+
 export const trigger = Command.make(
   'trigger',
-  { event, production, org, override, seed, json },
-  ({ event, production, org, override, seed, json }) =>
+  { event, production, org, override, seed, json, list },
+  ({ event, production, org, override, seed, json, list }) =>
     Effect.gen(function* () {
       const environment = environmentOf(production)
+      if (list) {
+        return yield* printEvents(environment)
+      }
       const organizations = yield* Organizations
       const organization = yield* organizations.resolve(
         environment,
@@ -210,6 +247,6 @@ export const trigger = Command.make(
     ),
 ).pipe(
   Command.withDescription(
-    'Send a sample webhook event to your local server through polar listen',
+    'Send a sample webhook event to your local server through polar listen. Run with --list to see every event.',
   ),
 )

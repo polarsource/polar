@@ -164,6 +164,31 @@ describe('trigger', () => {
     expect(output()).toContain('Sent order.paid to Acme')
   })
 
+  test('lists events with descriptions grouped by resource', async () => {
+    api.routes[`GET ${eventsUrl}`] = Response.json([
+      {
+        type: 'checkout.created',
+        description: 'Sent when a checkout is created.',
+      },
+      { type: 'order.paid', description: 'Sent when an order is paid.' },
+    ])
+    const { promise, output } = run(['--list'])
+    await promise
+
+    expect(output()).toContain('checkout')
+    expect(output()).toContain('checkout.created')
+    expect(output()).toContain('Sent when a checkout is created.')
+    expect(output()).toContain('order.paid')
+    expect(output()).toContain('polar trigger <event>')
+    expect(api.requests).toHaveLength(1)
+  })
+
+  test('explains when the event list cannot be loaded', async () => {
+    const { promise } = run(['--list'])
+
+    await expect(promise).rejects.toThrow('Could not load the list of events')
+  })
+
   test('requires an event name when not interactive', async () => {
     const { promise } = run([])
 

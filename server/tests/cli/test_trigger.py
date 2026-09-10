@@ -6,7 +6,6 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.cli.fixtures import (
-    PERSONAS,
     SUPPORTED_EVENTS,
     TriggerFixtures,
     with_column_defaults,

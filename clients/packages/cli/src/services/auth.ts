@@ -26,6 +26,7 @@ export class Auth extends Context.Service<
     login: (
       environment: PolarEnvironment,
       newSession: boolean,
+      onAuthorizationUrl?: (url: string) => Effect.Effect<void>,
     ) => Effect.Effect<boolean, AuthError>
     logout: (
       targets: ReadonlyArray<PolarEnvironment>,
@@ -134,14 +135,14 @@ export const make = (
         }
         return available
       }),
-      login: (environment, newSession) =>
+      login: (environment, newSession, onAuthorizationUrl) =>
         Effect.gen(function* () {
           yield* requireSavedMode
           if (!newSession && (yield* store.read(environment))) {
             yield* resolve(environment)
             return false
           }
-          const session = yield* oauth.login(environment)
+          const session = yield* oauth.login(environment, onAuthorizationUrl)
           yield* locks[environment].withPermit(
             Effect.gen(function* () {
               yield* store.write(environment, session)

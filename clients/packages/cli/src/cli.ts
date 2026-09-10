@@ -17,7 +17,7 @@ import * as Telemetry from '@/services/telemetry'
 import * as Trigger from '@/services/trigger'
 import {
   checkForUpdateInBackground,
-  showUpdateNotice,
+  pendingUpdate,
 } from '@/services/update-check'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
@@ -99,7 +99,20 @@ if (process.argv[2] === Telemetry.SENDER_COMMAND) {
     BunRuntime.runMain({ disableErrorReporting: true }),
   )
 } else {
-  showUpdateNotice()
+  const update = pendingUpdate()
+  if (update) {
+    process.stderr.write(
+      [
+        ui.blank,
+        ui.warning(
+          `Update available ${ui.dim(update.current)} ${ui.dim('→')} ${ui.bold(ui.cyan(update.latest))}`,
+        ),
+        ui.step(`Run ${ui.command('polar update')} to install it`),
+        ui.blank,
+        ui.blank,
+      ].join('\n'),
+    )
+  }
   checkForUpdateInBackground()
   instrumented.pipe(
     Effect.provide(services),

@@ -1,11 +1,15 @@
-import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
-import { Console, Effect, Fiber, Redacted } from 'effect'
+import { afterEach, describe, expect, vi, test } from 'vitest'
+import { Effect, Fiber } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
-import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
+import { AuthError } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
-import { startListening } from '@/commands/listen'
-import { authenticatedClient } from '@/services/api'
-import { captureConsole } from '@/utils/test-utils/cli'
+import {
+  type FailedForward,
+  type ForwardedEvent,
+  type ListenConnection,
+  type ListenReporter,
+  startListening,
+} from '@/services/listen'
 import { fakeAuth, overrideCredential } from '@/utils/test-utils/services'
 
 describe('startListening', () => {
@@ -32,10 +36,23 @@ describe('startListening', () => {
     )
   }
   const forward = vi.fn<Fetch>(async () => new Response(null, { status: 200 }))
-  let output: string[]
+  const reported: {
+    connected: ListenConnection[]
+    forwarded: ForwardedEvent[]
+    failed: FailedForward[]
+    undecodable: Array<string | undefined>
+  } = { connected: [], forwarded: [], failed: [], undecodable: [] }
+  const report: ListenReporter = {
+    connected: (connection) =>
+      Effect.sync(() => void reported.connected.push(connection)),
+    forwarded: (event) =>
+      Effect.sync(() => void reported.forwarded.push(event)),
+    forwardFailed: (event) =>
+      Effect.sync(() => void reported.failed.push(event)),
+    undecodable: (key) =>
+      Effect.sync(() => void reported.undecodable.push(key)),
+  }
   const run = (fetch: Fetch = streamFetch, credentials = auth) => {
-    const captured = captureConsole()
-    output = captured.lines
     const fiber = Effect.runFork(
       startListening({
         listenUrl: 'https://example.test/listen',
@@ -43,6 +60,7 @@ describe('startListening', () => {
         organizationName: 'Acme',
         environment: 'sandbox',
         forward,
+        report,
       }).pipe(
         Effect.provide(FetchHttpClient.layer),
         Effect.provideService(
@@ -50,7 +68,6 @@ describe('startListening', () => {
           fetch as typeof globalThis.fetch,
         ),
         Effect.provideService(Auth, credentials),
-        Effect.provideService(Console.Console, captured.console),
       ),
     )
     fibers.push(fiber)
@@ -70,6 +87,10 @@ describe('startListening', () => {
     connections.length = 0
     requests.length = 0
     forward.mockClear()
+    reported.connected.length = 0
+    reported.forwarded.length = 0
+    reported.failed.length = 0
+    reported.undecodable.length = 0
     vi.restoreAllMocks()
   })
 
@@ -126,9 +147,27 @@ describe('startListening', () => {
       'http://localhost:3000/webhook',
       expect.objectContaining({ method: 'POST', body: rawPayload, headers }),
     )
+    expect(reported.forwarded).toMatchObject([
+      { type: 'order.created', status: 200 },
+    ])
   })
 
-  test('reconnects immediately, resumes event IDs and prints the banner once', async () => {
+  test('reports forwarding failures without terminating the stream', async () => {
+    forward.mockRejectedValueOnce(new Error('ECONNREFUSED'))
+    run()
+    await tick()
+    emit({
+      id: 'evt_1',
+      key: 'webhook',
+      payload: { webhook_event_id: 'whid_1', payload: '{"type":"order.paid"}' },
+      headers: { 'webhook-id': 'wh_1' },
+    })
+    await tick()
+    expect(reported.failed).toMatchObject([{ type: 'order.paid' }])
+    expect(connections).toHaveLength(1)
+  })
+
+  test('reconnects immediately, resumes event IDs and reports the connection once', async () => {
     run()
     await tick()
     const ack = {
@@ -144,11 +183,16 @@ describe('startListening', () => {
     expect(requests[1]!.get('Last-Event-ID')).toBe('evt_1')
     emit(ack, 1)
     await tick()
-    expect(output.filter((line) => line.includes('Connected'))).toHaveLength(1)
+    expect(reported.connected).toEqual([
+      {
+        organizationName: 'Acme',
+        secret: 'whsec_test',
+        forwardUrl: 'http://localhost:3000/webhook',
+      },
+    ])
   })
 
-  test('logs malformed JSON without terminating the stream', async () => {
-    const log = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+  test('reports malformed JSON without terminating the stream', async () => {
     run()
     await tick()
     connections[0]!.controller.enqueue(
@@ -156,9 +200,7 @@ describe('startListening', () => {
     )
     emit({ type: 'reconnect' })
     await tick()
-    expect(log).toHaveBeenCalledWith(
-      expect.stringContaining('could not decode'),
-    )
+    expect(reported.undecodable).toEqual([undefined])
     expect(connections).toHaveLength(2)
   })
 
@@ -195,117 +237,5 @@ describe('startListening', () => {
       code: 200,
       message: 'Expected a text/event-stream response.',
     })
-  })
-})
-
-describe('authenticatedClient', () => {
-  let token: string
-  let source: 'keyring' | 'override'
-  let requests: string[]
-  let resolutions: PolarEnvironment[]
-  let refreshes: number
-  let failure: boolean
-  let status: number
-  const auth = Auth.of({
-    ...fakeAuth().auth,
-    resolve: (environment, rejected) =>
-      Effect.gen(function* () {
-        resolutions.push(environment)
-        if (failure) return yield* new AuthError({ message: 'refresh failed' })
-        if (rejected) {
-          refreshes++
-          token = 'rotated'
-        }
-        return { accessToken: Redacted.make(token), source }
-      }),
-  })
-  const forward: (
-    input: Parameters<typeof fetch>[0],
-    init?: RequestInit,
-  ) => Promise<Response> = async (_input, init) => {
-    requests.push(new Headers(init?.headers).get('Authorization') ?? '')
-    return new Response(null, { status })
-  }
-
-  const makeClient = (environment: PolarEnvironment) =>
-    authenticatedClient(environment).pipe(
-      Effect.provide(FetchHttpClient.layer),
-      Effect.provideService(FetchHttpClient.Fetch, forward as typeof fetch),
-    )
-
-  beforeEach(() => {
-    token = 'initial'
-    source = 'keyring'
-    requests = []
-    resolutions = []
-    refreshes = 0
-    failure = false
-    status = 200
-  })
-
-  test('reconnections resolve current credentials in the same environment', async () => {
-    const stream = await Effect.runPromise(
-      makeClient('production').pipe(Effect.provideService(Auth, auth)),
-    )
-    await Effect.runPromise(Effect.scoped(stream.get('https://example.test')))
-    token = 'new-token'
-    await Effect.runPromise(Effect.scoped(stream.get('https://example.test')))
-    expect(requests).toEqual(['Bearer initial', 'Bearer new-token'])
-    expect(resolutions).toEqual(['production', 'production'])
-  })
-
-  test('401 refresh is bounded to one retry across the entire listener', async () => {
-    status = 401
-    const stream = await Effect.runPromise(
-      makeClient('sandbox').pipe(Effect.provideService(Auth, auth)),
-    )
-    expect(
-      (
-        await Effect.runPromise(
-          Effect.scoped(stream.get('https://example.test')),
-        )
-      ).status,
-    ).toBe(401)
-    expect(
-      (
-        await Effect.runPromise(
-          Effect.scoped(stream.get('https://example.test')),
-        )
-      ).status,
-    ).toBe(401)
-    expect(requests).toEqual([
-      'Bearer initial',
-      'Bearer rotated',
-      'Bearer rotated',
-    ])
-    expect(refreshes).toBe(1)
-  })
-
-  test('override rejection never refreshes or falls back to saved credentials', async () => {
-    source = 'override'
-    status = 401
-    const stream = await Effect.runPromise(
-      makeClient('sandbox').pipe(Effect.provideService(Auth, auth)),
-    )
-    expect(
-      (
-        await Effect.runPromise(
-          Effect.scoped(stream.get('https://example.test')),
-        )
-      ).status,
-    ).toBe(401)
-    expect(requests).toEqual(['Bearer initial'])
-    expect(refreshes).toBe(0)
-  })
-
-  test('resolution failures reject instead of making an unauthenticated request', async () => {
-    failure = true
-    const stream = await Effect.runPromise(
-      makeClient('sandbox').pipe(Effect.provideService(Auth, auth)),
-    )
-    await expect(
-      Effect.runPromise(Effect.scoped(stream.get('https://example.test'))),
-    ).rejects.toThrow('refresh failed')
-    expect(requests).toEqual([])
   })
 })

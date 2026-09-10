@@ -1,6 +1,6 @@
-import type { ListenError } from '@/commands/listen'
+import type { ListenError } from '@/services/listen'
 import type { TriggerError } from '@/services/trigger'
-import type { UpdateError } from '@/commands/update'
+import type { UpdateError } from '@/services/update'
 import type { AuthError } from '@/schemas/Auth'
 import type { GitHubReleaseError } from '@/services/github-releases'
 

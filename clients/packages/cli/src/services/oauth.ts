@@ -1,14 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
-import {
-  Console,
-  Context,
-  DateTime,
-  Effect,
-  Layer,
-  Redacted,
-  Schema,
-} from 'effect'
+import { Context, DateTime, Effect, Layer, Redacted, Schema } from 'effect'
 import {
   HttpClient,
   HttpClientRequest,
@@ -23,7 +15,6 @@ import {
   type Session,
 } from '@/schemas/Auth'
 import { callbackPage, type CallbackOutcome } from '@/utils/callback-page'
-import * as ui from '@/utils/ui'
 
 const SANDBOX_CLIENT_ID = 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9'
 const PRODUCTION_CLIENT_ID = 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA'
@@ -102,7 +93,10 @@ const config = {
 export class OAuth extends Context.Service<
   OAuth,
   {
-    login: (environment: PolarEnvironment) => Effect.Effect<Session, AuthError>
+    login: (
+      environment: PolarEnvironment,
+      onAuthorizationUrl?: (url: string) => Effect.Effect<void>,
+    ) => Effect.Effect<Session, AuthError>
     refresh: (
       environment: PolarEnvironment,
       session: Session,
@@ -203,7 +197,10 @@ export const validateCallback = (url: URL, expectedState: string) => {
     : Effect.fail(new AuthError({ message: result.message }))
 }
 
-const login = (environment: PolarEnvironment) =>
+const login = (
+  environment: PolarEnvironment,
+  onAuthorizationUrl: (url: string) => Effect.Effect<void> = () => Effect.void,
+) =>
   Effect.gen(function* () {
     const state = randomBytes(32).toString('hex')
     const verifier = randomBytes(48).toString('base64url')
@@ -223,15 +220,7 @@ const login = (environment: PolarEnvironment) =>
       code_challenge_method: 'S256',
       sub_type: 'user',
     }).toString()
-    yield* Console.log(ui.blank)
-    yield* Console.log(
-      ui.step(`Opening your browser to sign in to Polar ${environment}...`),
-    )
-    yield* Console.log(ui.step('If it does not open, visit:'))
-    yield* Console.log(`    ${ui.cyan(authorization.toString())}`)
-    yield* Console.log(ui.blank)
-    yield* Console.log(ui.step('Waiting for you to authorize the CLI...'))
-    yield* Console.log(ui.blank)
+    yield* onAuthorizationUrl(authorization.toString())
     const server = createServer()
     const code = yield* Effect.callback<string, AuthError>((resume) => {
       let completed = false
@@ -328,8 +317,8 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient
     return OAuth.of({
-      login: (environment) =>
-        login(environment).pipe(
+      login: (environment, onAuthorizationUrl) =>
+        login(environment, onAuthorizationUrl).pipe(
           Effect.provideService(HttpClient.HttpClient, client),
         ),
       refresh: (environment, session) =>

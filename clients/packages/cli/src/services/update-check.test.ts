@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   checkForUpdateInBackground,
-  showUpdateNotice,
+  pendingUpdate,
 } from '@/services/update-check'
 import { stripAnsi } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
@@ -55,35 +55,33 @@ afterEach(async () => {
   await rm(home, { recursive: true, force: true })
 })
 
-describe('showUpdateNotice', () => {
-  test('stays silent without a cached check', () => {
-    showUpdateNotice({ home })
-    expect(stderr).toEqual([])
+describe('pendingUpdate', () => {
+  test('is empty without a cached check', () => {
+    expect(pendingUpdate({ home })).toBeUndefined()
   })
 
-  test('announces a newer cached release', async () => {
+  test('reports a newer cached release', async () => {
     await writeState({
       lastChecked: new Date().toISOString(),
       latestVersion: 'v99.0.0',
     })
-    showUpdateNotice({ home })
-    expect(stderr.join('')).toContain(`Update available ${VERSION} → v99.0.0`)
-    expect(stderr.join('')).toContain('polar update')
+    expect(pendingUpdate({ home })).toEqual({
+      current: VERSION,
+      latest: 'v99.0.0',
+    })
   })
 
-  test('stays silent when the cached release is not newer', async () => {
+  test('is empty when the cached release is not newer', async () => {
     await writeState({
       lastChecked: new Date().toISOString(),
       latestVersion: VERSION,
     })
-    showUpdateNotice({ home })
-    expect(stderr).toEqual([])
+    expect(pendingUpdate({ home })).toBeUndefined()
   })
 
   test('ignores a corrupt cache', async () => {
     await writeState('not json')
-    showUpdateNotice({ home })
-    expect(stderr).toEqual([])
+    expect(pendingUpdate({ home })).toBeUndefined()
   })
 })
 

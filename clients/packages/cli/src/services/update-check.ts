@@ -4,7 +4,6 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { Effect, type Layer } from 'effect'
 import { FetchHttpClient, type HttpClient } from 'effect/unstable/http'
-import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 import { getLatestRelease, isNewerVersion } from '@/services/github-releases'
 
@@ -22,32 +21,27 @@ export interface UpdateCheckOptions {
 
 const stateFile = (home: string) => join(home, '.polar', 'update-check.json')
 
-export function showUpdateNotice({
-  home = homedir(),
-}: UpdateCheckOptions = {}): void {
+export interface PendingUpdate {
+  current: string
+  latest: string
+}
+
+export function pendingUpdate({ home = homedir() }: UpdateCheckOptions = {}):
+  | PendingUpdate
+  | undefined {
   try {
     const file = stateFile(home)
-    if (!existsSync(file)) return
+    if (!existsSync(file)) return undefined
 
     const raw = readFileSync(file, 'utf-8')
     const state: UpdateCheckState = JSON.parse(raw)
 
     if (!state.latestVersion || !isNewerVersion(state.latestVersion, VERSION))
-      return
+      return undefined
 
-    process.stderr.write(
-      [
-        ui.blank,
-        ui.warning(
-          `Update available ${ui.dim(VERSION)} ${ui.dim('→')} ${ui.bold(ui.cyan(state.latestVersion))}`,
-        ),
-        ui.step(`Run ${ui.command('polar update')} to install it`),
-        ui.blank,
-        ui.blank,
-      ].join('\n'),
-    )
+    return { current: VERSION, latest: state.latestVersion }
   } catch {
-    // Silently ignore any errors
+    return undefined
   }
 }
 

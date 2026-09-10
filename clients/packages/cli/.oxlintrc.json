@@ -1,5 +1,94 @@
 {
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": ["node_modules/**", "dist/**", "bin/**"],
-  "extends": ["../oxlint-config/oxlint-base.json"]
+  "extends": ["../oxlint-config/oxlint-base.json"],
+  "plugins": ["typescript", "import"],
+  "jsPlugins": ["./lint/polar.js"],
+  "rules": {
+    "import/no-cycle": "error",
+    "polar/no-process-env": "error",
+    "polar/no-ansi-escapes": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/services/**/*.ts"],
+      "rules": {
+        "polar/no-output-in-services": "error",
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/commands/*", "@/commands/**"],
+                "message": "Services must not depend on commands. Move shared code into a service or a schema."
+              },
+              {
+                "group": ["@/utils/ui"],
+                "message": "Services must not print. Return data or a typed error and let the command render it."
+              },
+              {
+                "group": ["effect/unstable/cli"],
+                "message": "Services must not prompt or parse flags. That belongs in a command."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/commands/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["effect/unstable/http", "effect/unstable/http/*"],
+                "message": "Commands must not call the API directly. Add or use a method on a service in src/services."
+              },
+              {
+                "group": ["@polar-sh/sdk", "@polar-sh/sdk/*"],
+                "message": "Commands must not use the SDK directly. Go through the Polar service."
+              },
+              {
+                "group": [
+                  "@/services/credentials",
+                  "@/services/oauth",
+                  "@/services/client",
+                  "@/services/config"
+                ],
+                "message": "Commands use the high-level services (Auth, Organizations, Polar, Trigger), not the ones underneath them."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/services/api.ts",
+        "src/services/auth.ts",
+        "src/services/config.ts",
+        "src/services/telemetry.ts",
+        "src/cli.ts"
+      ],
+      "rules": {
+        "polar/no-process-env": "off"
+      }
+    },
+    {
+      "files": ["src/utils/ui.ts"],
+      "rules": {
+        "polar/no-ansi-escapes": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "src/utils/test-utils/**", "scripts/**"],
+      "rules": {
+        "no-restricted-imports": "off",
+        "polar/no-process-env": "off",
+        "polar/no-output-in-services": "off"
+      }
+    }
+  ]
 }

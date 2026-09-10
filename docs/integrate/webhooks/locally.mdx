@@ -49,30 +49,6 @@ If you don't set the correct secret, you'll see 403 errors if you use our Webhoo
 POLAR_WEBHOOK_SECRET=6t3c8ce2247c493a3ade20uea4484d64
 ```
 
-### Trigger sample events
-
-You don't need to complete a real checkout to test your handler. With `polar listen` running, send any event from a second terminal:
-
-```bash
-polar trigger order.created
-```
-
-The CLI builds a realistic payload, signs it with the same secret, and delivers it through your listen connection. Nothing is created in your account and no payment is made. Run `polar trigger` without an event to pick from a list, or `polar trigger --list` to see every event with a description.
-
-A few useful variations:
-
-```bash
-# Change a field in the payload
-polar trigger order.paid --override data.customer.email=jane@example.com
-
-# Reuse the same generated customer and IDs across events
-polar trigger subscription.created --seed 7
-polar trigger subscription.canceled --seed 7
-
-# Print the payload instead of sending it
-polar trigger checkout.created --json
-```
-
 Triggered events carry an `x-polar-triggered: true` header, so your handler can tell them apart from real ones if it needs to.
 
 ### All set!

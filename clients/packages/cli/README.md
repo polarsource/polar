@@ -44,6 +44,40 @@ bun src/cli.ts listen http://localhost:3000/api/webhooks
 bun src/cli.ts trigger order.created
 ```
 
+### Testing webhook triggers
+
+**1. Sign in and pick an organization.** Use `--sandbox` or `--production`. The browser opens for consent, then you choose an organization. Every command after this uses that organization's environment.
+
+```bash
+bun src/cli.ts auth login --sandbox
+bun src/cli.ts auth whoami
+```
+
+**2. Start a local webhook receiver** in its own terminal. Any HTTP server works; this one prints each event, the triggered marker, and the customer:
+
+```bash
+bun -e 'Bun.serve({ port: 4321, fetch: async (req) => { const b = await req.json(); console.log(b.type, "triggered:", req.headers.get("x-polar-triggered"), "customer:", b.data?.customer?.email ?? b.data?.email); return new Response("ok") } })'
+```
+
+**3. Open the tunnel** in a second terminal. You should see the connection banner with the organization name and the signing secret:
+
+```bash
+bun src/cli.ts listen http://localhost:4321/webhooks
+```
+
+**4. Trigger events** from a third terminal. Start with the catalog, then send a few:
+
+```bash
+bun src/cli.ts trigger --list
+bun src/cli.ts trigger order.created
+bun src/cli.ts trigger
+bun src/cli.ts trigger order.paid --override data.customer.email=astrid.lindgren@polar.sh --override data.subtotal_amount=99900 --seed 7
+bun src/cli.ts trigger customer_seat.assigned --seed 1 && bun src/cli.ts trigger customer_seat.claimed --seed 1 && bun src/cli.ts trigger customer_seat.revoked --seed 1
+bun src/cli.ts trigger customer.created --json --seed 3
+```
+
+Each trigger prints a confirmation, the listen terminal logs the forwarded event with your server's status code, and the receiver prints the payload type with `triggered: true`. Nothing is created in the organization: the dashboard shows no new orders, customers, or webhook deliveries.
+
 ## Releases
 
 Add a changeset from `clients/` with `pnpm exec changeset` and select `polar-cli`.

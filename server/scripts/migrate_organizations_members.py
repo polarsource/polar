@@ -24,7 +24,7 @@ Usage:
 import asyncio
 import logging.config
 import uuid
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import wraps
@@ -66,7 +66,7 @@ from polar.organization.tasks import (
     _prepare_seats,
 )
 from polar.postgres import AsyncSession, create_async_engine
-from scripts.helper import run_batched_update
+from scripts.helper import read_engine, run_batched_update
 
 cli = typer.Typer()
 
@@ -608,6 +608,13 @@ class OrganizationAudit:
         )
 
 
+def _chunked(
+    organization_ids: Sequence[uuid.UUID], size: int
+) -> Iterator[Sequence[uuid.UUID]]:
+    for start in range(0, len(organization_ids), size):
+        yield organization_ids[start : start + size]
+
+
 def _seat_products_cte(organization_ids: Sequence[uuid.UUID]) -> CTE:
     return (
         select(Product.id.label("product_id"), Product.organization_id)
@@ -721,24 +728,31 @@ async def _count_seats(
 
 
 async def _count_grants_missing_member(
-    session: AsyncReadSession, organization_ids: Sequence[uuid.UUID]
+    session: AsyncReadSession,
+    organization_ids: Sequence[uuid.UUID],
+    chunk_size: int,
 ) -> dict[uuid.UUID, int]:
-    result = await session.execute(
-        select(Customer.organization_id, func.count(BenefitGrant.id))
-        .select_from(BenefitGrant)
-        .join(Customer, BenefitGrant.customer_id == Customer.id)
-        .where(
-            Customer.organization_id.in_(organization_ids),
-            BenefitGrant.member_id.is_(None),
-            ~BenefitGrant.is_deleted,
+    counts: dict[uuid.UUID, int] = {}
+    for chunk in _chunked(organization_ids, chunk_size):
+        result = await session.execute(
+            select(Customer.organization_id, func.count(BenefitGrant.id))
+            .select_from(BenefitGrant)
+            .join(Customer, BenefitGrant.customer_id == Customer.id)
+            .where(
+                Customer.organization_id.in_(chunk),
+                BenefitGrant.member_id.is_(None),
+                ~BenefitGrant.is_deleted,
+            )
+            .group_by(Customer.organization_id)
         )
-        .group_by(Customer.organization_id)
-    )
-    return {organization_id: count for organization_id, count in result}
+        counts.update({organization_id: count for organization_id, count in result})
+    return counts
 
 
 async def _count_customers_missing_owner(
-    session: AsyncReadSession, organization_ids: Sequence[uuid.UUID]
+    session: AsyncReadSession,
+    organization_ids: Sequence[uuid.UUID],
+    chunk_size: int,
 ) -> dict[uuid.UUID, int]:
     owner_member = (
         select(Member.id)
@@ -749,16 +763,19 @@ async def _count_customers_missing_owner(
         )
         .exists()
     )
-    result = await session.execute(
-        select(Customer.organization_id, func.count(Customer.id))
-        .where(
-            Customer.organization_id.in_(organization_ids),
-            Customer.deleted_at.is_(None),
-            ~owner_member,
+    counts: dict[uuid.UUID, int] = {}
+    for chunk in _chunked(organization_ids, chunk_size):
+        result = await session.execute(
+            select(Customer.organization_id, func.count(Customer.id))
+            .where(
+                Customer.organization_id.in_(chunk),
+                Customer.deleted_at.is_(None),
+                ~owner_member,
+            )
+            .group_by(Customer.organization_id)
         )
-        .group_by(Customer.organization_id)
-    )
-    return {organization_id: count for organization_id, count in result}
+        counts.update({organization_id: count for organization_id, count in result})
+    return counts
 
 
 @cli.command()
@@ -769,14 +786,24 @@ async def audit(
         False, help="Only show organizations with an incomplete Phase 1"
     ),
     slug: str | None = typer.Option(None, help="Audit a single organization by slug"),
+    chunk_size: int = typer.Option(
+        20, help="Organizations per query for the customer-wide counts"
+    ),
+    command_timeout: float = typer.Option(
+        120.0, help="Seconds a single query may run before the server kills it"
+    ),
 ) -> None:
     """Report the organizations left on the legacy model and their Phase 1 state.
 
     Buckets them by how much seat traffic they actually have, and counts what
     Phase 1 has not filled in: seats and grants without a member, customers
     without an owner member.
+
+    The grant and owner-member counts scan every customer of every organization
+    still on the legacy model, so they run in chunks. Lower --chunk-size if a
+    query still times out.
     """
-    engine = create_async_engine("script")
+    engine = read_engine(command_timeout)
     sessionmaker = create_async_sessionmaker(engine)
 
     async with sessionmaker() as session:
@@ -807,8 +834,12 @@ async def audit(
         subscription_counts = await _count_seat_subscriptions(session, seat_products)
         order_counts = await _count_seat_orders(session, seat_products)
         seat_counts = await _count_seats(session, seat_products)
-        grant_gaps = await _count_grants_missing_member(session, organization_ids)
-        owner_gaps = await _count_customers_missing_owner(session, organization_ids)
+        grant_gaps = await _count_grants_missing_member(
+            session, organization_ids, chunk_size
+        )
+        owner_gaps = await _count_customers_missing_owner(
+            session, organization_ids, chunk_size
+        )
 
     audits = [
         OrganizationAudit(

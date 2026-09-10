@@ -220,18 +220,36 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_all(statement)
 
-    async def update_email_by_member_id(self, member_id: UUID, email: str) -> None:
-        """Sync the email snapshot on the active seats connected to a member.
+    async def update_email_by_member_id(
+        self,
+        member_id: UUID,
+        member_customer_id: UUID,
+        email: str,
+    ) -> None:
+        """Sync the email snapshot on the active member-model seats connected to a member.
 
-        Only seats with this member_id are touched, so seats with no member
-        connected (member_id NULL) are left intact. Revoked seats already clear
-        their member link so should not need to be altered.
+        Only seats whose holder IS the member's customer are touched — i.e.
+        member-model seats where ``CustomerSeat.customer_id`` is the billing
+        customer and the linked ``Member`` belongs to that same billing
+        customer (``member.customer_id == seat.customer_id``).
+
+        Legacy seats are deliberately skipped: there the ``Member`` is a
+        billing-customer team member while the seat-holder is a *different*
+        ``Customer`` (``seat.customer_id != member.customer_id``), so the
+        invitation snapshot must keep tracking ``seat.customer.email`` rather
+        than the billing team member's email — otherwise renaming the team
+        member would divert the seat-holder's invitation (and its one-time
+        claim token) to an unrelated address.
+
+        Seats with no member connected (member_id NULL) and revoked seats
+        (which clear their member link) are left untouched.
         """
         await self.session.execute(
             update(CustomerSeat)
             .where(
                 CustomerSeat.member_id == member_id,
                 CustomerSeat.status.in_([SeatStatus.pending, SeatStatus.claimed]),
+                CustomerSeat.customer_id == member_customer_id,
             )
             .values(email=email)
         )

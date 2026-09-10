@@ -879,7 +879,9 @@ class MemberService:
 
         if new_email is not None:
             seat_repository = CustomerSeatRepository.from_session(session)
-            await seat_repository.update_email_by_member_id(member.id, new_email)
+            await seat_repository.update_email_by_member_id(
+                member.id, member.customer_id, new_email
+            )
 
         log.info(
             "member.update.success",

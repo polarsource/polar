@@ -1271,6 +1271,87 @@ class TestUpdateEmail:
         await session.refresh(unconnected_seat)
         assert unconnected_seat.email == "member@example.com"
 
+    @pytest.mark.auth
+    async def test_update_email_skips_legacy_seats_where_member_is_not_seat_holder(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """A legacy seat's holder is a different Customer from the billing
+        team member linked on member_id. Renaming the billing team member must
+        NOT rewrite the seat-holder's invitation snapshot ``seat.email`` —
+        doing so would divert the (still-valid) one-time invitation token to an
+        attacker-controlled address and let the seat-holder's Customer account
+        be taken over."""
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        billing_customer.type = CustomerType.team
+        await save_fixture(billing_customer)
+        billing_member = await create_member(
+            save_fixture,
+            customer=billing_customer,
+            organization=organization,
+            email="seat@example.com",
+            role=MemberRole.member,
+        )
+
+        # Seat-holder Customer is a *different* Customer from the billing one.
+        seat_holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="seat@example.com",
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+        # Mirror the legacy-mode shape produced by ``assign_seat``:
+        # seat.customer_id is the seat-holder, seat.member_id is the billing
+        # team member — they belong to different customers.
+        pending_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=seat_holder.id,
+            member_id=billing_member.id,
+            email="seat@example.com",
+            status=SeatStatus.pending,
+            invitation_token="legacy-token",
+        )
+        await save_fixture(pending_seat)
+        claimed_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=seat_holder.id,
+            member_id=billing_member.id,
+            email="seat@example.com",
+            status=SeatStatus.claimed,
+        )
+        await save_fixture(claimed_seat)
+
+        await member_service.update(
+            session, billing_member, email="attacker@example.com"
+        )
+
+        await session.refresh(pending_seat)
+        await session.refresh(claimed_seat)
+        await session.refresh(billing_member)
+        # The billing member's email is renamed…
+        assert billing_member.email == "attacker@example.com"
+        # …but the seat-holder invitation snapshots stay aligned with the
+        # seat-holder Customer, the actual invitation recipient.
+        assert pending_seat.email == "seat@example.com"
+        assert claimed_seat.email == "seat@example.com"
+        assert pending_seat.customer_id == seat_holder.id
+        assert pending_seat.member_id == billing_member.id
+
 
 @pytest.mark.asyncio
 class TestDelete:

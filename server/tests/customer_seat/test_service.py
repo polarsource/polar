@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.service import (
     CustomerNotFound,
     InvalidInvitationToken,
@@ -28,6 +29,7 @@ from polar.kit.db.postgres import (
     create_async_sessionmaker,
 )
 from polar.kit.utils import utc_now
+from polar.member.service import member_service
 from polar.models import (
     Account,
     Customer,
@@ -37,6 +39,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.customer import CustomerType
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -2363,6 +2366,171 @@ class TestResendInvitation:
             call_kwargs = mock_send_email.call_args[1]
             # Should use seat.email, not seat.customer.email
             assert call_kwargs["customer_email"] == "seat@example.com"
+
+
+class TestLegacySeatEmailNotCorruptedByMemberRename:
+    """Regression: renaming a billing customer's team member must not divert a
+    legacy seat-holder's invitation (and its one-time claim token) to the
+    renamed address.
+
+    In legacy mode (``member_model_enabled=False``) ``assign_seat`` creates a
+    seat-holder ``Customer`` and a separate billing-customer ``Member`` linked
+    by ``member_id``. ``seat.email`` is the invitation snapshot and the
+    ``resend_invitation`` cascade prefers it, so overwriting it on a member
+    rename would let a billing admin take over the seat-holder's Customer by
+    renaming the auto-created team member to an attacker address and
+    re-sending the invitation."""
+
+    @pytest.mark.asyncio
+    async def test_legacy_seat_email_stays_with_seat_holder_after_member_rename(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": False},
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        billing_customer.type = CustomerType.team
+        await save_fixture(billing_customer)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        with patch("polar.customer_seat.service.send_seat_invitation_email"):
+            seat = await seat_service.assign_seat(
+                session, subscription, email="seat@example.com"
+            )
+
+        # Legacy-mode invariants (mirrors test_assign_seat_without_member_model_enabled).
+        assert seat.customer_id is not None
+        assert seat.customer_id != billing_customer.id
+        assert seat.member_id is not None
+        assert seat.email == "seat@example.com"
+        await session.refresh(seat, ["member", "customer"])
+        member = seat.member
+        customer = seat.customer
+        assert member is not None
+        assert customer is not None
+        assert member.customer_id == billing_customer.id
+        assert member.email == "seat@example.com"
+        assert customer.email == "seat@example.com"
+
+        # A billing admin renames the auto-created team member.
+        await member_service.update(session, member, email="attacker@example.com")
+        await session.refresh(seat, ["member", "customer"])
+
+        member = seat.member
+        customer = seat.customer
+        assert member is not None
+        assert customer is not None
+        # The member is renamed, but seat.email keeps tracking seat.customer.email.
+        assert member.email == "attacker@example.com"
+        assert member.customer_id == billing_customer.id
+        assert seat.email == "seat@example.com"
+        assert customer.email == "seat@example.com"
+
+        # The claim token therefore goes to the seat-holder, not the renamed
+        # billing team member's inbox.
+        repository = CustomerSeatRepository.from_session(session)
+        fresh_seat = await repository.get_by_id(
+            seat.id, options=repository.get_eager_options()
+        )
+        assert fresh_seat is not None
+        with patch(
+            "polar.customer_seat.service.send_seat_invitation_email"
+        ) as mock_send:
+            await seat_service.resend_invitation(session, fresh_seat)
+        mock_send.assert_called_once()
+        sent_email = mock_send.call_args.kwargs["customer_email"]
+        assert sent_email == "seat@example.com"
+        fresh_customer = fresh_seat.customer
+        fresh_member = fresh_seat.member
+        assert fresh_customer is not None
+        assert fresh_member is not None
+        assert sent_email == fresh_customer.email
+        assert sent_email != fresh_member.email
+
+    @pytest.mark.asyncio
+    async def test_member_model_seat_email_syncs_after_member_rename(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """When member_model_enabled=True the member IS the seat-holder (the
+        billing customer is the seat.customer), so renaming the member legitimately
+        updates the seat's invitation snapshot — the member-model sync the
+        hook was designed for. Guards against over-tightening the fix."""
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": True},
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        billing_customer.type = CustomerType.team
+        await save_fixture(billing_customer)
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        with patch("polar.customer_seat.service.send_seat_invitation_email"):
+            seat = await seat_service.assign_seat(
+                session, subscription, email="seat@example.com"
+            )
+
+        # member-model: the seat's customer is the billing customer and the
+        # linked member belongs to that same billing customer.
+        assert seat.customer_id == billing_customer.id
+        await session.refresh(seat, ["member", "customer"])
+        member = seat.member
+        assert member is not None
+        assert member.customer_id == billing_customer.id
+        assert seat.email == "seat@example.com"
+
+        await member_service.update(session, member, email="renamed@example.com")
+        await session.refresh(seat, ["member", "customer"])
+        member = seat.member
+        assert member is not None
+
+        assert member.email == "renamed@example.com"
+        assert seat.email == "renamed@example.com"
+
+        repository = CustomerSeatRepository.from_session(session)
+        fresh_seat = await repository.get_by_id(
+            seat.id, options=repository.get_eager_options()
+        )
+        assert fresh_seat is not None
+        with patch(
+            "polar.customer_seat.service.send_seat_invitation_email"
+        ) as mock_send:
+            await seat_service.resend_invitation(session, fresh_seat)
+        mock_send.assert_called_once()
+        assert mock_send.call_args.kwargs["customer_email"] == "renamed@example.com"
 
 
 class TestBenefitGranting:

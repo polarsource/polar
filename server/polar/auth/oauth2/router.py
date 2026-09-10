@@ -143,6 +143,8 @@ def get_oauth_login_router(
             )
             if authentication_session is None:
                 raise PolarAuthRedirectionError("No active authentication session")
+            if authentication_session.is_expired():
+                raise PolarAuthRedirectionError("No active authentication session")
 
         # Existing or linked user
         if enrollment is not None:

@@ -21,12 +21,6 @@ USER_ID_INDEX = "ix_notifications_user_id"
 
 
 def upgrade() -> None:
-    # GET /v1/notifications runs `WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`.
-    # With only single-column indexes the planner scans ix_notifications_created_at
-    # backwards and filters by user_id, which degrades badly for users with many
-    # notifications. This composite lets the query jump straight to the user's rows
-    # already ordered by created_at (Postgres scans a plain btree backwards for the
-    # DESC LIMIT). Built CONCURRENTLY to avoid locking the table.
     with op.get_context().autocommit_block():
         # Drop any INVALID leftover from an interrupted concurrent build first.
         op.drop_index(

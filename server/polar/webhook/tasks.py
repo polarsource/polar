@@ -6,6 +6,7 @@ from uuid import UUID
 
 import httpx
 import idna
+import sentry_sdk
 import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import Retry
@@ -79,7 +80,10 @@ async def _webhook_event_send(
         webhook_event_id, options=repository.get_eager_options()
     )
     if event is None:
-        raise Exception(f"webhook event not found id={webhook_event_id}")
+        sentry_sdk.capture_exception(
+            Exception(f"webhook event not found id={webhook_event_id}")
+        )
+        return
 
     bound_log = log.bind(
         id=webhook_event_id,

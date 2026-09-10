@@ -41,6 +41,7 @@ from ..components import (
 from ..layout import layout
 from ..orders.components import orders_datatable
 from ..responses import HXRedirectResponse
+from ..search import organization_ilike
 from ..toast import add_toast
 from .forms import CancelForm, UpdateBillingPeriodEndForm, build_update_status_form
 
@@ -147,8 +148,7 @@ async def list(
             statement = statement.where(
                 or_(
                     Customer.search_vector.op("@@")(ts_query_simple),
-                    Organization.slug.ilike(ilike_term),
-                    Organization.name.ilike(ilike_term),
+                    organization_ilike(ilike_term),
                 )
             )
 

@@ -20,7 +20,7 @@ from fastapi import Depends, HTTPException, Query, Request
 from fastapi.datastructures import FormData
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
-from sqlalchemy import Select, Text, and_, false, func, or_, select
+from sqlalchemy import Select, and_, false, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
@@ -118,6 +118,7 @@ from ..components import button, input, modal
 from ..dependencies import get_admin
 from ..layout import layout
 from ..responses import HXRedirectResponse
+from ..search import organization_ilike
 from ..support_cases.queries import cases_statement, open_case_organization_ids
 from ..support_cases.urls import append_return_to, case_detail_url
 from ..toast import add_toast
@@ -656,10 +657,7 @@ async def list_organizations(
                 search_term = f"%{q}%"
                 stmt = stmt.where(
                     or_(
-                        Organization.name.ilike(search_term),
-                        # `slug` is CITEXT: without the cast, ILIKE resolves to
-                        # citext's operator and skips the trigram index.
-                        Organization.slug.cast(Text).ilike(search_term),
+                        organization_ilike(search_term),
                         Organization.email.ilike(search_term),
                     )
                 )

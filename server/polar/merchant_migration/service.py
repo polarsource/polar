@@ -1299,13 +1299,18 @@ class MerchantMigrationService:
         return None
 
     def _advance_retired_steps(
-        self, migration: MerchantMigration, steps: list[PanTransferStep]
+        self,
+        migration: MerchantMigration,
+        # `Sequence`, not `list`: this class defines a `list` method, which would
+        # shadow the builtin in an annotation evaluated in the class body.
+        steps: Sequence[PanTransferStep],
     ) -> bool:
         """Walk past keys Polar no longer asks anyone to complete. True if the
         current step moved, so the caller can persist."""
-        before = pan_transfer.current(steps)
-        pan_transfer.advance(migration.pan_transfer_method, steps)
-        after = pan_transfer.current(steps)
+        working = list(steps)
+        before = pan_transfer.current(working)
+        pan_transfer.advance(migration.pan_transfer_method, working)
+        after = pan_transfer.current(working)
         return (before.key if before else None) != (after.key if after else None)
 
     def _cutover_reachable(self, migration: MerchantMigration) -> bool:

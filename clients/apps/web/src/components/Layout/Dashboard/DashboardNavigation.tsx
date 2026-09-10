@@ -18,6 +18,10 @@ import {
   useInsightsRoutes,
   useProductNavigationEnabled,
 } from '../../Dashboard/navigationProducts'
+import {
+  useIsVoidDestination,
+  useVoidRoutes,
+} from '../../Dashboard/navigationVoid'
 import { NavList } from './NavList'
 
 export const OrganizationNavigation = ({
@@ -26,12 +30,26 @@ export const OrganizationNavigation = ({
   organization: schemas['Organization']
 }) => {
   const productNavEnabled = useProductNavigationEnabled(organization)
+  const isVoidDestination = useIsVoidDestination()
+
+  if (isVoidDestination) {
+    return <VoidNavigation organization={organization} />
+  }
 
   return productNavEnabled ? (
     <ProductNavigation organization={organization} />
   ) : (
     <LegacyOrganizationNavigation organization={organization} />
   )
+}
+
+const VoidNavigation = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
+  const routes = useVoidRoutes(organization)
+  return <NavList routes={routes} navType="organization" />
 }
 
 const LegacyOrganizationNavigation = ({

@@ -1,6 +1,6 @@
 from polar.exceptions import PolarTaskError
 from polar.worker import (
-    AsyncReadSessionMaker,
+    AsyncSessionMaker,
     CronTrigger,
     TaskPriority,
     actor,
@@ -51,7 +51,7 @@ async def check_invariant(invariant_cls_name: str) -> None:
     except StopIteration as e:
         raise InvariantDoesNotExistError(invariant_cls_name) from e
 
-    async with AsyncReadSessionMaker() as session:
+    async with AsyncSessionMaker() as session:
         error = await invariant_service.check(session, invariant_cls)
 
     if error is not None:

@@ -1,25 +1,26 @@
 locals {
   backend_config = {
-    environment                          = "test"
-    base_url                             = "https://test-api.polar.sh"
-    user_session_cookie_domain           = "polar.sh"
-    user_session_cookie_key              = "polar_test_session"
-    authentication_session_cookie_domain = "polar.sh"
-    oauth2_session_state_cookie_domain   = "polar.sh"
-    debug                                = "0"
-    email_sender                         = "resend"
-    email_from_name                      = "[TEST] Polar"
-    email_from_domain                    = "notifications.test.polar.sh"
-    frontend_base_url                    = "https://test.polar.sh"
-    checkout_base_url                    = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
-    jwks_path                            = "/etc/secrets/jwks.json"
-    log_level                            = "INFO"
-    testing                              = "0"
-    auth_cookie_domain                   = "test.polar.sh"
-    tax_processors                       = "[\"numeral\",\"stripe\"]"
-    tax_record_processor                 = "numeral"
-    customer_portal_url_overrides        = var.customer_portal_url_overrides
-    plain_default_tier_external_id       = var.plain_default_tier_external_id
+    environment                                      = "test"
+    base_url                                         = "https://test-api.polar.sh"
+    user_session_cookie_domain                       = "polar.sh"
+    user_session_cookie_key                          = "polar_test_session"
+    authentication_session_cookie_domain             = "polar.sh"
+    oauth2_session_state_cookie_domain               = "polar.sh"
+    debug                                            = "0"
+    email_sender                                     = "resend"
+    email_from_name                                  = "[TEST] Polar"
+    email_from_domain                                = "notifications.test.polar.sh"
+    frontend_base_url                                = "https://test.polar.sh"
+    checkout_base_url                                = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
+    jwks_path                                        = "/etc/secrets/jwks.json"
+    log_level                                        = "INFO"
+    testing                                          = "0"
+    auth_cookie_domain                               = "test.polar.sh"
+    tax_processors                                   = "[\"numeral\",\"stripe\"]"
+    tax_record_processor                             = "numeral"
+    customer_portal_url_overrides                    = var.customer_portal_url_overrides
+    plain_default_tier_external_id                   = var.plain_default_tier_external_id
+    merchant_migration_destination_stripe_account_id = var.merchant_migration_destination_stripe_account_id
   }
 
   backend_secrets = {

@@ -386,6 +386,9 @@ class Settings(BaseSettings):
         "dummy",
         "observability.invariants.enqueue",
         "observability.invariants.check",
+        "merchant_migration.precheck",
+        "merchant_migration.verify_cards",
+        "merchant_migration.cutover",
     }
     WORKER_SQS_QUEUE_PREFIX: str = "polar-tasks"
     # Override to http://127.0.0.1:4566 in .env to target LocalStack

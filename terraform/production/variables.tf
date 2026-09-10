@@ -531,7 +531,14 @@ variable "next_public_stripe_payment_method_configuration" {
 variable "worker_sqs_actors" {
   description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
   type        = string
-  default     = "[\"dummy\"]"
+  default = jsonencode([
+    "dummy",
+    "observability.invariants.enqueue",
+    "observability.invariants.check",
+    "merchant_migration.precheck",
+    "merchant_migration.verify_cards",
+    "merchant_migration.cutover",
+  ])
 }
 
 variable "stripe_app_client_id" {

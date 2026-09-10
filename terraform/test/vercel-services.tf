@@ -277,6 +277,10 @@ locals {
     POLAR_STRIPE_APP_CLIENT_LINK_ID = {
       value = var.stripe_app_client_link_id
     }
+    POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = var.merchant_migration_destination_stripe_account_id != "" ? {
+      value     = var.merchant_migration_destination_stripe_account_id
+      sensitive = false
+    } : null
     POLAR_APPLE_CLIENT_ID = {
       value = var.apple_client_id
     }

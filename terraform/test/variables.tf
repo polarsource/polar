@@ -426,7 +426,7 @@ variable "next_public_stripe_payment_method_configuration" {
 variable "worker_sqs_actors" {
   description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
   type        = string
-  default     = "[\"dummy\"]"
+  default     = jsonencode(["*"])
 }
 
 variable "stripe_app_client_id" {
@@ -455,4 +455,10 @@ variable "redis_private_link_host" {
 variable "grafana_cloud_aws_external_id" {
   description = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
   type        = string
+}
+
+variable "merchant_migration_destination_stripe_account_id" {
+  description = "Stripe account ID merchants copy or import saved cards into"
+  type        = string
+  default     = ""
 }

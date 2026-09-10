@@ -1,7 +1,17 @@
 from uuid import UUID
 
 import typer
-from sqlalchemy import ColumnElement, Select, distinct, func, or_, select, update
+from sqlalchemy import (
+    ColumnElement,
+    Select,
+    and_,
+    distinct,
+    func,
+    or_,
+    select,
+    tuple_,
+    update,
+)
 from sqlalchemy.orm import aliased
 
 from polar.kit.db.postgres import create_async_sessionmaker
@@ -18,16 +28,17 @@ from .helper import (
 
 cli = typer.Typer()
 
-# An organization in one of these statuses is either live or waiting on a
-# decision, so it keeps the payout account it points at.
-KEEPER_STATUSES = (
-    OrganizationStatus.ACTIVE,
+# Unlinking an organization someone is currently assessing changes the picture
+# under the reviewer's eyes, so leave those alone whatever their claim.
+SPARED_STATUSES = (
     OrganizationStatus.REVIEW,
     OrganizationStatus.SNOOZED,
 )
 
 Candidate = aliased(Organization, name="candidate")
 Keeper = aliased(Organization, name="keeper")
+Seller = aliased(Organization, name="seller")
+Remaining = aliased(Organization, name="remaining")
 
 
 def _shared_payout_account_ids() -> Select[tuple[UUID | None]]:
@@ -59,30 +70,58 @@ def _sells(organization: type[Organization]) -> ColumnElement[bool]:
     )
 
 
+def _account_has_seller() -> ColumnElement[bool]:
+    return (
+        select(Seller.id)
+        .where(
+            Seller.payout_account_id == Candidate.payout_account_id,
+            Seller.deleted_at.is_(None),
+            _sells(Seller),
+        )
+        # Nested two levels deep, this would otherwise pull `candidate` into its
+        # own FROM and match any seller anywhere.
+        .correlate(Candidate)
+        .exists()
+    )
+
+
 def _unlinkable() -> tuple[ColumnElement[bool], ...]:
     return (
         Candidate.deleted_at.is_(None),
         Candidate.payout_account_id.in_(_shared_payout_account_ids()),
-        Candidate.status.not_in(KEEPER_STATUSES),
+        Candidate.status.not_in(SPARED_STATUSES),
         ~_sells(Candidate),
     )
 
 
-def _has_keeper() -> ColumnElement[bool]:
+def _has_better_claim() -> ColumnElement[bool]:
+    """Whether another organization on the account outranks the candidate.
+
+    Taking payments beats everything. Where nobody on the account ever sold,
+    age decides, so the account always keeps exactly one organization and the
+    merchant never has to redo their Stripe onboarding.
+    """
     return (
         select(Keeper.id)
         .where(
             Keeper.payout_account_id == Candidate.payout_account_id,
             Keeper.id != Candidate.id,
             Keeper.deleted_at.is_(None),
-            or_(Keeper.status.in_(KEEPER_STATUSES), _sells(Keeper)),
+            or_(
+                _sells(Keeper),
+                and_(
+                    ~_account_has_seller(),
+                    tuple_(Keeper.created_at, Keeper.id)
+                    < tuple_(Candidate.created_at, Candidate.id),
+                ),
+            ),
         )
         .exists()
     )
 
 
 def _candidates() -> Select[tuple[UUID]]:
-    return select(Candidate.id).where(*_unlinkable(), _has_keeper())
+    return select(Candidate.id).where(*_unlinkable(), _has_better_claim())
 
 
 @cli.command()
@@ -94,12 +133,15 @@ async def unlink_shared_payout_accounts(
     batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
 ) -> None:
-    """Give back every payout account shared by more than one organization.
+    """Leave a shared payout account with a single organization.
 
-    Stripe requires one connected account per website. An organization loses the
-    account it shares when it has never taken a payment and is not live or under
-    review, and only when another organization on that account keeps it — so the
-    merchant who completed the Stripe onboarding never loses their account.
+    Stripe requires one connected account per website. The organization that
+    takes payments keeps the account; where no organization on it ever sold, the
+    oldest keeps it. Everything else is unlinked, except organizations under
+    review or snoozed.
+
+    Accounts where several organizations sell are left alone: resolving those
+    means asking a merchant to onboard a second account.
     """
     configure_script_logging()
 
@@ -112,12 +154,20 @@ async def unlink_shared_payout_accounts(
             )
             accounts = await session.scalar(
                 select(func.count(distinct(Candidate.payout_account_id))).where(
-                    *_unlinkable(), _has_keeper()
+                    *_unlinkable(), _has_better_claim()
                 )
             )
-            without_keeper = await session.scalar(
-                select(func.count(distinct(Candidate.payout_account_id))).where(
-                    *_unlinkable(), ~_has_keeper()
+            still_shared = await session.scalar(
+                select(func.count()).select_from(
+                    select(Remaining.payout_account_id)
+                    .where(
+                        Remaining.deleted_at.is_(None),
+                        Remaining.payout_account_id.in_(_shared_payout_account_ids()),
+                        Remaining.id.not_in(_candidates()),
+                    )
+                    .group_by(Remaining.payout_account_id)
+                    .having(func.count() > 1)
+                    .subquery()
                 )
             )
 
@@ -125,8 +175,8 @@ async def unlink_shared_payout_accounts(
             f"{organizations} organization(s) to unlink across {accounts} payout account(s)."
         )
         typer.echo(
-            f"{without_keeper} shared payout account(s) left untouched: "
-            "no organization on them qualifies as a keeper."
+            f"{still_shared} payout account(s) would remain shared afterwards, "
+            "by organizations that all sell."
         )
 
         if not execute:

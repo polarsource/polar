@@ -30,6 +30,132 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.asyncio
+class TestExistsLiveByCustomerAndProduct:
+    async def test_returns_true_when_a_live_subscription_exists(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        assert await repository.exists_live_by_customer_and_product(
+            customer.id, product.id
+        )
+
+    async def test_returns_false_when_no_subscription_exists(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        repository = SubscriptionRepository.from_session(session)
+        assert not await repository.exists_live_by_customer_and_product(
+            customer.id, product.id
+        )
+
+    async def test_excludes_the_given_subscription_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """The retry path excludes the paused subscription it is re-activating,
+        so a paused sub on its own is not a false positive."""
+        paused = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        assert not await repository.exists_live_by_customer_and_product(
+            customer.id, product.id, exclude_subscription_id=paused.id
+        )
+
+    async def test_still_detects_another_live_subscription_when_excluding(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Excluding one subscription does not hide a different live one."""
+        paused = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        assert await repository.exists_live_by_customer_and_product(
+            customer.id, product.id, exclude_subscription_id=paused.id
+        )
+
+    async def test_paused_subscription_counts_as_live_without_exclusion(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """A paused sub is 'live' (could still bill) so it matches without
+        exclusion — this is why the retry path must pass exclude_subscription_id."""
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        assert await repository.exists_live_by_customer_and_product(
+            customer.id, product.id
+        )
+
+    async def test_ignores_dead_subscriptions(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            ended_at=utc_now(),
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        assert not await repository.exists_live_by_customer_and_product(
+            customer.id, product.id
+        )
+
+
+@pytest.mark.asyncio
 class TestSubscriptionProductPriceRepository:
     async def test_get_by_customers_and_meter_direct_subscription(
         self,

@@ -377,6 +377,85 @@ class TestRun:
         assert reloaded.status == SubscriptionStatus.active
         assert reloaded.payment_method_id is not None
 
+    async def test_retry_skips_when_customer_subscribed_during_paused_window(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        """A paused sub doesn't block checkout, so the customer may have
+        subscribed to the same product on Polar while it sat paused. The retry
+        must skip instead of reactivating on top of their live subscription.
+        """
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        paused_sub = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            user_metadata={"stripe_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = paused_sub.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        await save_fixture(pending_record)
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.active,
+        )
+        paused_sub_id = paused_sub.id
+        session.expunge_all()
+        record = await session.get(MerchantMigrationRecord, pending_record.id)
+        assert record is not None
+
+        outcome = await SubscriptionCutover(session, migration, _source()).run(record)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "already has a live subscription" in (outcome.message or "")
+        reloaded = await session.get(Subscription, paused_sub_id)
+        assert reloaded is not None
+        assert reloaded.status == SubscriptionStatus.paused
+
+    async def test_retry_activates_when_no_duplicate_subscribed_during_paused_window(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        """The guard must not break the happy retry: with no other live sub for
+        the product, the paused one is reactivated normally."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        paused_sub = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            user_metadata={"stripe_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = paused_sub.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        await save_fixture(pending_record)
+        paused_sub_id = paused_sub.id
+        session.expunge_all()
+        record = await session.get(MerchantMigrationRecord, pending_record.id)
+        assert record is not None
+
+        outcome = await SubscriptionCutover(session, migration, _source()).run(record)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        reloaded = await session.get(Subscription, paused_sub_id)
+        assert reloaded is not None
+        assert reloaded.status == SubscriptionStatus.active
+
     async def test_charges_a_card_that_landed_after_the_card_check(
         self,
         mocker: MockerFixture,

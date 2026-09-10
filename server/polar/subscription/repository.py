@@ -185,7 +185,11 @@ class SubscriptionRepository(
         return result.scalars().all()
 
     async def exists_live_by_customer_and_product(
-        self, customer_id: UUID, product_id: UUID
+        self,
+        customer_id: UUID,
+        product_id: UUID,
+        *,
+        exclude_subscription_id: UUID | None = None,
     ) -> bool:
         # "Live" = could still bill: not canceled/unpaid/incomplete, not ended.
         dead_statuses = (
@@ -203,6 +207,8 @@ class SubscriptionRepository(
             )
             .limit(1)
         )
+        if exclude_subscription_id is not None:
+            statement = statement.where(Subscription.id != exclude_subscription_id)
         result = await self.session.execute(statement)
         return result.first() is not None
 

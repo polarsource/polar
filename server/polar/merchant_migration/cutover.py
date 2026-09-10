@@ -241,6 +241,16 @@ class SubscriptionCutover:
         if subscription.status != SubscriptionStatus.paused:
             return _skip(_NOT_PAUSED)
 
+        # The customer may have subscribed to this product on Polar while this
+        # subscription was paused: a paused sub is not billable, so checkout's
+        # uniqueness check didn't block it. Don't reactivate on top of it.
+        if await self.subscription_repository.exists_live_by_customer_and_product(
+            subscription.customer_id,
+            subscription.product_id,
+            exclude_subscription_id=subscription.id,
+        ):
+            return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
+
         if not already_stopped:
             await self.adapter.stop_source_subscription(
                 record.source_id, reference=str(self.migration.id)

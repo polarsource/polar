@@ -14,8 +14,10 @@ from polar.merchant_migration.canonical import (
     CanonicalPaymentMethodType,
     CanonicalPricingScheme,
     CanonicalProduct,
+    CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
+from polar.merchant_migration.precheck import subscription_import_reason
 
 
 def _adapter(mocker: MockerFixture) -> tuple[StripeAdapter, Any]:
@@ -217,7 +219,19 @@ def _stripe_subscription(
     items: list[dict[str, Any]] | None = None,
     payment_method: dict[str, Any] | None = None,
     automatic_tax: dict[str, Any] | None = None,
+    subscription_discounts: list[dict[str, Any]] | None = None,
+    item_discounts: list[dict[str, Any]] | None = None,
 ) -> stripe_lib.Subscription:
+    # Stripe serializes `items.data[i].discounts` by default (as discount ids,
+    # expandable), so a discounted item carries it even when the subscription's
+    # own `discounts` is empty.
+    default_item: dict[str, Any] = {
+        "price": {"id": "price_1", "currency": "usd"},
+        "quantity": 1,
+        "current_period_start": 1_700_000_000,
+        "current_period_end": 1_702_000_000,
+        "discounts": item_discounts if item_discounts is not None else [],
+    }
     return stripe_lib.Subscription.construct_from(
         {
             "id": id,
@@ -231,22 +245,13 @@ def _stripe_subscription(
             "trial_end": trial_end,
             "billing_cycle_anchor": billing_cycle_anchor,
             "default_payment_method": payment_method,
-            "discounts": [],
+            "discounts": subscription_discounts
+            if subscription_discounts is not None
+            else [],
             "cancellation_details": (
                 {"comment": cancellation_comment} if cancellation_comment else None
             ),
-            "items": {
-                "data": items
-                if items is not None
-                else [
-                    {
-                        "price": {"id": "price_1", "currency": "usd"},
-                        "quantity": 1,
-                        "current_period_start": 1_700_000_000,
-                        "current_period_end": 1_702_000_000,
-                    }
-                ]
-            },
+            "items": {"data": items if items is not None else [default_item]},
         },
         None,
     )
@@ -661,6 +666,69 @@ class TestGetSubscription:
 
         assert subscription is not None
         assert subscription.stopped_for_migration is False
+
+
+@pytest.mark.asyncio
+class TestMapSubscriptionDiscount:
+    """A discount can live on the subscription or any of its items; either must
+    be detected so the import/cutover skip fires and the customer isn't re-billed
+    at full price."""
+
+    async def test_no_discount_is_not_flagged(self, mocker: MockerFixture) -> None:
+        adapter, _ = _adapter(mocker)
+
+        subscription = adapter._map_subscription(_stripe_subscription())
+
+        assert subscription.has_discount is False
+
+    async def test_subscription_level_discount_is_flagged(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, _ = _adapter(mocker)
+
+        subscription = adapter._map_subscription(
+            _stripe_subscription(
+                subscription_discounts=[{"source": "di_A", "coupon": {"id": "co_A"}}],
+                item_discounts=[],
+            )
+        )
+
+        assert subscription.has_discount is True
+
+    async def test_item_level_discount_is_flagged(self, mocker: MockerFixture) -> None:
+        # The subscription's own `discounts` is empty; Stripe carries the
+        # discount on `items.data[0].discounts` instead. Before the fix this
+        # reported `has_discount=False` and the customer was imported at list
+        # price.
+        adapter, _ = _adapter(mocker)
+
+        subscription = adapter._map_subscription(
+            _stripe_subscription(
+                subscription_discounts=[],
+                item_discounts=[{"source": "di_B", "coupon": {"id": "co_B"}}],
+            )
+        )
+
+        assert subscription.has_discount is True
+
+    async def test_item_level_discount_round_trips_to_precheck_skip(
+        self, mocker: MockerFixture
+    ) -> None:
+        # Closes the round-trip gap: a Stripe item-level discount must flow
+        # through the adapter into the precheck skip, not be dropped between
+        # them. The cutover re-check uses the same `subscription_import_reason`.
+        adapter, _ = _adapter(mocker)
+        canonical: CanonicalSubscription = adapter._map_subscription(
+            _stripe_subscription(
+                subscription_discounts=[],
+                item_discounts=[{"source": "di_B", "coupon": {"id": "co_B"}}],
+            )
+        )
+
+        reason = subscription_import_reason(canonical)
+
+        assert reason is not None
+        assert reason.code == "subscription_has_discount"
 
 
 @pytest.mark.asyncio

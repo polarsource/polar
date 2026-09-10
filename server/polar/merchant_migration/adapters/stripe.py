@@ -367,7 +367,8 @@ class StripeAdapter:
             quantity=first_item.get("quantity") or 1,
             payment_method=self._resolve_payment_method(subscription),
             has_discount=bool(subscription.get("discounts"))
-            or subscription.get("discount") is not None,
+            or subscription.get("discount") is not None
+            or any(item.get("discounts") for item in items),
             cancel_at_period_end=bool(subscription.cancel_at_period_end),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),

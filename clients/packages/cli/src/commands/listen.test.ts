@@ -117,7 +117,7 @@ describe('startListening', () => {
     }
     emit({
       id: 'evt_1',
-      key: 'webhook',
+      key: 'webhook.created',
       payload: { webhook_event_id: 'whid_1', payload: rawPayload },
       headers,
     })

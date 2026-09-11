@@ -156,6 +156,13 @@ export const startListening = ({
                 reconnect = true
                 return
               }
+              if (
+                typeof json === 'object' &&
+                json !== null &&
+                'key' in json &&
+                json.key !== 'webhook.created'
+              )
+                return
               const webhook = Schema.decodeUnknownExit(ListenWebhookEvent)(json)
               if (Exit.isFailure(webhook)) {
                 const key =

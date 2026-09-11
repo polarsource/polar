@@ -199,7 +199,8 @@ class SourceVerificationUnavailable(MerchantMigrationError):
 class SourceAccountAlreadyMigrated(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
-            "This Stripe account is already used by another merchant migration.",
+            "This Stripe account is already used by another organization's "
+            "merchant migration.",
             409,
         )
 
@@ -449,7 +450,10 @@ class MerchantMigrationService:
         if stripe_account_id is None:
             raise SourceVerificationUnavailable()
         await repository.lock_stripe_account(stripe_account_id)
-        if await repository.stripe_account_id_exists(stripe_account_id):
+        if await repository.stripe_account_id_exists(
+            stripe_account_id,
+            exclude_organization_id=create_schema.organization_id,
+        ):
             raise SourceAccountAlreadyMigrated()
         return await repository.create(migration, flush=True)
 

@@ -164,17 +164,22 @@ class WebhookService:
             OrganizationPermission.organization_manage,
         )
         secret = generate_webhook_secret()
+        secret_generated_at: datetime.datetime | None = utc_now()
         if (
             isinstance(create_schema, DeprecatedWebhookEndpointCreateWithSecret)
             and create_schema.secret is not None
         ):
+            # A custom secret is an arbitrary raw string, not base64 key material,
+            # so it must use the legacy signing scheme. Leaving
+            # `secret_generated_at` unset makes `sign_webhook()` fall back to it.
             secret = create_schema.secret
+            secret_generated_at = None
 
         endpoint = await repository.create(
             WebhookEndpoint(
                 **create_schema.model_dump(exclude={"secret"}, by_alias=True),
                 secret=secret,
-                secret_generated_at=utc_now(),
+                secret_generated_at=secret_generated_at,
                 organization=organization,
             )
         )
@@ -212,7 +217,10 @@ class WebhookService:
 
         update_dict = update_schema.model_dump(exclude_unset=True, exclude_none=True)
         if "secret" in update_dict:
-            update_dict["secret_generated_at"] = utc_now()
+            # The deprecated custom secret is an arbitrary raw string, so it must
+            # use the legacy signing scheme. Clearing `secret_generated_at`
+            # makes `sign_webhook()` fall back to it.
+            update_dict["secret_generated_at"] = None
 
         return await repository.update(
             endpoint,

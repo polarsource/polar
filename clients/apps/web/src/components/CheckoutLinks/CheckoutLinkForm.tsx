@@ -124,7 +124,8 @@ export const CheckoutLinkForm = ({
   useEffect(() => {
     if (!checkoutLink) return
     reset(defaultValues)
-  }, [checkoutLink, reset, defaultValues])
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- only re-hydrate when the checkout link identity changes; a router.refresh() after save produces a new checkoutLink reference with identical data and must NOT reset in-progress edits
+  }, [checkoutLink?.id, reset])
 
   const { mutateAsync: createCheckoutLink, isPending: isCreatePending } =
     useCreateCheckoutLink()

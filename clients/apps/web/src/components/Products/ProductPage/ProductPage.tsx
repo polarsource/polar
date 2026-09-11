@@ -3,8 +3,8 @@ import { useModal } from '@/components/Modal/useModal'
 import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
-import { useMetrics, useUpdateProduct } from '@/hooks/queries'
-import { apiErrorToast } from '@/utils/api/errors'
+import { useDeleteProduct, useMetrics, useUpdateProduct } from '@/hooks/queries'
+import { apiErrorToast, extractApiErrorMessage } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
 import { hasLegacyRecurringPrices } from '@/utils/product'
 import MoreVert from '@mui/icons-material/MoreVert'
@@ -81,6 +81,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
   })
 
   const updateProduct = useUpdateProduct(organization)
+  const deleteProduct = useDeleteProduct(organization)
   const router = useRouter()
 
   const {
@@ -93,6 +94,12 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     isShown: isUnarchiveModalShown,
     hide: hideUnarchiveModal,
     show: showUnarchiveModal,
+  } = useModal()
+
+  const {
+    isShown: isDeleteModalShown,
+    hide: hideDeleteModal,
+    show: showDeleteModal,
   } = useModal()
 
   const handleArchiveProduct = useCallback(async () => {
@@ -132,6 +139,24 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
       description: 'Product has been successfully unarchived',
     })
   }, [product, updateProduct])
+
+  const handleDeleteProduct = useCallback(async () => {
+    const { error } = await deleteProduct.mutateAsync(product)
+
+    if (error) {
+      toast({
+        title: 'Error Deleting Product',
+        description: extractApiErrorMessage(error),
+      })
+      return
+    }
+
+    toast({
+      title: 'Product Deleted',
+      description: 'Product has been permanently deleted',
+    })
+    router.push(`/dashboard/${organization.slug}/products`)
+  }, [product, deleteProduct, router, organization])
 
   return (
     <Tabs defaultValue="overview" className="h-full">
@@ -242,6 +267,11 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                       <DropdownMenuItem onClick={showUnarchiveModal}>
                         Unarchive Product
                       </DropdownMenuItem>
+                      {product.is_deletable && (
+                        <DropdownMenuItem destructive onClick={showDeleteModal}>
+                          Delete Permanently
+                        </DropdownMenuItem>
+                      )}
                     </>
                   )}
                 </DropdownMenuContent>
@@ -286,6 +316,16 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           isShown={isUnarchiveModalShown}
           hide={hideUnarchiveModal}
           destructiveText="Unarchive"
+        />
+        <ConfirmModal
+          title="Delete Product"
+          description="This product has never been sold and will be permanently deleted. This action cannot be undone."
+          onConfirm={handleDeleteProduct}
+          isShown={isDeleteModalShown}
+          hide={hideDeleteModal}
+          confirmPrompt={product.name}
+          destructiveText="Delete"
+          destructive
         />
       </DashboardBody>
     </Tabs>

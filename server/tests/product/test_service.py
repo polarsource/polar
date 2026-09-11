@@ -16,6 +16,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
 from polar.models import (
     Benefit,
+    Customer,
     File,
     Meter,
     Organization,
@@ -24,6 +25,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.file import FileServiceTypes, ProductMediaFile
 from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
@@ -55,6 +57,7 @@ from polar.product.schemas import (
     ProductPriceUnitBasedCreate,
     ProductUpdate,
 )
+from polar.product.service import ProductNotDeletable
 from polar.product.service import product as product_service
 from polar.product.sorting import ProductSortProperty
 from polar.product.tiers import Tiers, TiersInput, TierType
@@ -64,8 +67,12 @@ from tests.fixtures.random_objects import (
     METER_ID,
     create_benefit,
     create_checkout_link,
+    create_discount,
     create_meter,
+    create_order,
     create_product,
+    create_subscription,
+    create_trial_redemption,
     set_product_benefits,
 )
 
@@ -2872,6 +2879,137 @@ class TestUpdateBenefits:
                 ),
             ]
         )
+
+
+@pytest.mark.asyncio
+class TestDelete:
+    @pytest.mark.auth
+    async def test_not_deletable_with_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_order(save_fixture, customer=customer, product=product)
+        product = await self._reload(session, auth_subject, product)
+
+        assert not product.is_deletable
+        with pytest.raises(ProductNotDeletable):
+            await product_service.delete(session, product, auth_subject)
+
+        assert product.deleted_at is None
+
+    @pytest.mark.auth
+    async def test_not_deletable_with_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_subscription(save_fixture, product=product, customer=customer)
+        product = await self._reload(session, auth_subject, product)
+
+        assert not product.is_deletable
+        with pytest.raises(ProductNotDeletable):
+            await product_service.delete(session, product, auth_subject)
+
+    @pytest.mark.auth
+    async def test_not_deletable_with_trial_redemption(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_trial_redemption(
+            save_fixture,
+            customer=customer,
+            customer_email="customer@example.com",
+            product=product,
+        )
+        product = await self._reload(session, auth_subject, product)
+
+        assert not product.is_deletable
+        with pytest.raises(ProductNotDeletable):
+            await product_service.delete(session, product, auth_subject)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        product: Product,
+        product_second: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        checkout_link = await create_checkout_link(save_fixture, products=[product])
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            products=[product, product_second],
+        )
+        product = await self._reload(session, auth_subject, product)
+
+        assert product.is_deletable
+        deleted_product = await product_service.delete(session, product, auth_subject)
+
+        assert deleted_product.deleted_at is not None
+        assert deleted_product.is_archived
+
+        await session.refresh(checkout_link, {"deleted_at"})
+        assert checkout_link.deleted_at is not None
+
+        await session.refresh(discount, {"discount_products"})
+        assert [
+            discount_product.product_id
+            for discount_product in discount.discount_products
+        ] == [product_second.id]
+
+        assert await product_service.get(session, auth_subject, product.id) is None
+
+    @pytest.mark.auth
+    async def test_valid_archived(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        product.is_archived = True
+        await save_fixture(product)
+        product = await self._reload(session, auth_subject, product)
+
+        deleted_product = await product_service.delete(session, product, auth_subject)
+
+        assert deleted_product.deleted_at is not None
+
+    async def _reload(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+    ) -> Product:
+        await session.refresh(product, {"is_deletable"})
+        reloaded_product = await product_service.get(session, auth_subject, product.id)
+        assert reloaded_product is not None
+        return reloaded_product
 
 
 @pytest.mark.asyncio

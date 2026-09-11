@@ -1,0 +1,24 @@
+// Generated from customers:get_state (2026-04). Do not edit.
+import { Effect } from 'effect'
+import { Argument, Command } from 'effect/unstable/cli'
+import { ApiRuntime } from '../runtime'
+
+export const command = Command.make(
+  'get_state',
+  {
+    path: {
+      id: Argument.string('id'),
+    },
+  },
+  (config) =>
+    Effect.gen(function* () {
+      const api = yield* ApiRuntime
+      yield* api.execute({
+        operationId: 'customers:get_state',
+        method: 'GET',
+        requiresConfirmation: false,
+        confirm: false,
+        invoke: (client) => client.customers.getState(config.path.id),
+      })
+    }),
+).pipe(Command.withDescription('Get a customer state by ID.'))

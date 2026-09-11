@@ -17,7 +17,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Subscription
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.order.service import PaymentFailed
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
@@ -228,6 +228,12 @@ async def export(
 @router.get(
     "/{id}",
     summary="Get Subscription",
+    openapi_extra=cli_preview(
+        ("id", "ID"),
+        ("status", "Status"),
+        ("customer_id", "Customer ID"),
+        ("product_id", "Product ID"),
+    ),
     response_model=SubscriptionSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: SubscriptionNotFound},

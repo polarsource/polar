@@ -1,4 +1,5 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
+import { commands } from '@polar-sh/cli-commands'
 import { Cause, Effect, Layer, Runtime, Stdio } from 'effect'
 import { CliConfig, Command, GlobalFlag } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
@@ -7,6 +8,7 @@ import { trigger } from '@/commands/trigger'
 import { auth } from '@/commands/auth'
 import { update } from '@/commands/update'
 import { describeError } from '@/utils/errors'
+import * as ApiRuntime from '@/services/api-runtime'
 import * as Auth from '@/services/auth'
 import * as Credentials from '@/services/credentials'
 import * as Config from '@/services/config'
@@ -23,7 +25,7 @@ import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
 const mainCommand = Command.make('polar').pipe(
-  Command.withSubcommands([auth, listen, trigger, update]),
+  Command.withSubcommands([auth, listen, trigger, update, ...commands]),
 )
 
 const cli = Command.run(mainCommand, {
@@ -46,6 +48,7 @@ const telemetryLayer = Telemetry.layer.pipe(
   Layer.provide(Layer.mergeAll(BunServices.layer, Telemetry.detachedSender)),
 )
 const services = Layer.mergeAll(
+  ApiRuntime.layer.pipe(Layer.provide(polarLayer)),
   authLayer,
   polarLayer,
   organizationsLayer,

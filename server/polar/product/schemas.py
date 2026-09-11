@@ -740,6 +740,7 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     )
     is_archived: bool | None = Field(
         default=None,
+        json_schema_extra={"x-polar-cli-confirm": {"equals": True}},
         description=(
             "Whether the product is archived. "
             "If `true`, the product won't be available for purchase anymore. "

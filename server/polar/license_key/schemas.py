@@ -181,7 +181,10 @@ class LicenseKeyActivationRead(LicenseKeyActivationBase):
 
 
 class LicenseKeyUpdate(Schema):
-    status: LicenseKeyStatus | None = None
+    status: LicenseKeyStatus | None = Field(
+        default=None,
+        json_schema_extra={"x-polar-cli-confirm": {"one_of": ["revoked", "disabled"]}},
+    )
     usage: Int32 = 0
     limit_activations: Int32 | None = Field(gt=0, default=None)
     limit_usage: Int32 | None = Field(gt=0, default=None)

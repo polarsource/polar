@@ -1014,6 +1014,9 @@ importers:
       '@napi-rs/keyring':
         specifier: 2.0.0
         version: 2.0.0
+      '@polar-sh/cli-commands':
+        specifier: file:../../../sdk/cli-commands
+        version: file:../sdk/cli-commands(@polar-sh/sdk@1.0.0-alpha.20)(effect@4.0.0-rc.112)
       '@polar-sh/sdk':
         specifier: 1.0.0-alpha.20
         version: 1.0.0-alpha.20
@@ -5320,6 +5323,12 @@ packages:
   '@pnpm/npm-conf@3.0.2':
     resolution: {integrity: sha512-h104Kh26rR8tm+a3Qkc5S4VLYint3FE48as7+/5oCEcKR2idC/pF1G6AhIXKI+eHPJa/3J9i5z0Al47IeGHPkA==}
     engines: {node: '>=12'}
+
+  '@polar-sh/cli-commands@file:../sdk/cli-commands':
+    resolution: {directory: ../sdk/cli-commands, type: directory}
+    peerDependencies:
+      '@polar-sh/sdk': 1.0.0-alpha.20
+      effect: 4.0.0-rc.112
 
   '@polar-sh/sdk@0.46.1':
     resolution: {integrity: sha512-bFoEX2wxa5rWe2jTrJrf2Knelf/3zW1O2wGoqYoJfuRVvUgGSml1TB1v6NO+tDkT5d1bMfUFXBKxFYnuegG1iw==}
@@ -20650,6 +20659,11 @@ snapshots:
       '@pnpm/config.env-replace': 1.1.0
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
+
+  '@polar-sh/cli-commands@file:../sdk/cli-commands(@polar-sh/sdk@1.0.0-alpha.20)(effect@4.0.0-rc.112)':
+    dependencies:
+      '@polar-sh/sdk': 1.0.0-alpha.20
+      effect: 4.0.0-rc.112
 
   '@polar-sh/sdk@0.46.1':
     dependencies:

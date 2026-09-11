@@ -1,0 +1,21 @@
+sdk/generator/tests/test_cli_commands.py
+  s_1c7d438f9cbe08::t_3a2b54cb52ee8b 2,91
+  s_1c7d438f9cbe08::t_46b19a794c70b8 92-95
+  s_1c7d438f9cbe08::t_1d5f34e5333af4 14,285-290,292-297,299-315,317-325,327-328
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9264aed7db231234a5da2b3f0f544df55785a824",
+  "prompts": {},
+  "sessions": {
+    "s_1c7d438f9cbe08": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a09043-f35c-7252-84cc-068074c07f02",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

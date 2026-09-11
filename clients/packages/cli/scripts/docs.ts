@@ -177,7 +177,7 @@ const page = Effect.gen(function* () {
   ].join('\n')
   return [
     frontmatter,
-    '{/* Generated from the CLI by `pnpm --filter polar-cli docs`. Do not edit by hand. */}',
+    '{/* Generated from the CLI by `pnpm --filter polar-cli docs:generate`. Do not edit by hand. */}',
     'Run any command with `--help` to see the same information in your terminal.',
     ...sections,
     globalFlags,
@@ -195,7 +195,7 @@ if (process.argv.includes('--check')) {
     .catch(() => '')
   if (current !== content) {
     console.error(
-      `${output.pathname} is out of date. Run \`pnpm --filter polar-cli docs\` and commit the result.`,
+      `${output.pathname} is out of date. Run \`pnpm --filter polar-cli docs:generate\` and commit the result.`,
     )
     process.exit(1)
   }

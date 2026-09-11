@@ -1366,7 +1366,7 @@ export interface paths {
      * Get Organization Order Invoice
      * @description Get the invoice URL for a Polar order belonging to this organization.
      *
-     *     **Scopes**: `organizations:read` `organizations:write`
+     *     **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
      */
     get: operations['organizations:get_order_invoice']
     put?: never

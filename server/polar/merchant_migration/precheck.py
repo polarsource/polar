@@ -97,7 +97,8 @@ _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
 )
 _EXISTING_PRODUCT_NAME_REASON = (
-    "A Polar product already uses this name. Importing adds a second one."
+    "A Polar product already uses this name. Map this Stripe product onto it "
+    "so subscribers keep the same Polar product and benefits."
 )
 _DUPLICATE_CUSTOMER_EMAIL_REASON = (
     "Another source customer uses this email, and a Polar customer can only carry "
@@ -437,16 +438,17 @@ class PrecheckEngine:
         products_by_name: dict[str, set[str]],
         existing_product_names: set[str],
     ) -> Iterable[PrecheckIssue]:
-        # Warn, don't block: the product still imports, as a new Polar product next
-        # to the existing one. Mapping onto it is a later, merchant-driven step.
+        # Warn, don't block: without an explicit mapping Polar still imports a
+        # new product. Compatible name+price matches are reused at import.
         for name in products_by_name:
             if name.lower() in existing_product_names:
                 yield PrecheckIssue(
                     level=PrecheckIssueLevel.warning,
                     code="product_exists_in_polar",
                     message=(
-                        f"A Polar product named '{name}' already exists; importing "
-                        "will create a duplicate."
+                        f"A Polar product named '{name}' already exists; map "
+                        "this Stripe product onto it, or Polar will create a "
+                        "duplicate."
                     ),
                     source_id=None,
                 )
@@ -872,7 +874,7 @@ def _subscription_items(
         subscriptions, products, customers, default_currency
     )
     customer_by_source = {c.source_id: c for c in customers}
-    product_by_price = _product_by_price_key(products)
+    product_by_price = product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
     price_by_key = _price_display_by_key(products)
     items: list[MerchantMigrationRecordItem] = []
@@ -920,7 +922,7 @@ def _subscription_items(
     return items
 
 
-def _product_by_price_key(
+def product_by_price_key(
     products: Sequence[CanonicalProduct],
 ) -> dict[PriceKey, CanonicalProduct]:
     return {
@@ -1139,7 +1141,7 @@ def plan_subscription_imports(
     importable_prices = {
         price for plan in product_plans.values() for price in plan.importable_prices
     }
-    product_by_price = _product_by_price_key(products)
+    product_by_price = product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
     customer_plans = plan_customer_imports(customers)
     plans: dict[str, Reason | None] = {}

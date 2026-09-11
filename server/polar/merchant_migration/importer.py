@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import TypeVar
 from uuid import UUID
 
+from sqlalchemy.orm import selectinload
+
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
@@ -28,7 +30,12 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
-from polar.models.product_price import ProductPriceAmountType, ProductPriceFixed
+from polar.models.product_price import (
+    ProductPriceAmountType,
+    ProductPriceFixed,
+    ProductPriceSource,
+)
+from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCreate,
@@ -41,10 +48,12 @@ from .canonical import (
     CanonicalCustomer,
     CanonicalProduct,
     CanonicalSubscription,
+    PriceKey,
     canonical_price_key,
     deserialize,
     subscription_price_key,
 )
+from .errors import ProductMappingInvalid
 from .precheck import (
     ProductImportPlan,
     Reason,
@@ -52,6 +61,7 @@ from .precheck import (
     plan_product_imports,
     plan_subscription_imports,
 )
+from .product_mapping import UNSET, decide_mapping, read_product_mappings
 from .repository import MerchantMigrationRecordRepository
 from .schemas import (
     MerchantMigrationImportReport,
@@ -74,6 +84,18 @@ _CUSTOMER_STRIPE_ID_CONFLICT = Reason(
 )
 
 
+POLAR_PRODUCT_PRICE_OPTIONS = (selectinload(Product.all_prices),)
+
+
+def _catalog_fixed_prices(product: Product) -> list[ProductPriceFixed]:
+    return [
+        price
+        for price in product.all_prices
+        if isinstance(price, ProductPriceFixed)
+        and price.source == ProductPriceSource.catalog
+    ]
+
+
 def find_imported_price(
     product: Product,
     canonical_product: CanonicalProduct,
@@ -93,14 +115,54 @@ def find_imported_price(
     if canonical_price is None:
         return None
     currency = canonical_price.currency.lower()
-    return next(
-        (
-            price
-            for price in product.prices
-            if isinstance(price, ProductPriceFixed) and price.price_currency == currency
-        ),
-        None,
+    matches = [
+        price
+        for price in _catalog_fixed_prices(product)
+        if price.price_currency.lower() == currency
+        and price.price_amount == canonical_price.amount
+    ]
+    return next((price for price in matches if not price.is_archived), None) or (
+        matches[0] if matches else None
     )
+
+
+async def ensure_mapped_prices(
+    session: AsyncSession,
+    product: Product,
+    canonical: CanonicalProduct,
+    importable_price_keys: set[PriceKey],
+) -> None:
+    """Keep Stripe amounts as archived catalog prices when Polar's catalog moved on."""
+    existing = {
+        (price.price_currency.lower(), price.price_amount)
+        for price in _catalog_fixed_prices(product)
+    }
+    catalog_tax = {
+        price.price_currency.lower(): price.tax_behavior
+        for price in product.prices
+        if isinstance(price, ProductPriceFixed)
+    }
+    repository = ProductPriceRepository.from_session(session)
+    for price in canonical.prices:
+        if price.amount is None:
+            continue
+        if canonical_price_key(price) not in importable_price_keys:
+            continue
+        key = (price.currency.lower(), price.amount)
+        if key in existing:
+            continue
+        existing.add(key)
+        await repository.create(
+            ProductPriceFixed(
+                price_amount=price.amount,
+                price_currency=price.currency.lower(),
+                product=product,
+                is_archived=True,
+                source=ProductPriceSource.catalog,
+                tax_behavior=catalog_tax.get(price.currency.lower()),
+            ),
+            flush=True,
+        )
 
 
 async def create_imported_subscription(
@@ -164,6 +226,7 @@ class CatalogImporter:
         self.exclude_record_ids = exclude_record_ids
         self.record_repository = MerchantMigrationRecordRepository.from_session(session)
         self.customer_repository = CustomerRepository.from_session(session)
+        self.product_mappings = read_product_mappings(migration)
 
     async def run(self) -> MerchantMigrationImportReport:
         records = await self.record_repository.list_by_migration(self.migration.id)
@@ -295,6 +358,11 @@ class CatalogImporter:
         plans = plan_product_imports(
             products, self.organization.default_presentment_currency
         )
+        polar_products = await ProductRepository.from_session(
+            self.session
+        ).get_all_by_organization(
+            self.organization.id, options=POLAR_PRODUCT_PRICE_OPTIONS
+        )
 
         counts = ImportCounts()
         for record, product in zip(records, products, strict=True):
@@ -307,6 +375,24 @@ class CatalogImporter:
             if plan.skip is not None:
                 await self._mark_skipped(record, plan.skip)
                 counts.skipped += 1
+                continue
+            decision = decide_mapping(
+                product,
+                polar_products,
+                self.product_mappings.get(product.source_id, UNSET),
+            )
+            if decision.skip is not None:
+                # Leave the ledger pending so a corrected mapping can retry.
+                raise ProductMappingInvalid(decision.skip.message)
+            if decision.product is not None:
+                await ensure_mapped_prices(
+                    self.session,
+                    decision.product,
+                    product,
+                    plan.importable_prices,
+                )
+                await self._mark_imported(record, decision.product.id)
+                counts.imported += 1
                 continue
             polar_product = await self._create_product(product, plan)
             await self._mark_imported(record, polar_product.id)

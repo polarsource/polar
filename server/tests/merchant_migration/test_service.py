@@ -14,7 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, SubscriptionRecurringInterval, TaxBehavior
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
@@ -39,6 +39,9 @@ from polar.merchant_migration.cards import (
     AmbiguousCopiedCard,
 )
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
+from polar.merchant_migration.errors import (
+    ProductMappingInvalid,
+)
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
     STEP_MOVE_SUBSCRIPTIONS,
@@ -50,9 +53,11 @@ from polar.merchant_migration.repository import (
 )
 from polar.merchant_migration.schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationProductMappingChoice,
     PrecheckEntity,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
+    ProductMappingIncompatibility,
 )
 from polar.merchant_migration.service import (
     CatalogImportBlocked,
@@ -96,7 +101,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
-from polar.models.product_price import ProductPriceFixed
+from polar.models.product_price import ProductPriceFixed, ProductPriceSource
 from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
@@ -106,6 +111,8 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
     create_payment_method,
+    create_product,
+    create_product_price_fixed,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
@@ -1184,6 +1191,48 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
     ]
 
 
+def _legacy_amount_catalog() -> list[CanonicalRecord]:
+    """Stripe still bills $5 for Pro; Polar's catalog may have moved on."""
+    return [
+        CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_1",
+                    currency="usd",
+                    amount=500,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        ),
+        CanonicalCustomer(
+            source_id="cus_1",
+            email="alice@example.com",
+            name="Alice",
+            country="US",
+        ),
+        CanonicalSubscription(
+            source_id="sub_1",
+            customer_source_id="cus_1",
+            price_source_id="price_1",
+            status=CanonicalSubscriptionStatus.active,
+            collection_method=CanonicalCollectionMethod.charge_automatically,
+            current_period_start=None,
+            current_period_end=None,
+            trialing=False,
+            paused_collection=False,
+            line_item_count=1,
+            quantity=1,
+            payment_method=None,
+            currency="usd",
+        ),
+    ]
+
+
 def _multi_currency_catalog() -> list[CanonicalRecord]:
     return [
         CanonicalProduct(
@@ -1235,7 +1284,7 @@ async def _products(session: AsyncSession, organization: Organization) -> list[P
     result = await session.execute(
         select(Product)
         .where(Product.organization_id == organization.id)
-        .options(selectinload(Product.prices))
+        .options(selectinload(Product.all_prices), selectinload(Product.prices))
     )
     return list(result.scalars().unique().all())
 
@@ -1918,6 +1967,7 @@ class TestImportCatalog:
         )
         assert subscription is not None
         assert subscription.status == SubscriptionStatus.active
+        assert subscription.tax_behavior == TaxBehavior.exclusive
         assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
 
     @pytest.mark.auth
@@ -2031,6 +2081,316 @@ class TestImportCatalog:
             for price in products[0].prices
             if isinstance(price, ProductPriceFixed)
         } == {("eur", 900), ("usd", 1000)}
+
+
+@pytest.mark.asyncio
+class TestProductMappings:
+    @pytest.mark.auth
+    async def test_lists_suggested_match(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],
+        )
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+
+        listing = await service.list_product_mappings(
+            session, auth_subject, migration.id
+        )
+
+        assert len(listing.items) == 1
+        item = listing.items[0]
+        assert item.source_id == "prod_1:month:1"
+        assert item.suggested_product_id == existing.id
+        assert item.requires_choice is False
+        assert item.polar_product_id is None
+        assert item.create_new is False
+
+    @pytest.mark.auth
+    async def test_name_collision_without_match_requires_choice(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(1000, "usd")],
+        )
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+
+        listing = await service.list_product_mappings(
+            session, auth_subject, migration.id
+        )
+
+        item = listing.items[0]
+        assert item.name_collision is True
+        assert item.suggested_product_id is None
+        assert item.requires_choice is True
+        assert item.candidates[0].compatible is False
+        assert (
+            ProductMappingIncompatibility.interval_mismatch
+            in item.candidates[0].incompatibilities
+        )
+
+    @pytest.mark.auth
+    async def test_suggests_unique_name_despite_amount_mismatch(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+
+        listing = await service.list_product_mappings(
+            session, auth_subject, migration.id
+        )
+
+        item = listing.items[0]
+        assert item.suggested_product_id == existing.id
+        assert item.requires_choice is False
+        candidate = next(c for c in item.candidates if c.id == existing.id)
+        assert candidate.compatible is True
+        assert (
+            ProductMappingIncompatibility.amount_mismatch in candidate.incompatibilities
+        )
+
+    @pytest.mark.auth
+    async def test_import_reuses_matching_polar_product(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],
+        )
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 1
+        products = await _products(session, organization)
+        assert len(products) == 1
+        assert products[0].id == existing.id
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.list_by_migration(migration.id)
+        imported = next(
+            record
+            for record in records
+            if record.type == MerchantMigrationRecordType.product
+            and record.source_id == "prod_1:month:1"
+        )
+        assert imported.status == MerchantMigrationRecordStatus.imported
+        assert imported.target_id == existing.id
+
+    @pytest.mark.auth
+    async def test_import_grandfathers_stripe_amount_on_mapped_product(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],
+        )
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_legacy_amount_catalog(),
+        )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 1
+        products = await _products(session, organization)
+        assert len(products) == 1
+        assert products[0].id == existing.id
+        catalog = {
+            (price.price_currency, price.price_amount)
+            for price in products[0].prices
+            if isinstance(price, ProductPriceFixed)
+        }
+        assert catalog == {("usd", 1000)}
+        all_fixed = {
+            (price.price_currency, price.price_amount, price.is_archived)
+            for price in products[0].all_prices
+            if isinstance(price, ProductPriceFixed)
+        }
+        assert ("usd", 1000, False) in all_fixed
+        assert ("usd", 500, True) in all_fixed
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.list_by_migration(migration.id)
+        imported = next(
+            record
+            for record in records
+            if record.type == MerchantMigrationRecordType.product
+        )
+        assert imported.target_id == existing.id
+
+    @pytest.mark.auth
+    async def test_import_ignores_ad_hoc_price_when_grandfathering(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],
+        )
+        ad_hoc = await create_product_price_fixed(
+            save_fixture, product=existing, amount=500
+        )
+        ad_hoc.source = ProductPriceSource.ad_hoc
+        await save_fixture(ad_hoc)
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_legacy_amount_catalog(),
+        )
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        products = await _products(session, organization)
+        assert len(products) == 1
+        catalog_fixed = [
+            (price.price_amount, price.is_archived, price.source)
+            for price in products[0].all_prices
+            if isinstance(price, ProductPriceFixed)
+        ]
+        assert (1000, False, ProductPriceSource.catalog) in catalog_fixed
+        assert (500, True, ProductPriceSource.catalog) in catalog_fixed
+        assert (500, False, ProductPriceSource.ad_hoc) in catalog_fixed
+
+    @pytest.mark.auth
+    async def test_explicit_create_new_duplicates_existing_product(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],
+        )
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        await service.update_product_mappings(
+            session,
+            auth_subject,
+            migration.id,
+            [
+                MerchantMigrationProductMappingChoice(
+                    source_id="prod_1:month:1", polar_product_id=None
+                )
+            ],
+        )
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        products = await _products(session, organization)
+        ids = {product.id for product in products}
+        assert existing.id in ids
+        assert len(products) == 2
+
+    @pytest.mark.auth
+    async def test_import_blocks_when_mapping_is_required(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            name="Pro",
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(1000, "usd")],
+        )
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+
+        with pytest.raises(ProductMappingInvalid):
+            await service.import_catalog(session, auth_subject, migration.id)
+
+        products = await _products(session, organization)
+        assert len(products) == 1
 
 
 @pytest.mark.asyncio

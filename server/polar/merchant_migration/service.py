@@ -21,6 +21,7 @@ from polar.models import (
     MerchantMigration,
     MerchantMigrationRecord,
     PaymentMethod,
+    Product,
 )
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -36,6 +37,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
+from polar.models.product_price import ProductPriceFixed
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
@@ -60,7 +62,11 @@ from .cards import (
     parse_payment_method_mapping_csv,
 )
 from .cutover import SubscriptionCutover
-from .errors import MerchantMigrationError
+from .errors import (
+    MerchantMigrationError,
+    ProductMappingInvalid,
+    ProductMappingLocked,
+)
 from .importer import CatalogImporter
 from .pan_transfer import (
     STEP_CUTOVER,
@@ -78,7 +84,20 @@ from .precheck import (
     account_blockers,
     classify_records,
     import_blockers,
+    plan_product_imports,
     precheck_engine,
+)
+from .product_mapping import (
+    PRODUCT_MAPPINGS_KEY,
+    UNSET,
+    decide_mapping,
+    has_name_collision,
+    incompatibilities,
+    is_compatible,
+    read_product_mappings,
+    serialize_product_mappings,
+    subscriber_counts,
+    suggest_product,
 )
 from .repository import (
     MerchantMigrationRecordRepository,
@@ -88,6 +107,11 @@ from .schemas import (
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
+    MerchantMigrationMappedPrice,
+    MerchantMigrationPolarProductOption,
+    MerchantMigrationProductMappingChoice,
+    MerchantMigrationProductMappingItem,
+    MerchantMigrationProductMappingList,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordSummaryEntity,
@@ -245,6 +269,41 @@ class BlockedByPrecheck(MerchantMigrationError):
 class CatalogImportBlocked(BlockedByPrecheck):
     def __init__(self, blockers: list[PrecheckIssue]) -> None:
         super().__init__("The migration can't be imported:", blockers, 409)
+
+
+def _canonical_prices(
+    product: CanonicalProduct,
+) -> list[MerchantMigrationMappedPrice]:
+    return [
+        MerchantMigrationMappedPrice(
+            amount=price.amount, currency=price.currency.lower()
+        )
+        for price in product.prices
+        if price.amount is not None
+    ]
+
+
+def _polar_option(
+    canonical: CanonicalProduct, product: Product
+) -> MerchantMigrationPolarProductOption:
+    codes = incompatibilities(canonical, product)
+    return MerchantMigrationPolarProductOption(
+        id=product.id,
+        name=product.name,
+        recurring_interval=product.recurring_interval,
+        recurring_interval_count=(
+            product.recurring_interval_count if product.recurring_interval else None
+        ),
+        prices=[
+            MerchantMigrationMappedPrice(
+                amount=price.price_amount, currency=price.price_currency.lower()
+            )
+            for price in product.prices
+            if isinstance(price, ProductPriceFixed)
+        ],
+        compatible=is_compatible(canonical, product),
+        incompatibilities=codes,
+    )
 
 
 class SourceAccountNotMigratable(BlockedByPrecheck):
@@ -665,6 +724,161 @@ class MerchantMigrationService:
         )
         report.step = MerchantMigrationStep.create_catalog
         return report
+
+    async def list_product_mappings(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigrationProductMappingList:
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        organization = await self._get_organization(session, migration)
+        return await self._product_mapping_list(session, migration, organization)
+
+    async def update_product_mappings(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        mappings: Sequence[MerchantMigrationProductMappingChoice],
+    ) -> MerchantMigrationProductMappingList:
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        organization = await self._get_organization(session, migration)
+        await self._save_product_mappings(session, migration, organization, mappings)
+        return await self._product_mapping_list(session, migration, organization)
+
+    async def _save_product_mappings(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        organization: Organization,
+        choices: Sequence[MerchantMigrationProductMappingChoice],
+    ) -> None:
+        records = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).list_by_migration(migration.id)
+        polar_products = await ProductRepository.from_session(
+            session
+        ).get_all_by_organization(organization.id)
+        product_records = {
+            record.source_id: record
+            for record in records
+            if record.type == MerchantMigrationRecordType.product
+        }
+        canonical_products = [
+            self._as_canonical_product(record) for record in product_records.values()
+        ]
+        plans = plan_product_imports(
+            canonical_products, organization.default_presentment_currency
+        )
+        stored = read_product_mappings(migration)
+        for choice in choices:
+            record = product_records.get(choice.source_id)
+            if record is None:
+                raise ProductMappingInvalid(
+                    f"Unknown source product '{choice.source_id}'."
+                )
+            if record.status != MerchantMigrationRecordStatus.pending:
+                raise ProductMappingLocked()
+            canonical = self._as_canonical_product(record)
+            if plans[canonical.source_id].skip is not None:
+                raise ProductMappingInvalid(
+                    f"'{canonical.name}' can't be imported, so it can't be mapped."
+                )
+            if choice.polar_product_id is None:
+                stored[choice.source_id] = None
+                continue
+            decision = decide_mapping(
+                canonical, polar_products, choice.polar_product_id
+            )
+            if decision.product is None:
+                raise ProductMappingInvalid(
+                    f"'{canonical.name}' can't map onto that Polar product: "
+                    "currency or billing interval don't match."
+                )
+            stored[choice.source_id] = choice.polar_product_id
+        credentials = dict(migration.source_credentials)
+        credentials[PRODUCT_MAPPINGS_KEY] = serialize_product_mappings(stored)
+        await MerchantMigrationRepository.from_session(session).update(
+            migration, update_dict={"source_credentials": credentials}
+        )
+
+    async def _product_mapping_list(
+        self,
+        session: AsyncReadSession,
+        migration: MerchantMigration,
+        organization: Organization,
+    ) -> MerchantMigrationProductMappingList:
+        records = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).list_by_migration(migration.id)
+        polar_products = list(
+            await ProductRepository.from_session(session).get_all_by_organization(
+                organization.id
+            )
+        )
+        product_records = [
+            record
+            for record in records
+            if record.type == MerchantMigrationRecordType.product
+        ]
+        canonical_products = [
+            self._as_canonical_product(record) for record in product_records
+        ]
+        subscriptions = [
+            deserialize(record.type, record.canonical)
+            for record in records
+            if record.type == MerchantMigrationRecordType.subscription
+        ]
+        plans = plan_product_imports(
+            canonical_products, organization.default_presentment_currency
+        )
+        stored = read_product_mappings(migration)
+        counts = subscriber_counts(
+            canonical_products,
+            [item for item in subscriptions if isinstance(item, CanonicalSubscription)],
+        )
+        items: list[MerchantMigrationProductMappingItem] = []
+        for record, canonical in zip(product_records, canonical_products, strict=True):
+            if plans[canonical.source_id].skip is not None:
+                continue
+            chosen = stored.get(canonical.source_id, UNSET)
+            suggested = suggest_product(canonical, polar_products)
+            collision = has_name_collision(canonical, polar_products)
+            create_new = chosen is None
+            mapped_id = chosen if isinstance(chosen, UUID) else None
+            items.append(
+                MerchantMigrationProductMappingItem(
+                    source_id=canonical.source_id,
+                    product_source_id=canonical.product_source_id,
+                    name=canonical.name,
+                    recurring_interval=canonical.recurring_interval,
+                    recurring_interval_count=canonical.recurring_interval_count,
+                    prices=_canonical_prices(canonical),
+                    subscriber_count=counts.get(canonical.source_id, 0),
+                    import_status=record.status,
+                    polar_product_id=mapped_id,
+                    create_new=create_new,
+                    suggested_product_id=suggested.id
+                    if suggested is not None
+                    else None,
+                    name_collision=collision,
+                    requires_choice=chosen is UNSET and collision and suggested is None,
+                    candidates=[
+                        _polar_option(canonical, product) for product in polar_products
+                    ],
+                )
+            )
+        return MerchantMigrationProductMappingList(items=items)
+
+    def _as_canonical_product(
+        self, record: MerchantMigrationRecord
+    ) -> CanonicalProduct:
+        canonical = deserialize(record.type, record.canonical)
+        assert isinstance(canonical, CanonicalProduct)
+        return canonical
 
     async def get_pan_transfer(
         self,

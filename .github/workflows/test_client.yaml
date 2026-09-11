@@ -102,5 +102,8 @@ jobs:
       - name: "🧪 Test: CLI"
         run: pnpm --filter polar-cli test
 
+      - name: "📚 CLI docs are up to date"
+        run: pnpm --filter polar-cli docs:check
+
       - name: 🛠️ Build
         run: pnpm build

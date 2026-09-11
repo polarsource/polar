@@ -1,0 +1,109 @@
+---
+title: "Webhooks on your machine"
+sidebarTitle: "Webhooks"
+description: "Receive real webhook events locally and trigger sample events on demand"
+---
+
+Polar delivers webhooks to public URLs, which your local server does not have.
+The CLI bridges that gap: `polar listen` streams your organization's webhook
+events to a local URL, and `polar trigger` sends realistic sample events
+whenever you need one, without waiting for a real checkout or subscription.
+
+## Receive webhooks locally
+
+<Steps>
+  <Step title="Sign in and choose an organization">
+    ```bash Terminal
+    polar auth login --sandbox
+    ```
+
+    Pick the organization you want to receive events for. See
+    [Authentication](/cli/authentication) for details.
+  </Step>
+  <Step title="Start listening">
+    Point the CLI at the URL your webhook handler listens on:
+
+    ```bash Terminal
+    polar listen http://localhost:3000/api/webhooks
+    ```
+
+    ```text
+      ● Connected  Acme
+      Forwarding   http://localhost:3000/api/webhooks
+      Secret       6t3c8ce2247c493a3ade20uea4484d64  use this to verify signatures locally
+
+      Waiting for events... press Ctrl+C to stop
+    ```
+  </Step>
+  <Step title="Set the webhook secret">
+    Events are signed with the secret shown in the banner, exactly like
+    production deliveries. Configure your handler with it so signature
+    verification passes:
+
+    ```bash .env
+    POLAR_WEBHOOK_SECRET=6t3c8ce2247c493a3ade20uea4484d64
+    ```
+  </Step>
+</Steps>
+
+Every webhook event for the organization is now forwarded to your URL with the
+same headers and body a public endpoint would receive, and each delivery is
+logged with its status code and duration. The connection reconnects on its own
+if it drops. Press `Ctrl+C` to stop.
+
+<Note>
+  Events follow the active organization's environment. Listen with a sandbox
+  organization while developing, and switch with `polar auth org` when you need
+  production events.
+</Note>
+
+## Trigger sample events
+
+With `polar listen` running in one terminal, send a sample event from another:
+
+```bash Terminal
+polar trigger order.created
+```
+
+The CLI generates a realistic payload for the event, delivers it through your
+`listen` session, and reports where it went. Nothing is created in your
+organization. Run it without an event name to pick one from a list, or print
+the catalog:
+
+```bash Terminal
+polar trigger --list
+```
+
+### Shape the payload
+
+Override any field with `path=value`, repeating the flag as needed. Values are
+sent as text unless you pass `null`, a JSON object, an array or a quoted string:
+
+```bash Terminal
+polar trigger order.created \
+  --override customer.email=jane@example.com \
+  --override amount=4900
+```
+
+Generated IDs and values are random on every run. Pass any integer as
+`--seed` to make them deterministic, so the same seed always produces the same
+payload, which is handy for scripted tests:
+
+```bash Terminal
+polar trigger subscription.active --seed 42
+```
+
+### Inspect without sending
+
+Print the payload instead of delivering it:
+
+```bash Terminal
+polar trigger checkout.created --json
+```
+
+## Next steps
+
+- [Webhook events](/integrate/webhooks/events) documents every event and its
+  payload.
+- [Delivery](/integrate/webhooks/delivery) explains signatures, retries and
+  timeouts for production endpoints.

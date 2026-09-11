@@ -1,0 +1,157 @@
+---
+title: "Command reference"
+sidebarTitle: "Reference"
+description: "Every command, argument and flag of the Polar CLI"
+---
+
+{/* Generated from the CLI by `pnpm --filter polar-cli docs`. Do not edit by hand. */}
+
+Run any command with `--help` to see the same information in your terminal.
+
+## polar
+
+```bash
+polar <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar auth`](#polar-auth) Manage your Polar sessions and active organization
+- [`polar listen`](#polar-listen) Forward webhook events for an organization to a local URL
+- [`polar trigger`](#polar-trigger) Send a sample webhook event to your local server through polar listen. Run with --list to see every event.
+- [`polar update`](#polar-update) Update the CLI to the latest release
+
+## polar auth
+
+Manage your Polar sessions and active organization
+
+```bash
+polar auth <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar auth login`](#polar-auth-login) Sign in to Polar through your browser
+- [`polar auth whoami`](#polar-auth-whoami) Show your sessions and active organization
+- [`polar auth list`](#polar-auth-list) List the organizations you have access to
+- [`polar auth org`](#polar-auth-org) Choose the active organization
+- [`polar auth logout`](#polar-auth-logout) Sign out and remove saved sessions
+
+## polar auth login
+
+Sign in to Polar through your browser
+
+```bash
+polar auth login [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--sandbox` | `boolean` | Use the sandbox environment |
+| `--production` | `boolean` | Use the production environment |
+| `--new-session` | `boolean` | Sign in again even if a session is already saved |
+
+## polar auth whoami
+
+Show your sessions and active organization
+
+```bash
+polar auth whoami [flags]
+```
+
+## polar auth list
+
+List the organizations you have access to
+
+```bash
+polar auth list [flags]
+```
+
+## polar auth org
+
+Choose the active organization
+
+```bash
+polar auth org [flags]
+```
+
+## polar auth logout
+
+Sign out and remove saved sessions
+
+```bash
+polar auth logout [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--sandbox` | `boolean` | Use the sandbox environment |
+| `--production` | `boolean` | Use the production environment |
+| `--all` | `boolean` | Remove every saved session |
+
+## polar listen
+
+Forward webhook events for an organization to a local URL
+
+```bash
+polar listen [flags] <url>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `url` | `string` | Local URL to forward webhook events to, e.g. http://localhost:3000/api/webhooks |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID for this invocation only |
+
+## polar trigger
+
+Send a sample webhook event to your local server through polar listen. Run with --list to see every event.
+
+```bash
+polar trigger [flags] [<event>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `event` | `string` | Webhook event to send, e.g. order.created. Omit to pick from a list. (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID for this invocation only |
+| `--override` | `string` | Override a payload field, as path=value. Values are sent as text; use null, a JSON object, array or quoted string for other types. Repeatable. |
+| `--seed` | `integer` | Seed for generated IDs, for a reproducible payload |
+| `--json` | `boolean` | Print the payload as JSON instead of sending it |
+| `--list` | `boolean` | List every event you can trigger, with descriptions |
+
+## polar update
+
+Update the CLI to the latest release
+
+```bash
+polar update [flags]
+```
+
+## Global flags
+
+These flags work with every command.
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--help`, `-h` | `boolean` | Show help information |
+| `--version`, `-v` | `boolean` | Show version information |
+| `--completions` | `<bash\|zsh\|fish\|sh>` | Print shell completion script (choices: bash, zsh, fish, sh) |
+| `--log-level` | `<all\|trace\|debug\|info\|warn\|warning\|error\|fatal\|none>` | Sets the minimum log level (choices: all, trace, debug, info, warn, warning, error, fatal, none) |

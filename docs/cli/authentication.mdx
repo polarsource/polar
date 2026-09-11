@@ -1,0 +1,108 @@
+---
+title: "Authentication"
+sidebarTitle: "Authentication"
+description: "Sign in to Polar from the CLI and choose the organization you work on"
+---
+
+The CLI signs in through your browser with OAuth. Sessions are stored in your
+operating system's keychain, one per environment, so you can be signed in to
+sandbox and production at the same time.
+
+## Signing in
+
+Every login targets one environment. Pass the environment as a flag, or run the
+command without one in a terminal and the CLI will ask:
+
+<Tabs>
+  <Tab title="Sandbox">
+    ```bash Terminal
+    polar auth login --sandbox
+    ```
+  </Tab>
+  <Tab title="Production">
+    ```bash Terminal
+    polar auth login --production
+    ```
+  </Tab>
+</Tabs>
+
+Your browser opens on Polar's authorization page. Approve the request and
+return to the terminal. If a session already exists for that environment, the
+CLI keeps it and tells you how to replace it with `--new-session`.
+
+After signing in, the CLI lists every organization you can access across the
+environments you are signed in to and asks which one to make active.
+
+## The active organization
+
+Commands that act on an organization, such as `polar listen`, use the active
+organization. Its environment comes with it: choosing a sandbox organization
+means the CLI talks to sandbox, choosing a production organization means it
+talks to production. There is no separate environment switch.
+
+```bash Terminal
+polar auth org
+```
+
+Shows the same organization picker as login, so you can switch at any time.
+
+```bash Terminal
+polar auth whoami
+```
+
+Prints which environments you are signed in to and the active organization.
+
+```bash Terminal
+polar auth list
+```
+
+Lists every organization you can access, grouped by environment, with the
+active one marked.
+
+To use a different organization for a single command without changing the
+active one, pass its ID:
+
+```bash Terminal
+polar listen http://localhost:3000/webhooks --org <organization-id>
+```
+
+## Signing out
+
+Log out of one environment or all of them:
+
+```bash Terminal
+polar auth logout --production
+polar auth logout --all
+```
+
+Run it without a flag in a terminal to pick from your sessions. Logging out
+removes the session from your keychain and clears the active organization if it
+belonged to that environment.
+
+## CI and headless use
+
+On machines without a browser or keychain, authenticate with an
+[organization access token](/integrate/oat) instead of a session:
+
+```bash Terminal
+export POLAR_ACCESS_TOKEN=polar_oat_...
+export POLAR_ENVIRONMENT=sandbox
+polar listen http://localhost:3000/webhooks
+```
+
+`POLAR_ENVIRONMENT` selects the environment the token belongs to and defaults
+to `production`. When a token can access several organizations, pass
+`--org <organization-id>` to the command.
+
+<Note>
+  While `POLAR_ACCESS_TOKEN` is set, saved sessions are ignored and `polar auth
+  login` and `polar auth org` refuse to run. Unset it to go back to your
+  browser session.
+</Note>
+
+## Where things are stored
+
+- Sessions live in the operating system keychain under the service name
+  `polar-cli`, with one entry per environment.
+- The active organization is saved in `~/.config/polar-cli/config.json`, or
+  `$XDG_CONFIG_HOME/polar-cli/config.json` when that variable is set.

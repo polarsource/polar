@@ -11,7 +11,10 @@ from polar.external_event.service import external_event as external_event_servic
 from polar.kit.http import get_safe_return_url
 from polar.models.external_event import ExternalEventSource
 from polar.payout_account.repository import PayoutAccountRepository
-from polar.payout_account.service import PayoutAccountExternalLinkUnsupported
+from polar.payout_account.service import (
+    PayoutAccountExternalLinkUnsupported,
+    PayoutAccountSyncFailed,
+)
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -89,7 +92,11 @@ async def stripe_connect_refresh(
 
     try:
         link = await payout_account_service.onboarding_link(payout_account, return_path)
-    except (PayoutAccountExternalLinkUnsupported, stripe.StripeError):
+    except (
+        PayoutAccountExternalLinkUnsupported,
+        PayoutAccountSyncFailed,
+        stripe.StripeError,
+    ):
         log.warning("stripe.connect.refresh_link_failed", payout_account_id=str(id))
         return dashboard
 

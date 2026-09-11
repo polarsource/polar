@@ -325,21 +325,25 @@ class Checkout(
 
     @property
     def is_discount_applicable(self) -> bool:
-        if self.product_prices is None:
+        if self.product_prices_currency is None:
             return False
-        return any(is_discount_applicable(price) for price in self.product_prices)
+        return any(
+            is_discount_applicable(price) for price in self.product_prices_currency
+        )
 
     @property
     def is_free_product_price(self) -> bool:
-        if self.product_prices is None:
+        if self.product_prices_currency is None:
             return False
-        return all(price.is_free for price in self.product_prices)
+        return bool(self.product_prices_currency) and all(
+            price.is_free for price in self.product_prices_currency
+        )
 
     @property
     def has_metered_prices(self) -> bool:
-        if self.product_prices is None:
+        if self.product_prices_currency is None:
             return False
-        return any(is_metered_price(price) for price in self.product_prices)
+        return any(is_metered_price(price) for price in self.product_prices_currency)
 
     @property
     def is_payment_required(self) -> bool:
@@ -479,7 +483,7 @@ class Checkout(
         return prices
 
     @property
-    def product_prices(self) -> list[ProductPrice] | None:
+    def product_prices_currency(self) -> list[ProductPrice] | None:
         if self.product_id is None:
             return None
         return [

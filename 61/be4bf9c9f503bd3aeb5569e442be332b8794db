@@ -1,0 +1,266 @@
+sdk/generator/tests/test_cli_commands.py
+  s_ce40663d818538::t_e6058630f491c8 208-210,216-217,221-223,233-235,272-275
+  s_ce40663d818538::t_a907d2db46768a 211-215,218-220,224-228,230-232,236-246,262,271
+  s_ce40663d818538::t_cde0ef5abd756a 229
+  s_ce40663d818538::t_0b7930f8f8f3e9 263-267
+  s_ce40663d818538::t_9972a0daf42271 13,268-270
+  s_ce40663d818538::t_176c2f18764fe2 8-12,14-15,175-177,185-188,193-195,197-201,247-249,251-255
+  s_ce40663d818538::t_bc9646a59e3d77 178-184,189-192,196,202-207,250,256-261
+sdk/cli-commands/src/customer_seats/revoke_seat.ts
+  s_ce40663d818538::t_176c2f18764fe2 21
+sdk/cli-commands/src/discounts/create.ts
+  s_ce40663d818538::t_176c2f18764fe2 249
+sdk/cli-commands/src/license_keys/rotate.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/event_types/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 96
+sdk/cli-commands/src/meters/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 82
+server/polar/product/schemas.py
+  s_ce40663d818538::t_c7bd4e683e6c77 743
+server/polar/product/endpoints.py
+  s_ce40663d818538::t_d0640000adff40 14,111-113
+sdk/cli-commands/src/customers/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/metrics/limits.ts
+  s_ce40663d818538::t_176c2f18764fe2 12
+sdk/cli-commands/src/webhooks/redeliver_webhook_event.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/events/list_names.ts
+  s_ce40663d818538::t_176c2f18764fe2 81
+sdk/cli-commands/src/checkout_links/create.ts
+  s_ce40663d818538::t_176c2f18764fe2 129
+sdk/cli-commands/src/runtime.ts
+  s_ce40663d818538::t_176c2f18764fe2 25
+sdk/cli-commands/src/events/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/custom_fields/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 58
+sdk/cli-commands/src/customer_seats/assign_seat.ts
+  s_ce40663d818538::t_176c2f18764fe2 80
+sdk/cli-commands/src/customers/members/list_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 54
+sdk/cli-commands/src/meters/create.ts
+  s_ce40663d818538::t_176c2f18764fe2 78
+sdk/cli-commands/src/webhooks/reset_webhook_endpoint_secret.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/discounts/delete.ts
+  s_ce40663d818538::t_176c2f18764fe2 21
+sdk/cli-commands/src/checkouts/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 92
+sdk/cli-commands/src/benefit_grants/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 77
+sdk/cli-commands/src/products/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 100
+sdk/cli-commands/src/customers/get_state.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/customers/members/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 44
+sdk/cli-commands/src/license_keys/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 53
+sdk/cli-commands/src/refunds/create.ts
+  s_ce40663d818538::t_176c2f18764fe2 63
+sdk/cli-commands/src/benefits/grants.ts
+  s_ce40663d818538::t_176c2f18764fe2 53
+sdk/cli-commands/src/license_keys/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 54
+sdk/cli-commands/src/event_types/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 40
+sdk/cli-commands/src/webhooks/update_webhook_endpoint.ts
+  s_ce40663d818538::t_176c2f18764fe2 102
+sdk/cli-commands/src/orders/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 42
+sdk/cli-commands/src/subscriptions/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 158
+sdk/cli-commands/src/files/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 47
+sdk/cli-commands/src/custom_fields/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/customer_seats/resend_invitation.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/checkout_links/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/subscriptions/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 172
+sdk/cli-commands/src/license_keys/get_activation.ts
+  s_ce40663d818538::t_176c2f18764fe2 20
+sdk/cli-commands/src/customers/members/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 20
+sdk/cli-commands/src/meters/quantities.ts
+  s_ce40663d818538::t_176c2f18764fe2 684
+sdk/cli-commands/src/orders/generate_invoice.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/custom_fields/delete.ts
+  s_ce40663d818538::t_176c2f18764fe2 21
+sdk/cli-commands/src/customer_meters/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 86
+sdk/cli-commands/src/customers/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 83
+sdk/cli-commands/src/checkout_links/delete.ts
+  s_ce40663d818538::t_176c2f18764fe2 21
+sdk/cli-commands/src/customers/members/create.ts
+  s_ce40663d818538::t_176c2f18764fe2 52
+sdk/cli-commands/src/organizations/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 60
+sdk/cli-commands/src/products/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/webhooks/list_webhook_endpoints.ts
+  s_ce40663d818538::t_176c2f18764fe2 45
+sdk/cli-commands/src/customers/list_payment_methods_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 40
+sdk/cli-commands/src/organizations/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/orders/receipt.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/generator/cli_commands/emitter.py
+  s_ce40663d818538::t_176c2f18764fe2 187-193
+  s_ce40663d818538::t_33918914060ab3 7,101-102,107,109,179-182,196,220-221,242-255
+  s_ce40663d818538::t_e11c18d4da6c17 185-186,194,222
+  s_ce40663d818538::t_d8fa930306d426 136-138
+sdk/cli-commands/src/orders/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/webhooks/list_webhook_deliveries.ts
+  s_ce40663d818538::t_176c2f18764fe2 125
+sdk/cli-commands/src/discounts/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 68
+sdk/cli-commands/src/custom_fields/create.ts
+  s_ce40663d818538::t_176c2f18764fe2 65
+sdk/cli-commands/src/customers/list_payment_methods.ts
+  s_ce40663d818538::t_176c2f18764fe2 40
+sdk/cli-commands/src/discounts/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 240
+sdk/cli-commands/src/customer_seats/get_claim_info.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/webhooks/create_webhook_endpoint.ts
+  s_ce40663d818538::t_176c2f18764fe2 108
+sdk/cli-commands/src/refunds/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 88
+sdk/cli-commands/src/benefits/files.ts
+  s_ce40663d818538::t_176c2f18764fe2 38
+sdk/cli-commands/src/checkouts/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/customers/delete_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 36
+sdk/cli-commands/src/customers/members/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 52
+sdk/generator/generator/ir.py
+  ai_agent 673-675
+  s_ce40663d818538::t_f70bcfbcb2852f 222,676-679,682
+  s_ce40663d818538::t_3b25c1153e0099 135-140,150,680-681,683-685,710,730,989
+sdk/cli-commands/src/customer_seats/list_seats.ts
+  s_ce40663d818538::t_176c2f18764fe2 35
+sdk/cli-commands/src/webhooks/delete_webhook_endpoint.ts
+  s_ce40663d818538::t_176c2f18764fe2 21
+sdk/cli-commands/src/customer_meters/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/meters/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/orders/invoice.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/metrics/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 686
+sdk/generator/cli_commands/template/src/runtime.ts
+  s_ce40663d818538::t_ecdc628a95ca9f 25
+sdk/cli-commands/src/customers/get_state_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+clients/packages/cli/src/commands/destructive-flags.test.ts
+  s_ce40663d818538::t_37010dd5094b4e 103-108
+  s_ce40663d818538::t_248d17d7d0a035 1-23,27-36,40-53,81-84,89-90,109
+  s_ce40663d818538::t_176c2f18764fe2 24-26,37-39,54-80,85-88,91-102
+sdk/cli-commands/src/checkout_links/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 115
+sdk/generator/cli_commands/template/src/inputs.ts
+  s_ce40663d818538::t_5992eee82e8de2 22
+sdk/cli-commands/src/customers/create.ts
+  s_ce40663d818538::t_176c2f18764fe2 86
+sdk/cli-commands/src/benefits/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 69
+sdk/cli-commands/src/license_keys/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+clients/packages/cli/src/commands/api-commands.test.ts
+  s_ce40663d818538::t_a06cb878f4207f 152
+sdk/cli-commands/src/customers/members/get_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 20
+sdk/cli-commands/src/customers/members/delete.ts
+  s_ce40663d818538::t_176c2f18764fe2 22
+sdk/cli-commands/src/customers/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 76
+sdk/cli-commands/src/benefits/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/discounts/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/customers/members/update_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 46
+sdk/cli-commands/src/customers/update_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 62
+sdk/cli-commands/src/custom_fields/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 79
+sdk/cli-commands/src/inputs.ts
+  s_ce40663d818538::t_176c2f18764fe2 26
+sdk/cli-commands/src/customer_seats/claim_seat.ts
+  s_ce40663d818538::t_176c2f18764fe2 30
+sdk/cli-commands/src/meters/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 74
+sdk/cli-commands/src/orders/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 141
+sdk/cli-commands/src/payments/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/payments/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 85
+sdk/cli-commands/src/benefits/create.ts
+  s_ce40663d818538::t_176c2f18764fe2 74
+sdk/cli-commands/src/benefits/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 97
+sdk/cli-commands/src/customers/delete.ts
+  s_ce40663d818538::t_176c2f18764fe2 36
+sdk/generator/cli_commands/confirmation.py
+  s_ce40663d818538::t_caf504afa55b70 1-74,76-78,80-94
+  s_ce40663d818538::t_617757eea29701 75,79
+sdk/cli-commands/src/benefits/delete.ts
+  s_ce40663d818538::t_176c2f18764fe2 21
+sdk/cli-commands/src/products/update.ts
+  s_ce40663d818538::t_176c2f18764fe2 3,5-6,13,116-124,128-137
+sdk/generator/cli_commands/template/src/command.ts.jinja
+  s_ce40663d818538::t_189cbd13729636 69
+  s_ce40663d818538::t_04e85af0b2b32c 5,7,19,46,54-64,70
+sdk/cli-commands/src/subscriptions/revoke.ts
+  s_ce40663d818538::t_176c2f18764fe2 21
+sdk/cli-commands/src/customers/members/create_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 54
+sdk/cli-commands/src/customers/get_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/files/delete.ts
+  s_ce40663d818538::t_176c2f18764fe2 21
+sdk/cli-commands/src/products/create.ts
+  s_ce40663d818538::t_176c2f18764fe2 130
+sdk/cli-commands/src/checkout_links/list.ts
+  s_ce40663d818538::t_176c2f18764fe2 65
+sdk/cli-commands/src/customers/members/delete_external.ts
+  s_ce40663d818538::t_176c2f18764fe2 22
+sdk/cli-commands/README.md
+  s_ce40663d818538::t_83015419b16d70 61-96,99,105
+clients/packages/cli/src/services/api-runtime.ts
+  s_ce40663d818538::t_ac8f6eb8d3e1ba 20,27,34
+sdk/cli-commands/src/subscriptions/get.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+sdk/cli-commands/src/products/update_benefits.ts
+  s_ce40663d818538::t_176c2f18764fe2 37
+sdk/cli-commands/src/webhooks/get_webhook_endpoint.ts
+  s_ce40663d818538::t_176c2f18764fe2 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "61be4bf9c9f503bd3aeb5569e442be332b8794db",
+  "prompts": {},
+  "sessions": {
+    "s_ce40663d818538": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a08629-e886-7252-84cc-06590948dfbe",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

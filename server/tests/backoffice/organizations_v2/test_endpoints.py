@@ -18,6 +18,7 @@ from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import AUPSection
 from polar.postgres import AsyncSession, get_db_session
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_account, create_organization
 
 
 @pytest_asyncio.fixture
@@ -605,6 +606,36 @@ class TestListSearch:
         assert response.status_code == 200
         assert "Enter at least 3 characters to search." in response.text
         assert organization.name not in response.text
+
+    async def test_ranks_exact_then_prefix_then_substring(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+    ) -> None:
+        # Ordered so the default sort (status, then oldest in status) would
+        # return them relevance-last without the ranking.
+        organizations = [
+            ("Substring Org", "the-acme-group", datetime(2025, 1, 1, tzinfo=UTC)),
+            ("Prefix Org", "acme-industries", datetime(2025, 1, 2, tzinfo=UTC)),
+            ("Exact Org", "acme", datetime(2025, 1, 3, tzinfo=UTC)),
+        ]
+        for name, slug, status_updated_at in organizations:
+            account = await create_account(save_fixture, user)
+            organization = await create_organization(save_fixture, account)
+            organization.name = name
+            organization.slug = slug
+            organization.status_updated_at = status_updated_at
+            await save_fixture(organization)
+
+        response = await backoffice_client.get("/organizations/", params={"q": "acme"})
+
+        assert response.status_code == 200
+        positions = [
+            response.text.index(name)
+            for name in ("Exact Org", "Prefix Org", "Substring Org")
+        ]
+        assert positions == sorted(positions)
 
 
 @pytest.mark.asyncio

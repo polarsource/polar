@@ -20,7 +20,7 @@ from fastapi import Depends, HTTPException, Query, Request
 from fastapi.datastructures import FormData
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
-from sqlalchemy import Select, and_, false, func, or_, select
+from sqlalchemy import ColumnElement, Select, and_, case, false, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
@@ -519,6 +519,15 @@ def _normalize_search(q: str | None) -> str | None:
     return (q.strip() or None) if q else None
 
 
+def _search_match(term: str) -> ColumnElement[bool]:
+    return or_(organization_ilike(term), Organization.email.ilike(term))
+
+
+def _search_rank(q: str) -> ColumnElement[int]:
+    """Rank an `%q%` trigram match: exact first, then prefix, then substring."""
+    return case((_search_match(q), 0), (_search_match(f"{q}%"), 1), else_=2)
+
+
 def _apply_sql_sort(stmt: Select[Any], sort: str, direction: str) -> Select[Any]:
     is_desc = direction == "desc"
     if sort == "name":
@@ -643,6 +652,7 @@ async def list_organizations(
         )
 
     search_too_short = False
+    search_rank: ColumnElement[int] | None = None
     if q:
         try:
             stmt = stmt.where(Organization.id == uuid.UUID(q))
@@ -654,13 +664,8 @@ async def list_organizations(
                 search_too_short = True
                 stmt = stmt.where(false())
             else:
-                search_term = f"%{q}%"
-                stmt = stmt.where(
-                    or_(
-                        organization_ilike(search_term),
-                        Organization.email.ilike(search_term),
-                    )
-                )
+                stmt = stmt.where(_search_match(f"%{q}%"))
+                search_rank = _search_rank(q)
 
     # Country filter
     if country:
@@ -731,6 +736,12 @@ async def list_organizations(
     # keep the historical "asc" default.
     if direction is None:
         direction = "desc" if priority_sort else "asc"
+
+    # A `%term%` match hits anywhere in the name, slug or email, so an exact
+    # or prefix match can land pages deep. Rank it up front, unless the
+    # operator picked a column to sort by.
+    if search_rank is not None and sort == "priority":
+        stmt = stmt.order_by(search_rank)
 
     signals_by_org: dict[uuid.UUID, Signals] = {}
     organizations: list[Organization]

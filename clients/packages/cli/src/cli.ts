@@ -1,11 +1,8 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
 import { Cause, Effect, Layer, Runtime, Stdio } from 'effect'
-import { CliConfig, Command, GlobalFlag } from 'effect/unstable/cli'
+import { CliConfig, Command } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
-import { listen } from '@/commands/listen'
-import { trigger } from '@/commands/trigger'
-import { auth } from '@/commands/auth'
-import { update } from '@/commands/update'
+import { builtIns, polar } from '@/commands'
 import { describeError } from '@/utils/errors'
 import * as Auth from '@/services/auth'
 import * as Credentials from '@/services/credentials'
@@ -22,11 +19,7 @@ import {
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
-const mainCommand = Command.make('polar').pipe(
-  Command.withSubcommands([auth, listen, trigger, update]),
-)
-
-const cli = Command.run(mainCommand, {
+const cli = Command.run(polar, {
   version: VERSION.replace(/^v/, ''),
 })
 
@@ -53,14 +46,7 @@ const services = Layer.mergeAll(
   telemetryLayer,
   BunServices.layer,
   FetchHttpClient.layer,
-  CliConfig.layer({
-    builtIns: [
-      GlobalFlag.Help,
-      GlobalFlag.Version,
-      GlobalFlag.Completions,
-      GlobalFlag.LogLevel,
-    ],
-  }),
+  CliConfig.layer({ builtIns }),
 )
 
 const reportError = (cause: Cause.Cause<unknown>) => {
@@ -84,7 +70,7 @@ const instrumented = Effect.gen(function* () {
     Effect.tapCause(reportError),
     Effect.onExit((exit) =>
       telemetry.record({
-        command: Telemetry.commandPath(mainCommand, args),
+        command: Telemetry.commandPath(polar, args),
         flags: Telemetry.flagNames(args),
         ...Telemetry.outcomeOf(exit),
         durationMs: performance.now() - startedAt,

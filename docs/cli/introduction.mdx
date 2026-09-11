@@ -1,0 +1,72 @@
+---
+title: "Polar CLI"
+sidebarTitle: "Introduction"
+description: "Forward webhooks to your machine, trigger sample events and manage your Polar sessions from the terminal"
+---
+
+The Polar CLI brings your Polar organization to your terminal. Use it to receive
+webhooks on your local machine while you build, send realistic sample events to
+your handler, and switch between your sandbox and production organizations.
+
+<CardGroup cols={3}>
+  <Card title="Authentication" icon="key" href="/cli/authentication">
+    Sign in to sandbox and production, and choose the organization you work on.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/cli/webhooks">
+    Receive real webhooks locally and trigger sample events on demand.
+  </Card>
+  <Card title="Command reference" icon="terminal" href="/cli/reference">
+    Every command, argument and flag.
+  </Card>
+</CardGroup>
+
+## Installation
+
+The CLI ships as a single binary for macOS (Apple Silicon and Intel), Linux
+(x64) and Windows through WSL.
+
+```bash Terminal
+curl -fsSL https://polar.sh/install.sh | bash
+```
+
+Check that it works:
+
+```bash Terminal
+polar --version
+```
+
+## Updating
+
+The CLI checks for new releases in the background and tells you when one is
+available. Install it with:
+
+```bash Terminal
+polar update
+```
+
+## Shell completions
+
+Print a completion script for your shell and add it to your profile:
+
+```bash Terminal
+polar --completions zsh
+```
+
+Bash, fish and sh are supported too. Run `polar --help` or add `--help` to any
+command for inline documentation.
+
+## Telemetry
+
+The CLI sends one anonymous event per command to help us improve it: the
+command name, the names of the flags used (never their values), whether it
+succeeded, the duration, the CLI version, your operating system, and whether it
+ran in CI or from an AI coding agent. Events are keyed by a random install id.
+Access tokens, organization IDs, URLs and webhook payloads are never sent.
+
+To opt out, set either variable in your environment:
+
+```bash Terminal
+export POLAR_CLI_TELEMETRY_OPTOUT=1
+```
+
+The standard `DO_NOT_TRACK=1` is honoured as well.

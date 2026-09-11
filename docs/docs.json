@@ -42,7 +42,10 @@
         "groups": [
           {
             "group": "Bootup",
-            "pages": ["introduction", "migrate"]
+            "pages": [
+              "introduction",
+              "migrate"
+            ]
           },
           {
             "group": "Features",
@@ -188,13 +191,16 @@
               },
               {
                 "group": "Framework Guides",
-                "pages": ["guides/encore", "guides/laravel", "guides/nextjs"]
+                "pages": [
+                  "guides/encore",
+                  "guides/laravel",
+                  "guides/nextjs"
+                ]
               },
               {
                 "group": "Webhooks",
                 "pages": [
                   "integrate/webhooks/endpoints",
-                  "integrate/webhooks/locally",
                   "integrate/webhooks/delivery",
                   "integrate/webhooks/events"
                 ]
@@ -207,6 +213,15 @@
                   "integrate/oauth2/connect"
                 ]
               }
+            ]
+          },
+          {
+            "group": "CLI",
+            "pages": [
+              "cli/introduction",
+              "cli/authentication",
+              "cli/webhooks",
+              "cli/reference"
             ]
           },
           {
@@ -601,7 +616,9 @@
                       },
                       {
                         "group": "Organization",
-                        "pages": ["webhook organization.updated"]
+                        "pages": [
+                          "webhook organization.updated"
+                        ]
                       }
                     ]
                   }
@@ -1009,7 +1026,9 @@
                       },
                       {
                         "group": "Organization",
-                        "pages": ["webhook organization.updated"]
+                        "pages": [
+                          "webhook organization.updated"
+                        ]
                       }
                     ]
                   }
@@ -1047,12 +1066,17 @@
       {
         "tab": "Changelog",
         "icon": "signal-stream",
-        "pages": ["changelog/recent"]
+        "pages": [
+          "changelog/recent"
+        ]
       },
       {
         "tab": "Support",
         "icon": "square-question",
-        "pages": ["support", "security"]
+        "pages": [
+          "support",
+          "security"
+        ]
       }
     ]
   },
@@ -1079,7 +1103,12 @@
     }
   },
   "contextual": {
-    "options": ["copy", "view", "chatgpt", "claude"]
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
   },
   "footer": {
     "socials": {
@@ -2668,6 +2697,10 @@
     {
       "source": "/api-reference/2026-10/organizationupdated",
       "destination": "/api-reference/2026-10/organization_updated"
+    },
+    {
+      "source": "/integrate/webhooks/locally",
+      "destination": "/cli/webhooks"
     }
   ]
 }

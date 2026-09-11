@@ -2964,7 +2964,7 @@ export interface paths {
      * Events
      * @description **Scopes**: `webhooks:read` `webhooks:write`
      */
-    get: operations['cli:events']
+    get: operations['cli_router:events']
     put?: never
     post?: never
     delete?: never
@@ -2986,7 +2986,7 @@ export interface paths {
      * Trigger
      * @description **Scopes**: `webhooks:read` `webhooks:write`
      */
-    post: operations['cli:trigger']
+    post: operations['cli_router:trigger']
     delete?: never
     options?: never
     head?: never
@@ -47718,7 +47718,7 @@ export interface operations {
       }
     }
   }
-  'cli:events': {
+  'cli_router:events': {
     parameters: {
       query?: never
       header?: never
@@ -47738,7 +47738,7 @@ export interface operations {
       }
     }
   }
-  'cli:trigger': {
+  'cli_router:trigger': {
     parameters: {
       query?: never
       header?: never

@@ -184,6 +184,7 @@ ignore = [
   "F401", # remove unused import
 ]
 "scripts/*" = ["T20"]
+"docker/*" = ["T20"]
 "tests/**/test_*_benchmark.py" = ["T20"] # benchmarks report their measurements
 
 [tool.mypy]

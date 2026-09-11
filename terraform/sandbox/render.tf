@@ -49,6 +49,7 @@ resource "render_redis" "redis_sandbox" {
 # =============================================================================
 
 locals {
+  private_backoffice_hostname = "backoffice.sandbox.polar.sh"
   # Database connection info (derived from postgres resource)
   # db_host          = render_postgres.db.id
   db_internal_host = data.render_postgres.db.id
@@ -100,7 +101,12 @@ import {
 module "sandbox" {
   source = "../modules/render_service"
 
-  environment            = "sandbox"
+  environment = "sandbox"
+  private_backoffice = var.private_backoffice_enabled ? {
+    hostname             = local.private_backoffice_hostname
+    auth_key             = var.private_backoffice_tailscale_auth_key
+    cloudflare_api_token = var.private_backoffice_cloudflare_api_token
+  } : null
   render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
   registry_credential_id = render_registry_credential.ghcr.id
 
@@ -231,4 +237,19 @@ resource "cloudflare_dns_record" "api" {
   content = replace(module.sandbox.api_service_url, "https://", "")
   proxied = true
   ttl     = 1
+}
+
+resource "cloudflare_dns_record" "private_backoffice" {
+  count = var.private_backoffice_enabled && var.private_backoffice_tailscale_ip != "" ? 1 : 0
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = local.private_backoffice_hostname
+  type    = "A"
+  content = var.private_backoffice_tailscale_ip
+  proxied = false
+  ttl     = 300
+}
+
+output "private_backoffice_service_id" {
+  value = module.sandbox.private_backoffice_service_id
 }

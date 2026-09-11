@@ -567,3 +567,33 @@ resource "tfe_variable" "merchant_migration_destination_stripe_account_id_sandbo
   sensitive       = false
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "private_backoffice_enabled_sandbox" {
+  key             = "private_backoffice_enabled"
+  category        = "terraform"
+  description     = "Enable the private backoffice replica for sandbox"
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "private_backoffice_tailscale_auth_key_sandbox" {
+  key             = "private_backoffice_tailscale_auth_key"
+  category        = "terraform"
+  description     = "Tailscale auth key for the private backoffice replica in sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "private_backoffice_cloudflare_api_token_sandbox" {
+  key             = "private_backoffice_cloudflare_api_token"
+  category        = "terraform"
+  description     = "Cloudflare DNS token for private backoffice certificates in sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "private_backoffice_tailscale_ip_sandbox" {
+  key             = "private_backoffice_tailscale_ip"
+  category        = "terraform"
+  description     = "Assigned Tailscale IPv4 address for the private backoffice replica in sandbox"
+  variable_set_id = tfe_variable_set.sandbox.id
+}

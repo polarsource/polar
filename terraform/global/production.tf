@@ -685,3 +685,33 @@ resource "tfe_variable" "merchant_migration_destination_stripe_account_id_produc
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
 }
+
+resource "tfe_variable" "private_backoffice_enabled_production" {
+  key             = "private_backoffice_enabled"
+  category        = "terraform"
+  description     = "Enable the private backoffice replica for production"
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "private_backoffice_tailscale_auth_key_production" {
+  key             = "private_backoffice_tailscale_auth_key"
+  category        = "terraform"
+  description     = "Tailscale auth key for the private backoffice replica in production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "private_backoffice_cloudflare_api_token_production" {
+  key             = "private_backoffice_cloudflare_api_token"
+  category        = "terraform"
+  description     = "Cloudflare DNS token for private backoffice certificates in production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "private_backoffice_tailscale_ip_production" {
+  key             = "private_backoffice_tailscale_ip"
+  category        = "terraform"
+  description     = "Assigned Tailscale IPv4 address for the private backoffice replica in production"
+  variable_set_id = tfe_variable_set.production.id
+}

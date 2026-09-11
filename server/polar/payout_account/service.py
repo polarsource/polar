@@ -118,7 +118,7 @@ class PayoutAccountService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def create(
+    async def create_or_resume(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
@@ -128,6 +128,20 @@ class PayoutAccountService:
             session, auth_subject, payout_account_create
         )
 
+        current = None
+        if organization.payout_account_id is not None:
+            repository = PayoutAccountRepository.from_session(session)
+            current = await repository.get_by_id(organization.payout_account_id)
+
+        # An unfinished account in the same country is the one the merchant was
+        # already onboarding, so hand it back instead of opening a second one.
+        if (
+            current is not None
+            and not current.is_payout_ready
+            and current.country == payout_account_create.country
+        ):
+            return current
+
         payout_account = await self._create_stripe_account(
             session,
             auth_subject.subject,
@@ -135,15 +149,17 @@ class PayoutAccountService:
             organization.name,
         )
 
-        organization_repository = OrganizationRepository.from_session(session)
-        organization.payout_account = payout_account
-        await organization_repository.update(organization)
+        # Don't make it active while a ready account is still paying them out.
+        if current is None or not current.is_payout_ready:
+            organization_repository = OrganizationRepository.from_session(session)
+            organization.payout_account = payout_account
+            await organization_repository.update(organization)
 
-        # Stripe reads the organization's website off the connected account.
-        enqueue_job(
-            "organization.sync_payout_account_website",
-            organization_id=organization.id,
-        )
+            # Stripe reads the organization's website off the connected account.
+            enqueue_job(
+                "organization.sync_payout_account_website",
+                organization_id=organization.id,
+            )
 
         return payout_account
 

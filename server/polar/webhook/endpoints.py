@@ -37,7 +37,16 @@ WebhookEndpointNotFound = {
 }
 
 
-@router.get("/endpoints", response_model=ListResource[WebhookEndpointSchema])
+@router.get(
+    "/endpoints",
+    response_model=ListResource[WebhookEndpointSchema],
+    openapi_extra={
+        "x-tool-name": "webhooks_list_webhook_endpoints",
+        "x-tool-title": "List webhook endpoints",
+        "x-tool-description": "List webhook endpoints.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
+)
 async def list_webhook_endpoints(
     pagination: PaginationParamsQuery,
     auth_subject: WebhooksRead,
@@ -64,6 +73,12 @@ async def list_webhook_endpoints(
     "/endpoints/{id}",
     response_model=WebhookEndpointSchema,
     responses={404: WebhookEndpointNotFound},
+    openapi_extra={
+        "x-tool-name": "webhooks_get_webhook_endpoint",
+        "x-tool-title": "Get webhook endpoint",
+        "x-tool-description": "Get a webhook endpoint by ID.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get_webhook_endpoint(
     id: WebhookEndpointID,
@@ -83,6 +98,11 @@ async def get_webhook_endpoint(
     response_model=WebhookEndpointSchema,
     status_code=201,
     responses={201: {"description": "Webhook endpoint created."}},
+    openapi_extra={
+        "x-tool-name": "webhooks_create_webhook_endpoint",
+        "x-tool-title": "Create webhook endpoint",
+        "x-tool-description": "Create a webhook endpoint.",
+    },
 )
 async def create_webhook_endpoint(
     endpoint_create: Annotated[
@@ -104,6 +124,11 @@ async def create_webhook_endpoint(
     response_model=WebhookEndpointSchema,
     status_code=201,
     responses={201: {"description": "Webhook endpoint created."}},
+    openapi_extra={
+        "x-tool-name": "webhooks_create_webhook_endpoint",
+        "x-tool-title": "Create webhook endpoint",
+        "x-tool-description": "Create a webhook endpoint.",
+    },
 )
 @version(starting_from=V2026_10)
 async def create_webhook_endpoint_v2026_10(
@@ -123,6 +148,11 @@ async def create_webhook_endpoint_v2026_10(
     responses={
         200: {"description": "Webhook endpoint updated."},
         404: WebhookEndpointNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "webhooks_update_webhook_endpoint",
+        "x-tool-title": "Update webhook endpoint",
+        "x-tool-description": "Update a webhook endpoint.",
     },
 )
 async def update_webhook_endpoint(
@@ -154,6 +184,11 @@ async def update_webhook_endpoint(
         200: {"description": "Webhook endpoint updated."},
         404: WebhookEndpointNotFound,
     },
+    openapi_extra={
+        "x-tool-name": "webhooks_update_webhook_endpoint",
+        "x-tool-title": "Update webhook endpoint",
+        "x-tool-description": "Update a webhook endpoint.",
+    },
 )
 @version(starting_from=V2026_10)
 async def update_webhook_endpoint_v2026_10(
@@ -181,6 +216,11 @@ async def update_webhook_endpoint_v2026_10(
         200: {"description": "Webhook endpoint secret reset."},
         404: WebhookEndpointNotFound,
     },
+    openapi_extra={
+        "x-tool-name": "webhooks_reset_webhook_endpoint_secret",
+        "x-tool-title": "Reset webhook endpoint secret",
+        "x-tool-description": "Regenerate a webhook endpoint secret.",
+    },
 )
 async def reset_webhook_endpoint_secret(
     id: WebhookEndpointID,
@@ -206,6 +246,12 @@ async def reset_webhook_endpoint_secret(
         204: {"description": "Webhook endpoint deleted."},
         404: WebhookEndpointNotFound,
     },
+    openapi_extra={
+        "x-tool-name": "webhooks_delete_webhook_endpoint",
+        "x-tool-title": "Delete webhook endpoint",
+        "x-tool-description": "Delete a webhook endpoint.",
+        "x-tool-annotations": ["destructive", "idempotent"],
+    },
 )
 async def delete_webhook_endpoint(
     id: WebhookEndpointID,
@@ -225,6 +271,17 @@ async def delete_webhook_endpoint(
 @router.get(
     "/deliveries",
     response_model=ListResource[WebhookDeliverySchema],
+    openapi_extra={
+        "x-tool-name": "webhooks_list_webhook_deliveries",
+        "x-tool-title": "List webhook deliveries",
+        "x-tool-description": (
+            "List webhook deliveries.\n"
+            "\n"
+            "Deliveries are all the attempts to deliver a webhook event to an "
+            "endpoint."
+        ),
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list_webhook_deliveries(
     pagination: PaginationParamsQuery,
@@ -287,6 +344,11 @@ async def list_webhook_deliveries(
             "description": "Webhook event not found.",
             "model": ResourceNotFound.schema(),
         },
+    },
+    openapi_extra={
+        "x-tool-name": "webhooks_redeliver_webhook_event",
+        "x-tool-title": "Redeliver webhook event",
+        "x-tool-description": "Schedule the re-delivery of a webhook event.",
     },
 )
 async def redeliver_webhook_event(

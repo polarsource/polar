@@ -47,6 +47,11 @@ router = APIRouter(
         403: {"description": "Not permitted"},
         404: {"description": "Subscription, order, or customer not found"},
     },
+    openapi_extra={
+        "x-tool-name": "customer_seats_assign_seat",
+        "x-tool-title": "Assign customer seat",
+        "x-tool-description": "Assign a seat for a subscription or order.",
+    },
 )
 async def assign_seat(
     seat_assign: SeatAssign,
@@ -111,6 +116,12 @@ async def assign_seat(
         401: {"description": "Authentication required"},
         403: {"description": "Not permitted"},
         404: {"description": "Subscription or order not found"},
+    },
+    openapi_extra={
+        "x-tool-name": "customer_seats_list_seats",
+        "x-tool-title": "List customer seats",
+        "x-tool-description": "List seats for a subscription or order.",
+        "x-tool-annotations": ["read_only", "idempotent"],
     },
 )
 async def list_seats(
@@ -178,6 +189,12 @@ async def list_seats(
         403: {"description": "Not permitted"},
         404: {"description": "Seat not found"},
     },
+    openapi_extra={
+        "x-tool-name": "customer_seats_revoke_seat",
+        "x-tool-title": "Revoke customer seat",
+        "x-tool-description": "Revoke a customer seat.",
+        "x-tool-annotations": ["destructive", "idempotent"],
+    },
 )
 async def revoke_seat(
     seat_id: UUID4,
@@ -209,6 +226,11 @@ async def revoke_seat(
         403: {"description": "Not permitted"},
         404: {"description": "Seat not found"},
     },
+    openapi_extra={
+        "x-tool-name": "customer_seats_resend_invitation",
+        "x-tool-title": "Resend customer seat invitation",
+        "x-tool-description": "Resend an invitation for a pending customer seat.",
+    },
 )
 async def resend_invitation(
     seat_id: UUID4,
@@ -238,6 +260,12 @@ async def resend_invitation(
         400: {"description": "Invalid or expired invitation token"},
         403: {"description": "Seat-based pricing not enabled for organization"},
         404: {"description": "Seat not found"},
+    },
+    openapi_extra={
+        "x-tool-name": "customer_seats_get_claim_info",
+        "x-tool-title": "Get customer seat claim info",
+        "x-tool-description": "Get claim information for a customer seat invitation.",
+        "x-tool-annotations": ["read_only", "idempotent"],
     },
 )
 async def get_claim_info(
@@ -307,6 +335,11 @@ async def claim_stream(
     responses={
         400: {"description": "Invalid, expired, or already claimed token"},
         403: {"description": "Seat-based pricing not enabled for organization"},
+    },
+    openapi_extra={
+        "x-tool-name": "customer_seats_claim_seat",
+        "x-tool-title": "Claim customer seat",
+        "x-tool-description": "Claim Seat",
     },
 )
 async def claim_seat(

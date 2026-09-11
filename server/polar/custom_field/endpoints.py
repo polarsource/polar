@@ -37,7 +37,15 @@ CustomFieldNotFound = {
 
 
 @router.get(
-    "/", summary="List Custom Fields", response_model=ListResource[CustomFieldSchema]
+    "/",
+    summary="List Custom Fields",
+    response_model=ListResource[CustomFieldSchema],
+    openapi_extra={
+        "x-tool-name": "custom_fields_list",
+        "x-tool-title": "List custom fields",
+        "x-tool-description": "List custom fields.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list(
     auth_subject: auth.CustomFieldRead,
@@ -75,6 +83,12 @@ async def list(
     summary="Get Custom Field",
     response_model=CustomFieldSchema,
     responses={404: CustomFieldNotFound},
+    openapi_extra={
+        "x-tool-name": "custom_fields_get",
+        "x-tool-title": "Get custom field",
+        "x-tool-description": "Get a custom field by ID.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get(
     id: CustomFieldID,
@@ -96,6 +110,11 @@ async def get(
     status_code=201,
     summary="Create Custom Field",
     responses={201: {"description": "Custom field created."}},
+    openapi_extra={
+        "x-tool-name": "custom_fields_create",
+        "x-tool-title": "Create custom field",
+        "x-tool-description": "Create a custom field.",
+    },
 )
 async def create(
     custom_field_create: CustomFieldCreate,
@@ -113,6 +132,11 @@ async def create(
     responses={
         200: {"description": "Custom field updated."},
         404: CustomFieldNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "custom_fields_update",
+        "x-tool-title": "Update custom field",
+        "x-tool-description": "Update a custom field.",
     },
 )
 async def update(
@@ -139,6 +163,12 @@ async def update(
     responses={
         204: {"description": "Custom field deleted."},
         404: CustomFieldNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "custom_fields_delete",
+        "x-tool-title": "Delete custom field",
+        "x-tool-description": "Delete a custom field.",
+        "x-tool-annotations": ["destructive", "idempotent"],
     },
 )
 async def delete(

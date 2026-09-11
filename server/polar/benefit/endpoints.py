@@ -49,7 +49,13 @@ BenefitNotFound = {
     "/",
     summary="List Benefits",
     response_model=ListResource[BenefitSchema],
-    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    openapi_extra={
+        "x-tool-name": "benefits_list",
+        "x-tool-title": "List benefits",
+        "x-tool-description": "List all existing benefits.",
+        "x-tool-annotations": ["read_only"],
+        "parameters": [get_metadata_query_openapi_schema()],
+    },
 )
 async def list(
     auth_subject: auth.BenefitsRead,
@@ -99,6 +105,12 @@ async def list(
     summary="Get Benefit",
     response_model=BenefitSchema,
     responses={404: BenefitNotFound},
+    openapi_extra={
+        "x-tool-name": "benefits_get",
+        "x-tool-title": "Get benefit",
+        "x-tool-description": "Get a benefit by ID.",
+        "x-tool-annotations": ["read_only"],
+    },
 )
 async def get(
     id: BenefitID,
@@ -119,6 +131,14 @@ async def get(
     summary="List Benefit Files",
     response_model=ListResource[BenefitDownloadableFile],
     responses={404: BenefitNotFound},
+    openapi_extra={
+        "x-tool-name": "benefits_files",
+        "x-tool-title": "List benefit files",
+        "x-tool-description": (
+            "List the downloadable files for a benefit with their download statistics."
+        ),
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def files(
     id: BenefitID,
@@ -143,6 +163,16 @@ async def files(
     summary="List Benefit Grants",
     response_model=ListResource[BenefitGrant],
     responses={404: BenefitNotFound},
+    openapi_extra={
+        "x-tool-name": "benefits_grants",
+        "x-tool-title": "List grants for benefit",
+        "x-tool-description": (
+            "List the individual grants for a benefit.\n"
+            "\n"
+            "It's especially useful to check if a user has been granted a benefit."
+        ),
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def grants(
     id: BenefitID,
@@ -196,6 +226,14 @@ async def grants(
     response_model=BenefitSchema,
     status_code=201,
     responses={201: {"description": "Benefit created."}},
+    openapi_extra={
+        "x-tool-name": "benefits_create",
+        "x-tool-title": "Create benefit",
+        "x-tool-description": (
+            "Create a new benefit (entitlement) like license keys, file downloads, or"
+            " Discord access."
+        ),
+    },
 )
 async def create(
     auth_subject: auth.BenefitsWrite,
@@ -220,6 +258,11 @@ async def create(
     responses={
         200: {"description": "Benefit updated."},
         404: BenefitNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "benefits_update",
+        "x-tool-title": "Update benefit",
+        "x-tool-description": "Update an existing benefit's configuration.",
     },
 )
 async def update(
@@ -253,6 +296,15 @@ async def update(
             "model": NotPermitted.schema(),
         },
         404: BenefitNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "benefits_delete",
+        "x-tool-title": "Delete benefit",
+        "x-tool-description": (
+            "Delete a benefit. Caution: all associated grants will be revoked and "
+            "users will lose access."
+        ),
+        "x-tool-annotations": ["destructive"],
     },
 )
 async def delete(

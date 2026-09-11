@@ -3487,10 +3487,16 @@ async def edit_details(
 
             # Update organization with form data
             form_dict = form.model_dump(exclude_none=True)
+            previous_website = organization.website
             organization = await repository.update(
                 organization,
                 update_dict=form_dict,
             )
+            if organization.website != previous_website:
+                enqueue_job(
+                    "organization.sync_payout_account_website",
+                    organization_id=organization.id,
+                )
             redirect_url = (
                 str(
                     request.url_for(

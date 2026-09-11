@@ -522,6 +522,82 @@ class TestEditOrganization:
 
 
 @pytest.mark.asyncio
+class TestEditDetailsWebsiteSync:
+    async def test_website_change_enqueues_payout_account_sync(
+        self,
+        mocker: MockerFixture,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.website = "https://old.example.com"
+        await save_fixture(organization)
+
+        enqueue_job_mock = mocker.patch(
+            "polar.backoffice.organizations_v2.endpoints.enqueue_job"
+        )
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit-details",
+            data={
+                "website": "https://new.example.com",
+                "details[about]": "",
+                "details[product_description]": "",
+                "details[intended_use]": "",
+            },
+        )
+
+        assert response.status_code == 303
+        assert "new.example.com" in (organization.website or "")
+
+        sync_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args and call.args[0] == "organization.sync_payout_account_website"
+        ]
+        assert len(sync_calls) == 1
+        assert sync_calls[0].kwargs == {"organization_id": organization.id}
+
+    async def test_unchanged_website_does_not_enqueue_sync(
+        self,
+        mocker: MockerFixture,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        # Persisted with the trailing slash HttpUrlToStr adds, so the resubmitted
+        # value is the same URL and the sync gate must not fire.
+        organization.website = "https://example.com/"
+        await save_fixture(organization)
+
+        enqueue_job_mock = mocker.patch(
+            "polar.backoffice.organizations_v2.endpoints.enqueue_job"
+        )
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit-details",
+            data={
+                "website": "https://example.com",
+                "details[about]": "",
+                "details[product_description]": "",
+                "details[intended_use]": "",
+            },
+        )
+
+        assert response.status_code == 303
+        assert organization.website == "https://example.com/"
+
+        sync_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args and call.args[0] == "organization.sync_payout_account_website"
+        ]
+        assert sync_calls == []
+
+
+@pytest.mark.asyncio
 class TestOverviewLazyCards:
     async def test_overview_defers_slow_cards(
         self,

@@ -269,9 +269,9 @@ def _decide(groups: Groups) -> list[Decision]:
 
 async def _apply(session: AsyncSession, decisions: list[Decision]) -> None:
     """Re-read under lock: a merchant may have edited their own list while the
-    prompts were open. `populate_existing` is what makes that re-read real —
-    without it the rows already in the identity map keep the values loaded
-    before the questions, and the comparison below compares stale with stale.
+    prompts were open. `populate_existing` says the locked row wins over
+    anything already loaded, so this holds however the sessions above are
+    arranged.
     """
     organizations = {
         organization.id: organization
@@ -350,25 +350,29 @@ async def enforce_frame_ancestors(
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
     try:
+        # Read, then let go: answering takes as long as it takes, and an open
+        # transaction that whole time holds a snapshot on the primary.
         async with sessionmaker() as session:
             reviews = await _load_reviews(session, observations, slug)
-            groups = _partition(reviews)
-            _summary(groups)
 
-            decisions = _decide(groups)
-            if not decisions:
-                console.print("[green]Nothing to write.")
-                return
+        groups = _partition(reviews)
+        _summary(groups)
 
-            hosts = sum(len(decision.hosts) for decision in decisions)
-            enabled = sum(1 for decision in decisions if decision.enable)
-            if not execute:
-                console.print(
-                    f"[yellow]Rehearsal — --execute would add {hosts} host(s) "
-                    f"and switch on {enabled} organization(s)."
-                )
-                return
+        decisions = _decide(groups)
+        if not decisions:
+            console.print("[green]Nothing to write.")
+            return
 
+        hosts = sum(len(decision.hosts) for decision in decisions)
+        enabled = sum(1 for decision in decisions if decision.enable)
+        if not execute:
+            console.print(
+                f"[yellow]Rehearsal — --execute would add {hosts} host(s) "
+                f"and switch on {enabled} organization(s)."
+            )
+            return
+
+        async with sessionmaker() as session:
             await _apply(session, decisions)
     finally:
         await engine.dispose()

@@ -1,0 +1,107 @@
+# Publishes the Terraform provider by syncing sdk/terraform to the public
+# polarsource/terraform-provider-polar repository and pushing a version tag
+# there. The public repository's own release workflow then builds and signs the
+# Terraform Registry assets (goreleaser + GPG).
+#
+# The Terraform Registry can only publish from a dedicated public repository
+# named terraform-provider-{name} — it reads docs from that repository's git
+# tree at each tag and ingests the signed release assets — so the monorepo is
+# the source of truth and the public repository is a generated publish target,
+# following the same pattern as terraform-provider-google (Magic Modules) and
+# Cloudflare's generated provider.
+#
+# Required repository secret:
+#   TERRAFORM_PROVIDER_PUSH_TOKEN - a token for polarsource/terraform-provider-polar
+#     with contents:write AND workflows:write (the sync pushes files under
+#     .github/workflows, which GitHub rejects without the workflow permission).
+name: Terraform Provider Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish, without the leading v (e.g. 0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  VERSION: ${{ inputs.version }}
+
+jobs:
+  verify:
+    name: Build & test before publishing
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: sdk/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'sdk/terraform/go.mod'
+          cache: true
+          cache-dependency-path: 'sdk/terraform/go.sum'
+      - run: go build -v ./...
+      - run: go test ./...
+
+  publish:
+    name: Sync to terraform-provider-polar and tag
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate version
+        run: |
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "Version must be semver without the leading v, e.g. 0.1.0"
+            exit 1
+          fi
+
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          path: monorepo
+
+      - name: Checkout public provider repository
+        uses: actions/checkout@v4
+        with:
+          repository: polarsource/terraform-provider-polar
+          token: ${{ secrets.TERRAFORM_PROVIDER_PUSH_TOKEN }}
+          path: public
+
+      - name: Refuse to overwrite an existing tag
+        working-directory: public
+        run: |
+          if git ls-remote --exit-code origin "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${VERSION} already exists in terraform-provider-polar"
+            exit 1
+          fi
+
+      - name: Sync provider sources
+        run: |
+          rsync -a --delete \
+            --exclude '.git' \
+            --exclude 'AGENTS.md' \
+            monorepo/sdk/terraform/ public/
+
+      - name: Commit, tag, and push
+        working-directory: public
+        env:
+          MONOREPO_SHA: ${{ github.sha }}
+        run: |
+          git config user.name "polar-releases[bot]"
+          git config user.email "releases@polar.sh"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes since the last sync; tagging the current commit."
+          else
+            git commit -m "Release v${VERSION}" \
+              -m "Synced from polarsource/polar@${MONOREPO_SHA} (sdk/terraform)."
+          fi
+          git tag "v${VERSION}"
+          git push origin HEAD:main
+          git push origin "v${VERSION}"

@@ -1,0 +1,59 @@
+---
+title: "ADR-0010: The Terraform provider lives in the monorepo and publishes through a mirror"
+description: "Develop the merchant-facing Terraform provider in sdk/terraform with a hand-written API client; publish by syncing to polarsource/terraform-provider-polar."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Cross-cutting
+
+**Date**: 2026-08-14
+</Info>
+
+## Context
+
+Merchants want to manage their Polar organization and catalog as code. Terraform providers
+must be Go binaries published from a dedicated public repository named
+`terraform-provider-polar` — the Terraform Registry reads docs from that repository's git
+tree and ingests its signed release assets, with no monorepo or subdirectory mode. Meanwhile
+the API surface the provider wraps is defined here, and out-of-repo clients rot: the
+community provider's main liability is its dependency on the unmaintained, pre-1.0 Go SDK.
+
+## Decision
+
+Develop the provider in `sdk/terraform/` against a thin, hand-written internal HTTP client
+(no SDK dependency), and publish by syncing that directory to the public
+`polarsource/terraform-provider-polar` repository and tagging there (the
+`terraform-provider-publish` workflow).
+
+## Consequences
+
+- API changes and the provider evolve in the same PR, and monorepo CI
+  (`terraform-provider-ci`) fails when a change to the wrapped endpoints breaks the
+  provider build — drift is caught before merchants see it.
+- The public repository is a generated artifact: never commit to it directly; external
+  contributions are redirected to the monorepo. Releases are cut only through the publish
+  workflow.
+- The provider maintains its own request/response structs (`internal/polarapi`), typed
+  against `server/polar/{module}/schemas.py` — a deliberate duplication that insulates the
+  provider from SDK release cycles, at the cost of updating those structs when endpoints
+  change.
+- The monorepo takes on a Go toolchain in CI for this directory only.
+
+## Alternatives considered
+
+- **Dedicated repository as source of truth**: simplest publishing, but decouples the
+  provider from API changes — the drift would surface in merchant plans, not our CI.
+- **Speakeasy-generated provider**: works (Airbyte, Kong), but Polar migrated off Speakeasy
+  to the in-house SDK generator; re-adopting a paid vendor for one artifact runs against
+  that direction.
+- **Building on a Go SDK**: no maintained Go SDK exists, and generating one via
+  `sdk/generator` is a larger project than the provider itself; the provider only needs
+  ~40 endpoints.
+
+## References
+
+- `sdk/terraform/` (provider), `.github/workflows/terraform-provider-{ci,publish}.yml`
+- Precedent for the mirror pattern: terraform-provider-google (Magic Modules),
+  Cloudflare's generated provider, Airbyte's Speakeasy pipeline.

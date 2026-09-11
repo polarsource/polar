@@ -1,0 +1,27 @@
+# Runs in the public polarsource/terraform-provider-polar repository.
+# Development happens in the polarsource/polar monorepo (sdk/terraform); this
+# is a safety net for the synced code and for external contributions, which
+# should be redirected to the monorepo.
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - run: go build -v ./...
+      - run: go vet ./...
+      - run: test -z "$(gofmt -l .)"
+      - run: go test -v ./...

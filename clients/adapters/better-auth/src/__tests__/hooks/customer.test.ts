@@ -51,6 +51,60 @@ describe('customer hooks', () => {
       expect(mockClient.customers.create).not.toHaveBeenCalled()
       expect(mockClient.customers.update).not.toHaveBeenCalled()
     })
+
+    it('claims an unlinked individual customer by setting its external_id', async () => {
+      const user = createMockUser({
+        id: 'user-1',
+        email: 'unlinked@example.com',
+      })
+      const individualCustomer = createMockCustomer({
+        id: 'cust-1',
+        type: 'individual',
+        email: user.email,
+        external_id: null,
+      })
+      vi.mocked(mockClient.customers.list).mockResolvedValue({
+        items: [individualCustomer],
+        pagination: { total_count: 1, max_page: 1 },
+      })
+      vi.mocked(mockClient.customers.update).mockResolvedValue(
+        individualCustomer as any,
+      )
+
+      await onAfterUserCreate(createTestPolarOptions({ client: mockClient }))(
+        user,
+        createMockBetterAuthContext(),
+      )
+
+      expect(mockClient.customers.update).toHaveBeenCalledWith('cust-1', {
+        external_id: 'user-1',
+      })
+      expect(mockClient.customers.create).not.toHaveBeenCalled()
+    })
+
+    it('does not claim a team customer with a null external_id and surfaces a conflict', async () => {
+      const user = createMockUser({ id: 'user-1', email: 'team@example.com' })
+      vi.mocked(mockClient.customers.list).mockResolvedValue({
+        items: [
+          createMockCustomer({
+            id: 'team-cust',
+            type: 'team',
+            email: user.email,
+            external_id: null,
+          }),
+        ],
+        pagination: { total_count: 1, max_page: 1 },
+      })
+
+      await expect(
+        onAfterUserCreate(createTestPolarOptions({ client: mockClient }))(
+          user,
+          createMockBetterAuthContext(),
+        ),
+      ).rejects.toMatchObject({ status: 'CONFLICT' })
+      expect(mockClient.customers.create).not.toHaveBeenCalled()
+      expect(mockClient.customers.update).not.toHaveBeenCalled()
+    })
   })
 
   describe('onUserUpdate', () => {

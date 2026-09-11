@@ -27,7 +27,9 @@ export const onAfterUserCreate =
       const existingCustomers = await listCustomers(options.client)({
         email: user.email,
       })
-      const existingCustomer = existingCustomers.items[0]
+      const existingCustomer = existingCustomers.items.find(
+        (c) => c.type === 'individual',
+      )
 
       if (existingCustomer) {
         if (existingCustomer.external_id === user.id) {
@@ -42,6 +44,12 @@ export const onAfterUserCreate =
           external_id: user.id,
         })
         return
+      }
+
+      if (existingCustomers.items.some((c) => c.type === 'team')) {
+        throw new APIError('CONFLICT', {
+          message: 'A team customer with this email already exists',
+        })
       }
 
       const params = options.getCustomerCreateParams

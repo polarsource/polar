@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 import pytest
 
 from polar.config import settings
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.trial import TrialInterval
 from polar.models import Checkout, Organization, Product
@@ -145,6 +146,52 @@ async def test_is_free_product_price_for_zero_fixed_price(
 
     assert checkout.is_free_product_price is True
     assert checkout.is_payment_form_required is False
+
+
+@pytest.mark.asyncio
+class TestIsFreeProductPrice:
+    @pytest.mark.parametrize(
+        ("currency", "expected_free"), [("usd", True), ("eur", False)]
+    )
+    async def test_selected_currency(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        currency: str,
+        expected_free: bool,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(0, "usd"), (1000, "eur")],
+        )
+        checkout = await create_checkout(
+            save_fixture, products=[product], currency=currency
+        )
+
+        assert checkout.is_free_product_price is expected_free
+        assert checkout.is_payment_form_required is not expected_free
+        assert checkout.is_payment_setup_required is not expected_free
+
+        checkout.currency = "gbp"
+        assert checkout.is_free_product_price is False
+
+    async def test_free_base_with_paid_component(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(0, "usd"), ("seat", 1000, "usd"), (0, "eur")],
+        )
+        checkout = await create_checkout(save_fixture, products=[product], seats=1)
+
+        assert checkout.is_free_product_price is False
+        assert checkout.is_payment_form_required is True
 
 
 @pytest.mark.asyncio

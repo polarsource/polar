@@ -24,8 +24,6 @@ from uuid import UUID
 
 from logfire.query_client import AsyncLogfireQueryClient
 
-from polar.config import settings
-
 RETENTION = timedelta(days=30)
 MAX_SLICE = timedelta(days=14)
 MAX_ROWS = 10_000
@@ -54,11 +52,6 @@ class ObservationsTruncated(Exception):
             "so the slice is capped and organizations are missing. "
             "Raise MAX_ROWS or shorten the window."
         )
-
-
-class LogfireReadTokenMissing(Exception):
-    def __init__(self) -> None:
-        super().__init__("Set POLAR_LOGFIRE_READ_TOKEN in server/.env.")
 
 
 def _slices(window: timedelta, *, now: datetime) -> list[tuple[datetime, datetime]]:
@@ -99,14 +92,12 @@ def _merge(rows: list[dict[str, Any]]) -> dict[UUID, list[Observation]]:
     }
 
 
-async def load(window: timedelta = RETENTION) -> dict[UUID, list[Observation]]:
-    token = settings.LOGFIRE_READ_TOKEN
-    if token is None:
-        raise LogfireReadTokenMissing()
-
+async def load(
+    read_token: str, window: timedelta = RETENTION
+) -> dict[UUID, list[Observation]]:
     now = datetime.now(UTC)
     slices = _slices(window, now=now)
-    async with AsyncLogfireQueryClient(read_token=token) as client:
+    async with AsyncLogfireQueryClient(read_token=read_token) as client:
         results = await asyncio.gather(
             *(
                 client.query_json_rows(

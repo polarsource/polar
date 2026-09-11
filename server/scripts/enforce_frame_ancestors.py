@@ -34,7 +34,9 @@ how that bet is settled, which is why this is worth running regularly.
 Usage:
     cd server
 
-    # Needs a Logfire read token, see POLAR_LOGFIRE_READ_TOKEN in .env.template
+    # A Logfire read token
+    export LOGFIRE_READ_TOKEN=pylf_...
+
     # Rehearsal: the questions run, nothing is written
     uv run python -m scripts.enforce_frame_ancestors
 
@@ -331,6 +333,11 @@ async def _apply(session: AsyncSession, decisions: list[Decision]) -> None:
 @cli.command()
 @typer_async
 async def enforce_frame_ancestors(
+    read_token: str = typer.Option(
+        ...,
+        envvar="LOGFIRE_READ_TOKEN",
+        help="Logfire read token. A write token cannot query.",
+    ),
     execute: bool = typer.Option(
         False, help="Write the answers (default: rehearse, write nothing)"
     ),
@@ -339,7 +346,7 @@ async def enforce_frame_ancestors(
         RETENTION.days, help="Days of observations to read from Logfire."
     ),
 ) -> None:
-    observations = await load(timedelta(days=window))
+    observations = await load(read_token, timedelta(days=window))
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
     try:

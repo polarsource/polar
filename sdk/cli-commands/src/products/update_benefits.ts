@@ -34,6 +34,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'products:update_benefits',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.products.updateBenefits(config.path.id, body),

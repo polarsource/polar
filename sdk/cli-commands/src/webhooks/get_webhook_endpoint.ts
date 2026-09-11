@@ -16,6 +16,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'webhooks:get_webhook_endpoint',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.webhooks.getWebhookEndpoint(config.path.id),
       })

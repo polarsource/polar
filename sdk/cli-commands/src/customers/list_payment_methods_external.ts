@@ -37,6 +37,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customers:list_payment_methods_external',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.customers.listPaymentMethodsExternal(

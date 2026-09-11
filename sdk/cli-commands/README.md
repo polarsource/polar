@@ -58,16 +58,51 @@ matching top-level JSON keys with a shallow merge. Complex fields also accept JS
 flags, e.g. `--billing-address='{"country":"US"}'`. Omitted flags are not merged,
 so `false`, empty strings, and explicit JSON `null` are preserved.
 
+## Conditional destructive confirmation
+
+Annotate a top-level input property with `x-polar-cli-confirm` to require
+confirmation when its value matches a scalar. For example, `ProductUpdate` uses:
+
+```python
+is_archived: bool | None = Field(
+    default=None,
+    json_schema_extra={"x-polar-cli-confirm": {"equals": True}},
+)
+```
+
+This applies to commands consuming that input schema. Query parameter schemas can
+use the same annotation. The generator checks that the comparison value matches
+the field schema and emits `requiresConfirmation` from the merged request input.
+Any matching annotated field triggers confirmation; DELETE always requires it.
+Nested properties and structured comparison values are not supported.
+
+```bash
+polar products update <id> --is-archived=true
+polar products update <id> -d '{"is_archived":true}'
+polar products update <id> --is-archived=true --confirm
+polar products update <id> --is-archived=false
+```
+
+The first two commands preview the product and require the exact answer `yes`.
+`--confirm` / `-c` skips preview and prompt and is required without an interactive
+terminal. False, null, and omitted archive values do not prompt. Explicit flags
+override `--data` before the condition is evaluated.
+
+Only annotated inputs receive additional strict Effect Schema validation, so JSON
+strings or numbers cannot bypass a boolean condition through backend coercion.
+Other API payload validation remains server-side. Preview lookup, its one-second
+timeout, 404 handling, and fixed loading rows are shared with DELETE confirmation.
+The GET's `x-polar-cli-preview` metadata selects the displayed record fields.
+
 ## Prototype boundaries
 
-- Twelve top-level customer operations only; no exports, customer members, private
-  customer analytics, other resources, or composite workflows.
+- CLI-tagged, non-private operations; no composite workflows.
 - Validates flag primitives/enums and JSON syntax, not complete API schemas.
   `mergeInput` contains the intentional type assertion at that boundary. Required
   fields, union combinations, and nested values are validated by the server.
 - Flat and repeatable flags plus JSON; dotted/bracket flag aliases are deferred.
 - Uses the current CLI API wrapper, including its existing generic error messages.
-- DELETE requires `--confirm`; interactive confirmations are deferred.
+- DELETE and matching annotated inputs require interactive confirmation or `--confirm`.
 - No dry-run, response-header output, automatic pagination, or custom help renderer.
 - Generation is explicit (`pnpm generate`), not yet enforced in every release path.
   CI path filters and generated-package cache invalidation still need hardening.

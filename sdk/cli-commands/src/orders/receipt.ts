@@ -16,6 +16,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'orders:receipt',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.orders.receipt(config.path.id),
       })

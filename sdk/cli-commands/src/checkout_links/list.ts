@@ -62,6 +62,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'checkout-links:list',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.checkoutLinks.list(query),
       })

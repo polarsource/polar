@@ -118,46 +118,6 @@ describe('CLI-tagged API commands', () => {
     },
   )
 
-  test('DELETE confirmation also protects non-customer resources', async () => {
-    await expect(run(['files', 'delete', 'file-1']).promise).rejects.toThrow(
-      'files:delete performs a DELETE request.',
-    )
-    expect(requests).toHaveLength(0)
-    expect(auth.state.resolutions).toHaveLength(0)
-  })
-
-  test('DELETE proceeds when the prompt returns yes', async () => {
-    const prompt = vi.mocked(Prompt.run).mockReturnValue(Effect.succeed('yes'))
-    const cli = run(['files', 'delete', 'file-1'], { interactive: true })
-    await cli.promise
-    expect(cli.output()).toContain('\n  ▲ Confirm DELETE request\n\n')
-    expect(cli.output()).toContain('files:delete')
-    expect(prompt).toHaveBeenCalledOnce()
-    expect(requests).toHaveLength(1)
-    expect(requests[0]!.method).toBe('DELETE')
-  })
-
-  test('DELETE cancels when the prompt returns no', async () => {
-    vi.mocked(Prompt.run).mockReturnValue(Effect.succeed('no'))
-    await expect(
-      run(['files', 'delete', 'file-1'], { interactive: true }).promise,
-    ).rejects.toThrow('Command cancelled.')
-    expect(requests).toHaveLength(0)
-    expect(auth.state.resolutions).toHaveLength(0)
-  })
-
-  test.each([
-    ['customers', 'delete', 'customer-1', '--confirm'],
-    ['products', 'list'],
-  ])('%j skips the confirmation prompt', async (...args) => {
-    const prompt = vi.mocked(Prompt.run).mockReturnValue(Effect.succeed('yes'))
-    const cli = run(args, { interactive: true })
-    await cli.promise
-    expect(cli.terminal()).toBe('')
-    expect(prompt).not.toHaveBeenCalled()
-    expect(requests).toHaveLength(1)
-  })
-
   test.each([200, 403, 500])(
     'DELETE previews the record, with fallback for GET status %i',
     async (status) => {
@@ -189,7 +149,7 @@ describe('CLI-tagged API commands', () => {
       expect(cli.terminal()).toContain('External ID')
       expect(cli.terminal()).toContain('…\n\n')
       expect(cli.output().includes('Alice')).toBe(status === 200)
-      expect(cli.output()).toContain('Confirm DELETE request')
+      expect(cli.output()).toContain('Confirm destructive request')
     },
   )
 

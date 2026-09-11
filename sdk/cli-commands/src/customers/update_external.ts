@@ -59,6 +59,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customers:update_external',
         method: 'PATCH',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.customers.updateExternal(config.path.external_id, body),

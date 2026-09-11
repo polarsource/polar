@@ -126,6 +126,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'checkout-links:create',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.checkoutLinks.create(body),
       })

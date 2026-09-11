@@ -16,6 +16,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customer-seats:get_claim_info',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.customerSeats.getClaimInfo(config.path.invitation_token),

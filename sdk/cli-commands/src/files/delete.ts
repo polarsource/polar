@@ -18,6 +18,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'files:delete',
         method: 'DELETE',
+        requiresConfirmation: true,
         confirm: config.confirm,
         invoke: (client) => client.files.delete(config.path.id),
       })

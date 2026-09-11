@@ -681,6 +681,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'meters:quantities',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.meters.quantities(config.path.id, query),
       })

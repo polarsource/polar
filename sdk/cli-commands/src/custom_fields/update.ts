@@ -55,6 +55,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'custom-fields:update',
         method: 'PATCH',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.customFields.update(config.path.id, body),
       })

@@ -19,7 +19,7 @@ export const data = Flag.string('data').pipe(
 export const confirm = Flag.boolean('confirm').pipe(
   Flag.withAlias('c'),
   Flag.withDefault(false),
-  Flag.withDescription('Skip the confirmation prompt for DELETE requests'),
+  Flag.withDescription('Skip the confirmation prompt for destructive requests'),
 )
 
 // The prototype validates flags and JSON syntax; full input validation remains server-side.

@@ -5,7 +5,14 @@ import pytest
 
 from cli_commands.emitter import CLICommandsEmitter
 from cli_commands.ir import generate_cli_ir
-from generator.ir import APIIR, CLIPreview, CLIPreviewField, generate_ir
+from generator.ir import (
+    APIIR,
+    CLIConfirmation,
+    CLIPreview,
+    CLIPreviewField,
+    UnionType,
+    generate_ir,
+)
 
 
 @pytest.fixture(scope="module")
@@ -163,6 +170,109 @@ def test_generation_tracks_ir_changes(cli_ir: APIIR, tmp_path: pathlib.Path) -> 
     listing = (tmp_path / "src/customers/list.ts").read_text()
     assert "Updated customer listing documentation." in listing
     assert 'Flag.string("email")' not in listing
+
+
+def test_product_archive_confirmation_uses_merged_input(
+    cli_ir: APIIR, tmp_path: pathlib.Path
+) -> None:
+    CLICommandsEmitter(cli_ir).emit(tmp_path)
+    source = (tmp_path / "src/products/update.ts").read_text()
+    assert "Schema.optionalKey(Schema.NullOr(Schema.Boolean))" in source
+    assert 'requiresConfirmation: confirmationInput["is_archived"] === true' in source
+    assert "confirm: config.confirm" in source
+    assert "client.products.get(config.path.id)" in source
+    assert source.index("mergeInput<Body>") < source.index("Schema.decodeUnknownEffect")
+    assert (
+        "requiresConfirmation: true"
+        in (tmp_path / "src/customers/delete.ts").read_text()
+    )
+    assert "confirm: false" in (tmp_path / "src/products/create.ts").read_text()
+
+
+@pytest.mark.parametrize("value", ["true", 1])
+def test_confirmation_value_must_match_field_schema(
+    cli_ir: APIIR, tmp_path: pathlib.Path, value: str | int
+) -> None:
+    changed = cli_ir.model_copy(deep=True)
+    model = next(
+        model
+        for model in changed.versions[0].input_models
+        if model.name == "ProductUpdate"
+    )
+    field = next(field for field in model.fields if field.name == "is_archived")
+    field.cli_confirm = CLIConfirmation(equals=value)
+    with pytest.raises(ValueError, match="does not match its schema"):
+        CLICommandsEmitter(changed).emit(tmp_path)
+
+
+def test_confirmation_metadata_on_query_fields(
+    cli_spec: op.OpenAPI, tmp_path: pathlib.Path
+) -> None:
+    changed = cli_spec.model_copy(deep=True)
+    assert changed.paths is not None
+    operation = changed.paths["/v1/products/"].get
+    assert operation is not None
+    parameter = next(
+        parameter
+        for parameter in operation.parameters or []
+        if isinstance(parameter, op.Parameter) and parameter.name == "is_archived"
+    )
+    assert isinstance(parameter.param_schema, op.Schema)
+    parameter.param_schema.__pydantic_extra__ = {
+        "x-polar-cli-confirm": {"equals": True}
+    }
+    CLICommandsEmitter(generate_cli_ir(changed)).emit(tmp_path)
+    source = (tmp_path / "src/products/list.ts").read_text()
+    assert ")(query).pipe(" in source
+    assert 'confirmationInput["is_archived"] === true' in source
+    assert "confirm: config.confirm" in source
+    assert "preview:" not in source
+
+
+@pytest.mark.parametrize("annotation", [{}, {"equals": []}, {"equals": {}}])
+def test_malformed_confirmation_annotations_fail(
+    cli_spec: op.OpenAPI, annotation: dict[str, object]
+) -> None:
+    changed = cli_spec.model_copy(deep=True)
+    assert changed.components is not None and changed.components.schemas is not None
+    schema = changed.components.schemas["ProductUpdate"]
+    assert isinstance(schema, op.Schema) and schema.properties is not None
+    field = schema.properties["is_archived"]
+    assert isinstance(field, op.Schema)
+    field.__pydantic_extra__ = {"x-polar-cli-confirm": annotation}
+    with pytest.raises(ValueError, match="equals"):
+        generate_cli_ir(changed)
+
+
+def test_confirmation_metadata_is_preserved_across_body_variants(
+    cli_ir: APIIR, tmp_path: pathlib.Path
+) -> None:
+    changed = cli_ir.model_copy(deep=True)
+    model = next(
+        model
+        for model in changed.versions[0].input_models
+        if model.name == "BenefitCustomUpdate"
+    )
+    field = next(field for field in model.fields if field.name == "description")
+    field.cli_confirm = CLIConfirmation(equals="archive")
+    CLICommandsEmitter(changed).emit(tmp_path)
+    source = (tmp_path / "src/benefits/update.ts").read_text()
+    assert 'confirmationInput["description"] === "archive"' in source
+    assert "confirm: config.confirm" in source
+
+    service = next(
+        service
+        for service in changed.versions[0].services
+        if service.name == "Benefits"
+    )
+    method = next(method for method in service.methods if method.name == "update")
+    assert isinstance(method.body, UnionType)
+    method.body.variants.reverse()
+    CLICommandsEmitter(changed).emit(tmp_path)
+    assert (
+        'confirmationInput["description"] === "archive"'
+        in (tmp_path / "src/benefits/update.ts").read_text()
+    )
 
 
 def test_delete_previews_match_get_paths(cli_ir: APIIR, tmp_path: pathlib.Path) -> None:

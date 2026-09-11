@@ -237,6 +237,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'discounts:update',
         method: 'PATCH',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.discounts.update(config.path.id, body),
       })

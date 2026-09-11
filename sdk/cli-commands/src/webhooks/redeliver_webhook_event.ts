@@ -16,6 +16,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'webhooks:redeliver_webhook_event',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.webhooks.redeliverWebhookEvent(config.path.id),
